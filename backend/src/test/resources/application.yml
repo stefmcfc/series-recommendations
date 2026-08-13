@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:./build/test-series.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    show-sql: false
+  flyway:
+    enabled: false

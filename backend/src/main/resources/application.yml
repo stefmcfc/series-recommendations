@@ -1,0 +1,12 @@
+﻿spring:
+  datasource:
+    url: jdbc:sqlite:./data/series.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    show-sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration

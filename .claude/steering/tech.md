@@ -1,0 +1,83 @@
+# Tech Stack
+
+This reflects what's actually declared in `backend/build.gradle.kts` and `frontend/package.json` — check those files directly if this drifts.
+
+## Language / Runtime
+
+### Backend
+- **Java 25** toolchain (`build.gradle.kts` → `java.toolchain.languageVersion`)
+- **Spring Boot 4.0.0**
+
+### Frontend
+- **TypeScript** ~6.0.2
+- **React** 19.2.7
+- **Vite** 8.1.1
+
+## Framework
+
+### Backend
+- **Spring Boot 4**: REST API, dependency injection, data persistence
+  - `spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-validation`
+- **Spring Data JPA**: ORM layer for database operations
+- **Hibernate Community Dialects** (`hibernate-community-dialects`): provides the SQLite dialect
+
+### Frontend
+- **React 19**: Component-based UI
+- **axios**: HTTP client for backend calls (`frontend/src/services/seriesApi.ts`)
+- No router or CSS framework is installed yet — add `react-router` / Tailwind if/when the UI spec calls for it.
+
+## Database
+**SQLite** (local development) — `org.xerial:sqlite-jdbc` + `hibernate-community-dialects` for the SQLite Hibernate dialect. PostgreSQL is the intended production target (no code changes expected, per Spring Data JPA), but not yet configured anywhere in this repo.
+
+## Build Tools
+
+### Backend
+- **Gradle** via the wrapper. Only `gradlew.bat` (Windows) is checked in — there is no Unix `gradlew` script yet. Generate one with `gradle wrapper` if Unix/macOS support is needed.
+
+### Frontend
+- **Vite**: Dev server, production build, asset bundling
+- **npm**: Package manager
+
+## Testing
+
+### Backend
+- **Spock 2.4** (`spock-core`, `spock-spring`) on **Groovy 5.0**
+- **JUnit Platform**: test runner (`useJUnitPlatform()` in `build.gradle.kts`)
+- Specs live in `src/test/groovy/com/example/seriestracker/{controller,service,model}/`
+
+### Frontend
+- **Vitest 4.1** (Vite-native)
+- **React Testing Library 16** + **@testing-library/user-event**
+- **jsdom** as the test environment
+
+## API Documentation
+Not currently wired up. `springdoc-openapi` is **not** a dependency in `build.gradle.kts` — there is no `/swagger-ui.html` available today despite what older docs may say. Add `springdoc-openapi-starter-webmvc-ui` if interactive API docs are wanted.
+
+## CI/CD
+No CI pipeline exists in this repo currently (no `.gitlab-ci.yml`, no `.github/workflows/`). If one is added, see `RUNBOOK.md` for the commands it should run.
+
+## Common Commands
+
+```bash
+# Backend (run from backend/)
+gradlew.bat clean build        # Build project
+gradlew.bat test               # Run Spock tests
+gradlew.bat bootRun            # Start Spring Boot dev server (localhost:8080)
+gradlew.bat bootJar            # Package for production
+
+# Frontend (run from frontend/)
+npm install                    # Install dependencies
+npm run dev                    # Vite dev server (localhost:5173)
+npm run build                  # Production build
+npm run preview                # Preview production build
+npm test                       # Run Vitest (single run)
+npm run test:watch             # Watch mode
+npm run lint                   # ESLint
+```
+
+## Notes
+
+- **Frontend-Backend Communication**: Vite dev server proxies `/api` calls to `localhost:8080` (`frontend/vite.config.ts`); the axios client in `seriesApi.ts` also reads `VITE_API_BASE` directly and falls back to `http://localhost:8080/api/v1`.
+- **CORS**: Not yet configured on the Spring Boot side — needed if the frontend calls the backend directly instead of through the Vite proxy (e.g. in production).
+- **Environment Variables**: Backend uses `application.yml` + `SPRING_`-prefixed env var overrides; frontend uses `.env.local` (Vite `VITE_` prefix).
+- **Database Migrations**: Flyway is enabled and required — see `backend/src/main/resources/db/migration/`.

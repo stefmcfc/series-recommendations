@@ -1,0 +1,138 @@
+package com.example.seriestracker.controller;
+
+import com.example.seriestracker.dto.ApiResponse;
+import com.example.seriestracker.dto.SeriesDto;
+import com.example.seriestracker.dto.SeriesSearchCriteria;
+import com.example.seriestracker.service.SeriesExportService;
+import com.example.seriestracker.service.SeriesSearchService;
+import com.example.seriestracker.service.SeriesService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/series")
+public class SeriesController {
+
+    private static final DateTimeFormatter FILENAME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+
+    private final SeriesService seriesService;
+    private final SeriesSearchService searchService;
+    private final SeriesExportService exportService;
+
+    public SeriesController(SeriesService seriesService,
+                            SeriesSearchService searchService,
+                            SeriesExportService exportService) {
+        this.seriesService = seriesService;
+        this.searchService = searchService;
+        this.exportService = exportService;
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<SeriesDto>> create(@RequestBody SeriesDto dto) {
+        SeriesDto created = seriesService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>(created));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<SeriesDto>>> getAll() {
+        List<SeriesDto> list = seriesService.getAll();
+        return ResponseEntity.ok(new ApiResponse<>(list, list.size()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<SeriesDto>> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(new ApiResponse<>(seriesService.getById(id)));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<SeriesDto>> update(@PathVariable UUID id, @RequestBody SeriesDto dto) {
+        return ResponseEntity.ok(new ApiResponse<>(seriesService.update(id, dto)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        seriesService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<SeriesDto>>> search(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) List<String> genre,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer minPersonalRating,
+            @RequestParam(required = false) Integer maxPersonalRating,
+            @RequestParam(required = false) BigDecimal minImdbRating,
+            @RequestParam(required = false) BigDecimal maxImdbRating,
+            @RequestParam(required = false) Boolean startedNotFinished) {
+
+        SeriesSearchCriteria c = new SeriesSearchCriteria();
+        c.setTitle(title);
+        c.setGenres(genre);
+        c.setStatus(status);
+        c.setMinPersonalRating(minPersonalRating);
+        c.setMaxPersonalRating(maxPersonalRating);
+        c.setMinImdbRating(minImdbRating);
+        c.setMaxImdbRating(maxImdbRating);
+        c.setStartedNotFinished(startedNotFinished);
+
+        List<SeriesDto> results = searchService.search(c);
+        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<String> export(
+            @RequestParam String format,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) List<String> genre,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer minPersonalRating,
+            @RequestParam(required = false) Integer maxPersonalRating,
+            @RequestParam(required = false) BigDecimal minImdbRating,
+            @RequestParam(required = false) BigDecimal maxImdbRating,
+            @RequestParam(required = false) Boolean startedNotFinished) {
+
+        if (!format.equalsIgnoreCase("json") && !format.equalsIgnoreCase("csv")) {
+            return ResponseEntity.badRequest().body("Invalid format. Use 'json' or 'csv'.");
+        }
+
+        SeriesSearchCriteria c = new SeriesSearchCriteria();
+        c.setTitle(title);
+        c.setGenres(genre);
+        c.setStatus(status);
+        c.setMinPersonalRating(minPersonalRating);
+        c.setMaxPersonalRating(maxPersonalRating);
+        c.setMinImdbRating(minImdbRating);
+        c.setMaxImdbRating(maxImdbRating);
+        c.setStartedNotFinished(startedNotFinished);
+
+        List<SeriesDto> series = searchService.search(c);
+        String ts = LocalDateTime.now().format(FILENAME_FMT);
+        String content;
+        String filename;
+        String contentType;
+
+        if (format.equalsIgnoreCase("json")) {
+            content = exportService.exportAsJson(series, LocalDateTime.now());
+            filename = "series-export-" + ts + ".json";
+            contentType = "application/json";
+        } else {
+            content = exportService.exportAsCsv(series);
+            filename = "series-export-" + ts + ".csv";
+            contentType = "text/csv";
+        }
+
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+            .contentType(MediaType.parseMediaType(contentType))
+            .body(content);
+    }
+}

@@ -1,0 +1,31 @@
+# Build outputs
+backend/build/
+backend/.gradle/
+backend/data/
+frontend/dist/
+frontend/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+*.local
+
+# Test coverage
+frontend/coverage/
+
+# Claude Code local settings
+.claude/settings.local.json
