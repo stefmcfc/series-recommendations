@@ -1,9 +1,11 @@
-﻿export enum SeriesStatus {
-  WATCHING = 'WATCHING',
-  COMPLETED = 'COMPLETED',
-  DROPPED = 'DROPPED',
-  BACKLOG = 'BACKLOG',
-}
+﻿export const SeriesStatus = {
+  WATCHING: 'WATCHING',
+  COMPLETED: 'COMPLETED',
+  DROPPED: 'DROPPED',
+  BACKLOG: 'BACKLOG',
+} as const
+
+export type SeriesStatus = (typeof SeriesStatus)[keyof typeof SeriesStatus]
 
 export interface Series {
   id: string

@@ -5,14 +5,18 @@
 
 export class ApiError extends Error {
   readonly isApiError = true as const
+  readonly status: number
+  readonly details?: Record<string, string>
 
   constructor(
-    public readonly status: number,
+    status: number,
     message: string,
-    public readonly details?: Record<string, string>,
+    details?: Record<string, string>,
   ) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.details = details
   }
 }
 
