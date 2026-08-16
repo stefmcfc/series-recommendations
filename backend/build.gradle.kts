@@ -41,7 +41,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.spockframework:spock-core:2.4-groovy-5.0")
     testImplementation("org.spockframework:spock-spring:2.4-groovy-5.0")
-    testImplementation("org.apache.groovy:groovy:5.0.0")
+    testImplementation("org.apache.groovy:groovy:5.1.0")
 }
 
 tasks.withType<Test> {
