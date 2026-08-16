@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      # Only gradlew.bat (Windows) is checked into this repo, so CI provisions Gradle
+      # directly via setup-gradle rather than using the wrapper — see CLAUDE.md's hard
+      # rule on not adding a Unix wrapper script.
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check
+        working-directory: backend
+        # Runs tests, the JaCoCo coverage gate, and SpotBugs static analysis
+        # (all wired into `check` — see tooling_spec_001_code_quality_security.md).
+        run: gradle check
+      - name: Build
+        working-directory: backend
+        run: gradle build -x test
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Format check
+        working-directory: frontend
+        run: npm run format:check
+      - name: Test
+        working-directory: frontend
+        run: npm test
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+      - name: Audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Scanning the full checkout directly (rather than gitleaks/gitleaks-action, which
+      # diffs the push event's before/after commit range) sidesteps that action erroring
+      # out on certain push shapes, e.g. a repo's first push to main.
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            | tar -xz gitleaks
+      - name: Scan for secrets
+        run: ./gitleaks detect --source . --redact -v
