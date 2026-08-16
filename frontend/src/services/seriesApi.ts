@@ -1,8 +1,15 @@
 ﻿import axios from 'axios'
-import type { Series, CreateSeriesRequest, UpdateSeriesRequest, SearchCriteria } from '../types/series'
+import type {
+  Series,
+  CreateSeriesRequest,
+  UpdateSeriesRequest,
+  SearchCriteria,
+} from '../types/series'
 import { ApiError } from '../types/api'
 
-const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8080/api/v1'
+const API_BASE =
+  (import.meta.env.VITE_API_BASE as string | undefined) ??
+  'http://localhost:8080/api/v1'
 
 const client = axios.create({ baseURL: API_BASE })
 
@@ -21,8 +28,15 @@ async function request<T>(fn: () => Promise<{ data: T }>): Promise<T> {
       if (!err.response) {
         throw new ApiError(0, 'Network error. Please check your connection.')
       }
-      const { status, data } = err.response as { status: number; data: { error?: string; details?: Record<string, string> } }
-      throw new ApiError(status, data?.error ?? 'An error occurred', data?.details)
+      const { status, data } = err.response as {
+        status: number
+        data: { error?: string; details?: Record<string, string> }
+      }
+      throw new ApiError(
+        status,
+        data?.error ?? 'An error occurred',
+        data?.details,
+      )
     }
     throw err
   }
@@ -34,17 +48,24 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (criteria.title != null) params.title = criteria.title
   if (criteria.genres?.length) params.genre = criteria.genres
   if (criteria.status != null) params.status = criteria.status
-  if (criteria.minPersonalRating != null) params.minPersonalRating = criteria.minPersonalRating
-  if (criteria.maxPersonalRating != null) params.maxPersonalRating = criteria.maxPersonalRating
-  if (criteria.minImdbRating != null) params.minImdbRating = criteria.minImdbRating
-  if (criteria.maxImdbRating != null) params.maxImdbRating = criteria.maxImdbRating
-  if (criteria.startedNotFinished != null) params.startedNotFinished = criteria.startedNotFinished
+  if (criteria.minPersonalRating != null)
+    params.minPersonalRating = criteria.minPersonalRating
+  if (criteria.maxPersonalRating != null)
+    params.maxPersonalRating = criteria.maxPersonalRating
+  if (criteria.minImdbRating != null)
+    params.minImdbRating = criteria.minImdbRating
+  if (criteria.maxImdbRating != null)
+    params.maxImdbRating = criteria.maxImdbRating
+  if (criteria.startedNotFinished != null)
+    params.startedNotFinished = criteria.startedNotFinished
   return params
 }
 
 export const seriesApi = {
   getAll: (): Promise<Series[]> =>
-    request<{ data: Series[]; count: number }>(() => client.get('/series')).then((res) => res.data),
+    request<{ data: Series[]; count: number }>(() =>
+      client.get('/series'),
+    ).then((res) => res.data),
 
   getById: (id: string): Promise<Series> =>
     request<Series>(() => client.get('/series/' + id)),

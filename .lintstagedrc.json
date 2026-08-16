@@ -1,0 +1,6 @@
+{
+  "frontend/src/**/*.{ts,tsx}": [
+    "frontend/node_modules/.bin/prettier --write",
+    "frontend/node_modules/.bin/eslint --fix"
+  ]
+}
