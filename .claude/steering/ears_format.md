@@ -1,273 +1,155 @@
 # EARS Requirements Format
 
-This project uses EARS (Easy Approach to Requirements Syntax) to write clear, testable requirements. All specs use EARS format with explicit references and traceability.
+This project uses EARS (Easy Approach to Requirements Syntax) to write clear, testable requirements. All specs use EARS format with explicit references, verification markers, and traceability to tests.
 
-## EARS Format Overview
+> **Scope note**: this convention applies from `series_spec_005`/`frontend_spec_003` onward. The existing specs (`series_spec_001`–`004`, `frontend_spec_001`–`002`) predate it and use an older `SH-`/`IF-`/`MA-`/`SN-` ID scheme — they are not being retrofitted (they're already implemented and the IDs are referenced from their own test files). Don't renumber or rewrite them; just don't use their scheme for new specs.
 
-EARS is a structured, lightweight syntax that makes requirements unambiguous and testable. Every requirement follows one of these patterns:
+## EARS Patterns
 
-### Pattern 1: Shall Statements (Mandatory)
+Every requirement statement follows one of the five canonical EARS patterns. Use the simplest one that captures the requirement — complex ACs may combine clauses (When … , if … , then …).
+
+| Pattern | Template | Example |
+|---|---|---|
+| Ubiquitous | The `<system>` shall `<response>` | The `SeriesEntity` shall default `status` to `BACKLOG` on creation |
+| Event-driven | When `<trigger>`, the `<system>` shall `<response>` | When `GET /api/v1/series` is requested, the `SeriesController` shall return all series as JSON |
+| State-driven | While `<state>`, the `<system>` shall `<response>` | While a fetch is in flight, the `SeriesList` component shall display a loading spinner |
+| Unwanted behaviour | If `<condition>`, then the `<system>` shall `<response>` | If `seriesApi.getAll()` rejects, then the `SeriesList` component shall display an error message with a Retry button |
+| Optional feature | Where `<feature is present>`, the `<system>` shall `<response>` | Where an `onSeriesClick` handler is provided, the `SeriesList` component shall call it with the clicked series' `id` |
+
+**Name the system concretely** — the component, endpoint, service class, or entity. Never a bare "the system".
+
+## Reference IDs
+
+Every acceptance criterion gets a unique, human-readable ID in the form:
+
 ```
-The [system/component] shall [action]
+<AREA>-<SPEC-NUMBER>-AC-<NN>
 ```
-- Used for core functionality that must be implemented
-- Example: "The SeriesList component shall fetch all series from GET /api/v1/series"
-- AC prefix: `SH-` (Shall)
 
-### Pattern 2: Should Statements (Desirable)
-```
-The [system/component] should [action]
-```
-- Used for desired but not critical features
-- Example: "The SeriesList component should display a loading spinner while fetching"
-- AC prefix: `SH-` (Should; note: treated as lower priority but still tested)
+- `AREA` is `SERIES` for backend specs, `FRONTEND` for frontend specs, or `TOOLING` for repo-wide tooling/CI/build-config specs that aren't backend or frontend feature work — matching the spec file's own prefix (`series_spec_005_*.md` → `SERIES-005`, `frontend_spec_003_*.md` → `FRONTEND-003`, `tooling_spec_001_*.md` → `TOOLING-001`).
+- `NN` is a two-digit sequence number within that spec, assigned in the order requirements appear.
 
-### Pattern 3: May Statements (Optional)
-```
-The [system/component] may [action]
-```
-- Optional enhancements; nice-to-have
-- Example: "The SeriesList may support sorting by rating"
-- AC prefix: `MA-` (May; test if implemented, skip if time-constrained)
+Example: `SERIES-005-AC-01`, `FRONTEND-003-AC-07`.
 
-### Pattern 4: If/When Statements (Conditional)
-```
-If [condition], the [system/component] shall [action]
-When [trigger], the [system/component] shall [action]
-```
-- Conditional logic or event-driven behaviour
-- Example: "If a series has a null personalRating, the SeriesList shall display '—' in the rating column"
-- AC prefix: `IF-` (If/When)
+This reuses the numbering the spec files already carry rather than inventing a separate stage system — this project doesn't work in predefined stages, so an ID scheme built around them (`STAGE-N-AC-NN`) wouldn't fit. A spec's own filename is already the short, meaningful "what's being changed" label (mirroring how branches are named — `feature/<slug>`), so the ID just needs to be traceable back to it.
 
-### Pattern 5: Shall Not Statements (Prohibitive)
-```
-The [system/component] shall not [action]
-```
-- Explicitly forbidden behaviours (security, data integrity, etc.)
-- Example: "The SeriesForm shall not submit if title is blank"
-- AC prefix: `SN-` (Shall Not)
+### Conversion rules
 
----
+1. **Reference IDs are immutable.** Once assigned, never renumber, merge, or delete an ID — other specs, tests, and cross-reference tables may point to it.
+2. **Splitting**: if one requirement contains several distinct obligations, use sub-letters under the same ID (`SERIES-005-AC-01a`, `SERIES-005-AC-01b`) rather than new numbers.
+3. **No weakening**: every obligation in a requirement's prose must survive into its AC statement(s). If a requirement is ambiguous, resolve toward the stricter reading and note the decision in the spec.
 
-## Structure of a Requirement
+## Verification markers
 
-Each requirement has:
+Every AC carries a marker immediately after its reference ID, stating how it's actually verified:
 
-1. **Unique ID**: `SH-001`, `IF-002`, `MA-003`, etc.
-2. **Statement**: One of the EARS patterns above
-3. **Rationale** (optional): Why this requirement exists
-4. **References**: Links to backend specs, acceptance criteria, tests, or related requirements
-5. **Test Case**: How this will be verified (red/green TDD)
+- `[AUTO]` — verified by an automated test (Spock spec, Vitest test) or the build pipeline itself (compilation, CI).
+- `[MANUAL]` — verified by human review. A `[MANUAL]` AC must state *how* it's checked (e.g. "visual check in browser against the design note above") and, where one exists, note the route to automating it later.
+
+`[AUTO]` should be the overwhelming majority in this project — both backend (Spock) and frontend (Vitest + RTL) support testing almost everything. Treat any new `[MANUAL]` as something to justify, not a default.
+
+## Structure of a spec
+
+Each `.claude/specs/*.md` file has:
+
+1. **Header**: title, `Status` (Not started / In progress / Implemented, with a pointer to implementing files once true), `Priority`, `Depends on`, backend/frontend area.
+2. **Overview**: one paragraph — what this delivers and why.
+3. **Requirements**: grouped "Requirement N" sections, each with a one-line user story and its EARS-format acceptance criteria (ID + `[AUTO]`/`[MANUAL]` marker + statement).
+4. **Cross-references**: a table linking to the specific endpoints, types, or specs this one depends on or contracts against.
+5. **TDD test case sketches** (red, before implementation) in the target framework — Spock `given/when/then` for backend, Vitest + RTL for frontend — one per AC, named after its reference ID.
+6. **Acceptance Criteria Summary**: a flat checklist mirroring every AC above, unchecked (`- [ ]`) until implemented.
 
 ### Template
 
 ```markdown
-### SH-001: Fetch Series List
-**Statement**: The SeriesList component shall fetch all series from GET /api/v1/series on mount.
+### SERIES-005-AC-01 [AUTO]: Fetch Series List
+**Statement**: When `GET /api/v1/series` is requested, the `SeriesController` shall return all series as `{ data: Series[], count: number }`.
 
 **Rationale**: Users need to see their full collection when opening the app.
 
 **References**:
-- Backend: Spec 002 - `GET /api/v1/series` returns `{ data: Series[], count: number }`
-- Type: `src/types/series.ts` → `Series[]`
-- Service: `src/services/seriesApi.ts` → `seriesApi.getAll()`
+- Type: `SeriesDto` (backend `dto/`), `Series` (frontend `src/types/series.ts`)
+- Related: `SERIES-005-AC-02` (empty-list case)
 
 **Test Case (Red)**:
-```
-it('should fetch and display series on mount', () => {
-  // Mock API to return 2 series
-  vi.mock('seriesApi', () => ({ getAll: vi.fn(() => Promise.resolve([...]) }));
+\```groovy
+def "SERIES-005-AC-01: returns all series as JSON"() {
+    given: "two series exist in the repository"
+        // ...
 
-  // Test fails because component doesn't fetch yet
-  render(<SeriesList />);
-  expect(screen.getByText('Show 1')).toBeInTheDocument();
-});
-```
+    when: "GET /api/v1/series is requested"
+        // ...
 
-**Test Case (Green)**:
-```
-// Implement component to call seriesApi.getAll() in useEffect
-// Pass fetched data to render
-// Test now passes
-```
+    then: "the response is 200 with both series in data, count 2"
+        // ...
+}
+\```
+
+**Test Case (Green)**: implement the controller/service until the spec above passes.
 ```
 
----
+## Mapping to Spock
 
-## Why EARS + TDD Together?
+- **While/Where** (state, preconditions) → `given:` block
+- **When** (trigger) → `when:` block
+- **shall** (response) → `then:` assertions
+- **If/then** (unwanted behaviour) → `when:` + `then:` with `thrown(...)` or error-status assertions
 
-1. **Traceability**: Every test corresponds to a requirement ID (SH-001, IF-002, etc.)
-2. **Clarity**: No ambiguity about what "done" means
-3. **Testability**: EARS statements are inherently testable
-4. **Reference**: Tests and requirements are cross-linked, making debugging easier
+A ubiquitous requirement typically becomes a `then:`/`expect:`-only spec.
 
-Example:
-```
-SH-001 (Requirement) → SH-001.test.tsx (Test) → seriesApi.getAll() (Implementation)
-```
+### Block labels
 
----
+Every `given:`/`when:`/`then:`/`expect:`/`and:` block in a Spock spec carries a string label describing that step in plain language — bare, unlabelled blocks aren't used. Where a block maps directly onto an EARS clause (see table above), the label echoes that clause's own wording, so the spec reads as the requirement's sentence split across blocks:
 
-## Acceptance Criteria Format
+- `given "<state>":` — mirrors a While/Where clause, or states setup when the AC has no explicit precondition.
+- `when "<trigger>":` — mirrors the When clause.
+- `then "<response>":` — mirrors the shall clause.
+- `and "<...>":` — a further assertion or action within the same phase; label it independently rather than leaving it bare.
+- `expect "<response>":` — collapses when+then into one block for a direct, side-effect-free assertion; still labelled.
 
-Each spec includes acceptance criteria in EARS format, e.g.:
+Code beneath a labelled block is indented one level deeper than the label, so the label reads as a heading for the statements under it:
 
-```markdown
-## Acceptance Criteria
+```groovy
+def "SERIES-005-AC-01: returns all series as JSON"() {
+    given: "two series exist in the repository"
+        repository.save(new SeriesEntity(title: "Show A"))
+        repository.save(new SeriesEntity(title: "Show B"))
 
-**SH-001**: The SeriesList component shall display all fetched series.
-- [ ] API call is made on mount
-- [ ] Loading state shown while fetching
-- [ ] Series are rendered with title, status, rating visible
-- [ ] No series shown until fetch completes
+    when: "GET /api/v1/series is requested"
+        def response = client.get().uri("/api/v1/series").exchange()
 
-**IF-002**: If the API returns an empty list, the SeriesList shall display "No series yet".
-- [ ] Empty state message renders
-- [ ] Add Series button is visible
-- [ ] No loading spinner shown
+    then: "the response is 200 with both series in data"
+        response.expectStatus().isOk()
 
-**SN-003**: The SeriesList shall not display sensitive data (e.g., user IDs, auth tokens).
-- [ ] Component receives only Series DTO (public fields)
-- [ ] No internal IDs logged to console
-```
-
----
-
-## Cross-Referencing in Specs
-
-When writing a spec, always reference:
-
-1. **Backend Contract**: Which API endpoint? What's the response shape?
-2. **Types**: Which TypeScript interfaces are involved?
-3. **Related Requirements**: Which other SH/IF/MA IDs does this depend on?
-4. **Tests**: Which test cases verify this requirement?
-
-Example in a spec:
-
-```markdown
-### SH-002: Display Series Data
-**Statement**: The SeriesList component shall render each series's title, status, and IMDb rating.
-
-**References**:
-- Backend Spec 002: GET /api/v1/series response contract
-- Type: `Series` interface (src/types/series.ts)
-  - id: string
-  - title: string
-  - status: SeriesStatus
-  - imdbRating: number | null
-- Depends on: SH-001 (data must be fetched first)
-- Related: SH-003 (error handling if fetch fails)
-
-**Test**: SeriesListItem.test.tsx → SH-002.test
+    and: "count reflects the total"
+        response.expectBody().jsonPath("$.count").isEqualTo(2)
+}
 ```
 
----
+This applies to every Spock spec in `backend/src/test/groovy/`, including the existing ones.
 
-## Naming Convention for Test Files
+## Why EARS + TDD together
 
-Link requirements to tests by ID:
+1. **Traceability**: every test corresponds to a requirement ID.
+2. **Clarity**: no ambiguity about what "done" means.
+3. **Testability**: EARS statements are inherently testable.
+4. **Reviews**: reviewers can verify against requirement IDs.
 
-```
-src/components/SeriesList.tsx
-src/components/__tests__/SeriesList.SH-001.test.tsx   (Fetch on mount)
-src/components/__tests__/SeriesList.SH-002.test.tsx   (Render data)
-src/components/__tests__/SeriesList.IF-003.test.tsx   (Empty state)
-src/components/__tests__/SeriesList.SN-004.test.tsx   (No sensitive data)
-```
+## Naming convention for frontend test files
 
-Or simpler: Group all tests in one file and use describe blocks with IDs:
+Group tests in one file, using `describe` blocks named after the requirement ID:
 
 ```typescript
-describe('SeriesList', () => {
-  describe('SH-001: Fetch on mount', () => { /* tests */ });
-  describe('SH-002: Render data', () => { /* tests */ });
-  describe('IF-003: Empty state', () => { /* tests */ });
-  describe('SN-004: No sensitive data', () => { /* tests */ });
-});
+describe('FRONTEND-003-AC-01: fetch on mount', () => { /* tests */ })
+describe('FRONTEND-003-AC-02: loading state', () => { /* tests */ })
 ```
 
----
-
-## Benefits of This Approach
-
-✅ **Clarity**: No ambiguity about requirements
-✅ **Traceability**: Requirements ↔ Tests ↔ Code
-✅ **Scalability**: Easy to add new features without breaking old tests
-✅ **Reviews**: Reviewers can verify against requirement IDs
-✅ **Handoff**: Future work understands *why* code exists
-
----
-
-## Quick Reference: EARS Patterns
-
-| Pattern | Prefix | Example | Use When |
-|---------|--------|---------|----------|
-| Shall | SH- | "The component shall fetch data" | Mandatory requirement |
-| Should | SH- | "The component should show loading" | Desired, best-practice |
-| May | MA- | "The component may support sorting" | Optional enhancement |
-| If/When | IF- | "If title is blank, shall not submit" | Conditional logic |
-| Shall Not | SN- | "The component shall not expose secrets" | Prohibited behaviour |
-
----
-
-## Example: Full Requirement with EARS + TDD
-
-```markdown
-### SH-005: Error Handling
-**Statement**: If the API returns an error, the SeriesList component shall display an error message to the user.
-
-**Rationale**: Users need feedback when something goes wrong, not a silent failure.
-
-**References**:
-- Backend Spec 002: GET /api/v1/series can return 500 Internal Server Error
-- Type: `ApiError` interface (src/types/api.ts)
-- Service: `src/services/seriesApi.ts` includes error handling wrapper
-- Related SH-001 (fetch on mount), IF-004 (retry logic)
-
-**Acceptance Criteria**:
-- [ ] When fetch fails, loading state is cleared
-- [ ] Error message displays: "Failed to load series. Please try again."
-- [ ] Retry button is shown
-- [ ] Stack trace is NOT shown to user (logged to console only)
-
-**Test (Red)**:
-```typescript
-it('should show error message if fetch fails', () => {
-  vi.spyOn(seriesApi, 'getAll').mockRejectedValue(new Error('Network error'));
-  render(<SeriesList />);
-
-  await waitFor(() => {
-    expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
-  });
-});
-// Test FAILS because component doesn't handle errors yet
-```
-
-**Test (Green)**:
-```typescript
-// Implement error state in component
-const [error, setError] = useState<string | null>(null);
-
-useEffect(() => {
-  seriesApi.getAll()
-    .catch(err => setError('Failed to load series. Please try again.'));
-}, []);
-
-// Render error message conditionally
-if (error) return <div className="error">{error}</div>;
-
-// Test now PASSES
-```
-```
-
----
-
-## When Writing a New Spec
+## When writing a new spec
 
 Always include:
-1. **Requirement Statement** (EARS format with ID)
-2. **References** to backend, types, related specs
-3. **Acceptance Criteria** (checkboxes, each tied to a requirement ID)
-4. **Test template** showing red/green structure with requirement ID in test name
+1. Requirement statements in EARS format, each with a `<AREA>-<NNN>-AC-<NN>` ID and `[AUTO]`/`[MANUAL]` marker
+2. References to backend/frontend types, endpoints, and related specs
+3. An Acceptance Criteria Summary checklist
+4. Test case sketches showing red/green structure, named after the requirement ID
 
 The `.claude/skills/ears-spec` skill packages this workflow — use it when drafting a new spec so the structure stays consistent.

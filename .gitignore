@@ -3,7 +3,7 @@ backend/build/
 backend/.gradle/
 backend/data/
 frontend/dist/
-frontend/node_modules/
+node_modules/
 
 # Logs
 *.log

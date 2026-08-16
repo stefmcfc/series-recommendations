@@ -16,7 +16,7 @@ This project's specs (`.claude/specs/`) all follow EARS (Easy Approach to Requir
    - Frontend: read `.claude/steering/frontend_structure.md` and `.claude/steering/frontend_conventions.md`, and check what actually exists under `frontend/src/` (a lot of the target layout in that steering doc isn't built yet — don't assume a file exists because the steering doc mentions it).
    - Check dependency specs' actual `Status` line and cross-check against the real source — a spec's stated status has drifted from reality before in this project.
 
-3. **Write requirements as numbered EARS statements**, grouped into named "Requirement N" sections, each with a one-line user story and acceptance criteria using `WHEN`/`IF`/`SHALL`/`SHALL NOT` phrasing. Assign IDs (`SH-001`, `IF-002`, `SN-003`, ...) — see `.claude/steering/ears_format.md` for the prefix meanings.
+3. **Write requirements as numbered EARS statements**, grouped into named "Requirement N" sections, each with a one-line user story and acceptance criteria using the canonical EARS patterns (Ubiquitous, Event-driven, State-driven, Unwanted behaviour, Optional feature). Assign each AC an ID in the form `<AREA>-<SPEC-NUMBER>-AC-<NN>` (`SERIES-005-AC-01`, `FRONTEND-003-AC-02`, ...) plus a `[AUTO]`/`[MANUAL]` verification marker — see `.claude/steering/ears_format.md` for the full scheme. Note: specs `series_spec_001`–`004` and `frontend_spec_001`–`002` predate this scheme and use an older `SH-`/`IF-`/`MA-`/`SN-` ID style; don't copy that style into new specs.
 
 4. **Include a cross-reference table** linking to the specific endpoints, types, or specs this one depends on or contracts against.
 

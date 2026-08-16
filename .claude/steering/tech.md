@@ -75,6 +75,14 @@ npm run test:watch             # Watch mode
 npm run lint                   # ESLint
 ```
 
+## Secrets
+
+Nothing in this app requires a secret today (no external API calls, no auth — see `product.md`'s non-goals), but the rule is stated now so it's already in place if that changes (e.g. a future rating-source integration needing an API key):
+
+- Never commit `.env`, API keys, or credentials. Both are already git-ignored (`.env` and `.env.local` in the root `.gitignore`).
+- If a variable needs documenting for other developers, add it to a checked-in `.env.example` with a placeholder value, not the real one.
+- Never override `.gitignore` with `git add -f` on anything matching `.env*`, build output, or `node_modules`.
+
 ## Notes
 
 - **Frontend-Backend Communication**: Vite dev server proxies `/api` calls to `localhost:8080` (`frontend/vite.config.ts`); the axios client in `seriesApi.ts` also reads `VITE_API_BASE` directly and falls back to `http://localhost:8080/api/v1`.
