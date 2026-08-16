@@ -56,173 +56,173 @@ class SeriesSearchServiceSpec extends Specification {
     }
 
     def "search by title substring is case-insensitive"() {
-        given:
-        def criteria = new SeriesSearchCriteria(title: "office")
+        given: "search criteria filtering by a lowercase title substring"
+            def criteria = new SeriesSearchCriteria(title: "office")
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 1
-        results[0].title == "The Office"
+        then: "only the matching series is returned"
+            results.size() == 1
+            results[0].title == "The Office"
     }
 
     def "search by title uppercase still matches"() {
-        given:
-        def criteria = new SeriesSearchCriteria(title: "OFFICE")
+        given: "search criteria filtering by an uppercase title"
+            def criteria = new SeriesSearchCriteria(title: "OFFICE")
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 1
-        results[0].title == "The Office"
+        then: "the matching series is returned regardless of case"
+            results.size() == 1
+            results[0].title == "The Office"
     }
 
     def "search by single genre"() {
-        given:
-        def criteria = new SeriesSearchCriteria(genres: ["Comedy"])
+        given: "search criteria filtering by a single genre"
+            def criteria = new SeriesSearchCriteria(genres: ["Comedy"])
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 1
-        results[0].title == "The Office"
+        then: "only the series with that genre is returned"
+            results.size() == 1
+            results[0].title == "The Office"
     }
 
     def "search by genre matches series with that genre among many"() {
-        given:
-        def criteria = new SeriesSearchCriteria(genres: ["Drama"])
+        given: "search criteria filtering by the Drama genre"
+            def criteria = new SeriesSearchCriteria(genres: ["Drama"])
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 3  // GoT, Breaking Bad, Stranger Things
-        results.every { it.genres.contains("Drama") }
+        then: "all series containing the Drama genre are returned"
+            results.size() == 3  // GoT, Breaking Bad, Stranger Things
+            results.every { it.genres.contains("Drama") }
     }
 
     def "search by multiple genres uses OR logic"() {
-        given:
-        def criteria = new SeriesSearchCriteria(genres: ["Comedy", "Sci-Fi"])
+        given: "search criteria filtering by two genres"
+            def criteria = new SeriesSearchCriteria(genres: ["Comedy", "Sci-Fi"])
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 2  // The Office, Stranger Things
-        results.any { it.title == "The Office" }
-        results.any { it.title == "Stranger Things" }
+        then: "series matching either genre are returned"
+            results.size() == 2  // The Office, Stranger Things
+            results.any { it.title == "The Office" }
+            results.any { it.title == "Stranger Things" }
     }
 
     def "search by status"() {
-        given:
-        def criteria = new SeriesSearchCriteria(status: "COMPLETED")
+        given: "search criteria filtering by the COMPLETED status"
+            def criteria = new SeriesSearchCriteria(status: "COMPLETED")
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 2
-        results.every { it.status == "COMPLETED" }
+        then: "only completed series are returned"
+            results.size() == 2
+            results.every { it.status == "COMPLETED" }
     }
 
     def "search by personal rating range"() {
-        given:
-        def criteria = new SeriesSearchCriteria(minPersonalRating: 5, maxPersonalRating: 5)
+        given: "search criteria filtering by a personal rating of 5"
+            def criteria = new SeriesSearchCriteria(minPersonalRating: 5, maxPersonalRating: 5)
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 2  // The Office, Breaking Bad
-        results.every { it.personalRating == 5 }
+        then: "only series with a personal rating of 5 are returned"
+            results.size() == 2  // The Office, Breaking Bad
+            results.every { it.personalRating == 5 }
     }
 
     def "search by IMDb rating range"() {
-        given:
-        def criteria = new SeriesSearchCriteria(minImdbRating: 9.2, maxImdbRating: 10.0)
+        given: "search criteria filtering by an IMDb rating range"
+            def criteria = new SeriesSearchCriteria(minImdbRating: 9.2, maxImdbRating: 10.0)
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 2  // GoT (9.2), Breaking Bad (9.5)
-        results.every { it.imdbRating >= 9.2 }
+        then: "only series within the rating range are returned"
+            results.size() == 2  // GoT (9.2), Breaking Bad (9.5)
+            results.every { it.imdbRating >= 9.2 }
     }
 
     def "search started but not finished"() {
-        given:
-        def criteria = new SeriesSearchCriteria(startedNotFinished: true)
+        given: "search criteria filtering for series started but not finished"
+            def criteria = new SeriesSearchCriteria(startedNotFinished: true)
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 2  // Breaking Bad (WATCHING + progress), Stranger Things (DROPPED + progress)
-        results.every { it.status in ["WATCHING", "DROPPED"] }
+        then: "only series with in-progress or dropped status are returned"
+            results.size() == 2  // Breaking Bad (WATCHING + progress), Stranger Things (DROPPED + progress)
+            results.every { it.status in ["WATCHING", "DROPPED"] }
     }
 
     def "search combines multiple filters"() {
-        given:
-        def criteria = new SeriesSearchCriteria(
-            title: "game",
-            status: "COMPLETED",
-            minImdbRating: 9.0
-        )
+        given: "search criteria combining title, status, and rating filters"
+            def criteria = new SeriesSearchCriteria(
+                title: "game",
+                status: "COMPLETED",
+                minImdbRating: 9.0
+            )
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.size() == 1
-        results[0].title == "Game of Thrones"
+        then: "only the series matching all filters is returned"
+            results.size() == 1
+            results[0].title == "Game of Thrones"
     }
 
     def "search with no matches returns empty list"() {
-        given:
-        def criteria = new SeriesSearchCriteria(title: "nonexistent xyz")
+        given: "search criteria that matches no series"
+            def criteria = new SeriesSearchCriteria(title: "nonexistent xyz")
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.isEmpty()
+        then: "an empty list is returned"
+            results.isEmpty()
     }
 
     def "invalid status throws IllegalArgumentException"() {
-        given:
-        def criteria = new SeriesSearchCriteria(status: "INVALID")
+        given: "search criteria with an invalid status value"
+            def criteria = new SeriesSearchCriteria(status: "INVALID")
 
-        when:
-        searchService.search(criteria)
+        when: "the search is executed"
+            searchService.search(criteria)
 
-        then:
-        thrown(IllegalArgumentException)
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
     }
 
     def "null personal rating is excluded when rating filter is set"() {
-        given:
-        // Stranger Things has no personalRating
-        def criteria = new SeriesSearchCriteria(minPersonalRating: 4, maxPersonalRating: 5)
+        given: "search criteria filtering by personal rating range"
+            // Stranger Things has no personalRating
+            def criteria = new SeriesSearchCriteria(minPersonalRating: 4, maxPersonalRating: 5)
 
-        when:
-        def results = searchService.search(criteria)
+        when: "the search is executed"
+            def results = searchService.search(criteria)
 
-        then:
-        results.every { it.personalRating != null }
-        !results.any { it.title == "Stranger Things" }
+        then: "series without a personal rating are excluded from the results"
+            results.every { it.personalRating != null }
+            !results.any { it.title == "Stranger Things" }
     }
 
     def "results are sorted by dateAdded descending"() {
-        when:
-        def results = searchService.search(new SeriesSearchCriteria())
+        when: "all series are searched with no filters"
+            def results = searchService.search(new SeriesSearchCriteria())
 
-        then:
-        results.size() == 4
-        // Most recently added first (Stranger Things was added last in setup)
-        results[0].title == "Stranger Things"
-        results[-1].title == "The Office"
+        then: "results are returned sorted by dateAdded descending"
+            results.size() == 4
+            // Most recently added first (Stranger Things was added last in setup)
+            results[0].title == "Stranger Things"
+            results[-1].title == "The Office"
     }
 }

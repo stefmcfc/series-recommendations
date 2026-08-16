@@ -12,235 +12,273 @@ class SeriesEntitySpec extends Specification {
     Validator validator
 
     def "should create a series with title only"() {
-        when:
-        def series = new SeriesEntity(title: "The Office")
+        when: "a series is created with only a title"
+            def series = new SeriesEntity(title: "The Office")
 
-        then:
-        series.title == "The Office"
-        series.status == SeriesStatus.BACKLOG
-        series.id == null
-        series.dateAdded == null
+        then: "the title is set and default values are applied"
+            series.title == "The Office"
+            series.status == SeriesStatus.BACKLOG
+            series.id == null
+            series.dateAdded == null
     }
 
     def "should create a series with all fields"() {
-        when:
-        def series = new SeriesEntity(
-            title: "Game of Thrones",
-            year: 2011,
-            genres: "Drama,Fantasy,Thriller",
-            totalSeasons: 8,
-            totalEpisodes: 73,
-            currentSeason: 5,
-            currentEpisode: 3,
-            status: SeriesStatus.WATCHING,
-            imdbRating: 9.2,
-            metacriticRating: 71,
-            rottenTomatoesRating: 72,
-            personalRating: 4,
-            personalNotes: "Epic show, some disappointing seasons"
-        )
+        when: "a series is created with all fields populated"
+            def series = new SeriesEntity(
+                title: "Game of Thrones",
+                year: 2011,
+                genres: "Drama,Fantasy,Thriller",
+                totalSeasons: 8,
+                totalEpisodes: 73,
+                currentSeason: 5,
+                currentEpisode: 3,
+                status: SeriesStatus.WATCHING,
+                imdbRating: 9.2,
+                metacriticRating: 71,
+                rottenTomatoesRating: 72,
+                personalRating: 4,
+                personalNotes: "Epic show, some disappointing seasons"
+            )
 
-        then:
-        series.title == "Game of Thrones"
-        series.year == 2011
-        series.status == SeriesStatus.WATCHING
-        series.personalRating == 4
+        then: "all fields are set correctly"
+            series.title == "Game of Thrones"
+            series.year == 2011
+            series.status == SeriesStatus.WATCHING
+            series.personalRating == 4
     }
 
     def "should reject series with blank title"() {
-        when:
-        def series = new SeriesEntity(title: "")
-        def violations = validator.validate(series)
+        given: "a series with a blank title"
+            def series = new SeriesEntity(title: "")
 
-        then:
-        !violations.isEmpty()
-        violations.any { it.propertyPath.toString() == "title" }
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised for the title field"
+            !violations.isEmpty()
+            violations.any { it.propertyPath.toString() == "title" }
     }
 
     def "should reject series with null title"() {
-        when:
-        def series = new SeriesEntity(title: null)
-        def violations = validator.validate(series)
+        given: "a series with a null title"
+            def series = new SeriesEntity(title: null)
 
-        then:
-        !violations.isEmpty()
-        violations.any { it.propertyPath.toString() == "title" }
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised for the title field"
+            !violations.isEmpty()
+            violations.any { it.propertyPath.toString() == "title" }
     }
 
     def "should reject IMDb rating > 10"() {
-        when:
-        def series = new SeriesEntity(title: "Show", imdbRating: 10.1)
-        def violations = validator.validate(series)
+        given: "a series with an IMDb rating above 10"
+            def series = new SeriesEntity(title: "Show", imdbRating: 10.1)
 
-        then:
-        !violations.isEmpty()
-        violations.any { it.propertyPath.toString() == "imdbRating" }
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised for the imdbRating field"
+            !violations.isEmpty()
+            violations.any { it.propertyPath.toString() == "imdbRating" }
     }
 
     def "should reject IMDb rating < 0"() {
-        when:
-        def series = new SeriesEntity(title: "Show", imdbRating: -0.1)
-        def violations = validator.validate(series)
+        given: "a series with a negative IMDb rating"
+            def series = new SeriesEntity(title: "Show", imdbRating: -0.1)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should accept IMDb rating between 0 and 10 inclusive"() {
-        when:
-        def series = new SeriesEntity(title: "Show", imdbRating: rating)
-        def violations = validator.validate(series)
+        given: "a series with an IMDb rating within the valid range"
+            def series = new SeriesEntity(title: "Show", imdbRating: rating)
 
-        then:
-        violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
 
         where:
         rating << [0.0, 5.0, 10.0]
     }
 
     def "should reject Metacritic rating > 100"() {
-        when:
-        def series = new SeriesEntity(title: "Show", metacriticRating: 101)
-        def violations = validator.validate(series)
+        given: "a series with a Metacritic rating above 100"
+            def series = new SeriesEntity(title: "Show", metacriticRating: 101)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should accept Metacritic rating between 0 and 100 inclusive"() {
-        when:
-        def series = new SeriesEntity(title: "Show", metacriticRating: rating)
-        def violations = validator.validate(series)
+        given: "a series with a Metacritic rating within the valid range"
+            def series = new SeriesEntity(title: "Show", metacriticRating: rating)
 
-        then:
-        violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
 
         where:
         rating << [0, 50, 100]
     }
 
     def "should reject Rotten Tomatoes rating > 100"() {
-        when:
-        def series = new SeriesEntity(title: "Show", rottenTomatoesRating: 101)
-        def violations = validator.validate(series)
+        given: "a series with a Rotten Tomatoes rating above 100"
+            def series = new SeriesEntity(title: "Show", rottenTomatoesRating: 101)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should accept personal rating between 1 and 5 inclusive"() {
-        when:
-        def series = new SeriesEntity(title: "Show", personalRating: rating)
-        def violations = validator.validate(series)
+        given: "a series with a personal rating within the valid range"
+            def series = new SeriesEntity(title: "Show", personalRating: rating)
 
-        then:
-        violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
 
         where:
         rating << [1, 3, 5]
     }
 
     def "should reject personal rating < 1"() {
-        when:
-        def series = new SeriesEntity(title: "Show", personalRating: 0)
-        def violations = validator.validate(series)
+        given: "a series with a personal rating below 1"
+            def series = new SeriesEntity(title: "Show", personalRating: 0)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should reject personal rating > 5"() {
-        when:
-        def series = new SeriesEntity(title: "Show", personalRating: 6)
-        def violations = validator.validate(series)
+        given: "a series with a personal rating above 5"
+            def series = new SeriesEntity(title: "Show", personalRating: 6)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should reject year > current year"() {
-        when:
-        def series = new SeriesEntity(title: "Show", year: 2099)
-        def violations = validator.validate(series)
+        given: "a series with a year in the future"
+            def series = new SeriesEntity(title: "Show", year: 2099)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should accept year <= current year"() {
-        when:
-        def series = new SeriesEntity(title: "Show", year: 2026)
-        def violations = validator.validate(series)
+        given: "a series with a year no later than the current year"
+            def series = new SeriesEntity(title: "Show", year: 2026)
 
-        then:
-        violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
     }
 
     def "should reject totalSeasons <= 0"() {
-        when:
-        def series = new SeriesEntity(title: "Show", totalSeasons: 0)
-        def violations = validator.validate(series)
+        given: "a series with a non-positive totalSeasons value"
+            def series = new SeriesEntity(title: "Show", totalSeasons: 0)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should reject totalEpisodes <= 0"() {
-        when:
-        def series = new SeriesEntity(title: "Show", totalEpisodes: 0)
-        def violations = validator.validate(series)
+        given: "a series with a non-positive totalEpisodes value"
+            def series = new SeriesEntity(title: "Show", totalEpisodes: 0)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should reject currentSeason > totalSeasons"() {
-        when:
-        def series = new SeriesEntity(title: "Show", totalSeasons: 5, currentSeason: 6)
-        def violations = validator.validate(series)
+        given: "a series whose currentSeason exceeds its totalSeasons"
+            def series = new SeriesEntity(title: "Show", totalSeasons: 5, currentSeason: 6)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should allow currentSeason <= totalSeasons"() {
-        when:
-        def series = new SeriesEntity(title: "Show", totalSeasons: 5, currentSeason: 5)
-        def violations = validator.validate(series)
+        given: "a series whose currentSeason equals its totalSeasons"
+            def series = new SeriesEntity(title: "Show", totalSeasons: 5, currentSeason: 5)
 
-        then:
-        violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
     }
 
     def "should reject currentEpisode <= 0"() {
-        when:
-        def series = new SeriesEntity(title: "Show", currentEpisode: 0)
-        def violations = validator.validate(series)
+        given: "a series with a non-positive currentEpisode value"
+            def series = new SeriesEntity(title: "Show", currentEpisode: 0)
 
-        then:
-        !violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
     }
 
     def "should allow null optional fields"() {
-        when:
-        def series = new SeriesEntity(
-            title: "Show",
-            year: null,
-            genres: null,
-            imdbRating: null,
-            personalNotes: null
-        )
-        def violations = validator.validate(series)
+        given: "a series with all optional fields set to null"
+            def series = new SeriesEntity(
+                title: "Show",
+                year: null,
+                genres: null,
+                imdbRating: null,
+                personalNotes: null
+            )
 
-        then:
-        violations.isEmpty()
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
     }
 
     def "should set status to BACKLOG by default"() {
-        when:
-        def series = new SeriesEntity(title: "Show")
+        when: "a series is created without specifying a status"
+            def series = new SeriesEntity(title: "Show")
 
-        then:
-        series.status == SeriesStatus.BACKLOG
+        then: "the status defaults to BACKLOG"
+            series.status == SeriesStatus.BACKLOG
     }
 }

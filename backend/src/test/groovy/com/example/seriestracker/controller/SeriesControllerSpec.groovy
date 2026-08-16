@@ -33,163 +33,163 @@ class SeriesControllerSpec extends Specification {
   }
 
   def "POST /api/v1/series should create a series"() {
-    given:
-    def dto = new SeriesDto(title: "The Office")
-    def json = objectMapper.writeValueAsString(dto)
+    given: "a valid series DTO"
+        def dto = new SeriesDto(title: "The Office")
+        def json = objectMapper.writeValueAsString(dto)
 
-    when:
-    def result = mockMvc.perform(
-      post("/api/v1/series")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(json)
-    )
+    when: "a POST request is made to create the series"
+        def result = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
 
-    then:
-    result.andExpect(status().isCreated())
-    result.andExpect(jsonPath('$.data.title').value("The Office"))
-    result.andExpect(jsonPath('$.data.id').isNotEmpty())
+    then: "the series is created and returned in the response"
+        result.andExpect(status().isCreated())
+        result.andExpect(jsonPath('$.data.title').value("The Office"))
+        result.andExpect(jsonPath('$.data.id').isNotEmpty())
   }
 
   def "POST /api/v1/series should reject invalid data"() {
-    given:
-    def dto = new SeriesDto(title: "", imdbRating: 15.0)
-    def json = objectMapper.writeValueAsString(dto)
+    given: "a series DTO with a blank title and an invalid IMDb rating"
+        def dto = new SeriesDto(title: "", imdbRating: 15.0)
+        def json = objectMapper.writeValueAsString(dto)
 
-    when:
-    def result = mockMvc.perform(
-      post("/api/v1/series")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(json)
-    )
+    when: "a POST request is made to create the series"
+        def result = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
 
-    then:
-    result.andExpect(status().isBadRequest())
+    then: "the request is rejected as a bad request"
+        result.andExpect(status().isBadRequest())
   }
 
   def "GET /api/v1/series should return all series"() {
-    when:
-    def result = mockMvc.perform(get("/api/v1/series"))
+    when: "a GET request is made for all series"
+        def result = mockMvc.perform(get("/api/v1/series"))
 
-    then:
-    result.andExpect(status().isOk())
-    result.andExpect(jsonPath('$.data').isArray())
+    then: "the response contains an array of series"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data').isArray())
   }
 
   def "GET /api/v1/series/{id} should return a series"() {
-    given:
-    def createDto = new SeriesDto(title: "Test Show")
-    def createJson = objectMapper.writeValueAsString(createDto)
+    given: "a series DTO to create"
+        def createDto = new SeriesDto(title: "Test Show")
+        def createJson = objectMapper.writeValueAsString(createDto)
 
-    and:
-    def createResult = mockMvc.perform(
-      post("/api/v1/series")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(createJson)
-    ).andReturn()
+    and: "the series has been created via a POST request"
+        def createResult = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(createJson)
+        ).andReturn()
 
-    and:
-    def responseBody = objectMapper.readTree(createResult.response.contentAsString)
-    def id = responseBody.get("data").get("id").asText()
+    and: "the created series's ID is extracted from the response"
+        def responseBody = objectMapper.readTree(createResult.response.contentAsString)
+        def id = responseBody.get("data").get("id").asText()
 
-    when:
-    def result = mockMvc.perform(get("/api/v1/series/" + id))
+    when: "a GET request is made for that series ID"
+        def result = mockMvc.perform(get("/api/v1/series/" + id))
 
-    then:
-    result.andExpect(status().isOk())
-    result.andExpect(jsonPath('$.data.title').value("Test Show"))
+    then: "the matching series is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.title').value("Test Show"))
   }
 
   def "GET /api/v1/series/{id} should return 404 for non-existent series"() {
-    when:
-    def result = mockMvc.perform(get("/api/v1/series/00000000-0000-0000-0000-000000000000"))
+    when: "a GET request is made for a non-existent series ID"
+        def result = mockMvc.perform(get("/api/v1/series/00000000-0000-0000-0000-000000000000"))
 
-    then:
-    result.andExpect(status().isNotFound())
+    then: "a 404 Not Found response is returned"
+        result.andExpect(status().isNotFound())
   }
 
   def "PATCH /api/v1/series/{id} should update a series"() {
-    given:
-    def createDto = new SeriesDto(title: "Show", totalSeasons: 5)
-    def createJson = objectMapper.writeValueAsString(createDto)
+    given: "a series DTO to create"
+        def createDto = new SeriesDto(title: "Show", totalSeasons: 5)
+        def createJson = objectMapper.writeValueAsString(createDto)
 
-    and:
-    def createResult = mockMvc.perform(
-      post("/api/v1/series")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(createJson)
-    ).andReturn()
+    and: "the series has been created via a POST request"
+        def createResult = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(createJson)
+        ).andReturn()
 
-    and:
-    def responseBody = objectMapper.readTree(createResult.response.contentAsString)
-    def id = responseBody.get("data").get("id").asText()
+    and: "the created series's ID is extracted from the response"
+        def responseBody = objectMapper.readTree(createResult.response.contentAsString)
+        def id = responseBody.get("data").get("id").asText()
 
-    and:
-    def updateDto = new SeriesDto(currentSeason: 3)
-    def updateJson = objectMapper.writeValueAsString(updateDto)
+    and: "an update DTO with a new current season"
+        def updateDto = new SeriesDto(currentSeason: 3)
+        def updateJson = objectMapper.writeValueAsString(updateDto)
 
-    when:
-    def result = mockMvc.perform(
-      patch("/api/v1/series/" + id)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(updateJson)
-    )
+    when: "a PATCH request is made to update the series"
+        def result = mockMvc.perform(
+          patch("/api/v1/series/" + id)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(updateJson)
+        )
 
-    then:
-    result.andExpect(status().isOk())
-    result.andExpect(jsonPath('$.data.currentSeason').value(3))
+    then: "the series is updated and the new value is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.currentSeason').value(3))
   }
 
   def "PATCH /api/v1/series/{id} should return 404 for non-existent series"() {
-    given:
-    def updateDto = new SeriesDto(title: "Updated")
-    def json = objectMapper.writeValueAsString(updateDto)
+    given: "an update DTO"
+        def updateDto = new SeriesDto(title: "Updated")
+        def json = objectMapper.writeValueAsString(updateDto)
 
-    when:
-    def result = mockMvc.perform(
-      patch("/api/v1/series/00000000-0000-0000-0000-000000000000")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(json)
-    )
+    when: "a PATCH request is made for a non-existent series ID"
+        def result = mockMvc.perform(
+          patch("/api/v1/series/00000000-0000-0000-0000-000000000000")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
 
-    then:
-    result.andExpect(status().isNotFound())
+    then: "a 404 Not Found response is returned"
+        result.andExpect(status().isNotFound())
   }
 
   def "DELETE /api/v1/series/{id} should delete a series"() {
-    given:
-    def createDto = new SeriesDto(title: "Delete Me")
-    def createJson = objectMapper.writeValueAsString(createDto)
+    given: "a series DTO to create"
+        def createDto = new SeriesDto(title: "Delete Me")
+        def createJson = objectMapper.writeValueAsString(createDto)
 
-    and:
-    def createResult = mockMvc.perform(
-      post("/api/v1/series")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(createJson)
-    ).andReturn()
+    and: "the series has been created via a POST request"
+        def createResult = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(createJson)
+        ).andReturn()
 
-    and:
-    def responseBody = objectMapper.readTree(createResult.response.contentAsString)
-    def id = responseBody.get("data").get("id").asText()
+    and: "the created series's ID is extracted from the response"
+        def responseBody = objectMapper.readTree(createResult.response.contentAsString)
+        def id = responseBody.get("data").get("id").asText()
 
-    when:
-    def result = mockMvc.perform(delete("/api/v1/series/" + id))
+    when: "a DELETE request is made for that series"
+        def result = mockMvc.perform(delete("/api/v1/series/" + id))
 
-    then:
-    result.andExpect(status().isNoContent())
+    then: "a 204 No Content response is returned"
+        result.andExpect(status().isNoContent())
 
-    and:
-    when:
-    mockMvc.perform(get("/api/v1/series/" + id))
+    and: "the deleted series can no longer be retrieved"
+        when: "a GET request is made for the deleted series"
+            mockMvc.perform(get("/api/v1/series/" + id))
 
-    then:
-    status().isNotFound()
+        then: "a 404 Not Found response is returned"
+            status().isNotFound()
   }
 
   def "DELETE /api/v1/series/{id} should return 404 for non-existent series"() {
-    when:
-    def result = mockMvc.perform(delete("/api/v1/series/00000000-0000-0000-0000-000000000000"))
+    when: "a DELETE request is made for a non-existent series ID"
+        def result = mockMvc.perform(delete("/api/v1/series/00000000-0000-0000-0000-000000000000"))
 
-    then:
-    result.andExpect(status().isNotFound())
+    then: "a 404 Not Found response is returned"
+        result.andExpect(status().isNotFound())
   }
 }

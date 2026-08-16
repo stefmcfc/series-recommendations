@@ -136,6 +136,19 @@ Then run `gradlew.bat bootRun` again.
 
 ---
 
+## Git Hooks
+
+A root-level `package.json` sets up Husky + lint-staged:
+
+```bash
+npm install    # from repo root, once — installs husky/lint-staged and wires up git hooks
+```
+
+- **pre-commit**: runs `lint-staged`, which ESLints (`--fix`) any staged `frontend/src/**/*.{ts,tsx}` files. Requires `frontend/node_modules` to exist (`npm install` in `frontend/`).
+- **pre-push**: runs the full backend Spock suite (`gradlew.bat test`) and frontend tests + lint (`npm test && npm run lint`).
+
+Both hooks block the commit/push if anything fails. Fix the issue rather than bypassing with `--no-verify`.
+
 ## Running Tests
 
 ### Backend (Spock)

@@ -155,6 +155,7 @@ fetching, state, and loading/error/empty UI states.
 3. Loading spinner SHALL have `role="status"` and `aria-label="Loading"`.
 4. Error container SHALL have `role="alert"`.
 5. The "Add Series" button SHALL have `aria-label="Add new series"`.
+6. `[MANUAL]` `react-axe` SHALL be added as a frontend devDependency and wired into the dev-mode entry point (`main.tsx`, gated to `import.meta.env.DEV` so it never ships to production) as of this component's implementation — it's the first component available to run it against. It runs axe-core against the live DOM and logs violations to the browser console; this complements (doesn't replace) the static `eslint-plugin-jsx-a11y` checks from `tooling_spec_001_code_quality_security.md` Requirement 5, since it catches runtime-only issues (computed contrast, post-render ARIA/DOM state) that static analysis can't. Verified by inspection — open the dev build with `SeriesList` rendered and confirm no axe violations are logged; no CI check exists for this (it's a dev-console tool, not a lint rule).
 
 ---
 
@@ -570,6 +571,7 @@ Styling classes are intentionally omitted from this skeleton pending the Tailwin
 - [ ] If retry fails, error state shown again
 - [ ] "Add Series" button always visible in header
 - [ ] Add Series button has `data-testid="add-series-btn"` and `aria-label="Add new series"`
+- [ ] `react-axe` added as a devDependency and wired into `main.tsx` (dev-mode only), no violations logged
 - [ ] Series rows are clickable; `onSeriesClick(id)` called when clicked
 - [ ] Component works without `onSeriesClick` prop (no crash)
 - [ ] Series UUID not rendered as visible text

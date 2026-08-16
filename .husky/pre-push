@@ -1,0 +1,7 @@
+set -e
+
+echo "Running backend test suite..."
+(cd backend && ./gradlew.bat test)
+
+echo "Running frontend tests + lint..."
+(cd frontend && npm test && npm run lint)

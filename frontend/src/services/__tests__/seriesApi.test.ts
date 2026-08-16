@@ -18,8 +18,13 @@ vi.mock('axios', () => {
     delete: vi.fn(),
   }
 
-  const isAxiosError = vi.fn((err: unknown) =>
-    !!(err && typeof err === 'object' && (err as Record<string, unknown>).isAxiosError === true),
+  const isAxiosError = vi.fn(
+    (err: unknown) =>
+      !!(
+        err &&
+        typeof err === 'object' &&
+        (err as Record<string, unknown>).isAxiosError === true
+      ),
   )
 
   const create = vi.fn(() => mockInstance)
@@ -40,14 +45,13 @@ import { SeriesStatus } from '../../types/series'
 import type { Series, CreateSeriesRequest } from '../../types/series'
 
 // 3. Retrieve the mock instance that seriesApi.ts received when it called axios.create()
-const client = (
-  (axios.create as unknown as Record<string, unknown>)._instance as {
-    get: ReturnType<typeof vi.fn>
-    post: ReturnType<typeof vi.fn>
-    patch: ReturnType<typeof vi.fn>
-    delete: ReturnType<typeof vi.fn>
-  }
-)
+const client = (axios.create as unknown as Record<string, unknown>)
+  ._instance as {
+  get: ReturnType<typeof vi.fn>
+  post: ReturnType<typeof vi.fn>
+  patch: ReturnType<typeof vi.fn>
+  delete: ReturnType<typeof vi.fn>
+}
 
 // ---------------------------------------------------------------------------
 // Helper: build a fully-typed Series with null optionals
@@ -84,7 +88,11 @@ beforeEach(() => {
 describe('SH-001: getAll', () => {
   it('should return Series[] unwrapped from { data: Series[] }', async () => {
     const mockSeries: Series[] = [
-      makeSeries({ id: '1', title: 'The Office', status: SeriesStatus.WATCHING }),
+      makeSeries({
+        id: '1',
+        title: 'The Office',
+        status: SeriesStatus.WATCHING,
+      }),
     ]
     client.get.mockResolvedValue({ data: { data: mockSeries, count: 1 } })
 
@@ -106,7 +114,11 @@ describe('SH-001: getAll', () => {
 // ---------------------------------------------------------------------------
 describe('SH-002: getById', () => {
   it('should return Series from GET /series/{id}', async () => {
-    const mock = makeSeries({ id: 'abc-123', title: 'Breaking Bad', status: SeriesStatus.COMPLETED })
+    const mock = makeSeries({
+      id: 'abc-123',
+      title: 'Breaking Bad',
+      status: SeriesStatus.COMPLETED,
+    })
     client.get.mockResolvedValue({ data: mock })
 
     const result = await seriesApi.getById('abc-123')
@@ -122,7 +134,11 @@ describe('SH-002: getById', () => {
 describe('SH-003: create', () => {
   it('should POST to /series and return the created Series', async () => {
     const req: CreateSeriesRequest = { title: 'Severance' }
-    const mockCreated = makeSeries({ id: 'new-id', title: 'Severance', status: SeriesStatus.BACKLOG })
+    const mockCreated = makeSeries({
+      id: 'new-id',
+      title: 'Severance',
+      status: SeriesStatus.BACKLOG,
+    })
     client.post.mockResolvedValue({ data: mockCreated })
 
     const result = await seriesApi.create(req)
@@ -138,7 +154,11 @@ describe('SH-003: create', () => {
 describe('SH-004: update', () => {
   it('should PATCH /series/{id} with partial data', async () => {
     const patch = { currentSeason: 3, status: SeriesStatus.WATCHING }
-    const mockUpdated = makeSeries({ id: 'abc-123', currentSeason: 3, status: SeriesStatus.WATCHING })
+    const mockUpdated = makeSeries({
+      id: 'abc-123',
+      currentSeason: 3,
+      status: SeriesStatus.WATCHING,
+    })
     client.patch.mockResolvedValue({ data: mockUpdated })
 
     const result = await seriesApi.update('abc-123', patch)
@@ -170,7 +190,9 @@ describe('SH-006: search', () => {
 
     expect(client.get).toHaveBeenCalledWith(
       '/series/search',
-      expect.objectContaining({ params: expect.objectContaining({ title: 'office' }) }),
+      expect.objectContaining({
+        params: expect.objectContaining({ title: 'office' }),
+      }),
     )
   })
 
@@ -178,7 +200,9 @@ describe('SH-006: search', () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
     await seriesApi.search({ genres: ['Drama', 'Comedy'] })
 
-    const args = client.get.mock.calls[0][1] as { params: Record<string, unknown> }
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
     expect(args.params.genre).toEqual(['Drama', 'Comedy'])
   })
 
@@ -186,7 +210,9 @@ describe('SH-006: search', () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
     await seriesApi.search({ title: 'office', status: undefined })
 
-    const args = client.get.mock.calls[0][1] as { params: Record<string, unknown> }
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
     expect(args.params).not.toHaveProperty('status')
   })
 
@@ -220,7 +246,9 @@ describe('SH-007: export', () => {
     client.get.mockResolvedValue({ data: new Blob([''], { type: 'text/csv' }) })
     await seriesApi.export('csv', { status: SeriesStatus.COMPLETED })
 
-    const args = client.get.mock.calls[0][1] as { params: Record<string, unknown> }
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
     expect(args.params.status).toBe('COMPLETED')
     expect(args.params.format).toBe('csv')
   })
@@ -247,7 +275,10 @@ describe('IF-008: Error handling', () => {
       isAxiosError: true,
       response: {
         status: 400,
-        data: { error: 'Validation failed', details: { imdbRating: 'must be <= 10' } },
+        data: {
+          error: 'Validation failed',
+          details: { imdbRating: 'must be <= 10' },
+        },
       },
     })
 
@@ -280,7 +311,9 @@ describe('SN-009: No production logging', () => {
     // The service correctly guards logging behind this flag.
     // This test verifies the guard IS in place: console.log is called exactly
     // once per request (the DEV log), not on every call unconditionally.
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    const consoleSpy = vi
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined)
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
 
     await seriesApi.getAll()

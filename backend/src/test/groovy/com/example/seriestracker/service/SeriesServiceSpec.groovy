@@ -24,198 +24,198 @@ class SeriesServiceSpec extends Specification {
   }
 
   def "should create a series with minimal data"() {
-    given:
-    def dto = new SeriesDto(title: "The Office")
+    given: "a series DTO with only a title"
+        def dto = new SeriesDto(title: "The Office")
 
-    when:
-    def result = seriesService.create(dto)
+    when: "the series is created"
+        def result = seriesService.create(dto)
 
-    then:
-    result.id != null
-    result.title == "The Office"
-    result.status == "BACKLOG"
-    result.dateAdded != null
+    then: "the series is persisted with default values"
+        result.id != null
+        result.title == "The Office"
+        result.status == "BACKLOG"
+        result.dateAdded != null
   }
 
   def "should create a series with full data"() {
-    given:
-    def dto = new SeriesDto(
-      title: "Game of Thrones",
-      year: 2011,
-      genres: "Drama,Fantasy",
-      totalSeasons: 8,
-      imdbRating: 9.2,
-      personalRating: 4,
-      status: "WATCHING"
-    )
+    given: "a series DTO with a full set of fields"
+        def dto = new SeriesDto(
+          title: "Game of Thrones",
+          year: 2011,
+          genres: "Drama,Fantasy",
+          totalSeasons: 8,
+          imdbRating: 9.2,
+          personalRating: 4,
+          status: "WATCHING"
+        )
 
-    when:
-    def result = seriesService.create(dto)
+    when: "the series is created"
+        def result = seriesService.create(dto)
 
-    then:
-    result.title == "Game of Thrones"
-    result.year == 2011
-    result.imdbRating == 9.2
+    then: "the series is persisted with all fields set"
+        result.title == "Game of Thrones"
+        result.year == 2011
+        result.imdbRating == 9.2
   }
 
   def "should reject series creation with invalid IMDb rating"() {
-    given:
-    def dto = new SeriesDto(title: "Show", imdbRating: 15.0)
+    given: "a series DTO with an out-of-range IMDb rating"
+        def dto = new SeriesDto(title: "Show", imdbRating: 15.0)
 
-    when:
-    seriesService.create(dto)
+    when: "the series is created"
+        seriesService.create(dto)
 
-    then:
-    thrown(IllegalArgumentException)
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
   }
 
   def "should retrieve all series"() {
-    given:
-    seriesService.create(new SeriesDto(title: "Show 1"))
-    seriesService.create(new SeriesDto(title: "Show 2"))
+    given: "two series have been created"
+        seriesService.create(new SeriesDto(title: "Show 1"))
+        seriesService.create(new SeriesDto(title: "Show 2"))
 
-    when:
-    def results = seriesService.getAll()
+    when: "all series are retrieved"
+        def results = seriesService.getAll()
 
-    then:
-    results.size() == 2
+    then: "both series are returned"
+        results.size() == 2
   }
 
   def "should retrieve empty list when no series exist"() {
-    when:
-    def results = seriesService.getAll()
+    when: "all series are retrieved"
+        def results = seriesService.getAll()
 
-    then:
-    results.isEmpty()
+    then: "an empty list is returned"
+        results.isEmpty()
   }
 
   def "should retrieve series by ID"() {
-    given:
-    def created = seriesService.create(new SeriesDto(title: "The Office"))
+    given: "a series has been created"
+        def created = seriesService.create(new SeriesDto(title: "The Office"))
 
-    when:
-    def result = seriesService.getById(created.id)
+    when: "the series is retrieved by its ID"
+        def result = seriesService.getById(created.id)
 
-    then:
-    result.id == created.id
-    result.title == "The Office"
+    then: "the matching series is returned"
+        result.id == created.id
+        result.title == "The Office"
   }
 
   def "should throw EntityNotFoundException when retrieving non-existent series"() {
-    when:
-    seriesService.getById(UUID.randomUUID())
+    when: "a series is retrieved using a random, non-existent ID"
+        seriesService.getById(UUID.randomUUID())
 
-    then:
-    thrown(EntityNotFoundException)
+    then: "an EntityNotFoundException is thrown"
+        thrown(EntityNotFoundException)
   }
 
   def "should update series with new progress"() {
-    given:
-    def created = seriesService.create(new SeriesDto(
-      title: "The Office",
-      totalSeasons: 9,
-      totalEpisodes: 201
-    ))
+    given: "a series has been created with total seasons and episodes"
+        def created = seriesService.create(new SeriesDto(
+          title: "The Office",
+          totalSeasons: 9,
+          totalEpisodes: 201
+        ))
 
-    and:
-    def updateDto = new SeriesDto(
-      currentSeason: 5,
-      currentEpisode: 10
-    )
+    and: "an update DTO with new progress values"
+        def updateDto = new SeriesDto(
+          currentSeason: 5,
+          currentEpisode: 10
+        )
 
-    when:
-    def result = seriesService.update(created.id, updateDto)
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
 
-    then:
-    result.currentSeason == 5
-    result.currentEpisode == 10
-    result.title == "The Office"
+    then: "the progress fields are updated and other fields are unchanged"
+        result.currentSeason == 5
+        result.currentEpisode == 10
+        result.title == "The Office"
   }
 
   def "should reject update with invalid currentSeason"() {
-    given:
-    def created = seriesService.create(new SeriesDto(
-      title: "Show",
-      totalSeasons: 5
-    ))
+    given: "a series has been created with a total season count"
+        def created = seriesService.create(new SeriesDto(
+          title: "Show",
+          totalSeasons: 5
+        ))
 
-    and:
-    def updateDto = new SeriesDto(currentSeason: 10)
+    and: "an update DTO with a currentSeason beyond the total"
+        def updateDto = new SeriesDto(currentSeason: 10)
 
-    when:
-    seriesService.update(created.id, updateDto)
+    when: "the series is updated"
+        seriesService.update(created.id, updateDto)
 
-    then:
-    thrown(IllegalArgumentException)
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
   }
 
   def "should set dateCompleted when status changed to COMPLETED"() {
-    given:
-    def created = seriesService.create(new SeriesDto(title: "Show"))
+    given: "a series has been created"
+        def created = seriesService.create(new SeriesDto(title: "Show"))
 
-    and:
-    def updateDto = new SeriesDto(status: "COMPLETED")
+    and: "an update DTO changing the status to COMPLETED"
+        def updateDto = new SeriesDto(status: "COMPLETED")
 
-    when:
-    def result = seriesService.update(created.id, updateDto)
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
 
-    then:
-    result.status == "COMPLETED"
-    result.dateCompleted != null
+    then: "the status and dateCompleted are updated"
+        result.status == "COMPLETED"
+        result.dateCompleted != null
   }
 
   def "should clear dateCompleted when status changed away from COMPLETED"() {
-    given:
-    def created = seriesService.create(new SeriesDto(
-      title: "Show",
-      status: "COMPLETED"
-    ))
+    given: "a series has been created with COMPLETED status"
+        def created = seriesService.create(new SeriesDto(
+          title: "Show",
+          status: "COMPLETED"
+        ))
 
-    and:
-    def updateDto = new SeriesDto(status: "WATCHING")
+    and: "an update DTO changing the status to WATCHING"
+        def updateDto = new SeriesDto(status: "WATCHING")
 
-    when:
-    def result = seriesService.update(created.id, updateDto)
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
 
-    then:
-    result.status == "WATCHING"
-    result.dateCompleted == null
+    then: "the status changes and dateCompleted is cleared"
+        result.status == "WATCHING"
+        result.dateCompleted == null
   }
 
   def "should throw EntityNotFoundException when updating non-existent series"() {
-    given:
-    def updateDto = new SeriesDto(title: "New Title")
+    given: "an update DTO"
+        def updateDto = new SeriesDto(title: "New Title")
 
-    when:
-    seriesService.update(UUID.randomUUID(), updateDto)
+    when: "a non-existent series is updated"
+        seriesService.update(UUID.randomUUID(), updateDto)
 
-    then:
-    thrown(EntityNotFoundException)
+    then: "an EntityNotFoundException is thrown"
+        thrown(EntityNotFoundException)
   }
 
   def "should delete series"() {
-    given:
-    def created = seriesService.create(new SeriesDto(title: "Show"))
+    given: "a series has been created"
+        def created = seriesService.create(new SeriesDto(title: "Show"))
 
-    when:
-    seriesService.delete(created.id)
+    when: "the series is deleted"
+        seriesService.delete(created.id)
 
-    then:
-    noExceptionThrown()
+    then: "no exception is thrown"
+        noExceptionThrown()
 
-    and:
-    when:
-    seriesService.getById(created.id)
+    and: "the deleted series can no longer be retrieved"
+        when: "the deleted series is looked up"
+            seriesService.getById(created.id)
 
-    then:
-    thrown(EntityNotFoundException)
+        then: "an EntityNotFoundException is thrown"
+            thrown(EntityNotFoundException)
   }
 
   def "should throw EntityNotFoundException when deleting non-existent series"() {
-    when:
-    seriesService.delete(UUID.randomUUID())
+    when: "a non-existent series is deleted"
+        seriesService.delete(UUID.randomUUID())
 
-    then:
-    thrown(EntityNotFoundException)
+    then: "an EntityNotFoundException is thrown"
+        thrown(EntityNotFoundException)
   }
 }

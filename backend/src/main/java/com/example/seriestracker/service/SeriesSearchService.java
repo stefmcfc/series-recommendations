@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,14 +56,14 @@ public class SeriesSearchService {
 
     private boolean matchesTitle(SeriesEntity s, String title) {
         if (title == null || title.isBlank()) return true;
-        return s.getTitle().toLowerCase().contains(title.toLowerCase());
+        return s.getTitle().toLowerCase(Locale.ROOT).contains(title.toLowerCase(Locale.ROOT));
     }
 
     private boolean matchesGenres(SeriesEntity s, List<String> genres) {
         if (genres == null || genres.isEmpty()) return true;
         if (s.getGenres() == null || s.getGenres().isBlank()) return false;
-        String lower = s.getGenres().toLowerCase();
-        return genres.stream().anyMatch(g -> lower.contains(g.toLowerCase()));
+        String lower = s.getGenres().toLowerCase(Locale.ROOT);
+        return genres.stream().anyMatch(g -> lower.contains(g.toLowerCase(Locale.ROOT)));
     }
 
     private boolean matchesStatus(SeriesEntity s, String status) {

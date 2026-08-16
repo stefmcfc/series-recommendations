@@ -51,113 +51,113 @@ class SeriesExportServiceSpec extends Specification {
     }
 
     def "exportAsJson returns valid JSON string"() {
-        given:
-        def series = seriesService.getAll()
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
 
-        when:
-        def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
-        def parsed = new ObjectMapper().readTree(json)
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
 
-        then:
-        parsed != null
-        parsed.get('exportDate') != null
-        parsed.get('series').size() == 2
-        parsed.get('count').intValue() == 2
+        then: "the JSON contains the export date, series list, and count"
+            parsed != null
+            parsed.get('exportDate') != null
+            parsed.get('series').size() == 2
+            parsed.get('count').intValue() == 2
     }
 
     def "exportAsJson includes all series fields"() {
-        given:
-        def series = seriesService.getAll()
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
 
-        when:
-        def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
-        def parsed = new ObjectMapper().readTree(json)
-        def office = parsed.get('series').find { it.get('title').textValue() == 'The Office' }
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
+            def office = parsed.get('series').find { it.get('title').textValue() == 'The Office' }
 
-        then:
-        office != null
-        office.get('year').intValue() == 2005
-        office.get('genres').textValue() == 'Comedy'
-        office.get('totalSeasons').intValue() == 9
-        office.get('imdbRating').doubleValue() == 9.0
-        office.get('personalNotes').textValue() == 'Absolutely love this show'
+        then: "the exported JSON includes all fields for a series"
+            office != null
+            office.get('year').intValue() == 2005
+            office.get('genres').textValue() == 'Comedy'
+            office.get('totalSeasons').intValue() == 9
+            office.get('imdbRating').doubleValue() == 9.0
+            office.get('personalNotes').textValue() == 'Absolutely love this show'
     }
 
     def "exportAsJson handles null fields without error"() {
-        given:
-        seriesService.create(new SeriesDto(title: "Minimal Show"))
-        def series = seriesService.getAll()
+        given: "a series with only a title and no other fields, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "Minimal Show"))
+            def series = seriesService.getAll()
 
-        when:
-        def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
-        def parsed = new ObjectMapper().readTree(json)
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
 
-        then:
-        json != null
-        parsed.get('series').find { it.get('title').textValue() == 'Minimal Show' } != null
+        then: "the export succeeds and includes the minimal series"
+            json != null
+            parsed.get('series').find { it.get('title').textValue() == 'Minimal Show' } != null
     }
 
     def "exportAsCsv returns CSV with header row"() {
-        given:
-        def series = seriesService.getAll()
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
 
-        when:
-        def csv = exportService.exportAsCsv(series)
-        def lines = csv.trim().split("\n")
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
 
-        then:
-        lines[0].contains("title")
-        lines[0].contains("status")
-        lines[0].contains("imdbRating")
-        lines[0].contains("genres")
+        then: "the header row contains the expected column names"
+            lines[0].contains("title")
+            lines[0].contains("status")
+            lines[0].contains("imdbRating")
+            lines[0].contains("genres")
     }
 
     def "exportAsCsv contains all series titles"() {
-        given:
-        def series = seriesService.getAll()
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
 
-        when:
-        def csv = exportService.exportAsCsv(series)
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
 
-        then:
-        csv.contains("The Office")
-        csv.contains("Game of Thrones")
+        then: "the CSV contains the title of each series"
+            csv.contains("The Office")
+            csv.contains("Game of Thrones")
     }
 
     def "exportAsCsv quotes genres containing commas"() {
-        given:
-        def series = seriesService.getAll()
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
 
-        when:
-        def csv = exportService.exportAsCsv(series)
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
 
-        then:
-        // "Drama,Fantasy,Thriller" must be quoted in CSV
-        csv.contains('"Drama,Fantasy,Thriller"')
+        then: "genre values containing commas are quoted"
+            // "Drama,Fantasy,Thriller" must be quoted in CSV
+            csv.contains('"Drama,Fantasy,Thriller"')
     }
 
     def "exportAsCsv represents null values as empty strings, not 'null'"() {
-        given:
-        seriesService.create(new SeriesDto(title: "No Ratings Show"))
-        def series = seriesService.getAll()
+        given: "a series with no ratings, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "No Ratings Show"))
+            def series = seriesService.getAll()
 
-        when:
-        def csv = exportService.exportAsCsv(series)
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
 
-        then:
-        !csv.contains("null")
+        then: "null fields are rendered as empty strings rather than the literal 'null'"
+            !csv.contains("null")
     }
 
     def "exportAsCsv has correct number of columns per row"() {
-        given:
-        def series = seriesService.getAll()
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
 
-        when:
-        def csv = exportService.exportAsCsv(series)
-        def lines = csv.trim().split("\n")
-        def headerCols = lines[0].split(",").size()
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+            def headerCols = lines[0].split(",").size()
 
-        then:
-        headerCols == 16  // number of fields
+        then: "the header row has one column per series field"
+            headerCols == 16  // number of fields
     }
 }
