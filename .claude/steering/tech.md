@@ -41,7 +41,7 @@ This reflects what's actually declared in `backend/build.gradle.kts` and `fronte
 ## Testing
 
 ### Backend
-- **Spock 2.4** (`spock-core`, `spock-spring`) on **Groovy 5.0**
+- **Spock 2.4** (`spock-core`, `spock-spring`) on **Groovy 5.1**
 - **JUnit Platform**: test runner (`useJUnitPlatform()` in `build.gradle.kts`)
 - Specs live in `src/test/groovy/com/example/seriestracker/{controller,service,model}/`
 
