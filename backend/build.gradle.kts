@@ -26,9 +26,15 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
-    // SQLite
+    // SQLite. hibernate-community-dialects version is intentionally NOT pinned here --
+    // Spring Boot's dependency-management BOM constrains it independently of
+    // hibernate-core (e.g. still 7.0.0.Final under Boot 4.1.0's hibernate-core
+    // 7.4.1.Final), and a manually-pinned newer version can be binary-incompatible
+    // with whatever hibernate-core the BOM actually resolves (NoSuchMethodError at
+    // runtime in SQLiteDialect). Let the BOM manage it so bumps only happen when
+    // Spring Boot has actually validated the pairing.
     implementation("org.xerial:sqlite-jdbc:3.53.2.1")
-    implementation("org.hibernate.orm:hibernate-community-dialects:7.0.0.Final")
+    implementation("org.hibernate.orm:hibernate-community-dialects")
 
     // Flyway. spring-boot-flyway is required in addition to flyway-core: Boot 4 split
     // Flyway's autoconfiguration out of spring-boot-autoconfigure into its own module,
