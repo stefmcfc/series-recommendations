@@ -28,7 +28,7 @@ dependencies {
 
     // SQLite
     implementation("org.xerial:sqlite-jdbc:3.46.1.3")
-    implementation("org.hibernate.orm:hibernate-community-dialects:7.0.0.Final")
+    implementation("org.hibernate.orm:hibernate-community-dialects:7.4.5.Final")
 
     // Flyway. spring-boot-flyway is required in addition to flyway-core: Boot 4 split
     // Flyway's autoconfiguration out of spring-boot-autoconfigure into its own module,
