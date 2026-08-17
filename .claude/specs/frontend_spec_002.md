@@ -1,6 +1,6 @@
 # Frontend Spec 002: SeriesList Component
 
-**Status**: 🔧 Not started — next up. Depends on Frontend Spec 001, which is done. Nothing under `frontend/src/components/` exists yet.
+**Status**: ✅ Done. Depends on Frontend Spec 001, which is done.
 **Priority**: P0 (core UI)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Backend Spec 002 ✅
 **Frontend Stage**: 2 of N
@@ -26,7 +26,7 @@ fetching, state, and loading/error/empty UI states.
 - Loading indicator: spinner SVG + "Loading series..." text
 - Standard rendering (no virtualisation for MVP)
 
-**Before starting**: `.claude/steering/frontend_conventions.md` flags that Tailwind CSS is assumed by the styling examples below but is **not currently installed** (`frontend/package.json` has no `tailwindcss` dependency). Decide whether to add Tailwind or use plain CSS before implementing — the class names below are illustrative, not a hard requirement.
+**Styling decision**: CSS Modules (see `.claude/steering/frontend_conventions.md`) — `SeriesList.module.css` colocated with the component, no Tailwind. The class-less implementation skeleton below predates this decision; apply `styles.*` classNames from the module where sensible (structure/spacing), not a hard 1:1 mapping.
 
 ---
 
@@ -155,7 +155,7 @@ fetching, state, and loading/error/empty UI states.
 3. Loading spinner SHALL have `role="status"` and `aria-label="Loading"`.
 4. Error container SHALL have `role="alert"`.
 5. The "Add Series" button SHALL have `aria-label="Add new series"`.
-6. `[MANUAL]` `react-axe` SHALL be added as a frontend devDependency and wired into the dev-mode entry point (`main.tsx`, gated to `import.meta.env.DEV` so it never ships to production) as of this component's implementation — it's the first component available to run it against. It runs axe-core against the live DOM and logs violations to the browser console; this complements (doesn't replace) the static `eslint-plugin-jsx-a11y` checks from `tooling_spec_001_code_quality_security.md` Requirement 5, since it catches runtime-only issues (computed contrast, post-render ARIA/DOM state) that static analysis can't. Verified by inspection — open the dev build with `SeriesList` rendered and confirm no axe violations are logged; no CI check exists for this (it's a dev-console tool, not a lint rule).
+6. `[MANUAL]` `@axe-core/react` SHALL be added as a frontend devDependency and wired into the dev-mode entry point (`main.tsx`, gated to `import.meta.env.DEV` so it never ships to production) as of this component's implementation — it's the first component available to run it against. It runs axe-core against the live DOM and logs violations to the browser console; this complements (doesn't replace) the static `eslint-plugin-jsx-a11y` checks from `tooling_spec_001_code_quality_security.md` Requirement 5, since it catches runtime-only issues (computed contrast, post-render ARIA/DOM state) that static analysis can't. Package note: the spec originally named `react-axe`, but that package is deprecated upstream — `@axe-core/react` is Deque's maintained successor with the same `default(React, ReactDOM, timeout)` API, so it was used instead. Verified by inspection — temporarily rendered `<SeriesList />` in `App.tsx` with the dev server running and checked the browser console; it caught a real color-contrast violation (`SeriesList.module.css` used hardcoded light-theme grays that failed against this app's dark theme), which was fixed by switching the module to the app's `--text`/`--text-h`/`--border`/`--accent`/`--social-bg` CSS custom properties (see `src/index.css`) instead of hardcoded hex colors. The remaining `landmark-one-main`/`region` violations axe reports come from `App.tsx`'s unmodified Vite scaffold (no `<main>` landmark anywhere on the page) and are pre-existing/out of scope for this component-only spec — they'll be addressed when `SeriesList` is actually wired into `App.tsx`. No CI check exists for this (it's a dev-console tool, not a lint rule).
 
 ---
 
@@ -555,25 +555,25 @@ Styling classes are intentionally omitted from this skeleton pending the Tailwin
 
 ## Acceptance Criteria Summary
 
-- [ ] `seriesApi.getAll()` called once on mount
-- [ ] Loading spinner with `role="status"` shown while fetching
-- [ ] "Loading series..." text shown while loading
-- [ ] Loading indicator removed after fetch resolves
-- [ ] Each series renders title, status, and IMDb rating
-- [ ] Null `imdbRating` displays as "—"
-- [ ] Each series row has `data-testid="series-row"`
-- [ ] "No series yet." shown when list is empty
-- [ ] "Add your first series" button shown in empty state
-- [ ] "Failed to load series. Please try again." shown on error
-- [ ] Error container has `role="alert"`
-- [ ] "Retry" button shown in error state
-- [ ] Clicking Retry triggers re-fetch
-- [ ] If retry fails, error state shown again
-- [ ] "Add Series" button always visible in header
-- [ ] Add Series button has `data-testid="add-series-btn"` and `aria-label="Add new series"`
-- [ ] `react-axe` added as a devDependency and wired into `main.tsx` (dev-mode only), no violations logged
-- [ ] Series rows are clickable; `onSeriesClick(id)` called when clicked
-- [ ] Component works without `onSeriesClick` prop (no crash)
-- [ ] Series UUID not rendered as visible text
-- [ ] `personalNotes` not rendered in list view
-- [ ] All test cases SH-001 through SN-008 pass
+- [x] `seriesApi.getAll()` called once on mount
+- [x] Loading spinner with `role="status"` shown while fetching
+- [x] "Loading series..." text shown while loading
+- [x] Loading indicator removed after fetch resolves
+- [x] Each series renders title, status, and IMDb rating
+- [x] Null `imdbRating` displays as "—"
+- [x] Each series row has `data-testid="series-row"`
+- [x] "No series yet." shown when list is empty
+- [x] "Add your first series" button shown in empty state
+- [x] "Failed to load series. Please try again." shown on error
+- [x] Error container has `role="alert"`
+- [x] "Retry" button shown in error state
+- [x] Clicking Retry triggers re-fetch
+- [x] If retry fails, error state shown again
+- [x] "Add Series" button always visible in header
+- [x] Add Series button has `data-testid="add-series-btn"` and `aria-label="Add new series"`
+- [x] `@axe-core/react` (successor to the deprecated `react-axe`) added as a devDependency and wired into `main.tsx` (dev-mode only); caught and fixed a real color-contrast violation, no component-level violations remain
+- [x] Series rows are clickable; `onSeriesClick(id)` called when clicked
+- [x] Component works without `onSeriesClick` prop (no crash)
+- [x] Series UUID not rendered as visible text
+- [x] `personalNotes` not rendered in list view
+- [x] All test cases SH-001 through SN-008 pass (36/36 passing)
