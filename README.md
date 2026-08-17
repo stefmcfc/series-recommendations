@@ -14,8 +14,8 @@ A personal app for logging TV series you're watching, tracking your viewing prog
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Java 25 toolchain, Spring Boot 4.0.0 |
-| Frontend | TypeScript ~6.0, React 19.2, Vite 8.1 |
+| Backend | Java 25 toolchain, Spring Boot 4.1.0 |
+| Frontend | TypeScript ~6.0, React 19.2, Vite 8.2 |
 | Database | SQLite (local dev) → PostgreSQL (production) |
 | ORM | Spring Data JPA + Hibernate |
 | Migrations | Flyway |
