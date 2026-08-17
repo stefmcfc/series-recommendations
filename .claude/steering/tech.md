@@ -6,12 +6,12 @@ This reflects what's actually declared in `backend/build.gradle.kts` and `fronte
 
 ### Backend
 - **Java 25** toolchain (`build.gradle.kts` → `java.toolchain.languageVersion`)
-- **Spring Boot 4.0.0**
+- **Spring Boot 4.1.0**
 
 ### Frontend
 - **TypeScript** ~6.0.2
-- **React** 19.2.7
-- **Vite** 8.1.1
+- **React** 19.2.8
+- **Vite** 8.2.1
 
 ## Framework
 
@@ -54,7 +54,7 @@ This reflects what's actually declared in `backend/build.gradle.kts` and `fronte
 Not currently wired up. `springdoc-openapi` is **not** a dependency in `build.gradle.kts` — there is no `/swagger-ui.html` available today despite what older docs may say. Add `springdoc-openapi-starter-webmvc-ui` if interactive API docs are wanted.
 
 ## CI/CD
-No CI pipeline exists in this repo currently (no `.gitlab-ci.yml`, no `.github/workflows/`). If one is added, see `RUNBOOK.md` for the commands it should run.
+GitHub Actions (`.github/workflows/ci.yml`, `codeql.yml`) runs on every push to `main` and every PR — backend (`gradle check` + `gradle build -x test`), frontend (lint, format check, test, build, audit), and a gitleaks secrets scan. See `RUNBOOK.md`'s CI/CD and Troubleshooting sections for the specific commands and the dependency-version pitfalls that have broken it before (Gradle wrapper/CI version drift, `eslint-plugin-jsx-a11y` vs `eslint 10`, `hibernate-community-dialects` pinning).
 
 ## Common Commands
 
