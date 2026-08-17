@@ -136,4 +136,4 @@ Both are git-ignored — see root `.gitignore` and `backend/.gitignore`.
 
 ## CI/CD
 
-No CI pipeline is configured in this repo. See `.claude/steering/tech.md` for what one should run if added.
+GitHub Actions runs on every push to `main` and every PR — see `.claude/steering/tech.md`'s CI/CD section for what it runs, and `RUNBOOK.md`'s Troubleshooting section for the dependency-version pitfalls that have broken it before.
