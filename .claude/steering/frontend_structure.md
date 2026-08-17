@@ -7,12 +7,13 @@ Lines marked **(built)** exist today; everything else is the target layout to gr
 ```
 frontend/
 ├── src/
-│   ├── components/              # Reusable React components (not yet created)
-│   │   ├── SeriesList.tsx       # Next up — .claude/specs/frontend_spec_002.md
-│   │   ├── SeriesList.test.tsx
-│   │   ├── SeriesForm.tsx
-│   │   ├── SeriesDetail.tsx
-│   │   ├── SearchFilter.tsx
+│   ├── components/              # Reusable React components
+│   │   ├── SeriesList.tsx       # (built) .claude/specs/frontend_spec_002.md, wired into App.tsx
+│   │   ├── SeriesList.test.tsx  # (built)
+│   │   ├── SeriesList.module.css # (built)
+│   │   ├── SeriesForm.tsx       # Not yet created
+│   │   ├── SeriesDetail.tsx     # Not yet created
+│   │   ├── SearchFilter.tsx     # Not yet created
 │   │   └── ...
 │   │
 │   ├── pages/                   # Page-level components, if routing is added (not yet created)
@@ -30,9 +31,7 @@ frontend/
 │   │
 │   ├── utils/                   # Utility functions (not yet created)
 │   │
-│   ├── assets/                  # (built) hero.png, react.svg, vite.svg
-│   ├── App.tsx                  # (built, Vite scaffold — not yet wired to seriesApi)
-│   ├── App.css                  # (built)
+│   ├── App.tsx                  # (built) Renders SeriesList inside a <main> landmark
 │   ├── index.css                # (built)
 │   ├── main.tsx                 # (built) Entry point
 │   └── test-setup.ts            # (built) Vitest + jest-dom setup
