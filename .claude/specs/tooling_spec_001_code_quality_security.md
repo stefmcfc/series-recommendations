@@ -1,6 +1,6 @@
 # Tooling Spec 001: Code Quality & Security Hardening
 
-**Status**: ✅ Req 1-7 done (AC-01–AC-15); Req 8/CORS (AC-16) deferred per spec
+**Status**: ✅ Req 1-8 done (AC-01–AC-16)
 **Priority**: P2 (repo hygiene — doesn't block product feature work)
 **Depends on**: none
 **Area**: Tooling (cross-cutting — backend, frontend, and CI)
@@ -120,15 +120,43 @@ Husky is already installed for `pre-commit`/`pre-push` (see git hooks setup). A 
 
 ---
 
-### Requirement 8: CORS Configuration (Deferred)
+### Requirement 8: CORS Configuration
 
-**User story**: As a developer, I want CORS configured before the frontend ever calls the backend directly in production, so requests aren't silently blocked or, worse, permissively allowed from anywhere.
+**User story**: As a developer, I want CORS configured so the frontend can call the backend directly in a real browser, so requests aren't silently blocked or, worse, permissively allowed from anywhere.
 
-Not urgent today — the Vite dev proxy covers local work, and `tech.md` already flags this as an unconfigured, known gap.
+Originally deferred as "not urgent" because the Vite dev proxy covered local work. A real-browser verification pass (done while implementing `frontend_spec_003_add_series_form.md`) confirmed this was a real, currently-blocking gap: loading the frontend dev server in an actual browser and letting it call the backend directly failed with `No 'Access-Control-Allow-Origin' header is present` (confirmed both with and without VPN — not network-related). This is now implemented and verified.
+
+Implementation: `com.example.seriestracker.config.CorsConfig`, a `WebMvcConfigurer` bean (chosen over a standalone `CorsConfigurationSource` bean because this app has no Spring Security on the classpath — `WebMvcConfigurer.addCorsMappings` is the simpler, current, fully-supported mechanism for plain Spring MVC). Scoped to `/api/**`, allows `GET`/`POST`/`PATCH`/`DELETE` and the `Content-Type` header, no `allowCredentials` (no auth/cookies in this app). The allowed origin(s) are read from `app.cors.allowed-origins` in `application.yml` (default `http://localhost:5173`), overridable via `APP_CORS_ALLOWED_ORIGINS` — never a wildcard `*`.
 
 #### Acceptance Criteria
 
-- **TOOLING-001-AC-16** `[MANUAL]`, Where the frontend calls the backend directly instead of through the Vite dev proxy (i.e. before any production deployment where they're on different origins): the backend shall respond with CORS headers restricted to the configured frontend origin(s) — never a wildcard `*`. Verified by inspection at deployment-planning time, not automated now since there's no deployment target yet to test against.
+- **TOOLING-001-AC-16** `[AUTO]`: When a request to `/api/**` includes an `Origin` header matching a configured entry in `app.cors.allowed-origins`, then the backend shall respond with an `Access-Control-Allow-Origin` header echoing that origin (restricted to the configured allow-list — never a wildcard `*`), and when the `Origin` header does not match any configured entry, then the backend shall respond without an `Access-Control-Allow-Origin` header. Automated via a `MockMvc` Spock test (`CorsConfigSpec`) — no longer `[MANUAL]`: the previous deferral reasoning ("no deployment target to test against") no longer applies, since the test targets the known local dev origin (`http://localhost:5173`) that `application.yml` already defaults to.
+
+**Test Case (Red)**:
+```groovy
+def "TOOLING-001-AC-16: allowed origin receives Access-Control-Allow-Origin header"() {
+    given: "a request to an /api/** endpoint from the configured frontend dev origin"
+        def allowedOrigin = "http://localhost:5173"
+
+    when: "the request is made with an Origin header matching the configured allow-list"
+        def result = mockMvc.perform(get("/api/v1/series").header(HttpHeaders.ORIGIN, allowedOrigin))
+
+    then: "the response echoes back the allowed origin"
+        result.andExpect(status().isOk())
+        result.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin))
+}
+
+def "TOOLING-001-AC-16: disallowed origin does not receive a CORS allow header"() {
+    given: "a request to an /api/** endpoint from an origin not on the allow-list"
+        def disallowedOrigin = "http://evil.example.com"
+
+    when: "the request is made with a non-configured Origin header"
+        def result = mockMvc.perform(get("/api/v1/series").header(HttpHeaders.ORIGIN, disallowedOrigin))
+
+    then: "no Access-Control-Allow-Origin header is present, proving the config is not permissive/wildcard"
+        result.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN))
+}
+```
 
 ---
 
@@ -139,7 +167,7 @@ Not urgent today — the Vite dev proxy covers local work, and `tech.md` already
 | `GlobalExceptionHandler.java` | `backend/src/main/java/com/example/seriestracker/exception/` |
 | `.lintstagedrc.json`, `.husky/` | Git hooks setup (this session) |
 | `.github/workflows/ci.yml` | CI workflow (this session) |
-| CORS gap | `.claude/steering/tech.md` "Notes" section |
+| `CorsConfig.java` | `backend/src/main/java/com/example/seriestracker/config/` — see `.claude/steering/tech.md` "Notes" section |
 | Accessibility ACs | `.claude/specs/frontend_spec_002.md`, Requirement 8 |
 
 ---
@@ -161,4 +189,4 @@ Not urgent today — the Vite dev proxy covers local work, and `tech.md` already
 - [x] TOOLING-001-AC-13: commitlint + conventional config added
 - [x] TOOLING-001-AC-14: `.husky/commit-msg` hook enforces it
 - [x] TOOLING-001-AC-15: `.editorconfig` added at repo root
-- [ ] TOOLING-001-AC-16: CORS configured before any direct (non-proxied) frontend↔backend deployment
+- [x] TOOLING-001-AC-16: CORS configured via `CorsConfig` (`WebMvcConfigurer`) on `/api/**`, allow-list from `app.cors.allowed-origins` (default `http://localhost:5173`, no wildcard); verified with `CorsConfigSpec` (MockMvc) and a real headless-browser pass against the frontend dev server

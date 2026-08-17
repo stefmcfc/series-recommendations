@@ -239,6 +239,33 @@ describe('SH-007: Series row click', () => {
   })
 })
 
+describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
+  it('calls onAddClick when the header Add Series button is clicked', async () => {
+    const onAddClick = vi.fn()
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList onAddClick={onAddClick} />)
+    await waitFor(() => screen.getByText('Show'))
+    fireEvent.click(screen.getByTestId('add-series-btn'))
+    expect(onAddClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onAddClick when the empty-state Add button is clicked', async () => {
+    const onAddClick = vi.fn()
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList onAddClick={onAddClick} />)
+    const emptyStateButton = await screen.findByText(/add your first series/i)
+    fireEvent.click(emptyStateButton)
+    expect(onAddClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not throw when clicked without onAddClick', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    const emptyStateButton = await screen.findByText(/add your first series/i)
+    fireEvent.click(emptyStateButton)
+  })
+})
+
 describe('SN-008: No sensitive data exposed', () => {
   it('should not render the series UUID as visible text', async () => {
     mockGetAll.mockResolvedValue([
