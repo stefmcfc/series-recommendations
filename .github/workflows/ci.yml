@@ -21,7 +21,7 @@ jobs:
       # required for that), so CI always matches the version local dev uses instead of
       # silently drifting to whatever's newest -- that drift is what caused CI-only
       # failures from a Gradle 9.4.1 (local) vs 9.7.0 (CI) validation behavior change.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
       - name: Check
