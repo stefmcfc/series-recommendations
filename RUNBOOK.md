@@ -280,6 +280,16 @@ gradlew.bat bootRun
 
 Spring Boot 4 split Flyway's autoconfiguration out of `spring-boot-autoconfigure` into its own artifact, `org.springframework.boot:spring-boot-flyway`. Having `org.flywaydb:flyway-core` on the classpath is not enough by itself — without the Boot integration module, the `Flyway` bean is never created and migrations silently never run (no error, no log output, nothing). `build.gradle.kts` depends on both; if this resurfaces, check that `spring-boot-flyway` wasn't dropped.
 
+**`NoSuchMethodError` in `SQLiteDialect` on startup (Hibernate `SessionFactory` fails to build)**
+
+`hibernate-community-dialects` is binary-incompatible with the `hibernate-core` version actually in use. This happens if something in `build.gradle.kts` pins `hibernate-community-dialects` to an explicit version — an explicit version always wins over Spring Boot's own BOM recommendation (standard Maven/Spring dependency-management precedence), and Spring Boot pairs `hibernate-community-dialects` with a specific `hibernate-core` version internally; a manually-pinned version (e.g. from a Dependabot bump) can easily drift out of sync with whatever `hibernate-core` the BOM resolves. Fix: don't pin a version at all —
+
+```kotlin
+implementation("org.hibernate.orm:hibernate-community-dialects")
+```
+
+— and let Spring Boot's dependency management choose it. Verify with `gradlew.bat dependencies --configuration runtimeClasspath | grep hibernate-community` that the resolved version matches `hibernate-core`'s version exactly.
+
 **Tests fail with database errors**
 
 ```bash
@@ -292,9 +302,8 @@ gradlew.bat test
 
 ## CI/CD
 
-There is no CI pipeline configured in this repo yet. If you set one up, it should at minimum:
+GitHub Actions runs on every push to `main` and every PR (`.github/workflows/ci.yml`, plus `codeql.yml` for security scanning):
 
-1. Build backend: `gradlew.bat build`
-2. Run backend tests: `gradlew.bat test`
-3. Build frontend: `npm run build`
-4. Run frontend tests: `npm test`
+- **backend**: `gradle check` (tests, JaCoCo coverage gate, SpotBugs), then `gradle build -x test`. Uses `gradle/actions/setup-gradle` with `gradle-version: wrapper` so CI always matches the Gradle version pinned in `gradle/wrapper/gradle-wrapper.properties` — don't let these drift apart, a prior mismatch (local 9.4.1 vs CI resolving to latest) caused CI-only failures from a stricter task-validation rule that only exists in newer Gradle.
+- **frontend**: `npm ci`, `npm run lint`, `npm run format:check`, `npm test`, `npm run build`, `npm audit --audit-level=high`. Requires `frontend/.npmrc` (`legacy-peer-deps=true`) — `eslint-plugin-jsx-a11y`'s peer range doesn't yet cover the `eslint ^10` this project runs, so a clean `npm ci` fails without it.
+- **secrets-scan**: gitleaks over the full checkout.
