@@ -64,8 +64,13 @@ val jacocoExcludes = listOf(
     "com/example/seriestracker/exception/EntityNotFoundException*"
 )
 
+// classDirectories is reassigned below (to apply jacocoExcludes) via the eager
+// `.files.map` pattern, which loses the implicit task dependency Gradle would
+// otherwise infer from the original provider -- dependsOn(tasks.classes) restores
+// it explicitly so Gradle doesn't flag compileJava/compileGroovy/processResources
+// as undeclared inputs.
 tasks.jacocoTestReport {
-    dependsOn(tasks.test)
+    dependsOn(tasks.test, tasks.classes)
     reports {
         xml.required = true
         html.required = true
@@ -78,7 +83,7 @@ tasks.jacocoTestReport {
 }
 
 tasks.jacocoTestCoverageVerification {
-    dependsOn(tasks.test)
+    dependsOn(tasks.test, tasks.classes)
     classDirectories.setFrom(
         files(classDirectories.files.map {
             fileTree(it) { exclude(jacocoExcludes) }

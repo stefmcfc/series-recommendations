@@ -16,8 +16,14 @@ jobs:
           java-version: "25"
       # Only gradlew.bat (Windows) is checked into this repo, so CI provisions Gradle
       # directly via setup-gradle rather than using the wrapper — see CLAUDE.md's hard
-      # rule on not adding a Unix wrapper script.
+      # rule on not adding a Unix wrapper script. gradle-version: wrapper reads the
+      # version from gradle/wrapper/gradle-wrapper.properties (no wrapper script
+      # required for that), so CI always matches the version local dev uses instead of
+      # silently drifting to whatever's newest -- that drift is what caused CI-only
+      # failures from a Gradle 9.4.1 (local) vs 9.7.0 (CI) validation behavior change.
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
       - name: Check
         working-directory: backend
         # Runs tests, the JaCoCo coverage gate, and SpotBugs static analysis
