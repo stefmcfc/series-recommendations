@@ -73,8 +73,9 @@ The backend is configured via `backend/src/main/resources/application.yml`. No e
 | `spring.jpa.show-sql` | `true` | Print SQL queries to console |
 | `spring.jpa.hibernate.ddl-auto` | `validate` | Schema validation -- Flyway manages DDL |
 | `spring.flyway.enabled` | `true` | Run Flyway migrations on startup |
+| `app.cors.allowed-origins` | `http://localhost:5173` | Origin(s) allowed to call `/api/**` cross-origin (never a wildcard) — see `com.example.seriestracker.config.CorsConfig` |
 
-Override any property with a `SPRING_` prefixed environment variable:
+Override any property with a `SPRING_` prefixed environment variable (or, for the `app.*` property above, the plain `APP_`-prefixed equivalent — Spring's relaxed env-var binding applies to any property, not just `spring.*`):
 
 ```bash
 # Override the database path
@@ -297,6 +298,12 @@ cd backend
 gradlew.bat clean
 gradlew.bat test
 ```
+
+**Frontend showed "Failed to load series. Please try again." in a real browser (not Vitest) — fixed**
+
+This was a real, currently-blocking CORS gap (confirmed both with and without VPN — not network-related), tracked as `TOOLING-001-AC-16` in `tooling_spec_001_code_quality_security.md`. It's now fixed: `com.example.seriestracker.config.CorsConfig` (a `WebMvcConfigurer` bean) allows cross-origin requests to `/api/**` from the origin(s) configured in `app.cors.allowed-origins` (default `http://localhost:5173`, see the Environment Variables section above), restricted to the `GET`/`POST`/`PATCH`/`DELETE` methods and `Content-Type` header the frontend actually uses — never a wildcard `*`.
+
+No `frontend/.env.local` proxy workaround is needed anymore: `seriesApi.ts` can call `http://localhost:8080/api/v1` directly from a browser tab serving the frontend on `http://localhost:5173`, and the response will include a matching `Access-Control-Allow-Origin` header. If you deploy the frontend from a different origin, add it to `app.cors.allowed-origins` (comma-separated) or override via `APP_CORS_ALLOWED_ORIGINS` — don't loosen this to a wildcard.
 
 ---
 

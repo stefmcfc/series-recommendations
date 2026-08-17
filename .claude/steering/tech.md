@@ -86,6 +86,6 @@ Nothing in this app requires a secret today (no external API calls, no auth — 
 ## Notes
 
 - **Frontend-Backend Communication**: Vite dev server proxies `/api` calls to `localhost:8080` (`frontend/vite.config.ts`); the axios client in `seriesApi.ts` also reads `VITE_API_BASE` directly and falls back to `http://localhost:8080/api/v1`.
-- **CORS**: Not yet configured on the Spring Boot side — needed if the frontend calls the backend directly instead of through the Vite proxy (e.g. in production).
+- **CORS**: Configured via `com.example.seriestracker.config.CorsConfig` (a `WebMvcConfigurer`, not a `CorsConfigurationSource` bean — this app has no Spring Security on the classpath, so `WebMvcConfigurer.addCorsMappings` is the simpler, current, fully-supported mechanism). Applies to `/api/**` only, allows `GET`/`POST`/`PATCH`/`DELETE` and the `Content-Type` header, no credentials. The allowed origin(s) come from `app.cors.allowed-origins` in `application.yml` (default `http://localhost:5173`), overridable via the `APP_CORS_ALLOWED_ORIGINS` env var — never a wildcard. Verified with a real (headless) browser hitting the frontend dev server directly, no Vite proxy involved.
 - **Environment Variables**: Backend uses `application.yml` + `SPRING_`-prefixed env var overrides; frontend uses `.env.local` (Vite `VITE_` prefix).
 - **Database Migrations**: Flyway is enabled and required — see `backend/src/main/resources/db/migration/`.

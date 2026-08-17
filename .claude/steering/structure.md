@@ -28,6 +28,7 @@ backend/
 │   │   │       ├── model/             # JPA entities (@Entity) — SeriesEntity, SeriesStatus, ValidSeries + SeriesValidator
 │   │   │       ├── dto/               # API contracts — SeriesDto, ApiResponse, SeriesSearchCriteria, SeriesExportResponse
 │   │   │       ├── exception/         # EntityNotFoundException, GlobalExceptionHandler
+│   │   │       ├── config/            # CorsConfig (WebMvcConfigurer — /api/** CORS allow-list)
 │   │   │       └── SeriesTrackerApplication.java  # Entry point
 │   │   └── resources/
 │   │       ├── application.yml        # Spring config (dev, SQLite)
@@ -38,7 +39,8 @@ backend/
 │       │   └── com/example/seriestracker/
 │       │       ├── controller/        # SeriesControllerSpec
 │       │       ├── model/             # SeriesEntitySpec
-│       │       └── service/           # SeriesServiceSpec, SeriesSearchServiceSpec, SeriesExportServiceSpec
+│       │       ├── service/           # SeriesServiceSpec, SeriesSearchServiceSpec, SeriesExportServiceSpec
+│       │       └── config/            # CorsConfigSpec
 │       └── resources/
 │           └── application.yml        # Test datasource config
 ├── gradle/
@@ -48,7 +50,7 @@ backend/
 └── .gitignore
 ```
 
-There is no `config/` package or `application-prod.yml` yet — those are aspirational until a production deployment is actually set up.
+A `config/` package now exists (`CorsConfig`, for CORS — see `tech.md`'s Notes section). `application-prod.yml` is still aspirational until a production deployment is actually set up.
 
 ## Frontend structure
 

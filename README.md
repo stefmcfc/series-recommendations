@@ -66,6 +66,8 @@ The backend exposes a REST API at `http://localhost:8080/api/v1`.
 
 Full interactive docs are available at `http://localhost:8080/swagger-ui.html` when the backend is running (requires springdoc-openapi to be added — not yet a dependency).
 
+CORS is configured on `/api/**` to allow direct cross-origin calls from the frontend dev server (`http://localhost:5173` by default, overridable via `app.cors.allowed-origins` in `application.yml` or the `APP_CORS_ALLOWED_ORIGINS` env var — see `RUNBOOK.md`'s Environment Variables section).
+
 ## Getting Started
 
 See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instructions.
@@ -80,3 +82,4 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 004 | Export (JSON/CSV) | ✅ Done |
 | Frontend 001 | Types & API service layer | ✅ Done |
 | Frontend 002 | `SeriesList` component | ✅ Done |
+| Frontend 003 | `AddSeriesForm` (add-series modal) | ✅ Done |

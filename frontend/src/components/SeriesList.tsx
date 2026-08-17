@@ -5,9 +5,10 @@ import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
   onSeriesClick?: (id: string) => void
+  onAddClick?: () => void
 }
 
-export function SeriesList({ onSeriesClick }: SeriesListProps) {
+export function SeriesList({ onSeriesClick, onAddClick }: SeriesListProps) {
   const [series, setSeries] = useState<Series[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,6 +64,7 @@ export function SeriesList({ onSeriesClick }: SeriesListProps) {
           className={styles.addButton}
           data-testid="add-series-btn"
           aria-label="Add new series"
+          onClick={() => onAddClick?.()}
         >
           Add Series
         </button>
@@ -118,6 +120,7 @@ export function SeriesList({ onSeriesClick }: SeriesListProps) {
             className={styles.addButton}
             data-testid="add-series-btn"
             aria-label="Add new series"
+            onClick={() => onAddClick?.()}
           >
             Add your first series
           </button>

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Build/launch/drive recipe for verifying changes to the TV Series Tracker end-to-end — backend via curl/API, frontend via browser. Frontend browser-driving currently covers `SeriesList` only, which isn't wired into `App.tsx` yet; extend this section as more components land.
+description: Build/launch/drive recipe for verifying changes to the TV Series Tracker end-to-end — backend via curl/API, frontend via browser. `SeriesList` and `AddSeriesForm` are both wired into `App.tsx` (Frontend Specs 002/003); extend this section as more components land.
 ---
 
 # Verifying this app end-to-end
@@ -17,8 +17,9 @@ description: Build/launch/drive recipe for verifying changes to the TV Series Tr
 ## Launch (frontend)
 
 - `cd frontend && npm run dev` starts Vite on **:5173**, proxying `/api` to `:8080` (`vite.config.ts`).
-- `SeriesList` exists (`frontend/src/components/SeriesList.tsx`) but **isn't wired into `App.tsx` yet** — `App.tsx` is still the unmodified Vite scaffold. To see or drive it in a browser, temporarily mount it (see "Drive (frontend)" below); don't leave that wiring in when you're done.
+- `SeriesList` and `AddSeriesForm` are both wired into `App.tsx` (Frontend Specs 002/003) — no temporary mounting needed, `npm run dev` + open the browser is enough.
 - `@axe-core/react` runs automatically in dev mode (`main.tsx`, gated on `import.meta.env.DEV`) and logs accessibility violations to the browser console. It re-scans on every DOM mutation, not just first render — check the console after driving each state, not only on load.
+- **Gotcha — CORS blocks the browser (but not curl or Vitest) if you hit the backend directly.** The backend has no CORS config, and `seriesApi.ts`'s default `VITE_API_BASE` is the absolute URL `http://localhost:8080/api/v1`, so a browser on `http://localhost:5173` calling it directly is a blocked cross-origin request (shows up as "Failed to load series. Please try again." even though the backend is healthy). Work around it for a browser pass by creating a git-ignored `frontend/.env.local` with `VITE_API_BASE=/api/v1`, which routes calls through Vite's own dev-server proxy (server-side, not subject to browser CORS) — see RUNBOOK.md's Troubleshooting section for detail. Delete `.env.local` again afterwards; don't leave it in place.
 
 ## Drive (backend, via curl)
 
@@ -52,17 +53,18 @@ curl -X DELETE http://localhost:8080/api/v1/series/{id}
 
 ## Drive (frontend, via browser)
 
-Nothing is wired into `App.tsx` yet, so verifying a component means temporarily mounting it, driving it, then reverting the mount before committing:
+`SeriesList` and `AddSeriesForm` are both already wired into `App.tsx` — no temporary mounting needed for either.
 
-1. Add a temporary import + render to `App.tsx` (e.g. `import { SeriesList } from './components/SeriesList'` and `<SeriesList />` near the top of the returned JSX).
-2. `cd frontend && npm run dev`, then open `http://localhost:5173` (the `claude-in-chrome` skill's tools work well for this — navigate, screenshot, and `read_console_messages` with a pattern like `axe|violat|error`).
-3. Drive through the states that matter for a data-fetching component:
-   - **Loading** — visible immediately on mount, before the fetch resolves.
+1. Apply the CORS workaround above (`frontend/.env.local` with `VITE_API_BASE=/api/v1`) if driving against a real backend.
+2. `cd frontend && npm run dev`, then open `http://localhost:5173` (the `claude-in-chrome` skill's tools work well for this — navigate, screenshot, and `read_console_messages` with a pattern like `axe|violat|error`; if that tool isn't available in a given session, a small ad-hoc `puppeteer-core` script pointed at the local Chrome/Edge install and this app's dev-server URL is a viable fallback for scripted click/type/screenshot flows).
+3. Drive through the states that matter:
+   - **Loading** — visible immediately on `SeriesList` mount, before the fetch resolves.
    - **Error** — works without the backend running at all (the fetch fails naturally); confirms error copy, retry button, `role="alert"`.
-   - **Empty** — backend running (`gradlew.bat bootRun` from `backend/`) with no rows in the DB.
-   - **Populated** — `POST` a series first (see the curl recipe above), then reload.
-4. Check the console for axe violations after each state change, and `zoom`/screenshot anything visually suspicious.
-5. **Revert the temporary `App.tsx` mount** before committing — `git diff frontend/src/App.tsx` should be empty.
+   - **Empty** — backend running (`gradlew.bat bootRun` from `backend/`) with no rows in the DB; also the state to open `AddSeriesForm` from ("Add your first series" button).
+   - **Populated** — `POST` a series first (see the curl recipe above), then reload; or drive `AddSeriesForm` end-to-end (open → fill → submit) and confirm the list refreshes with the new row via `SeriesList`'s remount-on-`key`-change.
+   - **`AddSeriesForm` validation** — submit blank (title-required error), then an out-of-range field (e.g. `personalRating` > 5) alongside a valid title, and confirm inline errors render without calling the API.
+4. Check the console for axe violations after each state change, and `zoom`/screenshot anything visually suspicious. Check both light and dark `prefers-color-scheme` (see the dark-theme gotcha below) — `page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])` if scripting this with `puppeteer-core`.
+5. Clean up afterwards: delete `frontend/.env.local` if you created it, and delete any test series you created via the UI (`curl -X DELETE .../series/{id}` or `del backend\data\series.db` to reset entirely).
 
 **Gotcha — dark theme.** This app's CSS uses `prefers-color-scheme` (`frontend/src/index.css`'s `--text`/`--text-h`/`--bg`/`--border`/`--accent`/`--social-bg` custom properties). A component styled with hardcoded light-theme colors will pass every Vitest assertion (jsdom doesn't render CSS) and still fail an axe contrast check the moment it's actually rendered in a browser in dark mode. Use the shared custom properties, not hardcoded hex values, and always do at least one real browser pass — Vitest alone isn't sufficient sign-off for a new component's styling.
 

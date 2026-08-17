@@ -9,3 +9,7 @@ spring:
     show-sql: false
   flyway:
     enabled: false
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173
