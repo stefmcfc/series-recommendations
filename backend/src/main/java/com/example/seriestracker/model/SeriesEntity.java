@@ -3,6 +3,8 @@ package com.example.seriestracker.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,8 +14,11 @@ import java.util.UUID;
 @ValidSeries
 public class SeriesEntity {
 
+    // Hibernate 6+ defaults UUID columns to BINARY, but the Flyway migration declares
+    // `id` as TEXT (and the API serializes it as a string) — force VARCHAR to match.
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private UUID id;
 
     @Column(nullable = false, length = 255)
