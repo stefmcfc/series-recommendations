@@ -549,7 +549,7 @@ export function SeriesList({ onSeriesClick }: SeriesListProps) {
 }
 ```
 
-Styling classes are intentionally omitted from this skeleton pending the Tailwind-vs-plain-CSS decision noted at the top of this spec.
+Styling classes are omitted from this skeleton — it predates the CSS Modules decision noted at the top of this spec. The actual implementation applies `styles.*` classNames from `SeriesList.module.css`; see `frontend/src/components/SeriesList.tsx` for the real, styled version.
 
 ---
 
