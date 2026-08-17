@@ -276,6 +276,10 @@ del backend\data\series.db
 gradlew.bat bootRun
 ```
 
+**Migrations never run at all (no Flyway log lines on startup, straight to a Hibernate `Schema-validation: missing table` error)**
+
+Spring Boot 4 split Flyway's autoconfiguration out of `spring-boot-autoconfigure` into its own artifact, `org.springframework.boot:spring-boot-flyway`. Having `org.flywaydb:flyway-core` on the classpath is not enough by itself — without the Boot integration module, the `Flyway` bean is never created and migrations silently never run (no error, no log output, nothing). `build.gradle.kts` depends on both; if this resurfaces, check that `spring-boot-flyway` wasn't dropped.
+
 **Tests fail with database errors**
 
 ```bash

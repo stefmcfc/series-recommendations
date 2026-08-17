@@ -8,7 +8,10 @@
     current_season INTEGER,
     current_episode INTEGER,
     status TEXT DEFAULT 'BACKLOG',
-    imdb_rating DECIMAL(3,1),
+    -- NUMERIC not DECIMAL: sqlite-jdbc reports "DECIMAL(3,1)" back as JDBC type FLOAT,
+    -- which fails Hibernate's schema validation for a BigDecimal field (expects NUMERIC).
+    -- SQLite gives both the same type affinity, so this doesn't change stored values.
+    imdb_rating NUMERIC(3,1),
     metacritic_rating INTEGER,
     rotten_tomatoes_rating INTEGER,
     personal_rating INTEGER,
