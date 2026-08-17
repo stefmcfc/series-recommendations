@@ -79,4 +79,4 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 003 | Search and filter | ✅ Done |
 | Backend 004 | Export (JSON/CSV) | ✅ Done |
 | Frontend 001 | Types & API service layer | ✅ Done |
-| Frontend 002 | `SeriesList` component | 🔧 Next up |
+| Frontend 002 | `SeriesList` component | ✅ Done |

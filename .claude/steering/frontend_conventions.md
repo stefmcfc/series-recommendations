@@ -65,11 +65,7 @@ export const seriesApi = {
 
 ## Styling
 
-**Not yet decided for this codebase.** The original Kiro steering assumed Tailwind CSS, but `tailwindcss` is **not** currently in `package.json` — only plain CSS (`App.css`, `index.css`) exists. Before building the first real UI component, either:
-- add Tailwind (`npm install -D tailwindcss` + config), or
-- continue with plain CSS / CSS Modules
-
-and update this section once decided. Don't assume Tailwind classes are available until the dependency is actually installed.
+**CSS Modules** (decided when implementing `SeriesList`, `frontend_spec_002.md`). No extra dependency — Vite scopes `*.module.css` files automatically. One module per component, colocated (e.g. `SeriesList.tsx` + `SeriesList.module.css`), imported as `import styles from './SeriesList.module.css'` and applied via `className={styles.foo}`. The existing global `App.css`/`index.css` stay for app-wide resets/base styles only — component-specific styling goes in its own module, not the globals. Not Tailwind — the original Kiro-authored spec examples assumed it, but it was never installed and isn't being added.
 
 ## Testing Strategy (Vitest + React Testing Library)
 
