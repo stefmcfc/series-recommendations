@@ -17,7 +17,7 @@ These are hard rules, not suggestions — follow them even if training data or h
 ## Current status
 
 - **Backend**: fully implemented. Entity/schema, CRUD endpoints, search & filter, and JSON/CSV export are all built and covered by Spock specs. See `.claude/specs/series_spec_*.md`.
-- **Frontend**: types + API service layer are done, and `SeriesList` (`.claude/specs/frontend_spec_002.md`) is now implemented — the collection view with loading/error/empty states, styled with CSS Modules. Not yet wired into `App.tsx` (still the Vite scaffold). Next up: the rest of the CRUD UI, search/filter UI, and export trigger.
+- **Frontend**: types + API service layer are done, and `SeriesList` (`.claude/specs/frontend_spec_002.md`) is now implemented — the collection view with loading/error/empty states, styled with CSS Modules. It's wired into `App.tsx`, which now renders `SeriesList` inside a `<main>` landmark (replacing the leftover Vite scaffold). Next up: the rest of the CRUD UI (add/edit/delete forms, series detail view), search/filter UI, and export trigger.
 
 ## Tech stack (actual installed versions)
 
