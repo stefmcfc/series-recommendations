@@ -40,7 +40,10 @@ export interface CreateSeriesRequest {
   personalNotes?: string
 }
 
-export type UpdateSeriesRequest = Partial<CreateSeriesRequest>
+export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
+  currentSeason?: number
+  currentEpisode?: number
+}
 
 export interface SearchCriteria {
   title?: string

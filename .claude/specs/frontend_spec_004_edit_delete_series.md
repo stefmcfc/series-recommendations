@@ -1,6 +1,6 @@
 # Frontend Spec 004: Edit & Delete Series
 
-**Status**: Not started
+**Status**: Implemented. `src/types/series.ts` (`UpdateSeriesRequest` gains `currentSeason`/`currentEpisode`), `src/components/SeriesList.tsx` + `SeriesList.module.css` (Edit/Delete buttons, inline delete confirmation, `onEditClick` prop), `src/components/EditSeriesForm.tsx` + `EditSeriesForm.module.css` (new), `src/App.tsx` (edit-form wiring). Tests: `src/components/SeriesList.test.tsx`, `src/components/EditSeriesForm.test.tsx` (new), `src/App.test.tsx` — all amended/added following red/green TDD. `npm test` (102/102 passing), `npm run lint` (clean), `npm run build` (clean, confirms the `UpdateSeriesRequest` type change compiles) all verified on 2026-08-18. No real-browser pass done for this stage (not called out as required — see PR notes).
 **Priority**: P1 (second write-path UI — completes basic CRUD)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Backend Spec 002 (CRUD) ✅
 **Frontend Stage**: 4 of N
@@ -580,42 +580,42 @@ describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-004-AC-01: Edit/Delete buttons rendered per row with testids and aria-labels
-- [ ] FRONTEND-004-AC-02: `SeriesList` accepts optional `onEditClick`
-- [ ] FRONTEND-004-AC-03: Edit button calls `onEditClick(series)`, not `onSeriesClick`
-- [ ] FRONTEND-004-AC-04: no crash when `onEditClick` not provided
-- [ ] FRONTEND-004-AC-05: Delete button alone triggers no callback/API call
-- [ ] FRONTEND-004-AC-06: Delete click shows Confirm/Cancel in place of Edit/Delete
-- [ ] FRONTEND-004-AC-07: confirmation Cancel restores buttons, no delete call
-- [ ] FRONTEND-004-AC-08: Escape restores buttons, no delete call
-- [ ] FRONTEND-004-AC-09: row click during confirmation doesn't call `onSeriesClick`
-- [ ] FRONTEND-004-AC-10: Confirm calls `seriesApi.delete(id)`
-- [ ] FRONTEND-004-AC-11: Confirm disabled + "Deleting..." while in flight
-- [ ] FRONTEND-004-AC-12: Cancel disabled while in flight
-- [ ] FRONTEND-004-AC-13: successful delete removes row without re-fetch
-- [ ] FRONTEND-004-AC-14: empty state shown after deleting last series
-- [ ] FRONTEND-004-AC-15: delete failure shows scoped alert, keeps row, allows retry
-- [ ] FRONTEND-004-AC-16: `EditSeriesForm` dialog role/aria-modal/aria-labelledby
-- [ ] FRONTEND-004-AC-17: title input focused on mount
-- [ ] FRONTEND-004-AC-18: Cancel calls `onCancel`, no update call
-- [ ] FRONTEND-004-AC-19: Escape calls `onCancel`, no update call
-- [ ] FRONTEND-004-AC-20: labelled input per field incl. `currentSeason`/`currentEpisode`
-- [ ] FRONTEND-004-AC-21: fields pre-populated from `series` prop
-- [ ] FRONTEND-004-AC-22: `UpdateSeriesRequest` gains `currentSeason`/`currentEpisode`
-- [ ] FRONTEND-004-AC-23: blank title blocks submit
-- [ ] FRONTEND-004-AC-24: out-of-range shared fields block submit
-- [ ] FRONTEND-004-AC-25: `currentSeason` < 1 blocks submit
-- [ ] FRONTEND-004-AC-26: `currentEpisode` < 1 blocks submit
-- [ ] FRONTEND-004-AC-27: `currentSeason` > `totalSeasons` blocks submit
-- [ ] FRONTEND-004-AC-28: submit/Cancel disabled + "Saving..." while in flight
-- [ ] FRONTEND-004-AC-29: `onSuccess` called once with updated series
-- [ ] FRONTEND-004-AC-30: `ApiError.message` shown on failure, no `onSuccess`/`onCancel`
-- [ ] FRONTEND-004-AC-31: `ApiError.details` mapped to field errors
-- [ ] FRONTEND-004-AC-32: values retained, buttons re-enabled after failure
-- [ ] FRONTEND-004-AC-33: payload has `series.id` + populated fields only, never `id`/`dateAdded`/`dateCompleted`
-- [ ] FRONTEND-004-AC-34: `EditSeriesForm` conditionally rendered by `App.tsx`
-- [ ] FRONTEND-004-AC-35: `onEditClick` opens the form pre-filled in `App.tsx`
-- [ ] FRONTEND-004-AC-36: `onCancel` closes the form without refetching
-- [ ] FRONTEND-004-AC-37: `onSuccess` closes the form and remounts `SeriesList` to refetch
-- [ ] FRONTEND-004-AC-38: no form values logged to console (`EditSeriesForm`)
-- [ ] FRONTEND-004-AC-39: no series data logged to console (delete flow)
+- [x] FRONTEND-004-AC-01: Edit/Delete buttons rendered per row with testids and aria-labels
+- [x] FRONTEND-004-AC-02: `SeriesList` accepts optional `onEditClick`
+- [x] FRONTEND-004-AC-03: Edit button calls `onEditClick(series)`, not `onSeriesClick`
+- [x] FRONTEND-004-AC-04: no crash when `onEditClick` not provided
+- [x] FRONTEND-004-AC-05: Delete button alone triggers no callback/API call
+- [x] FRONTEND-004-AC-06: Delete click shows Confirm/Cancel in place of Edit/Delete
+- [x] FRONTEND-004-AC-07: confirmation Cancel restores buttons, no delete call
+- [x] FRONTEND-004-AC-08: Escape restores buttons, no delete call
+- [x] FRONTEND-004-AC-09: row click during confirmation doesn't call `onSeriesClick`
+- [x] FRONTEND-004-AC-10: Confirm calls `seriesApi.delete(id)`
+- [x] FRONTEND-004-AC-11: Confirm disabled + "Deleting..." while in flight
+- [x] FRONTEND-004-AC-12: Cancel disabled while in flight
+- [x] FRONTEND-004-AC-13: successful delete removes row without re-fetch
+- [x] FRONTEND-004-AC-14: empty state shown after deleting last series
+- [x] FRONTEND-004-AC-15: delete failure shows scoped alert, keeps row, allows retry
+- [x] FRONTEND-004-AC-16: `EditSeriesForm` dialog role/aria-modal/aria-labelledby
+- [x] FRONTEND-004-AC-17: title input focused on mount
+- [x] FRONTEND-004-AC-18: Cancel calls `onCancel`, no update call
+- [x] FRONTEND-004-AC-19: Escape calls `onCancel`, no update call
+- [x] FRONTEND-004-AC-20: labelled input per field incl. `currentSeason`/`currentEpisode`
+- [x] FRONTEND-004-AC-21: fields pre-populated from `series` prop
+- [x] FRONTEND-004-AC-22: `UpdateSeriesRequest` gains `currentSeason`/`currentEpisode`
+- [x] FRONTEND-004-AC-23: blank title blocks submit
+- [x] FRONTEND-004-AC-24: out-of-range shared fields block submit
+- [x] FRONTEND-004-AC-25: `currentSeason` < 1 blocks submit
+- [x] FRONTEND-004-AC-26: `currentEpisode` < 1 blocks submit
+- [x] FRONTEND-004-AC-27: `currentSeason` > `totalSeasons` blocks submit
+- [x] FRONTEND-004-AC-28: submit/Cancel disabled + "Saving..." while in flight
+- [x] FRONTEND-004-AC-29: `onSuccess` called once with updated series
+- [x] FRONTEND-004-AC-30: `ApiError.message` shown on failure, no `onSuccess`/`onCancel`
+- [x] FRONTEND-004-AC-31: `ApiError.details` mapped to field errors
+- [x] FRONTEND-004-AC-32: values retained, buttons re-enabled after failure
+- [x] FRONTEND-004-AC-33: payload has `series.id` + populated fields only, never `id`/`dateAdded`/`dateCompleted`
+- [x] FRONTEND-004-AC-34: `EditSeriesForm` conditionally rendered by `App.tsx`
+- [x] FRONTEND-004-AC-35: `onEditClick` opens the form pre-filled in `App.tsx`
+- [x] FRONTEND-004-AC-36: `onCancel` closes the form without refetching
+- [x] FRONTEND-004-AC-37: `onSuccess` closes the form and remounts `SeriesList` to refetch
+- [x] FRONTEND-004-AC-38: no form values logged to console (`EditSeriesForm`)
+- [x] FRONTEND-004-AC-39: no series data logged to console (delete flow)
