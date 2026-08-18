@@ -2,11 +2,13 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SeriesList } from './SeriesList'
 import { seriesApi } from '../services/seriesApi'
+import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type { Series } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
+const mockDelete = vi.mocked(seriesApi.delete)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -263,6 +265,195 @@ describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
     render(<SeriesList />)
     const emptyStateButton = await screen.findByText(/add your first series/i)
     fireEvent.click(emptyStateButton)
+  })
+})
+
+describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
+  it('renders labelled Edit and Delete buttons per row', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'The Office' })])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByText('The Office'))
+    expect(
+      screen.getByRole('button', { name: /edit the office/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /delete the office/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('calls onEditClick with the full series and not onSeriesClick', async () => {
+    const onEditClick = vi.fn()
+    const onSeriesClick = vi.fn()
+    const series = makeSeries({ id: '1', title: 'The Office' })
+    mockGetAll.mockResolvedValue([series])
+    render(
+      <SeriesList onEditClick={onEditClick} onSeriesClick={onSeriesClick} />,
+    )
+    await waitFor(() => screen.getByText('The Office'))
+
+    fireEvent.click(screen.getByTestId('edit-series-btn'))
+    expect(onEditClick).toHaveBeenCalledWith(series)
+    expect(onSeriesClick).not.toHaveBeenCalled()
+  })
+
+  it('does not throw when Edit is clicked without onEditClick', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    fireEvent.click(screen.getByTestId('edit-series-btn'))
+  })
+
+  it('does not call onSeriesClick, onEditClick, or seriesApi.delete when Delete is clicked', async () => {
+    const onSeriesClick = vi.fn()
+    const onEditClick = vi.fn()
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(
+      <SeriesList onSeriesClick={onSeriesClick} onEditClick={onEditClick} />,
+    )
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    expect(onSeriesClick).not.toHaveBeenCalled()
+    expect(onEditClick).not.toHaveBeenCalled()
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
+  it('shows Confirm/Cancel in place of Edit/Delete when Delete is clicked', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('cancel-delete-btn')).toBeInTheDocument()
+    expect(screen.queryByTestId('delete-series-btn')).not.toBeInTheDocument()
+  })
+
+  it('restores Edit/Delete when the confirmation Cancel is clicked, without deleting', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+
+    fireEvent.click(screen.getByTestId('cancel-delete-btn'))
+    expect(screen.getByTestId('delete-series-btn')).toBeInTheDocument()
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  it('restores Edit/Delete on Escape without deleting', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+
+    fireEvent.keyDown(screen.getByTestId('series-row'), { key: 'Escape' })
+    expect(screen.getByTestId('delete-series-btn')).toBeInTheDocument()
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  it('does not call onSeriesClick when the row is clicked while confirming', async () => {
+    const onSeriesClick = vi.fn()
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    render(<SeriesList onSeriesClick={onSeriesClick} />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+
+    fireEvent.click(screen.getByTestId('series-row'))
+    expect(onSeriesClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-004-AC-10/11/12: delete loading state', () => {
+  it('disables Confirm/Cancel and shows "Deleting..." while in flight', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockDelete.mockReturnValue(new Promise(() => undefined))
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
+
+    expect(mockDelete).toHaveBeenCalledWith('1')
+    const confirmButton = screen.getByTestId('confirm-delete-btn')
+    expect(confirmButton).toHaveTextContent(/deleting/i)
+    expect(confirmButton).toBeDisabled()
+    expect(screen.getByTestId('cancel-delete-btn')).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-004-AC-13/14: delete success', () => {
+  it('removes the row without re-fetching', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Show A' }),
+      makeSeries({ id: '2', title: 'Show B' }),
+    ])
+    mockDelete.mockResolvedValue(undefined)
+    render(<SeriesList />)
+    await waitFor(() => screen.getAllByTestId('delete-series-btn'))
+
+    fireEvent.click(screen.getAllByTestId('delete-series-btn')[0])
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
+
+    await waitFor(() =>
+      expect(screen.queryByText('Show A')).not.toBeInTheDocument(),
+    )
+    expect(screen.getByText('Show B')).toBeInTheDocument()
+    expect(mockGetAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the empty state after deleting the last series', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Only Show' })])
+    mockDelete.mockResolvedValue(undefined)
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByText(/no series yet/i)).toBeInTheDocument(),
+    )
+  })
+})
+
+describe('FRONTEND-004-AC-15: delete error handling', () => {
+  it('shows an alert scoped to the row and keeps it deletable', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockDelete.mockRejectedValue(new ApiError(500, 'Internal server error'))
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /internal server error/i,
+      ),
+    )
+    expect(screen.getByText('Show')).toBeInTheDocument()
+    expect(screen.getByTestId('confirm-delete-btn')).not.toBeDisabled()
+  })
+})
+
+describe('FRONTEND-004-AC-39: no series data logged during delete', () => {
+  it('never logs series data to the console when deleting', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'Secret Show',
+        personalNotes: 'private note',
+      }),
+    ])
+    mockDelete.mockResolvedValue(undefined)
+    render(<SeriesList />)
+    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
+
+    await waitFor(() => expect(mockDelete).toHaveBeenCalled())
+    expect(
+      logSpy.mock.calls.flat().some((c) => String(c).includes('private note')),
+    ).toBe(false)
   })
 })
 

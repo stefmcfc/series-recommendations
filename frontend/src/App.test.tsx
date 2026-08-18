@@ -7,6 +7,7 @@ import type { Series } from './types/series'
 vi.mock('./services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
 const mockCreate = vi.mocked(seriesApi.create)
+const mockUpdate = vi.mocked(seriesApi.update)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -58,5 +59,52 @@ describe('FRONTEND-003-AC-30: successful creation refreshes the list', () => {
     )
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(2))
     expect(await screen.findByText('New Show')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-004-AC-34/35: opening the edit form', () => {
+  it('renders EditSeriesForm pre-filled when a row Edit button is clicked', async () => {
+    mockGetAll.mockResolvedValue([
+      { id: '1', title: 'Show', status: 'WATCHING' } as Series,
+    ])
+    render(<App />)
+    await waitFor(() => screen.getByTestId('edit-series-btn'))
+
+    fireEvent.click(screen.getByTestId('edit-series-btn'))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^title/i)).toHaveValue('Show')
+  })
+})
+
+describe('FRONTEND-004-AC-36: cancelling an edit', () => {
+  it('closes the dialog without re-fetching', async () => {
+    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    render(<App />)
+    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    fireEvent.click(screen.getByTestId('edit-series-btn'))
+
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(mockGetAll).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
+  it('closes the dialog and re-fetches the series list', async () => {
+    mockGetAll
+      .mockResolvedValueOnce([{ id: '1', title: 'Show' } as Series])
+      .mockResolvedValueOnce([{ id: '1', title: 'Updated Show' } as Series])
+    mockUpdate.mockResolvedValue({ id: '1', title: 'Updated Show' } as Series)
+
+    render(<App />)
+    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    fireEvent.click(screen.getByTestId('edit-series-btn'))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('Updated Show')).toBeInTheDocument()
   })
 })
