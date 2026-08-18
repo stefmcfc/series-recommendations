@@ -1,6 +1,6 @@
 # Tooling Spec 001: Code Quality & Security Hardening
 
-**Status**: ✅ Req 1-8 done (AC-01–AC-16)
+**Status**: ✅ Req 1-8 done (AC-01–AC-17)
 **Priority**: P2 (repo hygiene — doesn't block product feature work)
 **Depends on**: none
 **Area**: Tooling (cross-cutting — backend, frontend, and CI)
@@ -191,4 +191,4 @@ def "TOOLING-001-AC-16: disallowed origin does not receive a CORS allow header"(
 - [x] TOOLING-001-AC-14: `.husky/commit-msg` hook enforces it
 - [x] TOOLING-001-AC-15: `.editorconfig` added at repo root
 - [x] TOOLING-001-AC-16: CORS configured via `CorsConfig` (`WebMvcConfigurer`) on `/api/**`, allow-list from `app.cors.allowed-origins` (default `http://localhost:5173`, no wildcard); verified with `CorsConfigSpec` (MockMvc) and a real headless-browser pass against the frontend dev server
-- [ ] TOOLING-001-AC-17: `CorsConfig` exposes `Content-Disposition` via `Access-Control-Expose-Headers` so cross-origin `axios` calls can read it (not just same-origin tools like `curl`)
+- [x] TOOLING-001-AC-17: `CorsConfig` exposes `Content-Disposition` via `Access-Control-Expose-Headers` (`.exposedHeaders("Content-Disposition")` added to the `CorsRegistry` mapping) so cross-origin `axios` calls can read it (not just same-origin tools like `curl`); verified with a new `CorsConfigSpec` case asserting `Access-Control-Expose-Headers: Content-Disposition` on a cross-origin request to `/api/v1/series/export`

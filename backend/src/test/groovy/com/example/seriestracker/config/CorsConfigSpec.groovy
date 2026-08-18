@@ -47,4 +47,18 @@ class CorsConfigSpec extends Specification {
         result.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
           .header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN))
   }
+
+  def "TOOLING-001-AC-17: cross-origin request to the export endpoint exposes Content-Disposition"() {
+    given: "a request to the export endpoint from the configured frontend dev origin"
+        def allowedOrigin = "http://localhost:5173"
+
+    when: "the request is made with an Origin header matching the configured allow-list"
+        def result = mockMvc.perform(
+          get("/api/v1/series/export").header(HttpHeaders.ORIGIN, allowedOrigin)
+        )
+
+    then: "the response declares Content-Disposition as exposed to cross-origin JavaScript"
+        result.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+          .header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Content-Disposition"))
+  }
 }
