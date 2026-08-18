@@ -4,19 +4,20 @@
 
 Lines marked **(built)** exist today; everything else is the target layout to grow into as specs are implemented (see `.claude/specs/frontend_spec_002.md` onward).
 
+All six components below follow the same triplet pattern — `ComponentName.tsx` + `ComponentName.test.tsx` + `ComponentName.module.css`, all colocated in `src/components/` — so only the `.tsx` file is listed per component below.
+
 ```
 frontend/
 ├── src/
-│   ├── components/              # Reusable React components
-│   │   ├── SeriesList.tsx       # (built) .claude/specs/frontend_spec_002.md, wired into App.tsx
-│   │   ├── SeriesList.test.tsx  # (built)
-│   │   ├── SeriesList.module.css # (built)
-│   │   ├── SeriesForm.tsx       # Not yet created
-│   │   ├── SeriesDetail.tsx     # Not yet created
-│   │   ├── SearchFilter.tsx     # Not yet created
-│   │   └── ...
+│   ├── components/                 # Reusable React components (all built)
+│   │   ├── SeriesList.tsx          # frontend_spec_002.md + frontend_spec_004.md (Edit/Delete) + frontend_spec_006.md (criteria prop) + frontend_spec_008.md (a11y fix); wired into App.tsx
+│   │   ├── AddSeriesForm.tsx       # frontend_spec_003_add_series_form.md; create-series modal
+│   │   ├── EditSeriesForm.tsx      # frontend_spec_004.md; edit-series modal
+│   │   ├── SeriesDetail.tsx        # frontend_spec_005_series_detail.md; full-record view + own Edit/Delete
+│   │   ├── SearchFilter.tsx        # frontend_spec_006_search_filter.md
+│   │   └── ExportControls.tsx      # frontend_spec_007_export_trigger.md
 │   │
-│   ├── pages/                   # Page-level components, if routing is added (not yet created)
+│   ├── pages/                   # Page-level components, if routing is added (not yet created — see frontend_spec_005.md's design decisions on why no router exists yet)
 │   │
 │   ├── services/                # (built)
 │   │   └── seriesApi.ts         # All backend API calls
@@ -31,7 +32,7 @@ frontend/
 │   │
 │   ├── utils/                   # Utility functions (not yet created)
 │   │
-│   ├── App.tsx                  # (built) Renders SeriesList inside a <main> landmark
+│   ├── App.tsx                  # (built) Orchestrator: swaps SeriesList/SeriesDetail on the selected series, renders SearchFilter/ExportControls above the list, owns AddSeriesForm/EditSeriesForm modal state and the refresh-via-remount key(s)
 │   ├── index.css                # (built)
 │   ├── main.tsx                 # (built) Entry point
 │   └── test-setup.ts            # (built) Vitest + jest-dom setup

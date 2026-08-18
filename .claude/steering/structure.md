@@ -58,14 +58,16 @@ What actually exists today:
 ```
 frontend/
 ├── src/
+│   ├── components/                    # 6 components, each a .tsx/.test.tsx/.module.css triplet
+│   │   ├── SeriesList.tsx, AddSeriesForm.tsx, EditSeriesForm.tsx,
+│   │   └── SeriesDetail.tsx, SearchFilter.tsx, ExportControls.tsx
 │   ├── services/
 │   │   ├── seriesApi.ts               # All backend API calls (axios)
 │   │   └── __tests__/seriesApi.test.ts
 │   ├── types/
 │   │   ├── series.ts                  # Series, SeriesStatus, SearchCriteria, CreateSeriesRequest, UpdateSeriesRequest
 │   │   └── api.ts                     # ApiResponse, ApiError, LoadingState, AsyncState
-│   ├── assets/                        # hero.png, react.svg, vite.svg (Vite scaffold)
-│   ├── App.tsx, App.css               # Vite scaffold — not yet wired to seriesApi
+│   ├── App.tsx, App.test.tsx          # Orchestrator — wires every component above together
 │   ├── index.css
 │   ├── main.tsx                       # React entry point
 │   └── test-setup.ts                  # Vitest + jest-dom setup
@@ -80,7 +82,7 @@ frontend/
 └── .gitignore
 ```
 
-**Not yet created**: `src/components/`, `src/pages/`, `src/hooks/`, `src/styles/`, `src/utils/`. See `.claude/steering/frontend_structure.md` for the target layout and `.claude/specs/frontend_spec_002.md` for the next component to build (`SeriesList`).
+**Not yet created**: `src/pages/`, `src/hooks/`, `src/styles/`, `src/utils/` (all still deferred — no router, no need for a custom hook or util yet). See `.claude/steering/frontend_structure.md` for the per-component detail (which spec built what) and the target layout for what's still ahead.
 
 ## Naming conventions
 
