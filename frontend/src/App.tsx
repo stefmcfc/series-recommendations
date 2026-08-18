@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { SeriesList } from './components/SeriesList'
+import { SeriesDetail } from './components/SeriesDetail'
 import { AddSeriesForm } from './components/AddSeriesForm'
 import { EditSeriesForm } from './components/EditSeriesForm'
 import { SearchFilter } from './components/SearchFilter'
@@ -10,6 +11,7 @@ function App() {
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [editingSeries, setEditingSeries] = useState<Series | null>(null)
   const [seriesListKey, setSeriesListKey] = useState(0)
+  const [seriesDetailKey, setSeriesDetailKey] = useState(0)
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null)
 
   const handleAddSuccess = () => {
@@ -20,19 +22,38 @@ function App() {
   const handleEditSuccess = () => {
     setEditingSeries(null)
     setSeriesListKey((key) => key + 1)
+    setSeriesDetailKey((key) => key + 1)
+  }
+
+  const handleBackToList = () => {
+    setSelectedSeriesId(null)
   }
 
   return (
     <main>
-      <SearchFilter onSearch={setCriteria} onClear={() => setCriteria(null)} />
-      <SeriesList
-        key={seriesListKey}
-        onSeriesClick={setSelectedSeriesId}
-        onAddClick={() => setIsAddFormOpen(true)}
-        onEditClick={setEditingSeries}
-        criteria={criteria ?? undefined}
-      />
-      {selectedSeriesId && <p>Selected series id: {selectedSeriesId}</p>}
+      {selectedSeriesId ? (
+        <SeriesDetail
+          key={seriesDetailKey}
+          id={selectedSeriesId}
+          onBack={handleBackToList}
+          onDeleted={handleBackToList}
+          onEditClick={setEditingSeries}
+        />
+      ) : (
+        <>
+          <SearchFilter
+            onSearch={setCriteria}
+            onClear={() => setCriteria(null)}
+          />
+          <SeriesList
+            key={seriesListKey}
+            onSeriesClick={setSelectedSeriesId}
+            onAddClick={() => setIsAddFormOpen(true)}
+            onEditClick={setEditingSeries}
+            criteria={criteria ?? undefined}
+          />
+        </>
+      )}
       {isAddFormOpen && (
         <AddSeriesForm
           onCancel={() => setIsAddFormOpen(false)}
