@@ -63,6 +63,7 @@ The backend exposes a REST API at `http://localhost:8080/api/v1`.
 | `DELETE` | `/api/v1/series/{id}` | Delete a series |
 | `GET` | `/api/v1/series/search` | Search and filter series |
 | `GET` | `/api/v1/series/export` | Export as JSON or CSV |
+| `GET` | `/api/v1/series/lookup?title=` | Look up a series by title via the OMDb API (year, genres, season/episode counts, ratings, poster) to autofill the add-series form. Requires `app.omdb.api-key` to be configured — see `RUNBOOK.md`'s Environment Variables section — otherwise returns `502`. |
 
 Full interactive docs are available at `http://localhost:8080/swagger-ui.html` when the backend is running (requires springdoc-openapi to be added — not yet a dependency).
 

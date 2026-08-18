@@ -9,7 +9,15 @@ spring:
     show-sql: false
   flyway:
     enabled: false
+  http:
+    clients:
+      connect-timeout: 5s
+      read-timeout: 10s
 
 app:
   cors:
     allowed-origins: http://localhost:5173
+  omdb:
+    base-url: https://www.omdbapi.com/
+    # api-key intentionally left unset in the test profile -- see OmdbClientSpec /
+    # SeriesControllerSpec for the "key not configured" 502 path.

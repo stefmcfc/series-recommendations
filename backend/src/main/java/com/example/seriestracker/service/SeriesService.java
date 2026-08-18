@@ -55,6 +55,7 @@ public class SeriesService {
         entity.setRottenTomatoesRating(dto.getRottenTomatoesRating());
         entity.setPersonalRating(dto.getPersonalRating());
         entity.setPersonalNotes(dto.getPersonalNotes());
+        entity.setPosterUrl(dto.getPosterUrl());
 
         // Set dateAdded explicitly so it's available immediately after save
         entity.setDateAdded(LocalDateTime.now());
@@ -137,6 +138,9 @@ public class SeriesService {
         if (dto.getPersonalNotes() != null) {
             entity.setPersonalNotes(dto.getPersonalNotes());
         }
+        if (dto.getPosterUrl() != null) {
+            entity.setPosterUrl(dto.getPosterUrl());
+        }
 
         if (dto.getStatus() != null) {
             SeriesStatus newStatus = SeriesStatus.valueOf(dto.getStatus());
@@ -178,6 +182,7 @@ public class SeriesService {
         dto.setRottenTomatoesRating(entity.getRottenTomatoesRating());
         dto.setPersonalRating(entity.getPersonalRating());
         dto.setPersonalNotes(entity.getPersonalNotes());
+        dto.setPosterUrl(entity.getPosterUrl());
         dto.setDateAdded(entity.getDateAdded());
         dto.setDateCompleted(entity.getDateCompleted());
         return dto;

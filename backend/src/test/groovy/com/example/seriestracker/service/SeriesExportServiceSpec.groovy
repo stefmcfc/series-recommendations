@@ -38,7 +38,8 @@ class SeriesExportServiceSpec extends Specification {
             metacriticRating: 82,
             rottenTomatoesRating: 90,
             personalRating: 5,
-            personalNotes: "Absolutely love this show"
+            personalNotes: "Absolutely love this show",
+            posterUrl: "https://example.com/the-office-poster.jpg"
         ))
         seriesService.create(new SeriesDto(
             title: "Game of Thrones",
@@ -81,6 +82,7 @@ class SeriesExportServiceSpec extends Specification {
             office.get('totalSeasons').intValue() == 9
             office.get('imdbRating').doubleValue() == 9.0
             office.get('personalNotes').textValue() == 'Absolutely love this show'
+            office.get('posterUrl').textValue() == 'https://example.com/the-office-poster.jpg'
     }
 
     def "exportAsJson handles null fields without error"() {
@@ -110,6 +112,7 @@ class SeriesExportServiceSpec extends Specification {
             lines[0].contains("status")
             lines[0].contains("imdbRating")
             lines[0].contains("genres")
+            lines[0].contains("posterUrl")
     }
 
     def "exportAsCsv contains all series titles"() {
@@ -158,6 +161,17 @@ class SeriesExportServiceSpec extends Specification {
             def headerCols = lines[0].split(",").size()
 
         then: "the header row has one column per series field"
-            headerCols == 16  // number of fields
+            headerCols == 17  // number of fields
+    }
+
+    def "SERIES-005-AC-04: exportAsCsv includes posterUrl values"() {
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+
+        then: "the CSV contains the poster URL"
+            csv.contains("https://example.com/the-office-poster.jpg")
     }
 }

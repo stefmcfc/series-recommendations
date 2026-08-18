@@ -20,7 +20,7 @@ public class SeriesExportService {
         "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
         "metacriticRating", "rottenTomatoesRating", "personalRating",
-        "personalNotes", "dateAdded", "dateCompleted"
+        "personalNotes", "posterUrl", "dateAdded", "dateCompleted"
     };
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -67,6 +67,7 @@ public class SeriesExportService {
             csv(s.getRottenTomatoesRating() != null ? s.getRottenTomatoesRating().toString() : null),
             csv(s.getPersonalRating() != null ? s.getPersonalRating().toString() : null),
             csv(s.getPersonalNotes()),
+            csv(s.getPosterUrl()),
             csv(s.getDateAdded() != null ? s.getDateAdded().format(ISO) : null),
             csv(s.getDateCompleted() != null ? s.getDateCompleted().format(ISO) : null)
         );

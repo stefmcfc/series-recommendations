@@ -26,6 +26,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
+    // RestClient support (OmdbClient). Boot 4 split RestClient's autoconfiguration --
+    // including the RestClient.Builder bean -- out of spring-boot-starter-web into its own
+    // module (spring-boot-restclient, mirroring how spring-boot-flyway was split out below).
+    // Without it, RestClient.Builder has no autoconfigured bean and fails to inject.
+    implementation("org.springframework.boot:spring-boot-restclient")
+
     // SQLite. hibernate-community-dialects version is intentionally NOT pinned here --
     // Spring Boot's dependency-management BOM constrains it independently of
     // hibernate-core (e.g. still 7.0.0.Final under Boot 4.1.0's hibernate-core
@@ -70,7 +76,8 @@ val jacocoExcludes = listOf(
     "com/example/seriestracker/model/SeriesEntity*",
     "com/example/seriestracker/model/SeriesStatus*",
     "com/example/seriestracker/model/ValidSeries*",
-    "com/example/seriestracker/exception/EntityNotFoundException*"
+    "com/example/seriestracker/exception/EntityNotFoundException*",
+    "com/example/seriestracker/exception/ExternalServiceException*"
 )
 
 // classDirectories is reassigned below (to apply jacocoExcludes) via the eager

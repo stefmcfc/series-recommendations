@@ -64,7 +64,7 @@ The Vite dev server starts at **http://localhost:5173** and proxies `/api` calls
 
 ### Backend
 
-The backend is configured via `backend/src/main/resources/application.yml`. No environment variables are required for local development -- defaults work out of the box.
+The backend is configured via `backend/src/main/resources/application.yml`. No environment variables are required to run the app itself -- defaults work out of the box. The one exception is `app.omdb.api-key`: without it, everything else still works, but `GET /api/v1/series/lookup` specifically returns `502` until it's set (see below).
 
 | Property | Default | Description |
 |----------|---------|-------------|
@@ -73,13 +73,20 @@ The backend is configured via `backend/src/main/resources/application.yml`. No e
 | `spring.jpa.show-sql` | `true` | Print SQL queries to console |
 | `spring.jpa.hibernate.ddl-auto` | `validate` | Schema validation -- Flyway manages DDL |
 | `spring.flyway.enabled` | `true` | Run Flyway migrations on startup |
+| `spring.http.clients.connect-timeout` | `5s` | Bounded connect timeout applied to outbound HTTP clients (currently only OMDb lookups) |
+| `spring.http.clients.read-timeout` | `10s` | Bounded read timeout applied to outbound HTTP clients (currently only OMDb lookups) |
 | `app.cors.allowed-origins` | `http://localhost:5173` | Origin(s) allowed to call `/api/**` cross-origin (never a wildcard) — see `com.example.seriestracker.config.CorsConfig` |
+| `app.omdb.api-key` | *(none)* | API key for the [OMDb API](https://www.omdbapi.com/) (free tier, registration required), used by `GET /api/v1/series/lookup`. **No default** — must be supplied via the `APP_OMDB_API_KEY` env var. The rest of the app runs fine without it; only `/series/lookup` itself fails with `502 Bad Gateway` until it's set. Never logged or included in any response body — see `com.example.seriestracker.client.OmdbClient`. |
+| `app.omdb.base-url` | `https://www.omdbapi.com/` | Base URL for the OMDb API, overridable via `APP_OMDB_BASE_URL` (e.g. to point at a test double) |
 
-Override any property with a `SPRING_` prefixed environment variable (or, for the `app.*` property above, the plain `APP_`-prefixed equivalent — Spring's relaxed env-var binding applies to any property, not just `spring.*`):
+Override any property with a `SPRING_` prefixed environment variable (or, for the `app.*` properties above, the plain `APP_`-prefixed equivalent — Spring's relaxed env-var binding applies to any property, not just `spring.*`):
 
 ```bash
 # Override the database path
 SPRING_DATASOURCE_URL=jdbc:sqlite:/absolute/path/to/my.db gradlew.bat bootRun
+
+# Enable GET /api/v1/series/lookup by supplying an OMDb API key
+APP_OMDB_API_KEY=your-omdb-api-key gradlew.bat bootRun
 ```
 
 Or create `backend/src/main/resources/application-local.yml` and activate it:
