@@ -169,13 +169,13 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
 })
 
 describe('FRONTEND-005-AC-25/26: navigating to detail', () => {
-  it('renders SeriesDetail instead of SeriesList when a row is clicked', async () => {
+  it('renders SeriesDetail instead of SeriesList when the title is clicked', async () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     render(<App />)
     await waitFor(() => screen.getByTestId('series-row'))
 
-    fireEvent.click(screen.getByTestId('series-row'))
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
     await waitFor(() =>
       expect(screen.getByTestId('back-btn')).toBeInTheDocument(),
     )
@@ -189,7 +189,7 @@ describe('FRONTEND-005-AC-27: returning to the list', () => {
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     render(<App />)
     await waitFor(() => screen.getByTestId('series-row'))
-    fireEvent.click(screen.getByTestId('series-row'))
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
 
     await waitFor(() => screen.getByTestId('back-btn'))
     fireEvent.click(screen.getByTestId('back-btn'))
@@ -217,7 +217,7 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
 
     render(<App />)
     await waitFor(() => screen.getByTestId('series-row'))
-    fireEvent.click(screen.getByTestId('series-row'))
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
     await waitFor(() => screen.getByTestId('edit-series-btn'))
 
     fireEvent.click(screen.getByTestId('edit-series-btn'))

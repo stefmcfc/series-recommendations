@@ -215,18 +215,18 @@ describe('SH-006: Add Series button', () => {
 })
 
 describe('SH-007: Series row click', () => {
-  it('should call onSeriesClick with series id when row is clicked', async () => {
+  it('should call onSeriesClick with series id when the title is clicked', async () => {
     const onSeriesClick = vi.fn()
     mockGetAll.mockResolvedValue([
       makeSeries({ id: 'abc-123', title: 'Clickable Show' }),
     ])
     render(<SeriesList onSeriesClick={onSeriesClick} />)
 
-    await waitFor(() =>
-      expect(screen.getByTestId('series-row')).toBeInTheDocument(),
-    )
+    const titleButton = await screen.findByRole('button', {
+      name: 'Clickable Show',
+    })
 
-    fireEvent.click(screen.getByTestId('series-row'))
+    fireEvent.click(titleButton)
     expect(onSeriesClick).toHaveBeenCalledWith('abc-123')
   })
 
@@ -234,11 +234,18 @@ describe('SH-007: Series row click', () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList />)
 
-    await waitFor(() =>
-      expect(screen.getByTestId('series-row')).toBeInTheDocument(),
-    )
+    const titleButton = await screen.findByRole('button', { name: 'Show' })
+    fireEvent.click(titleButton)
+  })
+})
 
-    fireEvent.click(screen.getByTestId('series-row'))
+describe('FRONTEND-008-AC-02: row is not itself interactive', () => {
+  it('the row <li> has no role or tabIndex', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList />)
+    const row = await screen.findByTestId('series-row')
+    expect(row).not.toHaveAttribute('role')
+    expect(row).not.toHaveAttribute('tabindex')
   })
 })
 
@@ -353,14 +360,14 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
     expect(mockDelete).not.toHaveBeenCalled()
   })
 
-  it('does not call onSeriesClick when the row is clicked while confirming', async () => {
+  it('does not call onSeriesClick when the title is clicked while confirming', async () => {
     const onSeriesClick = vi.fn()
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     render(<SeriesList onSeriesClick={onSeriesClick} />)
     await waitFor(() => screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('delete-series-btn'))
 
-    fireEvent.click(screen.getByTestId('series-row'))
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
     expect(onSeriesClick).not.toHaveBeenCalled()
   })
 })

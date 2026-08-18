@@ -83,14 +83,6 @@ export function SeriesList({
     if (event.key === 'Escape' && confirmingDeleteId === id) {
       setConfirmingDeleteId(null)
       setDeleteError(null)
-      return
-    }
-    if (
-      (event.key === 'Enter' || event.key === ' ') &&
-      confirmingDeleteId !== id
-    ) {
-      event.preventDefault()
-      onSeriesClick?.(id)
     }
   }
 
@@ -223,17 +215,20 @@ export function SeriesList({
       {!loading && !error && series.length > 0 && (
         <ul className={styles.list}>
           {series.map((s) => (
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-cancels-delete-confirmation (frontend_spec_008.md FRONTEND-008-AC-06) relies on the keydown bubbling up from whichever Confirm/Cancel button currently has focus; the <li> itself is intentionally non-interactive (no role/tabIndex — see frontend_spec_008.md) and isn't a keyboard-interaction target on its own.
             <li
               key={s.id}
               className={styles.row}
               data-testid="series-row"
-              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- spec (frontend_spec_002.md, Requirement 7) requires role="button" and data-testid="series-row" on the same <li>; keyboard/focus support (tabIndex, onKeyDown) makes it a valid interactive element despite the static check.
-              role="button"
-              tabIndex={0}
-              onClick={() => handleRowClick(s.id)}
               onKeyDown={(e) => handleRowKeyDown(e, s.id)}
             >
-              <span className={styles.title}>{s.title}</span>
+              <button
+                type="button"
+                className={styles.title}
+                onClick={() => handleRowClick(s.id)}
+              >
+                {s.title}
+              </button>
               <span className={styles.status}>{s.status}</span>
               <span className={styles.rating}>
                 {s.imdbRating !== null ? s.imdbRating : '—'}
