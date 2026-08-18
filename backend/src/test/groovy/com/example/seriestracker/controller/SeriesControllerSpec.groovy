@@ -50,6 +50,23 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data.id').isNotEmpty())
   }
 
+  def "SERIES-005-AC-03: POST /api/v1/series should accept and return posterUrl"() {
+    given: "a series DTO with a posterUrl"
+        def dto = new SeriesDto(title: "The Wire", posterUrl: "https://example.com/the-wire.jpg")
+        def json = objectMapper.writeValueAsString(dto)
+
+    when: "a POST request is made to create the series"
+        def result = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the series is created with the posterUrl included"
+        result.andExpect(status().isCreated())
+        result.andExpect(jsonPath('$.data.posterUrl').value("https://example.com/the-wire.jpg"))
+  }
+
   def "POST /api/v1/series should reject invalid data"() {
     given: "a series DTO with a blank title and an invalid IMDb rating"
         def dto = new SeriesDto(title: "", imdbRating: 15.0)
@@ -191,5 +208,17 @@ class SeriesControllerSpec extends Specification {
 
     then: "a 404 Not Found response is returned"
         result.andExpect(status().isNotFound())
+  }
+
+  def "SERIES-005-AC-17: GET /api/v1/series/lookup returns 502 when app.omdb.api-key is not configured"() {
+    when: "the lookup endpoint is invoked against the real OmdbClient/SeriesLookupService chain"
+        // The test profile deliberately leaves app.omdb.api-key unset (see
+        // src/test/resources/application.yml), so this exercises the real "key not
+        // configured" path end-to-end without calling the live OMDb API.
+        def result = mockMvc.perform(get("/api/v1/series/lookup").param("title", "Any Show"))
+
+    then: "the response is a 502 Bad Gateway with a generic message"
+        result.andExpect(status().isBadGateway())
+        result.andExpect(jsonPath('$.error').value("Unable to reach the series lookup service. Please try again."))
   }
 }

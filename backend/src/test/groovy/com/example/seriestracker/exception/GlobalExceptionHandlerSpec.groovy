@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import com.example.seriestracker.service.SeriesLookupService
 import com.example.seriestracker.service.SeriesService
 import org.springframework.core.MethodParameter
 import org.springframework.validation.BeanPropertyBindingResult
@@ -36,6 +37,40 @@ class GlobalExceptionHandlerSpec extends Specification {
 
   @MockitoBean
   SeriesService seriesService
+
+  @MockitoBean
+  SeriesLookupService seriesLookupService
+
+  def "SERIES-005-AC-16: no OMDb match for a lookup returns 404"() {
+    given: "the lookup service reports no OMDb match for the title"
+        when(seriesLookupService.lookup("Nonexistent Show"))
+          .thenThrow(new EntityNotFoundException("No OMDb results for title: Nonexistent Show"))
+
+    when: "the lookup endpoint is invoked"
+        def result = mockMvc.perform(get("/api/v1/series/lookup").param("title", "Nonexistent Show"))
+
+    then: "the specific 404 handler applies, not the generic 500 catch-all"
+        result.andExpect(status().isNotFound())
+        result.andExpect(jsonPath('$.error').value("No OMDb results for title: Nonexistent Show"))
+  }
+
+  def "SERIES-005-AC-17: an OMDb upstream failure returns 502 with a generic message, not the underlying exception's details"() {
+    given: "the lookup service reports an upstream failure with a sensitive underlying cause"
+        when(seriesLookupService.lookup("Any Show")).thenThrow(
+          new ExternalServiceException("OMDb request failed",
+            new RuntimeException("Connection refused: connect to 10.0.0.5:443")))
+
+    when: "the lookup endpoint is invoked"
+        def result = mockMvc.perform(get("/api/v1/series/lookup").param("title", "Any Show"))
+
+    then: "the response is a 502 with a generic error body"
+        result.andExpect(status().isBadGateway())
+        result.andExpect(jsonPath('$.error').value("Unable to reach the series lookup service. Please try again."))
+
+    and: "the underlying cause's details are not present in the response body"
+        !result.andReturn().response.contentAsString.contains("10.0.0.5")
+        !result.andReturn().response.contentAsString.contains("Connection refused")
+  }
 
   def "TOOLING-001-AC-01: unhandled exception returns generic 500, no internals leaked"() {
     given: "a service call that throws an unexpected RuntimeException with sensitive details"

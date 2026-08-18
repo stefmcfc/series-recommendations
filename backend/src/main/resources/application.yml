@@ -10,9 +10,29 @@
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # Bounded default connect/read timeouts for all outbound HTTP clients built from the
+  # auto-configured RestClient.Builder (currently only OmdbClient) -- see SERIES-005-AC-08.
+  # Deliberately not set via a manual ClientHttpRequestFactory inside OmdbClient itself:
+  # doing so would call RestClient.Builder#requestFactory(...) a second time, silently
+  # clobbering whatever MockRestServiceServer.bindTo(RestClient.Builder) had already wired
+  # up for tests (both mutate the same builder property; last call wins). Configuring the
+  # timeout at the Boot property level keeps OmdbClientSpec's mocked-server tests reliable.
+  http:
+    clients:
+      connect-timeout: 5s
+      read-timeout: 10s
 
 app:
   cors:
     # Comma-separated list of origins allowed to call /api/** cross-origin (never a
     # wildcard). Override via the APP_CORS_ALLOWED_ORIGINS env var without a code change.
     allowed-origins: http://localhost:5173
+  omdb:
+    # Base URL for the OMDb API (https://www.omdbapi.com/). Overridable via the
+    # APP_OMDB_BASE_URL env var without a code change (e.g. to point at a test double).
+    base-url: https://www.omdbapi.com/
+    # No default api-key here, intentionally -- it must be supplied via the APP_OMDB_API_KEY
+    # env var. It is read via a constructor-injected @Value with an empty-string fallback
+    # (see OmdbClient) so the app still starts and runs fine without it; only
+    # GET /api/v1/series/lookup itself fails (502) until the key is configured. Never logged
+    # or included in any response body.

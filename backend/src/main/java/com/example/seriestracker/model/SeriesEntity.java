@@ -76,6 +76,9 @@ public class SeriesEntity {
     @Column(nullable = true, columnDefinition = "TEXT")
     private String personalNotes;
 
+    @Column(nullable = true, length = 1000)
+    private String posterUrl;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime dateAdded;
@@ -124,6 +127,9 @@ public class SeriesEntity {
 
     public String getPersonalNotes() { return personalNotes; }
     public void setPersonalNotes(String personalNotes) { this.personalNotes = personalNotes; }
+
+    public String getPosterUrl() { return posterUrl; }
+    public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
 
     public LocalDateTime getDateAdded() { return dateAdded; }
     public void setDateAdded(LocalDateTime dateAdded) { this.dateAdded = dateAdded; }

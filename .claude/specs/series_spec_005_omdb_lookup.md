@@ -1,6 +1,6 @@
 # Spec 005: OMDb Lookup & Poster Field
 
-**Status**: Not started
+**Status**: ✅ Implemented — `posterUrl` added via `backend/src/main/resources/db/migration/V002__add_poster_url_to_series.sql`, `model/SeriesEntity.java`, `dto/SeriesDto.java`, `service/SeriesService.java`, and `service/SeriesExportService.java`. OMDb config in `application.yml` (`app.omdb.api-key`/`base-url`, `spring.http.clients.connect-timeout`/`read-timeout`). New `client/OmdbClient.java` (Spring `RestClient`) + `client/OmdbLookupResult.java`, `dto/SeriesLookupDto.java`, `service/SeriesLookupService.java`, `exception/ExternalServiceException.java`, and the `GET /api/v1/series/lookup` endpoint in `controller/SeriesController.java` with new `GlobalExceptionHandler` cases for `ExternalServiceException` (→502) and `MissingServletRequestParameterException` (→400). Tests: `client/OmdbClientSpec.groovy`, `client/OmdbClientTimeoutConfigSpec.groovy`, `service/SeriesLookupServiceSpec.groovy`, `controller/SeriesControllerLookupSpec.groovy`, plus additions to `controller/SeriesControllerSpec.groovy`, `exception/GlobalExceptionHandlerSpec.groovy`, `service/SeriesServiceSpec.groovy`, `service/SeriesExportServiceSpec.groovy`, and `model/SeriesEntitySpec.groovy`. Full suite green (`gradlew.bat test`) and `gradlew.bat check` (JaCoCo coverage gate + SpotBugs) passes; see the deviations noted below for two implementation details that diverged from this spec's original assumptions (the `spring-boot-restclient` dependency and the `spring.http.clients.*` timeout properties, and an added `MissingServletRequestParameterException` handler).
 **Priority**: P2 (quality-of-life for adding series — not core CRUD)
 **Depends on**: Spec 002 (CRUD)
 **Backend Task**
@@ -226,23 +226,31 @@ def "SERIES-005-AC-18: missing title returns 400"() {
 
 ---
 
+## Implementation Notes (Deviations From Original Assumptions)
+
+Three implementation details diverged from what this spec originally assumed, discovered during `backend-dev` implementation:
+
+1. **`spring-boot-restclient` had to be added as an explicit dependency.** This spec's Requirement 3 assumed `RestClient` support (specifically the `RestClient.Builder` bean needed for constructor injection) was already available transitively via `spring-boot-starter-web`. In this repo's actual Spring Boot 4.1.0 dependency graph it is not — Boot 4 split `RestClient`'s autoconfiguration (including the `RestClient.Builder` bean) out of `spring-boot-starter-web` into its own module, mirroring how `spring-boot-flyway` was already split out of `spring-boot-starter-data-jpa` (see the existing comment in `build.gradle.kts`). Without it, `OmdbClient`'s constructor fails to autowire with `NoSuchBeanDefinitionException`. Added `implementation("org.springframework.boot:spring-boot-restclient")` to `backend/build.gradle.kts` (version managed by the existing Spring Boot BOM, consistent with how `spring-boot-flyway` is already declared).
+2. **Bounded connect/read timeouts (AC-08) are configured via `spring.http.clients.connect-timeout`/`read-timeout` in `application.yml`, not an in-code `RestClient.Builder#requestFactory(...)` call inside `OmdbClient`.** The spec's mandated test pattern is `MockRestServiceServer.bindTo(RestClient.Builder)` — this call mutates the builder's `requestFactory` property in place. Since `OmdbClient`'s constructor also needs to set a factory to configure timeouts, and both calls target the same builder property, whichever call happens last wins — and the test necessarily calls `bindTo(...)` *before* constructing `OmdbClient` (since `OmdbClient` is what's under test). An in-code `.requestFactory(...)` call inside `OmdbClient`'s constructor would therefore silently overwrite the mock server's factory and break every `OmdbClientSpec` test (confirmed by hitting this directly during TDD). Configuring the timeout via Spring Boot's global `spring.http.clients.*` properties (applied to the auto-configured `RestClient.Builder` before it reaches application code) avoids the conflict entirely while still satisfying the "bounded, not infinite" intent of AC-08. Today OMDb is the only outbound HTTP client in this app, so the effective scope is identical to an OMDb-specific timeout; see the comment in `application.yml` and the Javadoc on `OmdbClient` for the full rationale.
+3. **Added a `MissingServletRequestParameterException` → 400 handler to `GlobalExceptionHandler`**, which AC-18 described as unnecessary ("standard Spring `@RequestParam` required-param validation, no custom handling needed"). That's true for a controller with no other exception handling — but this app's `GlobalExceptionHandler` already has a catch-all `@ExceptionHandler(Exception.class)` (`TOOLING-001-AC-01`), which is matched by Spring's `ExceptionHandlerExceptionResolver` ahead of Spring MVC's built-in default 400 handling for a missing required parameter. Without an explicit, more-specific handler, a missing `title` query param was actually being turned into a `500` by the existing catch-all (confirmed via a failing `SeriesControllerLookupSpec` test before this handler was added), not the `400` AC-18 requires.
+
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-005-AC-01: `posterUrl` column added via `V002` migration
-- [ ] SERIES-005-AC-02: `SeriesDto.posterUrl`
-- [ ] SERIES-005-AC-03: `posterUrl` flows through create/get/update like other optional fields
-- [ ] SERIES-005-AC-04: export includes `posterUrl`
-- [ ] SERIES-005-AC-05: `app.omdb.api-key`/`app.omdb.base-url` config
-- [ ] SERIES-005-AC-06: API key never in a response body or logs
-- [ ] SERIES-005-AC-07: `OmdbClient` uses `RestClient`
-- [ ] SERIES-005-AC-08: bounded connect/read timeouts
-- [ ] SERIES-005-AC-09: `Response: False` → not-found outcome
-- [ ] SERIES-005-AC-10: full field mapping, `N/A` → `null`
-- [ ] SERIES-005-AC-11: per-season episode aggregation up to 30 seasons
-- [ ] SERIES-005-AC-12: partial/failed aggregation degrades to `null`, doesn't fail the lookup
-- [ ] SERIES-005-AC-13: `GET /api/v1/series/lookup?title=` endpoint
-- [ ] SERIES-005-AC-14: 200 + `ApiResponse<SeriesLookupDto>` envelope on success
-- [ ] SERIES-005-AC-15: `SeriesLookupDto` shape
-- [ ] SERIES-005-AC-16: not-found → 404
-- [ ] SERIES-005-AC-17: upstream failure / missing key → 502, generic message
-- [ ] SERIES-005-AC-18: missing `title` param → 400
+- [x] SERIES-005-AC-01: `posterUrl` column added via `V002` migration
+- [x] SERIES-005-AC-02: `SeriesDto.posterUrl`
+- [x] SERIES-005-AC-03: `posterUrl` flows through create/get/update like other optional fields
+- [x] SERIES-005-AC-04: export includes `posterUrl`
+- [x] SERIES-005-AC-05: `app.omdb.api-key`/`app.omdb.base-url` config
+- [x] SERIES-005-AC-06: API key never in a response body or logs
+- [x] SERIES-005-AC-07: `OmdbClient` uses `RestClient`
+- [x] SERIES-005-AC-08: bounded connect/read timeouts (see Implementation Notes above for how this is configured)
+- [x] SERIES-005-AC-09: `Response: False` → not-found outcome
+- [x] SERIES-005-AC-10: full field mapping, `N/A` → `null`
+- [x] SERIES-005-AC-11: per-season episode aggregation up to 30 seasons
+- [x] SERIES-005-AC-12: partial/failed aggregation degrades to `null`, doesn't fail the lookup
+- [x] SERIES-005-AC-13: `GET /api/v1/series/lookup?title=` endpoint
+- [x] SERIES-005-AC-14: 200 + `ApiResponse<SeriesLookupDto>` envelope on success
+- [x] SERIES-005-AC-15: `SeriesLookupDto` shape
+- [x] SERIES-005-AC-16: not-found → 404
+- [x] SERIES-005-AC-17: upstream failure / missing key → 502, generic message
+- [x] SERIES-005-AC-18: missing `title` param → 400 (see Implementation Notes above)

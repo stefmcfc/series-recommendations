@@ -46,7 +46,8 @@ class SeriesServiceSpec extends Specification {
           totalSeasons: 8,
           imdbRating: 9.2,
           personalRating: 4,
-          status: "WATCHING"
+          status: "WATCHING",
+          posterUrl: "https://example.com/got-poster.jpg"
         )
 
     when: "the series is created"
@@ -56,6 +57,33 @@ class SeriesServiceSpec extends Specification {
         result.title == "Game of Thrones"
         result.year == 2011
         result.imdbRating == 9.2
+        result.posterUrl == "https://example.com/got-poster.jpg"
+  }
+
+  def "SERIES-005-AC-03: should create a series without a posterUrl, leaving it null"() {
+    given: "a series DTO with no posterUrl"
+        def dto = new SeriesDto(title: "No Poster Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "posterUrl is null, like other unset optional fields"
+        result.posterUrl == null
+  }
+
+  def "SERIES-005-AC-03: should update a series's posterUrl"() {
+    given: "a series has been created without a posterUrl"
+        def created = seriesService.create(new SeriesDto(title: "Show"))
+
+    and: "an update DTO with a posterUrl"
+        def updateDto = new SeriesDto(posterUrl: "https://example.com/poster.jpg")
+
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
+
+    then: "posterUrl is set, and other fields are unchanged"
+        result.posterUrl == "https://example.com/poster.jpg"
+        result.title == "Show"
   }
 
   def "should reject series creation with invalid IMDb rating"() {

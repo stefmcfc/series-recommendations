@@ -2,8 +2,10 @@ package com.example.seriestracker.controller;
 
 import com.example.seriestracker.dto.ApiResponse;
 import com.example.seriestracker.dto.SeriesDto;
+import com.example.seriestracker.dto.SeriesLookupDto;
 import com.example.seriestracker.dto.SeriesSearchCriteria;
 import com.example.seriestracker.service.SeriesExportService;
+import com.example.seriestracker.service.SeriesLookupService;
 import com.example.seriestracker.service.SeriesSearchService;
 import com.example.seriestracker.service.SeriesService;
 import org.springframework.http.HttpStatus;
@@ -26,13 +28,16 @@ public class SeriesController {
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
+    private final SeriesLookupService lookupService;
 
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
-                            SeriesExportService exportService) {
+                            SeriesExportService exportService,
+                            SeriesLookupService lookupService) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
+        this.lookupService = lookupService;
     }
 
     @PostMapping
@@ -61,6 +66,14 @@ public class SeriesController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/lookup")
+    public ResponseEntity<ApiResponse<SeriesLookupDto>> lookup(@RequestParam String title) {
+        if (title.isBlank()) {
+            throw new IllegalArgumentException("title is required");
+        }
+        return ResponseEntity.ok(new ApiResponse<>(lookupService.lookup(title)));
     }
 
     @GetMapping("/search")
