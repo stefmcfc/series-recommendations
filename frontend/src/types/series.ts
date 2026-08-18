@@ -22,6 +22,7 @@ export interface Series {
   rottenTomatoesRating: number | null
   personalRating: number | null
   personalNotes: string | null
+  posterUrl: string | null
   dateAdded: string
   dateCompleted: string | null
 }
@@ -38,11 +39,24 @@ export interface CreateSeriesRequest {
   rottenTomatoesRating?: number
   personalRating?: number
   personalNotes?: string
+  posterUrl?: string
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
   currentSeason?: number
   currentEpisode?: number
+}
+
+export interface OmdbLookupResult {
+  title: string
+  year?: number
+  genres?: string
+  totalSeasons?: number
+  totalEpisodes?: number
+  imdbRating?: number
+  metacriticRating?: number
+  rottenTomatoesRating?: number
+  posterUrl?: string
 }
 
 export interface SearchCriteria {

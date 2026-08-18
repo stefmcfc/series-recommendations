@@ -35,6 +35,7 @@ export function SeriesDetail({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [fetchedForId, setFetchedForId] = useState(id)
+  const [posterError, setPosterError] = useState(false)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -42,6 +43,7 @@ export function SeriesDetail({
     setLoading(true)
     setError(null)
     setNotFound(false)
+    setPosterError(false)
   }
 
   useEffect(() => {
@@ -155,6 +157,15 @@ export function SeriesDetail({
       {!loading && !notFound && !error && series && (
         <div className={styles.detail}>
           <h2 className={styles.heading}>{series.title}</h2>
+
+          {series.posterUrl !== null && !posterError && (
+            <img
+              src={series.posterUrl}
+              alt=""
+              className={styles.poster}
+              onError={() => setPosterError(true)}
+            />
+          )}
 
           <dl className={styles.fields}>
             <div className={styles.field}>

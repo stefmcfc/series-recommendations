@@ -72,6 +72,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     rottenTomatoesRating: null,
     personalRating: null,
     personalNotes: null,
+    posterUrl: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     ...overrides,
@@ -222,6 +223,25 @@ describe('SH-006: search', () => {
   it('should return empty array on no matches without throwing', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
     expect(await seriesApi.search({ title: 'nonexistent' })).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// SH-0XX: lookupByTitle()
+// ---------------------------------------------------------------------------
+describe('SH-0XX: lookupByTitle', () => {
+  it('should unwrap { data: OmdbLookupResult } and return it', async () => {
+    const mockResult = { title: 'Breaking Bad', year: 2008, imdbRating: 9.5 }
+    client.get.mockResolvedValue({ data: { data: mockResult } })
+
+    const result = await seriesApi.lookupByTitle('Breaking Bad')
+
+    expect(client.get).toHaveBeenCalledWith('/series/lookup', {
+      params: { title: 'Breaking Bad' },
+    })
+    expect(result.title).toBe('Breaking Bad')
+    expect(result.year).toBe(2008)
+    expect(result.imdbRating).toBe(9.5)
   })
 })
 

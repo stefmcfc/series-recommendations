@@ -1,6 +1,6 @@
 # Frontend Spec 009: OMDb Autofill & Poster Display
 
-**Status**: Not started
+**Status**: Implemented. `src/types/series.ts` (`OmdbLookupResult` interface; `posterUrl` added to `Series`/`CreateSeriesRequest`/`UpdateSeriesRequest`), `src/services/seriesApi.ts` (`lookupByTitle`), `src/services/__tests__/seriesApi.test.ts`, `src/components/AddSeriesForm.tsx` + `.module.css` (Look Up button, lookup loading/error state scoped near the Title field, autofill-only-non-null-fields logic, Poster URL field + preview with `onError` fallback), `src/components/EditSeriesForm.tsx` + `.module.css` (Poster URL field + preview, no Look Up button), `src/components/SeriesDetail.tsx` + `.module.css` (poster image when present, nothing when absent), `src/components/SeriesList.tsx` + `.module.css` (fixed-size `series-thumbnail` slot per row, placeholder box or poster image, `onError` falls back to the placeholder), and the corresponding `*.test.tsx` files (existing `makeSeries` test helpers updated to include `posterUrl`). `npm test` (171/171 passing), `npm run lint` (clean), `npm run build` (clean) all verified on 2026-08-18. No real-browser pass yet — the backend `GET /series/lookup` endpoint (Series Spec 005) isn't merged; that verification will happen once both branches land.
 **Priority**: P2 (quality-of-life for adding series — not core CRUD)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Series Spec 005 (`posterUrl` field + `GET /series/lookup` endpoint)
 **Frontend Stage**: 9 of N
@@ -288,26 +288,26 @@ describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-009-AC-01: `OmdbLookupResult` type
-- [ ] FRONTEND-009-AC-02: `posterUrl` on `Series`/`CreateSeriesRequest`/`UpdateSeriesRequest`
-- [ ] FRONTEND-009-AC-03: `seriesApi.lookupByTitle`
-- [ ] FRONTEND-009-AC-04: "Look Up" button rendered
-- [ ] FRONTEND-009-AC-05: disabled while title is blank
-- [ ] FRONTEND-009-AC-06: click calls `lookupByTitle`, doesn't submit the form
-- [ ] FRONTEND-009-AC-07: title overwritten with canonical result
-- [ ] FRONTEND-009-AC-08: non-null result fields overwrite; null/absent fields left alone
-- [ ] FRONTEND-009-AC-09: status/personalRating/personalNotes never touched by lookup
-- [ ] FRONTEND-009-AC-10: "Looking up..." + disabled while in flight
-- [ ] FRONTEND-009-AC-11: scoped alert on failure, fields untouched
-- [ ] FRONTEND-009-AC-12: failed/no lookup doesn't block Save
-- [ ] FRONTEND-009-AC-13: Poster URL field in `AddSeriesForm`
-- [ ] FRONTEND-009-AC-14: preview image when populated
-- [ ] FRONTEND-009-AC-15: broken preview hides itself
-- [ ] FRONTEND-009-AC-16: Poster URL field in `EditSeriesForm`
-- [ ] FRONTEND-009-AC-17: same preview/fallback behavior in `EditSeriesForm`
-- [ ] FRONTEND-009-AC-18: poster shown in `SeriesDetail` when present
-- [ ] FRONTEND-009-AC-19: no image element when absent
-- [ ] FRONTEND-009-AC-20: broken poster hides itself in `SeriesDetail`
-- [ ] FRONTEND-009-AC-21: fixed-size thumbnail slot per row in `SeriesList`
-- [ ] FRONTEND-009-AC-22: broken row thumbnail falls back to placeholder
-- [ ] FRONTEND-009-AC-23: no console logging of lookup title/result
+- [x] FRONTEND-009-AC-01: `OmdbLookupResult` type
+- [x] FRONTEND-009-AC-02: `posterUrl` on `Series`/`CreateSeriesRequest`/`UpdateSeriesRequest`
+- [x] FRONTEND-009-AC-03: `seriesApi.lookupByTitle`
+- [x] FRONTEND-009-AC-04: "Look Up" button rendered
+- [x] FRONTEND-009-AC-05: disabled while title is blank
+- [x] FRONTEND-009-AC-06: click calls `lookupByTitle`, doesn't submit the form
+- [x] FRONTEND-009-AC-07: title overwritten with canonical result
+- [x] FRONTEND-009-AC-08: non-null result fields overwrite; null/absent fields left alone
+- [x] FRONTEND-009-AC-09: status/personalRating/personalNotes never touched by lookup
+- [x] FRONTEND-009-AC-10: "Looking up..." + disabled while in flight
+- [x] FRONTEND-009-AC-11: scoped alert on failure, fields untouched
+- [x] FRONTEND-009-AC-12: failed/no lookup doesn't block Save
+- [x] FRONTEND-009-AC-13: Poster URL field in `AddSeriesForm`
+- [x] FRONTEND-009-AC-14: preview image when populated
+- [x] FRONTEND-009-AC-15: broken preview hides itself
+- [x] FRONTEND-009-AC-16: Poster URL field in `EditSeriesForm`
+- [x] FRONTEND-009-AC-17: same preview/fallback behavior in `EditSeriesForm`
+- [x] FRONTEND-009-AC-18: poster shown in `SeriesDetail` when present
+- [x] FRONTEND-009-AC-19: no image element when absent
+- [x] FRONTEND-009-AC-20: broken poster hides itself in `SeriesDetail`
+- [x] FRONTEND-009-AC-21: fixed-size thumbnail slot per row in `SeriesList`
+- [x] FRONTEND-009-AC-22: broken row thumbnail falls back to placeholder
+- [x] FRONTEND-009-AC-23: no console logging of lookup title/result

@@ -87,6 +87,55 @@
   }
 }
 
+.titleRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.titleRow input {
+  flex: 1;
+}
+
+.lookupButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lookupButton:hover:not(:disabled) {
+  background: var(--social-bg);
+}
+
+.lookupButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lookupError {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .lookupError {
+    color: #fca5a5;
+  }
+}
+
+.posterPreview {
+  margin-top: 0.5rem;
+  max-width: 100%;
+  max-height: 12rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { CreateSeriesRequest, Series } from '../types/series'
+import type {
+  CreateSeriesRequest,
+  OmdbLookupResult,
+  Series,
+} from '../types/series'
 import styles from './AddSeriesForm.module.css'
 
 interface AddSeriesFormProps {
@@ -22,6 +26,7 @@ interface FormState {
   rottenTomatoesRating: string
   personalRating: string
   personalNotes: string
+  posterUrl: string
 }
 
 const initialFormState: FormState = {
@@ -36,6 +41,7 @@ const initialFormState: FormState = {
   rottenTomatoesRating: '',
   personalRating: '',
   personalNotes: '',
+  posterUrl: '',
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -134,8 +140,31 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.personalRating = Number(form.personalRating)
   if (form.personalNotes.trim() !== '')
     payload.personalNotes = form.personalNotes.trim()
+  if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
 
   return payload
+}
+
+function applyLookupResult(
+  form: FormState,
+  result: OmdbLookupResult,
+): FormState {
+  const next: FormState = { ...form, title: result.title }
+
+  if (result.year != null) next.year = String(result.year)
+  if (result.genres != null) next.genres = result.genres
+  if (result.totalSeasons != null)
+    next.totalSeasons = String(result.totalSeasons)
+  if (result.totalEpisodes != null)
+    next.totalEpisodes = String(result.totalEpisodes)
+  if (result.imdbRating != null) next.imdbRating = String(result.imdbRating)
+  if (result.metacriticRating != null)
+    next.metacriticRating = String(result.metacriticRating)
+  if (result.rottenTomatoesRating != null)
+    next.rottenTomatoesRating = String(result.rottenTomatoesRating)
+  if (result.posterUrl != null) next.posterUrl = result.posterUrl
+
+  return next
 }
 
 export function AddSeriesForm({ onCancel, onSuccess }: AddSeriesFormProps) {
@@ -143,6 +172,9 @@ export function AddSeriesForm({ onCancel, onSuccess }: AddSeriesFormProps) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [lookingUp, setLookingUp] = useState(false)
+  const [lookupError, setLookupError] = useState<string | null>(null)
+  const [posterPreviewError, setPosterPreviewError] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -158,6 +190,35 @@ export function AddSeriesForm({ onCancel, onSuccess }: AddSeriesFormProps) {
     ) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }))
     }
+
+  const handlePosterUrlChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setForm((prev) => ({ ...prev, posterUrl: event.target.value }))
+    setPosterPreviewError(false)
+  }
+
+  const handleLookup = async () => {
+    const title = form.title.trim()
+    if (title === '' || lookingUp) return
+
+    setLookupError(null)
+    setLookingUp(true)
+
+    try {
+      const result = await seriesApi.lookupByTitle(title)
+      setForm((prev) => applyLookupResult(prev, result))
+      setPosterPreviewError(false)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setLookupError(err.message)
+      } else {
+        setLookupError('An unexpected error occurred. Please try again.')
+      }
+    } finally {
+      setLookingUp(false)
+    }
+  }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape' && !submitting) {
@@ -218,19 +279,35 @@ export function AddSeriesForm({ onCancel, onSuccess }: AddSeriesFormProps) {
         <form onSubmit={handleSubmit} noValidate>
           <div className={styles.field}>
             <label htmlFor="title">Title *</label>
-            <input
-              ref={titleInputRef}
-              id="title"
-              type="text"
-              required
-              value={form.title}
-              onChange={updateField('title')}
-              aria-describedby={fieldErrors.title ? 'title-error' : undefined}
-            />
+            <div className={styles.titleRow}>
+              <input
+                ref={titleInputRef}
+                id="title"
+                type="text"
+                required
+                value={form.title}
+                onChange={updateField('title')}
+                aria-describedby={fieldErrors.title ? 'title-error' : undefined}
+              />
+              <button
+                type="button"
+                className={styles.lookupButton}
+                data-testid="lookup-btn"
+                disabled={form.title.trim() === '' || lookingUp}
+                onClick={handleLookup}
+              >
+                {lookingUp ? 'Looking up...' : 'Look Up'}
+              </button>
+            </div>
             {fieldErrors.title && (
               <span id="title-error" className={styles.fieldError}>
                 {fieldErrors.title}
               </span>
+            )}
+            {lookupError && (
+              <div className={styles.lookupError} role="alert">
+                {lookupError}
+              </div>
             )}
           </div>
 
@@ -397,6 +474,24 @@ export function AddSeriesForm({ onCancel, onSuccess }: AddSeriesFormProps) {
               value={form.personalNotes}
               onChange={updateField('personalNotes')}
             />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="posterUrl">Poster URL</label>
+            <input
+              id="posterUrl"
+              type="text"
+              value={form.posterUrl}
+              onChange={handlePosterUrlChange}
+            />
+            {form.posterUrl.trim() !== '' && !posterPreviewError && (
+              <img
+                src={form.posterUrl}
+                alt=""
+                className={styles.posterPreview}
+                onError={() => setPosterPreviewError(true)}
+              />
+            )}
           </div>
 
           <div className={styles.actions}>

@@ -127,6 +127,21 @@
   background-color: var(--social-bg);
 }
 
+.thumbnail {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 3.5rem;
+  border-radius: 0.25rem;
+  background: var(--social-bg);
+  overflow: hidden;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .title {
   font: inherit;
   font-weight: 600;

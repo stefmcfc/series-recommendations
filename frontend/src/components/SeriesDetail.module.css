@@ -81,6 +81,15 @@
   color: var(--text-h);
 }
 
+.poster {
+  display: block;
+  max-width: 100%;
+  max-height: 24rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  margin: 0 0 1.5rem;
+}
+
 .fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

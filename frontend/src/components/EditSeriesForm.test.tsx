@@ -25,6 +25,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     rottenTomatoesRating: null,
     personalRating: null,
     personalNotes: null,
+    posterUrl: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     ...overrides,
@@ -219,6 +220,57 @@ describe('FRONTEND-004-AC-33: submission payload', () => {
     const payload = mockUpdate.mock.calls[0][1]
     expect(payload).not.toHaveProperty('currentSeason')
     expect(payload).not.toHaveProperty('currentEpisode')
+  })
+})
+
+describe('FRONTEND-009-AC-16/17: Poster URL field', () => {
+  it('renders a labelled Poster URL field pre-populated from series.posterUrl', () => {
+    renderForm({
+      series: makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    })
+    expect(screen.getByLabelText(/poster url/i)).toHaveValue(
+      'https://example.com/poster.jpg',
+    )
+  })
+
+  it('renders an empty Poster URL field when series.posterUrl is null', () => {
+    renderForm({ series: makeSeries({ posterUrl: null }) })
+    expect(screen.getByLabelText(/poster url/i)).toHaveValue('')
+  })
+
+  it('does not render a "Look Up" button', () => {
+    renderForm()
+    expect(screen.queryByTestId('lookup-btn')).not.toBeInTheDocument()
+  })
+
+  it('renders a preview when Poster URL is populated, hides it on load failure', () => {
+    renderForm({
+      series: makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    })
+
+    const img = screen.getByRole('presentation', {
+      hidden: true,
+    }) as HTMLImageElement
+    expect(img).toHaveAttribute('src', 'https://example.com/poster.jpg')
+
+    fireEvent.error(img)
+    expect(
+      screen.queryByRole('presentation', { hidden: true }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('includes posterUrl in the update payload when populated', async () => {
+    const series = makeSeries({ id: 'abc-123' })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+    fireEvent.change(screen.getByLabelText(/poster url/i), {
+      target: { value: 'https://example.com/new-poster.jpg' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    const payload = mockUpdate.mock.calls[0][1]
+    expect(payload.posterUrl).toBe('https://example.com/new-poster.jpg')
   })
 })
 

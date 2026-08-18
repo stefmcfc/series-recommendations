@@ -26,6 +26,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     rottenTomatoesRating: null,
     personalRating: 5,
     personalNotes: 'Rewatch of the year',
+    posterUrl: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     ...overrides,
@@ -88,6 +89,38 @@ describe('FRONTEND-005-AC-09: dates rendered as human-readable', () => {
     await waitFor(() => screen.getByText('The Office'))
     const expected = new Date('2026-01-01T00:00:00Z').toLocaleDateString()
     expect(screen.getByText(expected)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
+  it('renders the poster when present, nothing when absent', async () => {
+    mockGetById.mockResolvedValueOnce(
+      makeSeries({ posterUrl: 'https://example.com/p.jpg' }),
+    )
+    const { rerender } = render(
+      <SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />,
+    )
+    await waitFor(() => screen.getByAltText(''))
+    expect(screen.getByAltText('')).toHaveAttribute(
+      'src',
+      'https://example.com/p.jpg',
+    )
+
+    mockGetById.mockResolvedValueOnce(makeSeries({ id: '2', posterUrl: null }))
+    rerender(<SeriesDetail id="2" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.queryByAltText('')).not.toBeInTheDocument()
+  })
+
+  it('hides the poster if it fails to load', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ posterUrl: 'https://example.com/p.jpg' }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await waitFor(() => screen.getByAltText(''))
+
+    fireEvent.error(screen.getByAltText(''))
+    expect(screen.queryByAltText('')).not.toBeInTheDocument()
   })
 })
 

@@ -27,6 +27,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     rottenTomatoesRating: null,
     personalRating: null,
     personalNotes: null,
+    posterUrl: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     ...overrides,
@@ -110,6 +111,44 @@ describe('SH-003: Render series data', () => {
     await waitFor(() =>
       expect(screen.getAllByTestId('series-row')).toHaveLength(2),
     )
+  })
+})
+
+describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
+  it('renders a placeholder slot when posterUrl is null, an image when present', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'No Poster', posterUrl: null }),
+      makeSeries({
+        id: '2',
+        title: 'Has Poster',
+        posterUrl: 'https://example.com/p.jpg',
+      }),
+    ])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByText('No Poster'))
+
+    expect(screen.getAllByTestId('series-thumbnail')).toHaveLength(2)
+    expect(screen.getByAltText('')).toHaveAttribute(
+      'src',
+      'https://example.com/p.jpg',
+    )
+  })
+
+  it('falls back to the placeholder if the poster image fails to load', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'Has Poster',
+        posterUrl: 'https://example.com/p.jpg',
+      }),
+    ])
+    render(<SeriesList />)
+    await waitFor(() => screen.getByText('Has Poster'))
+
+    const img = screen.getByAltText('')
+    fireEvent.error(img)
+    expect(screen.queryByAltText('')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('series-thumbnail')).toHaveLength(1)
   })
 })
 
