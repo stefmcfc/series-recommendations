@@ -83,3 +83,4 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 001 | Types & API service layer | ✅ Done |
 | Frontend 002 | `SeriesList` component | ✅ Done |
 | Frontend 003 | `AddSeriesForm` (add-series modal) | ✅ Done |
+| Frontend 006 | `SearchFilter` (search & filter UI) | ✅ Done |

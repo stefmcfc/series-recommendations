@@ -1,6 +1,6 @@
 # Frontend Spec 006: Search & Filter UI
 
-**Status**: Not started
+**Status**: Implemented. `src/components/SearchFilter.tsx` + `SearchFilter.module.css` (new) — presentational filter form for every `SearchCriteria` field, submit-triggered `onSearch`/`onClear` callbacks. `src/components/SeriesList.tsx` (amended: optional `criteria?: SearchCriteria` prop, `hasActiveCriteria` helper, fetch effect branches between `seriesApi.getAll()`/`seriesApi.search(criteria)` and re-fetches on `criteria` change, filtered empty-state message/button suppression). `src/App.tsx` (amended: owns `criteria: SearchCriteria | null` state, renders `SearchFilter` above `SeriesList`, wires `criteria` through). Tests: `src/components/SearchFilter.test.tsx` (new, 9 tests), `src/components/SeriesList.test.tsx` (amended, +9 tests for criteria-driven fetching/retry/filtered empty state), `src/App.test.tsx` (amended, +2 tests for end-to-end wiring; two pre-existing tests scoped their `title` label query to `within(screen.getByRole('dialog'))` since `SearchFilter`'s own `title` field is now also present on the page) — all following red/green TDD. `npm test` (119/119 passing), `npm run lint` (clean), `npm run build` (clean) all verified on 2026-08-18. No real-browser pass done for this stage (not called out as required by the task — see PR notes for whether one is warranted).
 **Priority**: P1 (surfaces the backend's existing search endpoint, unused by the frontend today)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Frontend Spec 002 (`SeriesList`) ✅, Backend Spec 003 (Search & Filtering) ✅
 **Frontend Stage**: 6 of N
@@ -327,22 +327,22 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-006-AC-01: labelled control per `SearchCriteria` field
-- [ ] FRONTEND-006-AC-02: status select has "Any status" default
-- [ ] FRONTEND-006-AC-03: `onSearch` required prop
-- [ ] FRONTEND-006-AC-04: submit builds criteria from populated fields only
-- [ ] FRONTEND-006-AC-05: genres split/trimmed into `string[]`
-- [ ] FRONTEND-006-AC-06: no `onSearch` call on mount
-- [ ] FRONTEND-006-AC-07: "Clear Filters" button rendered
-- [ ] FRONTEND-006-AC-08: Clear resets fields and calls `onClear`, not `onSearch`
-- [ ] FRONTEND-006-AC-09: `SeriesList` accepts optional `criteria` prop
-- [ ] FRONTEND-006-AC-10: empty/undefined criteria → `getAll()`
-- [ ] FRONTEND-006-AC-11: non-empty criteria → `search(criteria)`
-- [ ] FRONTEND-006-AC-12: re-fetch on criteria change
-- [ ] FRONTEND-006-AC-13: Retry uses `search` when criteria active
-- [ ] FRONTEND-006-AC-14: filtered empty state message
-- [ ] FRONTEND-006-AC-15: no "Add your first series" button in filtered empty state
-- [ ] FRONTEND-006-AC-16: `App.tsx` owns `criteria` state
-- [ ] FRONTEND-006-AC-17: `SearchFilter` rendered above `SeriesList`, wired to state
-- [ ] FRONTEND-006-AC-18: `criteria` passed into `SeriesList`
-- [ ] FRONTEND-006-AC-19: no filter values logged to console
+- [x] FRONTEND-006-AC-01: labelled control per `SearchCriteria` field
+- [x] FRONTEND-006-AC-02: status select has "Any status" default
+- [x] FRONTEND-006-AC-03: `onSearch` required prop
+- [x] FRONTEND-006-AC-04: submit builds criteria from populated fields only
+- [x] FRONTEND-006-AC-05: genres split/trimmed into `string[]`
+- [x] FRONTEND-006-AC-06: no `onSearch` call on mount
+- [x] FRONTEND-006-AC-07: "Clear Filters" button rendered
+- [x] FRONTEND-006-AC-08: Clear resets fields and calls `onClear`, not `onSearch`
+- [x] FRONTEND-006-AC-09: `SeriesList` accepts optional `criteria` prop
+- [x] FRONTEND-006-AC-10: empty/undefined criteria → `getAll()`
+- [x] FRONTEND-006-AC-11: non-empty criteria → `search(criteria)`
+- [x] FRONTEND-006-AC-12: re-fetch on criteria change
+- [x] FRONTEND-006-AC-13: Retry uses `search` when criteria active
+- [x] FRONTEND-006-AC-14: filtered empty state message
+- [x] FRONTEND-006-AC-15: no "Add your first series" button in filtered empty state
+- [x] FRONTEND-006-AC-16: `App.tsx` owns `criteria` state
+- [x] FRONTEND-006-AC-17: `SearchFilter` rendered above `SeriesList`, wired to state
+- [x] FRONTEND-006-AC-18: `criteria` passed into `SeriesList`
+- [x] FRONTEND-006-AC-19: no filter values logged to console
