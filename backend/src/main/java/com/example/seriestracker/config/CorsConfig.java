@@ -19,6 +19,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * <p>The allowed origin(s) are read from {@code app.cors.allowed-origins}
  * (see {@code application.yml}), overridable without a code change via the
  * {@code APP_CORS_ALLOWED_ORIGINS} environment variable (Spring's relaxed env-var binding).
+ *
+ * <p>{@code Content-Disposition} is explicitly exposed via {@code exposedHeaders(...)} so
+ * cross-origin JavaScript (e.g. {@code axios} in the frontend's {@code seriesApi.export()})
+ * can read it from {@code response.headers}. Without this, the browser still receives the
+ * header at the network layer but hides it from JS per the CORS spec — a same-origin tool
+ * like {@code curl} is not subject to that restriction and so won't reveal the gap.
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
@@ -34,6 +40,7 @@ public class CorsConfig implements WebMvcConfigurer {
         registry.addMapping("/api/**")
             .allowedOrigins(allowedOrigins)
             .allowedMethods("GET", "POST", "PATCH", "DELETE")
-            .allowedHeaders("Content-Type");
+            .allowedHeaders("Content-Type")
+            .exposedHeaders("Content-Disposition");
     }
 }
