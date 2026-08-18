@@ -68,13 +68,19 @@ export const seriesApi = {
     ).then((res) => res.data),
 
   getById: (id: string): Promise<Series> =>
-    request<Series>(() => client.get('/series/' + id)),
+    request<{ data: Series }>(() => client.get('/series/' + id)).then(
+      (res) => res.data,
+    ),
 
   create: (data: CreateSeriesRequest): Promise<Series> =>
-    request<Series>(() => client.post('/series', data)),
+    request<{ data: Series }>(() => client.post('/series', data)).then(
+      (res) => res.data,
+    ),
 
   update: (id: string, data: UpdateSeriesRequest): Promise<Series> =>
-    request<Series>(() => client.patch('/series/' + id, data)),
+    request<{ data: Series }>(() => client.patch('/series/' + id, data)).then(
+      (res) => res.data,
+    ),
 
   delete: (id: string): Promise<void> =>
     request<null>(() => client.delete('/series/' + id)).then(() => undefined),

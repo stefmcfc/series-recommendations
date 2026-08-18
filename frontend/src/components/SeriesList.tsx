@@ -1,19 +1,32 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
-import type { Series } from '../types/series'
+import type { Series, SearchCriteria } from '../types/series'
 import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
   onSeriesClick?: (id: string) => void
   onAddClick?: () => void
   onEditClick?: (series: Series) => void
+  criteria?: SearchCriteria
+}
+
+function hasActiveCriteria(criteria?: SearchCriteria): boolean {
+  if (!criteria) return false
+  return Object.values(criteria).some((value) => {
+    if (value == null) return false
+    if (Array.isArray(value)) return value.length > 0
+    if (typeof value === 'string') return value !== ''
+    if (typeof value === 'boolean') return value === true
+    return true
+  })
 }
 
 export function SeriesList({
   onSeriesClick,
   onAddClick,
   onEditClick,
+  criteria,
 }: SeriesListProps) {
   const [series, setSeries] = useState<Series[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,11 +38,16 @@ export function SeriesList({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  const criteriaActive = hasActiveCriteria(criteria)
+
   useEffect(() => {
     let cancelled = false
 
-    seriesApi
-      .getAll()
+    const fetchSeries = criteriaActive
+      ? seriesApi.search(criteria as SearchCriteria)
+      : seriesApi.getAll()
+
+    fetchSeries
       .then((data) => {
         if (cancelled) return
         setSeries(data)
@@ -44,7 +62,8 @@ export function SeriesList({
     return () => {
       cancelled = true
     }
-  }, [refreshIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- criteriaActive is derived from criteria; including both is redundant and would cause criteria's object identity to trigger duplicate re-fetches.
+  }, [refreshIndex, criteria])
 
   const handleRetry = useCallback(() => {
     setLoading(true)
@@ -182,16 +201,22 @@ export function SeriesList({
 
       {!loading && !error && series.length === 0 && (
         <div className={styles.empty}>
-          <p>No series yet.</p>
-          <button
-            type="button"
-            className={styles.addButton}
-            data-testid="add-series-btn"
-            aria-label="Add new series"
-            onClick={() => onAddClick?.()}
-          >
-            Add your first series
-          </button>
+          <p>
+            {criteriaActive
+              ? 'No series match your filters.'
+              : 'No series yet.'}
+          </p>
+          {!criteriaActive && (
+            <button
+              type="button"
+              className={styles.addButton}
+              data-testid="add-series-btn"
+              aria-label="Add new series"
+              onClick={() => onAddClick?.()}
+            >
+              Add your first series
+            </button>
+          )}
         </div>
       )}
 
