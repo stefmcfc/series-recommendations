@@ -113,18 +113,19 @@ describe('SH-001: getAll', () => {
 // SH-002: getById()
 // ---------------------------------------------------------------------------
 describe('SH-002: getById', () => {
-  it('should return Series from GET /series/{id}', async () => {
+  it('should unwrap { data: Series } and return the bare Series', async () => {
     const mock = makeSeries({
       id: 'abc-123',
       title: 'Breaking Bad',
       status: SeriesStatus.COMPLETED,
     })
-    client.get.mockResolvedValue({ data: mock })
+    client.get.mockResolvedValue({ data: { data: mock } })
 
     const result = await seriesApi.getById('abc-123')
 
     expect(client.get).toHaveBeenCalledWith('/series/abc-123')
     expect(result.title).toBe('Breaking Bad')
+    expect(result).not.toHaveProperty('data')
   })
 })
 
@@ -132,19 +133,20 @@ describe('SH-002: getById', () => {
 // SH-003: create()
 // ---------------------------------------------------------------------------
 describe('SH-003: create', () => {
-  it('should POST to /series and return the created Series', async () => {
+  it('should unwrap { data: Series } and return the created Series', async () => {
     const req: CreateSeriesRequest = { title: 'Severance' }
     const mockCreated = makeSeries({
       id: 'new-id',
       title: 'Severance',
       status: SeriesStatus.BACKLOG,
     })
-    client.post.mockResolvedValue({ data: mockCreated })
+    client.post.mockResolvedValue({ data: { data: mockCreated } })
 
     const result = await seriesApi.create(req)
 
     expect(client.post).toHaveBeenCalledWith('/series', req)
     expect(result.id).toBe('new-id')
+    expect(result).not.toHaveProperty('data')
   })
 })
 
@@ -152,19 +154,20 @@ describe('SH-003: create', () => {
 // SH-004: update()
 // ---------------------------------------------------------------------------
 describe('SH-004: update', () => {
-  it('should PATCH /series/{id} with partial data', async () => {
+  it('should unwrap { data: Series } and return the updated Series', async () => {
     const patch = { currentSeason: 3, status: SeriesStatus.WATCHING }
     const mockUpdated = makeSeries({
       id: 'abc-123',
       currentSeason: 3,
       status: SeriesStatus.WATCHING,
     })
-    client.patch.mockResolvedValue({ data: mockUpdated })
+    client.patch.mockResolvedValue({ data: { data: mockUpdated } })
 
     const result = await seriesApi.update('abc-123', patch)
 
     expect(client.patch).toHaveBeenCalledWith('/series/abc-123', patch)
     expect(result.currentSeason).toBe(3)
+    expect(result).not.toHaveProperty('data')
   })
 })
 

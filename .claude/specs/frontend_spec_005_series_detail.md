@@ -1,6 +1,6 @@
 # Frontend Spec 005: Series Detail View
 
-**Status**: Not started
+**Status**: Implemented. `src/services/seriesApi.ts` (`getById`/`create`/`update` now unwrap `{ data: Series }`, fixing the pre-existing latent bug), `src/services/__tests__/seriesApi.test.ts` (SH-002/003/004 mocks corrected to the real double-wrapped shape), `src/components/SeriesDetail.tsx` + `SeriesDetail.module.css` + `SeriesDetail.test.tsx` (new), `src/App.tsx` (full-view swap between `SeriesList`/`SeriesDetail`, `seriesDetailKey` remount wiring), `src/App.test.tsx` (navigation + edit-from-detail coverage added). All work done red/green TDD. `npm test` (120/120 passing), `npm run lint` (clean — required switching the `id`-change reset logic from an in-effect `setState` to the React-recommended render-time "adjust state" pattern to satisfy `react-hooks/set-state-in-effect`), `npm run build` (clean) all verified on 2026-08-18. No real-browser pass done for this stage (not called out as required — see PR notes).
 **Priority**: P1 (third write-path-adjacent UI — first read view beyond the list)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 004 (`EditSeriesForm`, delete-confirmation pattern) ✅, Backend Spec 002 (CRUD) ✅
 **Frontend Stage**: 5 of N
@@ -481,33 +481,33 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-005-AC-01: `seriesApi.getById` unwraps `{ data: Series }`
-- [ ] FRONTEND-005-AC-02: `seriesApi.create` unwraps `{ data: Series }`
-- [ ] FRONTEND-005-AC-03: `seriesApi.update` unwraps `{ data: Series }`
-- [ ] FRONTEND-005-AC-04: `SeriesDetail` fetches via `getById(id)` on mount
-- [ ] FRONTEND-005-AC-05: re-fetches on `id` change
-- [ ] FRONTEND-005-AC-06: loading indicator with role="status"
-- [ ] FRONTEND-005-AC-07: every Series field rendered
-- [ ] FRONTEND-005-AC-08: null fields display "—"
-- [ ] FRONTEND-005-AC-09: dates human-readable
-- [ ] FRONTEND-005-AC-10: id (UUID) never rendered as visible text
-- [ ] FRONTEND-005-AC-11: 404 → "Series not found.", no Retry
-- [ ] FRONTEND-005-AC-12: other errors → alert + Retry
-- [ ] FRONTEND-005-AC-13: Retry re-fetches
-- [ ] FRONTEND-005-AC-14: Back control present in every state
-- [ ] FRONTEND-005-AC-15: Back calls `onBack`
-- [ ] FRONTEND-005-AC-16: optional `onEditClick` prop
-- [ ] FRONTEND-005-AC-17: Edit button calls `onEditClick(series)`
-- [ ] FRONTEND-005-AC-18: no crash without `onEditClick`
-- [ ] FRONTEND-005-AC-19: Delete button rendered
-- [ ] FRONTEND-005-AC-20: Delete click shows Confirm/Cancel
-- [ ] FRONTEND-005-AC-21: confirmation Cancel restores buttons, no delete call
-- [ ] FRONTEND-005-AC-22: Confirm calls `seriesApi.delete`, loading state shown
-- [ ] FRONTEND-005-AC-23: required `onDeleted`, called on success
-- [ ] FRONTEND-005-AC-24: delete failure shows alert, stays confirmable
-- [ ] FRONTEND-005-AC-25: `App.tsx` swaps `SeriesList`/`SeriesDetail` on `selectedSeriesId`
-- [ ] FRONTEND-005-AC-26: `onSeriesClick` sets `selectedSeriesId`
-- [ ] FRONTEND-005-AC-27: `onBack`/`onDeleted` clears selection, `SeriesList` re-fetches
-- [ ] FRONTEND-005-AC-28: `onEditClick` wired to shared edit state
-- [ ] FRONTEND-005-AC-29: edit success bumps a `SeriesDetail`-specific key
-- [ ] FRONTEND-005-AC-30: no series data logged to console
+- [x] FRONTEND-005-AC-01: `seriesApi.getById` unwraps `{ data: Series }`
+- [x] FRONTEND-005-AC-02: `seriesApi.create` unwraps `{ data: Series }`
+- [x] FRONTEND-005-AC-03: `seriesApi.update` unwraps `{ data: Series }`
+- [x] FRONTEND-005-AC-04: `SeriesDetail` fetches via `getById(id)` on mount
+- [x] FRONTEND-005-AC-05: re-fetches on `id` change
+- [x] FRONTEND-005-AC-06: loading indicator with role="status"
+- [x] FRONTEND-005-AC-07: every Series field rendered
+- [x] FRONTEND-005-AC-08: null fields display "—"
+- [x] FRONTEND-005-AC-09: dates human-readable
+- [x] FRONTEND-005-AC-10: id (UUID) never rendered as visible text
+- [x] FRONTEND-005-AC-11: 404 → "Series not found.", no Retry
+- [x] FRONTEND-005-AC-12: other errors → alert + Retry
+- [x] FRONTEND-005-AC-13: Retry re-fetches
+- [x] FRONTEND-005-AC-14: Back control present in every state
+- [x] FRONTEND-005-AC-15: Back calls `onBack`
+- [x] FRONTEND-005-AC-16: optional `onEditClick` prop
+- [x] FRONTEND-005-AC-17: Edit button calls `onEditClick(series)`
+- [x] FRONTEND-005-AC-18: no crash without `onEditClick`
+- [x] FRONTEND-005-AC-19: Delete button rendered
+- [x] FRONTEND-005-AC-20: Delete click shows Confirm/Cancel
+- [x] FRONTEND-005-AC-21: confirmation Cancel restores buttons, no delete call
+- [x] FRONTEND-005-AC-22: Confirm calls `seriesApi.delete`, loading state shown
+- [x] FRONTEND-005-AC-23: required `onDeleted`, called on success
+- [x] FRONTEND-005-AC-24: delete failure shows alert, stays confirmable
+- [x] FRONTEND-005-AC-25: `App.tsx` swaps `SeriesList`/`SeriesDetail` on `selectedSeriesId`
+- [x] FRONTEND-005-AC-26: `onSeriesClick` sets `selectedSeriesId`
+- [x] FRONTEND-005-AC-27: `onBack`/`onDeleted` clears selection, `SeriesList` re-fetches
+- [x] FRONTEND-005-AC-28: `onEditClick` wired to shared edit state
+- [x] FRONTEND-005-AC-29: edit success bumps a `SeriesDetail`-specific key
+- [x] FRONTEND-005-AC-30: no series data logged to console
