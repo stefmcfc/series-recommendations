@@ -9,6 +9,7 @@ import type { Series } from '../types/series'
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
 const mockDelete = vi.mocked(seriesApi.delete)
+const mockSearch = vi.mocked(seriesApi.search)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -474,5 +475,70 @@ describe('SN-008: No sensitive data exposed', () => {
     render(<SeriesList />)
     await waitFor(() => screen.getByText('Show'))
     expect(screen.queryByText('My private note')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-006-AC-09/10/11: criteria-driven fetching', () => {
+  it('calls getAll when no criteria is provided', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
+    expect(mockSearch).not.toHaveBeenCalled()
+  })
+
+  it('calls getAll when criteria is an empty object', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList criteria={{}} />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
+    expect(mockSearch).not.toHaveBeenCalled()
+  })
+
+  it('calls search with the given criteria when non-empty', async () => {
+    mockSearch.mockResolvedValue([])
+    render(<SeriesList criteria={{ title: 'office' }} />)
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith({ title: 'office' }),
+    )
+    expect(mockGetAll).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-006-AC-12: re-fetch on criteria change', () => {
+  it('re-fetches when criteria changes', async () => {
+    mockSearch.mockResolvedValue([])
+    const { rerender } = render(<SeriesList criteria={{ title: 'a' }} />)
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledWith({ title: 'a' }))
+
+    rerender(<SeriesList criteria={{ title: 'b' }} />)
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledWith({ title: 'b' }))
+    expect(mockSearch).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
+  it('retries via search, not getAll', async () => {
+    mockSearch
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValueOnce([])
+    render(<SeriesList criteria={{ title: 'office' }} />)
+    await waitFor(() => screen.getByRole('button', { name: /retry/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }))
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(2))
+    expect(mockGetAll).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-006-AC-14/15: filtered empty state', () => {
+  it('shows "No series match your filters." without the add-first-series button', async () => {
+    mockSearch.mockResolvedValue([])
+    render(<SeriesList criteria={{ title: 'nonexistent' }} />)
+    await waitFor(() =>
+      expect(
+        screen.getByText(/no series match your filters/i),
+      ).toBeInTheDocument(),
+    )
+    expect(screen.queryByText(/add your first series/i)).not.toBeInTheDocument()
+    expect(screen.getByTestId('add-series-btn')).toBeInTheDocument()
   })
 })

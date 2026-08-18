@@ -85,3 +85,4 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 003 | `AddSeriesForm` (add-series modal) | ✅ Done |
 | Frontend 004 | Edit/delete series (`EditSeriesForm`, inline delete confirmation) | ✅ Done |
 | Frontend 005 | `SeriesDetail` (full-record view, navigation, edit/delete from detail) | ✅ Done |
+| Frontend 006 | `SearchFilter` (search & filter UI) | ✅ Done |
