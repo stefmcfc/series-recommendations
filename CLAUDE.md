@@ -16,8 +16,8 @@ These are hard rules, not suggestions — follow them even if training data or h
 
 ## Current status
 
-- **Backend**: fully implemented. Entity/schema, CRUD endpoints, search & filter, and JSON/CSV export are all built and covered by Spock specs. See `.claude/specs/series_spec_*.md`.
-- **Frontend**: types + API service layer are done. `SeriesList` (`.claude/specs/frontend_spec_002.md`) — the collection view with loading/error/empty states — and `AddSeriesForm` (`.claude/specs/frontend_spec_003_add_series_form.md`) — the modal create-series dialog with client-side validation, submission states, and server-error handling — are both implemented, styled with CSS Modules. `App.tsx` wires them together: it renders `SeriesList` inside a `<main>` landmark, owns the add-form's open/closed state, and refreshes `SeriesList` via a remount (`key` bump) on successful creation. Next up: edit/delete series, the series detail view, search/filter UI, and export trigger.
+- **Backend**: fully implemented. Entity/schema, CRUD endpoints, search & filter, and JSON/CSV export are all built and covered by Spock specs. See `.claude/specs/series_spec_*.md`. CORS (`CorsConfig`) exposes `Content-Disposition` in addition to the allow-list/methods/headers already configured, so the frontend's export download can read the server-computed filename cross-origin (`.claude/specs/tooling_spec_001_code_quality_security.md`, AC-17).
+- **Frontend**: full CRUD + browse UI is implemented — `SeriesList` (list, with per-row Edit/Delete and inline delete confirmation), `AddSeriesForm`/`EditSeriesForm` (modals), `SeriesDetail` (full-record view reached by clicking a row, with its own Edit/Delete), `SearchFilter` (title/genre/status/rating-range/started-not-finished filtering), and `ExportControls` (JSON/CSV download, respecting active filters). `App.tsx` orchestrates all of it: it swaps between `SeriesList` and `SeriesDetail` based on the selected series (no router), renders `SearchFilter`/`ExportControls` above the list, and owns the two modals' open/closed state plus the `key`-bump refresh pattern used after add/edit success. See `.claude/specs/frontend_spec_*.md` (001–008) for the full history, including two corrections made along the way: `seriesApi.getById`/`create`/`update` now correctly unwrap the backend's response envelope (frontend_spec_005), and `SeriesList`'s rows no longer nest interactive controls inside a `role="button"` wrapper (frontend_spec_008, an accessibility fix). Every item in `README.md`'s Features Roadmap is currently done; nothing is in progress.
 
 ## Tech stack (actual installed versions)
 
@@ -45,7 +45,7 @@ Read these when working in the relevant area — don't duplicate their content h
 - `.claude/steering/frontend_structure.md` — frontend directory layout and target component structure
 - `.claude/steering/frontend_conventions.md` — frontend coding conventions (typing, API layer, styling, testing)
 - `.claude/steering/ears_format.md` — the EARS requirement format all specs use
-- `.claude/specs/` — feature specs (backend 001–004, frontend 001–002), each with acceptance criteria and TDD test cases
+- `.claude/specs/` — feature specs (backend 001–004, frontend 001–008), each with acceptance criteria and TDD test cases
 
 ## Working conventions
 
