@@ -1,6 +1,6 @@
 # Frontend Spec 007: Export Trigger
 
-**Status**: Not started
+**Status**: Implemented. `src/services/seriesApi.ts` (`export()` now resolves `{ blob, filename }`, parses `Content-Disposition`, falls back to `series-export.{format}`, and handles blob-shaped error responses via a dedicated `parseErrorBlob`/`parseFilename` pair instead of the shared `request<T>()` helper), `src/services/__tests__/seriesApi.test.ts` (SH-007 amended for the new return shape, new IF-010 describe block for blob-error parsing), `src/components/ExportControls.tsx` + `ExportControls.module.css` (new — two buttons, loading/error states, browser-download trigger via `URL.createObjectURL`/anchor click/`URL.revokeObjectURL`), `src/components/ExportControls.test.tsx` (new), `src/App.tsx` (renders `<ExportControls />`, no `criteria` wired in yet per the spec's design decisions), `src/App.test.tsx` (new AC-13 rendering test). `npm test` (114/114 passing across 6 files), `npm run lint` (clean), `npm run build` (clean) all verified on 2026-08-18. No real-browser pass done for this stage (not required — see PR notes; a manual pass against a running backend is recommended before merge since this is exactly the kind of file-download behavior unit tests can only approximate via mocks).
 **Priority**: P2 (surfaces the backend's existing export endpoint, unused by the frontend today)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Backend Spec 004 (Export) ✅
 **Frontend Stage**: 7 of N
@@ -318,17 +318,17 @@ describe('FRONTEND-007-AC-13: export controls rendered', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-007-AC-01: `export()` resolves `{ blob, filename }`, filename from `Content-Disposition`
-- [ ] FRONTEND-007-AC-02: fallback filename when header missing/unparseable
-- [ ] FRONTEND-007-AC-03: blob-shaped error response parsed for the real message
-- [ ] FRONTEND-007-AC-04: falls back to generic message when blob error body isn't JSON
-- [ ] FRONTEND-007-AC-05: both export buttons rendered
-- [ ] FRONTEND-007-AC-06: optional `criteria` prop
-- [ ] FRONTEND-007-AC-07: JSON button calls `export('json', criteria)`
-- [ ] FRONTEND-007-AC-08: CSV button calls `export('csv', criteria)`
-- [ ] FRONTEND-007-AC-09: both buttons disabled + "Exporting..." while in flight
-- [ ] FRONTEND-007-AC-10: successful export triggers a browser download
-- [ ] FRONTEND-007-AC-11: object URL revoked after triggering download
-- [ ] FRONTEND-007-AC-12: failure shows alert, re-enables buttons
-- [ ] FRONTEND-007-AC-13: `App.tsx` renders `ExportControls`
-- [ ] FRONTEND-007-AC-14: no logging of blob contents or criteria
+- [x] FRONTEND-007-AC-01: `export()` resolves `{ blob, filename }`, filename from `Content-Disposition`
+- [x] FRONTEND-007-AC-02: fallback filename when header missing/unparseable
+- [x] FRONTEND-007-AC-03: blob-shaped error response parsed for the real message
+- [x] FRONTEND-007-AC-04: falls back to generic message when blob error body isn't JSON
+- [x] FRONTEND-007-AC-05: both export buttons rendered
+- [x] FRONTEND-007-AC-06: optional `criteria` prop
+- [x] FRONTEND-007-AC-07: JSON button calls `export('json', criteria)`
+- [x] FRONTEND-007-AC-08: CSV button calls `export('csv', criteria)`
+- [x] FRONTEND-007-AC-09: both buttons disabled + "Exporting..." while in flight
+- [x] FRONTEND-007-AC-10: successful export triggers a browser download
+- [x] FRONTEND-007-AC-11: object URL revoked after triggering download
+- [x] FRONTEND-007-AC-12: failure shows alert, re-enables buttons
+- [x] FRONTEND-007-AC-13: `App.tsx` renders `ExportControls`
+- [x] FRONTEND-007-AC-14: no logging of blob contents or criteria

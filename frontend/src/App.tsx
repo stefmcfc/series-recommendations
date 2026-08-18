@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { SeriesList } from './components/SeriesList'
 import { AddSeriesForm } from './components/AddSeriesForm'
 import { EditSeriesForm } from './components/EditSeriesForm'
+import { ExportControls } from './components/ExportControls'
 import type { Series } from './types/series'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
 
   return (
     <main>
+      <ExportControls />
       <SeriesList
         key={seriesListKey}
         onSeriesClick={setSelectedSeriesId}

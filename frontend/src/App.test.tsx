@@ -89,6 +89,15 @@ describe('FRONTEND-004-AC-36: cancelling an edit', () => {
   })
 })
 
+describe('FRONTEND-007-AC-13: export controls rendered', () => {
+  it('renders ExportControls on the main page', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await waitFor(() => screen.getByTestId('export-json-btn'))
+    expect(screen.getByTestId('export-csv-btn')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
   it('closes the dialog and re-fetches the series list', async () => {
     mockGetAll
