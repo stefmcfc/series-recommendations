@@ -4,6 +4,7 @@ import type {
   CreateSeriesRequest,
   UpdateSeriesRequest,
   SearchCriteria,
+  OmdbLookupResult,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -88,6 +89,11 @@ export const seriesApi = {
   search: (criteria: SearchCriteria): Promise<Series[]> =>
     request<{ data: Series[]; count: number }>(() =>
       client.get('/series/search', { params: buildSearchParams(criteria) }),
+    ).then((res) => res.data),
+
+  lookupByTitle: (title: string): Promise<OmdbLookupResult> =>
+    request<{ data: OmdbLookupResult }>(() =>
+      client.get('/series/lookup', { params: { title } }),
     ).then((res) => res.data),
 
   export: async (

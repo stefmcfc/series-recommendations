@@ -25,6 +25,7 @@ interface FormState {
   rottenTomatoesRating: string
   personalRating: string
   personalNotes: string
+  posterUrl: string
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -48,6 +49,7 @@ function toFormState(series: Series): FormState {
     rottenTomatoesRating: numberToFormValue(series.rottenTomatoesRating),
     personalRating: numberToFormValue(series.personalRating),
     personalNotes: series.personalNotes ?? '',
+    posterUrl: series.posterUrl ?? '',
   }
 }
 
@@ -168,6 +170,7 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
     payload.personalRating = Number(form.personalRating)
   if (form.personalNotes.trim() !== '')
     payload.personalNotes = form.personalNotes.trim()
+  if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
 
   return payload
 }
@@ -181,6 +184,7 @@ export function EditSeriesForm({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [posterPreviewError, setPosterPreviewError] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -196,6 +200,13 @@ export function EditSeriesForm({
     ) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }))
     }
+
+  const handlePosterUrlChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setForm((prev) => ({ ...prev, posterUrl: event.target.value }))
+    setPosterPreviewError(false)
+  }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape' && !submitting) {
@@ -471,6 +482,24 @@ export function EditSeriesForm({
               value={form.personalNotes}
               onChange={updateField('personalNotes')}
             />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="posterUrl">Poster URL</label>
+            <input
+              id="posterUrl"
+              type="text"
+              value={form.posterUrl}
+              onChange={handlePosterUrlChange}
+            />
+            {form.posterUrl.trim() !== '' && !posterPreviewError && (
+              <img
+                src={form.posterUrl}
+                alt=""
+                className={styles.posterPreview}
+                onError={() => setPosterPreviewError(true)}
+              />
+            )}
           </div>
 
           <div className={styles.actions}>

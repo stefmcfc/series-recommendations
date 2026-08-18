@@ -37,6 +37,7 @@ export function SeriesList({
   )
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
 
   const criteriaActive = hasActiveCriteria(criteria)
 
@@ -101,6 +102,10 @@ export function SeriesList({
     event.stopPropagation()
     setDeleteError(null)
     setConfirmingDeleteId(id)
+  }
+
+  const handlePosterError = (id: string) => {
+    setPosterErrorIds((prev) => new Set(prev).add(id))
   }
 
   const handleCancelDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -222,6 +227,16 @@ export function SeriesList({
               data-testid="series-row"
               onKeyDown={(e) => handleRowKeyDown(e, s.id)}
             >
+              <div className={styles.thumbnail} data-testid="series-thumbnail">
+                {s.posterUrl !== null && !posterErrorIds.has(s.id) && (
+                  <img
+                    src={s.posterUrl}
+                    alt=""
+                    className={styles.thumbnailImage}
+                    onError={() => handlePosterError(s.id)}
+                  />
+                )}
+              </div>
               <button
                 type="button"
                 className={styles.title}
