@@ -229,9 +229,15 @@ describe('SH-006: search', () => {
 // SH-007: export()
 // ---------------------------------------------------------------------------
 describe('SH-007: export', () => {
-  it('should call GET /series/export with format=json and return Blob', async () => {
+  it('should call GET /series/export with format=json and return { blob, filename }', async () => {
     const mockBlob = new Blob(['{"series":[]}'], { type: 'application/json' })
-    client.get.mockResolvedValue({ data: mockBlob })
+    client.get.mockResolvedValue({
+      data: mockBlob,
+      headers: {
+        'content-disposition':
+          'attachment; filename="series-export-20260101_120000.json"',
+      },
+    })
 
     const result = await seriesApi.export('json')
 
@@ -242,11 +248,15 @@ describe('SH-007: export', () => {
         params: expect.objectContaining({ format: 'json' }),
       }),
     )
-    expect(result).toBeInstanceOf(Blob)
+    expect(result.blob).toBeInstanceOf(Blob)
+    expect(result.filename).toBe('series-export-20260101_120000.json')
   })
 
   it('should include filters in export params when provided', async () => {
-    client.get.mockResolvedValue({ data: new Blob([''], { type: 'text/csv' }) })
+    client.get.mockResolvedValue({
+      data: new Blob([''], { type: 'text/csv' }),
+      headers: {},
+    })
     await seriesApi.export('csv', { status: SeriesStatus.COMPLETED })
 
     const args = client.get.mock.calls[0][1] as {
@@ -254,6 +264,50 @@ describe('SH-007: export', () => {
     }
     expect(args.params.status).toBe('COMPLETED')
     expect(args.params.format).toBe('csv')
+  })
+
+  it('should fall back to a generic filename when the header is missing', async () => {
+    client.get.mockResolvedValue({
+      data: new Blob(['a,b'], { type: 'text/csv' }),
+      headers: {},
+    })
+
+    const result = await seriesApi.export('csv')
+
+    expect(result.filename).toBe('series-export.csv')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// IF-010: export error handling
+// ---------------------------------------------------------------------------
+describe('IF-010: export error handling', () => {
+  it('parses a JSON error message out of a Blob error response', async () => {
+    const errorBlob = new Blob([JSON.stringify({ error: 'Invalid format' })], {
+      type: 'application/json',
+    })
+    client.get.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 400, data: errorBlob },
+    })
+
+    await expect(seriesApi.export('json')).rejects.toMatchObject({
+      status: 400,
+      message: 'Invalid format',
+    })
+  })
+
+  it('falls back to a generic message when the Blob body is not valid JSON', async () => {
+    const errorBlob = new Blob(['not json'], { type: 'text/plain' })
+    client.get.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 500, data: errorBlob },
+    })
+
+    await expect(seriesApi.export('json')).rejects.toMatchObject({
+      status: 500,
+      message: 'An error occurred',
+    })
   })
 })
 

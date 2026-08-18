@@ -90,11 +90,68 @@ export const seriesApi = {
       client.get('/series/search', { params: buildSearchParams(criteria) }),
     ).then((res) => res.data),
 
-  export: (format: 'json' | 'csv', filters?: SearchCriteria): Promise<Blob> =>
-    request<Blob>(() =>
-      client.get('/series/export', {
+  export: async (
+    format: 'json' | 'csv',
+    filters?: SearchCriteria,
+  ): Promise<{ blob: Blob; filename: string }> => {
+    try {
+      if (import.meta.env.DEV) {
+        console.log('[seriesApi] request')
+      }
+      const response = await client.get('/series/export', {
         responseType: 'blob',
         params: { format, ...buildSearchParams(filters) },
-      }),
-    ),
+      })
+      const blob = response.data as Blob
+      const filename =
+        parseFilename(response.headers?.['content-disposition']) ??
+        `series-export.${format}`
+      return { blob, filename }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        if (import.meta.env.DEV) {
+          console.error('[seriesApi] error', err)
+        }
+        if (!err.response) {
+          throw new ApiError(0, 'Network error. Please check your connection.')
+        }
+        const { status, data } = err.response as {
+          status: number
+          data: unknown
+        }
+        // The request uses responseType: 'blob', so axios applies that same
+        // responseType to error responses too — a failed export's body
+        // arrives as a Blob of JSON text, not the parsed { error, details }
+        // object every other seriesApi method's error path assumes.
+        const parsed = await parseErrorBlob(data)
+        throw new ApiError(
+          status,
+          parsed?.error ?? 'An error occurred',
+          parsed?.details,
+        )
+      }
+      throw err
+    }
+  },
+}
+
+function parseFilename(contentDisposition: string | undefined): string | null {
+  if (!contentDisposition) return null
+  const match = /filename="?([^";]+)"?/i.exec(contentDisposition)
+  return match ? match[1] : null
+}
+
+async function parseErrorBlob(
+  data: unknown,
+): Promise<{ error?: string; details?: Record<string, string> } | null> {
+  if (!(data instanceof Blob)) return null
+  try {
+    const text = await data.text()
+    return JSON.parse(text) as {
+      error?: string
+      details?: Record<string, string>
+    }
+  } catch {
+    return null
+  }
 }

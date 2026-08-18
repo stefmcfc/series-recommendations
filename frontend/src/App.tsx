@@ -3,6 +3,7 @@ import { SeriesList } from './components/SeriesList'
 import { SeriesDetail } from './components/SeriesDetail'
 import { AddSeriesForm } from './components/AddSeriesForm'
 import { EditSeriesForm } from './components/EditSeriesForm'
+import { ExportControls } from './components/ExportControls'
 import { SearchFilter } from './components/SearchFilter'
 import type { Series, SearchCriteria } from './types/series'
 
@@ -45,6 +46,7 @@ function App() {
             onSearch={setCriteria}
             onClear={() => setCriteria(null)}
           />
+          <ExportControls criteria={criteria ?? undefined} />
           <SeriesList
             key={seriesListKey}
             onSeriesClick={setSelectedSeriesId}
