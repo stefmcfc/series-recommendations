@@ -36,3 +36,14 @@ app:
     # (see OmdbClient) so the app still starts and runs fine without it; only
     # GET /api/v1/series/lookup itself fails (502) until the key is configured. Never logged
     # or included in any response body.
+  tmdb:
+    # Base URL for the TMDB API (https://www.themoviedb.org/documentation/api). Overridable
+    # via the APP_TMDB_BASE_URL env var without a code change (e.g. to point at a test double).
+    base-url: https://api.themoviedb.org/3/
+    # No default api-key here, intentionally -- it must be supplied via the APP_TMDB_API_KEY
+    # env var. Read via a constructor-injected @Value with an empty-string fallback (see
+    # TmdbClient), same pattern as app.omdb.api-key -- the app still starts and runs fine
+    # without it; only GET /api/v1/series/recommendations fails (502) once it actually needs
+    # to call TMDB (an empty "watched" pool short-circuits before any call is attempted, per
+    # SERIES-006-AC-20, so a missing key alone doesn't fail the endpoint until there's
+    # something to source recommendations from). Never logged or included in any response body.

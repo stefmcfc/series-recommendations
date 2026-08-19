@@ -21,6 +21,7 @@ public class SeriesDto {
     private Integer personalRating;
     private String personalNotes;
     private String posterUrl;
+    private String imdbId;
     private LocalDateTime dateAdded;
     private LocalDateTime dateCompleted;
 
@@ -70,6 +71,9 @@ public class SeriesDto {
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public String getImdbId() { return imdbId; }
+    public void setImdbId(String imdbId) { this.imdbId = imdbId; }
 
     public LocalDateTime getDateAdded() { return dateAdded; }
     public void setDateAdded(LocalDateTime dateAdded) { this.dateAdded = dateAdded; }

@@ -71,6 +71,46 @@ class SeriesServiceSpec extends Specification {
         result.posterUrl == null
   }
 
+  def "SERIES-006-AC-01/02/03: imdbId flows through create and is persisted"() {
+    given: "a SeriesDto with imdbId set"
+        def dto = new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747")
+
+    when: "the series is created"
+        def created = seriesService.create(dto)
+
+    then: "imdbId round-trips"
+        created.imdbId == "tt0903747"
+
+    and: "imdbId is persisted and retrievable"
+        seriesService.getById(created.id).imdbId == "tt0903747"
+  }
+
+  def "SERIES-006-AC-03: should create a series without an imdbId, leaving it null"() {
+    given: "a series DTO with no imdbId"
+        def dto = new SeriesDto(title: "No Imdb Id Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "imdbId is null, like other unset optional fields"
+        result.imdbId == null
+  }
+
+  def "SERIES-006-AC-03: should update a series's imdbId"() {
+    given: "a series has been created without an imdbId"
+        def created = seriesService.create(new SeriesDto(title: "Show"))
+
+    and: "an update DTO with an imdbId"
+        def updateDto = new SeriesDto(imdbId: "tt1234567")
+
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
+
+    then: "imdbId is set, and other fields are unchanged"
+        result.imdbId == "tt1234567"
+        result.title == "Show"
+  }
+
   def "SERIES-005-AC-03: should update a series's posterUrl"() {
     given: "a series has been created without a posterUrl"
         def created = seriesService.create(new SeriesDto(title: "Show"))

@@ -46,6 +46,7 @@ public class SeriesLookupService {
         dto.setMetacriticRating(result.metacriticRating());
         dto.setRottenTomatoesRating(result.rottenTomatoesRating());
         dto.setPosterUrl(result.posterUrl());
+        dto.setImdbId(result.imdbId());
         return dto;
     }
 }

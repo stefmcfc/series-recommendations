@@ -18,6 +18,7 @@ public class SeriesLookupDto {
     private Integer metacriticRating;
     private Integer rottenTomatoesRating;
     private String posterUrl;
+    private String imdbId;
 
     public SeriesLookupDto() {}
 
@@ -47,4 +48,7 @@ public class SeriesLookupDto {
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public String getImdbId() { return imdbId; }
+    public void setImdbId(String imdbId) { this.imdbId = imdbId; }
 }

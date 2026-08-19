@@ -103,7 +103,8 @@ public class OmdbClient {
             parseBigDecimal(body.get("imdbRating")),
             parseRatingFromSource(ratings, "Metacritic"),
             parseRatingFromSource(ratings, "Rotten Tomatoes"),
-            str(body.get("Poster"))
+            str(body.get("Poster")),
+            str(body.get("imdbID"))
         );
     }
 

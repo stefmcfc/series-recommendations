@@ -64,7 +64,7 @@ The Vite dev server starts at **http://localhost:5173** and proxies `/api` calls
 
 ### Backend
 
-The backend is configured via `backend/src/main/resources/application.yml`. No environment variables are required to run the app itself -- defaults work out of the box. The one exception is `app.omdb.api-key`: without it, everything else still works, but `GET /api/v1/series/lookup` specifically returns `502` until it's set (see below).
+The backend is configured via `backend/src/main/resources/application.yml`. No environment variables are required to run the app itself -- defaults work out of the box. The exceptions are `app.omdb.api-key` and `app.tmdb.api-key`: without them, everything else still works, but `GET /api/v1/series/lookup` and `GET /api/v1/series/recommendations` (respectively) fail with `502` once they actually need to call out (see below -- `/recommendations` specifically only fails once there's at least one `COMPLETED` series with a resolvable `imdbId` to source from; with none yet, it returns `200` with an empty list regardless of whether the TMDB key is set).
 
 | Property | Default | Description |
 |----------|---------|-------------|
@@ -73,11 +73,13 @@ The backend is configured via `backend/src/main/resources/application.yml`. No e
 | `spring.jpa.show-sql` | `true` | Print SQL queries to console |
 | `spring.jpa.hibernate.ddl-auto` | `validate` | Schema validation -- Flyway manages DDL |
 | `spring.flyway.enabled` | `true` | Run Flyway migrations on startup |
-| `spring.http.clients.connect-timeout` | `5s` | Bounded connect timeout applied to outbound HTTP clients (currently only OMDb lookups) |
-| `spring.http.clients.read-timeout` | `10s` | Bounded read timeout applied to outbound HTTP clients (currently only OMDb lookups) |
+| `spring.http.clients.connect-timeout` | `5s` | Bounded connect timeout applied to outbound HTTP clients (OMDb and TMDB) |
+| `spring.http.clients.read-timeout` | `10s` | Bounded read timeout applied to outbound HTTP clients (OMDb and TMDB) |
 | `app.cors.allowed-origins` | `http://localhost:5173` | Origin(s) allowed to call `/api/**` cross-origin (never a wildcard) — see `uk.co.stefirby.seriestracker.config.CorsConfig` |
 | `app.omdb.api-key` | *(none)* | API key for the [OMDb API](https://www.omdbapi.com/) (free tier, registration required), used by `GET /api/v1/series/lookup`. **No default** — must be supplied via the `APP_OMDB_API_KEY` env var. The rest of the app runs fine without it; only `/series/lookup` itself fails with `502 Bad Gateway` until it's set. Never logged or included in any response body — see `uk.co.stefirby.seriestracker.client.OmdbClient`. |
 | `app.omdb.base-url` | `https://www.omdbapi.com/` | Base URL for the OMDb API, overridable via `APP_OMDB_BASE_URL` (e.g. to point at a test double) |
+| `app.tmdb.api-key` | *(none)* | API key for the [TMDB API](https://www.themoviedb.org/documentation/api) (free, non-commercial use, registration required), used by `GET /api/v1/series/recommendations`. **No default** — must be supplied via the `APP_TMDB_API_KEY` env var. The rest of the app runs fine without it; `/series/recommendations` only fails with `502 Bad Gateway` once it actually has a `COMPLETED` series with an `imdbId` to source from (an empty "watched" pool short-circuits with `200`/empty before any TMDB call is attempted). Never logged or included in any response body — see `uk.co.stefirby.seriestracker.client.TmdbClient`. |
+| `app.tmdb.base-url` | `https://api.themoviedb.org/3/` | Base URL for the TMDB API, overridable via `APP_TMDB_BASE_URL` (e.g. to point at a test double) |
 
 Override any property with a `SPRING_` prefixed environment variable (or, for the `app.*` properties above, the plain `APP_`-prefixed equivalent — Spring's relaxed env-var binding applies to any property, not just `spring.*`):
 
@@ -87,6 +89,9 @@ SPRING_DATASOURCE_URL=jdbc:sqlite:/absolute/path/to/my.db gradlew.bat bootRun
 
 # Enable GET /api/v1/series/lookup by supplying an OMDb API key
 APP_OMDB_API_KEY=your-omdb-api-key gradlew.bat bootRun
+
+# Enable GET /api/v1/series/recommendations by supplying a TMDB API key
+APP_TMDB_API_KEY=your-tmdb-api-key gradlew.bat bootRun
 ```
 
 Or create `backend/src/main/resources/application-local.yml` and activate it:
@@ -130,6 +135,9 @@ Migration files follow `V{version}__{description}.sql` naming.
 | File | Description |
 |------|-------------|
 | `V001__create_series_table.sql` | Initial schema -- `series` table with all columns and indexes |
+| `V002__add_poster_url_to_series.sql` | Adds `poster_url` to `series` |
+| `V003__add_imdb_id_to_series.sql` | Adds `imdb_id` to `series` (nullable, indexed) |
+| `V004__create_ignored_series_table.sql` | Creates the `ignored_series` table (dismissed recommendations) |
 
 ### Resetting the database
 
@@ -252,6 +260,20 @@ curl "http://localhost:8080/api/v1/series/export?format=json"
 
 ```bash
 curl "http://localhost:8080/api/v1/series/export?format=csv"
+```
+
+### Get recommendations
+
+```bash
+curl "http://localhost:8080/api/v1/series/recommendations?limit=10"
+```
+
+### Ignore (dismiss) a recommendation
+
+```bash
+curl -X POST http://localhost:8080/api/v1/series/ignored \
+  -H "Content-Type: application/json" \
+  -d "{\"imdbId\": \"tt1234567\", \"title\": \"Some Show\", \"reason\": \"Not interested\"}"
 ```
 
 ---

@@ -79,6 +79,12 @@ public class SeriesEntity {
     @Column(nullable = true, length = 1000)
     private String posterUrl;
 
+    // SERIES-006-AC-01: nullable -- manually-added series that never went through the OMDb
+    // lookup won't have one. Indexed (idx_series_imdb_id, V003 migration) since it's queried
+    // for existence checks by RecommendationService.
+    @Column(nullable = true, length = 20)
+    private String imdbId;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime dateAdded;
@@ -130,6 +136,9 @@ public class SeriesEntity {
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public String getImdbId() { return imdbId; }
+    public void setImdbId(String imdbId) { this.imdbId = imdbId; }
 
     public LocalDateTime getDateAdded() { return dateAdded; }
     public void setDateAdded(LocalDateTime dateAdded) { this.dateAdded = dateAdded; }

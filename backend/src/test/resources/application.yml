@@ -21,3 +21,7 @@ app:
     base-url: https://www.omdbapi.com/
     # api-key intentionally left unset in the test profile -- see OmdbClientSpec /
     # SeriesControllerSpec for the "key not configured" 502 path.
+  tmdb:
+    base-url: https://api.themoviedb.org/3/
+    # api-key intentionally left unset in the test profile -- see TmdbClientSpec /
+    # SeriesControllerRecommendationsSpec for the "key not configured" 502 path.

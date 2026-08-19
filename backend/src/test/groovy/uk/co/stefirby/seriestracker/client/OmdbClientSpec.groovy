@@ -59,7 +59,8 @@ class OmdbClientSpec extends Specification {
                     {"Source":"Rotten Tomatoes","Value":"96%"},
                     {"Source":"Metacritic","Value":"87/100"}
                   ],
-                  "Poster": "https://example.com/poster.jpg"
+                  "Poster": "https://example.com/poster.jpg",
+                  "imdbID": "tt0903747"
                 }
             '''
             mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
@@ -93,9 +94,49 @@ class OmdbClientSpec extends Specification {
             result.rottenTomatoesRating() == 96
             result.metacriticRating() == 87
             result.posterUrl() == "https://example.com/poster.jpg"
+            result.imdbId() == "tt0903747"
 
         and:
             mockServer.verify()
+    }
+
+    def "SERIES-006-AC-04: maps imdbID onto OmdbLookupResult.imdbId, N/A to null"() {
+        given: "an OMDb response with imdbID: tt0903747"
+            def body = '{"Response":"True","Title":"Breaking Bad","imdbID":"tt0903747"}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "OmdbClient.lookup('Breaking Bad') is called"
+            def result = client().lookup("Breaking Bad")
+
+        then: "imdbId is mapped"
+            result.imdbId() == "tt0903747"
+    }
+
+    def "SERIES-006-AC-04: treats a literal N/A imdbID as null"() {
+        given: "an OMDb response with imdbID: N/A"
+            def body = '{"Response":"True","Title":"Obscure Show","imdbID":"N/A"}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "OmdbClient.lookup(...) is called"
+            def result = client().lookup("Obscure Show")
+
+        then: "imdbId is null, not the literal string"
+            result.imdbId() == null
+    }
+
+    def "SERIES-006-AC-04: imdbID absent from the response maps to null"() {
+        given: "an OMDb response with no imdbID field at all"
+            def body = '{"Response":"True","Title":"No Imdb Id Show"}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "OmdbClient.lookup(...) is called"
+            def result = client().lookup("No Imdb Id Show")
+
+        then: "imdbId is null"
+            result.imdbId() == null
     }
 
     def "SERIES-005-AC-10: extracts the first year from an open-ended year range"() {
