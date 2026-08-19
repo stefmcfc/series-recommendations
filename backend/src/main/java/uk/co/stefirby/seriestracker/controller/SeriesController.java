@@ -90,7 +90,7 @@ public class SeriesController {
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<List<RecommendationDto>>> recommendations(
             @RequestParam(required = false, defaultValue = "20") int limit) {
-        int clampedLimit = Math.max(1, Math.min(50, limit));
+        int clampedLimit = Math.clamp(limit, 1, 50);
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }

@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * <p>Built on Spring's {@link RestClient} (not {@code RestTemplate}, which is in
  * maintenance mode). A {@link RestClient.Builder} is constructor-injected rather than an
  * already-built {@code RestClient} so tests can bind a
- * {@link org.springframework.test.web.client.MockRestServiceServer} to it -- see
+ * {@code org.springframework.test.web.client.MockRestServiceServer} to it -- see
  * {@code OmdbClientSpec}.
  *
  * <p>Deliberately does <em>not</em> call {@code RestClient.Builder#requestFactory(...)}

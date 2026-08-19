@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * <p>Built on Spring's {@link RestClient}, mirroring {@code OmdbClient} exactly: a
  * {@link RestClient.Builder} is constructor-injected rather than an already-built
  * {@code RestClient} so tests can bind a
- * {@link org.springframework.test.web.client.MockRestServiceServer} to it -- see
+ * {@code org.springframework.test.web.client.MockRestServiceServer} to it -- see
  * {@code TmdbClientSpec}. Authenticates via TMDB's v3 key-based auth ({@code ?api_key=} on
  * every request), not v4 Bearer-token auth, to mirror {@code OmdbClient}'s query-param-key
  * shape exactly rather than introducing a second auth style for one client.
@@ -69,7 +69,7 @@ public class TmdbClient {
         if (tvResults.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(toInteger(tvResults.get(0).get("id")));
+        return Optional.ofNullable(toInteger(tvResults.getFirst().get("id")));
     }
 
     /**
