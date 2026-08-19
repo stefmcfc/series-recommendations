@@ -23,6 +23,7 @@ export interface Series {
   personalRating: number | null
   personalNotes: string | null
   posterUrl: string | null
+  imdbId: string | null
   dateAdded: string
   dateCompleted: string | null
 }
@@ -40,6 +41,7 @@ export interface CreateSeriesRequest {
   personalRating?: number
   personalNotes?: string
   posterUrl?: string
+  imdbId?: string
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
@@ -57,6 +59,18 @@ export interface OmdbLookupResult {
   metacriticRating?: number
   rottenTomatoesRating?: number
   posterUrl?: string
+  imdbId?: string
+}
+
+export interface Recommendation {
+  title: string
+  year: number | null
+  genres: string | null
+  overview: string | null
+  posterUrl: string | null
+  tmdbRating: number | null
+  imdbId: string
+  sourceTitle: string | null
 }
 
 export interface SearchCriteria {

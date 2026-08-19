@@ -15,7 +15,8 @@ frontend/
 │   │   ├── EditSeriesForm.tsx      # frontend_spec_004.md; edit-series modal
 │   │   ├── SeriesDetail.tsx        # frontend_spec_005_series_detail.md; full-record view + own Edit/Delete
 │   │   ├── SearchFilter.tsx        # frontend_spec_006_search_filter.md
-│   │   └── ExportControls.tsx      # frontend_spec_007_export_trigger.md
+│   │   ├── ExportControls.tsx      # frontend_spec_007_export_trigger.md
+│   │   └── RecommendationsList.tsx # frontend_spec_010_recommendations.md; wired into App.tsx via a nav toggle alongside SeriesList
 │   │
 │   ├── pages/                   # Page-level components, if routing is added (not yet created — see frontend_spec_005.md's design decisions on why no router exists yet)
 │   │

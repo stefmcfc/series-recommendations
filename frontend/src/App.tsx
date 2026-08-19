@@ -5,9 +5,13 @@ import { AddSeriesForm } from './components/AddSeriesForm'
 import { EditSeriesForm } from './components/EditSeriesForm'
 import { ExportControls } from './components/ExportControls'
 import { SearchFilter } from './components/SearchFilter'
+import { RecommendationsList } from './components/RecommendationsList'
 import type { Series, SearchCriteria } from './types/series'
 
+type MainView = 'list' | 'recommendations'
+
 function App() {
+  const [mainView, setMainView] = useState<MainView>('list')
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [editingSeries, setEditingSeries] = useState<Series | null>(null)
@@ -42,18 +46,41 @@ function App() {
         />
       ) : (
         <>
-          <SearchFilter
-            onSearch={setCriteria}
-            onClear={() => setCriteria(null)}
-          />
-          <ExportControls criteria={criteria ?? undefined} />
-          <SeriesList
-            key={seriesListKey}
-            onSeriesClick={setSelectedSeriesId}
-            onAddClick={() => setIsAddFormOpen(true)}
-            onEditClick={setEditingSeries}
-            criteria={criteria ?? undefined}
-          />
+          <nav>
+            <button
+              type="button"
+              aria-pressed={mainView === 'list'}
+              onClick={() => setMainView('list')}
+            >
+              My Series
+            </button>
+            <button
+              type="button"
+              aria-pressed={mainView === 'recommendations'}
+              onClick={() => setMainView('recommendations')}
+            >
+              Recommendations
+            </button>
+          </nav>
+
+          {mainView === 'recommendations' ? (
+            <RecommendationsList />
+          ) : (
+            <>
+              <SearchFilter
+                onSearch={setCriteria}
+                onClear={() => setCriteria(null)}
+              />
+              <ExportControls criteria={criteria ?? undefined} />
+              <SeriesList
+                key={seriesListKey}
+                onSeriesClick={setSelectedSeriesId}
+                onAddClick={() => setIsAddFormOpen(true)}
+                onEditClick={setEditingSeries}
+                criteria={criteria ?? undefined}
+              />
+            </>
+          )}
         </>
       )}
       {isAddFormOpen && (

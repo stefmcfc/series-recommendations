@@ -28,6 +28,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     personalRating: null,
     personalNotes: null,
     posterUrl: null,
+    imdbId: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     ...overrides,

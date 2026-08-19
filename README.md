@@ -95,7 +95,7 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 009 | OMDb autofill & poster display (`AddSeriesForm` Look Up + poster preview, `EditSeriesForm`/`SeriesDetail`/`SeriesList` poster display) | ✅ Done |
 | Backend 005 | OMDb lookup & poster field | ✅ Done |
 | Backend 006 | Series recommendations (TMDB-sourced, ignore list) | ✅ Done (backend only — see Frontend 010) |
-| Frontend 010 | Recommendations UI | ⏳ Not started |
+| Frontend 010 | Recommendations UI (`RecommendationsList`, `AddSeriesForm` `initialValues` prefill, nav toggle) | ✅ Done |
 
 ## Changelog
 
