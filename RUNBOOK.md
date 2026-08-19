@@ -94,11 +94,17 @@ APP_OMDB_API_KEY=your-omdb-api-key gradlew.bat bootRun
 APP_TMDB_API_KEY=your-tmdb-api-key gradlew.bat bootRun
 ```
 
-Or create `backend/src/main/resources/application-local.yml` and activate it:
+Or, for a persistent local setup that doesn't need re-exporting every session: copy `backend/application-local.yml.example` to `backend/application-local.yml` (gitignored — never commit it) and fill in real values:
 
-```bash
-SPRING_PROFILES_ACTIVE=local gradlew.bat bootRun
+```yaml
+app:
+  omdb:
+    api-key: your-omdb-api-key-here
+  tmdb:
+    api-key: your-tmdb-api-key-here
 ```
+
+Loaded automatically on startup via `spring.config.import: optional:file:./application-local.yml` in `application.yml` — no profile flag needed, and no risk of it ending up in a build artifact since it lives outside `src/`, not in `src/main/resources`.
 
 ### Frontend
 
