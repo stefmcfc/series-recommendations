@@ -203,8 +203,8 @@ Ranges mirror the backend's actual constraints, same as `AddSeriesForm` (Fronten
 | `ApiError` | `src/types/api.ts` (Frontend Spec 001) |
 | `PATCH /api/v1/series/{id}` contract, `currentSeason`/`totalSeasons` validation, `dateCompleted` auto-set/clear | `series_spec_002_crud.md`, `SeriesService.update` |
 | `DELETE /api/v1/series/{id}` contract, 404 response shape | `series_spec_002_crud.md`, `SeriesController`/`GlobalExceptionHandler` |
-| `currentSeason > totalSeasons` → 400 via `IllegalArgumentException`, message-only (no `details` map) | `backend/src/main/java/com/example/seriestracker/service/SeriesService.java`, `exception/GlobalExceptionHandler.java` |
-| Field range constraints | `backend/src/main/java/com/example/seriestracker/model/SeriesEntity.java` bean-validation annotations |
+| `currentSeason > totalSeasons` → 400 via `IllegalArgumentException`, message-only (no `details` map) | `backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesService.java`, `exception/GlobalExceptionHandler.java` |
+| Field range constraints | `backend/src/main/java/uk/co/stefirby/seriestracker/model/SeriesEntity.java` bean-validation annotations |
 | Modal structure, field-set pattern, validation/payload conventions | `src/components/AddSeriesForm.tsx` (Frontend Spec 003) |
 | Row structure, `data-testid="series-row"`, `onSeriesClick` | `src/components/SeriesList.tsx` (Frontend Spec 002) |
 | Refresh-via-remount pattern | `frontend_spec_003_add_series_form.md` |

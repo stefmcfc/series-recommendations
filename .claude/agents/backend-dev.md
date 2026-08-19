@@ -23,7 +23,7 @@ Before making changes, read what's relevant:
 ## Working style
 
 - Write or update the relevant `.claude/specs/series_spec_*.md` first if you're adding a new requirement — this project uses EARS-format specs with acceptance criteria (see `.claude/steering/ears_format.md` and the `ears-spec` skill).
-- Follow red/green TDD: write the failing Spock spec first, then implement. Specs live in `backend/src/test/groovy/com/example/seriestracker/{controller,service,model}/`, one `*Spec.groovy` per class under test.
+- Follow red/green TDD: write the failing Spock spec first, then implement. Specs live in `backend/src/test/groovy/uk/co/stefirby/seriestracker/{controller,service,model}/`, one `*Spec.groovy` per class under test.
 - Keep controllers thin — business logic belongs in the service layer, not the controller.
 - Use `@Transactional` on service methods that mutate data.
 - Known gaps worth being aware of: no controller-level (`MockMvc`) tests exist yet for `/search` or `/export` (see `series_spec_003_search.md` / `series_spec_004_export.md`); only the Windows Gradle wrapper (`gradlew.bat`) is checked in.
@@ -34,7 +34,7 @@ Before making changes, read what's relevant:
 cd backend
 gradlew.bat bootRun                                    # dev server on :8080
 gradlew.bat test                                        # full Spock suite
-gradlew.bat test --tests "com.example.seriestracker.service.SeriesServiceSpec"   # one spec
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.service.SeriesServiceSpec"   # one spec
 gradlew.bat build                                        # full build
 ```
 

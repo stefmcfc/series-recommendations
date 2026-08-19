@@ -1,6 +1,6 @@
 # Spec 002: Series CRUD & REST Endpoints
 
-**Status**: ✅ Implemented — see `backend/src/main/java/com/example/seriestracker/controller/SeriesController.java`, `service/SeriesService.java`, `repository/SeriesRepository.java`, `exception/{EntityNotFoundException,GlobalExceptionHandler}.java`. Tests: `backend/src/test/groovy/com/example/seriestracker/{service/SeriesServiceSpec,controller/SeriesControllerSpec}.groovy`.
+**Status**: ✅ Implemented — see `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesController.java`, `service/SeriesService.java`, `repository/SeriesRepository.java`, `exception/{EntityNotFoundException,GlobalExceptionHandler}.java`. Tests: `backend/src/test/groovy/uk/co/stefirby/seriestracker/{service/SeriesServiceSpec,controller/SeriesControllerSpec}.groovy`.
 **Priority**: P0 (core API)
 **Depends on**: Spec 001
 **Backend Task**
@@ -55,7 +55,7 @@ DELETE /api/v1/series/{id}
 
 ### Service Layer
 
-`SeriesService` (`backend/src/main/java/com/example/seriestracker/service/SeriesService.java`):
+`SeriesService` (`backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesService.java`):
 ```java
 public SeriesDto create(SeriesDto dto);
 public SeriesDto getById(UUID id);       // throws EntityNotFoundException if not found
@@ -106,6 +106,6 @@ public void delete(UUID id);             // throws EntityNotFoundException if no
 `SeriesServiceSpec.groovy` and `SeriesControllerSpec.groovy` cover: minimal/full creation, invalid-rating rejection, get all (empty/non-empty), get by id (found/404), update (progress fields, invalid `currentSeason`, COMPLETED auto-sets/clears `dateCompleted`), delete (success/404), and the equivalent HTTP-level assertions via `MockMvc`. Run with:
 
 ```bash
-gradlew.bat test --tests "com.example.seriestracker.service.SeriesServiceSpec"
-gradlew.bat test --tests "com.example.seriestracker.controller.SeriesControllerSpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.service.SeriesServiceSpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.controller.SeriesControllerSpec"
 ```

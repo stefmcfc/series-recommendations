@@ -126,7 +126,7 @@ Husky is already installed for `pre-commit`/`pre-push` (see git hooks setup). A 
 
 Originally deferred as "not urgent" because the Vite dev proxy covered local work. A real-browser verification pass (done while implementing `frontend_spec_003_add_series_form.md`) confirmed this was a real, currently-blocking gap: loading the frontend dev server in an actual browser and letting it call the backend directly failed with `No 'Access-Control-Allow-Origin' header is present` (confirmed both with and without VPN — not network-related). This is now implemented and verified.
 
-Implementation: `com.example.seriestracker.config.CorsConfig`, a `WebMvcConfigurer` bean (chosen over a standalone `CorsConfigurationSource` bean because this app has no Spring Security on the classpath — `WebMvcConfigurer.addCorsMappings` is the simpler, current, fully-supported mechanism for plain Spring MVC). Scoped to `/api/**`, allows `GET`/`POST`/`PATCH`/`DELETE` and the `Content-Type` header, no `allowCredentials` (no auth/cookies in this app). The allowed origin(s) are read from `app.cors.allowed-origins` in `application.yml` (default `http://localhost:5173`), overridable via `APP_CORS_ALLOWED_ORIGINS` — never a wildcard `*`.
+Implementation: `uk.co.stefirby.seriestracker.config.CorsConfig`, a `WebMvcConfigurer` bean (chosen over a standalone `CorsConfigurationSource` bean because this app has no Spring Security on the classpath — `WebMvcConfigurer.addCorsMappings` is the simpler, current, fully-supported mechanism for plain Spring MVC). Scoped to `/api/**`, allows `GET`/`POST`/`PATCH`/`DELETE` and the `Content-Type` header, no `allowCredentials` (no auth/cookies in this app). The allowed origin(s) are read from `app.cors.allowed-origins` in `application.yml` (default `http://localhost:5173`), overridable via `APP_CORS_ALLOWED_ORIGINS` — never a wildcard `*`.
 
 #### Acceptance Criteria
 
@@ -165,10 +165,10 @@ def "TOOLING-001-AC-16: disallowed origin does not receive a CORS allow header"(
 
 | This spec | Source |
 |-----------|--------|
-| `GlobalExceptionHandler.java` | `backend/src/main/java/com/example/seriestracker/exception/` |
+| `GlobalExceptionHandler.java` | `backend/src/main/java/uk/co/stefirby/seriestracker/exception/` |
 | `.lintstagedrc.json`, `.husky/` | Git hooks setup (this session) |
 | `.github/workflows/ci.yml` | CI workflow (this session) |
-| `CorsConfig.java` | `backend/src/main/java/com/example/seriestracker/config/` — see `.claude/steering/tech.md` "Notes" section |
+| `CorsConfig.java` | `backend/src/main/java/uk/co/stefirby/seriestracker/config/` — see `.claude/steering/tech.md` "Notes" section |
 | Accessibility ACs | `.claude/specs/frontend_spec_002.md`, Requirement 8 |
 
 ---

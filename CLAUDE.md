@@ -58,6 +58,13 @@ Read these when working in the relevant area — don't duplicate their content h
 
 **Conventional Commits** for every commit message: `<type>(<scope>): <description>` — types `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `chore`; scope is the area touched where one applies (e.g. `feat(search): add genre filter`, `docs(specs): add verification markers`).
 
+## Versioning & changelog
+
+The app is versioned as one unit with [Semantic Versioning](https://semver.org/): `backend/build.gradle.kts` (`version`) and `frontend/package.json` (`"version"`) are kept in sync, and every notable change is recorded in [CHANGELOG.md](./CHANGELOG.md) ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format).
+
+- Add an entry under `## [Unreleased]` in `CHANGELOG.md` as part of the same PR that ships a user-facing feature or fix — not retroactively.
+- When cutting a release (merging to `main`), move `[Unreleased]` into a dated `## [x.y.z] - YYYY-MM-DD` section and bump both version fields together: **major** for breaking API/data changes, **minor** for new features, **patch** for fixes/chores with no behavior change users would notice.
+
 ## Git workflow
 
 - **Branch naming**: `feature/<slug>` for new work, `fix/<slug>` for bug fixes (e.g. `feature/series-list`, `fix/export-null-rating`).

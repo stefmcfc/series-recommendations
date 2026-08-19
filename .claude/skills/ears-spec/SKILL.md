@@ -29,5 +29,5 @@ This project's specs (`.claude/specs/`) all follow EARS (Easy Approach to Requir
 ## What NOT to do
 
 - Don't mark anything as done/implemented in the new spec — it hasn't been built yet, that's the point of writing it first.
-- Don't invent API contracts that don't match what's actually in `backend/src/main/java/com/example/seriestracker/dto/` — check the real DTOs.
+- Don't invent API contracts that don't match what's actually in `backend/src/main/java/uk/co/stefirby/seriestracker/dto/` — check the real DTOs.
 - Don't skip the test case sketches — every existing spec in this project has them, and `backend-dev`/`frontend-dev` rely on them as the starting point for TDD.

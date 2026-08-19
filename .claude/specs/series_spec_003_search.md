@@ -1,6 +1,6 @@
 # Spec 003: Series Search & Filtering
 
-**Status**: ✅ Implemented — see `backend/src/main/java/com/example/seriestracker/service/SeriesSearchService.java`, `dto/SeriesSearchCriteria.java`, and the `/search` endpoint in `controller/SeriesController.java`. Tests: `backend/src/test/groovy/com/example/seriestracker/service/SeriesSearchServiceSpec.groovy`. (Note: the README roadmap previously marked this "Planned" — it was already built; corrected during the Claude Code migration.)
+**Status**: ✅ Implemented — see `backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesSearchService.java`, `dto/SeriesSearchCriteria.java`, and the `/search` endpoint in `controller/SeriesController.java`. Tests: `backend/src/test/groovy/uk/co/stefirby/seriestracker/service/SeriesSearchServiceSpec.groovy`. (Note: the README roadmap previously marked this "Planned" — it was already built; corrected during the Claude Code migration.)
 **Priority**: P1 (MVP feature)
 **Depends on**: Spec 002
 **Backend Task**
@@ -67,5 +67,5 @@ Query Parameters (all optional):
 Run with:
 
 ```bash
-gradlew.bat test --tests "com.example.seriestracker.service.SeriesSearchServiceSpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.service.SeriesSearchServiceSpec"
 ```

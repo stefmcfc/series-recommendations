@@ -1,6 +1,6 @@
 # Spec 004: Series Export (JSON & CSV)
 
-**Status**: ✅ Implemented — see `backend/src/main/java/com/example/seriestracker/service/SeriesExportService.java`, `dto/SeriesExportResponse.java`, and the `/export` endpoint in `controller/SeriesController.java`. Tests: `backend/src/test/groovy/com/example/seriestracker/service/SeriesExportServiceSpec.groovy`. (Note: the README roadmap previously marked this "Planned" — it was already built; corrected during the Claude Code migration.)
+**Status**: ✅ Implemented — see `backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesExportService.java`, `dto/SeriesExportResponse.java`, and the `/export` endpoint in `controller/SeriesController.java`. Tests: `backend/src/test/groovy/uk/co/stefirby/seriestracker/service/SeriesExportServiceSpec.groovy`. (Note: the README roadmap previously marked this "Planned" — it was already built; corrected during the Claude Code migration.)
 **Priority**: P1 (MVP feature)
 **Depends on**: Spec 002
 **Backend Task**
@@ -73,5 +73,5 @@ public String exportAsCsv(List<SeriesDto> series);
 Run with:
 
 ```bash
-gradlew.bat test --tests "com.example.seriestracker.service.SeriesExportServiceSpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.service.SeriesExportServiceSpec"
 ```

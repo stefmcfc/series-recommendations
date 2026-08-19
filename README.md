@@ -34,7 +34,7 @@ series-recommendation/
 │   ├── steering/           # AI assistant context files
 │   └── specs/               # Feature specs and requirements
 ├── backend/               # Spring Boot application
-│   ├── src/main/java/com/example/seriestracker/
+│   ├── src/main/java/uk/co/stefirby/seriestracker/
 │   │   ├── controller/    # REST endpoints
 │   │   ├── service/       # Business logic
 │   │   ├── repository/    # Spring Data JPA
@@ -89,4 +89,8 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 006 | `SearchFilter` (search & filter UI) | ✅ Done |
 | Frontend 007 | `ExportControls` (export trigger) | ✅ Done |
 | Frontend 008 | Accessible row interactions (`SeriesList` nested-interactive fix) | ✅ Done |
-| Frontend 009 | OMDb autofill & poster display (`AddSeriesForm` Look Up + poster preview, `EditSeriesForm`/`SeriesDetail`/`SeriesList` poster display) | ✅ Done (frontend only — depends on Series Spec 005's backend endpoint, not yet merged) |
+| Frontend 009 | OMDb autofill & poster display (`AddSeriesForm` Look Up + poster preview, `EditSeriesForm`/`SeriesDetail`/`SeriesList` poster display) | ✅ Done |
+
+## Changelog
+
+Release history and notable changes are tracked in [CHANGELOG.md](./CHANGELOG.md).

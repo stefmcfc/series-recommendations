@@ -1,6 +1,6 @@
 # Spec 001: Series Entity & Database Schema
 
-**Status**: ✅ Implemented — see `backend/src/main/java/com/example/seriestracker/model/SeriesEntity.java`, `SeriesStatus.java`, `ValidSeries.java`/`SeriesValidator.java`, and `backend/src/main/resources/db/migration/V001__create_series_table.sql`. Tests: `backend/src/test/groovy/com/example/seriestracker/model/SeriesEntitySpec.groovy`.
+**Status**: ✅ Implemented — see `backend/src/main/java/uk/co/stefirby/seriestracker/model/SeriesEntity.java`, `SeriesStatus.java`, `ValidSeries.java`/`SeriesValidator.java`, and `backend/src/main/resources/db/migration/V001__create_series_table.sql`. Tests: `backend/src/test/groovy/uk/co/stefirby/seriestracker/model/SeriesEntitySpec.groovy`.
 **Priority**: P0 (foundation for everything else)
 **Backend Task**
 
@@ -48,7 +48,7 @@ A Series record contains:
 ### Implementation Details
 
 #### JPA Entity
-- Class: `SeriesEntity.java` in `backend/src/main/java/com/example/seriestracker/model/`
+- Class: `SeriesEntity.java` in `backend/src/main/java/uk/co/stefirby/seriestracker/model/`
 - Table name: `series` (lowercase, singular per convention)
 - Use `@Entity`, `@Table`, `@Column` annotations
 - Use `UUID` for `id` with `@GeneratedValue(strategy = GenerationType.UUID)`
@@ -58,7 +58,7 @@ A Series record contains:
 - Cross-field rule (`currentSeason <= totalSeasons`) enforced via the custom `@ValidSeries` constraint + `SeriesValidator`
 
 #### DTO for API
-- Class: `SeriesDto.java` in `backend/src/main/java/com/example/seriestracker/dto/`
+- Class: `SeriesDto.java` in `backend/src/main/java/uk/co/stefirby/seriestracker/dto/`
 - Mirrors entity fields, used for API requests/responses
 
 #### Database Migration
@@ -86,5 +86,5 @@ A Series record contains:
 Full Spock spec suite (`SeriesEntitySpec.groovy`) covers: minimal/full construction, blank/null title rejection, rating range validation (IMDb, Metacritic, Rotten Tomatoes, personal), year bounds, `totalSeasons`/`totalEpisodes`/`currentEpisode` positivity, `currentSeason <= totalSeasons`, null-optional-field acceptance, and the `BACKLOG` default. Run with:
 
 ```bash
-gradlew.bat test --tests "com.example.seriestracker.model.SeriesEntitySpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.model.SeriesEntitySpec"
 ```

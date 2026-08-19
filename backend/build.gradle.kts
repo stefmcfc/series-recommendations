@@ -7,8 +7,8 @@ plugins {
     id("com.github.spotbugs") version "6.5.10"
 }
 
-group = "com.example"
-version = "0.0.1-SNAPSHOT"
+group = "uk.co.stefirby"
+version = "1.0.0"
 
 java {
     toolchain {
@@ -71,13 +71,13 @@ jacoco {
 // logic (services, the validator, the catch-all exception handler, controllers)
 // stays in scope.
 val jacocoExcludes = listOf(
-    "com/example/seriestracker/SeriesTrackerApplication*",
-    "com/example/seriestracker/dto/**",
-    "com/example/seriestracker/model/SeriesEntity*",
-    "com/example/seriestracker/model/SeriesStatus*",
-    "com/example/seriestracker/model/ValidSeries*",
-    "com/example/seriestracker/exception/EntityNotFoundException*",
-    "com/example/seriestracker/exception/ExternalServiceException*"
+    "uk/co/stefirby/seriestracker/SeriesTrackerApplication*",
+    "uk/co/stefirby/seriestracker/dto/**",
+    "uk/co/stefirby/seriestracker/model/SeriesEntity*",
+    "uk/co/stefirby/seriestracker/model/SeriesStatus*",
+    "uk/co/stefirby/seriestracker/model/ValidSeries*",
+    "uk/co/stefirby/seriestracker/exception/EntityNotFoundException*",
+    "uk/co/stefirby/seriestracker/exception/ExternalServiceException*"
 )
 
 // classDirectories is reassigned below (to apply jacocoExcludes) via the eager
