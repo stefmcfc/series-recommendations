@@ -16,6 +16,7 @@ const mockCreate = vi.mocked(seriesApi.create)
 const mockUpdate = vi.mocked(seriesApi.update)
 const mockSearch = vi.mocked(seriesApi.search)
 const mockGetById = vi.mocked(seriesApi.getById)
+const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -196,6 +197,57 @@ describe('FRONTEND-005-AC-27: returning to the list', () => {
 
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(2))
     expect(screen.getByTestId('series-row')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
+  it('switches the main view without disturbing active search criteria', async () => {
+    mockGetAll.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
+    mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
+    mockGetRecommendations.mockResolvedValue([])
+
+    render(<App />)
+    await waitFor(() => screen.getByText('The Office'))
+
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'office' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'office' }),
+      ),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /recommendations/i }))
+    expect(
+      await screen.findByTestId('recommendations-list'),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('series-list')).not.toBeInTheDocument()
+    expect(
+      await screen.findByText(/no recommendations yet/i),
+    ).toBeInTheDocument()
+
+    const searchCallsBeforeReturning = mockSearch.mock.calls.length
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /series list|my series/i }),
+    )
+    expect(await screen.findByTestId('series-list')).toBeInTheDocument()
+
+    // The active criteria (App-level state, not SearchFilter's uncommitted
+    // input) survived the round trip: remounting SeriesList re-fetches with
+    // the same criteria automatically, without the user re-entering/re-
+    // submitting the filter.
+    await waitFor(() =>
+      expect(mockSearch.mock.calls.length).toBeGreaterThan(
+        searchCallsBeforeReturning,
+      ),
+    )
+    expect(mockSearch.mock.calls[mockSearch.mock.calls.length - 1][0]).toEqual(
+      expect.objectContaining({ title: 'office' }),
+    )
+    expect(await screen.findByText('The Office')).toBeInTheDocument()
   })
 })
 

@@ -526,6 +526,41 @@ describe('FRONTEND-009-AC-23: no lookup logging', () => {
   })
 })
 
+describe('FRONTEND-010-AC-11: initialValues prefill', () => {
+  it('pre-populates fields from initialValues, only for provided fields', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        initialValues={{
+          title: 'Ozark',
+          genres: 'Crime, Drama',
+          status: SeriesStatus.COMPLETED,
+        }}
+      />,
+    )
+
+    expect(screen.getByLabelText(/^title/i)).toHaveValue('Ozark')
+    expect(screen.getByLabelText(/genres/i)).toHaveValue('Crime, Drama')
+    expect(screen.getByLabelText(/^status/i)).toHaveValue(
+      SeriesStatus.COMPLETED,
+    )
+    expect(screen.getByLabelText(/^year/i)).toHaveValue(null) // untouched, not in initialValues
+  })
+
+  it('pre-populates numeric fields as strings', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        initialValues={{ title: 'Ozark', year: 2017 }}
+      />,
+    )
+
+    expect(screen.getByLabelText(/^year/i)).toHaveValue(2017)
+  })
+})
+
 describe('FRONTEND-003-AC-31/32: no leaked data, no out-of-contract fields', () => {
   it('never logs form values to the console', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)

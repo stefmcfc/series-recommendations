@@ -140,7 +140,7 @@ export function SeriesList({
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="series-list">
       <div className={styles.header}>
         <h2 className={styles.heading}>My Series</h2>
         <button

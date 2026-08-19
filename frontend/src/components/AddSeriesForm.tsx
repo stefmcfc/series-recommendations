@@ -12,6 +12,7 @@ import styles from './AddSeriesForm.module.css'
 interface AddSeriesFormProps {
   onCancel: () => void
   onSuccess: (series: Series) => void
+  initialValues?: Partial<CreateSeriesRequest>
 }
 
 interface FormState {
@@ -27,6 +28,7 @@ interface FormState {
   personalRating: string
   personalNotes: string
   posterUrl: string
+  imdbId: string
 }
 
 const initialFormState: FormState = {
@@ -42,6 +44,7 @@ const initialFormState: FormState = {
   personalRating: '',
   personalNotes: '',
   posterUrl: '',
+  imdbId: '',
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -141,6 +144,7 @@ function buildPayload(form: FormState): CreateSeriesRequest {
   if (form.personalNotes.trim() !== '')
     payload.personalNotes = form.personalNotes.trim()
   if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
+  if (form.imdbId.trim() !== '') payload.imdbId = form.imdbId.trim()
 
   return payload
 }
@@ -163,12 +167,50 @@ function applyLookupResult(
   if (result.rottenTomatoesRating != null)
     next.rottenTomatoesRating = String(result.rottenTomatoesRating)
   if (result.posterUrl != null) next.posterUrl = result.posterUrl
+  if (result.imdbId != null) next.imdbId = result.imdbId
 
   return next
 }
 
-export function AddSeriesForm({ onCancel, onSuccess }: AddSeriesFormProps) {
-  const [form, setForm] = useState<FormState>(initialFormState)
+function buildInitialFormState(
+  initialValues?: Partial<CreateSeriesRequest>,
+): FormState {
+  if (!initialValues) return initialFormState
+
+  const next: FormState = { ...initialFormState }
+
+  if (initialValues.title != null) next.title = initialValues.title
+  if (initialValues.year != null) next.year = String(initialValues.year)
+  if (initialValues.genres != null) next.genres = initialValues.genres
+  if (initialValues.totalSeasons != null)
+    next.totalSeasons = String(initialValues.totalSeasons)
+  if (initialValues.totalEpisodes != null)
+    next.totalEpisodes = String(initialValues.totalEpisodes)
+  if (initialValues.status != null) next.status = initialValues.status
+  if (initialValues.imdbRating != null)
+    next.imdbRating = String(initialValues.imdbRating)
+  if (initialValues.metacriticRating != null)
+    next.metacriticRating = String(initialValues.metacriticRating)
+  if (initialValues.rottenTomatoesRating != null)
+    next.rottenTomatoesRating = String(initialValues.rottenTomatoesRating)
+  if (initialValues.personalRating != null)
+    next.personalRating = String(initialValues.personalRating)
+  if (initialValues.personalNotes != null)
+    next.personalNotes = initialValues.personalNotes
+  if (initialValues.posterUrl != null) next.posterUrl = initialValues.posterUrl
+  if (initialValues.imdbId != null) next.imdbId = initialValues.imdbId
+
+  return next
+}
+
+export function AddSeriesForm({
+  onCancel,
+  onSuccess,
+  initialValues,
+}: AddSeriesFormProps) {
+  const [form, setForm] = useState<FormState>(() =>
+    buildInitialFormState(initialValues),
+  )
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)

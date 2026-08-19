@@ -5,6 +5,7 @@ import type {
   UpdateSeriesRequest,
   SearchCriteria,
   OmdbLookupResult,
+  Recommendation,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -95,6 +96,26 @@ export const seriesApi = {
     request<{ data: OmdbLookupResult }>(() =>
       client.get('/series/lookup', { params: { title } }),
     ).then((res) => res.data),
+
+  getRecommendations: (limit?: number): Promise<Recommendation[]> =>
+    request<{ data: Recommendation[]; count: number }>(() =>
+      client.get('/series/recommendations', {
+        params: limit != null ? { limit } : {},
+      }),
+    ).then((res) => res.data),
+
+  ignoreSeries: (
+    imdbId: string,
+    title: string,
+    reason?: string,
+  ): Promise<void> =>
+    request<{ data: unknown }>(() =>
+      client.post('/series/ignored', {
+        imdbId,
+        title,
+        ...(reason !== undefined ? { reason } : {}),
+      }),
+    ).then(() => undefined),
 
   export: async (
     format: 'json' | 'csv',

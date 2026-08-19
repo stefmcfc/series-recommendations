@@ -73,6 +73,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     personalRating: null,
     personalNotes: null,
     posterUrl: null,
+    imdbId: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     ...overrides,
@@ -242,6 +243,72 @@ describe('SH-0XX: lookupByTitle', () => {
     expect(result.title).toBe('Breaking Bad')
     expect(result.year).toBe(2008)
     expect(result.imdbRating).toBe(9.5)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-010-AC-03: getRecommendations()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-010-AC-03: getRecommendations', () => {
+  it('should unwrap { data: Recommendation[] } and pass limit through', async () => {
+    const mockResults = [
+      {
+        title: 'Ozark',
+        year: 2017,
+        genres: 'Crime, Drama',
+        overview: '...',
+        posterUrl: null,
+        tmdbRating: 8.4,
+        imdbId: 'tt5071412',
+        sourceTitle: 'Breaking Bad',
+      },
+    ]
+    client.get.mockResolvedValue({ data: { data: mockResults, count: 1 } })
+
+    const result = await seriesApi.getRecommendations(10)
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { limit: 10 },
+    })
+    expect(result).toEqual(mockResults)
+  })
+
+  it('should call without a limit param when none is given', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations()
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-010-AC-04: ignoreSeries()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-010-AC-04: ignoreSeries', () => {
+  it('should POST { imdbId, title } and omit reason when not given', async () => {
+    client.post.mockResolvedValue({ data: { data: {} } })
+
+    await seriesApi.ignoreSeries('tt5071412', 'Ozark')
+
+    expect(client.post).toHaveBeenCalledWith('/series/ignored', {
+      imdbId: 'tt5071412',
+      title: 'Ozark',
+    })
+  })
+
+  it('should include reason when given', async () => {
+    client.post.mockResolvedValue({ data: { data: {} } })
+
+    await seriesApi.ignoreSeries('tt5071412', 'Ozark', 'Not interested')
+
+    expect(client.post).toHaveBeenCalledWith('/series/ignored', {
+      imdbId: 'tt5071412',
+      title: 'Ozark',
+      reason: 'Not interested',
+    })
   })
 })
 
