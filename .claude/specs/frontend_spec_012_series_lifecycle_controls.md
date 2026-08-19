@@ -1,18 +1,20 @@
-# Frontend Spec 012: Exclude Flag, Production Status & Refresh
+# Frontend Spec 012: Exclude Flag, Production Status, Refresh & Rewatch Flag
 
 **Status**: Not started
-**Depends on**: Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Series Spec 008 (`excludeFromRecommendations`, `productionStatus`, `POST /series/{id}/refresh`)
+**Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Series Spec 008 (`excludeFromRecommendations`, `productionStatus`, `POST /series/{id}/refresh`, `flaggedForRewatch`)
 **Frontend Stage**: 12 of N
 
 ## Overview
 
-Surfaces Series Spec 008's three additions in the UI: an "Exclude from recommendations" checkbox on `AddSeriesForm`/`EditSeriesForm`, a production-status badge on `SeriesDetail`, and a "Refresh" action on `SeriesDetail` that re-fetches OMDb/TMDB data and reports what changed.
+Surfaces Series Spec 008's additions in the UI: an "Exclude from recommendations" checkbox on `AddSeriesForm`/`EditSeriesForm`, a production-status badge on `SeriesDetail`, a "Refresh" action on `SeriesDetail` that re-fetches OMDb/TMDB data and reports what changed, and a rewatch-flag toggle plus filter so a user can mark completed series as rewatch candidates while browsing and filter down to just those later.
 
 **Design decisions**:
 - **The exclude checkbox lives in both `AddSeriesForm` and `EditSeriesForm`**, not only `EditSeriesForm` — a user may already know at add-time that a series shouldn't feed recommendations (e.g. adding a kids' show watched with family).
 - **Production status is display-only**, matching the backend's read-only contract (`SERIES-008-AC-09`) — there is no form control for it anywhere.
 - **Refresh feedback is a single inline message summarizing both outcomes** (e.g. "Ratings updated. Production status unchanged."), built from `RefreshResult.omdbRefreshed`/`tmdbRefreshed`, rather than two separate indicators — a partial refresh is a normal outcome (`SERIES-008-AC-17`), not something that needs alarming treatment.
 - **Refresh is only on `SeriesDetail`, not `SeriesList`'s row actions.** Refreshing is a deliberate, occasional action on one series at a time, not a bulk operation — `SeriesDetail` is already the "everything about one series" view, matching where Edit/Delete already live (Frontend Spec 005).
+- **The rewatch toggle is the inverse placement of the exclude checkbox: `SeriesList` (inline, per row) and `SeriesDetail`, not `Add`/`EditSeriesForm`.** Flagging a series for rewatch only makes sense once it's `COMPLETED` — you can't know you want to rewatch something you haven't finished — and it's fundamentally a "scan through my finished list and flag a few" activity, not something decided while filling in a form. Requiring a modal open per flag would add real friction to that workflow; an inline row toggle doesn't.
+- **The rewatch toggle is only rendered for `COMPLETED` rows/series**, even though the backend places no such restriction (`SERIES-008-AC-21`) — a UI-only choice to keep the control meaningful, not a data constraint. Nothing stops a future spec from relaxing this.
 
 ---
 
@@ -64,14 +66,31 @@ Surfaces Series Spec 008's three additions in the UI: an "Exclude from recommend
 
 ---
 
+### Requirement 5: Rewatch Flag & Filter
+
+**User story**: As a user, I want to flag a completed series as a rewatch candidate while browsing my list, and later filter down to just those, so I don't have to remember which ones I meant to revisit.
+
+#### Acceptance Criteria
+
+- **FRONTEND-012-AC-11** [AUTO]: `src/types/series.ts` shall gain `flaggedForRewatch: boolean` on `Series`, `flaggedForRewatch?: boolean` on `UpdateSeriesRequest`, and `flaggedForRewatch?: boolean` on `SearchCriteria`.
+- **FRONTEND-012-AC-12** [AUTO]: `SeriesList` shall render a rewatch toggle (checkbox) on each row whose `status === SeriesStatus.COMPLETED`, initialized from `series.flaggedForRewatch`. Toggling it shall call `seriesApi.update(id, { flaggedForRewatch: <new value> })` and, on success, update that row's displayed state without refetching the whole list.
+- **FRONTEND-012-AC-13** [AUTO]: `SeriesDetail` shall render the same toggle when `series.status === SeriesStatus.COMPLETED`, calling `seriesApi.update` the same way and updating its own displayed state on success.
+- **FRONTEND-012-AC-14** [AUTO]: If the `update` call fails for either toggle (`SeriesList` row or `SeriesDetail`), the toggle shall revert to its prior state and show an inline error scoped to that control — following `RecommendationsList`'s existing per-card scoped-error pattern (`FRONTEND-010-AC-17`), not a page-level error.
+- **FRONTEND-012-AC-15** [AUTO]: `SearchFilter` shall render a "Flagged for rewatch" checkbox, following the same shape as the existing "Started, not finished" checkbox (`FRONTEND-006`) — included in the built `SearchCriteria` only when checked, omitted otherwise.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
 |-----------|--------|
 | `excludeFromRecommendations`, `productionStatus`, `ProductionStatus` enum values | `series_spec_008_series_lifecycle_data.md` Requirements 1–2 |
 | `POST /series/{id}/refresh`, `RefreshResult` shape | `series_spec_008_series_lifecycle_data.md` Requirement 3 |
+| `flaggedForRewatch` field, `SeriesSearchCriteria` filter, no server-side status restriction | `series_spec_008_series_lifecycle_data.md` Requirement 4 |
 | `AddSeriesForm`/`EditSeriesForm` field/payload conventions being extended | `frontend_spec_003_add_series_form.md`, `frontend_spec_004_edit_delete_series.md` |
 | `SeriesDetail`'s `formatValue` null-dash convention, existing Edit/Delete action placement | `frontend_spec_005_series_detail.md` |
+| `SearchFilter`'s existing `startedNotFinished` checkbox shape being mirrored for the new rewatch filter | `frontend_spec_006_search_filter.md` |
+| `RecommendationsList`'s per-card scoped-error pattern being mirrored for the rewatch toggle's failure handling | `frontend_spec_010_recommendations.md` Requirement 4 |
 
 ---
 
@@ -184,6 +203,62 @@ describe('FRONTEND-012-AC-10: refresh failure', () => {
 })
 ```
 
+### `src/components/SeriesList.test.tsx` (addition)
+
+```typescript
+describe('FRONTEND-012-AC-12: rewatch toggle on COMPLETED rows', () => {
+  it('renders only for COMPLETED rows and updates on toggle', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', status: SeriesStatus.COMPLETED, flaggedForRewatch: false }),
+      makeSeries({ id: '2', status: SeriesStatus.WATCHING, flaggedForRewatch: false }),
+    ])
+    mockUpdate.mockResolvedValue(makeSeries({ id: '1', status: SeriesStatus.COMPLETED, flaggedForRewatch: true }))
+    render(<SeriesList />)
+    await screen.findByText(/./)
+
+    const toggles = screen.getAllByLabelText(/flag for rewatch/i)
+    expect(toggles).toHaveLength(1) // only the COMPLETED row
+
+    fireEvent.click(toggles[0])
+    await waitFor(() =>
+      expect(seriesApi.update).toHaveBeenCalledWith('1', { flaggedForRewatch: true }),
+    )
+  })
+
+  it('reverts and shows a scoped error on failure', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', status: SeriesStatus.COMPLETED, flaggedForRewatch: false }),
+    ])
+    mockUpdate.mockRejectedValue(new ApiError(500, 'Internal server error'))
+    render(<SeriesList />)
+    const toggle = await screen.findByLabelText(/flag for rewatch/i)
+
+    fireEvent.click(toggle)
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(toggle).not.toBeChecked()
+  })
+})
+```
+
+### `src/components/SearchFilter.test.tsx` (addition)
+
+```typescript
+describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
+  it('includes flaggedForRewatch in criteria only when checked', () => {
+    const onSearch = vi.fn()
+    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
+    fireEvent.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ flaggedForRewatch: true }),
+    )
+  })
+})
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -198,3 +273,8 @@ describe('FRONTEND-012-AC-10: refresh failure', () => {
 - [ ] FRONTEND-012-AC-08: busy state while refreshing
 - [ ] FRONTEND-012-AC-09: success updates data + summary message
 - [ ] FRONTEND-012-AC-10: failure shows alert, data unchanged
+- [ ] FRONTEND-012-AC-11: `flaggedForRewatch` on `Series`/`UpdateSeriesRequest`/`SearchCriteria`
+- [ ] FRONTEND-012-AC-12: `SeriesList` rewatch toggle, `COMPLETED` rows only
+- [ ] FRONTEND-012-AC-13: `SeriesDetail` rewatch toggle, `COMPLETED` only
+- [ ] FRONTEND-012-AC-14: toggle reverts + scoped error on failure
+- [ ] FRONTEND-012-AC-15: `SearchFilter` rewatch checkbox

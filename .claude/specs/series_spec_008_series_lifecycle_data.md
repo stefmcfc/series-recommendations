@@ -3,7 +3,7 @@
 **Status**: Not started
 **No `frontend/` files are touched by this spec** — the exclude checkbox, refresh button, and production-status badge are `frontend_spec_012_series_lifecycle_controls.md`, a separate follow-up task.
 **Priority**: P2 (quality-of-life improvement — not core CRUD)
-**Depends on**: Spec 001 (entity/migration conventions, `SeriesStatus` enum precedent), Spec 005 (`OmdbClient.lookup`, episode-count aggregation precedent), Spec 006 (`TmdbClient`, `IgnoreOutcome` outcome-record precedent), Spec 007 (adds a filter predicate into the automatic watched-pool sourcing that spec builds)
+**Depends on**: Spec 001 (entity/migration conventions, `SeriesStatus` enum precedent), Spec 003 (`SeriesSearchCriteria`/`SeriesSearchService`, extended by this spec's rewatch filter), Spec 005 (`OmdbClient.lookup`, episode-count aggregation precedent), Spec 006 (`TmdbClient`, `IgnoreOutcome` outcome-record precedent), Spec 007 (adds a filter predicate into the automatic watched-pool sourcing that spec builds)
 **Backend Task**
 
 ## Overview
@@ -13,13 +13,15 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 1. **`excludeFromRecommendations`** — a persistent per-series flag so a series that's rated fine but isn't representative of taste (a kids' show watched with family, a guilty pleasure) can be kept out of automatic recommendation sourcing without lowering its rating or deleting it.
 2. **`productionStatus`** — a TMDB-sourced, informational field answering "is this show still going?" (`Returning Series`, `Ended`, `Canceled`, `In Production`, `Planned`, `Pilot`), resolved automatically when a series is added. This is deliberately *not* a new value on the existing `SeriesStatus` enum — that enum means "where am I with watching this" (a personal-progress concept), while this is "has the show itself finished being made" (a production-fact concept); conflating them would make `SeriesStatus.COMPLETED` ambiguous between "I've watched everything released" and "the show itself has ended," which `RecommendationService`'s existing `COMPLETED`-as-taste-signal logic (`SERIES-006-AC-14`) depends on staying unambiguous.
 3. **Refresh information** — an on-demand action to re-fetch a tracked series' OMDb-derived fields (episode counts, ratings) and TMDB production status, for when they've gone stale since the series was added.
+4. **`flaggedForRewatch`** — a persistent per-series flag so a user can mark a completed series as a rewatch candidate while browsing their list, then filter down to just those later.
 
 **Design decisions**:
+- **The rewatch flag is deliberately simple: a plain boolean field exposed through the existing search filter, not a new recommendation-sourcing mode.** It reuses `SeriesSearchCriteria`/`SeriesSearchService` (gaining `flaggedForRewatch`, the same nullable-boolean-filter shape as the existing `startedNotFinished`) rather than adding a dedicated endpoint or any `RecommendationService` involvement — combined with the existing `status`/`genres` filters, this already produces a filterable "rewatch list" for free. If a more elaborate rewatch *recommendation* feature (e.g. TMDB-sourced "people who rewatched X also rewatched Y") is wanted later, that's a separate, much larger feature — not this.
 - **`excludeFromRecommendations` only suppresses *automatic* watched-pool sourcing — it does not block an explicit `seriesIds` selection** (`SERIES-007-AC-08`). The flag means "don't use me as an automatic taste signal"; naming a series explicitly in a single request is a much stronger, one-off statement of intent that should win over a standing preference. This mirrors the reasoning in Spec 007's own Design Decisions for why explicit selection isn't restricted to `COMPLETED` status.
 - **`productionStatus` is modeled as a proper enum, not a passthrough string.** Unlike `genres` (deliberately free text, because OMDb's vocabulary is open-ended), TMDB's `status` field is a small, fixed, documented set of literal values — the same reasoning that makes `SeriesStatus` an enum applies here.
 - **TMDB resolution is always best-effort, both at create time and on refresh.** Every other external call in this app degrades gracefully (missing key, network failure, unresolvable id → the field stays null / unchanged, nothing else fails) — `productionStatus` resolution follows the same posture, not a new one.
 - **Refresh is `POST /api/v1/series/{id}/refresh`, not part of `PATCH`.** It doesn't accept a body describing desired changes — it's an action that triggers a server-side re-fetch, the same shape as `POST /api/v1/series/ignored` (Spec 006) rather than a client-supplied partial update.
-- **Both new columns ship in one migration (`V005`)** since they're additive changes delivered by the same spec/PR — unlike `V002`/`V003`, which were separate specs.
+- **All three new columns ship in one migration (`V005`)** since they're additive changes delivered by the same spec/PR — unlike `V002`/`V003`, which were separate specs.
 
 ---
 
@@ -69,6 +71,19 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 
 ---
 
+### Requirement 4: Rewatch Flag
+
+**User story**: As a user, I want to flag a completed series as a rewatch candidate while browsing my list, so I can filter down to just those later instead of trying to remember which ones I meant to revisit.
+
+#### Acceptance Criteria
+
+- **SERIES-008-AC-18** [AUTO]: `SeriesEntity` shall gain a `flaggedForRewatch` column (`BOOLEAN NOT NULL DEFAULT FALSE`), added via the same `V005` migration as `SERIES-008-AC-01`/`AC-07`.
+- **SERIES-008-AC-19** [AUTO]: `SeriesDto` shall gain a `flaggedForRewatch` field typed as boxed `Boolean`, with the same create/update partial-update semantics as `excludeFromRecommendations` (`SERIES-008-AC-02`/`AC-03`): `create` defaults to `false` when the DTO value is `null`; `update` sets it only when the DTO value is non-`null`.
+- **SERIES-008-AC-20** [AUTO]: `SeriesSearchCriteria` shall gain a `flaggedForRewatch` field (nullable `Boolean`). `SeriesSearchService.search` shall, when it is non-`null` and `true`, additionally filter results to only series with `flaggedForRewatch == true` — the same nullable-boolean-filter shape already used by `startedNotFinished` (`series_spec_003_search.md`).
+- **SERIES-008-AC-21** [AUTO]: The backend shall not restrict `flaggedForRewatch` based on `status` — a series can be flagged/unflagged and filtered on regardless of its current `status`. (The frontend companion spec chooses to only *expose* the toggle for `COMPLETED` series in the UI — that's a presentation choice, not a data constraint, and this API stays usable without it.)
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -78,7 +93,8 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 | `SeriesEntity`/Flyway migration conventions, `SeriesStatus` enum as the precedent for a new fixed-vocabulary enum, `genres` free-text-vs-enum rationale | `series_spec_001_entity.md` |
 | Automatic watched-pool sourcing (`SERIES-006-AC-14`) that `SERIES-008-AC-04` adds a filter predicate into; explicit `seriesIds` override that `SERIES-008-AC-05` deliberately does not filter | `series_spec_007_recommendation_sourcing.md` Requirements 4/6 |
 | Never-leak-internals policy for upstream failures | `tooling_spec_001_code_quality_security.md` Requirement 1 |
-| Future frontend consumer: exclude checkbox (`Add`/`EditSeriesForm`), refresh button, production-status badge (`SeriesDetail`) | `frontend_spec_012_series_lifecycle_controls.md` (not yet written) |
+| `SeriesSearchCriteria`'s existing nullable-boolean-filter shape (`startedNotFinished`) that `flaggedForRewatch` (Requirement 4) follows | `series_spec_003_search.md` |
+| Future frontend consumer: exclude checkbox (`Add`/`EditSeriesForm`), refresh button, production-status badge (`SeriesDetail`), rewatch toggle (`SeriesList` `COMPLETED` rows + `SeriesDetail`), rewatch filter checkbox (`SearchFilter`) | `frontend_spec_012_series_lifecycle_controls.md` (not yet written) |
 
 ---
 
@@ -221,6 +237,33 @@ def "SERIES-008-AC-14: OMDb lookup failure leaves fields unchanged and does not 
 }
 ```
 
+### `SeriesSearchServiceSpec.groovy` (Requirement 4)
+
+```groovy
+def "SERIES-008-AC-20: flaggedForRewatch=true filters to only flagged series"() {
+    given: "one flagged series, one unflagged series"
+        repository.save(new SeriesEntity(title: "Rewatch Me", flaggedForRewatch: true))
+        repository.save(new SeriesEntity(title: "Not Flagged", flaggedForRewatch: false))
+
+    when: "search is called with flaggedForRewatch: true"
+        def results = searchService.search(new SeriesSearchCriteria(flaggedForRewatch: true))
+
+    then: "only the flagged series is returned"
+        results*.title == ["Rewatch Me"]
+}
+
+def "SERIES-008-AC-20: flaggedForRewatch unset returns everything, same as today"() {
+    given: "one flagged series, one unflagged series"
+        // ...
+
+    when: "search is called with no flaggedForRewatch criteria"
+        def results = searchService.search(new SeriesSearchCriteria())
+
+    then: "both series are returned"
+        results.size() == 2
+}
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -242,3 +285,7 @@ def "SERIES-008-AC-14: OMDb lookup failure leaves fields unchanged and does not 
 - [ ] SERIES-008-AC-15: refresh re-resolves `productionStatus`, non-fatal on failure
 - [ ] SERIES-008-AC-16: `200` + `ApiResponse<RefreshResult>`
 - [ ] SERIES-008-AC-17: partial success persisted, not rolled back
+- [ ] SERIES-008-AC-18: `flaggedForRewatch` column (`V005` migration)
+- [ ] SERIES-008-AC-19: `SeriesDto.flaggedForRewatch` (boxed `Boolean`), same partial-update semantics as `excludeFromRecommendations`
+- [ ] SERIES-008-AC-20: `SeriesSearchCriteria.flaggedForRewatch` filter
+- [ ] SERIES-008-AC-21: no server-side status restriction on flagging/filtering
