@@ -1,4 +1,11 @@
 ﻿spring:
+  config:
+    # Loads backend/application-local.yml if present (gitignored, outside src/ so it can
+    # never end up compiled into a build artifact) -- lets a developer drop app.omdb.api-key/
+    # app.tmdb.api-key into a local-only file instead of exporting env vars every session.
+    # `optional:` means startup doesn't fail when the file is absent (e.g. in CI). See
+    # backend/application-local.yml.example and RUNBOOK.md's Environment Variables section.
+    import: "optional:file:./application-local.yml"
   datasource:
     url: jdbc:sqlite:./data/series.db
     driver-class-name: org.sqlite.JDBC

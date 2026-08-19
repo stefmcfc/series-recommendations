@@ -1,0 +1,8 @@
+# Copy this file to application-local.yml (same directory, gitignored) and fill in real
+# values. Loaded automatically on startup -- see spring.config.import in
+# src/main/resources/application.yml. Never commit application-local.yml itself.
+app:
+  omdb:
+    api-key: your-omdb-api-key-here
+  tmdb:
+    api-key: your-tmdb-api-key-here
