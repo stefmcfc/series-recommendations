@@ -1,7 +1,13 @@
 # Frontend Spec 011: Recommendation Sourcing & Filter Controls
 
-**Status**: Not started
-**Depends on**: Frontend Spec 010 (`RecommendationsList`, `Recommendation` type, `seriesApi.getRecommendations`) ✅, Series Spec 007 (`seriesIds`/`genres`/`keywords`/`minSourceRating`/`minTmdbRating`/`minVoteCount`/`yearMin`/`yearMax`/`excludeGenres`/`language`/`maxPerSource` query params)
+**Status**: Done — all 13 acceptance criteria implemented and covered by Vitest (`npm test`: 210/210 passing across the suite), `npm run lint` clean, `npm run build` clean.
+
+Files touched: `frontend/src/types/series.ts` (new `RecommendationQuery` interface), `frontend/src/services/seriesApi.ts` + `frontend/src/services/__tests__/seriesApi.test.ts` (`getRecommendations` signature changed from `(limit?: number)` to `(query?: RecommendationQuery)`, new `buildRecommendationParams` helper joining array fields with commas and omitting absent/empty fields; the pre-existing `getRecommendations(10)` call-site test was updated to `getRecommendations({ limit: 10 })` to match the new signature), `frontend/src/components/RecommendationControls.tsx` + `.test.tsx` + `.module.css` (new component — three-way radio mode selector `Automatic`/`Specific Series`/`Genre & Keyword`, `Specific Series` checkbox multi-select populated from `seriesApi.getAll()`, `Genre & Keyword` comma-separated text inputs with an at-least-one hint, a collapsed-by-default `Filters` section covering every Series Spec 007 output filter plus a mode-gated `minSourceRating` dropdown, and a `Reset Filters` action that clears only the filter fields), `frontend/src/components/RecommendationsList.tsx` + `.test.tsx` (new optional `query?: RecommendationQuery` prop, threaded into `getRecommendations` and added to the existing `refreshIndex`-keyed effect's dependency array), `frontend/src/App.tsx` + `frontend/src/App.test.tsx` (new `recommendationQuery` state, `RecommendationControls` rendered above `RecommendationsList` only in the Recommendations view, wired via `onQueryChange`/`query`).
+
+**Design/implementation note**: `RecommendationControls` emits changes by computing the next full state object directly (`{ ...state, ...patch }`) and calling both `setState` and `onQueryChange` with it synchronously in the event handler, rather than deriving the next value inside a `setState` updater callback — the latter triggered a real React warning ("Cannot update a component while rendering a different component") in a live browser check, because the updater runs during React's render phase and calling the parent's `setState` (`App`'s `setRecommendationQuery`) from inside it is exactly the case that warning covers. Caught only by the real-browser pass below, not by jsdom/Vitest.
+
+**Real-browser verification**: with the real backend running (`gradlew.bat bootRun`) and `npm run dev`, verified via a scripted Puppeteer pass (using this machine's already-cached Puppeteer Chrome build, executed as an ad hoc script outside the repo — no new dependency added to `frontend/package.json`) against the live dev server and real backend, no mocking: Recommendations view opens with `RecommendationControls` visible only there (not on "My Series"); switching to "Specific Series" fetches and renders one checkbox per real tracked series via `seriesApi.getAll()`; switching to "Genre & Keyword" shows the at-least-one hint, which disappears once a genre is typed; the Filters section is collapsed by default and expands on click; `minSourceRating` is present in Automatic/Specific Series modes and absent in Genre & Keyword mode; Reset Filters clears a populated `minTmdbRating` field back to empty; and network capture confirmed real `GET /series/recommendations` requests were sent with the correct query string as controls changed (`?seriesIds=<real-id>`, then `?seriesIds=<real-id>&minTmdbRating=7`), with zero console/page errors after the fix above. TMDB itself is not configured in this environment (same caveat as Frontend Spec 010), so the populated-recommendations-list rendering from a real TMDB-backed response was not re-verified here — that path is unchanged by this spec (Requirement 4's "no changes to card rendering" design decision) and was already verified under Frontend Spec 010.
+**Depends on**: Frontend Spec 010 (`RecommendationsList`, `Recommendation` type, `seriesApi.getRecommendations`) ✅, Series Spec 007 (`seriesIds`/`genres`/`keywords`/`minSourceRating`/`minTmdbRating`/`minVoteCount`/`yearMin`/`yearMax`/`excludeGenres`/`language`/`maxPerSource` query params) ✅
 **Frontend Stage**: 11 of N
 
 ## Overview
@@ -163,16 +169,16 @@ describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-011-AC-01: `RecommendationQuery` type
-- [ ] FRONTEND-011-AC-02: `seriesApi.getRecommendations(query?)` signature
-- [ ] FRONTEND-011-AC-03: three-way sourcing mode selector
-- [ ] FRONTEND-011-AC-04: Specific Series multi-select via `getAll()`
-- [ ] FRONTEND-011-AC-05: Genre & Keyword text inputs, at-least-one hint
-- [ ] FRONTEND-011-AC-06: switching mode clears the other mode's fields
-- [ ] FRONTEND-011-AC-07: output filter fields
-- [ ] FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zero
-- [ ] FRONTEND-011-AC-09: Reset Filters action
-- [ ] FRONTEND-011-AC-10: `RecommendationControls` rendered only in Recommendations view
-- [ ] FRONTEND-011-AC-11: `RecommendationsList` re-fetches on `query` prop change
-- [ ] FRONTEND-011-AC-12: any control change triggers re-fetch, no Apply button
-- [ ] FRONTEND-011-AC-13: fetch errors use existing error/Retry path, no new one
+- [x] FRONTEND-011-AC-01: `RecommendationQuery` type
+- [x] FRONTEND-011-AC-02: `seriesApi.getRecommendations(query?)` signature
+- [x] FRONTEND-011-AC-03: three-way sourcing mode selector
+- [x] FRONTEND-011-AC-04: Specific Series multi-select via `getAll()`
+- [x] FRONTEND-011-AC-05: Genre & Keyword text inputs, at-least-one hint
+- [x] FRONTEND-011-AC-06: switching mode clears the other mode's fields
+- [x] FRONTEND-011-AC-07: output filter fields
+- [x] FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zero
+- [x] FRONTEND-011-AC-09: Reset Filters action
+- [x] FRONTEND-011-AC-10: `RecommendationControls` rendered only in Recommendations view
+- [x] FRONTEND-011-AC-11: `RecommendationsList` re-fetches on `query` prop change
+- [x] FRONTEND-011-AC-12: any control change triggers re-fetch, no Apply button
+- [x] FRONTEND-011-AC-13: fetch errors use existing error/Retry path, no new one

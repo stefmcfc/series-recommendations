@@ -265,7 +265,7 @@ describe('FRONTEND-010-AC-03: getRecommendations', () => {
     ]
     client.get.mockResolvedValue({ data: { data: mockResults, count: 1 } })
 
-    const result = await seriesApi.getRecommendations(10)
+    const result = await seriesApi.getRecommendations({ limit: 10 })
 
     expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
       params: { limit: 10 },
@@ -277,6 +277,69 @@ describe('FRONTEND-010-AC-03: getRecommendations', () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
 
     await seriesApi.getRecommendations()
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-011-AC-02: getRecommendations(query) — sourcing/filter params
+// ---------------------------------------------------------------------------
+describe('FRONTEND-011-AC-02: getRecommendations with a full query', () => {
+  it('builds comma-joined array params and omits absent fields', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({
+      genres: ['Drama', 'Crime'],
+      minVoteCount: 50,
+      yearMin: 2020,
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { genres: 'Drama,Crime', minVoteCount: 50, yearMin: 2020 },
+    })
+  })
+
+  it('sends seriesIds/keywords/excludeGenres comma-joined and every other filter field', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({
+      seriesIds: ['id-1', 'id-2'],
+      keywords: ['heist', 'crime'],
+      excludeGenres: ['Horror'],
+      minSourceRating: 4,
+      minTmdbRating: 7.5,
+      yearMax: 2024,
+      language: 'en',
+      maxPerSource: 3,
+      limit: 15,
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {
+        seriesIds: 'id-1,id-2',
+        keywords: 'heist,crime',
+        excludeGenres: 'Horror',
+        minSourceRating: 4,
+        minTmdbRating: 7.5,
+        yearMax: 2024,
+        language: 'en',
+        maxPerSource: 3,
+        limit: 15,
+      },
+    })
+  })
+
+  it('omits empty-string language and empty arrays entirely', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({
+      language: '',
+      genres: [],
+      seriesIds: [],
+    })
 
     expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
       params: {},

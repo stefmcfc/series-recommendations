@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { Recommendation } from '../types/series'
+import type { Recommendation, RecommendationQuery } from '../types/series'
 import { AddSeriesForm } from './AddSeriesForm'
 import styles from './RecommendationsList.module.css'
 
@@ -11,7 +11,11 @@ interface PendingAdd {
   status: SeriesStatus
 }
 
-export function RecommendationsList() {
+interface RecommendationsListProps {
+  query?: RecommendationQuery
+}
+
+export function RecommendationsList({ query }: RecommendationsListProps = {}) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +29,7 @@ export function RecommendationsList() {
     let cancelled = false
 
     seriesApi
-      .getRecommendations()
+      .getRecommendations(query)
       .then((data) => {
         if (cancelled) return
         setRecommendations(data)
@@ -40,7 +44,7 @@ export function RecommendationsList() {
     return () => {
       cancelled = true
     }
-  }, [refreshIndex])
+  }, [refreshIndex, query])
 
   const handleRetry = useCallback(() => {
     setLoading(true)

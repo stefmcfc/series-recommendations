@@ -73,6 +73,21 @@ export interface Recommendation {
   sourceTitle: string | null
 }
 
+export interface RecommendationQuery {
+  limit?: number
+  seriesIds?: string[]
+  genres?: string[]
+  keywords?: string[]
+  minSourceRating?: number
+  minTmdbRating?: number
+  minVoteCount?: number
+  yearMin?: number
+  yearMax?: number
+  excludeGenres?: string[]
+  language?: string
+  maxPerSource?: number
+}
+
 export interface SearchCriteria {
   title?: string
   genres?: string[]

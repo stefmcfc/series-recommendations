@@ -251,6 +251,30 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
   })
 })
 
+describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recommendations view', () => {
+  it('shows the sourcing controls only while the Recommendations view is active', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRecommendations.mockResolvedValue([])
+
+    render(<App />)
+    await waitFor(() => screen.getByTestId('add-series-btn'))
+    expect(
+      screen.queryByRole('button', { name: /^automatic$/i }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /recommendations/i }))
+    expect(await screen.findByLabelText(/^automatic/i)).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /series list|my series/i }),
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('series-list')).toBeInTheDocument(),
+    )
+    expect(screen.queryByLabelText(/^automatic/i)).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () => {
   it('stays on SeriesDetail and shows updated data after a successful edit', async () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
