@@ -56,6 +56,7 @@ public class SeriesService {
         entity.setPersonalRating(dto.getPersonalRating());
         entity.setPersonalNotes(dto.getPersonalNotes());
         entity.setPosterUrl(dto.getPosterUrl());
+        entity.setImdbId(dto.getImdbId());
 
         // Set dateAdded explicitly so it's available immediately after save
         entity.setDateAdded(LocalDateTime.now());
@@ -141,6 +142,9 @@ public class SeriesService {
         if (dto.getPosterUrl() != null) {
             entity.setPosterUrl(dto.getPosterUrl());
         }
+        if (dto.getImdbId() != null) {
+            entity.setImdbId(dto.getImdbId());
+        }
 
         if (dto.getStatus() != null) {
             SeriesStatus newStatus = SeriesStatus.valueOf(dto.getStatus());
@@ -183,6 +187,7 @@ public class SeriesService {
         dto.setPersonalRating(entity.getPersonalRating());
         dto.setPersonalNotes(entity.getPersonalNotes());
         dto.setPosterUrl(entity.getPosterUrl());
+        dto.setImdbId(entity.getImdbId());
         dto.setDateAdded(entity.getDateAdded());
         dto.setDateCompleted(entity.getDateCompleted());
         return dto;

@@ -9,6 +9,7 @@ A personal app for logging TV series you're watching, tracking your viewing prog
 - Store ratings from IMDb, Metacritic, and Rotten Tomatoes alongside personal ratings and notes
 - Search and filter by genre, rating range, and completion status
 - Export your data as JSON or CSV
+- Get series recommendations sourced from TMDB, based on shows similar to what you've completed (or, with too little data yet, your most-watched genres), with a dismiss/ignore list so a rejected suggestion never resurfaces
 
 ## Tech Stack
 
@@ -64,6 +65,8 @@ The backend exposes a REST API at `http://localhost:8080/api/v1`.
 | `GET` | `/api/v1/series/search` | Search and filter series |
 | `GET` | `/api/v1/series/export` | Export as JSON or CSV |
 | `GET` | `/api/v1/series/lookup?title=` | Look up a series by title via the OMDb API (year, genres, season/episode counts, ratings, poster) to autofill the add-series form. Requires `app.omdb.api-key` to be configured — see `RUNBOOK.md`'s Environment Variables section — otherwise returns `502`. |
+| `GET` | `/api/v1/series/recommendations?limit=` | Suggest series to watch next, sourced from TMDB based on your `COMPLETED` series (title-based), supplemented by your most-watched genres when there's too little title-based data yet. Excludes anything already added or ignored. `limit` defaults to 20, clamped to 1-50. Requires `app.tmdb.api-key` to be configured once there's data to source from — see `RUNBOOK.md`'s Environment Variables section — otherwise returns `502`. |
+| `POST` | `/api/v1/series/ignored` | Dismiss a recommendation (`{ imdbId, title, reason? }`) so it never resurfaces. Idempotent — re-ignoring the same `imdbId` returns `200` instead of `201`. |
 
 Full interactive docs are available at `http://localhost:8080/swagger-ui.html` when the backend is running (requires springdoc-openapi to be added — not yet a dependency).
 
@@ -90,6 +93,9 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 007 | `ExportControls` (export trigger) | ✅ Done |
 | Frontend 008 | Accessible row interactions (`SeriesList` nested-interactive fix) | ✅ Done |
 | Frontend 009 | OMDb autofill & poster display (`AddSeriesForm` Look Up + poster preview, `EditSeriesForm`/`SeriesDetail`/`SeriesList` poster display) | ✅ Done |
+| Backend 005 | OMDb lookup & poster field | ✅ Done |
+| Backend 006 | Series recommendations (TMDB-sourced, ignore list) | ✅ Done (backend only — see Frontend 010) |
+| Frontend 010 | Recommendations UI | ⏳ Not started |
 
 ## Changelog
 

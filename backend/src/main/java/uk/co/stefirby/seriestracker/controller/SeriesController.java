@@ -1,9 +1,14 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
+import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
+import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
+import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
+import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
+import uk.co.stefirby.seriestracker.service.RecommendationService;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesLookupService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
@@ -29,15 +34,21 @@ public class SeriesController {
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
     private final SeriesLookupService lookupService;
+    private final RecommendationService recommendationService;
+    private final IgnoredSeriesService ignoredSeriesService;
 
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
-                            SeriesLookupService lookupService) {
+                            SeriesLookupService lookupService,
+                            RecommendationService recommendationService,
+                            IgnoredSeriesService ignoredSeriesService) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
         this.lookupService = lookupService;
+        this.recommendationService = recommendationService;
+        this.ignoredSeriesService = ignoredSeriesService;
     }
 
     @PostMapping
@@ -74,6 +85,21 @@ public class SeriesController {
             throw new IllegalArgumentException("title is required");
         }
         return ResponseEntity.ok(new ApiResponse<>(lookupService.lookup(title)));
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<ApiResponse<List<RecommendationDto>>> recommendations(
+            @RequestParam(required = false, defaultValue = "20") int limit) {
+        int clampedLimit = Math.max(1, Math.min(50, limit));
+        List<RecommendationDto> results = recommendationService.recommend(clampedLimit);
+        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
+    }
+
+    @PostMapping("/ignored")
+    public ResponseEntity<ApiResponse<IgnoredSeriesDto>> ignore(@RequestBody IgnoredSeriesDto dto) {
+        IgnoreOutcome outcome = ignoredSeriesService.ignore(dto);
+        HttpStatus status = outcome.created() ? HttpStatus.CREATED : HttpStatus.OK;
+        return ResponseEntity.status(status).body(new ApiResponse<>(outcome.dto()));
     }
 
     @GetMapping("/search")

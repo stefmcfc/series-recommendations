@@ -38,7 +38,8 @@ class SeriesEntitySpec extends Specification {
                 rottenTomatoesRating: 72,
                 personalRating: 4,
                 personalNotes: "Epic show, some disappointing seasons",
-                posterUrl: "https://example.com/got-poster.jpg"
+                posterUrl: "https://example.com/got-poster.jpg",
+                imdbId: "tt0944947"
             )
 
         then: "all fields are set correctly"
@@ -47,6 +48,7 @@ class SeriesEntitySpec extends Specification {
             series.status == SeriesStatus.WATCHING
             series.personalRating == 4
             series.posterUrl == "https://example.com/got-poster.jpg"
+            series.imdbId == "tt0944947"
     }
 
     def "should reject series with blank title"() {

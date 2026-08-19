@@ -15,7 +15,7 @@ class SeriesLookupServiceSpec extends Specification {
         given: "OmdbClient resolves a full result for the requested title"
             def omdbResult = new OmdbLookupResult(
                 "Breaking Bad", 2008, "Crime, Drama, Thriller", 5, 62,
-                new BigDecimal("9.5"), 87, 96, "https://example.com/poster.jpg"
+                new BigDecimal("9.5"), 87, 96, "https://example.com/poster.jpg", "tt0903747"
             )
             omdbClient.lookup("Breaking Bad") >> omdbResult
 
@@ -32,6 +32,7 @@ class SeriesLookupServiceSpec extends Specification {
             dto.metacriticRating == 87
             dto.rottenTomatoesRating == 96
             dto.posterUrl == "https://example.com/poster.jpg"
+            dto.imdbId == "tt0903747"
     }
 
     def "SERIES-005-AC-16: propagates EntityNotFoundException from OmdbClient"() {

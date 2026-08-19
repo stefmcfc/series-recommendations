@@ -17,6 +17,7 @@ public record OmdbLookupResult(
     BigDecimal imdbRating,
     Integer metacriticRating,
     Integer rottenTomatoesRating,
-    String posterUrl
+    String posterUrl,
+    String imdbId
 ) {
 }

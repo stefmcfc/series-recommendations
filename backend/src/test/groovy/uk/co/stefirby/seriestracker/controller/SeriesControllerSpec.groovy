@@ -7,7 +7,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto
 import uk.co.stefirby.seriestracker.dto.SeriesDto
+import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 import tools.jackson.databind.ObjectMapper
 
@@ -28,8 +30,12 @@ class SeriesControllerSpec extends Specification {
   @Autowired
   SeriesRepository seriesRepository
 
+  @Autowired
+  IgnoredSeriesRepository ignoredSeriesRepository
+
   def cleanup() {
     seriesRepository.deleteAll()
+    ignoredSeriesRepository.deleteAll()
   }
 
   def "POST /api/v1/series should create a series"() {
@@ -65,6 +71,23 @@ class SeriesControllerSpec extends Specification {
     then: "the series is created with the posterUrl included"
         result.andExpect(status().isCreated())
         result.andExpect(jsonPath('$.data.posterUrl').value("https://example.com/the-wire.jpg"))
+  }
+
+  def "SERIES-006-AC-03: POST /api/v1/series should accept and return imdbId"() {
+    given: "a series DTO with an imdbId"
+        def dto = new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747")
+        def json = objectMapper.writeValueAsString(dto)
+
+    when: "a POST request is made to create the series"
+        def result = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the series is created with the imdbId included"
+        result.andExpect(status().isCreated())
+        result.andExpect(jsonPath('$.data.imdbId').value("tt0903747"))
   }
 
   def "POST /api/v1/series should reject invalid data"() {
@@ -208,6 +231,70 @@ class SeriesControllerSpec extends Specification {
 
     then: "a 404 Not Found response is returned"
         result.andExpect(status().isNotFound())
+  }
+
+  def "SERIES-006-AC-32/33: POST /api/v1/series/ignored creates an ignore entry, 400 on blank imdbId"() {
+    when: "a POST request is made with a valid imdbId and title"
+        def dto = new IgnoredSeriesDto("tt1234567", "Some Show", null)
+        def json = objectMapper.writeValueAsString(dto)
+        def result = mockMvc.perform(
+          post("/api/v1/series/ignored")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the response is 201 and the entry is persisted"
+        result.andExpect(status().isCreated())
+        result.andExpect(jsonPath('$.data.imdbId').value("tt1234567"))
+        result.andExpect(jsonPath('$.data.title').value("Some Show"))
+
+    when: "a POST request is made with a blank imdbId"
+        def badDto = new IgnoredSeriesDto("", "Some Show", null)
+        def badJson = objectMapper.writeValueAsString(badDto)
+        def badResult = mockMvc.perform(
+          post("/api/v1/series/ignored")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(badJson)
+        )
+
+    then: "the response is 400"
+        badResult.andExpect(status().isBadRequest())
+  }
+
+  def "SERIES-006-AC-33: POST /api/v1/series/ignored returns 400 for a blank title"() {
+    when: "a POST request is made with a blank title"
+        def dto = new IgnoredSeriesDto("tt1234567", "  ", null)
+        def json = objectMapper.writeValueAsString(dto)
+        def result = mockMvc.perform(
+          post("/api/v1/series/ignored")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the response is 400"
+        result.andExpect(status().isBadRequest())
+  }
+
+  def "SERIES-006-AC-34: ignoring the same imdbId twice is idempotent"() {
+    given: "tt1234567 is already ignored"
+        def dto = new IgnoredSeriesDto("tt1234567", "Some Show", null)
+        def json = objectMapper.writeValueAsString(dto)
+        mockMvc.perform(
+          post("/api/v1/series/ignored")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        ).andExpect(status().isCreated())
+
+    when: "a POST request is made again with the same imdbId"
+        def result = mockMvc.perform(
+          post("/api/v1/series/ignored")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the response is 200, not 201, and no duplicate row is created"
+        result.andExpect(status().isOk())
+        ignoredSeriesRepository.count() == 1
   }
 
   def "SERIES-005-AC-17: GET /api/v1/series/lookup returns 502 when app.omdb.api-key is not configured"() {
