@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
+import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
@@ -89,9 +90,34 @@ public class SeriesController {
 
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<List<RecommendationDto>>> recommendations(
-            @RequestParam(required = false, defaultValue = "20") int limit) {
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @RequestParam(required = false) List<String> seriesIds,
+            @RequestParam(required = false) List<String> genres,
+            @RequestParam(required = false) List<String> keywords,
+            @RequestParam(required = false) Integer minSourceRating,
+            @RequestParam(required = false) BigDecimal minTmdbRating,
+            @RequestParam(required = false) Integer minVoteCount,
+            @RequestParam(required = false) Integer yearMin,
+            @RequestParam(required = false) Integer yearMax,
+            @RequestParam(required = false) List<String> excludeGenres,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) Integer maxPerSource) {
         int clampedLimit = Math.clamp(limit, 1, 50);
-        List<RecommendationDto> results = recommendationService.recommend(clampedLimit);
+
+        RecommendationCriteria criteria = new RecommendationCriteria();
+        criteria.setSeriesIds(seriesIds);
+        criteria.setGenres(genres);
+        criteria.setKeywords(keywords);
+        criteria.setMinSourceRating(minSourceRating);
+        criteria.setMinTmdbRating(minTmdbRating);
+        criteria.setMinVoteCount(minVoteCount);
+        criteria.setYearMin(yearMin);
+        criteria.setYearMax(yearMax);
+        criteria.setExcludeGenres(excludeGenres);
+        criteria.setLanguage(language);
+        criteria.setMaxPerSource(maxPerSource);
+
+        List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }
 

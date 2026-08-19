@@ -47,3 +47,8 @@ app:
     # to call TMDB (an empty "watched" pool short-circuits before any call is attempted, per
     # SERIES-006-AC-20, so a missing key alone doesn't fail the endpoint until there's
     # something to source recommendations from). Never logged or included in any response body.
+    # SERIES-007-AC-01/02: configurable sourcing caps, replacing what were previously
+    # hardcoded constants on RecommendationService. Overridable via APP_TMDB_MAX_SOURCE_SERIES
+    # / APP_TMDB_MAX_CANDIDATES without a code change.
+    max-source-series: 20
+    max-candidates: 50

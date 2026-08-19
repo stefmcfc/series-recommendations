@@ -1,6 +1,6 @@
 # Spec 007: Recommendation Sourcing, Weighting & Filtering
 
-**Status**: Not started
+**Status**: ✅ Implemented — `RecommendationService`'s sourcing caps are now read from `app.tmdb.max-source-series`/`app.tmdb.max-candidates` (constructor-injected `@Value`, defaults 20/50), documented in `application.yml`. The two independently-maintained genre maps were replaced by a single `service/TmdbGenreTable.java` (`TmdbGenre(id, canonicalName, aliases)` records, forward/reverse lookups derived from one list). `client/TmdbClient.java` gained `searchKeyword(String)` and `discover(List<Integer> genreIds, List<Integer> keywordIds)`, which supersedes and replaces `discoverByGenre` (its only caller, `RecommendationService`, was already being touched); `client/TmdbCandidate.java` gained `voteCount`/`originalLanguage` fields, populated by `TmdbClient`'s response mapping. A new `dto/RecommendationCriteria.java` (mirroring `SeriesSearchCriteria`'s mutable-class shape) carries every new optional request field; `RecommendationService.recommend(int limit)` is now a convenience overload of `recommend(int limit, RecommendationCriteria criteria)`, which implements directed sourcing (explicit `seriesIds`, or `genres`/`keywords` bypassing the watched pool — mutually exclusive, `400` if both are set), `personalRating`-weighted pool ordering with a `minSourceRating` hard cutoff, a `rankScore`-based ranking pass with a `maxPerSource` diversity cap, and the new `minTmdbRating`/`minVoteCount` (defaults to 20)/`yearMin`/`yearMax`/`excludeGenres`/`language` output filters. `controller/SeriesController.java`'s `GET /api/v1/series/recommendations` endpoint gained all eleven new optional query params. `exception/GlobalExceptionHandler.java` gained a `MethodArgumentTypeMismatchException` → `400` handler so a malformed typed param (e.g. non-numeric `yearMin`) is rejected cleanly rather than falling through to the `500` catch-all. Tests: new `service/TmdbGenreTableSpec.groovy`; substantial additions to `service/RecommendationServiceSpec.groovy`, `client/TmdbClientSpec.groovy`, and `controller/SeriesControllerRecommendationsSpec.groovy` (including updating pre-existing Spec 006 tests for the `discoverByGenre` → `discover` rename and the new default `maxPerSource`/`minVoteCount` filters, so they remain valid rather than coincidentally passing). Full suite green (`gradlew.bat build`: 211 tests, 0 failures, JaCoCo coverage gate and SpotBugs both pass with zero findings). No `frontend/` files, `CHANGELOG.md`, or version numbers were touched — see the Implementation Notes below for judgment calls made in the absence of a live `APP_TMDB_API_KEY`.
 **No `frontend/` files are touched by this spec** — the frontend controls for source selection and filters are `frontend_spec_011_recommendation_controls.md`, a separate follow-up task.
 **Priority**: P2 (quality-of-life improvement to an existing discovery feature — not core CRUD)
 **Depends on**: Spec 006 (Recommendations — this spec extends `RecommendationService`, `TmdbClient`, `TmdbCandidate`, and `GET /api/v1/series/recommendations` in place)
@@ -347,36 +347,94 @@ def "SERIES-007-AC-31: a malformed minSourceRating returns 400"() {
 
 ---
 
+## Implementation Notes (Deviations From / Extensions To Original Assumptions)
+
+As flagged in Design Decisions, this spec's new genre table (Requirement 2) and the new
+`TmdbClient.searchKeyword`/`discover` request/response shapes (Requirement 3) were, like
+Spec 006's original genre table, based on TMDB's publicly documented API reference, not
+verified against a live call — **no `APP_TMDB_API_KEY` was available in this environment**.
+Points worth flagging explicitly:
+
+1. **`TmdbClient.discover`'s `with_genres`/`with_keywords` co-occurrence on one call** is
+   implemented exactly as documented (both included as separate query params when both id
+   lists are non-empty), per SERIES-007-AC-06. This is the one point this spec's Design
+   Decisions section specifically asked to be verified early against a live call
+   ("that `/discover/tv` accepts `with_genres` and `with_keywords` together in one call") —
+   still unverified here for the same no-API-key reason as everything else in this note.
+2. **`TmdbClient.searchKeyword` assumes `/search/keyword`'s response shape mirrors every
+   other TMDB search/list endpoint** (`{"results": [{"id": ..., "name": ...}, ...]}`), taking
+   the first result's `id` per SERIES-007-AC-05. This matches TMDB's documented general
+   "search" response envelope (the same `results[]` shape `TmdbClient.mapResults` already
+   relies on for `/tv/{id}/recommendations`, `/tv/{id}/similar`, and `/discover/tv`), so no
+   new parsing helper was needed beyond a bespoke `listOfMaps(body, "results")` extraction —
+   worth spot-checking against a real API key before shipping the frontend consumer
+   (`frontend_spec_011_recommendation_controls.md`).
+3. **`minTmdbRating`/`yearMin`/`yearMax` treat a candidate whose relevant field is `null` as
+   failing that specific filter once it's active**, not just `yearMin`/`yearMax` as
+   SERIES-007-AC-26 explicitly states. SERIES-007-AC-24 doesn't say what happens when
+   `tmdbRating` (TMDB's `vote_average`) is itself `null` and `minTmdbRating` is set; this
+   spec's own AC-26 rationale for years ("a null value can't be verified to satisfy the
+   filter, so it's excluded rather than assumed to pass") generalizes cleanly to
+   `minTmdbRating`, so `RecommendationService.matchesMinTmdbRating` applies the same
+   null-excludes-when-active posture. `minVoteCount` doesn't need this treatment since it
+   already defaults a `null` `voteCount` to `0` (which then legitimately fails almost any
+   non-zero threshold on its own, including the default).
+4. **`excludeGenres`/genre-name comparisons throughout Requirement 8 are case-insensitive**
+   (`String.equalsIgnoreCase`), even though the spec text doesn't state this explicitly for
+   `excludeGenres` the way SERIES-007-AC-28 states it for `language`. Genre display names are
+   user-typed free text matched against TMDB's own canonical display strings (e.g.
+   `"Action & Adventure"`); requiring exact-case input would make the filter needlessly
+   brittle for what's meant to be a convenience filter, and case-insensitivity is already the
+   stated behavior one field over (`language`) in the same requirement.
+5. **`RecommendationCriteria.seriesIds`/`genres`/`keywords`/`excludeGenres` are `List<String>`,
+   not `List<UUID>`, on the DTO itself** — see the class-level Javadoc. Parsing/validating each
+   `seriesIds` entry as a UUID is treated as business logic (SERIES-007-AC-09's "is this a
+   well-formed, existing series id?" question), so it happens in `RecommendationService`, not
+   at the controller's request-binding boundary — consistent with `SeriesSearchService`'s own
+   `status` validation, which this spec's cross-references call out as the precedent to follow.
+
+Additionally, two pre-existing Spec 006 tests needed adjusting for newly-default-on
+Spec 007 behavior, not just mechanical renames: `RecommendationServiceSpec`'s
+"SERIES-006-AC-25: caps results at the requested limit" test sourced all 40 test candidates
+from a single source series, which the new default `maxPerSource` cap (3) would otherwise
+truncate before the original test's limit-of-5 assertion ever ran — the test now passes an
+explicit `RecommendationCriteria(maxPerSource: 40)` so it continues to isolate exactly what
+it was written to test (limit truncation, not the diversity cap). No other pre-existing
+assertions needed behavior-level changes; the `discoverByGenre` → `discover` and
+`TmdbCandidate` constructor-arity renames elsewhere were purely mechanical.
+
+---
+
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-007-AC-01: `app.tmdb.max-source-series` config (default 20)
-- [ ] SERIES-007-AC-02: `app.tmdb.max-candidates` config (default 50)
-- [ ] SERIES-007-AC-03: single source-of-truth genre table replaces the two maps
-- [ ] SERIES-007-AC-04: forward/reverse lookups preserve existing collapsing behavior
-- [ ] SERIES-007-AC-05: `TmdbClient.searchKeyword`
-- [ ] SERIES-007-AC-06: `TmdbClient.discover(genreIds, keywordIds)` supersedes `discoverByGenre`
-- [ ] SERIES-007-AC-07: `seriesIds` request param
-- [ ] SERIES-007-AC-08: explicit series selection sources regardless of status
-- [ ] SERIES-007-AC-09: unknown `seriesIds` entry → 400
-- [ ] SERIES-007-AC-10: unresolvable selected series skipped, not fatal
-- [ ] SERIES-007-AC-11: `seriesIds` pool still capped/ordered per Requirement 1/6
-- [ ] SERIES-007-AC-12: `genres`/`keywords` request params
-- [ ] SERIES-007-AC-13: genre/keyword mode bypasses watched-pool sourcing entirely
-- [ ] SERIES-007-AC-14: genre/keyword resolution, unresolvable entries skipped
-- [ ] SERIES-007-AC-15: genres + keywords combinable in one `discover()` call
-- [ ] SERIES-007-AC-16: genre/keyword-sourced candidates have `sourceTitle == null`
-- [ ] SERIES-007-AC-17: `seriesIds` + `genres`/`keywords` together → 400
-- [ ] SERIES-007-AC-18: no override params → unchanged Spec 006 behavior
-- [ ] SERIES-007-AC-19: source pool ordered by `personalRating` desc, `dateCompleted` tiebreak
-- [ ] SERIES-007-AC-20: `minSourceRating` hard cutoff (no-op in genre/keyword mode)
-- [ ] SERIES-007-AC-21: `rankScore` blends `tmdbRating` + source `personalRating`
-- [ ] SERIES-007-AC-22: `maxPerSource` diversity cap (default 3)
-- [ ] SERIES-007-AC-23: `TmdbCandidate.voteCount`/`originalLanguage` added
-- [ ] SERIES-007-AC-24: `minTmdbRating` filter
-- [ ] SERIES-007-AC-25: `minVoteCount` filter, defaults to 20
-- [ ] SERIES-007-AC-26: `yearMin`/`yearMax` filter, null year excluded when active
-- [ ] SERIES-007-AC-27: `excludeGenres` filter
-- [ ] SERIES-007-AC-28: `language` filter
-- [ ] SERIES-007-AC-29: Requirement 8 filters AND-combined, ordered before ranking
-- [ ] SERIES-007-AC-30: full endpoint parameter list
-- [ ] SERIES-007-AC-31: malformed parameter → 400
+- [x] SERIES-007-AC-01: `app.tmdb.max-source-series` config (default 20)
+- [x] SERIES-007-AC-02: `app.tmdb.max-candidates` config (default 50)
+- [x] SERIES-007-AC-03: single source-of-truth genre table replaces the two maps
+- [x] SERIES-007-AC-04: forward/reverse lookups preserve existing collapsing behavior
+- [x] SERIES-007-AC-05: `TmdbClient.searchKeyword`
+- [x] SERIES-007-AC-06: `TmdbClient.discover(genreIds, keywordIds)` supersedes `discoverByGenre`
+- [x] SERIES-007-AC-07: `seriesIds` request param
+- [x] SERIES-007-AC-08: explicit series selection sources regardless of status
+- [x] SERIES-007-AC-09: unknown `seriesIds` entry → 400
+- [x] SERIES-007-AC-10: unresolvable selected series skipped, not fatal
+- [x] SERIES-007-AC-11: `seriesIds` pool still capped/ordered per Requirement 1/6
+- [x] SERIES-007-AC-12: `genres`/`keywords` request params
+- [x] SERIES-007-AC-13: genre/keyword mode bypasses watched-pool sourcing entirely
+- [x] SERIES-007-AC-14: genre/keyword resolution, unresolvable entries skipped
+- [x] SERIES-007-AC-15: genres + keywords combinable in one `discover()` call
+- [x] SERIES-007-AC-16: genre/keyword-sourced candidates have `sourceTitle == null`
+- [x] SERIES-007-AC-17: `seriesIds` + `genres`/`keywords` together → 400
+- [x] SERIES-007-AC-18: no override params → unchanged Spec 006 behavior
+- [x] SERIES-007-AC-19: source pool ordered by `personalRating` desc, `dateCompleted` tiebreak
+- [x] SERIES-007-AC-20: `minSourceRating` hard cutoff (no-op in genre/keyword mode)
+- [x] SERIES-007-AC-21: `rankScore` blends `tmdbRating` + source `personalRating`
+- [x] SERIES-007-AC-22: `maxPerSource` diversity cap (default 3)
+- [x] SERIES-007-AC-23: `TmdbCandidate.voteCount`/`originalLanguage` added
+- [x] SERIES-007-AC-24: `minTmdbRating` filter
+- [x] SERIES-007-AC-25: `minVoteCount` filter, defaults to 20
+- [x] SERIES-007-AC-26: `yearMin`/`yearMax` filter, null year excluded when active
+- [x] SERIES-007-AC-27: `excludeGenres` filter
+- [x] SERIES-007-AC-28: `language` filter
+- [x] SERIES-007-AC-29: Requirement 8 filters AND-combined, ordered before ranking
+- [x] SERIES-007-AC-30: full endpoint parameter list
+- [x] SERIES-007-AC-31: malformed parameter → 400

@@ -91,15 +91,53 @@ public class TmdbClient {
     }
 
     /**
+     * Resolves a free-text keyword to a TMDB keyword id via
+     * {@code GET /search/keyword?query={name}} (SERIES-007-AC-05), returning the first
+     * result's {@code id}, or empty if {@code results[]} is absent or empty.
+     *
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
      */
-    public List<TmdbCandidate> discoverByGenre(List<Integer> genreIds) {
-        String joined = genreIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    public Optional<Integer> searchKeyword(String name) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder
-            .path("discover/tv")
-            .queryParam("with_genres", joined));
+            .path("search/keyword")
+            .queryParam("query", name));
+
+        List<Map<String, Object>> results = listOfMaps(body, "results");
+        if (results.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(toInteger(results.getFirst().get("id")));
+    }
+
+    /**
+     * Discovers TV series by genre and/or keyword id via {@code GET /discover/tv}
+     * (SERIES-007-AC-06), superseding {@code discoverByGenre} (SERIES-006-AC-11) -- TMDB's
+     * real {@code /discover/tv} endpoint accepts {@code with_genres} and {@code
+     * with_keywords} as two params on the same call, so this single method matches the real
+     * API shape better than two near-duplicate ones. {@code with_genres} is included only
+     * when {@code genreIds} is non-empty, and {@code with_keywords} only when {@code
+     * keywordIds} is non-empty; both may be present on the same call.
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> discover(List<Integer> genreIds, List<Integer> keywordIds) {
+        Map<String, Object> body = fetch(uriBuilder -> {
+            UriBuilder b = uriBuilder.path("discover/tv");
+            if (genreIds != null && !genreIds.isEmpty()) {
+                b = b.queryParam("with_genres", joinIds(genreIds));
+            }
+            if (keywordIds != null && !keywordIds.isEmpty()) {
+                b = b.queryParam("with_keywords", joinIds(keywordIds));
+            }
+            return b;
+        });
         return mapResults(body);
+    }
+
+    private static String joinIds(List<Integer> ids) {
+        return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
     /**
@@ -164,7 +202,9 @@ public class TmdbClient {
                 str(item.get("overview")),
                 str(item.get("poster_path")),
                 toBigDecimal(item.get("vote_average")),
-                toIntegerList(item.get("genre_ids"))
+                toIntegerList(item.get("genre_ids")),
+                toInteger(item.get("vote_count")),
+                str(item.get("original_language"))
             ));
         }
         return candidates;
