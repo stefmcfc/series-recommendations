@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Directed recommendation sourcing: base suggestions on specific tracked series, or on a genre/keyword directly, independent of watch history (`series_spec_007`, `frontend_spec_011`).
+- Recommendations are now weighted by personal rating (both which series get to source them and how candidates are ranked), with a per-source diversity cap so one favorite doesn't dominate the list.
+- New recommendation output filters: minimum TMDB rating, minimum vote count, year range, genre exclude-list, and language.
+- `app.tmdb.max-source-series`/`app.tmdb.max-candidates` are now configurable instead of hardcoded.
+
+### Changed
+
+- TMDB genre discovery now also supports keywords (e.g. "Spy"), supplementing TMDB's fixed 16-genre TV taxonomy.
+
 ## [1.1.0] - 2026-08-19
 
 ### Added
