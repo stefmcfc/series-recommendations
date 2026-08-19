@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-19
+
+### Added
+
+- Series recommendations sourced from [TMDB](https://www.themoviedb.org/documentation/api): title-based suggestions from the user's completed series, supplemented by genre-based discovery, filtered against series already added or ignored (`series_spec_006`, `frontend_spec_010`).
+- `imdbId` persistence on series, enabling reliable cross-referencing against recommendation results.
+- An ignore list (`POST /api/v1/series/ignored`) so a dismissed recommendation never resurfaces.
+- A Recommendations view with Mark as Watched / Add to List / Ignore actions per card, reusing `AddSeriesForm` via a new `initialValues` prop.
+- TMDB attribution notice on the Recommendations view, per TMDB's attribution guidelines.
+
 ## [1.0.0] - 2026-08-19
 
 Initial complete release: full CRUD + browse UI backed by a Spring Boot API,
