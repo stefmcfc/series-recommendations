@@ -21,7 +21,7 @@ backend/
 ├── src/
 │   ├── main/
 │   │   ├── java/
-│   │   │   └── com/example/seriestracker/
+│   │   │   └── uk/co/stefirby/seriestracker/
 │   │   │       ├── controller/        # REST endpoints (@RestController) — SeriesController
 │   │   │       ├── service/           # Business logic (@Service) — SeriesService, SeriesSearchService, SeriesExportService
 │   │   │       ├── repository/        # Spring Data JPA (@Repository) — SeriesRepository
@@ -36,7 +36,7 @@ backend/
 │   │           └── migration/         # SQL migration scripts (Flyway) — V001__create_series_table.sql
 │   └── test/
 │       ├── groovy/
-│       │   └── com/example/seriestracker/
+│       │   └── uk/co/stefirby/seriestracker/
 │       │       ├── controller/        # SeriesControllerSpec
 │       │       ├── model/             # SeriesEntitySpec
 │       │       ├── service/           # SeriesServiceSpec, SeriesSearchServiceSpec, SeriesExportServiceSpec
@@ -87,7 +87,7 @@ frontend/
 ## Naming conventions
 
 ### Backend (Java)
-- **Packages**: `com.example.seriestracker.{feature}` (lowercase, reverse domain)
+- **Packages**: `uk.co.stefirby.seriestracker.{feature}` (lowercase, reverse domain)
 - **Classes**: `PascalCase` (e.g., `SeriesController`, `SeriesService`, `SeriesEntity`)
 - **Files**: Match class name (e.g., `SeriesService.java`)
 - **Constants**: `SCREAMING_SNAKE_CASE`
@@ -105,7 +105,7 @@ frontend/
 ## Where tests live
 
 ### Backend
-- Colocated with source: `src/test/groovy/com/example/seriestracker/{controller,service,model}/ServiceNameSpec.groovy`
+- Colocated with source: `src/test/groovy/uk/co/stefirby/seriestracker/{controller,service,model}/ServiceNameSpec.groovy`
 - Run with: `gradlew.bat test`
 
 ### Frontend
@@ -129,7 +129,7 @@ frontend/
 
 - **SQLite** (local dev): file at `backend/data/series.db`, created on first run
 - **Migrations**: `backend/src/main/resources/db/migration/V001__create_series_table.sql`
-- **JPA Entities**: `backend/src/main/java/com/example/seriestracker/model/`
+- **JPA Entities**: `backend/src/main/java/uk/co/stefirby/seriestracker/model/`
 
 ## Build artifacts
 

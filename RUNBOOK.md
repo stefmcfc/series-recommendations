@@ -75,8 +75,8 @@ The backend is configured via `backend/src/main/resources/application.yml`. No e
 | `spring.flyway.enabled` | `true` | Run Flyway migrations on startup |
 | `spring.http.clients.connect-timeout` | `5s` | Bounded connect timeout applied to outbound HTTP clients (currently only OMDb lookups) |
 | `spring.http.clients.read-timeout` | `10s` | Bounded read timeout applied to outbound HTTP clients (currently only OMDb lookups) |
-| `app.cors.allowed-origins` | `http://localhost:5173` | Origin(s) allowed to call `/api/**` cross-origin (never a wildcard) — see `com.example.seriestracker.config.CorsConfig` |
-| `app.omdb.api-key` | *(none)* | API key for the [OMDb API](https://www.omdbapi.com/) (free tier, registration required), used by `GET /api/v1/series/lookup`. **No default** — must be supplied via the `APP_OMDB_API_KEY` env var. The rest of the app runs fine without it; only `/series/lookup` itself fails with `502 Bad Gateway` until it's set. Never logged or included in any response body — see `com.example.seriestracker.client.OmdbClient`. |
+| `app.cors.allowed-origins` | `http://localhost:5173` | Origin(s) allowed to call `/api/**` cross-origin (never a wildcard) — see `uk.co.stefirby.seriestracker.config.CorsConfig` |
+| `app.omdb.api-key` | *(none)* | API key for the [OMDb API](https://www.omdbapi.com/) (free tier, registration required), used by `GET /api/v1/series/lookup`. **No default** — must be supplied via the `APP_OMDB_API_KEY` env var. The rest of the app runs fine without it; only `/series/lookup` itself fails with `502 Bad Gateway` until it's set. Never logged or included in any response body — see `uk.co.stefirby.seriestracker.client.OmdbClient`. |
 | `app.omdb.base-url` | `https://www.omdbapi.com/` | Base URL for the OMDb API, overridable via `APP_OMDB_BASE_URL` (e.g. to point at a test double) |
 
 Override any property with a `SPRING_` prefixed environment variable (or, for the `app.*` properties above, the plain `APP_`-prefixed equivalent — Spring's relaxed env-var binding applies to any property, not just `spring.*`):
@@ -171,8 +171,8 @@ Tests use a separate SQLite database (`ddl-auto: create-drop`, see `backend/src/
 Run a specific spec:
 
 ```bash
-gradlew.bat test --tests "com.example.seriestracker.service.SeriesServiceSpec"
-gradlew.bat test --tests "com.example.seriestracker.controller.SeriesControllerSpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.service.SeriesServiceSpec"
+gradlew.bat test --tests "uk.co.stefirby.seriestracker.controller.SeriesControllerSpec"
 ```
 
 View the HTML report:
@@ -308,7 +308,7 @@ gradlew.bat test
 
 **Frontend showed "Failed to load series. Please try again." in a real browser (not Vitest) — fixed**
 
-This was a real, currently-blocking CORS gap (confirmed both with and without VPN — not network-related), tracked as `TOOLING-001-AC-16` in `tooling_spec_001_code_quality_security.md`. It's now fixed: `com.example.seriestracker.config.CorsConfig` (a `WebMvcConfigurer` bean) allows cross-origin requests to `/api/**` from the origin(s) configured in `app.cors.allowed-origins` (default `http://localhost:5173`, see the Environment Variables section above), restricted to the `GET`/`POST`/`PATCH`/`DELETE` methods and `Content-Type` header the frontend actually uses — never a wildcard `*`.
+This was a real, currently-blocking CORS gap (confirmed both with and without VPN — not network-related), tracked as `TOOLING-001-AC-16` in `tooling_spec_001_code_quality_security.md`. It's now fixed: `uk.co.stefirby.seriestracker.config.CorsConfig` (a `WebMvcConfigurer` bean) allows cross-origin requests to `/api/**` from the origin(s) configured in `app.cors.allowed-origins` (default `http://localhost:5173`, see the Environment Variables section above), restricted to the `GET`/`POST`/`PATCH`/`DELETE` methods and `Content-Type` header the frontend actually uses — never a wildcard `*`.
 
 No `frontend/.env.local` proxy workaround is needed anymore: `seriesApi.ts` can call `http://localhost:8080/api/v1` directly from a browser tab serving the frontend on `http://localhost:5173`, and the response will include a matching `Access-Control-Allow-Origin` header. If you deploy the frontend from a different origin, add it to `app.cors.allowed-origins` (comma-separated) or override via `APP_CORS_ALLOWED_ORIGINS` — don't loosen this to a wildcard.
 

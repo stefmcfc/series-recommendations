@@ -87,7 +87,7 @@ This spec covers `AddSeriesForm` — a modal dialog that lets the user create a 
 
 **User Story:** As a user, I want to be told immediately if something I entered is invalid, so that I don't have to wait for a round trip to the server to find out.
 
-Ranges below mirror the backend's actual bean-validation constraints (`backend/src/main/java/com/example/seriestracker/model/SeriesEntity.java`) so a client-valid submission is never rejected by the server for range reasons.
+Ranges below mirror the backend's actual bean-validation constraints (`backend/src/main/java/uk/co/stefirby/seriestracker/model/SeriesEntity.java`) so a client-valid submission is never rejected by the server for range reasons.
 
 #### Acceptance Criteria
 
@@ -167,7 +167,7 @@ Ranges below mirror the backend's actual bean-validation constraints (`backend/s
 | `seriesApi.create()` | `src/services/seriesApi.ts` (Frontend Spec 001) |
 | `ApiError` | `src/types/api.ts` (Frontend Spec 001) |
 | `POST /api/v1/series` contract, 400 validation response shape | `series_spec_002_crud.md`, `SeriesController`/`GlobalExceptionHandler` |
-| Field range constraints (`year`, `totalSeasons`, `totalEpisodes`, `imdbRating`, `metacriticRating`, `rottenTomatoesRating`, `personalRating`) | `backend/src/main/java/com/example/seriestracker/model/SeriesEntity.java` bean-validation annotations |
+| Field range constraints (`year`, `totalSeasons`, `totalEpisodes`, `imdbRating`, `metacriticRating`, `rottenTomatoesRating`, `personalRating`) | `backend/src/main/java/uk/co/stefirby/seriestracker/model/SeriesEntity.java` bean-validation annotations |
 | `data-testid="add-series-btn"` (header + empty-state buttons) | `frontend_spec_002.md` Requirements 4 and 6 |
 | `SeriesList` component being amended | `src/components/SeriesList.tsx` (Frontend Spec 002) |
 
