@@ -158,73 +158,75 @@ export function SeriesDetail({
         <div className={styles.detail}>
           <h2 className={styles.heading}>{series.title}</h2>
 
-          {series.posterUrl !== null && !posterError && (
-            <img
-              src={series.posterUrl}
-              alt=""
-              className={styles.poster}
-              onError={() => setPosterError(true)}
-            />
-          )}
+          <div className={styles.content}>
+            {series.posterUrl !== null && !posterError && (
+              <img
+                src={series.posterUrl}
+                alt=""
+                className={styles.poster}
+                onError={() => setPosterError(true)}
+              />
+            )}
 
-          <dl className={styles.fields}>
-            <div className={styles.field}>
-              <dt>Year</dt>
-              <dd>{formatValue(series.year)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Genres</dt>
-              <dd>{formatValue(series.genres)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Status</dt>
-              <dd>{series.status}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Total Seasons</dt>
-              <dd>{formatValue(series.totalSeasons)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Total Episodes</dt>
-              <dd>{formatValue(series.totalEpisodes)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Current Season</dt>
-              <dd>{formatValue(series.currentSeason)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Current Episode</dt>
-              <dd>{formatValue(series.currentEpisode)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>IMDb Rating</dt>
-              <dd>{formatValue(series.imdbRating)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Metacritic Rating</dt>
-              <dd>{formatValue(series.metacriticRating)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Rotten Tomatoes Rating</dt>
-              <dd>{formatValue(series.rottenTomatoesRating)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Personal Rating</dt>
-              <dd>{formatValue(series.personalRating)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Personal Notes</dt>
-              <dd>{formatValue(series.personalNotes)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Date Added</dt>
-              <dd>{formatDate(series.dateAdded)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Date Completed</dt>
-              <dd>{formatDate(series.dateCompleted)}</dd>
-            </div>
-          </dl>
+            <dl className={styles.fields}>
+              <div className={styles.field}>
+                <dt>Year</dt>
+                <dd>{formatValue(series.year)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Genres</dt>
+                <dd>{formatValue(series.genres)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Status</dt>
+                <dd>{series.status}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Total Seasons</dt>
+                <dd>{formatValue(series.totalSeasons)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Total Episodes</dt>
+                <dd>{formatValue(series.totalEpisodes)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Current Season</dt>
+                <dd>{formatValue(series.currentSeason)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Current Episode</dt>
+                <dd>{formatValue(series.currentEpisode)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>IMDb Rating</dt>
+                <dd>{formatValue(series.imdbRating)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Metacritic Rating</dt>
+                <dd>{formatValue(series.metacriticRating)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Rotten Tomatoes Rating</dt>
+                <dd>{formatValue(series.rottenTomatoesRating)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Personal Rating</dt>
+                <dd>{formatValue(series.personalRating)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Personal Notes</dt>
+                <dd>{formatValue(series.personalNotes)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Date Added</dt>
+                <dd>{formatDate(series.dateAdded)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Date Completed</dt>
+                <dd>{formatDate(series.dateCompleted)}</dd>
+              </div>
+            </dl>
+          </div>
 
           {confirmingDelete ? (
             <div className={styles.actions}>
