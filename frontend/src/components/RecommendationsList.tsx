@@ -252,6 +252,10 @@ export function RecommendationsList() {
           }}
         />
       )}
+
+      <p className={styles.attribution}>
+        This product uses the TMDB API but is not endorsed or certified by TMDB.
+      </p>
     </div>
   )
 }

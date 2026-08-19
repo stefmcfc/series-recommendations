@@ -214,3 +214,25 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
     expect(screen.getAllByRole('alert')).toHaveLength(1)
   })
 })
+
+describe('FRONTEND-010-AC-20: TMDB attribution', () => {
+  it('shows the attribution notice regardless of view state', async () => {
+    mockGetRecommendations.mockResolvedValue([])
+    render(<RecommendationsList />)
+
+    expect(
+      screen.getByText(
+        /this product uses the tmdb api but is not endorsed or certified by tmdb/i,
+      ),
+    ).toBeInTheDocument()
+
+    await waitFor(() =>
+      expect(screen.getByText(/no recommendations yet/i)).toBeInTheDocument(),
+    )
+    expect(
+      screen.getByText(
+        /this product uses the tmdb api but is not endorsed or certified by tmdb/i,
+      ),
+    ).toBeInTheDocument()
+  })
+})

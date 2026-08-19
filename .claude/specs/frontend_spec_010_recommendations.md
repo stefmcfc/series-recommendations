@@ -89,6 +89,18 @@ Adds a `RecommendationsList` view: fetches `GET /api/v1/series/recommendations` 
 
 ---
 
+### Requirement 6: TMDB Attribution
+
+**User story**: As the app's operator, I want the Recommendations view to credit TMDB as its data source, so the app honors the terms of TMDB's free API.
+
+**Design decision**: TMDB's [attribution guidelines](https://www.themoviedb.org/about/logos-attribution) ask for their logo plus a standard attribution sentence on any screen displaying their data. This app is a personal, non-distributed project, but the requirement isn't scoped by audience size — a text-only notice is a low-cost way to honor it without pulling in an external logo asset (which would need its own image-hosting/licensing consideration). Shown unconditionally on the view (not only when results are present), since the view is TMDB-backed regardless of whether a given request happens to 502 or return zero results.
+
+#### Acceptance Criteria
+
+- **FRONTEND-010-AC-20** [AUTO]: `RecommendationsList` shall render a persistent, unobtrusive attribution notice reading "This product uses the TMDB API but is not endorsed or certified by TMDB." — visible regardless of loading/error/empty/populated state.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -285,3 +297,4 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
 - [x] FRONTEND-010-AC-17: card stays + scoped alert on ignore failure
 - [x] FRONTEND-010-AC-18: "Recommendations" nav toggle in `App.tsx`
 - [x] FRONTEND-010-AC-19: toggling views doesn't disturb `SearchFilter`/`ExportControls` state
+- [x] FRONTEND-010-AC-20: persistent TMDB attribution notice
