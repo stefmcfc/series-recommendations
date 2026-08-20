@@ -187,6 +187,13 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                   {r.year !== null && (
                     <span className={styles.year}>{r.year}</span>
                   )}
+                  {r.tmdbRating !== null && (
+                    <span className={styles.rating}>
+                      {r.tmdbRating.toFixed(1)}
+                      {r.voteCount !== null &&
+                        ` (${r.voteCount.toLocaleString()} votes)`}
+                    </span>
+                  )}
                 </div>
                 {r.genres !== null && (
                   <span className={styles.genres}>{r.genres}</span>

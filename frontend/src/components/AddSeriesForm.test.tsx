@@ -1121,8 +1121,8 @@ describe('FRONTEND-017-AC-07: OMDb candidate-picker selection uses the typed tit
   })
 })
 
-describe("FRONTEND-017-AC-08: TMDB auto-resolve uses the selected candidate's own title as the reference", () => {
-  it('captures the TMDB candidate title, not the originally-typed term', async () => {
+describe("FRONTEND-021-AC-03/04/06: TMDB auto-resolve prefers the candidate's own title as primary", () => {
+  it('sets title to the TMDB candidate name and alternateTitle to the differing OMDb title', async () => {
     mockSearch.mockResolvedValue([])
     mockSearchTmdb.mockResolvedValue([
       { tmdbId: 4046, title: 'Spooks', year: 2002 },
@@ -1138,14 +1138,14 @@ describe("FRONTEND-017-AC-08: TMDB auto-resolve uses the selected candidate's ow
     fireEvent.click(screen.getByTestId('search-tmdb-btn'))
 
     await waitFor(() =>
-      expect(screen.getByLabelText(/^title/i)).toHaveValue('MI-5'),
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('Spooks'),
     )
-    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('MI-5')
   })
 })
 
-describe("FRONTEND-017-AC-09: TMDB candidate-picker selection uses the selected candidate's own title as the reference", () => {
-  it("captures the selected TMDB candidate's title, not the originally-typed term", async () => {
+describe("FRONTEND-021-AC-03/04/07: TMDB candidate-picker selection prefers the candidate's own title as primary", () => {
+  it("sets title to the selected TMDB candidate's name and alternateTitle to the differing OMDb title", async () => {
     mockSearch.mockResolvedValue([])
     mockSearchTmdb.mockResolvedValue([
       { tmdbId: 4046, title: 'Spooks', year: 2002 },
@@ -1163,6 +1163,24 @@ describe("FRONTEND-017-AC-09: TMDB candidate-picker selection uses the selected 
     await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
 
     fireEvent.click(screen.getByRole('button', { name: /^spooks/i }))
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('Spooks'),
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('MI-5')
+  })
+})
+
+describe('FRONTEND-021-AC-08: OMDb-only paths are unaffected', () => {
+  it('still uses the OMDb-resolved title as primary for the direct lookup path', async () => {
+    mockSearch.mockResolvedValue([{ title: 'MI-5', imdbId: 'tt0160904' }])
+    mockResolve.mockResolvedValue({
+      title: 'MI-5',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('Spooks')
 
     await waitFor(() =>
       expect(screen.getByLabelText(/^title/i)).toHaveValue('MI-5'),

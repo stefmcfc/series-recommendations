@@ -27,6 +27,7 @@ function makeRecommendation(
     overview: 'A financial planner relocates his family.',
     posterUrl: null,
     tmdbRating: 8.4,
+    voteCount: null,
     imdbId: 'tt5071412',
     sourceTitles: [],
     totalSourceCount: 0,
@@ -291,5 +292,39 @@ describe('FRONTEND-010-AC-20: TMDB attribution', () => {
         /this product uses the tmdb api but is not endorsed or certified by tmdb/i,
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-020-AC-02/03: rating and vote count rendered', () => {
+  it('renders the rating to one decimal place with a formatted vote count', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ tmdbRating: 7.749, voteCount: 1500 }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(await screen.findByText('7.7 (1,500 votes)')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-020-AC-04: rating alone when voteCount is null', () => {
+  it('renders just the rating', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ tmdbRating: 8, voteCount: null }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(await screen.findByText('8.0')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-020-AC-05: nothing rendered when tmdbRating is null', () => {
+  it('renders no rating text', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ tmdbRating: null, voteCount: null }),
+    ])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    expect(screen.queryByText(/votes\)/)).not.toBeInTheDocument()
   })
 })

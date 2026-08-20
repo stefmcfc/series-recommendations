@@ -140,6 +140,13 @@
   font-size: 0.875rem;
 }
 
+.rating {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
 .genres {
   color: var(--text);
   font-size: 0.875rem;
