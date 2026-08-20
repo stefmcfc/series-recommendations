@@ -268,7 +268,9 @@ class SeriesEntitySpec extends Specification {
                 year: null,
                 genres: null,
                 imdbRating: null,
-                personalNotes: null
+                personalNotes: null,
+                alternateTitle: null,
+                tags: null
             )
 
         when: "the series is validated"
@@ -284,5 +286,44 @@ class SeriesEntitySpec extends Specification {
 
         then: "the status defaults to BACKLOG"
             series.status == SeriesStatus.BACKLOG
+    }
+
+    def "SERIES-013-AC-01: accepts a series with an alternateTitle set"() {
+        given: "a series with title and alternateTitle both set"
+            def series = new SeriesEntity(title: "MI-5", alternateTitle: "Spooks")
+
+        expect: "the entity holds both values"
+            series.title == "MI-5"
+            series.alternateTitle == "Spooks"
+    }
+
+    def "SERIES-013-AC-01: leaves alternateTitle null when unset, like other optional fields"() {
+        given: "a series with only a title"
+            def series = new SeriesEntity(title: "Breaking Bad")
+
+        expect: "alternateTitle defaults to null"
+            series.alternateTitle == null
+    }
+
+    def "SERIES-014-AC-03/05: should create a series with tags set and return it verbatim"() {
+        when: "a series is created with a comma-separated tags value"
+            def series = new SeriesEntity(
+                title: "Game of Thrones",
+                tags: "rewatch candidate,watch with partner"
+            )
+
+        then: "the tags value is stored and returned exactly as given"
+            series.tags == "rewatch candidate,watch with partner"
+    }
+
+    def "SERIES-014-AC-04: should allow a null tags value"() {
+        given: "a series with tags explicitly set to null"
+            def series = new SeriesEntity(title: "Show", tags: null)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
     }
 }

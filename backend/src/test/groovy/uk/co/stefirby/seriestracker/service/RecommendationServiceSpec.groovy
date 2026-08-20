@@ -18,7 +18,7 @@ class RecommendationServiceSpec extends Specification {
     TmdbClient tmdbClient = Mock()
 
     RecommendationService recommendationService =
-        new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, 20, 50)
+        new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 20, 50)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -285,7 +285,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-01: max-source-series cap is configurable via constructor"() {
         given: "a service configured with maxSourceSeries=2, and 3 eligible COMPLETED series"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, 2, 50)
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 2, 50)
             def now = LocalDateTime.now()
             def sources = (1..3).collect {
                 completedSeries("Show ${it}", "tt${it.toString().padLeft(7, '0')}", now.minusDays(it))
@@ -302,7 +302,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, 20, 3)
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 20, 3)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -381,7 +381,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-11: an explicit seriesIds pool larger than max-source-series is ordered and truncated"() {
         given: "a service configured with maxSourceSeries=1, and two selected series with different personalRatings"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, 1, 50)
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 1, 50)
             def low = completedSeries("Low", "tt0000001", LocalDateTime.now(), null, 2)
             low.id = UUID.randomUUID()
             def high = completedSeries("High", "tt0000002", LocalDateTime.now(), null, 5)
@@ -815,5 +815,21 @@ class RecommendationServiceSpec extends Specification {
         then: "the two low-rated candidates are filtered out (leaving only 2, well under the diversity cap)"
             results.size() == 2
             results*.title().sort() == ["A", "B"]
+    }
+
+    def "SERIES-012-AC-02: candidate poster URLs are built from TmdbClient.POSTER_BASE_URL"() {
+        given: "a TMDB candidate with a poster_path"
+            tmdbClient.discover(_, _) >> [
+                new TmdbCandidate(99, "Discovered Show", 2020, "overview", "/poster.jpg",
+                    new BigDecimal("7.5"), [18], 100, "en")
+            ]
+            tmdbClient.externalIds(99) >> Optional.of("tt0000099")
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+
+        when: "recommendations are requested"
+            def result = recommendationService.recommend(10, criteria)
+
+        then: "the poster URL is built from TmdbClient's own constant, not a private duplicate"
+            result[0].posterUrl() == TmdbClient.POSTER_BASE_URL + "/poster.jpg"
     }
 }

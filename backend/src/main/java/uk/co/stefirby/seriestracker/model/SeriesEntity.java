@@ -25,6 +25,13 @@ public class SeriesEntity {
     @NotBlank(message = "Title is required")
     private String title;
 
+    // SERIES-013-AC-01: nullable, mirrors title's own @Column definition minus the
+    // @NotBlank/nullable=false constraints -- storage for the "other" name a series is
+    // known by (e.g. OMDb's "MI-5" vs. the TMDB-searched "Spooks"). No index -- nothing
+    // in this spec's scope filters or looks up by alternateTitle.
+    @Column(nullable = true, length = 255)
+    private String alternateTitle;
+
     @Column(nullable = true)
     @Min(value = 1, message = "Year must be greater than 0")
     @Max(value = 2026, message = "Year must be <= current year")
@@ -79,6 +86,13 @@ public class SeriesEntity {
     @Column(nullable = true, length = 1000)
     private String posterUrl;
 
+    // SERIES-014-AC-01/03/04/05: nullable, comma-separated, user-supplied labels for
+    // organizing a collection. Same storage shape as genres exactly (column type,
+    // nullable/length convention, verbatim no-parsing policy) -- just sourced from the
+    // user rather than an external API, with no fixed vocabulary.
+    @Column(nullable = true, length = 500)
+    private String tags;
+
     // SERIES-006-AC-01: nullable -- manually-added series that never went through the OMDb
     // lookup won't have one. Indexed (idx_series_imdb_id, V003 migration) since it's queried
     // for existence checks by RecommendationService.
@@ -97,6 +111,9 @@ public class SeriesEntity {
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+
+    public String getAlternateTitle() { return alternateTitle; }
+    public void setAlternateTitle(String alternateTitle) { this.alternateTitle = alternateTitle; }
 
     public Integer getYear() { return year; }
     public void setYear(Integer year) { this.year = year; }
@@ -136,6 +153,9 @@ public class SeriesEntity {
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public String getTags() { return tags; }
+    public void setTags(String tags) { this.tags = tags; }
 
     public String getImdbId() { return imdbId; }
     public void setImdbId(String imdbId) { this.imdbId = imdbId; }

@@ -1,5 +1,7 @@
 package uk.co.stefirby.seriestracker.service;
 
+import org.springframework.stereotype.Component;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ import java.util.Map;
  * {@code "Action & Adventure"}; {@code Sci-Fi} and {@code Fantasy} both resolve to
  * {@code 10765}, rendered back as {@code "Sci-Fi & Fantasy"}.
  */
+@Component
 public final class TmdbGenreTable {
 
     /**
@@ -49,6 +52,7 @@ public final class TmdbGenreTable {
 
     private final Map<String, Integer> forward;
     private final Map<Integer, String> reverse;
+    private final List<String> allAliasNames;
 
     public TmdbGenreTable() {
         Map<String, Integer> f = new LinkedHashMap<>();
@@ -61,6 +65,10 @@ public final class TmdbGenreTable {
         }
         this.forward = Map.copyOf(f);
         this.reverse = Map.copyOf(r);
+        this.allAliasNames = GENRES.stream()
+            .flatMap(genre -> genre.aliases().stream())
+            .sorted()
+            .toList();
     }
 
     /**
@@ -79,5 +87,17 @@ public final class TmdbGenreTable {
      */
     public String displayNameFor(int id) {
         return reverse.get(id);
+    }
+
+    /**
+     * Returns the flattened list of every alias name across all {@link #GENRES} entries --
+     * the same strings {@link #idFor(String)} matches against -- sorted alphabetically
+     * (SERIES-010-AC-01/02). Distinct from the 16 canonical display names {@link
+     * #displayNameFor(int)} renders (e.g. {@code "Action & Adventure"}); this is the 18-item
+     * alias vocabulary a caller like the "Genres" recommendation-sourcing field must match
+     * against to guarantee a resolvable value.
+     */
+    public List<String> allAliasNames() {
+        return allAliasNames;
     }
 }

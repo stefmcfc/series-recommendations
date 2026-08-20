@@ -47,4 +47,24 @@ class TmdbGenreTableSpec extends Specification {
             genreTable.idFor("Horror") == null
             genreTable.displayNameFor(999999) == null
     }
+
+    def "SERIES-010-AC-01/02: exposes the full flattened alias vocabulary, sorted alphabetically, no duplicates"() {
+        given: "the fixed TmdbGenreTable.GENRES list"
+            def table = new TmdbGenreTable()
+
+        when: "allAliasNames() is called"
+            def aliases = table.allAliasNames()
+
+        then: "it contains exactly the 18 alias names, not the 16 canonical display names"
+            aliases.size() == 18
+            aliases.containsAll(["Action", "Adventure", "Sci-Fi", "Fantasy", "Talk-Show", "War"])
+            !aliases.contains("Action & Adventure")
+            !aliases.contains("Sci-Fi & Fantasy")
+            !aliases.contains("Talk")
+            !aliases.contains("War & Politics")
+
+        and: "it is sorted alphabetically with no duplicates"
+            aliases == aliases.toSorted()
+            aliases.toSet().size() == aliases.size()
+    }
 }

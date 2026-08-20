@@ -16,11 +16,13 @@ public class SeriesExportService {
 
     private static final Logger log = LoggerFactory.getLogger(SeriesExportService.class);
 
+    // SERIES-013-AC-04 / SERIES-014-AC-12: alternateTitle and tags appended alongside the
+    // other newer optional fields, before the date columns.
     private static final String[] CSV_HEADERS = {
-        "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
+        "id", "title", "alternateTitle", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
         "metacriticRating", "rottenTomatoesRating", "personalRating",
-        "personalNotes", "posterUrl", "dateAdded", "dateCompleted"
+        "personalNotes", "posterUrl", "tags", "dateAdded", "dateCompleted"
     };
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -55,6 +57,7 @@ public class SeriesExportService {
         return String.join(",",
             csv(s.getId() != null ? s.getId().toString() : null),
             csv(s.getTitle()),
+            csv(s.getAlternateTitle()),
             csv(s.getYear() != null ? s.getYear().toString() : null),
             csv(s.getGenres()),
             csv(s.getTotalSeasons() != null ? s.getTotalSeasons().toString() : null),
@@ -68,6 +71,7 @@ public class SeriesExportService {
             csv(s.getPersonalRating() != null ? s.getPersonalRating().toString() : null),
             csv(s.getPersonalNotes()),
             csv(s.getPosterUrl()),
+            csv(s.getTags()),
             csv(s.getDateAdded() != null ? s.getDateAdded().format(ISO) : null),
             csv(s.getDateCompleted() != null ? s.getDateCompleted().format(ISO) : null)
         );

@@ -54,13 +54,10 @@ public class RecommendationService {
      */
     private static final int DEFAULT_MIN_VOTE_COUNT = 20;
 
-    private static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
-
-    private static final TmdbGenreTable GENRE_TABLE = new TmdbGenreTable();
-
     private final SeriesRepository seriesRepository;
     private final IgnoredSeriesRepository ignoredSeriesRepository;
     private final TmdbClient tmdbClient;
+    private final TmdbGenreTable genreTable;
 
     /**
      * Upper bound on how many source series (the automatic {@code COMPLETED} pool, or an
@@ -79,11 +76,13 @@ public class RecommendationService {
     public RecommendationService(SeriesRepository seriesRepository,
                                   IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
+                                  TmdbGenreTable genreTable,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates) {
         this.seriesRepository = seriesRepository;
         this.ignoredSeriesRepository = ignoredSeriesRepository;
         this.tmdbClient = tmdbClient;
+        this.genreTable = genreTable;
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
     }
@@ -155,7 +154,7 @@ public class RecommendationService {
             return List.of();
         }
         return genres.stream()
-            .map(GENRE_TABLE::idFor)
+            .map(genreTable::idFor)
             .filter(Objects::nonNull)
             .distinct()
             .collect(Collectors.toList());
@@ -278,7 +277,7 @@ public class RecommendationService {
         List<Integer> genreIds = genreCounts.entrySet().stream()
             .filter(e -> e.getValue() == max)
             .map(Map.Entry::getKey)
-            .map(GENRE_TABLE::idFor)
+            .map(genreTable::idFor)
             .filter(Objects::nonNull)
             .distinct()
             .collect(Collectors.toList());
@@ -420,26 +419,26 @@ public class RecommendationService {
         return result;
     }
 
-    private static RecommendationDto toDto(DedupedCandidate dc) {
+    private RecommendationDto toDto(DedupedCandidate dc) {
         TmdbCandidate c = dc.candidate();
         return new RecommendationDto(
             c.title(),
             c.year(),
             joinGenres(c.genreIds()),
             c.overview(),
-            c.posterPath() != null ? POSTER_BASE_URL + c.posterPath() : null,
+            c.posterPath() != null ? TmdbClient.POSTER_BASE_URL + c.posterPath() : null,
             c.voteAverage(),
             dc.imdbId(),
             dc.sourceSeries() != null ? dc.sourceSeries().getTitle() : null
         );
     }
 
-    private static String joinGenres(List<Integer> genreIds) {
+    private String joinGenres(List<Integer> genreIds) {
         if (genreIds == null || genreIds.isEmpty()) {
             return null;
         }
         String joined = genreIds.stream()
-            .map(GENRE_TABLE::displayNameFor)
+            .map(genreTable::displayNameFor)
             .filter(Objects::nonNull)
             .distinct()
             .collect(Collectors.joining(", "));
