@@ -347,6 +347,7 @@ describe('FRONTEND-010-AC-03: getRecommendations', () => {
         overview: '...',
         posterUrl: null,
         tmdbRating: 8.4,
+        voteCount: 1500,
         imdbId: 'tt5071412',
         sourceTitles: ['Breaking Bad'],
         totalSourceCount: 1,

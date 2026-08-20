@@ -162,15 +162,22 @@ function applyLookupResult(
   form: FormState,
   result: OmdbLookupResult,
   referenceTitle: string,
+  preferReferenceAsTitle = false,
 ): FormState {
-  const next: FormState = { ...form, title: result.title }
-
   const trimmedReference = referenceTitle.trim()
+  const useReferenceAsTitle = preferReferenceAsTitle && trimmedReference !== ''
+  const primaryTitle = useReferenceAsTitle ? trimmedReference : result.title
+  const alternateCandidate = (
+    useReferenceAsTitle ? result.title : trimmedReference
+  ).trim()
+
+  const next: FormState = { ...form, title: primaryTitle }
+
   if (
-    trimmedReference !== '' &&
-    trimmedReference.toLowerCase() !== result.title.trim().toLowerCase()
+    alternateCandidate !== '' &&
+    alternateCandidate.toLowerCase() !== primaryTitle.trim().toLowerCase()
   ) {
-    next.alternateTitle = trimmedReference
+    next.alternateTitle = alternateCandidate
   }
 
   if (result.year != null) next.year = String(result.year)
@@ -271,8 +278,11 @@ export function AddSeriesForm({
   const applyResolvedResult = (
     result: OmdbLookupResult,
     referenceTitle: string,
+    preferReferenceAsTitle = false,
   ) => {
-    setForm((prev) => applyLookupResult(prev, result, referenceTitle))
+    setForm((prev) =>
+      applyLookupResult(prev, result, referenceTitle, preferReferenceAsTitle),
+    )
     setPosterPreviewError(false)
   }
 
@@ -363,7 +373,7 @@ export function AddSeriesForm({
       if (results.length === 1) {
         const [candidate] = results
         const result = await seriesApi.resolveTmdbCandidate(candidate.tmdbId)
-        applyResolvedResult(result, candidate.title)
+        applyResolvedResult(result, candidate.title, true)
         setShowTmdbEscapeHatch(false)
         return
       }
@@ -389,7 +399,7 @@ export function AddSeriesForm({
 
     try {
       const result = await seriesApi.resolveTmdbCandidate(candidate.tmdbId)
-      applyResolvedResult(result, candidate.title)
+      applyResolvedResult(result, candidate.title, true)
       setTmdbCandidates([])
     } catch (err) {
       if (err instanceof ApiError) {

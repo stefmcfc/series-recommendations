@@ -88,6 +88,7 @@ export interface Recommendation {
   overview: string | null
   posterUrl: string | null
   tmdbRating: number | null
+  voteCount: number | null
   imdbId: string
   sourceTitles: string[]
   totalSourceCount: number
