@@ -79,7 +79,7 @@ A unit of work isn't done until:
 - Tests pass (`gradlew.bat test` for backend changes, `npm test` + `npm run lint` for frontend changes)
 - The relevant `.claude/specs/` file's acceptance criteria are checked off (or the spec is created first, if this is new work)
 - `README.md` is updated if features, endpoints, scripts, or configuration changed
-- `RUNBOOK.md` is updated if how the project is run, verified, or troubleshot changed
+- `RUNBOOK.md` is updated if how the project is run, verified, or troubleshot changed — including when an *existing* config property (e.g. an API key) starts gating more or different endpoints than its current description covers, not just when a brand-new property is added. (A real gap hit in practice: `app.tmdb.api-key`'s description named only `/recommendations` after `/lookup/search-tmdb`/`/lookup/resolve-tmdb` started depending on it too — nothing auto-detects this, so it has to be checked deliberately.)
 
 ## When unsure
 

@@ -14,10 +14,23 @@ versioned together as one app.
 - Recommendations are now weighted by personal rating (both which series get to source them and how candidates are ranked), with a per-source diversity cap so one favorite doesn't dominate the list.
 - New recommendation output filters: minimum TMDB rating, minimum vote count, year range, genre exclude-list, and language.
 - `app.tmdb.max-source-series`/`app.tmdb.max-candidates` are now configurable instead of hardcoded.
+- OMDb search candidates and disambiguated lookup: `GET /api/v1/series/lookup/search?title=` returns OMDb's full candidate list (not just its single best guess), and `GET /api/v1/series/lookup` now also accepts `imdbId` to resolve one specific candidate to full detail, so adding a series with an ambiguous title (e.g. "Spooks" vs. "Spooks: Code 9") no longer silently trusts OMDb's fuzzy match (`series_spec_011`).
+- `AddSeriesForm`'s "Look Up" button now searches OMDb instead of trusting its single best guess: an unambiguous title still autofills in one click, but a title with multiple OMDb matches shows a candidate picker (poster, title, year) inside the existing dialog so the user picks the right match before anything is applied (`frontend_spec_015`).
+- A TMDB-backed search fallback for adding a series: `GET /api/v1/series/lookup/search-tmdb?title=` searches TMDB directly (which, unlike OMDb, matches against original/translated/AKA names), and `GET /api/v1/series/lookup/resolve-tmdb?tmdbId=` resolves one chosen candidate to full detail — trying OMDb's richer data via the candidate's cross-referenced IMDb id first, and falling back to TMDB's own (thinner) detail when OMDb has no record for that title at all — so a title OMDb's own search misses entirely (e.g. "Spooks", catalogued in OMDb as "MI-5") can still be added (`series_spec_012`).
+- `AddSeriesForm` gains a manual "Search TMDB instead" escape hatch, shown alongside a zero-result OMDb lookup or its 2+-result candidate picker: it searches TMDB directly and, on a single match, auto-resolves and autofills it, or on multiple matches, shows its own candidate picker (poster, title, year, original title) inside the same dialog — surfacing titles OMDb's own search misses entirely, like "Spooks" (`frontend_spec_016`).
+- Backend-only `alternateTitle` field on `SeriesEntity`/`SeriesDto`, flowing through create/read/update and CSV/JSON export like any other optional field, storage for the "other" name a series is known by (e.g. OMDb's "MI-5" vs. the TMDB-searched "Spooks") — no frontend consumer yet (`series_spec_013`).
+- Backend-only `tags` field on `SeriesEntity`/`SeriesDto`: a nullable, comma-separated, user-supplied string for organizing a collection (e.g. "rewatch candidate"), flowing through create/read/update and CSV/JSON export with the same storage/escaping conventions as `genres` — no frontend consumer or `SearchFilter` integration yet (`series_spec_014`).
+- `alternateTitle` frontend consumer: `AddSeriesForm`'s OMDb/TMDB lookup now captures the name a user actually searched/selected by into an editable Alternate Title field whenever it differs from the resolved result's own title (e.g. searching "Spooks" resolves to "MI-5", with "Spooks" captured as the alternate title) — also editable in `EditSeriesForm`, and shown muted next to the title in `SeriesList`/`SeriesDetail` (`frontend_spec_017`).
+- `tags` frontend consumer: a free-text, comma-separated Tags field, editable in `AddSeriesForm`/`EditSeriesForm` (positioned next to Genres) and displayed in `SeriesDetail`'s field list — `SeriesList` and `SearchFilter` integration deliberately out of scope (`frontend_spec_018`).
 
 ### Changed
 
 - TMDB genre discovery now also supports keywords (e.g. "Spy"), supplementing TMDB's fixed 16-genre TV taxonomy.
+
+### Fixed
+
+- New `GET /api/v1/series/genres` endpoint exposes the exact 18-name genre vocabulary `RecommendationService.resolveGenreIds` matches against, fixing a silent failure where a typed genre that didn't exactly match TMDB's fixed alias list was dropped with no error, and recommendations could silently fall back to TMDB's generic "most popular" feed (`series_spec_010`).
+- `RecommendationControls`'s Genre & Keyword sourcing mode now presents genres as a checkbox list populated from `GET /api/v1/series/genres`, replacing the free-text Genres input so a typed genre can no longer silently fail to resolve (`frontend_spec_014`).
 
 ## [1.1.0] - 2026-08-19
 
