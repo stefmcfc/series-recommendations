@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-20
+
 ### Added
 
 - Recommendation cards show the TMDB rating (one decimal place, right-justified) and vote count (`series_spec_016`, `frontend_spec_020`).
