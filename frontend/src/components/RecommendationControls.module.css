@@ -26,6 +26,23 @@
   padding: 0;
 }
 
+.sortByFieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sortByFieldset legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+  padding: 0;
+}
+
 .modeOption {
   display: flex;
   align-items: center;

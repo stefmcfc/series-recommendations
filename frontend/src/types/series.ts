@@ -89,7 +89,8 @@ export interface Recommendation {
   posterUrl: string | null
   tmdbRating: number | null
   imdbId: string
-  sourceTitle: string | null
+  sourceTitles: string[]
+  totalSourceCount: number
 }
 
 export interface RecommendationQuery {
@@ -105,6 +106,8 @@ export interface RecommendationQuery {
   excludeGenres?: string[]
   language?: string
   maxPerSource?: number
+  maxSourcesShown?: number
+  sortBy?: 'score' | 'recommendationCount'
 }
 
 export interface SearchCriteria {
