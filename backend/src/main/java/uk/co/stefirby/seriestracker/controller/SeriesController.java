@@ -142,7 +142,9 @@ public class SeriesController {
             @RequestParam(required = false) Integer yearMax,
             @RequestParam(required = false) List<String> excludeGenres,
             @RequestParam(required = false) String language,
-            @RequestParam(required = false) Integer maxPerSource) {
+            @RequestParam(required = false) Integer maxPerSource,
+            @RequestParam(required = false) Integer maxSourcesShown,
+            @RequestParam(required = false) String sortBy) {
         int clampedLimit = Math.clamp(limit, 1, 50);
 
         RecommendationCriteria criteria = new RecommendationCriteria();
@@ -157,6 +159,8 @@ public class SeriesController {
         criteria.setExcludeGenres(excludeGenres);
         criteria.setLanguage(language);
         criteria.setMaxPerSource(maxPerSource);
+        criteria.setMaxSourcesShown(maxSourcesShown);
+        criteria.setSortBy(sortBy);
 
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));

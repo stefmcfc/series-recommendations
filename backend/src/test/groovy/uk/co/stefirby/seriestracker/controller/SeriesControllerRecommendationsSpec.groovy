@@ -41,7 +41,8 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 "https://image.tmdb.org/t/p/w500/poster.jpg",
                 new BigDecimal("8.7"),
                 "tt3032476",
-                "Breaking Bad"
+                ["Breaking Bad"],
+                1
             )
             when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto, dto, dto])
 
@@ -52,7 +53,8 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(status().isOk())
             result.andExpect(jsonPath('$.count').value(3))
             result.andExpect(jsonPath('$.data[0].title').value("Better Call Saul"))
-            result.andExpect(jsonPath('$.data[0].sourceTitle').value("Breaking Bad"))
+            result.andExpect(jsonPath('$.data[0].sourceTitles[0]').value("Breaking Bad"))
+            result.andExpect(jsonPath('$.data[0].totalSourceCount').value(1))
             result.andExpect(jsonPath('$.data[0].imdbId').value("tt3032476"))
     }
 
@@ -191,6 +193,40 @@ class SeriesControllerRecommendationsSpec extends Specification {
     def "SERIES-007-AC-31: a malformed maxPerSource returns 400"() {
         when: "GET /api/v1/series/recommendations?maxPerSource=abc is requested"
             def result = mockMvc.perform(get("/api/v1/series/recommendations").param("maxPerSource", "abc"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    // -- SERIES-015-AC-23/24: maxSourcesShown/sortBy endpoint wiring --
+
+    def "SERIES-015-AC-23: maxSourcesShown and sortBy are accepted and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?maxSourcesShown=2&sortBy=recommendationCount is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("maxSourcesShown", "2")
+                .param("sortBy", "recommendationCount"))
+
+        then: "the request succeeds"
+            result.andExpect(status().isOk())
+    }
+
+    def "SERIES-015-AC-23: an unrecognized sortBy value is not an error"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?sortBy=bogus is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("sortBy", "bogus"))
+
+        then: "the request succeeds"
+            result.andExpect(status().isOk())
+    }
+
+    def "SERIES-015-AC-24: a non-numeric maxSourcesShown returns 400"() {
+        when: "GET /api/v1/series/recommendations?maxSourcesShown=abc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("maxSourcesShown", "abc"))
 
         then: "the response is 400"
             result.andExpect(status().isBadRequest())

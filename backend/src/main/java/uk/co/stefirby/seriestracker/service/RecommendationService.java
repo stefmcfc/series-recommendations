@@ -48,6 +48,24 @@ public class RecommendationService {
     private static final int DEFAULT_MAX_PER_SOURCE = 3;
 
     /**
+     * Default for {@code maxSourcesShown} when {@link RecommendationCriteria#getMaxSourcesShown()}
+     * is unset (SERIES-015-AC-13).
+     */
+    private static final int DEFAULT_MAX_SOURCES_SHOWN = 3;
+
+    /**
+     * Canonical per-candidate ordering of contributing source series (SERIES-015-AC-05):
+     * {@code personalRating} descending (nulls last), then {@code dateCompleted} descending
+     * (nulls last). Shared, unmodified, by {@link #resolveSourcePool}'s pool ordering, {@link
+     * #dedupeAndExclude}'s per-candidate ordering (which feeds scoring, {@code best-source}
+     * diversity-cap mode, and {@code RecommendationDto.sourceTitles}), so all three can never
+     * disagree about which source is "best" for a given candidate (SERIES-015-AC-06).
+     */
+    private static final Comparator<SeriesEntity> SOURCE_ORDER_COMPARATOR = Comparator
+        .comparing(SeriesEntity::getPersonalRating, Comparator.nullsLast(Comparator.reverseOrder()))
+        .thenComparing(SeriesEntity::getDateCompleted, Comparator.nullsLast(Comparator.reverseOrder()));
+
+    /**
      * Default for the {@code minVoteCount} output filter when unset -- the one filter in
      * this spec that isn't a no-op by default (SERIES-007-AC-25). A high {@code voteAverage}
      * from a handful of votes is closer to noise than signal.
@@ -73,18 +91,29 @@ public class RecommendationService {
      */
     private final int maxCandidates;
 
+    /**
+     * Selects the {@link #applyDiversityCap} strategy (SERIES-015-AC-14): {@code "best-source"}
+     * (default) caps on each candidate's single best contributing source only; {@code
+     * "all-sources"} caps on every contributing source. Any value other than exactly {@code
+     * "all-sources"} is treated as {@code "best-source"} -- no startup validation/rejection of
+     * an unrecognized value (SERIES-015-AC-18).
+     */
+    private final String diversityCapMode;
+
     public RecommendationService(SeriesRepository seriesRepository,
                                   IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
                                   TmdbGenreTable genreTable,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
-                                  @Value("${app.tmdb.max-candidates:50}") int maxCandidates) {
+                                  @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
+                                  @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode) {
         this.seriesRepository = seriesRepository;
         this.ignoredSeriesRepository = ignoredSeriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
+        this.diversityCapMode = diversityCapMode;
     }
 
     /** Convenience overload -- equivalent to {@code recommend(limit, new RecommendationCriteria())}. */
@@ -108,9 +137,12 @@ public class RecommendationService {
         List<DedupedCandidate> deduped = dedupeAndExclude(capped);
         List<DedupedCandidate> filtered = applyOutputFilters(deduped, criteria);
 
+        int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
+            ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
+
         List<ScoredCandidate> ranked = filtered.stream()
-            .map(this::score)
-            .sorted(Comparator.comparingDouble(ScoredCandidate::rankScore).reversed())
+            .map(dc -> score(dc, effectiveMaxSourcesShown))
+            .sorted(resolveSortComparator(criteria))
             .collect(Collectors.toList());
 
         int effectiveMaxPerSource = criteria.getMaxPerSource() != null ? criteria.getMaxPerSource() : DEFAULT_MAX_PER_SOURCE;
@@ -201,9 +233,7 @@ public class RecommendationService {
         return pool.stream()
             .filter(e -> c.getMinSourceRating() == null
                 || (e.getPersonalRating() != null && e.getPersonalRating() >= c.getMinSourceRating()))
-            .sorted(Comparator
-                .comparing(SeriesEntity::getPersonalRating, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(SeriesEntity::getDateCompleted, Comparator.nullsLast(Comparator.reverseOrder())))
+            .sorted(SOURCE_ORDER_COMPARATOR)
             .limit(maxSourceSeries)
             .collect(Collectors.toList());
     }
@@ -304,22 +334,50 @@ public class RecommendationService {
     // -- Requirement 6 (Spec 006): filtering & deduplication --
 
     private List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw) {
-        Map<String, DedupedCandidate> deduped = new LinkedHashMap<>();
+        Map<String, TmdbCandidate> candidateByImdbId = new LinkedHashMap<>();
+        Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
+
         for (RawCandidate rc : raw) {
             Optional<String> imdbIdOpt = tmdbClient.externalIds(rc.candidate().tmdbId());
             if (imdbIdOpt.isEmpty()) {
                 continue;
             }
             String imdbId = imdbIdOpt.get();
-            if (deduped.containsKey(imdbId)) {
+
+            if (candidateByImdbId.containsKey(imdbId)) {
+                // SERIES-015-AC-02: a duplicate's source series is accumulated, not discarded.
+                if (rc.sourceSeries() != null) {
+                    sourcesByImdbId.get(imdbId).add(rc.sourceSeries());
+                }
                 continue;
             }
+
             if (seriesRepository.existsByImdbId(imdbId) || ignoredSeriesRepository.existsByImdbId(imdbId)) {
                 continue;
             }
-            deduped.put(imdbId, new DedupedCandidate(rc.candidate(), rc.sourceSeries(), imdbId));
+
+            candidateByImdbId.put(imdbId, rc.candidate());
+            List<SeriesEntity> sources = new ArrayList<>();
+            if (rc.sourceSeries() != null) {
+                // SERIES-015-AC-04: the first-seen source seeds the accumulated list.
+                sources.add(rc.sourceSeries());
+            }
+            sourcesByImdbId.put(imdbId, sources);
         }
-        return new ArrayList<>(deduped.values());
+
+        return candidateByImdbId.entrySet().stream()
+            .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey())), e.getKey()))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Applies the canonical per-candidate source ordering (SERIES-015-AC-05) once, so scoring,
+     * {@code best-source} diversity-cap mode, and {@code RecommendationDto.sourceTitles} all
+     * read the same order (SERIES-015-AC-06). A genre/keyword-only candidate's empty list
+     * (SERIES-015-AC-03) sorts to another empty list.
+     */
+    private List<SeriesEntity> orderSources(List<SeriesEntity> sources) {
+        return sources.stream().sorted(SOURCE_ORDER_COMPARATOR).collect(Collectors.toList());
     }
 
     // -- Requirement 8: output filters (SERIES-007-AC-23..29) --
@@ -385,42 +443,90 @@ public class RecommendationService {
 
     // -- Requirement 7: output ranking & diversity cap (SERIES-007-AC-21/22) --
 
-    private ScoredCandidate score(DedupedCandidate dc) {
+    private ScoredCandidate score(DedupedCandidate dc, int effectiveMaxSourcesShown) {
         double tmdbRating = dc.candidate().voteAverage() != null ? dc.candidate().voteAverage().doubleValue() : 0.0;
-        RecommendationDto dto = toDto(dc);
+        RecommendationDto dto = toDto(dc, effectiveMaxSourcesShown);
 
         double rankScore;
-        if (dc.sourceSeries() != null) {
-            Integer personalRating = dc.sourceSeries().getPersonalRating();
-            double personalRatingTerm = personalRating != null ? personalRating * 2 : 0;
+        if (!dc.sourceSeries().isEmpty()) {
+            // SERIES-015-AC-07: the max personalRating across all contributing sources --
+            // equivalently the first entry's personalRating under the canonical ordering
+            // (SERIES-015-AC-05), since that ordering is personalRating-descending.
+            Integer maxPersonalRating = dc.sourceSeries().get(0).getPersonalRating();
+            double personalRatingTerm = maxPersonalRating != null ? maxPersonalRating * 2 : 0;
             rankScore = (tmdbRating * 0.5) + (personalRatingTerm * 0.5);
         } else {
             rankScore = tmdbRating;
         }
 
-        return new ScoredCandidate(dto, rankScore);
+        List<String> allSourceTitles = dc.sourceSeries().stream()
+            .map(SeriesEntity::getTitle)
+            .collect(Collectors.toList());
+        return new ScoredCandidate(dto, rankScore, allSourceTitles);
     }
 
+    /**
+     * Branches the ranking sort on {@link RecommendationCriteria#getSortBy()}
+     * (SERIES-015-AC-19/20/21): {@code "score"} (default) sorts by {@code rankScore}
+     * descending; {@code "recommendationCount"} sorts by {@code totalSourceCount} descending,
+     * with {@code rankScore} descending as a tiebreaker. Any other value falls back to {@code
+     * "score"}.
+     */
+    private Comparator<ScoredCandidate> resolveSortComparator(RecommendationCriteria c) {
+        if ("recommendationCount".equals(c.getSortBy())) {
+            return Comparator
+                .comparingInt((ScoredCandidate sc) -> sc.dto().totalSourceCount())
+                .thenComparingDouble(ScoredCandidate::rankScore)
+                .reversed();
+        }
+        return Comparator.comparingDouble(ScoredCandidate::rankScore).reversed();
+    }
+
+    /**
+     * SERIES-015-AC-15/16/17/18: either mode never caps a candidate with no contributing
+     * sources. {@code "best-source"} (default, and the fallback for any unrecognized {@link
+     * #diversityCapMode} value) checks/increments only the candidate's best contributing
+     * source (the first entry under the canonical ordering); {@code "all-sources"}
+     * checks/increments every contributing source.
+     */
     private List<ScoredCandidate> applyDiversityCap(List<ScoredCandidate> ranked, int maxPerSource) {
+        boolean allSourcesMode = "all-sources".equals(diversityCapMode);
         Map<String, Integer> perSourceCount = new HashMap<>();
         List<ScoredCandidate> result = new ArrayList<>();
         for (ScoredCandidate sc : ranked) {
-            String sourceTitle = sc.dto().sourceTitle();
-            if (sourceTitle == null) {
+            List<String> sourceTitles = sc.allSourceTitles();
+            if (sourceTitles.isEmpty()) {
                 result.add(sc);
                 continue;
             }
-            int count = perSourceCount.getOrDefault(sourceTitle, 0);
-            if (count < maxPerSource) {
-                result.add(sc);
-                perSourceCount.put(sourceTitle, count + 1);
+
+            if (allSourcesMode) {
+                boolean anySourceAtCap = sourceTitles.stream()
+                    .anyMatch(title -> perSourceCount.getOrDefault(title, 0) >= maxPerSource);
+                if (!anySourceAtCap) {
+                    result.add(sc);
+                    for (String title : sourceTitles) {
+                        perSourceCount.merge(title, 1, Integer::sum);
+                    }
+                }
+            } else {
+                String bestSourceTitle = sourceTitles.get(0);
+                int count = perSourceCount.getOrDefault(bestSourceTitle, 0);
+                if (count < maxPerSource) {
+                    result.add(sc);
+                    perSourceCount.put(bestSourceTitle, count + 1);
+                }
             }
         }
         return result;
     }
 
-    private RecommendationDto toDto(DedupedCandidate dc) {
+    private RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown) {
         TmdbCandidate c = dc.candidate();
+        List<String> sourceTitles = dc.sourceSeries().stream()
+            .map(SeriesEntity::getTitle)
+            .limit(effectiveMaxSourcesShown)
+            .collect(Collectors.toList());
         return new RecommendationDto(
             c.title(),
             c.year(),
@@ -429,7 +535,8 @@ public class RecommendationService {
             c.posterPath() != null ? TmdbClient.POSTER_BASE_URL + c.posterPath() : null,
             c.voteAverage(),
             dc.imdbId(),
-            dc.sourceSeries() != null ? dc.sourceSeries().getTitle() : null
+            sourceTitles,
+            dc.sourceSeries().size()
         );
     }
 
@@ -448,9 +555,21 @@ public class RecommendationService {
     /** A raw TMDB candidate paired with the pool series it was sourced from, if any (null for genre/keyword-sourced). */
     private record RawCandidate(TmdbCandidate candidate, SeriesEntity sourceSeries) {}
 
-    /** A raw candidate that survived dedupe/already-added/already-ignored filtering, with its resolved imdb_id. */
-    private record DedupedCandidate(TmdbCandidate candidate, SeriesEntity sourceSeries, String imdbId) {}
+    /**
+     * A raw candidate that survived dedupe/already-added/already-ignored filtering, with its
+     * resolved imdb_id. {@code sourceSeries} accumulates every distinct watched series that
+     * recommended this candidate (SERIES-015-AC-01/02/04), ordered by the canonical
+     * per-candidate ordering (SERIES-015-AC-05) -- an empty list, never {@code null}, for a
+     * candidate sourced only via genre/keyword discovery (SERIES-015-AC-03).
+     */
+    private record DedupedCandidate(TmdbCandidate candidate, List<SeriesEntity> sourceSeries, String imdbId) {}
 
-    /** A final candidate paired with its computed {@code rankScore} (SERIES-007-AC-21), pre-diversity-cap. */
-    private record ScoredCandidate(RecommendationDto dto, double rankScore) {}
+    /**
+     * A final candidate paired with its computed {@code rankScore} (SERIES-007-AC-21),
+     * pre-diversity-cap, and the full (uncapped, canonically-ordered) list of contributing
+     * source titles -- needed by {@code all-sources} diversity-cap mode (SERIES-015-AC-16),
+     * which must see every contributing source even beyond {@code dto.sourceTitles()}'s
+     * {@code maxSourcesShown} cap.
+     */
+    private record ScoredCandidate(RecommendationDto dto, double rankScore, List<String> allSourceTitles) {}
 }
