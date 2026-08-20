@@ -40,6 +40,7 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 "A small-time lawyer.",
                 "https://image.tmdb.org/t/p/w500/poster.jpg",
                 new BigDecimal("8.7"),
+                1500,
                 "tt3032476",
                 ["Breaking Bad"],
                 1
@@ -56,6 +57,29 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(jsonPath('$.data[0].sourceTitles[0]').value("Breaking Bad"))
             result.andExpect(jsonPath('$.data[0].totalSourceCount').value(1))
             result.andExpect(jsonPath('$.data[0].imdbId').value("tt3032476"))
+    }
+
+    def "SERIES-016-AC-01: GET /api/v1/series/recommendations includes voteCount"() {
+        given: "RecommendationService.recommend(...) resolves a DTO with voteCount 1500"
+            def dto = new RecommendationDto(
+                "Better Call Saul",
+                2015,
+                "Crime, Drama",
+                "A small-time lawyer.",
+                "https://image.tmdb.org/t/p/w500/poster.jpg",
+                new BigDecimal("8.7"),
+                1500,
+                "tt3032476",
+                ["Breaking Bad"],
+                1
+            )
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto])
+
+        when: "the recommendations endpoint is invoked"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations"))
+
+        then: "voteCount is present in the response"
+            result.andExpect(jsonPath('$.data[0].voteCount').value(1500))
     }
 
     def "SERIES-006-AC-26: values above 50 clamp to 50"() {

@@ -10,6 +10,8 @@ import java.util.List;
  *
  * <p>{@code tmdbRating} is TMDB's {@code vote_average}, deliberately never conflated with
  * {@code imdbRating} -- they're different rating systems on different scales/methodologies.
+ * {@code voteCount} is TMDB's {@code vote_count} backing that average, passed through verbatim
+ * ({@code series_spec_016_recommendation_vote_count.md}).
  *
  * <p>{@code sourceTitles} holds the first {@code maxSourcesShown} (default 3, {@code
  * series_spec_015_multi_source_recommendations.md} SERIES-015-AC-13) titles of every watched
@@ -31,6 +33,7 @@ public record RecommendationDto(
     String overview,
     String posterUrl,
     BigDecimal tmdbRating,
+    Integer voteCount,
     String imdbId,
     List<String> sourceTitles,
     Integer totalSourceCount

@@ -534,6 +534,7 @@ public class RecommendationService {
             c.overview(),
             c.posterPath() != null ? TmdbClient.POSTER_BASE_URL + c.posterPath() : null,
             c.voteAverage(),
+            c.voteCount(),
             dc.imdbId(),
             sourceTitles,
             dc.sourceSeries().size()

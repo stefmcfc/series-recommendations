@@ -42,6 +42,21 @@ class RecommendationServiceSpec extends Specification {
         new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage)
     }
 
+    def "SERIES-016-AC-02: toDto populates voteCount from the TMDB candidate verbatim"() {
+        given: "a genre-directed candidate with voteCount 1500"
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+            tmdbClient.discover(_, _) >> [candidate(500, "Genre Candidate", 2020, new BigDecimal("8.0"), [18], 1500)]
+            tmdbClient.externalIds(500) >> Optional.of("tt5005005")
+            seriesRepository.existsByImdbId("tt5005005") >> false
+            ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "voteCount is passed through unchanged"
+            results[0].voteCount() == 1500
+    }
+
     def "SERIES-006-AC-20: empty watched pool returns an empty list without calling TMDB"() {
         given: "no COMPLETED series with imdbId exist"
             seriesRepository.findAll() >> []
