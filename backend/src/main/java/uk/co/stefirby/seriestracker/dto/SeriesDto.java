@@ -8,6 +8,7 @@ public class SeriesDto {
 
     private UUID id;
     private String title;
+    private String alternateTitle;
     private Integer year;
     private String genres;
     private Integer totalSeasons;
@@ -21,6 +22,7 @@ public class SeriesDto {
     private Integer personalRating;
     private String personalNotes;
     private String posterUrl;
+    private String tags;
     private String imdbId;
     private LocalDateTime dateAdded;
     private LocalDateTime dateCompleted;
@@ -32,6 +34,9 @@ public class SeriesDto {
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+
+    public String getAlternateTitle() { return alternateTitle; }
+    public void setAlternateTitle(String alternateTitle) { this.alternateTitle = alternateTitle; }
 
     public Integer getYear() { return year; }
     public void setYear(Integer year) { this.year = year; }
@@ -71,6 +76,9 @@ public class SeriesDto {
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public String getTags() { return tags; }
+    public void setTags(String tags) { this.tags = tags; }
 
     public String getImdbId() { return imdbId; }
     public void setImdbId(String imdbId) { this.imdbId = imdbId; }

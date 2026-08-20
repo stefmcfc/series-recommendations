@@ -14,8 +14,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'abc-123',
     title: 'The Office',
+    alternateTitle: null,
     year: 2005,
     genres: 'Comedy',
+    tags: null,
     totalSeasons: 9,
     totalEpisodes: 201,
     currentSeason: 4,
@@ -281,6 +283,53 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
         screen.queryByTestId('confirm-delete-btn'),
       ).not.toBeInTheDocument(),
     )
+  })
+})
+
+describe('FRONTEND-017-AC-20/21: alternate title shown near the heading, not in the fields list', () => {
+  it('renders "aka {alternateTitle}" near the heading when present', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'MI-5' })).toBeInTheDocument(),
+    )
+    expect(screen.getByText(/aka spooks/i)).toBeInTheDocument()
+    expect(screen.queryByText('Alternate Title')).not.toBeInTheDocument() // not in the <dl> fields list
+  })
+
+  it('renders nothing extra when alternateTitle is null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ alternateTitle: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => expect(screen.getByRole('heading')).toBeInTheDocument())
+    expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-018-AC-13/14: Tags entry rendered', () => {
+  it('renders a populated tags value verbatim', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ tags: 'rewatch candidate,watch with partner' }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.getByText('Tags')).toBeInTheDocument()
+    expect(
+      screen.getByText('rewatch candidate,watch with partner'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders "—" for a null tags value', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ tags: null }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.getByText('Tags')).toBeInTheDocument()
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 })
 

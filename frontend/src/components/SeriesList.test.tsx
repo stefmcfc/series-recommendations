@@ -15,8 +15,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'test-id',
     title: 'Test Show',
+    alternateTitle: null,
     year: null,
     genres: null,
+    tags: null,
     totalSeasons: null,
     totalEpisodes: null,
     currentSeason: null,
@@ -573,6 +575,40 @@ describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
     await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(2))
     expect(mockGetAll).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-017-AC-18/19: alternate title shown next to the row title', () => {
+  it('renders "aka {alternateTitle}" next to the title when present', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
+    ])
+    render(<SeriesList />)
+
+    await waitFor(() => expect(screen.getByText('MI-5')).toBeInTheDocument())
+    expect(screen.getByText(/aka spooks/i)).toBeInTheDocument()
+  })
+
+  it('renders nothing extra when alternateTitle is null', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Breaking Bad', alternateTitle: null }),
+    ])
+    render(<SeriesList />)
+
+    await waitFor(() =>
+      expect(screen.getByText('Breaking Bad')).toBeInTheDocument(),
+    )
+    expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
+  })
+
+  it('does not nest the alternate title text inside the title button', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
+    ])
+    render(<SeriesList />)
+
+    const titleButton = await screen.findByRole('button', { name: 'MI-5' })
+    expect(titleButton).not.toHaveTextContent(/spooks/i)
   })
 })
 

@@ -5,7 +5,10 @@ import type {
   UpdateSeriesRequest,
   SearchCriteria,
   OmdbLookupResult,
+  LookupCandidate,
+  LookupTmdbCandidate,
   Recommendation,
+  RecommendationQuery,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -42,6 +45,29 @@ async function request<T>(fn: () => Promise<{ data: T }>): Promise<T> {
     }
     throw err
   }
+}
+
+function buildRecommendationParams(
+  query?: RecommendationQuery,
+): Record<string, unknown> {
+  if (!query) return {}
+  const params: Record<string, unknown> = {}
+  if (query.limit != null) params.limit = query.limit
+  if (query.seriesIds?.length) params.seriesIds = query.seriesIds.join(',')
+  if (query.genres?.length) params.genres = query.genres.join(',')
+  if (query.keywords?.length) params.keywords = query.keywords.join(',')
+  if (query.minSourceRating != null)
+    params.minSourceRating = query.minSourceRating
+  if (query.minTmdbRating != null) params.minTmdbRating = query.minTmdbRating
+  if (query.minVoteCount != null) params.minVoteCount = query.minVoteCount
+  if (query.yearMin != null) params.yearMin = query.yearMin
+  if (query.yearMax != null) params.yearMax = query.yearMax
+  if (query.excludeGenres?.length)
+    params.excludeGenres = query.excludeGenres.join(',')
+  if (query.language != null && query.language !== '')
+    params.language = query.language
+  if (query.maxPerSource != null) params.maxPerSource = query.maxPerSource
+  return params
 }
 
 function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
@@ -97,10 +123,37 @@ export const seriesApi = {
       client.get('/series/lookup', { params: { title } }),
     ).then((res) => res.data),
 
-  getRecommendations: (limit?: number): Promise<Recommendation[]> =>
+  searchByTitle: (title: string): Promise<LookupCandidate[]> =>
+    request<{ data: LookupCandidate[] }>(() =>
+      client.get('/series/lookup/search', { params: { title } }),
+    ).then((res) => res.data),
+
+  lookupByImdbId: (imdbId: string): Promise<OmdbLookupResult> =>
+    request<{ data: OmdbLookupResult }>(() =>
+      client.get('/series/lookup', { params: { imdbId } }),
+    ).then((res) => res.data),
+
+  searchTmdb: (title: string): Promise<LookupTmdbCandidate[]> =>
+    request<{ data: LookupTmdbCandidate[] }>(() =>
+      client.get('/series/lookup/search-tmdb', { params: { title } }),
+    ).then((res) => res.data),
+
+  resolveTmdbCandidate: (tmdbId: number): Promise<OmdbLookupResult> =>
+    request<{ data: OmdbLookupResult }>(() =>
+      client.get('/series/lookup/resolve-tmdb', { params: { tmdbId } }),
+    ).then((res) => res.data),
+
+  getGenreOptions: (): Promise<string[]> =>
+    request<{ data: string[]; count: number }>(() =>
+      client.get('/series/genres'),
+    ).then((res) => res.data),
+
+  getRecommendations: (
+    query?: RecommendationQuery,
+  ): Promise<Recommendation[]> =>
     request<{ data: Recommendation[]; count: number }>(() =>
       client.get('/series/recommendations', {
-        params: limit != null ? { limit } : {},
+        params: buildRecommendationParams(query),
       }),
     ).then((res) => res.data),
 

@@ -10,8 +10,10 @@ export type SeriesStatus = (typeof SeriesStatus)[keyof typeof SeriesStatus]
 export interface Series {
   id: string
   title: string
+  alternateTitle: string | null
   year: number | null
   genres: string | null
+  tags: string | null
   totalSeasons: number | null
   totalEpisodes: number | null
   currentSeason: number | null
@@ -30,8 +32,10 @@ export interface Series {
 
 export interface CreateSeriesRequest {
   title: string
+  alternateTitle?: string
   year?: number
   genres?: string
+  tags?: string
   totalSeasons?: number
   totalEpisodes?: number
   status?: SeriesStatus
@@ -62,6 +66,21 @@ export interface OmdbLookupResult {
   imdbId?: string
 }
 
+export interface LookupCandidate {
+  title: string
+  year?: number
+  imdbId?: string
+  posterUrl?: string
+}
+
+export interface LookupTmdbCandidate {
+  tmdbId: number
+  title: string
+  year?: number
+  originalTitle?: string
+  posterUrl?: string
+}
+
 export interface Recommendation {
   title: string
   year: number | null
@@ -71,6 +90,21 @@ export interface Recommendation {
   tmdbRating: number | null
   imdbId: string
   sourceTitle: string | null
+}
+
+export interface RecommendationQuery {
+  limit?: number
+  seriesIds?: string[]
+  genres?: string[]
+  keywords?: string[]
+  minSourceRating?: number
+  minTmdbRating?: number
+  minVoteCount?: number
+  yearMin?: number
+  yearMax?: number
+  excludeGenres?: string[]
+  language?: string
+  maxPerSource?: number
 }
 
 export interface SearchCriteria {

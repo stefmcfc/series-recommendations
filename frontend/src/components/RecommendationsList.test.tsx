@@ -215,6 +215,27 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
   })
 })
 
+describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
+  it('calls getRecommendations again with the new query', async () => {
+    mockGetRecommendations.mockResolvedValue([])
+    const { rerender } = render(
+      <RecommendationsList query={{ genres: ['Drama'] }} />,
+    )
+    await waitFor(() =>
+      expect(mockGetRecommendations).toHaveBeenCalledWith({
+        genres: ['Drama'],
+      }),
+    )
+
+    rerender(<RecommendationsList query={{ genres: ['Comedy'] }} />)
+    await waitFor(() =>
+      expect(mockGetRecommendations).toHaveBeenLastCalledWith({
+        genres: ['Comedy'],
+      }),
+    )
+  })
+})
+
 describe('FRONTEND-010-AC-20: TMDB attribution', () => {
   it('shows the attribution notice regardless of view state', async () => {
     mockGetRecommendations.mockResolvedValue([])

@@ -13,8 +13,10 @@ interface EditSeriesFormProps {
 
 interface FormState {
   title: string
+  alternateTitle: string
   year: string
   genres: string
+  tags: string
   totalSeasons: string
   totalEpisodes: string
   currentSeason: string
@@ -37,8 +39,10 @@ function numberToFormValue(value: number | null): string {
 function toFormState(series: Series): FormState {
   return {
     title: series.title,
+    alternateTitle: series.alternateTitle ?? '',
     year: numberToFormValue(series.year),
     genres: series.genres ?? '',
+    tags: series.tags ?? '',
     totalSeasons: numberToFormValue(series.totalSeasons),
     totalEpisodes: numberToFormValue(series.totalEpisodes),
     currentSeason: numberToFormValue(series.currentSeason),
@@ -150,8 +154,11 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
     status: form.status,
   }
 
+  if (form.alternateTitle.trim() !== '')
+    payload.alternateTitle = form.alternateTitle.trim()
   if (form.year.trim() !== '') payload.year = Number(form.year)
   if (form.genres.trim() !== '') payload.genres = form.genres.trim()
+  if (form.tags.trim() !== '') payload.tags = form.tags.trim()
   if (form.totalSeasons.trim() !== '')
     payload.totalSeasons = Number(form.totalSeasons)
   if (form.totalEpisodes.trim() !== '')
@@ -284,6 +291,16 @@ export function EditSeriesForm({
           </div>
 
           <div className={styles.field}>
+            <label htmlFor="alternateTitle">Alternate Title</label>
+            <input
+              id="alternateTitle"
+              type="text"
+              value={form.alternateTitle}
+              onChange={updateField('alternateTitle')}
+            />
+          </div>
+
+          <div className={styles.field}>
             <label htmlFor="year">Year</label>
             <input
               id="year"
@@ -306,6 +323,16 @@ export function EditSeriesForm({
               type="text"
               value={form.genres}
               onChange={updateField('genres')}
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="tags">Tags</label>
+            <input
+              id="tags"
+              type="text"
+              value={form.tags}
+              onChange={updateField('tags')}
             />
           </div>
 

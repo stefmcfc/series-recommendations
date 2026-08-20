@@ -295,4 +295,147 @@ class OmdbClientSpec extends Specification {
         where:
             apiKey << [null, "", "   "]
     }
+
+    def "SERIES-011-AC-01/02: search maps every entry of the Search array onto OmdbSearchCandidate"() {
+        given: "OMDb responds to a search with two candidates"
+            def body = '''
+                {
+                  "Search": [
+                    {"Title":"Spooks","Year":"2002–2011","imdbID":"tt0290403","Poster":"https://example.com/spooks.jpg"},
+                    {"Title":"Spooks: Code 9","Year":"2008–2008","imdbID":"tt1219342","Poster":"N/A"}
+                  ],
+                  "totalResults": "2",
+                  "Response": "True"
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("apikey", API_KEY))
+                .andExpect(queryParam("type", "series"))
+                .andExpect(queryParam("s", "Spooks"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "OmdbClient.search('Spooks') is called"
+            def result = client().search("Spooks")
+
+        then: "both candidates are mapped, with N/A poster treated as null"
+            result.size() == 2
+            result[0].title() == "Spooks"
+            result[0].year() == 2002
+            result[0].imdbId() == "tt0290403"
+            result[0].posterUrl() == "https://example.com/spooks.jpg"
+            result[1].title() == "Spooks: Code 9"
+            result[1].posterUrl() == null
+    }
+
+    def "SERIES-011-AC-03: Response=False returns an empty list, not an exception"() {
+        given: "OMDb responds with no matches"
+            def body = '{"Response":"False","Error":"Series not found!"}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "OmdbClient.search(...) is called"
+            def result = client().search("Nonexistent Show 12345")
+
+        then: "the result is an empty list, no exception is thrown"
+            result == []
+    }
+
+    def "SERIES-011-AC-04: a non-2xx response from OMDb raises ExternalServiceException"() {
+        given: "OMDb responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withServerError())
+
+        when: "OmdbClient.search(...) is called"
+            client().search("Any Show")
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
+    }
+
+    def "SERIES-011-AC-04: an unset/blank API key raises ExternalServiceException without calling OMDb for search"() {
+        when: "OmdbClient.search(...) is called with no API key configured"
+            client(apiKey).search("Any Show")
+
+        then: "an ExternalServiceException is raised, and no HTTP request is attempted"
+            thrown(ExternalServiceException)
+
+        where:
+            apiKey << [null, "", "   "]
+    }
+
+    def "SERIES-011-AC-05/06: lookupByImdbId maps the same fields as lookup(title), using i= instead of t="() {
+        given: "OMDb responds to an i= request with a full series"
+            def body = '''
+                {
+                  "Response": "True",
+                  "Title": "Spooks",
+                  "Year": "2002–2011",
+                  "Genre": "Action, Drama, Thriller",
+                  "totalSeasons": "10",
+                  "imdbRating": "7.9",
+                  "Poster": "https://example.com/spooks.jpg",
+                  "imdbID": "tt0290403"
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andExpect(queryParam("i", "tt0290403"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+            (1..10).each { season ->
+                mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                    .andExpect(queryParam("i", "tt0290403"))
+                    .andExpect(queryParam("Season", season as String))
+                    .andRespond(withSuccess(
+                        "{\"Response\":\"True\",\"Episodes\":${episodesJson(1)}}", MediaType.APPLICATION_JSON))
+            }
+
+        when: "OmdbClient.lookupByImdbId('tt0290403') is called"
+            def result = client().lookupByImdbId("tt0290403")
+
+        then: "every field is mapped, and per-season aggregation used i=, not t="
+            result.title() == "Spooks"
+            result.totalSeasons() == 10
+            result.totalEpisodes() == 10
+            result.imdbId() == "tt0290403"
+
+        and:
+            mockServer.verify()
+    }
+
+    def "SERIES-011-AC-07: Response=False for lookupByImdbId raises a not-found outcome identifying the imdbId"() {
+        given: "an OMDb response of Response=False"
+            def body = '{"Response":"False","Error":"Incorrect IMDb ID."}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "OmdbClient.lookupByImdbId('tt9999999') is called"
+            client().lookupByImdbId("tt9999999")
+
+        then: "a not-found signal is raised, identifying the searched imdbId"
+            def ex = thrown(EntityNotFoundException)
+            ex.message.contains("tt9999999")
+    }
+
+    def "SERIES-011-AC-08: a non-2xx response from OMDb raises ExternalServiceException for lookupByImdbId"() {
+        given: "OMDb responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+                .andRespond(withServerError())
+
+        when: "OmdbClient.lookupByImdbId(...) is called"
+            client().lookupByImdbId("tt0290403")
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
+    }
+
+    def "SERIES-011-AC-08: an unset/blank API key raises ExternalServiceException without calling OMDb for lookupByImdbId"() {
+        when: "OmdbClient.lookupByImdbId(...) is called with no API key configured"
+            client(apiKey).lookupByImdbId("tt0290403")
+
+        then: "an ExternalServiceException is raised, and no HTTP request is attempted"
+            thrown(ExternalServiceException)
+
+        where:
+            apiKey << [null, "", "   "]
+    }
 }

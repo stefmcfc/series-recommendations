@@ -8,7 +8,17 @@ import type { Series } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockCreate = vi.mocked(seriesApi.create)
-const mockLookup = vi.mocked(seriesApi.lookupByTitle)
+const mockSearch = vi.mocked(seriesApi.searchByTitle)
+const mockResolve = vi.mocked(seriesApi.lookupByImdbId)
+const mockSearchTmdb = vi.mocked(seriesApi.searchTmdb)
+const mockResolveTmdb = vi.mocked(seriesApi.resolveTmdbCandidate)
+
+async function runLookup(title: string) {
+  fireEvent.change(screen.getByLabelText(/^title/i), {
+    target: { value: title },
+  })
+  fireEvent.click(screen.getByTestId('lookup-btn'))
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -333,9 +343,10 @@ describe('FRONTEND-003-AC-24/25/26: server-side error handling', () => {
   })
 })
 
-describe('FRONTEND-009-AC-04/05/06: triggering a lookup', () => {
-  it('disables Look Up until a title is entered, then calls lookupByTitle', async () => {
-    mockLookup.mockResolvedValue({ title: 'Show' })
+describe('FRONTEND-015-AC-04: triggering a lookup calls searchByTitle', () => {
+  it('disables Look Up until a title is entered, then calls searchByTitle', async () => {
+    mockSearch.mockResolvedValue([{ title: 'Show', imdbId: 'tt0000001' }])
+    mockResolve.mockResolvedValue({ title: 'Show' })
     renderForm()
 
     expect(screen.getByTestId('lookup-btn')).toBeDisabled()
@@ -345,25 +356,46 @@ describe('FRONTEND-009-AC-04/05/06: triggering a lookup', () => {
     expect(screen.getByTestId('lookup-btn')).not.toBeDisabled()
 
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() => expect(mockLookup).toHaveBeenCalledWith('Show'))
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledWith('Show'))
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  it('trims the title before calling lookupByTitle', async () => {
-    mockLookup.mockResolvedValue({ title: 'Show' })
+  it('trims the title before calling searchByTitle', async () => {
+    mockSearch.mockResolvedValue([{ title: 'Show', imdbId: 'tt0000001' }])
+    mockResolve.mockResolvedValue({ title: 'Show' })
     renderForm()
 
     fireEvent.change(screen.getByLabelText(/^title/i), {
       target: { value: '  Show  ' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() => expect(mockLookup).toHaveBeenCalledWith('Show'))
+    await waitFor(() => expect(mockSearch).toHaveBeenCalledWith('Show'))
   })
 })
 
-describe('FRONTEND-009-AC-07/08/09: autofill overwrite rules', () => {
+describe('FRONTEND-015-AC-05: zero results', () => {
+  it('shows the existing lookup-error UI and no picker', async () => {
+    mockSearch.mockResolvedValue([])
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Xyzzy' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/no matches found/i),
+    )
+    expect(screen.queryByTestId('lookup-candidates')).not.toBeInTheDocument()
+    expect(mockResolve).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-015-AC-06/07/08/09: autofill overwrite rules (single-candidate auto-resolve)', () => {
   it('overwrites empty fields but leaves user-entered totalEpisodes alone when the result omits it', async () => {
-    mockLookup.mockResolvedValue({
+    mockSearch.mockResolvedValue([
+      { title: 'Breaking Bad', imdbId: 'tt0959621' },
+    ])
+    mockResolve.mockResolvedValue({
       title: 'Breaking Bad',
       year: 2008,
       genres: 'Crime, Drama',
@@ -382,6 +414,7 @@ describe('FRONTEND-009-AC-07/08/09: autofill overwrite rules', () => {
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
 
+    await waitFor(() => expect(mockResolve).toHaveBeenCalledWith('tt0959621'))
     await waitFor(() =>
       expect(screen.getByLabelText(/^title/i)).toHaveValue('Breaking Bad'),
     )
@@ -394,10 +427,12 @@ describe('FRONTEND-009-AC-07/08/09: autofill overwrite rules', () => {
       'https://example.com/bb.jpg',
     )
     expect(screen.getByLabelText(/^status/i)).toHaveValue(SeriesStatus.BACKLOG) // untouched
+    expect(screen.queryByTestId('lookup-candidates')).not.toBeInTheDocument()
   })
 
   it('never touches status, personalRating, or personalNotes', async () => {
-    mockLookup.mockResolvedValue({ title: 'Show', imdbRating: 7.5 })
+    mockSearch.mockResolvedValue([{ title: 'Show', imdbId: 'tt0000001' }])
+    mockResolve.mockResolvedValue({ title: 'Show', imdbRating: 7.5 })
     renderForm()
 
     fireEvent.change(screen.getByLabelText(/^title/i), {
@@ -418,11 +453,9 @@ describe('FRONTEND-009-AC-07/08/09: autofill overwrite rules', () => {
     expect(screen.getByLabelText(/personal rating/i)).toHaveValue(4)
     expect(screen.getByLabelText(/notes/i)).toHaveValue('my notes')
   })
-})
 
-describe('FRONTEND-009-AC-10/11/12: lookup loading and error', () => {
-  it('shows "Looking up..." while in flight and disables the button', () => {
-    mockLookup.mockReturnValue(new Promise(() => undefined))
+  it('shows "Looking up..." while either chained call is in flight and disables the button', () => {
+    mockSearch.mockReturnValue(new Promise(() => undefined))
     renderForm()
     fireEvent.change(screen.getByLabelText(/^title/i), {
       target: { value: 'Show' },
@@ -433,9 +466,10 @@ describe('FRONTEND-009-AC-10/11/12: lookup loading and error', () => {
     expect(screen.getByTestId('lookup-btn')).toBeDisabled()
   })
 
-  it('shows a scoped alert on failure without touching form fields, and Save still works', async () => {
-    mockLookup.mockRejectedValue(
-      new ApiError(404, 'No OMDb results for title: Xyzzy'),
+  it('shows a scoped alert on auto-resolve failure without touching form fields, and Save still works', async () => {
+    mockSearch.mockResolvedValue([{ title: 'Xyzzy', imdbId: 'tt0000001' }])
+    mockResolve.mockRejectedValue(
+      new ApiError(404, 'No OMDb results for imdbId: tt0000001'),
     )
     mockCreate.mockResolvedValue({ id: '1', title: 'Xyzzy' } as Series)
     renderForm()
@@ -456,8 +490,9 @@ describe('FRONTEND-009-AC-10/11/12: lookup loading and error', () => {
   })
 
   it('is a distinct alert region from the submitError region', async () => {
-    mockLookup.mockRejectedValue(
-      new ApiError(404, 'No OMDb results for title: Xyzzy'),
+    mockSearch.mockResolvedValue([{ title: 'Xyzzy', imdbId: 'tt0000001' }])
+    mockResolve.mockRejectedValue(
+      new ApiError(404, 'No OMDb results for imdbId: tt0000001'),
     )
     mockCreate.mockRejectedValue(new ApiError(500, 'Internal server error'))
     renderForm()
@@ -475,6 +510,164 @@ describe('FRONTEND-009-AC-10/11/12: lookup loading and error', () => {
     )
     expect(screen.getByText(/no omdb results/i)).toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(2)
+  })
+})
+
+describe('FRONTEND-015-AC-10/11/12: two or more results shows a picker', () => {
+  it('renders one button per candidate with title/year/poster, and no second dialog', async () => {
+    mockSearch.mockResolvedValue([
+      {
+        title: 'Spooks',
+        year: 2002,
+        imdbId: 'tt0290403',
+        posterUrl: 'https://example.com/spooks.jpg',
+      },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+    ])
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('lookup-candidate')).toHaveLength(2),
+    )
+    expect(screen.getByTestId('lookup-candidates')).toBeInTheDocument()
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByText(/spooks: code 9/i)).toBeInTheDocument()
+    expect(mockResolve).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-015-AC-13/14/15: selecting a candidate resolves and applies it', () => {
+  it('calls lookupByImdbId for the clicked candidate, applies it, and clears the picker', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+    ])
+    mockResolve.mockResolvedValue({
+      title: 'Spooks',
+      year: 2002,
+      imdbRating: 7.9,
+    })
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks \(2002\)$/i }))
+
+    await waitFor(() => expect(mockResolve).toHaveBeenCalledWith('tt0290403'))
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^year/i)).toHaveValue(2002),
+    )
+    expect(screen.queryByTestId('lookup-candidates')).not.toBeInTheDocument()
+  })
+
+  it('disables every candidate button while a selection resolves', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+    ])
+    mockResolve.mockReturnValue(new Promise(() => undefined))
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks \(2002\)$/i }))
+
+    await waitFor(() => {
+      for (const btn of screen.getAllByTestId('lookup-candidate')) {
+        expect(btn).toBeDisabled()
+      }
+    })
+  })
+})
+
+describe('FRONTEND-015-AC-16: a failed candidate resolution keeps the picker open', () => {
+  it('shows the error and leaves the picker showing with buttons re-enabled', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+    ])
+    mockResolve.mockRejectedValue(
+      new ApiError(
+        502,
+        'Unable to reach the series lookup service. Please try again.',
+      ),
+    )
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks \(2002\)$/i }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/unable to reach/i),
+    )
+    const candidateButtons = screen.getAllByTestId('lookup-candidate')
+    expect(candidateButtons).toHaveLength(2)
+    for (const btn of candidateButtons) {
+      expect(btn).not.toBeDisabled()
+    }
+  })
+})
+
+describe('FRONTEND-015-AC-17: dismissing the picker', () => {
+  it('clears the picker without resolving anything', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+    ])
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-candidate'))
+
+    fireEvent.click(screen.getByTestId('lookup-candidates-cancel'))
+
+    expect(screen.queryByTestId('lookup-candidates')).not.toBeInTheDocument()
+    expect(mockResolve).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-015-AC-18: re-clicking Look Up while the picker is open re-searches', () => {
+  it('replaces the picker contents with the new search result', async () => {
+    mockSearch.mockResolvedValueOnce([
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+    ])
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    await waitFor(() =>
+      expect(screen.getAllByTestId('lookup-candidate')).toHaveLength(2),
+    )
+
+    mockSearch.mockResolvedValueOnce([
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+      { title: 'Spooks: The Greater Good', year: 2015, imdbId: 'tt2379713' },
+    ])
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('lookup-candidate')).toHaveLength(3),
+    )
+    expect(mockSearch).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -509,17 +702,326 @@ describe('FRONTEND-009-AC-13/14/15: poster field and preview', () => {
   })
 })
 
-describe('FRONTEND-009-AC-23: no lookup logging', () => {
-  it('never logs the looked-up title or the lookup result', async () => {
+describe('FRONTEND-015-AC-20: no logging of search/resolve data', () => {
+  it('never logs the searched title or a resolved result', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
-    mockLookup.mockResolvedValue({ title: 'Secret Show', imdbRating: 8.1 })
+    mockSearch.mockResolvedValue([
+      { title: 'Secret Show', imdbId: 'tt0000001' },
+    ])
+    mockResolve.mockResolvedValue({ title: 'Secret Show', imdbRating: 8.1 })
     renderForm()
     fireEvent.change(screen.getByLabelText(/^title/i), {
       target: { value: 'Secret Show' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
 
-    await waitFor(() => expect(mockLookup).toHaveBeenCalled())
+    await waitFor(() => expect(mockResolve).toHaveBeenCalled())
+    expect(
+      logSpy.mock.calls.flat().some((c) => String(c).includes('Secret Show')),
+    ).toBe(false)
+  })
+})
+
+describe('FRONTEND-016-AC-04: escape hatch shown alongside zero OMDb results', () => {
+  it('renders search-tmdb-btn next to the lookup-error message', async () => {
+    mockSearch.mockResolvedValue([])
+    renderForm()
+    await runLookup('Spooks')
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/no matches found/i),
+    )
+    expect(screen.getByTestId('search-tmdb-btn')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-016-AC-05: escape hatch shown alongside the OMDb candidate picker', () => {
+  it('renders search-tmdb-btn next to lookup-candidates-cancel', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'Spooks: Code 9', year: 2008, imdbId: 'tt1219342' },
+      { title: "Frankelda's Book of Spooks", year: 2024, imdbId: 'tt9999999' },
+    ])
+    renderForm()
+    await runLookup('Spooks')
+
+    await waitFor(() => screen.getAllByTestId('lookup-candidate'))
+    expect(screen.getByTestId('search-tmdb-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('lookup-candidates-cancel')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-016-AC-06: no escape hatch on the exactly-one-result auto-resolve path', () => {
+  it('does not render search-tmdb-btn when OMDb search auto-resolves a single candidate', async () => {
+    mockSearch.mockResolvedValue([{ title: 'Spooks', imdbId: 'tt0290403' }])
+    mockResolve.mockResolvedValue({ title: 'Spooks', year: 2002 })
+    renderForm()
+    await runLookup('Spooks')
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^year/i)).toHaveValue(2002),
+    )
+    expect(screen.queryByTestId('search-tmdb-btn')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-016-AC-07/12: clicking Search TMDB instead clears OMDb state and searches TMDB', () => {
+  it('clears candidates/lookupError and calls searchTmdb with the trimmed title', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([])
+    renderForm()
+    await runLookup('  Spooks  ')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    expect(screen.getByTestId('search-tmdb-btn')).toHaveTextContent(
+      /searching tmdb/i,
+    )
+    await waitFor(() => expect(mockSearchTmdb).toHaveBeenCalledWith('Spooks'))
+  })
+})
+
+describe('FRONTEND-016-AC-08: zero TMDB results is a dead end', () => {
+  it('shows a distinct message and does not re-render the escape hatch', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([])
+    renderForm()
+    await runLookup('Xyzzy')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /no matches found on tmdb/i,
+      ),
+    )
+    expect(screen.queryByTestId('search-tmdb-btn')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('lookup-tmdb-candidates'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-016-AC-09/12: exactly one TMDB result auto-resolves', () => {
+  it('resolves and applies the single TMDB candidate without showing a picker', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+    ])
+    mockResolveTmdb.mockResolvedValue({
+      title: 'Spooks',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    await waitFor(() => expect(mockResolveTmdb).toHaveBeenCalledWith(4046))
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^year/i)).toHaveValue(2002),
+    )
+    expect(
+      screen.queryByTestId('lookup-tmdb-candidates'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-016-AC-11: auto-resolve failure', () => {
+  it('shows the lookup error and leaves fields untouched', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+    ])
+    mockResolveTmdb.mockRejectedValue(
+      new ApiError(
+        502,
+        'Unable to reach the series lookup service. Please try again.',
+      ),
+    )
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/unable to reach/i),
+    )
+    expect(screen.getByLabelText(/^year/i)).toHaveValue(null)
+  })
+})
+
+describe('FRONTEND-016-AC-10/13/14: two or more TMDB results shows a picker', () => {
+  it('renders one button per candidate with title/year/originalTitle/poster', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      {
+        tmdbId: 4046,
+        title: 'Spooks',
+        year: 2002,
+        posterUrl: 'https://example.com/spooks.jpg',
+      },
+      {
+        tmdbId: 65327,
+        title: 'Money Heist',
+        year: 2017,
+        originalTitle: 'La Casa de Papel',
+      },
+    ])
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('lookup-tmdb-candidate')).toHaveLength(2),
+    )
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByText(/la casa de papel/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-016-AC-16/17/18: selecting a TMDB candidate resolves and applies it', () => {
+  it('calls resolveTmdbCandidate for the clicked candidate, applies it, and clears the picker', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+      { tmdbId: 65327, title: 'Money Heist', year: 2017 },
+    ])
+    mockResolveTmdb.mockResolvedValue({
+      title: 'Spooks',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks/i }))
+
+    await waitFor(() => expect(mockResolveTmdb).toHaveBeenCalledWith(4046))
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^year/i)).toHaveValue(2002),
+    )
+    expect(
+      screen.queryByTestId('lookup-tmdb-candidates'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('disables every candidate button while a selection resolves', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+      { tmdbId: 65327, title: 'Money Heist', year: 2017 },
+    ])
+    mockResolveTmdb.mockReturnValue(new Promise(() => undefined))
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks/i }))
+
+    await waitFor(() => {
+      for (const btn of screen.getAllByTestId('lookup-tmdb-candidate')) {
+        expect(btn).toBeDisabled()
+      }
+    })
+  })
+})
+
+describe('FRONTEND-016-AC-19: a failed TMDB candidate resolution keeps the picker open', () => {
+  it('shows the error and leaves the TMDB picker showing, buttons re-enabled', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+      { tmdbId: 65327, title: 'Money Heist', year: 2017 },
+    ])
+    mockResolveTmdb.mockRejectedValue(
+      new ApiError(
+        502,
+        'Unable to reach the series lookup service. Please try again.',
+      ),
+    )
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks/i }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(/unable to reach/i),
+    )
+    expect(screen.getAllByTestId('lookup-tmdb-candidate')).toHaveLength(2)
+    expect(screen.getAllByTestId('lookup-tmdb-candidate')[0]).not.toBeDisabled()
+  })
+})
+
+describe('FRONTEND-016-AC-15: dismissing the TMDB picker', () => {
+  it('clears the picker without resolving anything', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+      { tmdbId: 65327, title: 'Money Heist', year: 2017 },
+    ])
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+
+    fireEvent.click(screen.getByTestId('lookup-tmdb-candidates-cancel'))
+
+    expect(
+      screen.queryByTestId('lookup-tmdb-candidates'),
+    ).not.toBeInTheDocument()
+    expect(mockResolveTmdb).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-016-AC-21: re-clicking Look Up clears a stale TMDB picker', () => {
+  it('clears tmdbCandidates when a fresh OMDb search cycle starts', async () => {
+    mockSearch.mockResolvedValueOnce([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+      { tmdbId: 65327, title: 'Money Heist', year: 2017 },
+    ])
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+
+    mockSearch.mockResolvedValueOnce([])
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('lookup-tmdb-candidates'),
+      ).not.toBeInTheDocument(),
+    )
+  })
+})
+
+describe('FRONTEND-016-AC-22: no logging of TMDB search/resolve data', () => {
+  it('never logs the searched title or a resolved TMDB result', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([{ tmdbId: 1, title: 'Secret Show' }])
+    mockResolveTmdb.mockResolvedValue({ title: 'Secret Show' })
+    renderForm()
+    await runLookup('Secret Show')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    await waitFor(() => expect(mockResolveTmdb).toHaveBeenCalled())
     expect(
       logSpy.mock.calls.flat().some((c) => String(c).includes('Secret Show')),
     ).toBe(false)
@@ -558,6 +1060,214 @@ describe('FRONTEND-010-AC-11: initialValues prefill', () => {
     )
 
     expect(screen.getByLabelText(/^year/i)).toHaveValue(2017)
+  })
+})
+
+describe('FRONTEND-017-AC-04/06: typed title differs from the OMDb auto-resolved result', () => {
+  it('captures the typed title into Alternate Title', async () => {
+    mockSearch.mockResolvedValue([{ title: 'MI-5', imdbId: 'tt0160904' }])
+    mockResolve.mockResolvedValue({
+      title: 'MI-5',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('Spooks')
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('MI-5'),
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+  })
+})
+
+describe('FRONTEND-017-AC-05: typed title matches the resolved result (case/whitespace-insensitive)', () => {
+  it('leaves Alternate Title blank', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'Breaking Bad', imdbId: 'tt0903747' },
+    ])
+    mockResolve.mockResolvedValue({ title: 'Breaking Bad', year: 2008 })
+    renderForm()
+    await runLookup('  breaking bad  ')
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('Breaking Bad'),
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('')
+  })
+})
+
+describe('FRONTEND-017-AC-07: OMDb candidate-picker selection uses the typed title as the reference', () => {
+  it('captures the typed title into Alternate Title when the selected candidate resolves to a different name', async () => {
+    mockSearch.mockResolvedValue([
+      { title: 'MI-5', imdbId: 'tt0160904' },
+      { title: 'Spooks: Code 9', imdbId: 'tt1219342' },
+    ])
+    mockResolve.mockResolvedValue({
+      title: 'MI-5',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('Spooks')
+    await waitFor(() => screen.getAllByTestId('lookup-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^mi-5/i }))
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('MI-5'),
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+  })
+})
+
+describe("FRONTEND-017-AC-08: TMDB auto-resolve uses the selected candidate's own title as the reference", () => {
+  it('captures the TMDB candidate title, not the originally-typed term', async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+    ])
+    mockResolveTmdb.mockResolvedValue({
+      title: 'MI-5',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('spooks uk drama')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('MI-5'),
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+  })
+})
+
+describe("FRONTEND-017-AC-09: TMDB candidate-picker selection uses the selected candidate's own title as the reference", () => {
+  it("captures the selected TMDB candidate's title, not the originally-typed term", async () => {
+    mockSearch.mockResolvedValue([])
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+      { tmdbId: 65327, title: 'Money Heist', year: 2017 },
+    ])
+    mockResolveTmdb.mockResolvedValue({
+      title: 'MI-5',
+      year: 2002,
+      imdbId: 'tt0160904',
+    })
+    renderForm()
+    await runLookup('spooks uk drama')
+    await waitFor(() => screen.getByTestId('search-tmdb-btn'))
+    fireEvent.click(screen.getByTestId('search-tmdb-btn'))
+    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^spooks/i }))
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/^title/i)).toHaveValue('MI-5'),
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+  })
+})
+
+describe('FRONTEND-017-AC-11: Alternate Title field renders between Title and Year', () => {
+  it('renders an editable, initially-empty Alternate Title input', () => {
+    renderForm()
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('')
+  })
+})
+
+describe('FRONTEND-017-AC-12: submission payload includes/omits alternateTitle', () => {
+  it('omits alternateTitle when blank', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    expect(mockCreate.mock.calls[0][0]).not.toHaveProperty('alternateTitle')
+  })
+
+  it('includes a trimmed alternateTitle when populated', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'MI-5' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'MI-5' },
+    })
+    fireEvent.change(screen.getByLabelText(/alternate title/i), {
+      target: { value: '  Spooks  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    expect(mockCreate.mock.calls[0][0].alternateTitle).toBe('Spooks')
+  })
+})
+
+describe('FRONTEND-017-AC-13: buildInitialFormState populates alternateTitle from initialValues', () => {
+  it('pre-fills Alternate Title when initialValues.alternateTitle is set', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        initialValues={{ title: 'MI-5', alternateTitle: 'Spooks' }}
+      />,
+    )
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+  })
+})
+
+describe('FRONTEND-018-AC-04: Tags field rendered', () => {
+  it('renders a labelled Tags control', () => {
+    renderForm()
+    expect(screen.getByLabelText(/^tags/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-018-AC-06: valid submission payload includes/omits tags', () => {
+  it('omits tags from the payload when blank', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    const payload = mockCreate.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('tags')
+  })
+
+  it('includes a trimmed tags value when populated', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.change(screen.getByLabelText(/^tags/i), {
+      target: { value: '  rewatch candidate,watch with partner  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    const payload = mockCreate.mock.calls[0][0]
+    expect(payload.tags).toBe('rewatch candidate,watch with partner')
+  })
+})
+
+describe('FRONTEND-018-AC-07: initialValues prefill includes tags', () => {
+  it('pre-populates tags from initialValues when provided', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        initialValues={{ title: 'Ozark', tags: 'background watching' }}
+      />,
+    )
+    expect(screen.getByLabelText(/^tags/i)).toHaveValue('background watching')
   })
 })
 

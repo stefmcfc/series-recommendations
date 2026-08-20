@@ -156,7 +156,18 @@ export function SeriesDetail({
 
       {!loading && !notFound && !error && series && (
         <div className={styles.detail}>
-          <h2 className={styles.heading}>{series.title}</h2>
+          <h2
+            className={
+              series.alternateTitle !== null
+                ? `${styles.heading} ${styles.headingWithAlternate}`
+                : styles.heading
+            }
+          >
+            {series.title}
+          </h2>
+          {series.alternateTitle !== null && (
+            <p className={styles.alternateTitle}>aka {series.alternateTitle}</p>
+          )}
 
           <div className={styles.content}>
             {series.posterUrl !== null && !posterError && (
@@ -176,6 +187,10 @@ export function SeriesDetail({
               <div className={styles.field}>
                 <dt>Genres</dt>
                 <dd>{formatValue(series.genres)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Tags</dt>
+                <dd>{formatValue(series.tags)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Status</dt>

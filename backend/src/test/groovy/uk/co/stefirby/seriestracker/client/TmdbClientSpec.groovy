@@ -86,10 +86,12 @@ class TmdbClientSpec extends Specification {
                   "results": [
                     {"id": 2316, "name": "The Office", "first_air_date": "2005-03-24",
                      "overview": "A mockumentary.", "poster_path": "/poster1.jpg",
-                     "vote_average": 8.6, "genre_ids": [35]},
+                     "vote_average": 8.6, "genre_ids": [35], "vote_count": 1500,
+                     "original_language": "en"},
                     {"id": 1668, "name": "Friends", "first_air_date": "1994-09-22",
                      "overview": "Six friends.", "poster_path": "/poster2.jpg",
-                     "vote_average": 8.4, "genre_ids": [35, 18]}
+                     "vote_average": 8.4, "genre_ids": [35, 18], "vote_count": 900,
+                     "original_language": "en"}
                   ]
                 }
             '''
@@ -112,6 +114,41 @@ class TmdbClientSpec extends Specification {
             result[0].genreIds() == [35]
             result[1].tmdbId() == 1668
             result[1].genreIds() == [35, 18]
+    }
+
+    def "SERIES-007-AC-23: maps vote_count and original_language onto TmdbCandidate"() {
+        given: "TMDB /tv/1396/recommendations returns one result with vote_count and original_language"
+            def body = '''
+                {
+                  "results": [
+                    {"id": 2316, "name": "The Office", "vote_average": 8.6,
+                     "vote_count": 1500, "original_language": "en"}
+                  ]
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/recommendations")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.recommendations(1396) is called"
+            def result = client().recommendations(1396)
+
+        then: "voteCount and originalLanguage are mapped"
+            result[0].voteCount() == 1500
+            result[0].originalLanguage() == "en"
+    }
+
+    def "SERIES-007-AC-23: vote_count/original_language are null when absent"() {
+        given: "TMDB /tv/1396/recommendations returns a result with neither field"
+            def body = '{"results":[{"id":2316,"name":"The Office"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/recommendations")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.recommendations(1396) is called"
+            def result = client().recommendations(1396)
+
+        then: "both fields are null"
+            result[0].voteCount() == null
+            result[0].originalLanguage() == null
     }
 
     def "SERIES-006-AC-09: an absent results array maps to an empty list"() {
@@ -143,7 +180,7 @@ class TmdbClientSpec extends Specification {
             result[0].year() == 2015
     }
 
-    def "SERIES-006-AC-11: discoverByGenre() calls /discover/tv with comma-joined genre ids"() {
+    def "SERIES-007-AC-06: discover() calls /discover/tv with comma-joined genre ids when only genreIds are given"() {
         given: "TMDB /discover/tv returns one result"
             def body = '{"results":[{"id":99,"name":"Discovered Show","genre_ids":[18]}]}'
             mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
@@ -151,12 +188,85 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_genres", "18,80"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discoverByGenre([18, 80]) is called"
-            def result = client().discoverByGenre([18, 80])
+        when: "TmdbClient.discover([18, 80], []) is called"
+            def result = client().discover([18, 80], [])
 
-        then: "the result is mapped to a TmdbCandidate"
+        then: "with_genres is sent and with_keywords is omitted; the result is mapped to a TmdbCandidate"
             result.size() == 1
             result[0].tmdbId() == 99
+    }
+
+    def "SERIES-007-AC-06: discover() sends both with_genres and with_keywords when both are provided"() {
+        given: "a mocked TMDB server expecting GET /discover/tv?with_genres=18&with_keywords=9720"
+            def body = '{"results":[{"id":100,"name":"Spy Show"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("with_genres", "18"))
+                .andExpect(queryParam("with_keywords", "9720"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discover([18], [9720]) is called"
+            def result = client().discover([18], [9720])
+
+        then: "the expected request was made and the result is mapped"
+            result.size() == 1
+            result[0].tmdbId() == 100
+    }
+
+    def "SERIES-007-AC-06: discover() omits with_genres when genreIds is empty, sending only with_keywords"() {
+        given: "TMDB /discover/tv returns one result"
+            def body = '{"results":[{"id":101,"name":"Keyword-only Show"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("with_keywords", "9720"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discover([], [9720]) is called"
+            def result = client().discover([], [9720])
+
+        then: "the result is mapped"
+            result.size() == 1
+            result[0].tmdbId() == 101
+    }
+
+    def "SERIES-007-AC-05: resolves a keyword name to a TMDB keyword id"() {
+        given: "TMDB /search/keyword?query=spy returns one result with id 9720"
+            def body = '{"results":[{"id":9720,"name":"spy"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/keyword")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("query", "spy"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.searchKeyword('spy') is called"
+            def result = client().searchKeyword("spy")
+
+        then: "the keyword id is returned"
+            result.get() == 9720
+    }
+
+    def "SERIES-007-AC-05: returns empty when /search/keyword results is empty"() {
+        given: "TMDB /search/keyword returns an empty results array"
+            def body = '{"results":[]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/keyword")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.searchKeyword('nonexistent') is called"
+            def result = client().searchKeyword("nonexistent")
+
+        then: "no keyword id is returned"
+            result.isEmpty()
+    }
+
+    def "SERIES-007-AC-05: returns empty when /search/keyword results is absent"() {
+        given: "TMDB /search/keyword returns a body with no results field"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/keyword")))
+                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.searchKeyword('spy') is called"
+            def result = client().searchKeyword("spy")
+
+        then: "no keyword id is returned"
+            result.isEmpty()
     }
 
     def "SERIES-006-AC-12: externalIds() returns the imdb_id field"() {
@@ -218,5 +328,111 @@ class TmdbClientSpec extends Specification {
 
         where:
             apiKey << [null, "", "   "]
+    }
+
+    def "SERIES-012-AC-01: exposes the poster base URL as a public static final constant"() {
+        expect:
+            TmdbClient.POSTER_BASE_URL == "https://image.tmdb.org/t/p/w500"
+    }
+
+    def "SERIES-012-AC-03/04/05: search maps every entry of results[] onto TmdbSearchCandidate, omitting a redundant originalTitle"() {
+        given: "TMDB responds to a search with two results, one with a differing original_name"
+            def body = '''
+                {
+                  "results": [
+                    {"id": 4046, "name": "Spooks", "original_name": "Spooks",
+                     "first_air_date": "2002-05-13", "poster_path": "/spooks.jpg",
+                     "genre_ids": [10759, 18]},
+                    {"id": 65327, "name": "Money Heist", "original_name": "La Casa de Papel",
+                     "first_air_date": "2017-05-02", "poster_path": null, "genre_ids": []}
+                  ]
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("query", "Spooks"))
+                .andExpect(queryParam("api_key", API_KEY))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.search('Spooks') is called"
+            def result = client().search("Spooks")
+
+        then: "both entries are mapped, originalTitle omitted only when identical to title"
+            result.size() == 2
+            result[0].tmdbId() == 4046
+            result[0].title() == "Spooks"
+            result[0].originalTitle() == null
+            result[0].year() == 2002
+            result[0].posterPath() == "/spooks.jpg"
+            result[0].genreIds() == [10759, 18]
+            result[1].tmdbId() == 65327
+            result[1].title() == "Money Heist"
+            result[1].originalTitle() == "La Casa de Papel"
+            result[1].posterPath() == null
+    }
+
+    def "SERIES-012-AC-06: an absent or empty results array maps to an empty list, no exception"() {
+        given: "TMDB responds with no matches"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/tv")))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.search(...) is called"
+            def result = client().search("Nonexistent Show 12345")
+
+        then: "the result is an empty list, no exception is thrown"
+            result == []
+    }
+
+    def "SERIES-012-AC-07: a non-2xx response from TMDB search raises ExternalServiceException"() {
+        given: "TMDB responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/tv")))
+                .andRespond(withServerError())
+
+        when: "TmdbClient.search(...) is called"
+            client().search("Any Show")
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
+    }
+
+    def "SERIES-012-AC-08/09: details maps /tv/{id}, extracting genre ids from the {id,name} object array shape"() {
+        given: "TMDB responds to /tv/4046 with the full detail shape"
+            def body = '''
+                {
+                  "name": "Spooks",
+                  "first_air_date": "2002-05-13",
+                  "genres": [{"id": 10759, "name": "Action & Adventure"}, {"id": 18, "name": "Drama"}],
+                  "poster_path": "/spooks.jpg",
+                  "number_of_seasons": 10,
+                  "number_of_episodes": 108
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("api_key", API_KEY))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.details(4046) is called"
+            def result = client().details(4046)
+
+        then: "every field is mapped, genreIds extracted from the genres[].id shape, not a flat array"
+            result.title() == "Spooks"
+            result.year() == 2002
+            result.genreIds() == [10759, 18]
+            result.posterPath() == "/spooks.jpg"
+            result.numberOfSeasons() == 10
+            result.numberOfEpisodes() == 108
+    }
+
+    def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {
+        given: "TMDB responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046")))
+                .andRespond(withServerError())
+
+        when: "TmdbClient.details(...) is called"
+            client().details(4046)
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
     }
 }

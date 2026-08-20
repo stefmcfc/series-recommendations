@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -44,6 +45,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    // A query param that fails Spring's own conversion (e.g. a non-numeric value for a
+    // typed Integer/BigDecimal @RequestParam, such as GET /recommendations?yearMin=abc,
+    // SERIES-007-AC-31) is caught here instead of falling through to the catch-all
+    // Exception.class handler below, which would otherwise turn it into a 500 -- same
+    // rationale as the MissingServletRequestParameterException handler above.
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error("Invalid value for parameter '" + ex.getName() + "'"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

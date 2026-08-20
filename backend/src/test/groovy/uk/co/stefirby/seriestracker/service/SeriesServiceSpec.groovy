@@ -126,6 +126,116 @@ class SeriesServiceSpec extends Specification {
         result.title == "Show"
   }
 
+  def "SERIES-013-AC-02/03: alternateTitle flows through create and is persisted"() {
+    given: "a SeriesDto with alternateTitle set"
+        def dto = new SeriesDto(title: "MI-5", alternateTitle: "Spooks")
+
+    when: "the series is created"
+        def created = seriesService.create(dto)
+
+    then: "alternateTitle round-trips"
+        created.alternateTitle == "Spooks"
+
+    and: "alternateTitle is persisted and retrievable"
+        seriesService.getById(created.id).alternateTitle == "Spooks"
+  }
+
+  def "SERIES-013-AC-03: should create a series without an alternateTitle, leaving it null"() {
+    given: "a series DTO with no alternateTitle"
+        def dto = new SeriesDto(title: "No Alternate Title Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "alternateTitle is null, like other unset optional fields"
+        result.alternateTitle == null
+  }
+
+  def "SERIES-013-AC-03: should update a series's alternateTitle"() {
+    given: "a series has been created without an alternateTitle"
+        def created = seriesService.create(new SeriesDto(title: "MI-5"))
+
+    and: "an update DTO with an alternateTitle"
+        def updateDto = new SeriesDto(alternateTitle: "Spooks")
+
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
+
+    then: "alternateTitle is set, and other fields are unchanged"
+        result.alternateTitle == "Spooks"
+        result.title == "MI-5"
+  }
+
+  def "SERIES-013-AC-03: an update omitting alternateTitle leaves the stored value unchanged"() {
+    given: "a series has been created with an alternateTitle"
+        def created = seriesService.create(new SeriesDto(title: "MI-5", alternateTitle: "Spooks"))
+
+    and: "an update DTO that omits alternateTitle but changes another field"
+        def updateDto = new SeriesDto(personalRating: 5)
+
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
+
+    then: "alternateTitle is unchanged, matching every other optional field's update semantics"
+        result.alternateTitle == "Spooks"
+        result.personalRating == 5
+  }
+
+  def "SERIES-014-AC-06/07: tags flows through create and is persisted"() {
+    given: "a SeriesDto with tags set"
+        def dto = new SeriesDto(title: "The Wire", tags: "rewatch candidate,background watching")
+
+    when: "the series is created"
+        def created = seriesService.create(dto)
+
+    then: "tags round-trips"
+        created.tags == "rewatch candidate,background watching"
+
+    and: "tags is persisted and retrievable"
+        seriesService.getById(created.id).tags == "rewatch candidate,background watching"
+  }
+
+  def "SERIES-014-AC-08: should create a series without tags, leaving it null"() {
+    given: "a series DTO with no tags"
+        def dto = new SeriesDto(title: "No Tags Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "tags is null, like other unset optional fields"
+        result.tags == null
+  }
+
+  def "SERIES-014-AC-09: should update a series's tags"() {
+    given: "a series has been created without tags"
+        def created = seriesService.create(new SeriesDto(title: "Show"))
+
+    and: "an update DTO with tags"
+        def updateDto = new SeriesDto(tags: "rewatch candidate")
+
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
+
+    then: "tags is set, and other fields are unchanged"
+        result.tags == "rewatch candidate"
+        result.title == "Show"
+  }
+
+  def "SERIES-014-AC-09: an update omitting tags leaves the stored value unchanged"() {
+    given: "a series has been created with tags"
+        def created = seriesService.create(new SeriesDto(title: "Show", tags: "rewatch candidate"))
+
+    and: "an update DTO that omits tags but changes another field"
+        def updateDto = new SeriesDto(personalRating: 5)
+
+    when: "the series is updated"
+        def result = seriesService.update(created.id, updateDto)
+
+    then: "tags is unchanged, matching every other optional field's update semantics"
+        result.tags == "rewatch candidate"
+        result.personalRating == 5
+  }
+
   def "should reject series creation with invalid IMDb rating"() {
     given: "a series DTO with an out-of-range IMDb rating"
         def dto = new SeriesDto(title: "Show", imdbRating: 15.0)

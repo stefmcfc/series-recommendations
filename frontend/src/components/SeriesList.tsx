@@ -237,13 +237,20 @@ export function SeriesList({
                   />
                 )}
               </div>
-              <button
-                type="button"
-                className={styles.title}
-                onClick={() => handleRowClick(s.id)}
-              >
-                {s.title}
-              </button>
+              <div className={styles.titleGroup}>
+                <button
+                  type="button"
+                  className={styles.title}
+                  onClick={() => handleRowClick(s.id)}
+                >
+                  {s.title}
+                </button>
+                {s.alternateTitle !== null && (
+                  <span className={styles.alternateTitle}>
+                    aka {s.alternateTitle}
+                  </span>
+                )}
+              </div>
               <span className={styles.status}>{s.status}</span>
               <span className={styles.rating}>
                 {s.imdbRating !== null ? s.imdbRating : '—'}

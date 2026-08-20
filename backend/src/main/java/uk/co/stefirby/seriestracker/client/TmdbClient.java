@@ -42,6 +42,14 @@ public class TmdbClient {
 
     private static final Logger log = LoggerFactory.getLogger(TmdbClient.class);
 
+    /**
+     * TMDB's poster-image base URL, prepended to a {@code poster_path} to build a displayable
+     * poster URL. The single owner of this literal (SERIES-012-AC-01) -- callers such as
+     * {@code RecommendationService} and {@code SeriesLookupService} reference this constant
+     * rather than holding their own copy.
+     */
+    public static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
+
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
 
     private final String apiKey;
@@ -91,15 +99,53 @@ public class TmdbClient {
     }
 
     /**
+     * Resolves a free-text keyword to a TMDB keyword id via
+     * {@code GET /search/keyword?query={name}} (SERIES-007-AC-05), returning the first
+     * result's {@code id}, or empty if {@code results[]} is absent or empty.
+     *
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
      */
-    public List<TmdbCandidate> discoverByGenre(List<Integer> genreIds) {
-        String joined = genreIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    public Optional<Integer> searchKeyword(String name) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder
-            .path("discover/tv")
-            .queryParam("with_genres", joined));
+            .path("search/keyword")
+            .queryParam("query", name));
+
+        List<Map<String, Object>> results = listOfMaps(body, "results");
+        if (results.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(toInteger(results.getFirst().get("id")));
+    }
+
+    /**
+     * Discovers TV series by genre and/or keyword id via {@code GET /discover/tv}
+     * (SERIES-007-AC-06), superseding {@code discoverByGenre} (SERIES-006-AC-11) -- TMDB's
+     * real {@code /discover/tv} endpoint accepts {@code with_genres} and {@code
+     * with_keywords} as two params on the same call, so this single method matches the real
+     * API shape better than two near-duplicate ones. {@code with_genres} is included only
+     * when {@code genreIds} is non-empty, and {@code with_keywords} only when {@code
+     * keywordIds} is non-empty; both may be present on the same call.
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> discover(List<Integer> genreIds, List<Integer> keywordIds) {
+        Map<String, Object> body = fetch(uriBuilder -> {
+            UriBuilder b = uriBuilder.path("discover/tv");
+            if (genreIds != null && !genreIds.isEmpty()) {
+                b = b.queryParam("with_genres", joinIds(genreIds));
+            }
+            if (keywordIds != null && !keywordIds.isEmpty()) {
+                b = b.queryParam("with_keywords", joinIds(keywordIds));
+            }
+            return b;
+        });
         return mapResults(body);
+    }
+
+    private static String joinIds(List<Integer> ids) {
+        return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
     /**
@@ -109,6 +155,42 @@ public class TmdbClient {
     public Optional<String> externalIds(int tmdbId) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId + "/external_ids"));
         return Optional.ofNullable(str(body.get("imdb_id")));
+    }
+
+    /**
+     * Full-catalog TV title search via {@code GET /search/tv?query={query}}
+     * (SERIES-012-AC-03) -- unlike {@code OmdbClient.search}'s {@code s=}, TMDB's search
+     * matches against original, translated, and "also known as" names, so a title OMDb has
+     * filed under a different name can still be found this way.
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbSearchCandidate> search(String query) {
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder
+            .path("search/tv")
+            .queryParam("query", query));
+        return mapSearchResults(body);
+    }
+
+    /**
+     * Full detail lookup for a specific TMDB id via {@code GET /tv/{tmdbId}} (SERIES-012-AC-08),
+     * used as the degraded-fallback data source when OMDb has no record for a resolved
+     * {@code imdbId}.
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public TmdbSeriesDetail details(int tmdbId) {
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId));
+        return new TmdbSeriesDetail(
+            str(body.get("name")),
+            extractYear(str(body.get("first_air_date"))),
+            genreIdsFromObjects(body.get("genres")),
+            str(body.get("poster_path")),
+            toInteger(body.get("number_of_seasons")),
+            toInteger(body.get("number_of_episodes"))
+        );
     }
 
     private Map<String, Object> fetch(Function<UriBuilder, UriBuilder> customizer) {
@@ -164,10 +246,60 @@ public class TmdbClient {
                 str(item.get("overview")),
                 str(item.get("poster_path")),
                 toBigDecimal(item.get("vote_average")),
+                toIntegerList(item.get("genre_ids")),
+                toInteger(item.get("vote_count")),
+                str(item.get("original_language"))
+            ));
+        }
+        return candidates;
+    }
+
+    private static List<TmdbSearchCandidate> mapSearchResults(Map<String, Object> body) {
+        List<Map<String, Object>> results = listOfMaps(body, "results");
+        List<TmdbSearchCandidate> candidates = new ArrayList<>();
+        for (Map<String, Object> item : results) {
+            Integer id = toInteger(item.get("id"));
+            if (id == null) {
+                continue;
+            }
+            String title = str(item.get("name"));
+            String originalTitle = str(item.get("original_name"));
+            if (originalTitle != null && originalTitle.equals(title)) {
+                originalTitle = null;
+            }
+            candidates.add(new TmdbSearchCandidate(
+                id,
+                title,
+                originalTitle,
+                extractYear(str(item.get("first_air_date"))),
+                str(item.get("poster_path")),
                 toIntegerList(item.get("genre_ids"))
             ));
         }
         return candidates;
+    }
+
+    /**
+     * Extracts each entry's {@code id} from an array of {@code {id, name}} genre objects, as
+     * returned by {@code GET /tv/{id}}'s {@code genres} field -- a materially different shape
+     * from the flat {@code genre_ids} integer array {@link #toIntegerList} handles
+     * (SERIES-012-AC-09).
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Integer> genreIdsFromObjects(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        List<Integer> ids = new ArrayList<>();
+        for (Object o : list) {
+            if (o instanceof Map<?, ?> m) {
+                Integer id = toInteger(((Map<String, Object>) m).get("id"));
+                if (id != null) {
+                    ids.add(id);
+                }
+            }
+        }
+        return ids;
     }
 
     private static List<Integer> toIntegerList(Object value) {

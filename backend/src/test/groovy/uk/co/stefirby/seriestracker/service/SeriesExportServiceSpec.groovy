@@ -161,7 +161,8 @@ class SeriesExportServiceSpec extends Specification {
             def headerCols = lines[0].split(",").size()
 
         then: "the header row has one column per series field"
-            headerCols == 17  // number of fields
+            // 17 original fields + alternateTitle (SERIES-013) + tags (SERIES-014)
+            headerCols == 19
     }
 
     def "SERIES-005-AC-04: exportAsCsv includes posterUrl values"() {
@@ -173,5 +174,99 @@ class SeriesExportServiceSpec extends Specification {
 
         then: "the CSV contains the poster URL"
             csv.contains("https://example.com/the-office-poster.jpg")
+    }
+
+    def "SERIES-013-AC-04: exportAsJson includes alternateTitle"() {
+        given: "a series with an alternateTitle, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "MI-5", alternateTitle: "Spooks"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
+            def mi5 = parsed.get('series').find { it.get('title').textValue() == 'MI-5' }
+
+        then: "alternateTitle is present in the exported JSON"
+            mi5 != null
+            mi5.get('alternateTitle').textValue() == 'Spooks'
+    }
+
+    def "SERIES-013-AC-04: exportAsCsv includes alternateTitle values and header"() {
+        given: "a series with an alternateTitle, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "MI-5", alternateTitle: "Spooks"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+
+        then: "the header includes alternateTitle and the row includes its value"
+            lines[0].contains("alternateTitle")
+            csv.contains("Spooks")
+    }
+
+    def "SERIES-013-AC-04: exportAsCsv represents a null alternateTitle as an empty cell, not the literal 'null'"() {
+        given: "a series with no alternateTitle, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "No Alternate Title Show"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+
+        then: "the export succeeds without a literal 'null' anywhere"
+            !csv.contains("null")
+    }
+
+    def "SERIES-014-AC-11: exportAsJson includes tags"() {
+        given: "a series with a tags value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "The Office 2", tags: "background watching"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
+            def office = parsed.get('series').find { it.get('title').textValue() == 'The Office 2' }
+
+        then: "the exported JSON includes the tags field"
+            office.get('tags').textValue() == 'background watching'
+    }
+
+    def "SERIES-014-AC-12: exportAsCsv includes a tags column"() {
+        given: "all series have been retrieved"
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+
+        then: "the header row contains the tags column"
+            lines[0].contains("tags")
+    }
+
+    def "SERIES-014-AC-13: exportAsCsv quotes tags containing commas"() {
+        given: "a series with a comma-separated tags value, among the retrieved series"
+            seriesService.create(new SeriesDto(
+                title: "Vikings",
+                tags: "rewatch candidate,watch with partner"
+            ))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+
+        then: "the tags value containing commas is quoted"
+            csv.contains('"rewatch candidate,watch with partner"')
+    }
+
+    def "SERIES-014-AC-14: exportAsCsv represents a null tags value as an empty string"() {
+        given: "a series with no tags, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "No Tags Show"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+
+        then: "the row does not contain the literal string null"
+            !csv.contains("null")
     }
 }

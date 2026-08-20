@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Client for the OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), isolating
@@ -63,7 +64,7 @@ public class OmdbClient {
     }
 
     /**
-     * Looks up a series by title.
+     * Looks up a series by title, via OMDb's {@code t=} ("best single match") parameter.
      *
      * @throws EntityNotFoundException  if OMDb reports no match ({@code Response: False})
      * @throws ExternalServiceException if the OMDb API key is unset, or the call fails for
@@ -71,6 +72,29 @@ public class OmdbClient {
      *                                  non-200, unparseable response)
      */
     public OmdbLookupResult lookup(String title) {
+        return performLookup("t", title, "No OMDb results for title: " + title);
+    }
+
+    /**
+     * Looks up a series by its exact IMDb id, via OMDb's {@code i=} parameter -- shares
+     * {@link #performLookup}'s mapping/aggregation implementation with {@link #lookup(String)},
+     * differing only in which query param carries the identifier (SERIES-011-AC-06).
+     *
+     * @throws EntityNotFoundException  if OMDb reports no match ({@code Response: False}),
+     *                                  identifying the searched imdbId (SERIES-011-AC-07)
+     * @throws ExternalServiceException if the OMDb API key is unset, or the call fails for
+     *                                  any other reason (SERIES-011-AC-08)
+     */
+    public OmdbLookupResult lookupByImdbId(String imdbId) {
+        return performLookup("i", imdbId, "No OMDb results for imdbId: " + imdbId);
+    }
+
+    /**
+     * Shared mapping/aggregation implementation behind {@link #lookup(String)} and
+     * {@link #lookupByImdbId(String)}, parameterized only by which OMDb query param
+     * ({@code t=} or {@code i=}) carries the identifier (SERIES-011-AC-06).
+     */
+    private OmdbLookupResult performLookup(String identifierParam, String identifierValue, String notFoundMessage) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("OMDb lookup requested but app.omdb.api-key is not configured");
             throw new ExternalServiceException("OMDb API key is not configured");
@@ -79,16 +103,16 @@ public class OmdbClient {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder
             .queryParam("apikey", apiKey)
             .queryParam("type", "series")
-            .queryParam("t", title)
+            .queryParam(identifierParam, identifierValue)
             .build());
 
         if (body == null || isFalseResponse(body)) {
-            throw new EntityNotFoundException("No OMDb results for title: " + title);
+            throw new EntityNotFoundException(notFoundMessage);
         }
 
         Integer totalSeasons = parseInt(body.get("totalSeasons"));
         Integer totalEpisodes = totalSeasons != null
-            ? aggregateEpisodeCount(title, totalSeasons)
+            ? aggregateEpisodeCount(identifierParam, identifierValue, totalSeasons)
             : null;
 
         @SuppressWarnings("unchecked")
@@ -109,14 +133,53 @@ public class OmdbClient {
     }
 
     /**
+     * Searches for lightweight candidate matches for a title, via OMDb's {@code s=} parameter
+     * -- unlike {@link #lookup(String)}, a "no matches" outcome is this method's normal
+     * result (an empty list), not {@link EntityNotFoundException} (SERIES-011-AC-03).
+     *
+     * @throws ExternalServiceException if the OMDb API key is unset, or the call fails for
+     *                                  any other reason (SERIES-011-AC-04)
+     */
+    public List<OmdbSearchCandidate> search(String title) {
+        if (apiKey == null || apiKey.isBlank()) {
+            log.error("OMDb search requested but app.omdb.api-key is not configured");
+            throw new ExternalServiceException("OMDb API key is not configured");
+        }
+
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder
+            .queryParam("apikey", apiKey)
+            .queryParam("type", "series")
+            .queryParam("s", title)
+            .build());
+
+        if (body == null || isFalseResponse(body)) {
+            return List.of();
+        }
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> entries = (List<Map<String, Object>>) body.getOrDefault("Search", List.of());
+
+        return entries.stream()
+            .map(entry -> new OmdbSearchCandidate(
+                str(entry.get("Title")),
+                extractYear(str(entry.get("Year"))),
+                str(entry.get("imdbID")),
+                str(entry.get("Poster"))
+            ))
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Sums episode counts across {@code Season=1..totalSeasons}. Degrades to {@code null}
      * (rather than failing the whole lookup) if {@code totalSeasons} exceeds the cap, or if
      * any individual season call fails or returns something unparseable (SERIES-005-AC-12).
+     * Each season call uses the same identifier type ({@code t=} or {@code i=}) as the
+     * lookup it originated from -- never mixed (SERIES-011-AC-06).
      */
-    private Integer aggregateEpisodeCount(String title, int totalSeasons) {
+    private Integer aggregateEpisodeCount(String identifierParam, String identifierValue, int totalSeasons) {
         if (totalSeasons > OMDB_MAX_SEASONS_FOR_EPISODE_COUNT) {
             log.warn("totalSeasons ({}) for '{}' exceeds the aggregation cap ({}); "
-                + "skipping episode count aggregation", totalSeasons, title, OMDB_MAX_SEASONS_FOR_EPISODE_COUNT);
+                + "skipping episode count aggregation", totalSeasons, identifierValue, OMDB_MAX_SEASONS_FOR_EPISODE_COUNT);
             return null;
         }
 
@@ -127,12 +190,12 @@ public class OmdbClient {
             try {
                 seasonBody = fetch(uriBuilder -> uriBuilder
                     .queryParam("apikey", apiKey)
-                    .queryParam("t", title)
+                    .queryParam(identifierParam, identifierValue)
                     .queryParam("Season", currentSeason)
                     .build());
             } catch (RuntimeException e) {
                 log.warn("Failed to fetch season {} for '{}'; episode count aggregation abandoned",
-                    currentSeason, title, e);
+                    currentSeason, identifierValue, e);
                 return null;
             }
 

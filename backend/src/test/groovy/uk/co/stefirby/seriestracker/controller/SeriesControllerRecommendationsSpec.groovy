@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.controller
 
+import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.dto.RecommendationDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.service.RecommendationService
@@ -11,6 +12,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
 
+import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -29,7 +32,7 @@ class SeriesControllerRecommendationsSpec extends Specification {
     RecommendationService recommendationService
 
     def "SERIES-006-AC-26/27/28: returns 200 with the envelope, using the default limit of 20"() {
-        given: "RecommendationService.recommend(20) resolves to 3 recommendations"
+        given: "RecommendationService.recommend(20, ...) resolves to 3 recommendations"
             def dto = new RecommendationDto(
                 "Better Call Saul",
                 2015,
@@ -40,7 +43,7 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 "tt3032476",
                 "Breaking Bad"
             )
-            when(recommendationService.recommend(20)).thenReturn([dto, dto, dto])
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto, dto, dto])
 
         when: "the recommendations endpoint is invoked with no limit param"
             def result = mockMvc.perform(get("/api/v1/series/recommendations"))
@@ -55,7 +58,7 @@ class SeriesControllerRecommendationsSpec extends Specification {
 
     def "SERIES-006-AC-26: values above 50 clamp to 50"() {
         given: "RecommendationService resolves an empty list for any limit"
-            when(recommendationService.recommend(50)).thenReturn([])
+            when(recommendationService.recommend(eq(50), any(RecommendationCriteria))).thenReturn([])
 
         when: "the recommendations endpoint is invoked with limit=999"
             def result = mockMvc.perform(get("/api/v1/series/recommendations").param("limit", "999"))
@@ -64,25 +67,26 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(status().isOk())
             // Assigned rather than a bare statement: Spock treats a bare non-void
             // expression in a "then:" block as an implicit boolean condition, and
-            // verify(...).recommend(50) returns the stubbed (empty, hence falsy) list.
-            def unused = verify(recommendationService).recommend(50)
+            // verify(...).recommend(50, ...) returns the stubbed (empty, hence falsy) list.
+            def unused = verify(recommendationService).recommend(eq(50), any(RecommendationCriteria))
     }
 
     def "SERIES-006-AC-26: values below 1 clamp to 1"() {
         given: "RecommendationService resolves an empty list for any limit"
-            when(recommendationService.recommend(1)).thenReturn([])
+            when(recommendationService.recommend(eq(1), any(RecommendationCriteria))).thenReturn([])
 
         when: "the recommendations endpoint is invoked with limit=0"
             def result = mockMvc.perform(get("/api/v1/series/recommendations").param("limit", "0"))
 
         then: "the response is 200 and recommend was called with 1 (clamped)"
             result.andExpect(status().isOk())
-            def unused = verify(recommendationService).recommend(1)
+            def unused = verify(recommendationService).recommend(eq(1), any(RecommendationCriteria))
     }
 
     def "SERIES-006-AC-29: an upstream TMDB failure returns 502 with a generic message"() {
         given: "RecommendationService fails because TMDB is unreachable / the key is unset"
-            when(recommendationService.recommend(20)).thenThrow(new ExternalServiceException("TMDB request failed"))
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new ExternalServiceException("TMDB request failed"))
 
         when: "the recommendations endpoint is invoked"
             def result = mockMvc.perform(get("/api/v1/series/recommendations"))
@@ -90,5 +94,105 @@ class SeriesControllerRecommendationsSpec extends Specification {
         then: "the response is 502 and does not leak the underlying exception message"
             result.andExpect(status().isBadGateway())
             result.andExpect(jsonPath('$.error').value("Unable to reach the series lookup service. Please try again."))
+    }
+
+    // -- SERIES-007-AC-30: full endpoint parameter list --
+
+    def "SERIES-007-AC-30: accepts every new optional recommendation param"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "the recommendations endpoint is invoked with every new param set"
+            def id = UUID.randomUUID().toString()
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("seriesIds", id)
+                .param("genres", "Drama")
+                .param("keywords", "Spy")
+                .param("minSourceRating", "3")
+                .param("minTmdbRating", "6.5")
+                .param("minVoteCount", "10")
+                .param("yearMin", "2010")
+                .param("yearMax", "2020")
+                .param("excludeGenres", "Horror")
+                .param("language", "en")
+                .param("maxPerSource", "5"))
+
+        then: "the response is 200"
+            result.andExpect(status().isOk())
+    }
+
+    // -- SERIES-007-AC-09/17/20: service-level IllegalArgumentException maps to 400 --
+
+    def "SERIES-007-AC-09: an unknown series id in seriesIds is rejected"() {
+        given: "RecommendationService rejects the request as it would for an unknown seriesIds entry"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("Unknown series id(s) in seriesIds: [...]"))
+
+        when: "GET /api/v1/series/recommendations?seriesIds={a random UUID} is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("seriesIds", UUID.randomUUID().toString()))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-007-AC-17: seriesIds combined with genres is rejected"() {
+        given: "RecommendationService rejects the request as it would for combined seriesIds+genres"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("seriesIds cannot be combined with genres/keywords"))
+
+        when: "GET /api/v1/series/recommendations?seriesIds={id}&genres=Drama is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("seriesIds", UUID.randomUUID().toString())
+                .param("genres", "Drama"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-007-AC-20: minSourceRating outside 1-5 is rejected"() {
+        given: "RecommendationService rejects the request as it would for an out-of-range minSourceRating"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("minSourceRating must be between 1 and 5"))
+
+        when: "GET /api/v1/series/recommendations?minSourceRating=9 is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("minSourceRating", "9"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    // -- SERIES-007-AC-31: malformed typed params -> 400 (real Spring conversion failure, no stub needed) --
+
+    def "SERIES-007-AC-31: a malformed minTmdbRating returns 400"() {
+        when: "GET /api/v1/series/recommendations?minTmdbRating=abc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("minTmdbRating", "abc"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-007-AC-31: a malformed minVoteCount returns 400"() {
+        when: "GET /api/v1/series/recommendations?minVoteCount=abc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("minVoteCount", "abc"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-007-AC-31: a malformed yearMin returns 400"() {
+        when: "GET /api/v1/series/recommendations?yearMin=abc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("yearMin", "abc"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-007-AC-31: a malformed maxPerSource returns 400"() {
+        when: "GET /api/v1/series/recommendations?maxPerSource=abc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("maxPerSource", "abc"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
     }
 }

@@ -44,6 +44,7 @@ public class SeriesService {
 
         SeriesEntity entity = new SeriesEntity();
         entity.setTitle(dto.getTitle());
+        entity.setAlternateTitle(dto.getAlternateTitle());
         entity.setYear(dto.getYear());
         entity.setGenres(dto.getGenres());
         entity.setTotalSeasons(dto.getTotalSeasons());
@@ -56,6 +57,7 @@ public class SeriesService {
         entity.setPersonalRating(dto.getPersonalRating());
         entity.setPersonalNotes(dto.getPersonalNotes());
         entity.setPosterUrl(dto.getPosterUrl());
+        entity.setTags(dto.getTags());
         entity.setImdbId(dto.getImdbId());
 
         // Set dateAdded explicitly so it's available immediately after save
@@ -100,6 +102,9 @@ public class SeriesService {
         if (dto.getTitle() != null) {
             entity.setTitle(dto.getTitle());
         }
+        if (dto.getAlternateTitle() != null) {
+            entity.setAlternateTitle(dto.getAlternateTitle());
+        }
         if (dto.getYear() != null) {
             entity.setYear(dto.getYear());
         }
@@ -142,6 +147,9 @@ public class SeriesService {
         if (dto.getPosterUrl() != null) {
             entity.setPosterUrl(dto.getPosterUrl());
         }
+        if (dto.getTags() != null) {
+            entity.setTags(dto.getTags());
+        }
         if (dto.getImdbId() != null) {
             entity.setImdbId(dto.getImdbId());
         }
@@ -174,6 +182,7 @@ public class SeriesService {
         SeriesDto dto = new SeriesDto();
         dto.setId(entity.getId());
         dto.setTitle(entity.getTitle());
+        dto.setAlternateTitle(entity.getAlternateTitle());
         dto.setYear(entity.getYear());
         dto.setGenres(entity.getGenres());
         dto.setTotalSeasons(entity.getTotalSeasons());
@@ -187,6 +196,7 @@ public class SeriesService {
         dto.setPersonalRating(entity.getPersonalRating());
         dto.setPersonalNotes(entity.getPersonalNotes());
         dto.setPosterUrl(entity.getPosterUrl());
+        dto.setTags(entity.getTags());
         dto.setImdbId(entity.getImdbId());
         dto.setDateAdded(entity.getDateAdded());
         dto.setDateCompleted(entity.getDateCompleted());

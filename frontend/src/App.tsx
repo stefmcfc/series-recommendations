@@ -6,7 +6,12 @@ import { EditSeriesForm } from './components/EditSeriesForm'
 import { ExportControls } from './components/ExportControls'
 import { SearchFilter } from './components/SearchFilter'
 import { RecommendationsList } from './components/RecommendationsList'
-import type { Series, SearchCriteria } from './types/series'
+import { RecommendationControls } from './components/RecommendationControls'
+import type {
+  Series,
+  SearchCriteria,
+  RecommendationQuery,
+} from './types/series'
 
 type MainView = 'list' | 'recommendations'
 
@@ -18,6 +23,9 @@ function App() {
   const [seriesListKey, setSeriesListKey] = useState(0)
   const [seriesDetailKey, setSeriesDetailKey] = useState(0)
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null)
+  const [recommendationQuery, setRecommendationQuery] = useState<
+    RecommendationQuery | undefined
+  >(undefined)
 
   const handleAddSuccess = () => {
     setIsAddFormOpen(false)
@@ -64,7 +72,10 @@ function App() {
           </nav>
 
           {mainView === 'recommendations' ? (
-            <RecommendationsList />
+            <>
+              <RecommendationControls onQueryChange={setRecommendationQuery} />
+              <RecommendationsList query={recommendationQuery} />
+            </>
           ) : (
             <>
               <SearchFilter

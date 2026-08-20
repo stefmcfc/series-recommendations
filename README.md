@@ -65,6 +65,9 @@ The backend exposes a REST API at `http://localhost:8080/api/v1`.
 | `GET` | `/api/v1/series/search` | Search and filter series |
 | `GET` | `/api/v1/series/export` | Export as JSON or CSV |
 | `GET` | `/api/v1/series/lookup?title=` | Look up a series by title via the OMDb API (year, genres, season/episode counts, ratings, poster) to autofill the add-series form. Requires `app.omdb.api-key` to be configured — see `RUNBOOK.md`'s Environment Variables section — otherwise returns `502`. |
+| `GET` | `/api/v1/series/lookup/search?title=` | Search OMDb's full candidate list for a title (not just its single best guess), for disambiguating an ambiguous title before resolving one via `GET /api/v1/series/lookup?imdbId=`. |
+| `GET` | `/api/v1/series/lookup/search-tmdb?title=` | Search TMDB directly for a title — unlike OMDb's search, TMDB matches against original/translated/AKA names, so a title OMDb's own search misses entirely (e.g. "Spooks", catalogued in OMDb as "MI-5") can still be found. Requires `app.tmdb.api-key`. |
+| `GET` | `/api/v1/series/lookup/resolve-tmdb?tmdbId=` | Resolve a TMDB search candidate to full lookup detail: tries OMDb's richer data via the candidate's cross-referenced IMDb id first, falling back to TMDB's own (thinner) detail — ratings absent — when OMDb has no record for that title at all. Always `200` on success, even in the degraded case; `502` only for a genuine upstream failure. |
 | `GET` | `/api/v1/series/recommendations?limit=` | Suggest series to watch next, sourced from TMDB based on your `COMPLETED` series (title-based), supplemented by your most-watched genres when there's too little title-based data yet. Excludes anything already added or ignored. `limit` defaults to 20, clamped to 1-50. Requires `app.tmdb.api-key` to be configured once there's data to source from — see `RUNBOOK.md`'s Environment Variables section — otherwise returns `502`. |
 | `POST` | `/api/v1/series/ignored` | Dismiss a recommendation (`{ imdbId, title, reason? }`) so it never resurfaces. Idempotent — re-ignoring the same `imdbId` returns `200` instead of `201`. |
 
@@ -96,6 +99,12 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 005 | OMDb lookup & poster field | ✅ Done |
 | Backend 006 | Series recommendations (TMDB-sourced, ignore list) | ✅ Done (backend only — see Frontend 010) |
 | Frontend 010 | Recommendations UI (`RecommendationsList`, `AddSeriesForm` `initialValues` prefill, nav toggle) | ✅ Done |
+| Frontend 017 | Alternate title UI (`AddSeriesForm`/`EditSeriesForm` editable field, OMDb/TMDB lookup mismatch capture, `SeriesList`/`SeriesDetail` display) | ✅ Done |
+| Frontend 018 | User-defined tags UI (`AddSeriesForm`/`EditSeriesForm` editable field, `SeriesDetail` display) | ✅ Done |
+
+## Future Ideas
+
+Deferred features and known gaps, not yet scheduled against a spec, are tracked in [FUTURE_IDEAS.md](./FUTURE_IDEAS.md).
 
 ## Changelog
 
