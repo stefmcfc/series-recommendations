@@ -60,8 +60,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'test-id',
     title: 'Test Show',
+    alternateTitle: null,
     year: null,
     genres: null,
+    tags: null,
     totalSeasons: null,
     totalEpisodes: null,
     currentSeason: null,
@@ -247,6 +249,92 @@ describe('SH-0XX: lookupByTitle', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-015-AC-02: searchByTitle()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-015-AC-02: searchByTitle', () => {
+  it('should call GET /series/lookup/search and unwrap { data: LookupCandidate[] }', async () => {
+    const mockCandidates = [
+      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
+    ]
+    client.get.mockResolvedValue({ data: { data: mockCandidates } })
+
+    const result = await seriesApi.searchByTitle('Spooks')
+
+    expect(client.get).toHaveBeenCalledWith('/series/lookup/search', {
+      params: { title: 'Spooks' },
+    })
+    expect(result).toEqual(mockCandidates)
+  })
+
+  it('should return an empty array on no matches without throwing', async () => {
+    client.get.mockResolvedValue({ data: { data: [] } })
+
+    const result = await seriesApi.searchByTitle('Xyzzy')
+
+    expect(result).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-015-AC-03: lookupByImdbId()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-015-AC-03: lookupByImdbId', () => {
+  it('should call GET /series/lookup with an imdbId param and unwrap { data: SeriesLookupDto }', async () => {
+    const mockResult = { title: 'Spooks', imdbRating: 7.9 }
+    client.get.mockResolvedValue({ data: { data: mockResult } })
+
+    const result = await seriesApi.lookupByImdbId('tt0290403')
+
+    expect(client.get).toHaveBeenCalledWith('/series/lookup', {
+      params: { imdbId: 'tt0290403' },
+    })
+    expect(result.title).toBe('Spooks')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-016-AC-02: searchTmdb()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-016-AC-02: searchTmdb', () => {
+  it('should call GET /series/lookup/search-tmdb and unwrap { data: LookupTmdbCandidate[] }', async () => {
+    const mockCandidates = [{ tmdbId: 4046, title: 'Spooks', year: 2002 }]
+    client.get.mockResolvedValue({ data: { data: mockCandidates } })
+
+    const result = await seriesApi.searchTmdb('Spooks')
+
+    expect(client.get).toHaveBeenCalledWith('/series/lookup/search-tmdb', {
+      params: { title: 'Spooks' },
+    })
+    expect(result).toEqual(mockCandidates)
+  })
+
+  it('should return an empty array on no matches without throwing', async () => {
+    client.get.mockResolvedValue({ data: { data: [] } })
+
+    const result = await seriesApi.searchTmdb('Xyzzy')
+
+    expect(result).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-016-AC-03: resolveTmdbCandidate()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-016-AC-03: resolveTmdbCandidate', () => {
+  it('should call GET /series/lookup/resolve-tmdb with a tmdbId param and unwrap { data: SeriesLookupDto }', async () => {
+    const mockResult = { title: 'Spooks', imdbId: 'tt0160904' }
+    client.get.mockResolvedValue({ data: { data: mockResult } })
+
+    const result = await seriesApi.resolveTmdbCandidate(4046)
+
+    expect(client.get).toHaveBeenCalledWith('/series/lookup/resolve-tmdb', {
+      params: { tmdbId: 4046 },
+    })
+    expect(result.title).toBe('Spooks')
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-010-AC-03: getRecommendations()
 // ---------------------------------------------------------------------------
 describe('FRONTEND-010-AC-03: getRecommendations', () => {
@@ -344,6 +432,22 @@ describe('FRONTEND-011-AC-02: getRecommendations with a full query', () => {
     expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
       params: {},
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-014-AC-01: getGenreOptions()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-014-AC-01: getGenreOptions', () => {
+  it('fetches and unwraps the genre list', async () => {
+    client.get.mockResolvedValue({
+      data: { data: ['Action', 'Drama'], count: 2 },
+    })
+
+    const result = await seriesApi.getGenreOptions()
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres')
+    expect(result).toEqual(['Action', 'Drama'])
   })
 })
 

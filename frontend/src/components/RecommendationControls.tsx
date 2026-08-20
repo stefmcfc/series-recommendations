@@ -12,7 +12,7 @@ interface RecommendationControlsProps {
 interface ControlsState {
   mode: SourceMode
   selectedSeriesIds: string[]
-  genresText: string
+  genresSelected: string[]
   keywordsText: string
   minSourceRating: string
   minTmdbRating: string
@@ -27,7 +27,7 @@ interface ControlsState {
 const initialState: ControlsState = {
   mode: 'automatic',
   selectedSeriesIds: [],
-  genresText: '',
+  genresSelected: [],
   keywordsText: '',
   minSourceRating: '',
   minTmdbRating: '',
@@ -54,9 +54,8 @@ function buildQuery(state: ControlsState): RecommendationQuery {
   }
 
   if (state.mode === 'genre') {
-    const genres = parseCommaList(state.genresText)
     const keywords = parseCommaList(state.keywordsText)
-    if (genres.length > 0) query.genres = genres
+    if (state.genresSelected.length > 0) query.genres = state.genresSelected
     if (keywords.length > 0) query.keywords = keywords
   }
 
@@ -86,11 +85,19 @@ export function RecommendationControls({
   const [state, setState] = useState<ControlsState>(initialState)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [allSeries, setAllSeries] = useState<Series[]>([])
+  const [genreOptions, setGenreOptions] = useState<string[]>([])
 
   useEffect(() => {
     seriesApi
       .getAll()
       .then(setAllSeries)
+      .catch(() => undefined)
+  }, [])
+
+  useEffect(() => {
+    seriesApi
+      .getGenreOptions()
+      .then(setGenreOptions)
       .catch(() => undefined)
   }, [])
 
@@ -104,7 +111,7 @@ export function RecommendationControls({
     updateState({
       mode,
       selectedSeriesIds: [],
-      genresText: '',
+      genresSelected: [],
       keywordsText: '',
     })
   }
@@ -116,6 +123,16 @@ export function RecommendationControls({
         selectedSeriesIds: checked
           ? [...state.selectedSeriesIds, id]
           : state.selectedSeriesIds.filter((seriesId) => seriesId !== id),
+      })
+    }
+
+  const handleGenreToggle =
+    (genre: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const checked = event.target.checked
+      updateState({
+        genresSelected: checked
+          ? [...state.genresSelected, genre]
+          : state.genresSelected.filter((g) => g !== genre),
       })
     }
 
@@ -140,7 +157,7 @@ export function RecommendationControls({
 
   const showGenreKeywordHint =
     state.mode === 'genre' &&
-    parseCommaList(state.genresText).length === 0 &&
+    state.genresSelected.length === 0 &&
     parseCommaList(state.keywordsText).length === 0
 
   return (
@@ -207,13 +224,24 @@ export function RecommendationControls({
       {state.mode === 'genre' && (
         <div className={styles.genreKeywordFields}>
           <div className={styles.field}>
-            <label htmlFor="recommendation-genres">Genres</label>
-            <input
-              id="recommendation-genres"
-              type="text"
-              value={state.genresText}
-              onChange={updateField('genresText')}
-            />
+            <span>Genres</span>
+            <div className={styles.seriesPicker}>
+              {genreOptions.length === 0 ? (
+                <p className={styles.hint}>No genres to choose from yet.</p>
+              ) : (
+                genreOptions.map((genre) => (
+                  <div key={genre} className={styles.seriesOption}>
+                    <input
+                      id={`genre-checkbox-${genre}`}
+                      type="checkbox"
+                      checked={state.genresSelected.includes(genre)}
+                      onChange={handleGenreToggle(genre)}
+                    />
+                    <label htmlFor={`genre-checkbox-${genre}`}>{genre}</label>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
           <div className={styles.field}>
             <label htmlFor="recommendation-keywords">Keywords</label>

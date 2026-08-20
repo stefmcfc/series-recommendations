@@ -10,8 +10,10 @@ export type SeriesStatus = (typeof SeriesStatus)[keyof typeof SeriesStatus]
 export interface Series {
   id: string
   title: string
+  alternateTitle: string | null
   year: number | null
   genres: string | null
+  tags: string | null
   totalSeasons: number | null
   totalEpisodes: number | null
   currentSeason: number | null
@@ -30,8 +32,10 @@ export interface Series {
 
 export interface CreateSeriesRequest {
   title: string
+  alternateTitle?: string
   year?: number
   genres?: string
+  tags?: string
   totalSeasons?: number
   totalEpisodes?: number
   status?: SeriesStatus
@@ -60,6 +64,21 @@ export interface OmdbLookupResult {
   rottenTomatoesRating?: number
   posterUrl?: string
   imdbId?: string
+}
+
+export interface LookupCandidate {
+  title: string
+  year?: number
+  imdbId?: string
+  posterUrl?: string
+}
+
+export interface LookupTmdbCandidate {
+  tmdbId: number
+  title: string
+  year?: number
+  originalTitle?: string
+  posterUrl?: string
 }
 
 export interface Recommendation {

@@ -4,6 +4,8 @@ import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type {
   CreateSeriesRequest,
+  LookupCandidate,
+  LookupTmdbCandidate,
   OmdbLookupResult,
   Series,
 } from '../types/series'
@@ -17,8 +19,10 @@ interface AddSeriesFormProps {
 
 interface FormState {
   title: string
+  alternateTitle: string
   year: string
   genres: string
+  tags: string
   totalSeasons: string
   totalEpisodes: string
   status: SeriesStatus
@@ -33,8 +37,10 @@ interface FormState {
 
 const initialFormState: FormState = {
   title: '',
+  alternateTitle: '',
   year: '',
   genres: '',
+  tags: '',
   totalSeasons: '',
   totalEpisodes: '',
   status: SeriesStatus.BACKLOG,
@@ -127,8 +133,11 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     status: form.status,
   }
 
+  if (form.alternateTitle.trim() !== '')
+    payload.alternateTitle = form.alternateTitle.trim()
   if (form.year.trim() !== '') payload.year = Number(form.year)
   if (form.genres.trim() !== '') payload.genres = form.genres.trim()
+  if (form.tags.trim() !== '') payload.tags = form.tags.trim()
   if (form.totalSeasons.trim() !== '')
     payload.totalSeasons = Number(form.totalSeasons)
   if (form.totalEpisodes.trim() !== '')
@@ -152,8 +161,17 @@ function buildPayload(form: FormState): CreateSeriesRequest {
 function applyLookupResult(
   form: FormState,
   result: OmdbLookupResult,
+  referenceTitle: string,
 ): FormState {
   const next: FormState = { ...form, title: result.title }
+
+  const trimmedReference = referenceTitle.trim()
+  if (
+    trimmedReference !== '' &&
+    trimmedReference.toLowerCase() !== result.title.trim().toLowerCase()
+  ) {
+    next.alternateTitle = trimmedReference
+  }
 
   if (result.year != null) next.year = String(result.year)
   if (result.genres != null) next.genres = result.genres
@@ -180,8 +198,11 @@ function buildInitialFormState(
   const next: FormState = { ...initialFormState }
 
   if (initialValues.title != null) next.title = initialValues.title
+  if (initialValues.alternateTitle != null)
+    next.alternateTitle = initialValues.alternateTitle
   if (initialValues.year != null) next.year = String(initialValues.year)
   if (initialValues.genres != null) next.genres = initialValues.genres
+  if (initialValues.tags != null) next.tags = initialValues.tags
   if (initialValues.totalSeasons != null)
     next.totalSeasons = String(initialValues.totalSeasons)
   if (initialValues.totalEpisodes != null)
@@ -216,6 +237,13 @@ export function AddSeriesForm({
   const [submitting, setSubmitting] = useState(false)
   const [lookingUp, setLookingUp] = useState(false)
   const [lookupError, setLookupError] = useState<string | null>(null)
+  const [candidates, setCandidates] = useState<LookupCandidate[]>([])
+  const [resolvingCandidate, setResolvingCandidate] = useState(false)
+  const [tmdbCandidates, setTmdbCandidates] = useState<LookupTmdbCandidate[]>(
+    [],
+  )
+  const [resolvingTmdbCandidate, setResolvingTmdbCandidate] = useState(false)
+  const [showTmdbEscapeHatch, setShowTmdbEscapeHatch] = useState(false)
   const [posterPreviewError, setPosterPreviewError] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
@@ -240,17 +268,44 @@ export function AddSeriesForm({
     setPosterPreviewError(false)
   }
 
+  const applyResolvedResult = (
+    result: OmdbLookupResult,
+    referenceTitle: string,
+  ) => {
+    setForm((prev) => applyLookupResult(prev, result, referenceTitle))
+    setPosterPreviewError(false)
+  }
+
   const handleLookup = async () => {
     const title = form.title.trim()
     if (title === '' || lookingUp) return
 
     setLookupError(null)
+    setCandidates([])
+    setTmdbCandidates([])
+    setShowTmdbEscapeHatch(false)
     setLookingUp(true)
 
     try {
-      const result = await seriesApi.lookupByTitle(title)
-      setForm((prev) => applyLookupResult(prev, result))
-      setPosterPreviewError(false)
+      const results = await seriesApi.searchByTitle(title)
+
+      if (results.length === 0) {
+        setLookupError('No matches found for that title.')
+        setShowTmdbEscapeHatch(true)
+        return
+      }
+
+      if (results.length === 1) {
+        const [candidate] = results
+        if (candidate.imdbId != null) {
+          const result = await seriesApi.lookupByImdbId(candidate.imdbId)
+          applyResolvedResult(result, title)
+        }
+        return
+      }
+
+      setCandidates(results)
+      setShowTmdbEscapeHatch(true)
     } catch (err) {
       if (err instanceof ApiError) {
         setLookupError(err.message)
@@ -260,6 +315,95 @@ export function AddSeriesForm({
     } finally {
       setLookingUp(false)
     }
+  }
+
+  const handleSelectCandidate = async (candidate: LookupCandidate) => {
+    if (resolvingCandidate || candidate.imdbId == null) return
+
+    setLookupError(null)
+    setResolvingCandidate(true)
+
+    try {
+      const result = await seriesApi.lookupByImdbId(candidate.imdbId)
+      applyResolvedResult(result, form.title.trim())
+      setCandidates([])
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setLookupError(err.message)
+      } else {
+        setLookupError('An unexpected error occurred. Please try again.')
+      }
+    } finally {
+      setResolvingCandidate(false)
+    }
+  }
+
+  const handleCancelCandidates = () => {
+    setCandidates([])
+  }
+
+  const handleSearchTmdb = async () => {
+    const title = form.title.trim()
+    if (title === '' || resolvingTmdbCandidate) return
+
+    setLookupError(null)
+    setCandidates([])
+    setTmdbCandidates([])
+    setResolvingTmdbCandidate(true)
+
+    try {
+      const results = await seriesApi.searchTmdb(title)
+
+      if (results.length === 0) {
+        setLookupError('No matches found on TMDB either.')
+        setShowTmdbEscapeHatch(false)
+        return
+      }
+
+      if (results.length === 1) {
+        const [candidate] = results
+        const result = await seriesApi.resolveTmdbCandidate(candidate.tmdbId)
+        applyResolvedResult(result, candidate.title)
+        setShowTmdbEscapeHatch(false)
+        return
+      }
+
+      setTmdbCandidates(results)
+      setShowTmdbEscapeHatch(false)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setLookupError(err.message)
+      } else {
+        setLookupError('An unexpected error occurred. Please try again.')
+      }
+    } finally {
+      setResolvingTmdbCandidate(false)
+    }
+  }
+
+  const handleSelectTmdbCandidate = async (candidate: LookupTmdbCandidate) => {
+    if (resolvingTmdbCandidate) return
+
+    setLookupError(null)
+    setResolvingTmdbCandidate(true)
+
+    try {
+      const result = await seriesApi.resolveTmdbCandidate(candidate.tmdbId)
+      applyResolvedResult(result, candidate.title)
+      setTmdbCandidates([])
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setLookupError(err.message)
+      } else {
+        setLookupError('An unexpected error occurred. Please try again.')
+      }
+    } finally {
+      setResolvingTmdbCandidate(false)
+    }
+  }
+
+  const handleCancelTmdbCandidates = () => {
+    setTmdbCandidates([])
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -351,6 +495,130 @@ export function AddSeriesForm({
                 {lookupError}
               </div>
             )}
+            {showTmdbEscapeHatch &&
+              candidates.length === 0 &&
+              tmdbCandidates.length === 0 && (
+                <button
+                  type="button"
+                  className={styles.candidatesCancelButton}
+                  data-testid="search-tmdb-btn"
+                  disabled={resolvingTmdbCandidate}
+                  onClick={handleSearchTmdb}
+                >
+                  {resolvingTmdbCandidate
+                    ? 'Searching TMDB...'
+                    : 'Search TMDB instead'}
+                </button>
+              )}
+            {candidates.length > 0 && (
+              <div
+                className={styles.candidates}
+                data-testid="lookup-candidates"
+              >
+                <ul className={styles.candidateList}>
+                  {candidates.map((candidate) => (
+                    <li key={`${candidate.imdbId ?? candidate.title}`}>
+                      <button
+                        type="button"
+                        className={styles.candidateButton}
+                        data-testid="lookup-candidate"
+                        disabled={resolvingCandidate}
+                        onClick={() => handleSelectCandidate(candidate)}
+                      >
+                        {candidate.posterUrl && (
+                          <img
+                            src={candidate.posterUrl}
+                            alt=""
+                            className={styles.candidatePoster}
+                          />
+                        )}
+                        <span>
+                          {candidate.title}
+                          {candidate.year != null ? ` (${candidate.year})` : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className={styles.candidatesCancelButton}
+                  data-testid="lookup-candidates-cancel"
+                  disabled={resolvingCandidate}
+                  onClick={handleCancelCandidates}
+                >
+                  Cancel
+                </button>
+                {showTmdbEscapeHatch && (
+                  <button
+                    type="button"
+                    className={styles.candidatesCancelButton}
+                    data-testid="search-tmdb-btn"
+                    disabled={resolvingTmdbCandidate}
+                    onClick={handleSearchTmdb}
+                  >
+                    {resolvingTmdbCandidate
+                      ? 'Searching TMDB...'
+                      : 'Search TMDB instead'}
+                  </button>
+                )}
+              </div>
+            )}
+            {tmdbCandidates.length > 0 && (
+              <div
+                className={styles.candidates}
+                data-testid="lookup-tmdb-candidates"
+              >
+                <ul className={styles.candidateList}>
+                  {tmdbCandidates.map((candidate) => (
+                    <li key={candidate.tmdbId}>
+                      <button
+                        type="button"
+                        className={styles.candidateButton}
+                        data-testid="lookup-tmdb-candidate"
+                        disabled={resolvingTmdbCandidate}
+                        onClick={() => handleSelectTmdbCandidate(candidate)}
+                      >
+                        {candidate.posterUrl && (
+                          <img
+                            src={candidate.posterUrl}
+                            alt=""
+                            className={styles.candidatePoster}
+                          />
+                        )}
+                        <span>
+                          {candidate.title}
+                          {candidate.year != null ? ` (${candidate.year})` : ''}
+                          {candidate.originalTitle != null &&
+                          candidate.originalTitle !== candidate.title
+                            ? ` — ${candidate.originalTitle}`
+                            : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className={styles.candidatesCancelButton}
+                  data-testid="lookup-tmdb-candidates-cancel"
+                  disabled={resolvingTmdbCandidate}
+                  onClick={handleCancelTmdbCandidates}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="alternateTitle">Alternate Title</label>
+            <input
+              id="alternateTitle"
+              type="text"
+              value={form.alternateTitle}
+              onChange={updateField('alternateTitle')}
+            />
           </div>
 
           <div className={styles.field}>
@@ -376,6 +644,16 @@ export function AddSeriesForm({
               type="text"
               value={form.genres}
               onChange={updateField('genres')}
+            />
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="tags">Tags</label>
+            <input
+              id="tags"
+              type="text"
+              value={form.tags}
+              onChange={updateField('tags')}
             />
           </div>
 

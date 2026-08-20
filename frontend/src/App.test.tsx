@@ -17,6 +17,7 @@ const mockUpdate = vi.mocked(seriesApi.update)
 const mockSearch = vi.mocked(seriesApi.search)
 const mockGetById = vi.mocked(seriesApi.getById)
 const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
+const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -205,6 +206,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
     mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
     mockGetRecommendations.mockResolvedValue([])
+    mockGetGenreOptions.mockResolvedValue([])
 
     render(<App />)
     await waitFor(() => screen.getByText('The Office'))
@@ -255,6 +257,7 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
   it('shows the sourcing controls only while the Recommendations view is active', async () => {
     mockGetAll.mockResolvedValue([])
     mockGetRecommendations.mockResolvedValue([])
+    mockGetGenreOptions.mockResolvedValue([])
 
     render(<App />)
     await waitFor(() => screen.getByTestId('add-series-btn'))

@@ -13,8 +13,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'test-id',
     title: 'Test Show',
+    alternateTitle: null,
     year: 2020,
     genres: 'Drama',
+    tags: null,
     totalSeasons: 5,
     totalEpisodes: 50,
     currentSeason: 2,
@@ -326,6 +328,88 @@ describe('FRONTEND-004-AC-30/31/32: server-side error handling', () => {
         0,
       ),
     )
+  })
+})
+
+describe('FRONTEND-017-AC-15/16: Alternate Title pre-populated from the series', () => {
+  it('pre-fills from series.alternateTitle', () => {
+    renderForm({
+      series: makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
+    })
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
+  })
+
+  it('renders blank when series.alternateTitle is null', () => {
+    renderForm({ series: makeSeries({ alternateTitle: null }) })
+    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('')
+  })
+})
+
+describe('FRONTEND-017-AC-17: submission payload includes/omits alternateTitle', () => {
+  it('omits alternateTitle when blank', async () => {
+    const series = makeSeries({ alternateTitle: null })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    expect(mockUpdate.mock.calls[0][1]).not.toHaveProperty('alternateTitle')
+  })
+
+  it('includes a trimmed alternateTitle when populated', async () => {
+    const series = makeSeries({ title: 'MI-5', alternateTitle: null })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+    fireEvent.change(screen.getByLabelText(/alternate title/i), {
+      target: { value: '  Spooks  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    expect(mockUpdate.mock.calls[0][1].alternateTitle).toBe('Spooks')
+  })
+})
+
+describe('FRONTEND-018-AC-09/10: Tags field rendered and pre-filled', () => {
+  it('renders a labelled Tags control pre-filled from the series prop', () => {
+    renderForm({ series: makeSeries({ tags: 'rewatch candidate' }) })
+    expect(screen.getByLabelText(/^tags/i)).toHaveValue('rewatch candidate')
+  })
+
+  it('renders a null tags value as empty', () => {
+    renderForm({ series: makeSeries({ tags: null }) })
+    expect(screen.getByLabelText(/^tags/i)).toHaveValue('')
+  })
+})
+
+describe('FRONTEND-018-AC-12: submission payload includes/omits tags', () => {
+  it('includes a trimmed tags value when changed', async () => {
+    mockUpdate.mockResolvedValue({
+      id: 'test-id',
+      title: 'Test Show',
+    } as Series)
+    renderForm({ series: makeSeries({ tags: null }) })
+    fireEvent.change(screen.getByLabelText(/^tags/i), {
+      target: { value: '  watch with partner  ' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    const payload = mockUpdate.mock.calls[0][1]
+    expect(payload.tags).toBe('watch with partner')
+  })
+
+  it('omits tags from the payload when blank', async () => {
+    mockUpdate.mockResolvedValue({
+      id: 'test-id',
+      title: 'Test Show',
+    } as Series)
+    renderForm({ series: makeSeries({ tags: null }) })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    const payload = mockUpdate.mock.calls[0][1]
+    expect(payload).not.toHaveProperty('tags')
   })
 })
 

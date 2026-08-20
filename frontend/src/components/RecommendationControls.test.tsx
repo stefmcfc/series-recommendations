@@ -6,13 +6,16 @@ import type { Series } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
+const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: '1',
     title: 'Ozark',
+    alternateTitle: null,
     year: 2017,
     genres: 'Crime, Drama',
+    tags: null,
     totalSeasons: 4,
     totalEpisodes: 44,
     currentSeason: null,
@@ -34,6 +37,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetAll.mockResolvedValue([])
+  mockGetGenreOptions.mockResolvedValue([])
 })
 
 describe('FRONTEND-011-AC-03: three-way sourcing mode selector', () => {
@@ -79,54 +83,121 @@ describe('FRONTEND-011-AC-04: Specific Series multi-select via getAll()', () => 
   })
 })
 
-describe('FRONTEND-011-AC-05: Genre & Keyword text inputs and at-least-one hint', () => {
-  it('populates genres/keywords from comma-separated text', () => {
+describe('FRONTEND-014-AC-02: fetches genre options on mount', () => {
+  it('calls seriesApi.getGenreOptions() once on mount', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    expect(mockGetGenreOptions).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-014-AC-03: degrades gracefully if getGenreOptions() rejects', () => {
+  it('does not crash and still renders the rest of the form', async () => {
+    mockGetGenreOptions.mockRejectedValue(new Error('network error'))
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    await waitFor(() => expect(mockGetGenreOptions).toHaveBeenCalled())
+    expect(screen.getByLabelText(/^keywords/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-014-AC-04/05: genre checkbox list', () => {
+  it('renders a checkbox per fetched genre and toggles genresSelected on click', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Action', 'Drama'])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    fireEvent.change(screen.getByLabelText(/^genres/i), {
-      target: { value: 'Drama, Crime ,' },
-    })
 
+    const dramaCheckbox = await screen.findByLabelText('Drama')
+    expect(screen.getByLabelText('Action')).toBeInTheDocument()
+
+    fireEvent.click(dramaCheckbox)
     expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ genres: ['Drama', 'Crime'] }),
+      expect.objectContaining({ genres: ['Drama'] }),
     )
 
+    fireEvent.click(screen.getByLabelText('Action'))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ genres: ['Drama', 'Action'] }),
+    )
+
+    fireEvent.click(dramaCheckbox)
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ genres: ['Action'] }),
+    )
+  })
+})
+
+describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
+  it('does not render a text input labelled Genres', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Action'])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    await screen.findByLabelText('Action')
+
+    expect(
+      screen.queryByRole('textbox', { name: /^genres/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/^keywords/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-014-AC-08: empty genresSelected omits genres from the query', () => {
+  it('omits genres when no checkbox is checked', () => {
+    mockGetGenreOptions.mockResolvedValue(['Action'])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
     fireEvent.change(screen.getByLabelText(/^keywords/i), {
       target: { value: 'heist' },
     })
+
     expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        genres: ['Drama', 'Crime'],
-        keywords: ['heist'],
-      }),
+      expect.not.objectContaining({ genres: expect.anything() }),
     )
   })
+})
 
-  it('shows a hint and omits genres/keywords from the query when both are empty', () => {
-    const onQueryChange = vi.fn()
-    render(<RecommendationControls onQueryChange={onQueryChange} />)
+describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', () => {
+  it('hides the hint once a genre checkbox is checked, shows it again once unchecked', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Drama'])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-
     expect(
       screen.getByText(/enter at least one genre or keyword/i),
     ).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText(/^genres/i), {
-      target: { value: 'Drama' },
-    })
+    const dramaCheckbox = await screen.findByLabelText('Drama')
+    fireEvent.click(dramaCheckbox)
     expect(
       screen.queryByText(/enter at least one genre or keyword/i),
     ).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText(/^genres/i), {
-      target: { value: '' },
-    })
+    fireEvent.click(dramaCheckbox)
     expect(
       screen.getByText(/enter at least one genre or keyword/i),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
+  it('clears checked genres when switching from Genre & Keyword to Specific Series', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Drama'])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    const dramaCheckbox = await screen.findByLabelText('Drama')
+    fireEvent.click(dramaCheckbox)
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ genres: ['Drama'] }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/specific series/i))
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ genres: expect.anything() }),
     )
@@ -134,21 +205,6 @@ describe('FRONTEND-011-AC-05: Genre & Keyword text inputs and at-least-one hint'
 })
 
 describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
-  it('clears genres/keywords when switching from Genre & Keyword to Specific Series', () => {
-    const onQueryChange = vi.fn()
-    render(<RecommendationControls onQueryChange={onQueryChange} />)
-
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    fireEvent.change(screen.getByLabelText(/^genres/i), {
-      target: { value: 'Drama' },
-    })
-    fireEvent.click(screen.getByLabelText(/specific series/i))
-
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.not.objectContaining({ genres: expect.anything() }),
-    )
-  })
-
   it('clears seriesIds when switching from Specific Series to Genre & Keyword', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Ozark' })])
     const onQueryChange = vi.fn()

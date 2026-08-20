@@ -5,6 +5,8 @@ import type {
   UpdateSeriesRequest,
   SearchCriteria,
   OmdbLookupResult,
+  LookupCandidate,
+  LookupTmdbCandidate,
   Recommendation,
   RecommendationQuery,
 } from '../types/series'
@@ -119,6 +121,31 @@ export const seriesApi = {
   lookupByTitle: (title: string): Promise<OmdbLookupResult> =>
     request<{ data: OmdbLookupResult }>(() =>
       client.get('/series/lookup', { params: { title } }),
+    ).then((res) => res.data),
+
+  searchByTitle: (title: string): Promise<LookupCandidate[]> =>
+    request<{ data: LookupCandidate[] }>(() =>
+      client.get('/series/lookup/search', { params: { title } }),
+    ).then((res) => res.data),
+
+  lookupByImdbId: (imdbId: string): Promise<OmdbLookupResult> =>
+    request<{ data: OmdbLookupResult }>(() =>
+      client.get('/series/lookup', { params: { imdbId } }),
+    ).then((res) => res.data),
+
+  searchTmdb: (title: string): Promise<LookupTmdbCandidate[]> =>
+    request<{ data: LookupTmdbCandidate[] }>(() =>
+      client.get('/series/lookup/search-tmdb', { params: { title } }),
+    ).then((res) => res.data),
+
+  resolveTmdbCandidate: (tmdbId: number): Promise<OmdbLookupResult> =>
+    request<{ data: OmdbLookupResult }>(() =>
+      client.get('/series/lookup/resolve-tmdb', { params: { tmdbId } }),
+    ).then((res) => res.data),
+
+  getGenreOptions: (): Promise<string[]> =>
+    request<{ data: string[]; count: number }>(() =>
+      client.get('/series/genres'),
     ).then((res) => res.data),
 
   getRecommendations: (
