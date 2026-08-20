@@ -28,7 +28,8 @@ function makeRecommendation(
     posterUrl: null,
     tmdbRating: 8.4,
     imdbId: 'tt5071412',
-    sourceTitle: null,
+    sourceTitles: [],
+    totalSourceCount: 0,
     ...overrides,
   }
 }
@@ -52,9 +53,12 @@ describe('FRONTEND-010-AC-05/06: fetch on mount, loading state', () => {
 })
 
 describe('FRONTEND-010-AC-08/09/10: display, empty state', () => {
-  it('renders a card per recommendation, with sourceTitle when present', async () => {
+  it('renders a card per recommendation, with sourceTitles when present', async () => {
     mockGetRecommendations.mockResolvedValue([
-      makeRecommendation({ sourceTitle: 'Breaking Bad' }),
+      makeRecommendation({
+        sourceTitles: ['Breaking Bad'],
+        totalSourceCount: 1,
+      }),
     ])
     render(<RecommendationsList />)
 
@@ -69,16 +73,6 @@ describe('FRONTEND-010-AC-08/09/10: display, empty state', () => {
     ).toBeInTheDocument()
   })
 
-  it('does not render "Because you watched" when sourceTitle is null', async () => {
-    mockGetRecommendations.mockResolvedValue([
-      makeRecommendation({ sourceTitle: null }),
-    ])
-    render(<RecommendationsList />)
-
-    await screen.findByText('Ozark')
-    expect(screen.queryByText(/because you watched/i)).not.toBeInTheDocument()
-  })
-
   it('shows an empty-state message when there are no results', async () => {
     mockGetRecommendations.mockResolvedValue([])
     render(<RecommendationsList />)
@@ -86,6 +80,48 @@ describe('FRONTEND-010-AC-08/09/10: display, empty state', () => {
     expect(
       await screen.findByText(/no recommendations yet/i),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-019-AC-05/06: multi-source "Because you watched" label', () => {
+  it('joins sourceTitles with a plain comma when there is no overflow', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({
+        sourceTitles: ['Slow Horses', '24'],
+        totalSourceCount: 2,
+      }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(
+      await screen.findByText('Because you watched Slow Horses, 24'),
+    ).toBeInTheDocument()
+  })
+
+  it('appends "and N more" when totalSourceCount exceeds sourceTitles.length', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({
+        sourceTitles: ['Slow Horses', '24'],
+        totalSourceCount: 3,
+      }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(
+      await screen.findByText('Because you watched Slow Horses, 24 and 1 more'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-019-AC-07: no line when sourceTitles is empty', () => {
+  it('does not render "Because you watched" when sourceTitles is []', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ sourceTitles: [], totalSourceCount: 0 }),
+    ])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    expect(screen.queryByText(/because you watched/i)).not.toBeInTheDocument()
   })
 })
 

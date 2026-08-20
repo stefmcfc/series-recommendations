@@ -348,7 +348,8 @@ describe('FRONTEND-010-AC-03: getRecommendations', () => {
         posterUrl: null,
         tmdbRating: 8.4,
         imdbId: 'tt5071412',
-        sourceTitle: 'Breaking Bad',
+        sourceTitles: ['Breaking Bad'],
+        totalSourceCount: 1,
       },
     ]
     client.get.mockResolvedValue({ data: { data: mockResults, count: 1 } })
@@ -428,6 +429,46 @@ describe('FRONTEND-011-AC-02: getRecommendations with a full query', () => {
       genres: [],
       seriesIds: [],
     })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-019-AC-03: getRecommendations wires maxSourcesShown
+// ---------------------------------------------------------------------------
+describe('FRONTEND-019-AC-03: getRecommendations wires maxSourcesShown', () => {
+  it('includes maxSourcesShown in params when present', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ maxSourcesShown: 2 })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { maxSourcesShown: 2 },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-019-AC-04: getRecommendations wires sortBy
+// ---------------------------------------------------------------------------
+describe('FRONTEND-019-AC-04: getRecommendations wires sortBy', () => {
+  it('includes sortBy when set to recommendationCount', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ sortBy: 'recommendationCount' })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { sortBy: 'recommendationCount' },
+    })
+  })
+
+  it('omits sortBy entirely when absent from the query', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({})
 
     expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
       params: {},

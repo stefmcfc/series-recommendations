@@ -340,6 +340,95 @@ describe('FRONTEND-011-AC-12: every control change triggers onQueryChange, no Ap
   })
 })
 
+describe('FRONTEND-019-AC-08/09: Max Sources Shown filter field', () => {
+  it('renders inside Filters and updates the query when populated', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+
+    fireEvent.change(screen.getByLabelText(/max sources shown/i), {
+      target: { value: '2' },
+    })
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ maxSourcesShown: 2 }),
+    )
+  })
+
+  it('omits maxSourcesShown from the query when left blank', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+
+    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+      target: { value: '7' },
+    })
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ maxSourcesShown: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-019-AC-10: Reset Filters clears Max Sources Shown', () => {
+  it('clears a populated Max Sources Shown field on Reset Filters', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+
+    fireEvent.change(screen.getByLabelText(/max sources shown/i), {
+      target: { value: '2' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+
+    expect(screen.getByLabelText(/max sources shown/i)).toHaveValue(null)
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ maxSourcesShown: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-019-AC-11: Sort By is a top-level control, defaults to Best Match', () => {
+  it('is visible while Filters is collapsed, defaulted to Best Match', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    expect(screen.getByLabelText(/best match/i)).toBeChecked()
+    expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-019-AC-12: selecting Most Recommended sets/unsets sortBy immediately', () => {
+  it('sets sortBy on selection, omits it again once reverted to Best Match', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/most recommended/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortBy: 'recommendationCount' }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/best match/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ sortBy: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-019-AC-13: Reset Filters does not affect Sort By', () => {
+  it('leaves sortBy=recommendationCount in place after Reset Filters', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/most recommended/i))
+    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortBy: 'recommendationCount' }),
+    )
+  })
+})
+
 describe('specific-series fetch failure', () => {
   it('does not crash if seriesApi.getAll() rejects', async () => {
     mockGetAll.mockRejectedValue(new Error('network error'))

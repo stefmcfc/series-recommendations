@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-20
+
+### Changed
+
+- Recommendations now attribute every one of a user's watched series that suggested a candidate, not just one: `RecommendationDto.sourceTitle` (a single string) is replaced by `sourceTitles` (a capped, best-first list) and `totalSourceCount` (the true uncapped count), scoring uses the best-rated contributing source, and the per-source diversity cap gains a configurable `app.recommendations.diversity-cap-mode` (`best-source`/`all-sources`). A new `sortBy=recommendationCount` request param orders results by how many watched series recommended them (`series_spec_015`).
+- `RecommendationsList`'s "Because you watched X" line now shows every contributing source (plain comma-joined) plus an "and N more" suffix when more sources contributed than are shown, in place of a single title. `RecommendationControls` gains a `Max Sources Shown` field in its Filters section and a new top-level `Sort By` control (`Best Match` / `Most Recommended`), consuming the paired backend change above (`frontend_spec_019`).
+
 ## [1.2.0] - 2026-08-20
 
 ### Added

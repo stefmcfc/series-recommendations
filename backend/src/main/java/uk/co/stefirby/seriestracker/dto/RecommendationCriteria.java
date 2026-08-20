@@ -32,6 +32,8 @@ public class RecommendationCriteria {
     private List<String> excludeGenres;
     private String language;
     private Integer maxPerSource;
+    private Integer maxSourcesShown;
+    private String sortBy;
 
     public RecommendationCriteria() {}
 
@@ -67,4 +69,10 @@ public class RecommendationCriteria {
 
     public Integer getMaxPerSource() { return maxPerSource; }
     public void setMaxPerSource(Integer maxPerSource) { this.maxPerSource = maxPerSource; }
+
+    public Integer getMaxSourcesShown() { return maxSourcesShown; }
+    public void setMaxSourcesShown(Integer maxSourcesShown) { this.maxSourcesShown = maxSourcesShown; }
+
+    public String getSortBy() { return sortBy; }
+    public void setSortBy(String sortBy) { this.sortBy = sortBy; }
 }

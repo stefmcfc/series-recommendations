@@ -67,6 +67,9 @@ function buildRecommendationParams(
   if (query.language != null && query.language !== '')
     params.language = query.language
   if (query.maxPerSource != null) params.maxPerSource = query.maxPerSource
+  if (query.maxSourcesShown != null)
+    params.maxSourcesShown = query.maxSourcesShown
+  if (query.sortBy != null) params.sortBy = query.sortBy
   return params
 }
 

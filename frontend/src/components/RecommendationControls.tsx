@@ -4,6 +4,7 @@ import type { RecommendationQuery, Series } from '../types/series'
 import styles from './RecommendationControls.module.css'
 
 type SourceMode = 'automatic' | 'specific' | 'genre'
+type SortByOption = 'score' | 'recommendationCount'
 
 interface RecommendationControlsProps {
   onQueryChange: (query: RecommendationQuery) => void
@@ -22,6 +23,8 @@ interface ControlsState {
   excludeGenresText: string
   language: string
   maxPerSource: string
+  maxSourcesShown: string
+  sortBy: SortByOption
 }
 
 const initialState: ControlsState = {
@@ -37,6 +40,8 @@ const initialState: ControlsState = {
   excludeGenresText: '',
   language: '',
   maxPerSource: '',
+  maxSourcesShown: '',
+  sortBy: 'score',
 }
 
 function parseCommaList(value: string): string[] {
@@ -75,6 +80,10 @@ function buildQuery(state: ControlsState): RecommendationQuery {
   if (state.language.trim() !== '') query.language = state.language.trim()
   if (state.maxPerSource.trim() !== '')
     query.maxPerSource = Number(state.maxPerSource)
+  if (state.maxSourcesShown.trim() !== '')
+    query.maxSourcesShown = Number(state.maxSourcesShown)
+
+  if (state.sortBy === 'recommendationCount') query.sortBy = state.sortBy
 
   return query
 }
@@ -152,7 +161,12 @@ export function RecommendationControls({
       excludeGenresText: '',
       language: '',
       maxPerSource: '',
+      maxSourcesShown: '',
     })
+  }
+
+  const handleSortByChange = (sortBy: SortByOption) => {
+    updateState({ sortBy })
   }
 
   const showGenreKeywordHint =
@@ -196,6 +210,32 @@ export function RecommendationControls({
             onChange={() => handleModeChange('genre')}
           />
           <label htmlFor="source-mode-genre">Genre &amp; Keyword</label>
+        </div>
+      </fieldset>
+
+      <fieldset className={styles.sortByFieldset}>
+        <legend>Sort By</legend>
+
+        <div className={styles.modeOption}>
+          <input
+            id="sort-by-score"
+            type="radio"
+            name="sort-by"
+            checked={state.sortBy === 'score'}
+            onChange={() => handleSortByChange('score')}
+          />
+          <label htmlFor="sort-by-score">Best Match</label>
+        </div>
+
+        <div className={styles.modeOption}>
+          <input
+            id="sort-by-recommendation-count"
+            type="radio"
+            name="sort-by"
+            checked={state.sortBy === 'recommendationCount'}
+            onChange={() => handleSortByChange('recommendationCount')}
+          />
+          <label htmlFor="sort-by-recommendation-count">Most Recommended</label>
         </div>
       </fieldset>
 
@@ -369,6 +409,18 @@ export function RecommendationControls({
                 type="number"
                 value={state.maxPerSource}
                 onChange={updateField('maxPerSource')}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="recommendation-max-sources-shown">
+                Max Sources Shown
+              </label>
+              <input
+                id="recommendation-max-sources-shown"
+                type="number"
+                value={state.maxSourcesShown}
+                onChange={updateField('maxSourcesShown')}
               />
             </div>
 

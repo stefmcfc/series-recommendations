@@ -194,9 +194,11 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                 {r.overview !== null && (
                   <p className={styles.overview}>{r.overview}</p>
                 )}
-                {r.sourceTitle !== null && (
+                {r.sourceTitles.length > 0 && (
                   <p className={styles.sourceTitle}>
-                    Because you watched {r.sourceTitle}
+                    Because you watched {r.sourceTitles.join(', ')}
+                    {r.totalSourceCount > r.sourceTitles.length &&
+                      ` and ${r.totalSourceCount - r.sourceTitles.length} more`}
                   </p>
                 )}
 
