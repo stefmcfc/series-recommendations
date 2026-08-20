@@ -1,6 +1,6 @@
 # Spec 013: `alternateTitle` Field
 
-**Status**: Implemented
+**Status**: Implemented. **Superseded (removed) by `series_spec_017_tmdb_primary_lookup.md`**: with a single TMDB-primary search path, the searched-vs-resolved title ambiguity this field existed to capture mostly disappears; the field, column, and capture logic are deleted. Kept for historical/traceability reference; no AC here is renumbered or deleted.
 **Priority**: P2 (quality-of-life — unblocks a future frontend fix, not core CRUD)
 **Depends on**: `series_spec_001_entity.md` (the original `SeriesEntity`/`title` column this field is modeled on)
 **Backend Task**

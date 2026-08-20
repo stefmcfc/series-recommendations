@@ -1,6 +1,6 @@
 # Frontend Spec 017: Alternate Title
 
-**Status**: Implemented
+**Status**: Implemented. **Superseded (removed) by `frontend_spec_022_tmdb_primary_lookup.md`**: the `alternateTitle` field and its display across `Add`/`EditSeriesForm`, `SeriesList`, and `SeriesDetail` are removed, per the backend field removal in `series_spec_017_tmdb_primary_lookup.md`. Kept for historical/traceability reference; no AC here is renumbered or deleted.
 **Priority**: P2 (quality-of-life / correctness fix for adding series — not core CRUD)
 **Depends on**: Series Spec 013 (`alternateTitle` field) ✅, Frontend Spec 009 (OMDb Autofill & Poster Display) ✅, Frontend Spec 015 (Lookup Candidate Picker) ✅, Frontend Spec 016 (TMDB Lookup Fallback) ✅
 **Frontend Stage**: 17 of N

@@ -1,6 +1,6 @@
 # Frontend Spec 021: TMDB Title as Primary for TMDB-Resolved Lookups
 
-**Status**: ✅ Implemented
+**Status**: ✅ Implemented. **Rendered moot by `frontend_spec_022_tmdb_primary_lookup.md`**: this fix corrected which of two divergent titles won when both an OMDb-first and a TMDB-fallback path could produce a series. With only one search path (and `alternateTitle` removed entirely), the bug class this fixed no longer exists. Kept for historical/traceability reference; no AC here is renumbered or deleted.
 **Priority**: P2 (correctness fix — the alternate-title feature currently inverts which name a user recognizes)
 **Depends on**: Frontend Spec 017 (Alternate Title) ✅, Frontend Spec 016 (TMDB Lookup Fallback) ✅
 

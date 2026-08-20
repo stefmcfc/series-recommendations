@@ -1,10 +1,11 @@
 # Spec 008: Series Lifecycle Data — Exclude Flag, Production Status & Refresh
 
 **Status**: Not started
-**No `frontend/` files are touched by this spec** — the exclude checkbox, refresh button, and production-status badge are `frontend_spec_012_series_lifecycle_controls.md`, a separate follow-up task.
+**No `frontend/` files are touched by this spec** — the exclude checkbox and production-status badge are `frontend_spec_012_series_lifecycle_controls.md`, a separate follow-up task.
 **Priority**: P2 (quality-of-life improvement — not core CRUD)
-**Depends on**: Spec 001 (entity/migration conventions, `SeriesStatus` enum precedent), Spec 003 (`SeriesSearchCriteria`/`SeriesSearchService`, extended by this spec's rewatch filter), Spec 005 (`OmdbClient.lookup`, episode-count aggregation precedent), Spec 006 (`TmdbClient`, `IgnoreOutcome` outcome-record precedent), Spec 007 (adds a filter predicate into the automatic watched-pool sourcing that spec builds)
+**Depends on**: Spec 001 (entity/migration conventions, `SeriesStatus` enum precedent), Spec 003 (`SeriesSearchCriteria`/`SeriesSearchService`, extended by this spec's rewatch filter), Spec 005 (`OmdbClient.lookup`, episode-count aggregation precedent — largely superseded by Spec 017), Spec 006 (`TmdbClient`, `IgnoreOutcome` outcome-record precedent), Spec 007 (adds a filter predicate into the automatic watched-pool sourcing that spec builds)
 **Backend Task**
+**Note**: Requirement 3 (Refresh Information) below is **superseded in full by `series_spec_018_series_refresh.md`** — see that requirement's heading for details. Requirements 1, 2, and 4 are unaffected and remain current.
 
 ## Overview
 
@@ -12,7 +13,7 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 
 1. **`excludeFromRecommendations`** — a persistent per-series flag so a series that's rated fine but isn't representative of taste (a kids' show watched with family, a guilty pleasure) can be kept out of automatic recommendation sourcing without lowering its rating or deleting it.
 2. **`productionStatus`** — a TMDB-sourced, informational field answering "is this show still going?" (`Returning Series`, `Ended`, `Canceled`, `In Production`, `Planned`, `Pilot`), resolved automatically when a series is added. This is deliberately *not* a new value on the existing `SeriesStatus` enum — that enum means "where am I with watching this" (a personal-progress concept), while this is "has the show itself finished being made" (a production-fact concept); conflating them would make `SeriesStatus.COMPLETED` ambiguous between "I've watched everything released" and "the show itself has ended," which `RecommendationService`'s existing `COMPLETED`-as-taste-signal logic (`SERIES-006-AC-14`) depends on staying unambiguous.
-3. **Refresh information** — an on-demand action to re-fetch a tracked series' OMDb-derived fields (episode counts, ratings) and TMDB production status, for when they've gone stale since the series was added.
+3. ~~**Refresh information**~~ — **superseded, see Requirement 3 below.** Now specified in `series_spec_018_series_refresh.md`, which also adds a bulk "refresh everything" job and `lastRefreshedAt` tracking that this spec never covered.
 4. **`flaggedForRewatch`** — a persistent per-series flag so a user can mark a completed series as a rewatch candidate while browsing their list, then filter down to just those later.
 
 **Design decisions**:
@@ -56,18 +57,20 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 
 ---
 
-### Requirement 3: Refresh Information
+### Requirement 3: Refresh Information — SUPERSEDED
+
+**Superseded by `series_spec_018_series_refresh.md` in full.** That spec carries forward the same single-series refresh contract (re-scoped to Spec 017's TMDB-primary/narrowed-OMDb source split) and additionally specifies a bulk "refresh everything" job and `lastRefreshedAt` tracking that were never in scope here. The ACs below are frozen for traceability only — do not implement against them.
 
 **User story**: As a user, I want to refresh a tracked series' episode counts, ratings, and production status on demand, so data that's gone stale since I added it can be brought up to date without deleting and re-adding.
 
 #### Acceptance Criteria
 
-- **SERIES-008-AC-12** [AUTO]: `SeriesController` shall expose `POST /api/v1/series/{id}/refresh`, delegating to a new `SeriesRefreshService.refresh(UUID id)`. If `id` does not match an existing `SeriesEntity`, it shall respond `404 Not Found` (`EntityNotFoundException`, same pattern as `getById`/`update`/`delete`).
-- **SERIES-008-AC-13** [AUTO]: The refresh action shall re-run `OmdbClient.lookup(entity.getTitle())`. On success, it shall update `totalSeasons`, `totalEpisodes`, `imdbRating`, `metacriticRating`, and `rottenTomatoesRating` on the entity from the fresh lookup result. `title`, `genres`, `posterUrl`, `personalRating`, `personalNotes`, `status`, `currentSeason`, `currentEpisode`, `imdbId`, `dateAdded`, and `dateCompleted` shall remain untouched — user- and system-owned fields that a refresh does not overwrite.
-- **SERIES-008-AC-14** [AUTO]: If the OMDb lookup fails (`EntityNotFoundException` or `ExternalServiceException` thrown by `OmdbClient`), the fields listed in `SERIES-008-AC-13` shall be left unchanged, and this alone shall not fail the overall refresh request.
-- **SERIES-008-AC-15** [AUTO]: If the entity's `imdbId` is non-blank, the refresh action shall re-resolve `productionStatus` the same way as `SERIES-008-AC-10`. Failure leaves the existing value unchanged and does not fail the overall request.
-- **SERIES-008-AC-16** [AUTO]: On completion, the endpoint shall respond `200 OK` with `ApiResponse<RefreshResult>`, a new record `RefreshResult(SeriesDto series, boolean omdbRefreshed, boolean tmdbRefreshed)` — mirroring `IgnoreOutcome`'s established pattern (`series_spec_006_recommendations.md` Implementation Notes) of pairing the DTO with outcome metadata the controller can't otherwise derive without duplicating the service's own checks.
-- **SERIES-008-AC-17** [AUTO]: The entity shall be persisted via `repository.save(...)` reflecting whichever of OMDb/TMDB refresh succeeded — a partial success (one source updated, the other not) is a normal outcome, not an error, and is not rolled back.
+- ~~**SERIES-008-AC-12** [AUTO]~~ — superseded by `SERIES-018-AC-01`: `SeriesController` shall expose `POST /api/v1/series/{id}/refresh`, delegating to a new `SeriesRefreshService.refresh(UUID id)`. If `id` does not match an existing `SeriesEntity`, it shall respond `404 Not Found` (`EntityNotFoundException`, same pattern as `getById`/`update`/`delete`).
+- ~~**SERIES-008-AC-13** [AUTO]~~ — superseded by `SERIES-018-AC-02`/`AC-03` (OMDb-derived fields split differently under the TMDB-primary source order): The refresh action shall re-run `OmdbClient.lookup(entity.getTitle())`. On success, it shall update `totalSeasons`, `totalEpisodes`, `imdbRating`, `metacriticRating`, and `rottenTomatoesRating` on the entity from the fresh lookup result. `title`, `genres`, `posterUrl`, `personalRating`, `personalNotes`, `status`, `currentSeason`, `currentEpisode`, `imdbId`, `dateAdded`, and `dateCompleted` shall remain untouched — user- and system-owned fields that a refresh does not overwrite.
+- ~~**SERIES-008-AC-14** [AUTO]~~ — superseded by `SERIES-018-AC-06`: If the OMDb lookup fails (`EntityNotFoundException` or `ExternalServiceException` thrown by `OmdbClient`), the fields listed in `SERIES-008-AC-13` shall be left unchanged, and this alone shall not fail the overall refresh request.
+- ~~**SERIES-008-AC-15** [AUTO]~~ — superseded by `SERIES-018-AC-02`/`AC-05`: If the entity's `imdbId` is non-blank, the refresh action shall re-resolve `productionStatus` the same way as `SERIES-008-AC-10`. Failure leaves the existing value unchanged and does not fail the overall request.
+- ~~**SERIES-008-AC-16** [AUTO]~~ — superseded by `SERIES-018-AC-07`: On completion, the endpoint shall respond `200 OK` with `ApiResponse<RefreshResult>`, a new record `RefreshResult(SeriesDto series, boolean omdbRefreshed, boolean tmdbRefreshed)` — mirroring `IgnoreOutcome`'s established pattern (`series_spec_006_recommendations.md` Implementation Notes) of pairing the DTO with outcome metadata the controller can't otherwise derive without duplicating the service's own checks.
+- ~~**SERIES-008-AC-17** [AUTO]~~ — superseded by `SERIES-018-AC-08`: The entity shall be persisted via `repository.save(...)` reflecting whichever of OMDb/TMDB refresh succeeded — a partial success (one source updated, the other not) is a normal outcome, not an error, and is not rolled back.
 
 ---
 
@@ -89,7 +92,8 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 | This spec | Source |
 |-----------|--------|
 | `IgnoreOutcome` outcome-record pattern, `TmdbClient`/`OmdbClient` `RestClient` conventions, `ExternalServiceException`, never-fail-the-request-on-a-graceful-degradation policy | `series_spec_006_recommendations.md` |
-| `OmdbClient.lookup(String title)`, `OMDB_MAX_SEASONS_FOR_EPISODE_COUNT`/episode-count aggregation this refresh re-triggers | `series_spec_005_omdb_lookup.md` |
+| `OmdbClient.lookup(String title)`, `OMDB_MAX_SEASONS_FOR_EPISODE_COUNT`/episode-count aggregation (superseded reference — Requirement 3 itself is superseded, see above) | `series_spec_005_omdb_lookup.md` |
+| Current refresh design (single + bulk), `lastRefreshedAt` | `series_spec_018_series_refresh.md` |
 | `SeriesEntity`/Flyway migration conventions, `SeriesStatus` enum as the precedent for a new fixed-vocabulary enum, `genres` free-text-vs-enum rationale | `series_spec_001_entity.md` |
 | Automatic watched-pool sourcing (`SERIES-006-AC-14`) that `SERIES-008-AC-04` adds a filter predicate into; explicit `seriesIds` override that `SERIES-008-AC-05` deliberately does not filter | `series_spec_007_recommendation_sourcing.md` Requirements 4/6 |
 | Never-leak-internals policy for upstream failures | `tooling_spec_001_code_quality_security.md` Requirement 1 |
@@ -279,12 +283,12 @@ def "SERIES-008-AC-20: flaggedForRewatch unset returns everything, same as today
 - [ ] SERIES-008-AC-09: `SeriesDto.productionStatus`, output-only
 - [ ] SERIES-008-AC-10: resolved at create time, non-fatal on failure
 - [ ] SERIES-008-AC-11: not auto-re-resolved on update/PATCH
-- [ ] SERIES-008-AC-12: `POST /api/v1/series/{id}/refresh` endpoint, 404 on unknown id
-- [ ] SERIES-008-AC-13: refresh updates OMDb-derived fields only
-- [ ] SERIES-008-AC-14: OMDb failure leaves fields unchanged, non-fatal
-- [ ] SERIES-008-AC-15: refresh re-resolves `productionStatus`, non-fatal on failure
-- [ ] SERIES-008-AC-16: `200` + `ApiResponse<RefreshResult>`
-- [ ] SERIES-008-AC-17: partial success persisted, not rolled back
+- [ ] ~~SERIES-008-AC-12~~: superseded, not implementable — see SERIES-018-AC-01
+- [ ] ~~SERIES-008-AC-13~~: superseded, not implementable — see SERIES-018-AC-02/AC-03
+- [ ] ~~SERIES-008-AC-14~~: superseded, not implementable — see SERIES-018-AC-06
+- [ ] ~~SERIES-008-AC-15~~: superseded, not implementable — see SERIES-018-AC-02/AC-05
+- [ ] ~~SERIES-008-AC-16~~: superseded, not implementable — see SERIES-018-AC-07
+- [ ] ~~SERIES-008-AC-17~~: superseded, not implementable — see SERIES-018-AC-08
 - [ ] SERIES-008-AC-18: `flaggedForRewatch` column (`V005` migration)
 - [ ] SERIES-008-AC-19: `SeriesDto.flaggedForRewatch` (boxed `Boolean`), same partial-update semantics as `excludeFromRecommendations`
 - [ ] SERIES-008-AC-20: `SeriesSearchCriteria.flaggedForRewatch` filter

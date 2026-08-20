@@ -1,6 +1,6 @@
 # Frontend Spec 016: TMDB Lookup Fallback
 
-**Status**: Complete
+**Status**: Complete. **Superseded by `frontend_spec_022_tmdb_primary_lookup.md`**: this spec's "Search TMDB instead" escape hatch is promoted to the only "Look Up" behavior — the escape-hatch button itself is removed since there's no other path to escape from; the underlying search/candidate-picker/resolve UI it built stays, unchanged. Kept for historical/traceability reference; no AC here is renumbered or deleted.
 **Priority**: P2 (quality-of-life / correctness fix for adding series — not core CRUD)
 **Depends on**: Frontend Spec 015 (Lookup Candidate Picker) ✅, Series Spec 012 (`GET /series/lookup/search-tmdb`, `GET /series/lookup/resolve-tmdb`)
 **Frontend Stage**: 16 of N

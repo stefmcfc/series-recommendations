@@ -1,6 +1,6 @@
 # Frontend Spec 015: Lookup Candidate Picker
 
-**Status**: Done
+**Status**: Done. **Superseded (removed) by `frontend_spec_022_tmdb_primary_lookup.md`**: the OMDb candidate picker this spec built is removed — TMDB search (`frontend_spec_016`'s picker) is the sole path now. Kept for historical/traceability reference; no AC here is renumbered or deleted.
 **Priority**: P2 (quality-of-life / correctness fix for adding series — not core CRUD)
 **Depends on**: Frontend Spec 009 (OMDb Autofill & Poster Display) ✅, Series Spec 011 (`GET /series/lookup/search`, `GET /series/lookup?imdbId=`)
 **Frontend Stage**: 15 of N

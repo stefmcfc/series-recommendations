@@ -1,6 +1,6 @@
 # Spec 012: TMDB Search Lookup Fallback (AKA-Matching Escape Hatch)
 
-**Status**: Implemented
+**Status**: Implemented. **Superseded by `series_spec_017_tmdb_primary_lookup.md`**: this spec's TMDB-fallback escape hatch (`search-tmdb`/`resolve-tmdb`) is promoted from a fallback to the sole/primary lookup path, and `resolveTmdbCandidate`'s "try OMDb first" priority inverts to "TMDB is the base, OMDb is best-effort enrichment only." The endpoints and their routes are unchanged; only the internal data-source priority changes. Kept for historical/traceability reference; no AC here is renumbered or deleted.
 **Priority**: P2 (quality-of-life / correctness fix for adding series — not core CRUD)
 **Depends on**: `series_spec_011_omdb_search_candidates.md` (✅ Implemented), `series_spec_010_genre_dropdown.md` (✅ Implemented, for the `TmdbGenreTable` Spring bean this spec injects into `SeriesLookupService`)
 **Backend Task**
