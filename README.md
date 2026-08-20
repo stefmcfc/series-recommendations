@@ -95,12 +95,39 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 006 | `SearchFilter` (search & filter UI) | ✅ Done |
 | Frontend 007 | `ExportControls` (export trigger) | ✅ Done |
 | Frontend 008 | Accessible row interactions (`SeriesList` nested-interactive fix) | ✅ Done |
-| Frontend 009 | OMDb autofill & poster display (`AddSeriesForm` Look Up + poster preview, `EditSeriesForm`/`SeriesDetail`/`SeriesList` poster display) | ✅ Done |
-| Backend 005 | OMDb lookup & poster field | ✅ Done |
-| Backend 006 | Series recommendations (TMDB-sourced, ignore list) | ✅ Done (backend only — see Frontend 010) |
+| Frontend 009 | OMDb autofill & poster display (`AddSeriesForm` Look Up + poster preview, `EditSeriesForm`/`SeriesDetail`/`SeriesList` poster display) | ✅ Done — superseded, see Frontend 022 |
+| Backend 005 | OMDb lookup & poster field | ✅ Done — largely superseded, see Backend 017 |
+| Backend 006 | Series recommendations (TMDB-sourced, ignore list) | ✅ Done |
 | Frontend 010 | Recommendations UI (`RecommendationsList`, `AddSeriesForm` `initialValues` prefill, nav toggle) | ✅ Done |
-| Frontend 017 | Alternate title UI (`AddSeriesForm`/`EditSeriesForm` editable field, OMDb/TMDB lookup mismatch capture, `SeriesList`/`SeriesDetail` display) | ✅ Done |
+| Backend 007 | Directed recommendation sourcing, rating-weighted ranking, diversity cap, output filters | ✅ Done |
+| Frontend 011 | `RecommendationControls` (sourcing mode, output filters) | ✅ Done |
+| Backend 010 | `GET /series/genres` genre vocabulary endpoint | ✅ Done |
+| Frontend 014 | Genre checkbox list (replaces free-text genre sourcing) | ✅ Done |
+| Backend 011 | OMDb search candidates & disambiguated lookup | ✅ Done — superseded, see Backend 017 |
+| Frontend 015 | Lookup candidate picker (`AddSeriesForm`) | ✅ Done — superseded, see Frontend 022 |
+| Backend 012 | TMDB search fallback & resolve | ✅ Done — superseded, see Backend 017 |
+| Frontend 016 | TMDB lookup fallback UI (`AddSeriesForm` "Search TMDB instead") | ✅ Done — superseded, see Frontend 022 |
+| Backend 013 | `alternateTitle` field | ✅ Done — removed, see Backend 017 |
+| Frontend 017 | Alternate title UI (`AddSeriesForm`/`EditSeriesForm` editable field, OMDb/TMDB lookup mismatch capture, `SeriesList`/`SeriesDetail` display) | ✅ Done — removed, see Frontend 022 |
+| Backend 014 | `tags` field | ✅ Done |
 | Frontend 018 | User-defined tags UI (`AddSeriesForm`/`EditSeriesForm` editable field, `SeriesDetail` display) | ✅ Done |
+| Backend 015 | Multi-source recommendation attribution, `sortBy=recommendationCount` | ✅ Done |
+| Frontend 019 | Multi-source recommendation display (`RecommendationsList` "and N more", `Sort By`/`Max Sources Shown` controls) | ✅ Done |
+| Backend 016 | Recommendation TMDB rating & vote count | ✅ Done |
+| Frontend 020 | Recommendation rating/vote-count display | ✅ Done |
+| Frontend 021 | TMDB-primary title fix (TMDB search fallback keeps searched title as primary) | ✅ Done — folded into Frontend 022 |
+| Backend 008 | Series lifecycle data (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`) | ⬜ Not started — Requirement 3 (Refresh) superseded, see Backend 018 |
+| Frontend 012 | Series lifecycle controls (exclude checkbox, production-status badge, rewatch toggle/filter) | ⬜ Not started — Requirement 4 (Refresh) superseded, see Frontend 023 |
+| Backend 009 | Sort by personal rating (`sortBy`/`sortDirection` on listing endpoints) | ⬜ Not started |
+| Frontend 013 | Star ratings & sort (`StarRating` component, `SeriesList` sort control) | ⬜ Not started |
+| Backend 017 | TMDB-primary lookup & rating sourcing (TMDB search/resolve as sole lookup path; OMDb narrowed to a single `imdbRating`/`rottenTomatoesRating` enrichment call; drops `metacriticRating`/`alternateTitle`; adds `tmdbRating`/`tmdbVoteCount`) | ⬜ Not started |
+| Frontend 022 | TMDB-primary lookup UI (single TMDB search/candidate-picker flow, drops the OMDb picker, "Search TMDB instead" escape hatch, and alternate-title/Metacritic fields) | ⬜ Not started |
+| Backend 018 | Series refresh — single (`POST /series/{id}/refresh`) + bulk (`POST`/`GET /series/refresh-all`) async job, rate-limited, `lastRefreshedAt` tracking | ⬜ Not started |
+| Frontend 023 | Series refresh UI (`SeriesDetail` Refresh button, `SeriesList` "Refresh All" with progress polling/reload-safe state, relative-time display) | ⬜ Not started |
+| Backend 019 | Keyword tracking (normalized `keyword`/`series_keyword` tables from TMDB, `GET /series/keywords` stats endpoint, keyword search filter) | ⬜ Not started |
+| Frontend 024 | Keyword tracking UI (`SeriesDetail` keyword chips, sortable keyword stats view, `SearchFilter` keyword filter) | ⬜ Not started |
+| Backend 020 | Watch providers (TMDB/JustWatch streaming availability, UK-region default, attached to recommendation candidates) | ⬜ Not started |
+| Frontend 025 | Watch providers UI (`RecommendationsList` streaming badges, JustWatch attribution) | ⬜ Not started |
 
 ## Future Ideas
 

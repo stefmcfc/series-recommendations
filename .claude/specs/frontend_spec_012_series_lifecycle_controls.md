@@ -1,18 +1,18 @@
 # Frontend Spec 012: Exclude Flag, Production Status, Refresh & Rewatch Flag
 
 **Status**: Not started
-**Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Series Spec 008 (`excludeFromRecommendations`, `productionStatus`, `POST /series/{id}/refresh`, `flaggedForRewatch`)
+**Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Series Spec 008 (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`)
 **Frontend Stage**: 12 of N
+**Note**: Requirement 4 (Refresh Action) below is **superseded in full by `frontend_spec_023_series_refresh.md`** — see that requirement's heading for details. Requirements 1–3 and 5 are unaffected and remain current.
 
 ## Overview
 
-Surfaces Series Spec 008's additions in the UI: an "Exclude from recommendations" checkbox on `AddSeriesForm`/`EditSeriesForm`, a production-status badge on `SeriesDetail`, a "Refresh" action on `SeriesDetail` that re-fetches OMDb/TMDB data and reports what changed, and a rewatch-flag toggle plus filter so a user can mark completed series as rewatch candidates while browsing and filter down to just those later.
+Surfaces Series Spec 008's additions in the UI: an "Exclude from recommendations" checkbox on `AddSeriesForm`/`EditSeriesForm`, a production-status badge on `SeriesDetail`, ~~a "Refresh" action on `SeriesDetail` that re-fetches OMDb/TMDB data and reports what changed~~ (superseded, see Requirement 4), and a rewatch-flag toggle plus filter so a user can mark completed series as rewatch candidates while browsing and filter down to just those later.
 
 **Design decisions**:
 - **The exclude checkbox lives in both `AddSeriesForm` and `EditSeriesForm`**, not only `EditSeriesForm` — a user may already know at add-time that a series shouldn't feed recommendations (e.g. adding a kids' show watched with family).
 - **Production status is display-only**, matching the backend's read-only contract (`SERIES-008-AC-09`) — there is no form control for it anywhere.
-- **Refresh feedback is a single inline message summarizing both outcomes** (e.g. "Ratings updated. Production status unchanged."), built from `RefreshResult.omdbRefreshed`/`tmdbRefreshed`, rather than two separate indicators — a partial refresh is a normal outcome (`SERIES-008-AC-17`), not something that needs alarming treatment.
-- **Refresh is only on `SeriesDetail`, not `SeriesList`'s row actions.** Refreshing is a deliberate, occasional action on one series at a time, not a bulk operation — `SeriesDetail` is already the "everything about one series" view, matching where Edit/Delete already live (Frontend Spec 005).
+- ~~Refresh feedback is a single inline message summarizing both outcomes...~~ — superseded, see Requirement 4 and `frontend_spec_023_series_refresh.md` (which also adds a bulk "Refresh All" on `SeriesList`, deliberately not ruled out here).
 - **The rewatch toggle is the inverse placement of the exclude checkbox: `SeriesList` (inline, per row) and `SeriesDetail`, not `Add`/`EditSeriesForm`.** Flagging a series for rewatch only makes sense once it's `COMPLETED` — you can't know you want to rewatch something you haven't finished — and it's fundamentally a "scan through my finished list and flag a few" activity, not something decided while filling in a form. Requiring a modal open per flag would add real friction to that workflow; an inline row toggle doesn't.
 - **The rewatch toggle is only rendered for `COMPLETED` rows/series**, even though the backend places no such restriction (`SERIES-008-AC-21`) — a UI-only choice to keep the control meaningful, not a data constraint. Nothing stops a future spec from relaxing this.
 
@@ -27,8 +27,8 @@ Surfaces Series Spec 008's additions in the UI: an "Exclude from recommendations
 #### Acceptance Criteria
 
 - **FRONTEND-012-AC-01** [AUTO]: `src/types/series.ts` shall gain `excludeFromRecommendations: boolean` and `productionStatus: string | null` on `Series`, and `excludeFromRecommendations?: boolean` on `CreateSeriesRequest`/`UpdateSeriesRequest` (`productionStatus` is not added to either request type — it is output-only, `SERIES-008-AC-09`).
-- **FRONTEND-012-AC-02** [AUTO]: `src/types/series.ts` shall gain a `RefreshResult` interface: `series: Series`, `omdbRefreshed: boolean`, `tmdbRefreshed: boolean` (mirroring `RefreshResult`, Series Spec 008 AC-16).
-- **FRONTEND-012-AC-03** [AUTO]: `seriesApi` shall gain `refresh: (id: string) => Promise<RefreshResult>`, calling `POST /series/{id}/refresh` and unwrapping the `{ data: RefreshResult }` envelope.
+- ~~**FRONTEND-012-AC-02** [AUTO]~~ — superseded by `FRONTEND-023-AC-02`: `src/types/series.ts` shall gain a `RefreshResult` interface: `series: Series`, `omdbRefreshed: boolean`, `tmdbRefreshed: boolean` (mirroring `RefreshResult`, Series Spec 008 AC-16).
+- ~~**FRONTEND-012-AC-03** [AUTO]~~ — superseded by `FRONTEND-023-AC-03`: `seriesApi` shall gain `refresh: (id: string) => Promise<RefreshResult>`, calling `POST /series/{id}/refresh` and unwrapping the `{ data: RefreshResult }` envelope.
 
 ---
 
@@ -53,16 +53,18 @@ Surfaces Series Spec 008's additions in the UI: an "Exclude from recommendations
 
 ---
 
-### Requirement 4: Refresh Action
+### Requirement 4: Refresh Action — SUPERSEDED
+
+**Superseded by `frontend_spec_023_series_refresh.md` in full.** That spec carries forward the same single-series Refresh button on `SeriesDetail` (re-scoped to the current backend contract) and additionally adds a bulk "Refresh All" on `SeriesList` with progress polling and "last refreshed" timestamps that were never in scope here. The ACs below are frozen for traceability only — do not implement against them.
 
 **User story**: As a user, I want to refresh a series' episode counts, ratings, and production status on demand, so stale data doesn't linger indefinitely.
 
 #### Acceptance Criteria
 
-- **FRONTEND-012-AC-07** [AUTO]: `SeriesDetail` shall render a "Refresh" button (alongside the existing Edit/Delete actions) that calls `seriesApi.refresh(id)`.
-- **FRONTEND-012-AC-08** [AUTO]: While the refresh call is in flight, the button shall show a busy state ("Refreshing...") and be disabled, following the same pattern as the existing Delete-confirmation busy state.
-- **FRONTEND-012-AC-09** [AUTO]: On success, `SeriesDetail` shall update its displayed data from `RefreshResult.series` and show an inline summary message built from `omdbRefreshed`/`tmdbRefreshed` (e.g. both true → "Ratings and production status updated."; one true → naming only that one; both false → "No new data available.").
-- **FRONTEND-012-AC-10** [AUTO]: If `seriesApi.refresh` rejects, `SeriesDetail` shall display an error message (`role="alert"`) and leave the currently-displayed data unchanged.
+- ~~**FRONTEND-012-AC-07** [AUTO]~~ — superseded by `FRONTEND-023-AC-05`: `SeriesDetail` shall render a "Refresh" button (alongside the existing Edit/Delete actions) that calls `seriesApi.refresh(id)`.
+- ~~**FRONTEND-012-AC-08** [AUTO]~~ — superseded by `FRONTEND-023-AC-06`: While the refresh call is in flight, the button shall show a busy state ("Refreshing...") and be disabled, following the same pattern as the existing Delete-confirmation busy state.
+- ~~**FRONTEND-012-AC-09** [AUTO]~~ — superseded by `FRONTEND-023-AC-07`: On success, `SeriesDetail` shall update its displayed data from `RefreshResult.series` and show an inline summary message built from `omdbRefreshed`/`tmdbRefreshed` (e.g. both true → "Ratings and production status updated."; one true → naming only that one; both false → "No new data available.").
+- ~~**FRONTEND-012-AC-10** [AUTO]~~ — superseded by `FRONTEND-023-AC-08`: If `seriesApi.refresh` rejects, `SeriesDetail` shall display an error message (`role="alert"`) and leave the currently-displayed data unchanged.
 
 ---
 
@@ -85,7 +87,7 @@ Surfaces Series Spec 008's additions in the UI: an "Exclude from recommendations
 | This spec | Source |
 |-----------|--------|
 | `excludeFromRecommendations`, `productionStatus`, `ProductionStatus` enum values | `series_spec_008_series_lifecycle_data.md` Requirements 1–2 |
-| `POST /series/{id}/refresh`, `RefreshResult` shape | `series_spec_008_series_lifecycle_data.md` Requirement 3 |
+| Current refresh design (single + bulk, `lastRefreshedAt`) — superseded reference, Requirement 4 above is frozen | `frontend_spec_023_series_refresh.md`, `series_spec_018_series_refresh.md` |
 | `flaggedForRewatch` field, `SeriesSearchCriteria` filter, no server-side status restriction | `series_spec_008_series_lifecycle_data.md` Requirement 4 |
 | `AddSeriesForm`/`EditSeriesForm` field/payload conventions being extended | `frontend_spec_003_add_series_form.md`, `frontend_spec_004_edit_delete_series.md` |
 | `SeriesDetail`'s `formatValue` null-dash convention, existing Edit/Delete action placement | `frontend_spec_005_series_detail.md` |
@@ -264,15 +266,15 @@ describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
 ## Acceptance Criteria Summary
 
 - [ ] FRONTEND-012-AC-01: `excludeFromRecommendations`/`productionStatus` on `Series`/request types
-- [ ] FRONTEND-012-AC-02: `RefreshResult` type
-- [ ] FRONTEND-012-AC-03: `seriesApi.refresh`
+- [ ] ~~FRONTEND-012-AC-02~~: superseded, not implementable — see FRONTEND-023-AC-02
+- [ ] ~~FRONTEND-012-AC-03~~: superseded, not implementable — see FRONTEND-023-AC-03
 - [ ] FRONTEND-012-AC-04: `AddSeriesForm` exclude checkbox, omitted unless checked
 - [ ] FRONTEND-012-AC-05: `EditSeriesForm` exclude checkbox, always sent explicitly
 - [ ] FRONTEND-012-AC-06: `SeriesDetail` production-status label / dash
-- [ ] FRONTEND-012-AC-07: Refresh button on `SeriesDetail`
-- [ ] FRONTEND-012-AC-08: busy state while refreshing
-- [ ] FRONTEND-012-AC-09: success updates data + summary message
-- [ ] FRONTEND-012-AC-10: failure shows alert, data unchanged
+- [ ] ~~FRONTEND-012-AC-07~~: superseded, not implementable — see FRONTEND-023-AC-05
+- [ ] ~~FRONTEND-012-AC-08~~: superseded, not implementable — see FRONTEND-023-AC-06
+- [ ] ~~FRONTEND-012-AC-09~~: superseded, not implementable — see FRONTEND-023-AC-07
+- [ ] ~~FRONTEND-012-AC-10~~: superseded, not implementable — see FRONTEND-023-AC-08
 - [ ] FRONTEND-012-AC-11: `flaggedForRewatch` on `Series`/`UpdateSeriesRequest`/`SearchCriteria`
 - [ ] FRONTEND-012-AC-12: `SeriesList` rewatch toggle, `COMPLETED` rows only
 - [ ] FRONTEND-012-AC-13: `SeriesDetail` rewatch toggle, `COMPLETED` only
