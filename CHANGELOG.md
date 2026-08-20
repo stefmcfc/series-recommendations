@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-20
+
 ### Added
 
 - Directed recommendation sourcing: base suggestions on specific tracked series, or on a genre/keyword directly, independent of watch history (`series_spec_007`, `frontend_spec_011`).
