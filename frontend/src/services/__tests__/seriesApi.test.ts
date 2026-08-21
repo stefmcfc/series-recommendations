@@ -78,6 +78,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     imdbId: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
+    lastRefreshedAt: null,
+    originCountry: null,
+    productionStatus: null,
     ...overrides,
   }
 }
@@ -226,6 +229,61 @@ describe('SH-006: search', () => {
   it('should return empty array on no matches without throwing', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
     expect(await seriesApi.search({ title: 'nonexistent' })).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-023-AC-03: refresh(), refreshAll(), getRefreshStatus()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-023-AC-03: refresh', () => {
+  it('should POST /series/{id}/refresh and unwrap { data: RefreshResult }', async () => {
+    const mockResult = {
+      series: makeSeries({ id: 'abc-123', title: 'The Office' }),
+      omdbRefreshed: true,
+      tmdbRefreshed: false,
+    }
+    client.post.mockResolvedValue({ data: { data: mockResult } })
+
+    const result = await seriesApi.refresh('abc-123')
+
+    expect(client.post).toHaveBeenCalledWith('/series/abc-123/refresh')
+    expect(result).toEqual(mockResult)
+  })
+})
+
+describe('FRONTEND-023-AC-03: refreshAll', () => {
+  it('should POST /series/refresh-all and unwrap { data: RefreshJobStatus }', async () => {
+    const mockStatus = {
+      status: 'IN_PROGRESS',
+      totalCount: 10,
+      completedCount: 0,
+      startedAt: '2026-01-01T00:00:00Z',
+      finishedAt: null,
+    }
+    client.post.mockResolvedValue({ data: { data: mockStatus } })
+
+    const result = await seriesApi.refreshAll()
+
+    expect(client.post).toHaveBeenCalledWith('/series/refresh-all')
+    expect(result).toEqual(mockStatus)
+  })
+})
+
+describe('FRONTEND-023-AC-03: getRefreshStatus', () => {
+  it('should GET /series/refresh-all/status and unwrap { data: RefreshJobStatus }', async () => {
+    const mockStatus = {
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      startedAt: null,
+      finishedAt: null,
+    }
+    client.get.mockResolvedValue({ data: { data: mockStatus } })
+
+    const result = await seriesApi.getRefreshStatus()
+
+    expect(client.get).toHaveBeenCalledWith('/series/refresh-all/status')
+    expect(result).toEqual(mockStatus)
   })
 })
 

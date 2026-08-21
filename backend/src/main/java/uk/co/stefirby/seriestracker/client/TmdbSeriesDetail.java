@@ -28,6 +28,10 @@ import java.util.List;
  * SeriesRefreshService}'s refresh already calls {@link TmdbClient#details(int)} for the other
  * TMDB-sourced fields above; a second call per refreshed series would needlessly double TMDB
  * traffic during a rate-limited bulk refresh (see {@code series_spec_018_series_refresh.md}).
+ *
+ * <p>{@code originCountry} (SERIES-021-AC-02) is the first entry of this same endpoint's
+ * {@code origin_country} array -- {@code null} when absent or empty -- see
+ * {@code series_spec_021_origin_country.md}.
  */
 public record TmdbSeriesDetail(
     String title,
@@ -38,6 +42,7 @@ public record TmdbSeriesDetail(
     Integer numberOfEpisodes,
     BigDecimal voteAverage,
     Integer voteCount,
-    ProductionStatus productionStatus
+    ProductionStatus productionStatus,
+    String originCountry
 ) {
 }

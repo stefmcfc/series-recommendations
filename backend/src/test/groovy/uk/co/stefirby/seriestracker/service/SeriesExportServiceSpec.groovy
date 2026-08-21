@@ -163,8 +163,9 @@ class SeriesExportServiceSpec extends Specification {
 
         then: "the header row has one column per series field"
             // 17 original fields (minus metacriticRating, which was removed by SERIES-017)
-            // + tags (SERIES-014) + tmdbRating/tmdbVoteCount (SERIES-017)
-            headerCols == 19
+            // + tags (SERIES-014) + tmdbRating/tmdbVoteCount (SERIES-017) + originCountry
+            // (SERIES-021)
+            headerCols == 20
     }
 
     def "SERIES-005-AC-04: exportAsCsv includes posterUrl values"() {
@@ -277,5 +278,41 @@ class SeriesExportServiceSpec extends Specification {
 
         then: "the row does not contain the literal string null"
             !csv.contains("null")
+    }
+
+    def "SERIES-021-AC-10: CSV headers include originCountry"() {
+        when: "a CSV export is generated"
+            def csv = exportService.exportAsCsv([])
+
+        then: "the header row includes originCountry"
+            csv.readLines().first().contains("originCountry")
+    }
+
+    def "SERIES-021-AC-10: exportAsCsv includes an originCountry value"() {
+        given: "a series with an originCountry value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "The Office (UK)", originCountry: "GB"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+
+        then: "the header includes originCountry and a row contains its value"
+            lines[0].contains("originCountry")
+            csv.contains("GB")
+    }
+
+    def "SERIES-021-AC-10: exportAsJson includes originCountry"() {
+        given: "a series with an originCountry value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "The Office (UK) 2", originCountry: "GB"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
+            def office = parsed.get('series').find { it.get('title').textValue() == 'The Office (UK) 2' }
+
+        then: "the exported JSON includes the originCountry field"
+            office.get('originCountry').textValue() == 'GB'
     }
 }

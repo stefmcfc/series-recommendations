@@ -155,6 +155,35 @@ class SeriesServiceSpec extends Specification {
         result.tmdbVoteCount == null
   }
 
+  def "SERIES-021-AC-06/08: create persists originCountry and productionStatus unchanged from the incoming dto"() {
+    given: "a SeriesDto with originCountry and productionStatus set"
+        def dto = new SeriesDto(title: "The Office", originCountry: "GB", productionStatus: "ENDED")
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "both fields are persisted unchanged"
+        created.originCountry == "GB"
+        created.productionStatus == "ENDED"
+
+    and: "both fields are retrievable after persistence"
+        def fetched = seriesService.getById(created.id)
+        fetched.originCountry == "GB"
+        fetched.productionStatus == "ENDED"
+  }
+
+  def "SERIES-021-AC-06/08: create leaves originCountry/productionStatus null when unset"() {
+    given: "a SeriesDto with no originCountry/productionStatus"
+        def dto = new SeriesDto(title: "No Origin Country Show")
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "both fields are null, like other unset optional fields"
+        created.originCountry == null
+        created.productionStatus == null
+  }
+
   def "SERIES-014-AC-06/07: tags flows through create and is persisted"() {
     given: "a SeriesDto with tags set"
         def dto = new SeriesDto(title: "The Wire", tags: "rewatch candidate,background watching")

@@ -16,6 +16,10 @@ public class TmdbLookupCandidateDto {
     private String originalTitle;
     private String posterUrl;
 
+    // series_spec_021_origin_country.md (SERIES-021-AC-03): the candidate's first
+    // origin_country entry, letting a user disambiguate same-title remakes before picking one.
+    private String originCountry;
+
     public TmdbLookupCandidateDto() {}
 
     public int getTmdbId() { return tmdbId; }
@@ -32,4 +36,7 @@ public class TmdbLookupCandidateDto {
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }
+
+    public String getOriginCountry() { return originCountry; }
+    public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
 }

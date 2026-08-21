@@ -193,7 +193,8 @@ public class TmdbClient {
             toInteger(body.get("number_of_episodes")),
             toBigDecimal(body.get("vote_average")),
             toInteger(body.get("vote_count")),
-            ProductionStatus.fromTmdbStatus(str(body.get("status"))).orElse(null)
+            ProductionStatus.fromTmdbStatus(str(body.get("status"))).orElse(null),
+            firstOriginCountry(body.get("origin_country"))
         );
     }
 
@@ -277,7 +278,8 @@ public class TmdbClient {
                 originalTitle,
                 extractYear(str(item.get("first_air_date"))),
                 str(item.get("poster_path")),
-                toIntegerList(item.get("genre_ids"))
+                toIntegerList(item.get("genre_ids")),
+                firstOriginCountry(item.get("origin_country"))
             ));
         }
         return candidates;
@@ -304,6 +306,20 @@ public class TmdbClient {
             }
         }
         return ids;
+    }
+
+    /**
+     * Extracts the first entry of TMDB's {@code origin_country} array (SERIES-021-AC-01/02) --
+     * only the first entry is kept, per {@code series_spec_021_origin_country.md}'s design
+     * decision, mirroring {@link #findTvIdByImdbId(String)}'s own existing precedent of taking
+     * an array response's first entry. {@code null} when the field is absent or empty.
+     */
+    @SuppressWarnings("unchecked")
+    private static String firstOriginCountry(Object value) {
+        if (!(value instanceof List<?> list) || list.isEmpty()) {
+            return null;
+        }
+        return str(((List<Object>) list).get(0));
     }
 
     private static List<Integer> toIntegerList(Object value) {

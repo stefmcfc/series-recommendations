@@ -372,6 +372,32 @@ class TmdbClientSpec extends Specification {
             result[1].posterPath() == null
     }
 
+    def "SERIES-021-AC-01: search maps origin_country's first entry onto TmdbSearchCandidate"() {
+        given: "TMDB search results include an origin_country array"
+            def body = '{"results": [{"id": 2996, "name": "The Office", "origin_country": ["GB"]}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/tv")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "search('The Office') is called"
+            def results = client().search("The Office")
+
+        then: "originCountry is the array's first entry"
+            results[0].originCountry() == "GB"
+    }
+
+    def "SERIES-021-AC-01: an absent origin_country maps to a null originCountry"() {
+        given: "a TMDB search result with no origin_country field"
+            def body = '{"results": [{"id": 1, "name": "Show"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/tv")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "search('Show') is called"
+            def results = client().search("Show")
+
+        then: "originCountry is null"
+            results[0].originCountry() == null
+    }
+
     def "SERIES-012-AC-06: an absent or empty results array maps to an empty list, no exception"() {
         given: "TMDB responds with no matches"
             mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("search/tv")))
@@ -456,6 +482,32 @@ class TmdbClientSpec extends Specification {
 
         then: "productionStatus is null, not an error"
             result.productionStatus() == null
+    }
+
+    def "SERIES-021-AC-02: details maps origin_country's first entry onto TmdbSeriesDetail"() {
+        given: "a TMDB detail response with an origin_country array"
+            def body = '{"name": "The Office", "origin_country": ["GB"], "genres": []}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/2996")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details(2996) is called"
+            def result = client().details(2996)
+
+        then: "originCountry is the array's first entry"
+            result.originCountry() == "GB"
+    }
+
+    def "SERIES-021-AC-02: an absent origin_country maps to a null originCountry on TmdbSeriesDetail"() {
+        given: "a TMDB detail response with no origin_country field"
+            def body = '{"name": "Obscure Show", "genres": []}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/2997")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details(2997) is called"
+            def result = client().details(2997)
+
+        then: "originCountry is null"
+            result.originCountry() == null
     }
 
     def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {

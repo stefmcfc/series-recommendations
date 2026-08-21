@@ -9,6 +9,7 @@ import type { Series } from '../types/series'
 vi.mock('../services/seriesApi')
 const mockGetById = vi.mocked(seriesApi.getById)
 const mockDelete = vi.mocked(seriesApi.delete)
+const mockRefresh = vi.mocked(seriesApi.refresh)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -32,6 +33,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     imdbId: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
+    lastRefreshedAt: null,
+    originCountry: null,
+    productionStatus: null,
     ...overrides,
   }
 }
@@ -324,6 +328,148 @@ describe('FRONTEND-018-AC-13/14: Tags entry rendered', () => {
     await waitFor(() => screen.getByText('The Office'))
     expect(screen.getByText('Tags')).toBeInTheDocument()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+})
+
+describe('FRONTEND-023-AC-05/06/07: refresh action', () => {
+  it('shows a busy state, then updates data and a summary on success', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ totalSeasons: 5, lastRefreshedAt: null }),
+    )
+    mockRefresh.mockResolvedValue({
+      series: makeSeries({ totalSeasons: 6 }),
+      omdbRefreshed: true,
+      tmdbRefreshed: false,
+    })
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
+    expect(screen.getByRole('button', { name: /refreshing/i })).toBeDisabled()
+
+    expect(await screen.findByText('6')).toBeInTheDocument()
+    expect(screen.getByText(/ratings updated/i)).toBeInTheDocument()
+  })
+
+  it('shows a summary naming production status when only tmdb refreshed', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockRefresh.mockResolvedValue({
+      series: makeSeries(),
+      omdbRefreshed: false,
+      tmdbRefreshed: true,
+    })
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
+
+    expect(
+      await screen.findByText(/production status updated/i),
+    ).toBeInTheDocument()
+  })
+
+  it('shows a "no new data" summary when neither source refreshed', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockRefresh.mockResolvedValue({
+      series: makeSeries(),
+      omdbRefreshed: false,
+      tmdbRefreshed: false,
+    })
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
+
+    expect(
+      await screen.findByText(/no new data available/i),
+    ).toBeInTheDocument()
+  })
+
+  it('shows a summary naming ratings and production status when both refreshed', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockRefresh.mockResolvedValue({
+      series: makeSeries(),
+      omdbRefreshed: true,
+      tmdbRefreshed: true,
+    })
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
+
+    expect(
+      await screen.findByText(/ratings and production status updated/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-023-AC-08: refresh failure', () => {
+  it('shows an alert and leaves data unchanged', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ totalSeasons: 3 }))
+    mockRefresh.mockRejectedValue(
+      new ApiError(
+        502,
+        'Unable to reach the series lookup service. Please try again.',
+      ),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.getByText('3')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-023-AC-09: last refreshed display', () => {
+  it('shows relative time when lastRefreshedAt is set', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ lastRefreshedAt: new Date().toISOString() }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    expect(await screen.findByText(/last refreshed/i)).toBeInTheDocument()
+  })
+
+  it('shows no last-refreshed text when lastRefreshedAt is null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ lastRefreshedAt: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+    expect(screen.queryByText(/last refreshed/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-026-AC-09/10/11: TMDB metadata fields', () => {
+  it('displays origin country, production status, and TMDB rating/vote count', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        originCountry: 'GB',
+        productionStatus: 'ENDED',
+        tmdbRating: 7.7,
+        tmdbVoteCount: 450,
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('United Kingdom')).toBeInTheDocument()
+    expect(screen.getByText('Ended')).toBeInTheDocument()
+    expect(screen.getByText('7.7')).toBeInTheDocument()
+    expect(screen.getByText('450')).toBeInTheDocument()
+  })
+
+  it('shows "—" for each field when null', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        originCountry: null,
+        productionStatus: null,
+        tmdbRating: null,
+        tmdbVoteCount: null,
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('The Office')
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4)
   })
 })
 

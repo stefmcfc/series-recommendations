@@ -28,6 +28,15 @@ public class SeriesLookupDto {
     private String posterUrl;
     private String imdbId;
 
+    // series_spec_021_origin_country.md (SERIES-021-AC-04): the resolved candidate's first
+    // origin_country entry, sourced from TmdbSeriesDetail.originCountry().
+    private String originCountry;
+
+    // series_spec_021_origin_country.md (SERIES-021-AC-07): closes a gap left by
+    // series_spec_018 -- TmdbSeriesDetail.productionStatus() was already available on every
+    // resolve-tmdb call but was never copied onto this DTO until now.
+    private String productionStatus;
+
     public SeriesLookupDto() {}
 
     public String getTitle() { return title; }
@@ -62,4 +71,10 @@ public class SeriesLookupDto {
 
     public String getImdbId() { return imdbId; }
     public void setImdbId(String imdbId) { this.imdbId = imdbId; }
+
+    public String getOriginCountry() { return originCountry; }
+    public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public String getProductionStatus() { return productionStatus; }
+    public void setProductionStatus(String productionStatus) { this.productionStatus = productionStatus; }
 }

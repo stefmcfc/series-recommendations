@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
-import type { Series, SearchCriteria } from '../types/series'
+import type { Series, SearchCriteria, RefreshJobStatus } from '../types/series'
+import { formatRelativeTime } from '../utils/relativeTime'
+import { formatCountryName } from '../utils/countryName'
 import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
@@ -10,6 +12,11 @@ interface SeriesListProps {
   onEditClick?: (series: Series) => void
   criteria?: SearchCriteria
 }
+
+// Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
+// enough that a short bulk job's progress feels live, infrequent enough not
+// to hammer the status endpoint.
+const REFRESH_POLL_INTERVAL_MS = 2500
 
 function hasActiveCriteria(criteria?: SearchCriteria): boolean {
   if (!criteria) return false
@@ -38,8 +45,11 @@ export function SeriesList({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
+  const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
+  const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
 
   const criteriaActive = hasActiveCriteria(criteria)
+  const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +75,84 @@ export function SeriesList({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- criteriaActive is derived from criteria; including both is redundant and would cause criteria's object identity to trigger duplicate re-fetches.
   }, [refreshIndex, criteria])
+
+  // FRONTEND-023-AC-11: check once on mount so a page reload mid-batch
+  // resumes the disabled/polling state instead of showing a stale enabled
+  // button.
+  useEffect(() => {
+    let cancelled = false
+
+    seriesApi
+      .getRefreshStatus()
+      .then((status) => {
+        if (cancelled) return
+        setJobStatus(status)
+      })
+      .catch(() => {
+        // Non-critical background check -- leave the button in its default
+        // enabled state if the status endpoint itself is unreachable.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // FRONTEND-023-AC-12/13: poll while a bulk job is in progress, whether
+  // just started by this click or discovered on mount. Stops itself (via
+  // effect cleanup) once jobStatus.status is no longer IN_PROGRESS.
+  useEffect(() => {
+    if (!refreshAllInProgress) return
+
+    const intervalId = setInterval(() => {
+      seriesApi
+        .getRefreshStatus()
+        .then((status) => {
+          setJobStatus(status)
+          if (status.status !== 'IN_PROGRESS') {
+            setRefreshIndex((index) => index + 1)
+          }
+        })
+        .catch(() => {
+          // Transient poll failure -- keep polling on the next tick rather
+          // than surfacing an error for a background check.
+        })
+    }, REFRESH_POLL_INTERVAL_MS)
+
+    return () => {
+      clearInterval(intervalId)
+    }
+  }, [refreshAllInProgress])
+
+  const handleRefreshAllClick = () => {
+    setRefreshAllError(null)
+
+    seriesApi
+      .refreshAll()
+      .then((status) => {
+        setJobStatus(status)
+      })
+      .catch((err: unknown) => {
+        if (err instanceof ApiError && err.status === 409) {
+          // FRONTEND-023-AC-14: a job is already running server-side --
+          // reflect that the same way a mount-time discovery would, rather
+          // than surfacing it as a user-facing error.
+          setJobStatus({
+            status: 'IN_PROGRESS',
+            totalCount: 0,
+            completedCount: 0,
+            startedAt: null,
+            finishedAt: null,
+          })
+          return
+        }
+        if (err instanceof ApiError) {
+          setRefreshAllError(err.message)
+        } else {
+          setRefreshAllError('An unexpected error occurred. Please try again.')
+        }
+      })
+  }
 
   const handleRetry = useCallback(() => {
     setLoading(true)
@@ -143,16 +231,44 @@ export function SeriesList({
     <div className={styles.container} data-testid="series-list">
       <div className={styles.header}>
         <h2 className={styles.heading}>My Series</h2>
-        <button
-          type="button"
-          className={styles.addButton}
-          data-testid="add-series-btn"
-          aria-label="Add new series"
-          onClick={() => onAddClick?.()}
-        >
-          Add Series
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.refreshAllButton}
+            data-testid="refresh-all-btn"
+            disabled={refreshAllInProgress}
+            onClick={handleRefreshAllClick}
+          >
+            Refresh All
+          </button>
+          {refreshAllInProgress && jobStatus && (
+            <span className={styles.refreshProgress}>
+              Refreshing {jobStatus.completedCount} of {jobStatus.totalCount}
+              ...
+            </span>
+          )}
+          {jobStatus?.finishedAt != null && (
+            <span className={styles.lastFullRefresh}>
+              Last full refresh: {formatRelativeTime(jobStatus.finishedAt)}
+            </span>
+          )}
+          <button
+            type="button"
+            className={styles.addButton}
+            data-testid="add-series-btn"
+            aria-label="Add new series"
+            onClick={() => onAddClick?.()}
+          >
+            Add Series
+          </button>
+        </div>
       </div>
+
+      {refreshAllError && (
+        <div className={styles.error} role="alert">
+          <p>{refreshAllError}</p>
+        </div>
+      )}
 
       {loading && (
         <div className={styles.loading} role="status" aria-label="Loading">
@@ -243,8 +359,14 @@ export function SeriesList({
                   className={styles.title}
                   onClick={() => handleRowClick(s.id)}
                 >
-                  {s.title}
+                  {s.year != null ? `${s.title} (${s.year})` : s.title}
                 </button>
+                {s.originCountry != null && (
+                  <span className={styles.country}>
+                    {' | '}
+                    {formatCountryName(s.originCountry)}
+                  </span>
+                )}
               </div>
               <span className={styles.status}>{s.status}</span>
               <span className={styles.rating}>

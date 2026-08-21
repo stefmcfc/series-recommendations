@@ -101,6 +101,7 @@ public class SeriesLookupService {
         dto.setYear(candidate.year());
         dto.setOriginalTitle(candidate.originalTitle());
         dto.setPosterUrl(candidate.posterPath() != null ? TmdbClient.POSTER_BASE_URL + candidate.posterPath() : null);
+        dto.setOriginCountry(candidate.originCountry());
         return dto;
     }
 
@@ -119,6 +120,8 @@ public class SeriesLookupService {
         dto.setPosterUrl(detail.posterPath() != null ? TmdbClient.POSTER_BASE_URL + detail.posterPath() : null);
         dto.setTmdbRating(detail.voteAverage());
         dto.setTmdbVoteCount(detail.voteCount());
+        dto.setOriginCountry(detail.originCountry());
+        dto.setProductionStatus(detail.productionStatus() != null ? detail.productionStatus().name() : null);
         return dto;
     }
 

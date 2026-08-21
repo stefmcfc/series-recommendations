@@ -8,6 +8,8 @@ import type {
   LookupTmdbCandidate,
   Recommendation,
   RecommendationQuery,
+  RefreshResult,
+  RefreshJobStatus,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -142,6 +144,21 @@ export const seriesApi = {
       client.get('/series/recommendations', {
         params: buildRecommendationParams(query),
       }),
+    ).then((res) => res.data),
+
+  refresh: (id: string): Promise<RefreshResult> =>
+    request<{ data: RefreshResult }>(() =>
+      client.post('/series/' + id + '/refresh'),
+    ).then((res) => res.data),
+
+  refreshAll: (): Promise<RefreshJobStatus> =>
+    request<{ data: RefreshJobStatus }>(() =>
+      client.post('/series/refresh-all'),
+    ).then((res) => res.data),
+
+  getRefreshStatus: (): Promise<RefreshJobStatus> =>
+    request<{ data: RefreshJobStatus }>(() =>
+      client.get('/series/refresh-all/status'),
     ).then((res) => res.data),
 
   ignoreSeries: (

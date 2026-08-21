@@ -1,6 +1,6 @@
 # Frontend Spec 023: Series Refresh — Single & Bulk
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Series Spec 018 (`POST /series/{id}/refresh`, `POST`/`GET /series/refresh-all`, `RefreshResult`, `RefreshJobStatus`, `lastRefreshedAt`)
 **Frontend Stage**: 23 of N
 **Supersedes**: `frontend_spec_012_series_lifecycle_controls.md` Requirement 4 (Refresh Action) in full — see that spec's own note.
@@ -202,18 +202,18 @@ describe('FRONTEND-023-AC-15: last full refresh display', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-023-AC-01: `lastRefreshedAt` on `Series`
-- [ ] FRONTEND-023-AC-02: `RefreshResult`/`RefreshJobStatus` types
-- [ ] FRONTEND-023-AC-03: `seriesApi.refresh`/`refreshAll`/`getRefreshStatus`
-- [ ] FRONTEND-023-AC-04: `formatRelativeTime` utility
-- [ ] FRONTEND-023-AC-05: `SeriesDetail` Refresh button
-- [ ] FRONTEND-023-AC-06: busy/disabled state while refreshing
-- [ ] FRONTEND-023-AC-07: success updates data + summary message
-- [ ] FRONTEND-023-AC-08: failure shows alert, data unchanged
-- [ ] FRONTEND-023-AC-09: "Last refreshed" relative-time display
-- [ ] FRONTEND-023-AC-10: `SeriesList` "Refresh All" button
-- [ ] FRONTEND-023-AC-11: resumes polling on mount if already in progress
-- [ ] FRONTEND-023-AC-12: disabled + progress text while polling
-- [ ] FRONTEND-023-AC-13: stops polling, re-enables, re-fetches list on completion
-- [ ] FRONTEND-023-AC-14: `409` on click treated as already-in-progress, not an error
-- [ ] FRONTEND-023-AC-15: "Last full refresh" relative-time display
+- [x] FRONTEND-023-AC-01: `lastRefreshedAt` on `Series`
+- [x] FRONTEND-023-AC-02: `RefreshResult`/`RefreshJobStatus` types
+- [x] FRONTEND-023-AC-03: `seriesApi.refresh`/`refreshAll`/`getRefreshStatus`
+- [x] FRONTEND-023-AC-04: `formatRelativeTime` utility
+- [x] FRONTEND-023-AC-05: `SeriesDetail` Refresh button
+- [x] FRONTEND-023-AC-06: busy/disabled state while refreshing
+- [x] FRONTEND-023-AC-07: success updates data + summary message
+- [x] FRONTEND-023-AC-08: failure shows alert, data unchanged
+- [x] FRONTEND-023-AC-09: "Last refreshed" relative-time display
+- [x] FRONTEND-023-AC-10: `SeriesList` "Refresh All" button
+- [x] FRONTEND-023-AC-11: resumes polling on mount if already in progress
+- [x] FRONTEND-023-AC-12: disabled + progress text while polling
+- [x] FRONTEND-023-AC-13: stops polling, re-enables, re-fetches list on completion
+- [x] FRONTEND-023-AC-14: `409` on click treated as already-in-progress, not an error
+- [x] FRONTEND-023-AC-15: "Last full refresh" relative-time display

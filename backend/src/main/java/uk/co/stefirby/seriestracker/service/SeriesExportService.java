@@ -16,14 +16,14 @@ public class SeriesExportService {
 
     private static final Logger log = LoggerFactory.getLogger(SeriesExportService.class);
 
-    // SERIES-014-AC-12 / SERIES-017-AC-13: tags, tmdbRating, and tmdbVoteCount appended
-    // alongside the other newer optional fields, before the date columns. metacriticRating
-    // and alternateTitle are gone entirely (SERIES-017-AC-14/15).
+    // SERIES-014-AC-12 / SERIES-017-AC-13 / SERIES-021-AC-10: tags, tmdbRating, tmdbVoteCount,
+    // and originCountry appended alongside the other newer optional fields, before the date
+    // columns. metacriticRating and alternateTitle are gone entirely (SERIES-017-AC-14/15).
     private static final String[] CSV_HEADERS = {
         "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
         "rottenTomatoesRating", "tmdbRating", "tmdbVoteCount", "personalRating",
-        "personalNotes", "posterUrl", "tags", "dateAdded", "dateCompleted"
+        "personalNotes", "posterUrl", "tags", "originCountry", "dateAdded", "dateCompleted"
     };
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -73,6 +73,7 @@ public class SeriesExportService {
             csv(s.getPersonalNotes()),
             csv(s.getPosterUrl()),
             csv(s.getTags()),
+            csv(s.getOriginCountry()),
             csv(s.getDateAdded() != null ? s.getDateAdded().format(ISO) : null),
             csv(s.getDateCompleted() != null ? s.getDateCompleted().format(ISO) : null)
         );

@@ -31,7 +31,8 @@ frontend/
 │   │
 │   ├── styles/                  # Global styles (not yet created — `index.css` currently lives at src/ root)
 │   │
-│   ├── utils/                   # Utility functions (not yet created)
+│   ├── utils/                   # (built)
+│   │   └── relativeTime.ts      # frontend_spec_023_series_refresh.md; formatRelativeTime()
 │   │
 │   ├── App.tsx                  # (built) Orchestrator: swaps SeriesList/SeriesDetail on the selected series, renders SearchFilter/ExportControls above the list, owns AddSeriesForm/EditSeriesForm modal state and the refresh-via-remount key(s)
 │   ├── index.css                # (built)

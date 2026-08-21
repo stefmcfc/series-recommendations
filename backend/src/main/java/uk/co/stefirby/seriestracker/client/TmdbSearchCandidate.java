@@ -12,6 +12,10 @@ import java.util.List;
  * {@code originalTitle} to help a user disambiguate a title catalogued under a different
  * original-language name (e.g. "Money Heist" / "La Casa de Papel") -- {@code null} when absent
  * or identical to {@code title}.
+ *
+ * <p>{@code originCountry} (SERIES-021-AC-01) is the first entry of this endpoint's {@code
+ * origin_country} array -- {@code null} when absent or empty -- see {@code
+ * series_spec_021_origin_country.md}.
  */
 public record TmdbSearchCandidate(
     int tmdbId,
@@ -19,6 +23,7 @@ public record TmdbSearchCandidate(
     String originalTitle,
     Integer year,
     String posterPath,
-    List<Integer> genreIds
+    List<Integer> genreIds,
+    String originCountry
 ) {
 }

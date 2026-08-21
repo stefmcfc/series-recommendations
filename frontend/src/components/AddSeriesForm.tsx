@@ -8,6 +8,7 @@ import type {
   SeriesLookupResult,
   Series,
 } from '../types/series'
+import { formatCountryName } from '../utils/countryName'
 import styles from './AddSeriesForm.module.css'
 
 interface AddSeriesFormProps {
@@ -30,6 +31,10 @@ interface FormState {
   personalNotes: string
   posterUrl: string
   imdbId: string
+  tmdbRating: string
+  tmdbVoteCount: string
+  originCountry: string
+  productionStatus: string
 }
 
 const initialFormState: FormState = {
@@ -46,6 +51,10 @@ const initialFormState: FormState = {
   personalNotes: '',
   posterUrl: '',
   imdbId: '',
+  tmdbRating: '',
+  tmdbVoteCount: '',
+  originCountry: '',
+  productionStatus: '',
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -134,6 +143,14 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.personalNotes = form.personalNotes.trim()
   if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
   if (form.imdbId.trim() !== '') payload.imdbId = form.imdbId.trim()
+  if (form.tmdbRating.trim() !== '')
+    payload.tmdbRating = Number(form.tmdbRating)
+  if (form.tmdbVoteCount.trim() !== '')
+    payload.tmdbVoteCount = Number(form.tmdbVoteCount)
+  if (form.originCountry.trim() !== '')
+    payload.originCountry = form.originCountry.trim()
+  if (form.productionStatus.trim() !== '')
+    payload.productionStatus = form.productionStatus.trim()
 
   return payload
 }
@@ -155,6 +172,12 @@ function applyLookupResult(
     next.rottenTomatoesRating = String(result.rottenTomatoesRating)
   if (result.posterUrl != null) next.posterUrl = result.posterUrl
   if (result.imdbId != null) next.imdbId = result.imdbId
+  if (result.tmdbRating != null) next.tmdbRating = String(result.tmdbRating)
+  if (result.tmdbVoteCount != null)
+    next.tmdbVoteCount = String(result.tmdbVoteCount)
+  if (result.originCountry != null) next.originCountry = result.originCountry
+  if (result.productionStatus != null)
+    next.productionStatus = result.productionStatus
 
   return next
 }
@@ -412,6 +435,9 @@ export function AddSeriesForm({
                           {candidate.originalTitle != null &&
                           candidate.originalTitle !== candidate.title
                             ? ` — ${candidate.originalTitle}`
+                            : ''}
+                          {candidate.originCountry != null
+                            ? ` — ${formatCountryName(candidate.originCountry)}`
                             : ''}
                         </span>
                       </button>
