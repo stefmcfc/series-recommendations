@@ -1,6 +1,6 @@
 # Spec 019: Keyword Tracking (Normalized TMDB Keywords)
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P2 (quality-of-life / data-analysis feature — not core CRUD)
 **Depends on**: Series Spec 001 (`SeriesEntity`, migration conventions), Series Spec 017 (`series_spec_017_tmdb_primary_lookup.md`, TMDB-primary resolve flow — this spec's population hook is called from there at series-creation time), Series Spec 018 (`series_spec_018_series_refresh.md`, refresh flow — this spec's population hook is also called from there)
 **Backend Task**
@@ -29,7 +29,7 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 
 #### Acceptance Criteria
 
-- **SERIES-019-AC-01** [AUTO]: A new Flyway migration `V003__create_keyword_tables.sql` shall create a `keyword` table (this is `V003`, not `V009` — `series_spec_017_tmdb_primary_lookup.md`'s migration-squash decision, `SERIES-017-AC-16`, collapses the prior `V001`–`V006` history down to a rewritten `V001` plus a renumbered `V002__create_ignored_series_table.sql`, so `V003` is the next free slot by the time this spec is implemented) (`id` TEXT PK, `tmdb_keyword_id` INTEGER NOT NULL UNIQUE, `name` TEXT NOT NULL) and a `series_keyword` join table (`series_id` TEXT NOT NULL REFERENCES `series(id)`, `keyword_id` TEXT NOT NULL REFERENCES `keyword(id)`, composite unique constraint on `(series_id, keyword_id)`), following this project's existing UUID-as-TEXT PK convention (`SeriesEntity`/`IgnoredSeriesEntity`).
+- **SERIES-019-AC-01** [AUTO]: A new Flyway migration `V005__create_keyword_tables.sql` shall create a `keyword` table (this is `V005`, not `V003` as originally drafted — two other specs claimed `V003`/`V004` before this one was implemented: `V003__add_production_status_to_series.sql` (`series_spec_018`) and `V004__add_origin_country_to_series.sql` (`series_spec_021`), so `V005` is the next free slot by the time this spec is actually implemented) (`id` TEXT PK, `tmdb_keyword_id` INTEGER NOT NULL UNIQUE, `name` TEXT NOT NULL) and a `series_keyword` join table (`series_id` TEXT NOT NULL REFERENCES `series(id)`, `keyword_id` TEXT NOT NULL REFERENCES `keyword(id)`, composite unique constraint on `(series_id, keyword_id)`), following this project's existing UUID-as-TEXT PK convention (`SeriesEntity`/`IgnoredSeriesEntity`).
 - **SERIES-019-AC-02** [AUTO]: A new `KeywordEntity` (`model` package) shall map the `keyword` table: `id` (`UUID`, `@JdbcTypeCode(SqlTypes.VARCHAR)`, generated), `tmdbKeywordId` (`Integer`, unique, not null), `name` (`String`, not null).
 - **SERIES-019-AC-03** [AUTO]: `SeriesEntity` shall gain a `Set<KeywordEntity> keywords` field, mapped `@ManyToMany` over the `series_keyword` join table (`@JoinTable(name = "series_keyword", ...)`), lazily fetched.
 - **SERIES-019-AC-04** [AUTO]: A new `KeywordRepository extends JpaRepository<KeywordEntity, UUID>` shall gain a single derived-query method, `Optional<KeywordEntity> findByTmdbKeywordId(Integer tmdbKeywordId)`, used to look up an existing keyword row before creating a new one (Requirement 3) — a derived query, not a custom `@Query`, consistent with this project's repository conventions.
@@ -59,6 +59,8 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 - **SERIES-019-AC-10** [AUTO]: `syncKeywords` shall set `entity.setKeywords(...)` to exactly the resolved set of `KeywordEntity` rows from `SERIES-019-AC-09` — replacing, not appending to, the entity's prior keyword set, so a keyword no longer present in TMDB's current response is unlinked from this series (its `keyword` row is untouched, since other series may still reference it via their own `series_keyword` rows).
 - **SERIES-019-AC-11** [AUTO]: If `TmdbClient.showKeywords` throws `ExternalServiceException`, `syncKeywords` shall catch and log it, leaving `entity`'s existing keyword set unchanged — matching the never-fail-the-surrounding-request posture already established for `productionStatus` resolution (`series_spec_008` SERIES-008-AC-10).
 - **SERIES-019-AC-12** [AUTO]: `syncKeywords` does not itself call `seriesRepository.save(...)` — persisting the entity (with its updated `keywords` association) is the caller's responsibility, matching how `RecommendationService`/other collaborators don't own persistence for entities they merely populate fields on.
+
+**Implementation note (call-site wiring)**: `syncKeywords` is wired into `SeriesRefreshService.refreshFromTmdb` — a `tmdbId` is already resolved there as a local variable, making the call site a one-line, minimal addition consistent with that method's existing non-fatal-on-failure posture. It is **not** wired into the series-creation path: unlike the refresh flow, creation never carries a `tmdbId` end-to-end — `SeriesLookupService.resolveTmdbCandidate` knows the `tmdbId` it resolved, but returns a `SeriesLookupDto` (used only to autofill the add-series form) that has no `tmdbId` field, and the later `POST /api/v1/series` create call takes a `SeriesDto` that likewise never carries one. Wiring creation would require threading a `tmdbId` field through `SeriesLookupDto` → the frontend form → `SeriesDto` → `SeriesService.create`, a materially larger, cross-cutting change out of scope for this spec's first pass. A freshly-created series simply has no keywords until its first refresh.
 
 ---
 
@@ -101,7 +103,7 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 | Nulls-last average/sort convention | `series_spec_009_rating_sort.md` |
 | Unrecognized-soft-param falls back to default, not `400` | `series_spec_015_multi_source_recommendations.md` |
 | `GET /series/genres` `{ data, count }` envelope convention this spec's `GET /series/keywords` matches | `series_spec_010_genre_dropdown.md` |
-| Population call sites: series-creation (TMDB-primary resolve) and refresh | `series_spec_017_tmdb_primary_lookup.md` (not yet written), `series_spec_018_series_refresh.md` (not yet written) |
+| Population call site: refresh (creation-time population deferred — see Requirement 3's implementation note) | `series_spec_017_tmdb_primary_lookup.md`, `series_spec_018_series_refresh.md` |
 | Never-leak-internals policy for upstream failures | `tooling_spec_001_code_quality_security.md` Requirement 1 |
 | Frontend consumer: keyword chips on `SeriesDetail`, Keywords stats view, `SearchFilter` keyword multi-select | `frontend_spec_024_keyword_tracking.md` (not yet written) |
 | Deferred idea: weighting recommendations/filters by keyword popularity/average rating | `FUTURE_IDEAS.md` |
@@ -251,24 +253,24 @@ def "SERIES-019-AC-17: GET /api/v1/series/keywords returns 200 with the envelope
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-019-AC-01: `V003__create_keyword_tables.sql` — `keyword` + `series_keyword` tables
-- [ ] SERIES-019-AC-02: `KeywordEntity` (`id`, `tmdbKeywordId` unique, `name`)
-- [ ] SERIES-019-AC-03: `SeriesEntity.keywords` `@ManyToMany`
-- [ ] SERIES-019-AC-04: `KeywordRepository.findByTmdbKeywordId`
-- [ ] SERIES-019-AC-05: `TmdbClient.showKeywords(tmdbId)` + `TmdbKeyword` record
-- [ ] SERIES-019-AC-06: malformed/absent `results` → empty list, not an error
-- [ ] SERIES-019-AC-07: throws `ExternalServiceException` only on genuine call failure
-- [ ] SERIES-019-AC-08: `KeywordSyncService.syncKeywords(entity, tmdbId)`
-- [ ] SERIES-019-AC-09: upserts `KeywordEntity` rows by `tmdbKeywordId`, no duplicates
-- [ ] SERIES-019-AC-10: replaces (not appends) the entity's keyword set; unlink ≠ delete shared row
-- [ ] SERIES-019-AC-11: TMDB failure leaves existing keyword set unchanged, non-fatal
-- [ ] SERIES-019-AC-12: `syncKeywords` does not persist the entity itself
-- [ ] SERIES-019-AC-13: `KeywordStatDto` (`name`, `seriesCount`, `averagePersonalRating`)
-- [ ] SERIES-019-AC-14: `GET /api/v1/series/keywords` via `KeywordStatsService`, in-memory aggregation
-- [ ] SERIES-019-AC-15: correct `seriesCount`/`averagePersonalRating` (unrated excluded, not zeroed)
-- [ ] SERIES-019-AC-16: `sortBy` param, nulls-last, soft-fallback on unrecognized value
-- [ ] SERIES-019-AC-17: `200` + `{ data, count }` envelope, empty list is not an error
-- [ ] SERIES-019-AC-18: `SeriesSearchCriteria.keywords: List<String>`
-- [ ] SERIES-019-AC-19: `matchesKeywords` — exact, case-insensitive, OR logic
-- [ ] SERIES-019-AC-20: repeatable `keyword` query param wired into `/search`
-- [ ] SERIES-019-AC-21: unused filter is fully backward-compatible
+- [x] SERIES-019-AC-01: `V005__create_keyword_tables.sql` — `keyword` + `series_keyword` tables
+- [x] SERIES-019-AC-02: `KeywordEntity` (`id`, `tmdbKeywordId` unique, `name`)
+- [x] SERIES-019-AC-03: `SeriesEntity.keywords` `@ManyToMany`
+- [x] SERIES-019-AC-04: `KeywordRepository.findByTmdbKeywordId`
+- [x] SERIES-019-AC-05: `TmdbClient.showKeywords(tmdbId)` + `TmdbKeyword` record
+- [x] SERIES-019-AC-06: malformed/absent `results` → empty list, not an error
+- [x] SERIES-019-AC-07: throws `ExternalServiceException` only on genuine call failure
+- [x] SERIES-019-AC-08: `KeywordSyncService.syncKeywords(entity, tmdbId)`
+- [x] SERIES-019-AC-09: upserts `KeywordEntity` rows by `tmdbKeywordId`, no duplicates
+- [x] SERIES-019-AC-10: replaces (not appends) the entity's keyword set; unlink ≠ delete shared row
+- [x] SERIES-019-AC-11: TMDB failure leaves existing keyword set unchanged, non-fatal
+- [x] SERIES-019-AC-12: `syncKeywords` does not persist the entity itself
+- [x] SERIES-019-AC-13: `KeywordStatDto` (`name`, `seriesCount`, `averagePersonalRating`)
+- [x] SERIES-019-AC-14: `GET /api/v1/series/keywords` via `KeywordStatsService`, in-memory aggregation
+- [x] SERIES-019-AC-15: correct `seriesCount`/`averagePersonalRating` (unrated excluded, not zeroed)
+- [x] SERIES-019-AC-16: `sortBy` param, nulls-last, soft-fallback on unrecognized value
+- [x] SERIES-019-AC-17: `200` + `{ data, count }` envelope, empty list is not an error
+- [x] SERIES-019-AC-18: `SeriesSearchCriteria.keywords: List<String>`
+- [x] SERIES-019-AC-19: `matchesKeywords` — exact, case-insensitive, OR logic
+- [x] SERIES-019-AC-20: repeatable `keyword` query param wired into `/search`
+- [x] SERIES-019-AC-21: unused filter is fully backward-compatible

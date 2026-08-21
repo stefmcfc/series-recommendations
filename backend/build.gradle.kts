@@ -77,6 +77,7 @@ val jacocoExcludes = listOf(
     "uk/co/stefirby/seriestracker/model/SeriesStatus*",
     "uk/co/stefirby/seriestracker/model/ValidSeries*",
     "uk/co/stefirby/seriestracker/model/IgnoredSeriesEntity*",
+    "uk/co/stefirby/seriestracker/model/KeywordEntity*",
     "uk/co/stefirby/seriestracker/exception/EntityNotFoundException*",
     "uk/co/stefirby/seriestracker/exception/ExternalServiceException*"
 )

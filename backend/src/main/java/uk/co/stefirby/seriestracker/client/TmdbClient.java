@@ -150,6 +150,20 @@ public class TmdbClient {
     }
 
     /**
+     * Fetches a show's current TMDB keywords via {@code GET /tv/{tmdbId}/keywords}
+     * (SERIES-019-AC-05), used by {@code KeywordSyncService} to populate/reconcile a series'
+     * normalized keyword set. An absent/malformed {@code results} field yields an empty list,
+     * not an error (SERIES-019-AC-06).
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbKeyword> showKeywords(int tmdbId) {
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId + "/keywords"));
+        return mapKeywords(body);
+    }
+
+    /**
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
      */
@@ -257,6 +271,19 @@ public class TmdbClient {
             ));
         }
         return candidates;
+    }
+
+    private static List<TmdbKeyword> mapKeywords(Map<String, Object> body) {
+        List<Map<String, Object>> results = listOfMaps(body, "results");
+        List<TmdbKeyword> keywords = new ArrayList<>();
+        for (Map<String, Object> item : results) {
+            Integer id = toInteger(item.get("id"));
+            if (id == null) {
+                continue;
+            }
+            keywords.add(new TmdbKeyword(id, str(item.get("name"))));
+        }
+        return keywords;
     }
 
     private static List<TmdbSearchCandidate> mapSearchResults(Map<String, Object> body) {

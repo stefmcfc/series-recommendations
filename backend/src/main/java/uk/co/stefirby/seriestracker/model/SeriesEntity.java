@@ -7,6 +7,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -128,6 +130,20 @@ public class SeriesEntity {
     @Column(nullable = true, length = 2)
     private String originCountry;
 
+    // series_spec_019_keyword_tracking.md (SERIES-019-AC-03): a series' TMDB keywords,
+    // normalized via a shared `keyword` table plus a `series_keyword` join table -- unlike
+    // `genres`/`tags`, this needs COUNT/AVG-style aggregation (KeywordStatsService), which a
+    // delimited string column can't support without parsing every row on every query. Lazily
+    // fetched; populated/replaced wholesale by KeywordSyncService.syncKeywords rather than
+    // mutated piecemeal elsewhere.
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "series_keyword",
+        joinColumns = @JoinColumn(name = "series_id"),
+        inverseJoinColumns = @JoinColumn(name = "keyword_id")
+    )
+    private Set<KeywordEntity> keywords = new HashSet<>();
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -196,4 +212,7 @@ public class SeriesEntity {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public Set<KeywordEntity> getKeywords() { return keywords; }
+    public void setKeywords(Set<KeywordEntity> keywords) { this.keywords = keywords; }
 }

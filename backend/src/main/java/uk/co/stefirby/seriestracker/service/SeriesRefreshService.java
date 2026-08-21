@@ -40,13 +40,16 @@ public class SeriesRefreshService {
     private final TmdbClient tmdbClient;
     private final OmdbClient omdbClient;
     private final SeriesService seriesService;
+    private final KeywordSyncService keywordSyncService;
 
     public SeriesRefreshService(SeriesRepository repository, TmdbClient tmdbClient,
-                                 OmdbClient omdbClient, SeriesService seriesService) {
+                                 OmdbClient omdbClient, SeriesService seriesService,
+                                 KeywordSyncService keywordSyncService) {
         this.repository = repository;
         this.tmdbClient = tmdbClient;
         this.omdbClient = omdbClient;
         this.seriesService = seriesService;
+        this.keywordSyncService = keywordSyncService;
     }
 
     @Transactional
@@ -69,10 +72,11 @@ public class SeriesRefreshService {
     /**
      * Updates {@code totalSeasons}/{@code totalEpisodes}/{@code tmdbRating}/{@code
      * tmdbVoteCount}/{@code productionStatus}/{@code originCountry} from a fresh TMDB detail
-     * lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09). Returns {@code
-     * false} without attempting a lookup when the entity has no {@code imdbId} to resolve a
-     * {@code tmdbId} from, or when TMDB is otherwise unresolvable/unreachable
-     * (SERIES-018-AC-05) -- never throws.
+     * lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09), and reconciles
+     * {@code keywords} via {@link KeywordSyncService#syncKeywords} using the same resolved
+     * {@code tmdbId} (SERIES-019-AC-08). Returns {@code false} without attempting a lookup
+     * when the entity has no {@code imdbId} to resolve a {@code tmdbId} from, or when TMDB is
+     * otherwise unresolvable/unreachable (SERIES-018-AC-05) -- never throws.
      */
     private boolean refreshFromTmdb(SeriesEntity entity) {
         String imdbId = entity.getImdbId();
@@ -91,6 +95,10 @@ public class SeriesRefreshService {
             entity.setTmdbVoteCount(detail.voteCount());
             entity.setProductionStatus(detail.productionStatus());
             entity.setOriginCountry(detail.originCountry());
+            // series_spec_019_keyword_tracking.md (SERIES-019-AC-08): reconciles this series'
+            // keyword set against TMDB's current data using the same tmdbId just resolved
+            // above -- non-fatal on its own (KeywordSyncService never throws).
+            keywordSyncService.syncKeywords(entity, tmdbId);
             return true;
         } catch (ExternalServiceException e) {
             log.info("TMDB refresh unavailable for series {} (imdbId={}): {}", entity.getId(), imdbId, e.getMessage());
