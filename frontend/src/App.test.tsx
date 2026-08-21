@@ -18,9 +18,17 @@ const mockSearch = vi.mocked(seriesApi.search)
 const mockGetById = vi.mocked(seriesApi.getById)
 const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
+const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockGetRefreshStatus.mockResolvedValue({
+    status: 'IDLE',
+    totalCount: 0,
+    completedCount: 0,
+    startedAt: null,
+    finishedAt: null,
+  })
 })
 
 describe('FRONTEND-003-AC-27/28: opening the form', () => {

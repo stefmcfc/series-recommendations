@@ -11,6 +11,7 @@ versioned together as one app.
 ### Added
 
 - Series data refresh: `POST /api/v1/series/{id}/refresh` re-fetches one series' TMDB detail (`totalSeasons`/`totalEpisodes`/`tmdbRating`/`tmdbVoteCount`/`productionStatus`) and narrowed OMDb ratings (`imdbRating`/`rottenTomatoesRating`), with either source's failure being independently non-fatal and a partial success saved rather than rolled back. `POST /api/v1/series/refresh-all` starts an async job refreshing every tracked series sequentially (rate-limited via `app.tmdb.refresh-delay-ms`, default 250ms), polled via `GET /api/v1/series/refresh-all/status`; a second start while one is in progress returns `409`. `SeriesEntity`/`SeriesDto` gain `lastRefreshedAt`, set at create time and on every successful refresh (`series_spec_018`).
+- Series refresh UI: `SeriesDetail` gains a "Refresh" button (busy state while in flight, an inline summary of what changed on success, an alert on failure, and a "Last refreshed X ago" display), and `SeriesList` gains a "Refresh All" button that starts the bulk job, polls its progress every 2.5s, disables itself and resumes polling on page reload if a job is already running (treating a `409` on click the same way rather than as an error), and shows "Last full refresh: X ago" once available. A new `src/utils/relativeTime.ts` provides the shared "X ago" formatting (`frontend_spec_023`).
 
 ## [2.0.0] - 2026-08-21
 

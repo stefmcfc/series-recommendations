@@ -30,6 +30,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     imdbId: 'tt5071412',
     dateAdded: '2024-01-01T00:00:00Z',
     dateCompleted: null,
+    lastRefreshedAt: null,
     ...overrides,
   }
 }

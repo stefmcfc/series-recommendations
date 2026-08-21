@@ -10,6 +10,8 @@ vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
 const mockDelete = vi.mocked(seriesApi.delete)
 const mockSearch = vi.mocked(seriesApi.search)
+const mockRefreshAll = vi.mocked(seriesApi.refreshAll)
+const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -33,12 +35,20 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     imdbId: null,
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
+    lastRefreshedAt: null,
     ...overrides,
   }
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockGetRefreshStatus.mockResolvedValue({
+    status: 'IDLE',
+    totalCount: 0,
+    completedCount: 0,
+    startedAt: null,
+    finishedAt: null,
+  })
 })
 
 describe('SH-001: Fetch on mount', () => {
@@ -585,6 +595,95 @@ describe('FRONTEND-022-AC-10: alternateTitle no longer displayed', () => {
 
     await waitFor(() => expect(screen.getByText('MI-5')).toBeInTheDocument())
     expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () => {
+  it('disables the button, shows progress, then re-enables and re-fetches on completion', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockRefreshAll.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      totalCount: 15,
+      completedCount: 0,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+    })
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(screen.getByRole('button', { name: /refresh all/i }))
+    expect(await screen.findByText(/refreshing 0 of 15/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /refresh all/i })).toBeDisabled()
+
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'COMPLETED',
+      totalCount: 15,
+      completedCount: 15,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    })
+
+    await waitFor(
+      () =>
+        expect(
+          screen.getByRole('button', { name: /refresh all/i }),
+        ).not.toBeDisabled(),
+      { timeout: 8000 },
+    )
+    expect(mockGetAll).toHaveBeenCalledTimes(2)
+  }, 10000)
+})
+
+describe('FRONTEND-023-AC-11: resumes polling on mount if a job is already running', () => {
+  it('enters the disabled/polling state without a click', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      totalCount: 15,
+      completedCount: 4,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+    })
+
+    render(<SeriesList />)
+
+    expect(await screen.findByText(/refreshing 4 of 15/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /refresh all/i })).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-023-AC-14: 409 on click is treated as already-in-progress, not an error', () => {
+  it('enters polling state instead of showing an error', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockRefreshAll.mockRejectedValue(
+      new ApiError(409, 'A refresh is already in progress'),
+    )
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(screen.getByRole('button', { name: /refresh all/i }))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: /refresh all/i }),
+      ).toBeDisabled(),
+    )
+  })
+})
+
+describe('FRONTEND-023-AC-15: last full refresh display', () => {
+  it('shows relative time from the status endpoint finishedAt', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'COMPLETED',
+      totalCount: 15,
+      completedCount: 15,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    })
+    render(<SeriesList />)
+    expect(await screen.findByText(/last full refresh/i)).toBeInTheDocument()
   })
 })
 

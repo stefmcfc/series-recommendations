@@ -28,6 +28,21 @@ export interface Series {
   imdbId: string | null
   dateAdded: string
   dateCompleted: string | null
+  lastRefreshedAt: string | null
+}
+
+export interface RefreshResult {
+  series: Series
+  omdbRefreshed: boolean
+  tmdbRefreshed: boolean
+}
+
+export interface RefreshJobStatus {
+  status: 'IDLE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+  totalCount: number
+  completedCount: number
+  startedAt: string | null
+  finishedAt: string | null
 }
 
 export interface CreateSeriesRequest {

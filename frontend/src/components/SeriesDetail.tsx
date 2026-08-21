@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { Series } from '../types/series'
+import { formatRelativeTime } from '../utils/relativeTime'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -20,6 +21,22 @@ function formatDate(value: string | null): string {
   return new Date(value).toLocaleDateString()
 }
 
+function buildRefreshSummary(
+  omdbRefreshed: boolean,
+  tmdbRefreshed: boolean,
+): string {
+  if (omdbRefreshed && tmdbRefreshed) {
+    return 'Ratings and production status updated.'
+  }
+  if (omdbRefreshed) {
+    return 'Ratings updated.'
+  }
+  if (tmdbRefreshed) {
+    return 'Production status updated.'
+  }
+  return 'No new data available.'
+}
+
 export function SeriesDetail({
   id,
   onBack,
@@ -36,6 +53,9 @@ export function SeriesDetail({
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [fetchedForId, setFetchedForId] = useState(id)
   const [posterError, setPosterError] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [refreshSummary, setRefreshSummary] = useState<string | null>(null)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -44,6 +64,9 @@ export function SeriesDetail({
     setError(null)
     setNotFound(false)
     setPosterError(false)
+    setRefreshing(false)
+    setRefreshError(null)
+    setRefreshSummary(null)
   }
 
   useEffect(() => {
@@ -110,6 +133,30 @@ export function SeriesDetail({
           setDeleteError(err.message)
         } else {
           setDeleteError('An unexpected error occurred. Please try again.')
+        }
+      })
+  }
+
+  const handleRefreshClick = () => {
+    setRefreshError(null)
+    setRefreshSummary(null)
+    setRefreshing(true)
+
+    seriesApi
+      .refresh(id)
+      .then((result) => {
+        setRefreshing(false)
+        setSeries(result.series)
+        setRefreshSummary(
+          buildRefreshSummary(result.omdbRefreshed, result.tmdbRefreshed),
+        )
+      })
+      .catch((err: unknown) => {
+        setRefreshing(false)
+        if (err instanceof ApiError) {
+          setRefreshError(err.message)
+        } else {
+          setRefreshError('An unexpected error occurred. Please try again.')
         }
       })
   }
@@ -272,7 +319,30 @@ export function SeriesDetail({
               >
                 Delete
               </button>
+              <button
+                type="button"
+                className={styles.refreshButton}
+                data-testid="refresh-series-btn"
+                disabled={refreshing}
+                onClick={handleRefreshClick}
+              >
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+              {series.lastRefreshedAt !== null && (
+                <span className={styles.lastRefreshed}>
+                  Last refreshed {formatRelativeTime(series.lastRefreshedAt)}
+                </span>
+              )}
             </div>
+          )}
+
+          {refreshError && (
+            <div className={styles.error} role="alert">
+              <p>{refreshError}</p>
+            </div>
+          )}
+          {refreshSummary && (
+            <p className={styles.refreshSummary}>{refreshSummary}</p>
           )}
         </div>
       )}

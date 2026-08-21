@@ -124,7 +124,7 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 017 | TMDB-primary lookup & rating sourcing (TMDB search/resolve as sole lookup path; OMDb narrowed to a single `imdbRating`/`rottenTomatoesRating` enrichment call; drops `metacriticRating`/`alternateTitle`; adds `tmdbRating`/`tmdbVoteCount`) | ✅ Done |
 | Frontend 022 | TMDB-primary lookup UI (single TMDB search/candidate-picker flow, drops the OMDb picker, "Search TMDB instead" escape hatch, and alternate-title/Metacritic fields) | ⬜ Not started |
 | Backend 018 | Series refresh — single (`POST /series/{id}/refresh`) + bulk (`POST`/`GET /series/refresh-all`) async job, rate-limited, `lastRefreshedAt` tracking | ✅ Done |
-| Frontend 023 | Series refresh UI (`SeriesDetail` Refresh button, `SeriesList` "Refresh All" with progress polling/reload-safe state, relative-time display) | ⬜ Not started |
+| Frontend 023 | Series refresh UI (`SeriesDetail` Refresh button, `SeriesList` "Refresh All" with progress polling/reload-safe state, relative-time display) | ✅ Done |
 | Backend 019 | Keyword tracking (normalized `keyword`/`series_keyword` tables from TMDB, `GET /series/keywords` stats endpoint, keyword search filter) | ⬜ Not started |
 | Frontend 024 | Keyword tracking UI (`SeriesDetail` keyword chips, sortable keyword stats view, `SearchFilter` keyword filter) | ⬜ Not started |
 | Backend 020 | Watch providers (TMDB/JustWatch streaming availability, UK-region default, attached to recommendation candidates) | ⬜ Not started |

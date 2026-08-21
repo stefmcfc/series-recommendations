@@ -1,6 +1,6 @@
 # Frontend Spec 012: Exclude Flag, Production Status, Refresh & Rewatch Flag
 
-**Status**: Not started
+**Status**: Not started — Requirement 4 (Refresh Action) superseded by `frontend_spec_023_series_refresh.md`, now implemented there; Requirements 1–3 and 5 remain not started
 **Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Series Spec 008 (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`)
 **Frontend Stage**: 12 of N
 **Note**: Requirement 4 (Refresh Action) below is **superseded in full by `frontend_spec_023_series_refresh.md`** — see that requirement's heading for details. Requirements 1–3 and 5 are unaffected and remain current.
