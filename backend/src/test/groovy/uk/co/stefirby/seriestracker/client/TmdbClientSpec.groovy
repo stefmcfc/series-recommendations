@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.client
 
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
+import uk.co.stefirby.seriestracker.model.ProductionStatus
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
@@ -395,7 +396,7 @@ class TmdbClientSpec extends Specification {
             thrown(ExternalServiceException)
     }
 
-    def "SERIES-012-AC-08/09 / SERIES-017-AC-11: details maps /tv/{id}, extracting genre ids from the {id,name} object array shape and vote_average/vote_count"() {
+    def "SERIES-012-AC-08/09 / SERIES-017-AC-11 / SERIES-018-AC-02: details maps /tv/{id}, extracting genre ids from the {id,name} object array shape, vote_average/vote_count, and productionStatus"() {
         given: "TMDB responds to /tv/4046 with the full detail shape"
             def body = '''
                 {
@@ -406,7 +407,8 @@ class TmdbClientSpec extends Specification {
                   "number_of_seasons": 10,
                   "number_of_episodes": 108,
                   "vote_average": 7.8,
-                  "vote_count": 245
+                  "vote_count": 245,
+                  "status": "Ended"
                 }
             '''
             mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046")))
@@ -426,6 +428,7 @@ class TmdbClientSpec extends Specification {
             result.numberOfEpisodes() == 108
             result.voteAverage() == 7.8
             result.voteCount() == 245
+            result.productionStatus() == ProductionStatus.ENDED
     }
 
     def "SERIES-017-AC-11: details maps absent vote_average/vote_count to null"() {
@@ -440,6 +443,19 @@ class TmdbClientSpec extends Specification {
         then: "both vote fields are null"
             result.voteAverage() == null
             result.voteCount() == null
+    }
+
+    def "SERIES-018-AC-02: details maps an absent or unrecognized status field to a null productionStatus"() {
+        given: "TMDB responds to /tv/4048 with no status field"
+            def body = '{"name":"Obscure Show","number_of_seasons":1,"number_of_episodes":6}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4048")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.details(4048) is called"
+            def result = client().details(4048)
+
+        then: "productionStatus is null, not an error"
+            result.productionStatus() == null
     }
 
     def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {

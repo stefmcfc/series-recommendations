@@ -1,5 +1,7 @@
 package uk.co.stefirby.seriestracker.client;
 
+import uk.co.stefirby.seriestracker.model.ProductionStatus;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -19,6 +21,13 @@ import java.util.List;
  * <p>{@code voteAverage}/{@code voteCount} (SERIES-017-AC-11) are parsed from this endpoint's
  * {@code vote_average}/{@code vote_count} fields, the same TMDB concept {@link TmdbCandidate}
  * already carries under those same field names.
+ *
+ * <p>{@code productionStatus} (SERIES-018-AC-02) is parsed from this same endpoint's {@code
+ * status} field via {@link ProductionStatus#fromTmdbStatus(String)} -- folded into this single
+ * {@code GET /tv/{id}} call rather than a separate request, since {@code
+ * SeriesRefreshService}'s refresh already calls {@link TmdbClient#details(int)} for the other
+ * TMDB-sourced fields above; a second call per refreshed series would needlessly double TMDB
+ * traffic during a rate-limited bulk refresh (see {@code series_spec_018_series_refresh.md}).
  */
 public record TmdbSeriesDetail(
     String title,
@@ -28,6 +37,7 @@ public record TmdbSeriesDetail(
     Integer numberOfSeasons,
     Integer numberOfEpisodes,
     BigDecimal voteAverage,
-    Integer voteCount
+    Integer voteCount,
+    ProductionStatus productionStatus
 ) {
 }

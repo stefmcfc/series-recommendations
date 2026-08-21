@@ -1,0 +1,14 @@
+package uk.co.stefirby.seriestracker.service;
+
+import java.time.LocalDateTime;
+
+/**
+ * Snapshot of {@link BulkRefreshService}'s single in-memory job (SERIES-018-AC-18) --
+ * {@code status} is one of {@code IDLE}/{@code IN_PROGRESS}/{@code COMPLETED}/{@code FAILED}.
+ * A plain {@code String} rather than an enum: it's serialized straight to JSON with no other
+ * consumer needing type-safe handling, the same shape {@code SeriesStatus} already uses on
+ * {@code SeriesDto}.
+ */
+public record RefreshJobStatus(String status, int totalCount, int completedCount,
+                                LocalDateTime startedAt, LocalDateTime finishedAt) {
+}

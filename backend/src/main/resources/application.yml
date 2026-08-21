@@ -59,6 +59,13 @@ app:
     # / APP_TMDB_MAX_CANDIDATES without a code change.
     max-source-series: 20
     max-candidates: 50
+    # series_spec_018_series_refresh.md (SERIES-018-AC-15): fixed delay (milliseconds) between
+    # items during a bulk refresh (POST /api/v1/series/refresh-all), sized to stay well under
+    # TMDB's free-tier rate limit (~40 requests/10s) for a personal collection's realistic
+    # size. A deliberately simple fixed-sleep mechanism, not a token/leaky-bucket
+    # rate-limiter -- see the spec's Design Decisions. Overridable via
+    # APP_TMDB_REFRESH_DELAY_MS without a code change.
+    refresh-delay-ms: 250
   recommendations:
     # SERIES-015-AC-14: selects RecommendationService's per-source diversity-cap strategy --
     # "best-source" (default) caps on each candidate's single best contributing source only;

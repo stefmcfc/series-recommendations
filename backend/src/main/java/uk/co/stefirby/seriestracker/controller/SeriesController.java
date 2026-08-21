@@ -8,11 +8,15 @@ import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
 import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
+import uk.co.stefirby.seriestracker.service.BulkRefreshService;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
 import uk.co.stefirby.seriestracker.service.RecommendationService;
+import uk.co.stefirby.seriestracker.service.RefreshJobStatus;
+import uk.co.stefirby.seriestracker.service.RefreshResult;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesLookupService;
+import uk.co.stefirby.seriestracker.service.SeriesRefreshService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
 import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
@@ -48,6 +52,8 @@ public class SeriesController {
     private final RecommendationService recommendationService;
     private final IgnoredSeriesService ignoredSeriesService;
     private final TmdbGenreTable genreTable;
+    private final SeriesRefreshService refreshService;
+    private final BulkRefreshService bulkRefreshService;
 
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
@@ -55,7 +61,9 @@ public class SeriesController {
                             SeriesLookupService lookupService,
                             RecommendationService recommendationService,
                             IgnoredSeriesService ignoredSeriesService,
-                            TmdbGenreTable genreTable) {
+                            TmdbGenreTable genreTable,
+                            SeriesRefreshService refreshService,
+                            BulkRefreshService bulkRefreshService) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
@@ -63,6 +71,8 @@ public class SeriesController {
         this.recommendationService = recommendationService;
         this.ignoredSeriesService = ignoredSeriesService;
         this.genreTable = genreTable;
+        this.refreshService = refreshService;
+        this.bulkRefreshService = bulkRefreshService;
     }
 
     @PostMapping
@@ -91,6 +101,23 @@ public class SeriesController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/" + UUID_PATH_PATTERN + "/refresh")
+    public ResponseEntity<ApiResponse<RefreshResult>> refresh(@PathVariable UUID id) {
+        RefreshResult result = refreshService.refresh(id);
+        return ResponseEntity.ok(new ApiResponse<>(result));
+    }
+
+    @PostMapping("/refresh-all")
+    public ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll() {
+        RefreshJobStatus status = bulkRefreshService.start();
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(status));
+    }
+
+    @GetMapping("/refresh-all/status")
+    public ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAllStatus() {
+        return ResponseEntity.ok(new ApiResponse<>(bulkRefreshService.status()));
     }
 
     @GetMapping("/lookup/search-tmdb")

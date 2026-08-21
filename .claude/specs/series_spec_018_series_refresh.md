@@ -1,6 +1,6 @@
 # Spec 018: Series Data Refresh (Single & Bulk)
 
-**Status**: Not started
+**Status**: Implemented
 **No `frontend/` files are touched by this spec** — the Refresh button, progress display, and "last refreshed" timestamps are `frontend_spec_023_series_refresh.md`, a separate follow-up task.
 **Priority**: P2 (quality-of-life improvement — not core CRUD)
 **Depends on**: Spec 001 (entity/migration conventions), Spec 005 (`OmdbClient` conventions, being narrowed by Spec 017), Spec 006 (`IgnoreOutcome` outcome-record precedent), Spec 008 (`ProductionStatus` enum, Requirement 2 — unaffected by this spec), Spec 017 (`series_spec_017_tmdb_primary_lookup.md` — TMDB as primary source, narrowed OMDb ratings-only call, `tmdbRating`/`tmdbVoteCount` fields)
@@ -189,25 +189,25 @@ def "SERIES-018-AC-19/21: status endpoint reflects IDLE before any run, then hol
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-018-AC-01: `POST /series/{id}/refresh`, 404 on unknown id
-- [ ] SERIES-018-AC-02: TMDB re-fetch updates seasons/episodes/tmdbRating/voteCount/productionStatus
-- [ ] SERIES-018-AC-03: narrowed OMDb re-fetch updates imdbRating/rottenTomatoesRating
-- [ ] SERIES-018-AC-04: user/system-owned fields untouched
-- [ ] SERIES-018-AC-05: TMDB failure non-fatal, fields unchanged
-- [ ] SERIES-018-AC-06: OMDb failure non-fatal, fields unchanged
-- [ ] SERIES-018-AC-07: `200` + `ApiResponse<RefreshResult>`
-- [ ] SERIES-018-AC-08: partial success persisted, not rolled back
-- [ ] SERIES-018-AC-09: `lastRefreshedAt` set on any successful refresh, unchanged if both fail
-- [ ] SERIES-018-AC-10: `lastRefreshedAt` column (ships via Spec 017's squashed `V001` baseline, no migration of its own)
-- [ ] SERIES-018-AC-11: `SeriesDto.lastRefreshedAt`, output-only
-- [ ] SERIES-018-AC-12: `create` sets `lastRefreshedAt` to now
-- [ ] SERIES-018-AC-13: `POST /series/refresh-all`, `202` + initial status
-- [ ] SERIES-018-AC-14: second concurrent start → `409`
-- [ ] SERIES-018-AC-15: sequential processing with fixed inter-item delay
-- [ ] SERIES-018-AC-16: batch runs asynchronously, request doesn't block
-- [ ] SERIES-018-AC-17: per-item failure doesn't stop the batch
-- [ ] SERIES-018-AC-18: `GET /series/refresh-all/status` returns `RefreshJobStatus`
-- [ ] SERIES-018-AC-19: `IDLE` default before any job has run
-- [ ] SERIES-018-AC-20: `completedCount`/`finishedAt` reflect in-progress state correctly
-- [ ] SERIES-018-AC-21: completed job's status persists until a new job starts
-- [ ] SERIES-018-AC-22: unexpected batch-loop failure → `FAILED`, non-propagating
+- [x] SERIES-018-AC-01: `POST /series/{id}/refresh`, 404 on unknown id
+- [x] SERIES-018-AC-02: TMDB re-fetch updates seasons/episodes/tmdbRating/voteCount/productionStatus — **deviation**: `ProductionStatus`/`productionStatus` did not yet exist (`series_spec_008_series_lifecycle_data.md` Requirement 2 was itself `Not started`, despite this spec's header describing it as "unaffected"). A minimal prerequisite subset (the `ProductionStatus` enum, `SeriesEntity.productionStatus`/`SeriesDto.productionStatus`, a new `V003` migration) was added here, with TMDB's `status` string folded into the existing `TmdbClient.details()` call/`TmdbSeriesDetail` record rather than spec 008's originally-designed separate `showStatus(int)` method — avoids doubling TMDB traffic per refreshed series during a rate-limited bulk run. `excludeFromRecommendations`/`flaggedForRewatch` and create-time `productionStatus` resolution (spec 008 Requirements 1/2's remaining scope) are still not implemented.
+- [x] SERIES-018-AC-03: narrowed OMDb re-fetch updates imdbRating/rottenTomatoesRating
+- [x] SERIES-018-AC-04: user/system-owned fields untouched
+- [x] SERIES-018-AC-05: TMDB failure non-fatal, fields unchanged
+- [x] SERIES-018-AC-06: OMDb failure non-fatal, fields unchanged
+- [x] SERIES-018-AC-07: `200` + `ApiResponse<RefreshResult>`
+- [x] SERIES-018-AC-08: partial success persisted, not rolled back
+- [x] SERIES-018-AC-09: `lastRefreshedAt` set on any successful refresh, unchanged if both fail
+- [x] SERIES-018-AC-10: `lastRefreshedAt` column (ships via Spec 017's squashed `V001` baseline, no migration of its own)
+- [x] SERIES-018-AC-11: `SeriesDto.lastRefreshedAt`, output-only
+- [x] SERIES-018-AC-12: `create` sets `lastRefreshedAt` to now
+- [x] SERIES-018-AC-13: `POST /series/refresh-all`, `202` + initial status
+- [x] SERIES-018-AC-14: second concurrent start → `409`
+- [x] SERIES-018-AC-15: sequential processing with fixed inter-item delay
+- [x] SERIES-018-AC-16: batch runs asynchronously, request doesn't block
+- [x] SERIES-018-AC-17: per-item failure doesn't stop the batch
+- [x] SERIES-018-AC-18: `GET /series/refresh-all/status` returns `RefreshJobStatus`
+- [x] SERIES-018-AC-19: `IDLE` default before any job has run
+- [x] SERIES-018-AC-20: `completedCount`/`finishedAt` reflect in-progress state correctly
+- [x] SERIES-018-AC-21: completed job's status persists until a new job starts
+- [x] SERIES-018-AC-22: unexpected batch-loop failure → `FAILED`, non-propagating

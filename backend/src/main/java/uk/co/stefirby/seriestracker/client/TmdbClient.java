@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.client;
 
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
+import uk.co.stefirby.seriestracker.model.ProductionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -191,7 +192,8 @@ public class TmdbClient {
             toInteger(body.get("number_of_seasons")),
             toInteger(body.get("number_of_episodes")),
             toBigDecimal(body.get("vote_average")),
-            toInteger(body.get("vote_count"))
+            toInteger(body.get("vote_count")),
+            ProductionStatus.fromTmdbStatus(str(body.get("status"))).orElse(null)
         );
     }
 
