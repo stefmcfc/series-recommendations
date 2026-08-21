@@ -8,13 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-21
+
 ### Changed
 
-- TMDB is now the sole search/lookup source for adding a series: `GET /api/v1/series/lookup/resolve-tmdb?tmdbId=` builds its result exclusively from TMDB's own detail (title, year, genres, poster, season/episode counts, and new `tmdbRating`/`tmdbVoteCount`), then merges in `imdbRating`/`rottenTomatoesRating` from a narrowed, best-effort OMDb call keyed off whatever `imdbId` TMDB resolves — a failed or missing OMDb call no longer fails the request, it just leaves those two fields `null` (backend-only for now; `frontend_spec_022` will follow) (`series_spec_017`).
+- TMDB is now the sole search/lookup source for adding a series: `GET /api/v1/series/lookup/resolve-tmdb?tmdbId=` builds its result exclusively from TMDB's own detail (title, year, genres, poster, season/episode counts, and new `tmdbRating`/`tmdbVoteCount`), then merges in `imdbRating`/`rottenTomatoesRating` from a narrowed, best-effort OMDb call keyed off whatever `imdbId` TMDB resolves — a failed or missing OMDb call no longer fails the request, it just leaves those two fields `null` (`series_spec_017`).
+- `AddSeriesForm`'s "Look Up" now searches TMDB directly instead of OMDb, showing a TMDB candidate picker on multiple matches — the old OMDb-first candidate picker and the "Search TMDB instead" escape-hatch button are gone, since there's now only one search path (`frontend_spec_022`).
 
 ### Removed
 
-- `GET /api/v1/series/lookup?title=`, `GET /api/v1/series/lookup/search?title=`, and `GET /api/v1/series/lookup?imdbId=` (OMDb-primary search/lookup) — TMDB's search already superset-matches everything OMDb's own search does. `metacriticRating` (essentially never populated by OMDb for TV) and `alternateTitle` (existed only to disambiguate the two-search-path era) are also removed from `SeriesEntity`/`SeriesDto`/CSV/JSON export (`series_spec_017`).
+- `GET /api/v1/series/lookup?title=`, `GET /api/v1/series/lookup/search?title=`, and `GET /api/v1/series/lookup?imdbId=` (OMDb-primary search/lookup) — TMDB's search already superset-matches everything OMDb's own search does. `metacriticRating` (essentially never populated by OMDb for TV) and `alternateTitle` (existed only to disambiguate the two-search-path era) are also removed from `SeriesEntity`/`SeriesDto`/CSV/JSON export, and from every frontend form/list/detail view (`series_spec_017`, `frontend_spec_022`).
 
 ## [1.4.0] - 2026-08-20
 
