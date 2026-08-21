@@ -35,6 +35,7 @@ interface FormState {
   tmdbVoteCount: string
   originCountry: string
   productionStatus: string
+  tmdbId: string
 }
 
 const initialFormState: FormState = {
@@ -55,6 +56,7 @@ const initialFormState: FormState = {
   tmdbVoteCount: '',
   originCountry: '',
   productionStatus: '',
+  tmdbId: '',
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -151,6 +153,7 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.originCountry = form.originCountry.trim()
   if (form.productionStatus.trim() !== '')
     payload.productionStatus = form.productionStatus.trim()
+  if (form.tmdbId.trim() !== '') payload.tmdbId = Number(form.tmdbId)
 
   return payload
 }
@@ -178,6 +181,7 @@ function applyLookupResult(
   if (result.originCountry != null) next.originCountry = result.originCountry
   if (result.productionStatus != null)
     next.productionStatus = result.productionStatus
+  if (result.tmdbId != null) next.tmdbId = String(result.tmdbId)
 
   return next
 }

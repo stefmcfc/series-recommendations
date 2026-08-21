@@ -285,6 +285,6 @@ describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () 
 - [ ] FRONTEND-024-AC-12: `SearchFilter` keyword checkbox list, sourced from the backend
 - [ ] FRONTEND-024-AC-13: selected keywords included in criteria, omitted when none
 - [ ] FRONTEND-024-AC-14: keyword-fetch failure degrades gracefully, scoped error only
-- [ ] FRONTEND-024-AC-15: `SeriesLookupResult` gains `tmdbId`
-- [ ] FRONTEND-024-AC-16: `CreateSeriesRequest` gains `tmdbId`
-- [ ] FRONTEND-024-AC-17: `AddSeriesForm` carries `tmdbId` through to the create payload
+- [x] FRONTEND-024-AC-15: `SeriesLookupResult` gains `tmdbId`
+- [x] FRONTEND-024-AC-16: `CreateSeriesRequest` gains `tmdbId`
+- [x] FRONTEND-024-AC-17: `AddSeriesForm` carries `tmdbId` through to the create payload

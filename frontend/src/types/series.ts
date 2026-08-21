@@ -65,6 +65,7 @@ export interface CreateSeriesRequest {
   tmdbVoteCount?: number
   originCountry?: string
   productionStatus?: string
+  tmdbId?: number
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
@@ -86,6 +87,7 @@ export interface SeriesLookupResult {
   imdbId?: string
   originCountry?: string
   productionStatus?: string
+  tmdbId?: number
 }
 
 export interface LookupTmdbCandidate {
