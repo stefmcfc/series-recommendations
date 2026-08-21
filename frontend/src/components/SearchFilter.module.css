@@ -39,6 +39,36 @@
   gap: 0.5rem;
 }
 
+.keywordPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.keywordOption {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.keywordOption label {
+  font-size: 0.875rem;
+  font-weight: normal;
+  color: var(--text);
+}
+
+.keywordError {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .keywordError {
+    color: #fca5a5;
+  }
+}
+
 .checkboxField label {
   font-size: 0.875rem;
   font-weight: 600;

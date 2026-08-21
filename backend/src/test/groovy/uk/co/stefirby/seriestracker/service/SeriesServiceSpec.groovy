@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
+import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 import java.util.UUID
 
@@ -15,6 +16,9 @@ class SeriesServiceSpec extends Specification {
 
   @Autowired
   SeriesRepository seriesRepository
+
+  @Autowired
+  KeywordRepository keywordRepository
 
   KeywordSyncService keywordSyncService = Mock()
 
@@ -26,6 +30,7 @@ class SeriesServiceSpec extends Specification {
 
   def cleanup() {
     seriesRepository.deleteAll()
+    keywordRepository.deleteAll()
   }
 
   def "should create a series with minimal data"() {
@@ -275,6 +280,33 @@ class SeriesServiceSpec extends Specification {
 
     then: "the returned dto does not carry tmdbId back"
         created.tmdbId == null
+  }
+
+  def "FRONTEND-024-AC-02: keywords is an empty list, never null, when a series has none"() {
+    given: "a SeriesDto with no keywords"
+        def dto = new SeriesDto(title: "No Keywords Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "keywords is an empty list"
+        result.keywords == []
+  }
+
+  def "FRONTEND-024-AC-02: entityToDto maps a series' keyword names, sorted alphabetically"() {
+    given: "a persisted series with two keywords attached directly to the entity"
+        def created = seriesService.create(new SeriesDto(title: "Spooks"))
+        def entity = seriesRepository.findById(created.id).get()
+        def spy = keywordRepository.save(new uk.co.stefirby.seriestracker.model.KeywordEntity(tmdbKeywordId: 1, name: "spy"))
+        def mi5 = keywordRepository.save(new uk.co.stefirby.seriestracker.model.KeywordEntity(tmdbKeywordId: 2, name: "mi5"))
+        entity.setKeywords([spy, mi5] as Set)
+        seriesRepository.save(entity)
+
+    when: "the series is fetched"
+        def result = seriesService.getById(created.id)
+
+    then: "keywords come back as sorted name strings"
+        result.keywords == ["mi5", "spy"]
   }
 
   def "should reject series creation with invalid IMDb rating"() {

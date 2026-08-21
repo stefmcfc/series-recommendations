@@ -19,6 +19,7 @@ const mockGetById = vi.mocked(seriesApi.getById)
 const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
+const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -29,6 +30,7 @@ beforeEach(() => {
     startedAt: null,
     finishedAt: null,
   })
+  mockGetKeywordStats.mockResolvedValue([])
 })
 
 describe('FRONTEND-003-AC-27/28: opening the form', () => {
@@ -283,6 +285,27 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
       expect(screen.getByTestId('series-list')).toBeInTheDocument(),
     )
     expect(screen.queryByLabelText(/^automatic/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
+  it('renders KeywordsView when the Keywords toggle is clicked', async () => {
+    mockGetAll.mockResolvedValue([])
+
+    render(<App />)
+    await waitFor(() => screen.getByTestId('add-series-btn'))
+
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
+    expect(screen.queryByTestId('series-list')).not.toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /series list|my series/i }),
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('series-list')).toBeInTheDocument(),
+    )
+    expect(screen.queryByTestId('keywords-view')).not.toBeInTheDocument()
   })
 })
 

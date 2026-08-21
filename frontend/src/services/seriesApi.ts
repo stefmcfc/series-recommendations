@@ -10,6 +10,7 @@ import type {
   RecommendationQuery,
   RefreshResult,
   RefreshJobStatus,
+  KeywordStat,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -79,6 +80,7 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   const params: Record<string, unknown> = {}
   if (criteria.title != null) params.title = criteria.title
   if (criteria.genres?.length) params.genre = criteria.genres
+  if (criteria.keywords?.length) params.keyword = criteria.keywords
   if (criteria.status != null) params.status = criteria.status
   if (criteria.minPersonalRating != null)
     params.minPersonalRating = criteria.minPersonalRating
@@ -135,6 +137,15 @@ export const seriesApi = {
   getGenreOptions: (): Promise<string[]> =>
     request<{ data: string[]; count: number }>(() =>
       client.get('/series/genres'),
+    ).then((res) => res.data),
+
+  getKeywordStats: (
+    sortBy?: 'seriesCount' | 'averagePersonalRating',
+  ): Promise<KeywordStat[]> =>
+    request<{ data: KeywordStat[]; count: number }>(() =>
+      client.get('/series/keywords', {
+        params: sortBy !== undefined ? { sortBy } : {},
+      }),
     ).then((res) => res.data),
 
   getRecommendations: (

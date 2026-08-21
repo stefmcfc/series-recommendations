@@ -7,13 +7,14 @@ import { ExportControls } from './components/ExportControls'
 import { SearchFilter } from './components/SearchFilter'
 import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
+import { KeywordsView } from './components/KeywordsView'
 import type {
   Series,
   SearchCriteria,
   RecommendationQuery,
 } from './types/series'
 
-type MainView = 'list' | 'recommendations'
+type MainView = 'list' | 'recommendations' | 'keywords'
 
 function App() {
   const [mainView, setMainView] = useState<MainView>('list')
@@ -69,14 +70,25 @@ function App() {
             >
               Recommendations
             </button>
+            <button
+              type="button"
+              aria-pressed={mainView === 'keywords'}
+              onClick={() => setMainView('keywords')}
+            >
+              Keywords
+            </button>
           </nav>
 
-          {mainView === 'recommendations' ? (
+          {mainView === 'recommendations' && (
             <>
               <RecommendationControls onQueryChange={setRecommendationQuery} />
               <RecommendationsList query={recommendationQuery} />
             </>
-          ) : (
+          )}
+
+          {mainView === 'keywords' && <KeywordsView />}
+
+          {mainView === 'list' && (
             <>
               <SearchFilter
                 onSearch={setCriteria}

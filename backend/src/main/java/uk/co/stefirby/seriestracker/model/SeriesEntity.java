@@ -133,10 +133,18 @@ public class SeriesEntity {
     // series_spec_019_keyword_tracking.md (SERIES-019-AC-03): a series' TMDB keywords,
     // normalized via a shared `keyword` table plus a `series_keyword` join table -- unlike
     // `genres`/`tags`, this needs COUNT/AVG-style aggregation (KeywordStatsService), which a
-    // delimited string column can't support without parsing every row on every query. Lazily
-    // fetched; populated/replaced wholesale by KeywordSyncService.syncKeywords rather than
-    // mutated piecemeal elsewhere.
-    @ManyToMany(fetch = FetchType.LAZY)
+    // delimited string column can't support without parsing every row on every query.
+    // Populated/replaced wholesale by KeywordSyncService.syncKeywords rather than mutated
+    // piecemeal elsewhere.
+    //
+    // frontend_spec_024_keyword_tracking.md (FRONTEND-024-AC-02): eagerly fetched, not lazy --
+    // SeriesService.entityToDto now flattens this collection into SeriesDto.keywords on every
+    // read (getById/getAll/create/update), so it needs to be available whenever an entity is
+    // loaded, not just within an still-open session. KeywordStatsService already loads every
+    // series' full keyword set into memory for GET /series/keywords regardless (see its own
+    // javadoc's "fine at this app's scale" precedent), so this doesn't introduce a new class of
+    // cost -- it just makes the always-needed case the default instead of a lazy trap.
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "series_keyword",
         joinColumns = @JoinColumn(name = "series_id"),

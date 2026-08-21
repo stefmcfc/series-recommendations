@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class SeriesDto {
@@ -46,6 +47,13 @@ public class SeriesDto {
     // SeriesService.create to trigger KeywordSyncService.syncKeywords (SERIES-019-AC-24), never
     // persisted on SeriesEntity (which has no tmdbId column) and never set by entityToDto.
     private Integer tmdbId;
+
+    // series_spec_019_keyword_tracking.md / frontend_spec_024_keyword_tracking.md
+    // (FRONTEND-024-AC-02): output-only flattened KeywordEntity.name values for this series,
+    // sorted alphabetically for stable ordering -- never read from the incoming DTO (there is
+    // no user-authored keyword concept; keywords are populated wholesale by
+    // KeywordSyncService.syncKeywords). Never null, empty list when a series has none.
+    private List<String> keywords = List.of();
 
     public SeriesDto() {}
 
@@ -120,4 +128,7 @@ public class SeriesDto {
 
     public Integer getTmdbId() { return tmdbId; }
     public void setTmdbId(Integer tmdbId) { this.tmdbId = tmdbId; }
+
+    public List<String> getKeywords() { return keywords; }
+    public void setKeywords(List<String> keywords) { this.keywords = keywords; }
 }

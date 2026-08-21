@@ -127,7 +127,7 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 018 | Series refresh — single (`POST /series/{id}/refresh`) + bulk (`POST`/`GET /series/refresh-all`) async job, rate-limited, `lastRefreshedAt` tracking | ✅ Done |
 | Frontend 023 | Series refresh UI (`SeriesDetail` Refresh button, `SeriesList` "Refresh All" with progress polling/reload-safe state, relative-time display) | ✅ Done |
 | Backend 019 | Keyword tracking (normalized `keyword`/`series_keyword` tables from TMDB, `GET /series/keywords` stats endpoint, keyword search filter) | ✅ Done |
-| Frontend 024 | Keyword tracking UI (`SeriesDetail` keyword chips, sortable keyword stats view, `SearchFilter` keyword filter) | ⬜ Not started |
+| Frontend 024 | Keyword tracking UI (`SeriesDetail` keyword chips, sortable keyword stats view, `SearchFilter` keyword filter) | ✅ Done |
 | Backend 020 | Watch providers (TMDB/JustWatch streaming availability, UK-region default, attached to recommendation candidates) | ⬜ Not started |
 | Frontend 025 | Watch providers UI (`RecommendationsList` streaming badges, JustWatch attribution) | ⬜ Not started |
 | Backend 021 | TMDB origin country (`originCountry` on lookup candidates/lookup result/persisted series, kept fresh on refresh, included in export; closes a `productionStatus` create-time gap from Backend 008/018) | ✅ Done |

@@ -1,6 +1,6 @@
 # Frontend Spec 024: Keyword Tracking (Display, Stats View, Filter)
 
-**Status**: In progress (Requirement 5 implemented; Requirements 1-4 — display, stats view, filter — not yet started)
+**Status**: Implemented
 **Depends on**: Series Spec 019 (`series_spec_019_keyword_tracking.md`, `GET /series/keywords`, `SeriesSearchCriteria.keywords`, Requirement 6's `tmdbId` round-trip) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Frontend Spec 018 (`tags` display precedent) ✅, Frontend Spec 022 (`AddSeriesForm` hidden-field round-trip pattern) ✅
 **Frontend Stage**: 24 of N
 
@@ -29,6 +29,8 @@ Surfaces Series Spec 019's normalized TMDB keyword tracking: read-only keyword c
 - **FRONTEND-024-AC-03** [AUTO]: `SearchCriteria` shall gain a `keywords?: string[]` field, following the exact convention `genres?: string[]` already uses on the same interface.
 - **FRONTEND-024-AC-04** [AUTO]: `seriesApi` shall gain `getKeywordStats: (sortBy?: 'seriesCount' | 'averagePersonalRating') => Promise<KeywordStat[]>`, calling `GET /series/keywords` (with `sortBy` as a query param when provided) and unwrapping the `{ data, count }` envelope, following the exact pattern `getGenreOptions` already uses for its own single-array-fetch shape.
 - **FRONTEND-024-AC-05** [AUTO]: `buildSearchParams` (the shared helper already used by both `search` and `export`) shall include `params.keyword = criteria.keywords` (repeatable param, mirroring `params.genre = criteria.genres`'s exact existing line) when `criteria.keywords?.length` is truthy.
+
+**Implementation note (backend gap closed as part of this spec)**: at the start of this spec's implementation, `SeriesDto` did not serialize a series' own keyword names — `SeriesEntity.keywords` (the `series_spec_019` `@ManyToMany` relation) existed, but `SeriesService.entityToDto` never read it, so `FRONTEND-024-AC-02` had no real backend data to carry. Closed by adding `SeriesDto.keywords: List<String>` (output-only, alphabetically sorted, empty list not null) and populating it in `entityToDto`. This also required changing `SeriesEntity.keywords` from `FetchType.LAZY` to `FetchType.EAGER` — `entityToDto` now reads this collection on every read path (`getById`/`getAll`/`create`/`update`), and `KeywordStatsService` already loads every series' full keyword set into memory regardless (its own javadoc's "fine at this app's scale" precedent), so this doesn't introduce a new class of cost. Covered by two new `SeriesServiceSpec` cases (`FRONTEND-024-AC-02`). See `backend/src/main/java/uk/co/stefirby/seriestracker/dto/SeriesDto.java`, `SeriesService.java`, `model/SeriesEntity.java`.
 
 ---
 
@@ -271,20 +273,20 @@ describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () 
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-024-AC-01: `KeywordStat` type
-- [ ] FRONTEND-024-AC-02: `Series.keywords: string[]`
-- [ ] FRONTEND-024-AC-03: `SearchCriteria.keywords?: string[]`
-- [ ] FRONTEND-024-AC-04: `seriesApi.getKeywordStats(sortBy?)`
-- [ ] FRONTEND-024-AC-05: `buildSearchParams` includes `keyword` when present
-- [ ] FRONTEND-024-AC-06: `SeriesDetail` Keywords `<dl>` entry, positioned after Tags
-- [ ] FRONTEND-024-AC-07: keyword chips rendered; dash when empty
-- [ ] FRONTEND-024-AC-08: `KeywordsView` table (keyword / count / avg rating)
-- [ ] FRONTEND-024-AC-09: sortable column headers re-fetch with `sortBy`
-- [ ] FRONTEND-024-AC-10: `App.tsx` gains a `Keywords` nav toggle
-- [ ] FRONTEND-024-AC-11: loading/error states on `KeywordsView`
-- [ ] FRONTEND-024-AC-12: `SearchFilter` keyword checkbox list, sourced from the backend
-- [ ] FRONTEND-024-AC-13: selected keywords included in criteria, omitted when none
-- [ ] FRONTEND-024-AC-14: keyword-fetch failure degrades gracefully, scoped error only
+- [x] FRONTEND-024-AC-01: `KeywordStat` type
+- [x] FRONTEND-024-AC-02: `Series.keywords: string[]`
+- [x] FRONTEND-024-AC-03: `SearchCriteria.keywords?: string[]`
+- [x] FRONTEND-024-AC-04: `seriesApi.getKeywordStats(sortBy?)`
+- [x] FRONTEND-024-AC-05: `buildSearchParams` includes `keyword` when present
+- [x] FRONTEND-024-AC-06: `SeriesDetail` Keywords `<dl>` entry, positioned after Tags
+- [x] FRONTEND-024-AC-07: keyword chips rendered; dash when empty
+- [x] FRONTEND-024-AC-08: `KeywordsView` table (keyword / count / avg rating)
+- [x] FRONTEND-024-AC-09: sortable column headers re-fetch with `sortBy`
+- [x] FRONTEND-024-AC-10: `App.tsx` gains a `Keywords` nav toggle
+- [x] FRONTEND-024-AC-11: loading/error states on `KeywordsView`
+- [x] FRONTEND-024-AC-12: `SearchFilter` keyword checkbox list, sourced from the backend
+- [x] FRONTEND-024-AC-13: selected keywords included in criteria, omitted when none
+- [x] FRONTEND-024-AC-14: keyword-fetch failure degrades gracefully, scoped error only
 - [x] FRONTEND-024-AC-15: `SeriesLookupResult` gains `tmdbId`
 - [x] FRONTEND-024-AC-16: `CreateSeriesRequest` gains `tmdbId`
 - [x] FRONTEND-024-AC-17: `AddSeriesForm` carries `tmdbId` through to the create payload

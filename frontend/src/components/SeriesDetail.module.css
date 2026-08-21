@@ -124,6 +124,16 @@
   color: var(--text-h);
 }
 
+.keywordChip {
+  display: inline-block;
+  background: var(--social-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  margin: 0 0.375rem 0.375rem 0;
+  font-size: 0.8125rem;
+}
+
 .actions {
   display: flex;
   align-items: center;

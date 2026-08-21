@@ -31,6 +31,13 @@ export interface Series {
   lastRefreshedAt: string | null
   originCountry: string | null
   productionStatus: string | null
+  keywords: string[]
+}
+
+export interface KeywordStat {
+  name: string
+  seriesCount: number
+  averagePersonalRating: number | null
 }
 
 export interface RefreshResult {
@@ -132,6 +139,7 @@ export interface RecommendationQuery {
 export interface SearchCriteria {
   title?: string
   genres?: string[]
+  keywords?: string[]
   status?: SeriesStatus
   minPersonalRating?: number
   maxPersonalRating?: number

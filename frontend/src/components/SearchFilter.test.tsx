@@ -1,10 +1,16 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SearchFilter } from './SearchFilter'
 import { SeriesStatus } from '../types/series'
+import { seriesApi } from '../services/seriesApi'
+import { ApiError } from '../types/api'
+
+vi.mock('../services/seriesApi')
+const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockGetKeywordStats.mockResolvedValue([])
 })
 
 function renderFilter() {
@@ -148,5 +154,48 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
     expect(
       logSpy.mock.calls.flat().some((c) => String(c).includes('secret-title')),
     ).toBe(false)
+  })
+})
+
+describe('FRONTEND-024-AC-12/13: keyword checkbox filter', () => {
+  it('includes selected keywords in criteria, omits when none selected', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    const onSearch = vi.fn()
+    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
+
+    await screen.findByLabelText('spy')
+    fireEvent.click(screen.getByLabelText('spy'))
+    fireEvent.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ keywords: ['spy'] }),
+    )
+  })
+
+  it('omits keywords from criteria when nothing is selected', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    const onSearch = vi.fn()
+    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
+
+    await screen.findByLabelText('spy')
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith({})
+  })
+})
+
+describe('FRONTEND-024-AC-14: keyword fetch failure degrades gracefully', () => {
+  it('renders the rest of SearchFilter when getKeywordStats rejects', async () => {
+    mockGetKeywordStats.mockRejectedValue(
+      new ApiError(500, 'Internal server error'),
+    )
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument()
   })
 })
