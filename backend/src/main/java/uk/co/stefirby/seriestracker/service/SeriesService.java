@@ -63,6 +63,11 @@ public class SeriesService {
         // Set dateAdded explicitly so it's available immediately after save
         entity.setDateAdded(LocalDateTime.now());
 
+        // SERIES-018-AC-12: a freshly added series' data is, by definition, as fresh as it'll
+        // ever be without an explicit refresh -- leaving lastRefreshedAt null until the first
+        // refresh would misrepresent a just-added series as stale.
+        entity.setLastRefreshedAt(LocalDateTime.now());
+
         SeriesStatus status = SeriesStatus.BACKLOG;
         if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
             status = SeriesStatus.valueOf(dto.getStatus());
@@ -194,6 +199,8 @@ public class SeriesService {
         dto.setImdbId(entity.getImdbId());
         dto.setDateAdded(entity.getDateAdded());
         dto.setDateCompleted(entity.getDateCompleted());
+        dto.setLastRefreshedAt(entity.getLastRefreshedAt());
+        dto.setProductionStatus(entity.getProductionStatus() != null ? entity.getProductionStatus().name() : null);
         return dto;
     }
 }

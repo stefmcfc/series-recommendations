@@ -27,6 +27,15 @@ public class SeriesDto {
     private LocalDateTime dateAdded;
     private LocalDateTime dateCompleted;
 
+    // series_spec_018_series_refresh.md: output-only, like dateAdded/dateCompleted -- never
+    // read from the incoming DTO in create/update (SERIES-018-AC-11).
+    private LocalDateTime lastRefreshedAt;
+
+    // series_spec_018_series_refresh.md (SERIES-018-AC-02), minimal prerequisite of
+    // series_spec_008's Requirement 2 -- output-only, same convention as dateAdded/
+    // dateCompleted/productionStatus's own SERIES-008-AC-09 design.
+    private String productionStatus;
+
     public SeriesDto() {}
 
     public UUID getId() { return id; }
@@ -88,4 +97,10 @@ public class SeriesDto {
 
     public LocalDateTime getDateCompleted() { return dateCompleted; }
     public void setDateCompleted(LocalDateTime dateCompleted) { this.dateCompleted = dateCompleted; }
+
+    public LocalDateTime getLastRefreshedAt() { return lastRefreshedAt; }
+    public void setLastRefreshedAt(LocalDateTime lastRefreshedAt) { this.lastRefreshedAt = lastRefreshedAt; }
+
+    public String getProductionStatus() { return productionStatus; }
+    public void setProductionStatus(String productionStatus) { this.productionStatus = productionStatus; }
 }

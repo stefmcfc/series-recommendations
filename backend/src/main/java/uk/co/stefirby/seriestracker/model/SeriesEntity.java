@@ -107,6 +107,20 @@ public class SeriesEntity {
     @Column(nullable = true)
     private LocalDateTime dateCompleted;
 
+    // series_spec_018_series_refresh.md (SERIES-018-AC-10/12): when this series' TMDB/IMDb/RT
+    // ratings were last refreshed from upstream, either by an explicit refresh or at create
+    // time (a just-added series is as fresh as it will ever be without a refresh).
+    @Column(nullable = true)
+    private LocalDateTime lastRefreshedAt;
+
+    // series_spec_018_series_refresh.md (SERIES-018-AC-02), a minimal prerequisite of
+    // series_spec_008's own Requirement 2 (not yet otherwise implemented -- see
+    // ProductionStatus's own javadoc). Nullable: unresolved until the first successful
+    // refresh that has a resolvable imdbId.
+    @Column(nullable = true)
+    @Enumerated(EnumType.STRING)
+    private ProductionStatus productionStatus;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -166,4 +180,10 @@ public class SeriesEntity {
 
     public LocalDateTime getDateCompleted() { return dateCompleted; }
     public void setDateCompleted(LocalDateTime dateCompleted) { this.dateCompleted = dateCompleted; }
+
+    public LocalDateTime getLastRefreshedAt() { return lastRefreshedAt; }
+    public void setLastRefreshedAt(LocalDateTime lastRefreshedAt) { this.lastRefreshedAt = lastRefreshedAt; }
+
+    public ProductionStatus getProductionStatus() { return productionStatus; }
+    public void setProductionStatus(ProductionStatus productionStatus) { this.productionStatus = productionStatus; }
 }

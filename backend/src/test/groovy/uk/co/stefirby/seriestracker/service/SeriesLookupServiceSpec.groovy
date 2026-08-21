@@ -46,7 +46,7 @@ class SeriesLookupServiceSpec extends Specification {
     def "SERIES-017-AC-04/06: resolve builds from TMDB detail, merges OMDb ratings when available"() {
         given: "TMDB detail for tmdbId=4046 and a resolvable imdbId"
             tmdbClient.details(4046) >> new TmdbSeriesDetail(
-                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245)
+                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245, null)
             tmdbClient.externalIds(4046) >> Optional.of("tt0160904")
             omdbClient.ratingsForImdbId("tt0160904") >> new OmdbRatings(new BigDecimal("8.3"), null)
 
@@ -70,7 +70,7 @@ class SeriesLookupServiceSpec extends Specification {
     def "SERIES-017-AC-07: an EntityNotFoundException from OMDb enrichment never fails the resolve"() {
         given: "TMDB detail resolves fine, but OMDb has no record for the resolved imdbId"
             tmdbClient.details(4046) >> new TmdbSeriesDetail(
-                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245)
+                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245, null)
             tmdbClient.externalIds(4046) >> Optional.of("tt0160904")
             omdbClient.ratingsForImdbId("tt0160904") >> {
                 throw new EntityNotFoundException("No OMDb results for imdbId: tt0160904")
@@ -89,7 +89,7 @@ class SeriesLookupServiceSpec extends Specification {
     def "SERIES-017-AC-07: an ExternalServiceException from OMDb enrichment never fails the resolve"() {
         given: "TMDB detail resolves fine, but OMDb throws ExternalServiceException"
             tmdbClient.details(4046) >> new TmdbSeriesDetail(
-                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245)
+                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245, null)
             tmdbClient.externalIds(4046) >> Optional.of("tt0160904")
             omdbClient.ratingsForImdbId("tt0160904") >> { throw new ExternalServiceException("OMDb down") }
 
@@ -105,7 +105,7 @@ class SeriesLookupServiceSpec extends Specification {
     def "SERIES-017-AC-08: no imdbId resolved means no OMDb call is attempted"() {
         given: "TMDB has no IMDb cross-reference for this title"
             tmdbClient.details(999) >> new TmdbSeriesDetail(
-                "Obscure Show", 2020, [], null, 1, 6, new BigDecimal("6.0"), 12)
+                "Obscure Show", 2020, [], null, 1, 6, new BigDecimal("6.0"), 12, null)
             tmdbClient.externalIds(999) >> Optional.empty()
 
         when: "resolveTmdbCandidate(999) is called"
@@ -136,7 +136,7 @@ class SeriesLookupServiceSpec extends Specification {
     def "SERIES-017-AC-04: a TmdbClient.externalIds failure propagates unchanged"() {
         given: "TMDB detail succeeds but externalIds fails"
             tmdbClient.details(4046) >> new TmdbSeriesDetail(
-                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245)
+                "Spooks", 2002, [10759, 18], "/poster.jpg", 10, 81, new BigDecimal("7.8"), 245, null)
             tmdbClient.externalIds(4046) >> { throw new ExternalServiceException("TMDB request failed") }
 
         when: "the candidate is resolved"

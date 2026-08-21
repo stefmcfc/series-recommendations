@@ -25,3 +25,7 @@ app:
     base-url: https://api.themoviedb.org/3/
     # api-key intentionally left unset in the test profile -- see TmdbClientSpec /
     # SeriesControllerRecommendationsSpec for the "key not configured" 502 path.
+    # series_spec_018: shorter than the 250ms production default so BulkRefreshService's
+    # PollingConditions-based tests (SeriesControllerRefreshSpec) stay fast, while still
+    # leaving a wide enough IN_PROGRESS window for the concurrent-start (409) test.
+    refresh-delay-ms: 300
