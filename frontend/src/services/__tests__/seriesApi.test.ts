@@ -60,7 +60,6 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'test-id',
     title: 'Test Show',
-    alternateTitle: null,
     year: null,
     genres: null,
     tags: null,
@@ -70,8 +69,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     currentEpisode: null,
     status: SeriesStatus.BACKLOG,
     imdbRating: null,
-    metacriticRating: null,
     rottenTomatoesRating: null,
+    tmdbRating: null,
+    tmdbVoteCount: null,
     personalRating: null,
     personalNotes: null,
     posterUrl: null,
@@ -230,65 +230,19 @@ describe('SH-006: search', () => {
 })
 
 // ---------------------------------------------------------------------------
-// SH-0XX: lookupByTitle()
+// FRONTEND-022-AC-14: removed OMDb-backed methods
 // ---------------------------------------------------------------------------
-describe('SH-0XX: lookupByTitle', () => {
-  it('should unwrap { data: OmdbLookupResult } and return it', async () => {
-    const mockResult = { title: 'Breaking Bad', year: 2008, imdbRating: 9.5 }
-    client.get.mockResolvedValue({ data: { data: mockResult } })
-
-    const result = await seriesApi.lookupByTitle('Breaking Bad')
-
-    expect(client.get).toHaveBeenCalledWith('/series/lookup', {
-      params: { title: 'Breaking Bad' },
-    })
-    expect(result.title).toBe('Breaking Bad')
-    expect(result.year).toBe(2008)
-    expect(result.imdbRating).toBe(9.5)
-  })
-})
-
-// ---------------------------------------------------------------------------
-// FRONTEND-015-AC-02: searchByTitle()
-// ---------------------------------------------------------------------------
-describe('FRONTEND-015-AC-02: searchByTitle', () => {
-  it('should call GET /series/lookup/search and unwrap { data: LookupCandidate[] }', async () => {
-    const mockCandidates = [
-      { title: 'Spooks', year: 2002, imdbId: 'tt0290403' },
-    ]
-    client.get.mockResolvedValue({ data: { data: mockCandidates } })
-
-    const result = await seriesApi.searchByTitle('Spooks')
-
-    expect(client.get).toHaveBeenCalledWith('/series/lookup/search', {
-      params: { title: 'Spooks' },
-    })
-    expect(result).toEqual(mockCandidates)
-  })
-
-  it('should return an empty array on no matches without throwing', async () => {
-    client.get.mockResolvedValue({ data: { data: [] } })
-
-    const result = await seriesApi.searchByTitle('Xyzzy')
-
-    expect(result).toEqual([])
-  })
-})
-
-// ---------------------------------------------------------------------------
-// FRONTEND-015-AC-03: lookupByImdbId()
-// ---------------------------------------------------------------------------
-describe('FRONTEND-015-AC-03: lookupByImdbId', () => {
-  it('should call GET /series/lookup with an imdbId param and unwrap { data: SeriesLookupDto }', async () => {
-    const mockResult = { title: 'Spooks', imdbRating: 7.9 }
-    client.get.mockResolvedValue({ data: { data: mockResult } })
-
-    const result = await seriesApi.lookupByImdbId('tt0290403')
-
-    expect(client.get).toHaveBeenCalledWith('/series/lookup', {
-      params: { imdbId: 'tt0290403' },
-    })
-    expect(result.title).toBe('Spooks')
+describe('FRONTEND-022-AC-14: removed OMDb-backed methods', () => {
+  it('no longer exposes lookupByTitle/searchByTitle/lookupByImdbId', () => {
+    expect(
+      (seriesApi as unknown as Record<string, unknown>).lookupByTitle,
+    ).toBeUndefined()
+    expect(
+      (seriesApi as unknown as Record<string, unknown>).searchByTitle,
+    ).toBeUndefined()
+    expect(
+      (seriesApi as unknown as Record<string, unknown>).lookupByImdbId,
+    ).toBeUndefined()
   })
 })
 

@@ -35,8 +35,9 @@ class SeriesExportServiceSpec extends Specification {
             currentEpisode: 12,
             status: "WATCHING",
             imdbRating: 9.0,
-            metacriticRating: 82,
             rottenTomatoesRating: 90,
+            tmdbRating: 8.5,
+            tmdbVoteCount: 3200,
             personalRating: 5,
             personalNotes: "Absolutely love this show",
             posterUrl: "https://example.com/the-office-poster.jpg"
@@ -161,7 +162,8 @@ class SeriesExportServiceSpec extends Specification {
             def headerCols = lines[0].split(",").size()
 
         then: "the header row has one column per series field"
-            // 17 original fields + alternateTitle (SERIES-013) + tags (SERIES-014)
+            // 17 original fields (minus metacriticRating, which was removed by SERIES-017)
+            // + tags (SERIES-014) + tmdbRating/tmdbVoteCount (SERIES-017)
             headerCols == 19
     }
 
@@ -176,38 +178,45 @@ class SeriesExportServiceSpec extends Specification {
             csv.contains("https://example.com/the-office-poster.jpg")
     }
 
-    def "SERIES-013-AC-04: exportAsJson includes alternateTitle"() {
-        given: "a series with an alternateTitle, among the retrieved series"
-            seriesService.create(new SeriesDto(title: "MI-5", alternateTitle: "Spooks"))
+    def "SERIES-017-AC-13: exportAsJson includes tmdbRating/tmdbVoteCount, excludes metacriticRating/alternateTitle"() {
+        given: "a series with tmdbRating/tmdbVoteCount, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "Spooks", tmdbRating: 7.8, tmdbVoteCount: 245))
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
             def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
-            def mi5 = parsed.get('series').find { it.get('title').textValue() == 'MI-5' }
+            def spooks = parsed.get('series').find { it.get('title').textValue() == 'Spooks' }
 
-        then: "alternateTitle is present in the exported JSON"
-            mi5 != null
-            mi5.get('alternateTitle').textValue() == 'Spooks'
+        then: "tmdbRating/tmdbVoteCount are present, and the removed fields are absent"
+            spooks != null
+            spooks.get('tmdbRating').doubleValue() == 7.8
+            spooks.get('tmdbVoteCount').intValue() == 245
+            !spooks.has('metacriticRating')
+            !spooks.has('alternateTitle')
     }
 
-    def "SERIES-013-AC-04: exportAsCsv includes alternateTitle values and header"() {
-        given: "a series with an alternateTitle, among the retrieved series"
-            seriesService.create(new SeriesDto(title: "MI-5", alternateTitle: "Spooks"))
+    def "SERIES-017-AC-13/14: exportAsCsv includes a tmdbRating/tmdbVoteCount header and values, excludes metacriticRating/alternateTitle"() {
+        given: "a series with tmdbRating/tmdbVoteCount, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "Spooks", tmdbRating: 7.8, tmdbVoteCount: 245))
             def series = seriesService.getAll()
 
         when: "the series are exported as CSV"
             def csv = exportService.exportAsCsv(series)
             def lines = csv.trim().split("\n")
 
-        then: "the header includes alternateTitle and the row includes its value"
-            lines[0].contains("alternateTitle")
-            csv.contains("Spooks")
+        then: "the header includes tmdbRating/tmdbVoteCount and excludes the removed columns"
+            lines[0].contains("tmdbRating")
+            lines[0].contains("tmdbVoteCount")
+            !lines[0].contains("metacriticRating")
+            !lines[0].contains("alternateTitle")
+            csv.contains("7.8")
+            csv.contains("245")
     }
 
-    def "SERIES-013-AC-04: exportAsCsv represents a null alternateTitle as an empty cell, not the literal 'null'"() {
-        given: "a series with no alternateTitle, among the retrieved series"
-            seriesService.create(new SeriesDto(title: "No Alternate Title Show"))
+    def "SERIES-017-AC-13: exportAsCsv represents a null tmdbRating/tmdbVoteCount as an empty cell, not the literal 'null'"() {
+        given: "a series with no tmdbRating/tmdbVoteCount, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "No TMDB Rating Show"))
             def series = seriesService.getAll()
 
         when: "the series are exported as CSV"

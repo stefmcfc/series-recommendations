@@ -12,7 +12,6 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: '1',
     title: 'Ozark',
-    alternateTitle: null,
     year: 2017,
     genres: 'Crime, Drama',
     tags: null,
@@ -22,8 +21,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     currentEpisode: null,
     status: 'COMPLETED',
     imdbRating: 8.4,
-    metacriticRating: null,
     rottenTomatoesRating: null,
+    tmdbRating: null,
+    tmdbVoteCount: null,
     personalRating: null,
     personalNotes: null,
     posterUrl: null,

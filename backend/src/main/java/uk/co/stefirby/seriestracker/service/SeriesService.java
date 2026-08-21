@@ -44,7 +44,6 @@ public class SeriesService {
 
         SeriesEntity entity = new SeriesEntity();
         entity.setTitle(dto.getTitle());
-        entity.setAlternateTitle(dto.getAlternateTitle());
         entity.setYear(dto.getYear());
         entity.setGenres(dto.getGenres());
         entity.setTotalSeasons(dto.getTotalSeasons());
@@ -52,8 +51,9 @@ public class SeriesService {
         entity.setCurrentSeason(dto.getCurrentSeason());
         entity.setCurrentEpisode(dto.getCurrentEpisode());
         entity.setImdbRating(dto.getImdbRating());
-        entity.setMetacriticRating(dto.getMetacriticRating());
         entity.setRottenTomatoesRating(dto.getRottenTomatoesRating());
+        entity.setTmdbRating(dto.getTmdbRating());
+        entity.setTmdbVoteCount(dto.getTmdbVoteCount());
         entity.setPersonalRating(dto.getPersonalRating());
         entity.setPersonalNotes(dto.getPersonalNotes());
         entity.setPosterUrl(dto.getPosterUrl());
@@ -102,9 +102,6 @@ public class SeriesService {
         if (dto.getTitle() != null) {
             entity.setTitle(dto.getTitle());
         }
-        if (dto.getAlternateTitle() != null) {
-            entity.setAlternateTitle(dto.getAlternateTitle());
-        }
         if (dto.getYear() != null) {
             entity.setYear(dto.getYear());
         }
@@ -131,9 +128,6 @@ public class SeriesService {
         }
         if (dto.getImdbRating() != null) {
             entity.setImdbRating(dto.getImdbRating());
-        }
-        if (dto.getMetacriticRating() != null) {
-            entity.setMetacriticRating(dto.getMetacriticRating());
         }
         if (dto.getRottenTomatoesRating() != null) {
             entity.setRottenTomatoesRating(dto.getRottenTomatoesRating());
@@ -182,7 +176,6 @@ public class SeriesService {
         SeriesDto dto = new SeriesDto();
         dto.setId(entity.getId());
         dto.setTitle(entity.getTitle());
-        dto.setAlternateTitle(entity.getAlternateTitle());
         dto.setYear(entity.getYear());
         dto.setGenres(entity.getGenres());
         dto.setTotalSeasons(entity.getTotalSeasons());
@@ -191,8 +184,9 @@ public class SeriesService {
         dto.setCurrentEpisode(entity.getCurrentEpisode());
         dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
         dto.setImdbRating(entity.getImdbRating());
-        dto.setMetacriticRating(entity.getMetacriticRating());
         dto.setRottenTomatoesRating(entity.getRottenTomatoesRating());
+        dto.setTmdbRating(entity.getTmdbRating());
+        dto.setTmdbVoteCount(entity.getTmdbVoteCount());
         dto.setPersonalRating(entity.getPersonalRating());
         dto.setPersonalNotes(entity.getPersonalNotes());
         dto.setPosterUrl(entity.getPosterUrl());

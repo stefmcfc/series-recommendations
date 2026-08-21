@@ -166,13 +166,6 @@
   text-decoration: underline;
 }
 
-.alternateTitle {
-  color: var(--text);
-  opacity: 0.7;
-  font-size: 0.8125rem;
-  font-style: italic;
-}
-
 .status {
   color: var(--text);
   font-size: 0.875rem;

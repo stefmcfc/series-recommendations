@@ -66,8 +66,8 @@ The Vite dev server starts at **http://localhost:5173** and proxies `/api` calls
 
 The backend is configured via `backend/src/main/resources/application.yml`. No environment variables are required to run the app itself -- defaults work out of the box. The exceptions are `app.omdb.api-key` and `app.tmdb.api-key`: without them, everything else still works, but any endpoint that needs to call out to that API fails with `502` once it actually does so:
 
-- `app.omdb.api-key` gates `GET /api/v1/series/lookup` (both its `title` and `imdbId` modes), `GET /api/v1/series/lookup/search`, and the OMDb-first branch of `GET /api/v1/series/lookup/resolve-tmdb` (which falls back to TMDB's own data, no `502`, if OMDb has no record for the resolved id -- see `series_spec_012_tmdb_lookup_fallback.md`).
-- `app.tmdb.api-key` gates `GET /api/v1/series/recommendations`, `GET /api/v1/series/lookup/search-tmdb`, and `GET /api/v1/series/lookup/resolve-tmdb` (`/recommendations` specifically only fails once there's at least one `COMPLETED` series with a resolvable `imdbId` to source from; with none yet, it returns `200` with an empty list regardless of whether the TMDB key is set).
+- `app.omdb.api-key` gates only the best-effort `imdbRating`/`rottenTomatoesRating` enrichment step inside `GET /api/v1/series/lookup/resolve-tmdb` -- per `series_spec_017_tmdb_primary_lookup.md`, TMDB is now the sole search/detail source, so an unset or failing OMDb key never fails that request; it just leaves `imdbRating`/`rottenTomatoesRating` `null` on the result (no `502`). `GET /api/v1/series/lookup` and `GET /api/v1/series/lookup/search` (OMDb-primary search/lookup) no longer exist (`404`).
+- `app.tmdb.api-key` gates `GET /api/v1/series/recommendations`, `GET /api/v1/series/lookup/search-tmdb`, and `GET /api/v1/series/lookup/resolve-tmdb` itself (`/recommendations` specifically only fails once there's at least one `COMPLETED` series with a resolvable `imdbId` to source from; with none yet, it returns `200` with an empty list regardless of whether the TMDB key is set).
 
 | Property | Default | Description |
 |----------|---------|-------------|
@@ -90,7 +90,8 @@ Override any property with a `SPRING_` prefixed environment variable (or, for th
 # Override the database path
 SPRING_DATASOURCE_URL=jdbc:sqlite:/absolute/path/to/my.db gradlew.bat bootRun
 
-# Enable GET /api/v1/series/lookup by supplying an OMDb API key
+# Enable imdbRating/rottenTomatoesRating enrichment on GET /api/v1/series/lookup/resolve-tmdb
+# by supplying an OMDb API key
 APP_OMDB_API_KEY=your-omdb-api-key gradlew.bat bootRun
 
 # Enable GET /api/v1/series/recommendations by supplying a TMDB API key

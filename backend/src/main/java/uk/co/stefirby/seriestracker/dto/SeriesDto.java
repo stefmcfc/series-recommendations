@@ -8,7 +8,6 @@ public class SeriesDto {
 
     private UUID id;
     private String title;
-    private String alternateTitle;
     private Integer year;
     private String genres;
     private Integer totalSeasons;
@@ -17,8 +16,9 @@ public class SeriesDto {
     private Integer currentEpisode;
     private String status;
     private BigDecimal imdbRating;
-    private Integer metacriticRating;
     private Integer rottenTomatoesRating;
+    private BigDecimal tmdbRating;
+    private Integer tmdbVoteCount;
     private Integer personalRating;
     private String personalNotes;
     private String posterUrl;
@@ -34,9 +34,6 @@ public class SeriesDto {
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
-
-    public String getAlternateTitle() { return alternateTitle; }
-    public void setAlternateTitle(String alternateTitle) { this.alternateTitle = alternateTitle; }
 
     public Integer getYear() { return year; }
     public void setYear(Integer year) { this.year = year; }
@@ -62,11 +59,14 @@ public class SeriesDto {
     public BigDecimal getImdbRating() { return imdbRating; }
     public void setImdbRating(BigDecimal imdbRating) { this.imdbRating = imdbRating; }
 
-    public Integer getMetacriticRating() { return metacriticRating; }
-    public void setMetacriticRating(Integer metacriticRating) { this.metacriticRating = metacriticRating; }
-
     public Integer getRottenTomatoesRating() { return rottenTomatoesRating; }
     public void setRottenTomatoesRating(Integer rottenTomatoesRating) { this.rottenTomatoesRating = rottenTomatoesRating; }
+
+    public BigDecimal getTmdbRating() { return tmdbRating; }
+    public void setTmdbRating(BigDecimal tmdbRating) { this.tmdbRating = tmdbRating; }
+
+    public Integer getTmdbVoteCount() { return tmdbVoteCount; }
+    public void setTmdbVoteCount(Integer tmdbVoteCount) { this.tmdbVoteCount = tmdbVoteCount; }
 
     public Integer getPersonalRating() { return personalRating; }
     public void setPersonalRating(Integer personalRating) { this.personalRating = personalRating; }

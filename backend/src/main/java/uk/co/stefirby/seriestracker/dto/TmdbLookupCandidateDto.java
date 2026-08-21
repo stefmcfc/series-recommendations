@@ -2,12 +2,11 @@ package uk.co.stefirby.seriestracker.dto;
 
 /**
  * A single lightweight candidate from {@code GET /api/v1/series/lookup/search-tmdb}, used to
- * let a user pick the correct show from TMDB's own search results when OMDb's own search
- * (keyed by its {@code s=} title matching, with no AKA/alternate-title support) couldn't find
- * it at all. Deliberately distinct from {@link SeriesLookupCandidateDto}: that one carries
- * {@code imdbId} (an OMDb-search candidate is already keyed by IMDb id), this one carries
- * {@code tmdbId} -- a TMDB-search candidate hasn't yet been resolved to an IMDb id, which is
- * exactly what {@code SeriesLookupService.resolveTmdbCandidate} does.
+ * let a user pick the correct show from TMDB's own search results -- per
+ * {@code series_spec_017_tmdb_primary_lookup.md}, TMDB search is this app's sole search path
+ * (OMDb's own {@code s=} search, with no AKA/alternate-title support, was removed outright).
+ * Carries {@code tmdbId}, not yet resolved to an IMDb id -- that's exactly what
+ * {@code SeriesLookupService.resolveTmdbCandidate} does.
  */
 public class TmdbLookupCandidateDto {
 

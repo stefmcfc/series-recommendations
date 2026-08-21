@@ -3,9 +3,16 @@ package uk.co.stefirby.seriestracker.dto;
 import java.math.BigDecimal;
 
 /**
- * Result of an OMDb title lookup ({@code GET /api/v1/series/lookup}), used to autofill the
- * add-series form. Deliberately distinct from {@link SeriesDto}: a lookup result is not a
- * persisted series and has no {@code id}, {@code dateAdded}, {@code status}, etc.
+ * Result of a TMDB-primary series lookup ({@code GET /api/v1/series/lookup/resolve-tmdb}),
+ * used to autofill the add-series form. Deliberately distinct from {@link SeriesDto}: a
+ * lookup result is not a persisted series and has no {@code id}, {@code dateAdded},
+ * {@code status}, etc.
+ *
+ * <p>Per {@code series_spec_017_tmdb_primary_lookup.md}: {@code title}/{@code year}/
+ * {@code genres}/{@code totalSeasons}/{@code totalEpisodes}/{@code posterUrl}/
+ * {@code tmdbRating}/{@code tmdbVoteCount} are always sourced from TMDB; {@code imdbRating}/
+ * {@code rottenTomatoesRating} are optional OMDb enrichment, populated only when TMDB
+ * resolves an {@code imdbId} and OMDb has a record for it.
  */
 public class SeriesLookupDto {
 
@@ -15,8 +22,9 @@ public class SeriesLookupDto {
     private Integer totalSeasons;
     private Integer totalEpisodes;
     private BigDecimal imdbRating;
-    private Integer metacriticRating;
     private Integer rottenTomatoesRating;
+    private BigDecimal tmdbRating;
+    private Integer tmdbVoteCount;
     private String posterUrl;
     private String imdbId;
 
@@ -40,11 +48,14 @@ public class SeriesLookupDto {
     public BigDecimal getImdbRating() { return imdbRating; }
     public void setImdbRating(BigDecimal imdbRating) { this.imdbRating = imdbRating; }
 
-    public Integer getMetacriticRating() { return metacriticRating; }
-    public void setMetacriticRating(Integer metacriticRating) { this.metacriticRating = metacriticRating; }
-
     public Integer getRottenTomatoesRating() { return rottenTomatoesRating; }
     public void setRottenTomatoesRating(Integer rottenTomatoesRating) { this.rottenTomatoesRating = rottenTomatoesRating; }
+
+    public BigDecimal getTmdbRating() { return tmdbRating; }
+    public void setTmdbRating(BigDecimal tmdbRating) { this.tmdbRating = tmdbRating; }
+
+    public Integer getTmdbVoteCount() { return tmdbVoteCount; }
+    public void setTmdbVoteCount(Integer tmdbVoteCount) { this.tmdbVoteCount = tmdbVoteCount; }
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }

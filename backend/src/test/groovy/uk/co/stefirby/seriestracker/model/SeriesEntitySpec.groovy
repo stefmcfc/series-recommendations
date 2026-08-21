@@ -34,7 +34,6 @@ class SeriesEntitySpec extends Specification {
                 currentEpisode: 3,
                 status: SeriesStatus.WATCHING,
                 imdbRating: 9.2,
-                metacriticRating: 71,
                 rottenTomatoesRating: 72,
                 personalRating: 4,
                 personalNotes: "Epic show, some disappointing seasons",
@@ -112,9 +111,21 @@ class SeriesEntitySpec extends Specification {
         rating << [0.0, 5.0, 10.0]
     }
 
-    def "should reject Metacritic rating > 100"() {
-        given: "a series with a Metacritic rating above 100"
-            def series = new SeriesEntity(title: "Show", metacriticRating: 101)
+    def "SERIES-017-AC-10: should reject TMDB rating > 10"() {
+        given: "a series with a TMDB rating above 10"
+            def series = new SeriesEntity(title: "Show", tmdbRating: 10.1)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised for the tmdbRating field"
+            !violations.isEmpty()
+            violations.any { it.propertyPath.toString() == "tmdbRating" }
+    }
+
+    def "SERIES-017-AC-10: should reject TMDB rating < 0"() {
+        given: "a series with a negative TMDB rating"
+            def series = new SeriesEntity(title: "Show", tmdbRating: -0.1)
 
         when: "the series is validated"
             def violations = validator.validate(series)
@@ -123,9 +134,9 @@ class SeriesEntitySpec extends Specification {
             !violations.isEmpty()
     }
 
-    def "should accept Metacritic rating between 0 and 100 inclusive"() {
-        given: "a series with a Metacritic rating within the valid range"
-            def series = new SeriesEntity(title: "Show", metacriticRating: rating)
+    def "SERIES-017-AC-10: should accept TMDB rating between 0 and 10 inclusive"() {
+        given: "a series with a TMDB rating within the valid range"
+            def series = new SeriesEntity(title: "Show", tmdbRating: rating)
 
         when: "the series is validated"
             def violations = validator.validate(series)
@@ -134,7 +145,33 @@ class SeriesEntitySpec extends Specification {
             violations.isEmpty()
 
         where:
-        rating << [0, 50, 100]
+        rating << [0.0, 5.0, 10.0]
+    }
+
+    def "SERIES-017-AC-10: should reject a negative TMDB vote count"() {
+        given: "a series with a negative tmdbVoteCount"
+            def series = new SeriesEntity(title: "Show", tmdbVoteCount: -1)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised for the tmdbVoteCount field"
+            !violations.isEmpty()
+            violations.any { it.propertyPath.toString() == "tmdbVoteCount" }
+    }
+
+    def "SERIES-017-AC-10: should accept a zero or positive TMDB vote count"() {
+        given: "a series with a non-negative tmdbVoteCount"
+            def series = new SeriesEntity(title: "Show", tmdbVoteCount: count)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
+
+        where:
+        count << [0, 245]
     }
 
     def "should reject Rotten Tomatoes rating > 100"() {
@@ -269,7 +306,8 @@ class SeriesEntitySpec extends Specification {
                 genres: null,
                 imdbRating: null,
                 personalNotes: null,
-                alternateTitle: null,
+                tmdbRating: null,
+                tmdbVoteCount: null,
                 tags: null
             )
 
@@ -288,21 +326,23 @@ class SeriesEntitySpec extends Specification {
             series.status == SeriesStatus.BACKLOG
     }
 
-    def "SERIES-013-AC-01: accepts a series with an alternateTitle set"() {
-        given: "a series with title and alternateTitle both set"
-            def series = new SeriesEntity(title: "MI-5", alternateTitle: "Spooks")
+    def "SERIES-017-AC-10: accepts a series with tmdbRating/tmdbVoteCount set"() {
+        given: "a series with title, tmdbRating, and tmdbVoteCount all set"
+            def series = new SeriesEntity(title: "Spooks", tmdbRating: 7.8, tmdbVoteCount: 245)
 
-        expect: "the entity holds both values"
-            series.title == "MI-5"
-            series.alternateTitle == "Spooks"
+        expect: "the entity holds all three values"
+            series.title == "Spooks"
+            series.tmdbRating == 7.8
+            series.tmdbVoteCount == 245
     }
 
-    def "SERIES-013-AC-01: leaves alternateTitle null when unset, like other optional fields"() {
+    def "SERIES-017-AC-10: leaves tmdbRating/tmdbVoteCount null when unset, like other optional fields"() {
         given: "a series with only a title"
             def series = new SeriesEntity(title: "Breaking Bad")
 
-        expect: "alternateTitle defaults to null"
-            series.alternateTitle == null
+        expect: "tmdbRating/tmdbVoteCount default to null"
+            series.tmdbRating == null
+            series.tmdbVoteCount == null
     }
 
     def "SERIES-014-AC-03/05: should create a series with tags set and return it verbatim"() {
