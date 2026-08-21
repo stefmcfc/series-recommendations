@@ -6,6 +6,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria
+import uk.co.stefirby.seriestracker.model.KeywordEntity
+import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
 @SpringBootTest
@@ -21,8 +24,12 @@ class SeriesSearchServiceSpec extends Specification {
     @Autowired
     SeriesRepository seriesRepository
 
+    @Autowired
+    KeywordRepository keywordRepository
+
     def setup() {
         seriesRepository.deleteAll()
+        keywordRepository.deleteAll()
 
         seriesService.create(new SeriesDto(
             title: "The Office",
@@ -224,5 +231,58 @@ class SeriesSearchServiceSpec extends Specification {
             // Most recently added first (Stranger Things was added last in setup)
             results[0].title == "Stranger Things"
             results[-1].title == "The Office"
+    }
+
+    def "SERIES-019-AC-19: keyword filter matches exactly (case-insensitive), not by substring"() {
+        given: "a series carrying 'spy', another carrying 'espionage'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def espionage = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 5265, name: "espionage"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "Homeland", keywords: [espionage] as Set))
+
+        when: "search is called with keywords: ['spy']"
+            def results = searchService.search(new SeriesSearchCriteria(keywords: ["spy"]))
+
+        then: "only the exact match is returned -- 'espionage' does not match 'spy'"
+            results*.title == ["Spooks"]
+    }
+
+    def "SERIES-019-AC-19: keyword filter is case-insensitive"() {
+        given: "a series carrying 'spy'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", keywords: [spy] as Set))
+
+        when: "search is called with a differently-cased keyword"
+            def results = searchService.search(new SeriesSearchCriteria(keywords: ["SPY"]))
+
+        then: "the series is still matched"
+            results*.title == ["Spooks"]
+    }
+
+    def "SERIES-019-AC-19: multiple requested keywords use OR logic"() {
+        given: "one series carrying 'spy', another carrying 'mi5', a third carrying neither"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def mi5 = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 190904, name: "mi5"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "Homeland", keywords: [mi5] as Set))
+            seriesRepository.save(new SeriesEntity(title: "The Office"))
+
+        when: "search is called with both keywords"
+            def results = searchService.search(new SeriesSearchCriteria(keywords: ["spy", "mi5"]))
+
+        then: "both matching series are returned"
+            results*.title as Set == ["Spooks", "Homeland"] as Set
+    }
+
+    def "SERIES-019-AC-21: an empty keywords list applies no filtering"() {
+        given: "two series, neither carrying any keyword"
+            seriesRepository.save(new SeriesEntity(title: "No Keywords One"))
+            seriesRepository.save(new SeriesEntity(title: "No Keywords Two"))
+
+        when: "search is called with no keywords criteria"
+            def results = searchService.search(new SeriesSearchCriteria())
+
+        then: "both series are returned (plus the four from setup)"
+            results.size() == 6
     }
 }

@@ -149,6 +149,20 @@ class SeriesLookupServiceSpec extends Specification {
             result.tmdbVoteCount == 12
     }
 
+    def "SERIES-019-AC-22: resolve carries tmdbId through onto the lookup result"() {
+        given: "TmdbClient.details resolves a full detail"
+            tmdbClient.details(4046) >> new TmdbSeriesDetail(
+                "Spooks", 2002, [80], "/poster.jpg", 10, 81,
+                new BigDecimal("7.8"), 245, ProductionStatus.ENDED, "GB")
+            tmdbClient.externalIds(4046) >> Optional.empty()
+
+        when: "resolveTmdbCandidate(4046) is called"
+            def result = lookupService.resolveTmdbCandidate(4046)
+
+        then: "the result carries the same tmdbId"
+            result.tmdbId == 4046
+    }
+
     def "SERIES-017-AC-04: a TmdbClient.details failure propagates unchanged"() {
         given: "TMDB's own detail endpoint fails"
             tmdbClient.details(4046) >> { throw new ExternalServiceException("TMDB request failed") }

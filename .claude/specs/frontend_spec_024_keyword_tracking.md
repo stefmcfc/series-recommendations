@@ -1,7 +1,7 @@
 # Frontend Spec 024: Keyword Tracking (Display, Stats View, Filter)
 
-**Status**: Not started
-**Depends on**: Series Spec 019 (`series_spec_019_keyword_tracking.md`, `GET /series/keywords`, `SeriesSearchCriteria.keywords`) — not yet written/implemented, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Frontend Spec 018 (`tags` display precedent) ✅
+**Status**: Implemented
+**Depends on**: Series Spec 019 (`series_spec_019_keyword_tracking.md`, `GET /series/keywords`, `SeriesSearchCriteria.keywords`, Requirement 6's `tmdbId` round-trip) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Frontend Spec 018 (`tags` display precedent) ✅, Frontend Spec 022 (`AddSeriesForm` hidden-field round-trip pattern) ✅
 **Frontend Stage**: 24 of N
 
 ## Overview
@@ -29,6 +29,8 @@ Surfaces Series Spec 019's normalized TMDB keyword tracking: read-only keyword c
 - **FRONTEND-024-AC-03** [AUTO]: `SearchCriteria` shall gain a `keywords?: string[]` field, following the exact convention `genres?: string[]` already uses on the same interface.
 - **FRONTEND-024-AC-04** [AUTO]: `seriesApi` shall gain `getKeywordStats: (sortBy?: 'seriesCount' | 'averagePersonalRating') => Promise<KeywordStat[]>`, calling `GET /series/keywords` (with `sortBy` as a query param when provided) and unwrapping the `{ data, count }` envelope, following the exact pattern `getGenreOptions` already uses for its own single-array-fetch shape.
 - **FRONTEND-024-AC-05** [AUTO]: `buildSearchParams` (the shared helper already used by both `search` and `export`) shall include `params.keyword = criteria.keywords` (repeatable param, mirroring `params.genre = criteria.genres`'s exact existing line) when `criteria.keywords?.length` is truthy.
+
+**Implementation note (backend gap closed as part of this spec)**: at the start of this spec's implementation, `SeriesDto` did not serialize a series' own keyword names — `SeriesEntity.keywords` (the `series_spec_019` `@ManyToMany` relation) existed, but `SeriesService.entityToDto` never read it, so `FRONTEND-024-AC-02` had no real backend data to carry. Closed by adding `SeriesDto.keywords: List<String>` (output-only, alphabetically sorted, empty list not null) and populating it in `entityToDto`. This also required changing `SeriesEntity.keywords` from `FetchType.LAZY` to `FetchType.EAGER` — `entityToDto` now reads this collection on every read path (`getById`/`getAll`/`create`/`update`), and `KeywordStatsService` already loads every series' full keyword set into memory regardless (its own javadoc's "fine at this app's scale" precedent), so this doesn't introduce a new class of cost. Covered by two new `SeriesServiceSpec` cases (`FRONTEND-024-AC-02`). See `backend/src/main/java/uk/co/stefirby/seriestracker/dto/SeriesDto.java`, `SeriesService.java`, `model/SeriesEntity.java`.
 
 ---
 
@@ -68,16 +70,32 @@ Surfaces Series Spec 019's normalized TMDB keyword tracking: read-only keyword c
 
 ---
 
+### Requirement 5: `tmdbId` Carried Through for Creation-Time Keyword Population
+
+**User story**: As a user, I want a series I just added to already have its keywords populated, not just after I later hit Refresh, since TMDB's keyword data was available the whole time via the same `tmdbId` I already picked in the candidate picker.
+
+Implemented ahead of Requirements 1-4 (display) — this is prerequisite plumbing, not display, added to close a gap in `series_spec_019_keyword_tracking.md` discovered after that spec's initial implementation: `resolveTmdbCandidate` already has the `tmdbId` it needs in scope (it's the method's own parameter), but nothing carried that value from the lookup response, through the add-series form, to the eventual create request — so a freshly-created series got no keywords until its first refresh. This requirement closes that round-trip using the exact hidden-field pattern already established for `imdbId`/`originCountry`/`tmdbRating`/`tmdbVoteCount` (`frontend_spec_022`/`frontend_spec_026`) — no new mechanism, just one more field carried the same way. It's numbered last (not folded into Requirement 1) specifically so it doesn't collide with or renumber `FRONTEND-024-AC-01` through `AC-14` above, which predate it.
+
+#### Acceptance Criteria
+
+- **FRONTEND-024-AC-15** [AUTO]: `src/types/series.ts`'s `SeriesLookupResult` interface shall gain `tmdbId?: number`.
+- **FRONTEND-024-AC-16** [AUTO]: `CreateSeriesRequest` shall gain `tmdbId?: number`.
+- **FRONTEND-024-AC-17** [AUTO]: `AddSeriesForm`'s `FormState` shall carry `tmdbId` the same way it already carries `imdbId`: populated by `applyLookupResult` from a resolved `SeriesLookupResult`, included in `buildPayload`'s `CreateSeriesRequest` whenever present, never rendered as a visible input.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
 |-----------|--------|
-| `GET /series/keywords`, `KeywordStatDto` shape, `SeriesSearchCriteria.keywords`, exact-match keyword filter semantics | `series_spec_019_keyword_tracking.md` (not yet written) |
+| `GET /series/keywords`, `KeywordStatDto` shape, `SeriesSearchCriteria.keywords`, exact-match keyword filter semantics | `series_spec_019_keyword_tracking.md` |
 | `formatValue` null-dash convention, `<dl className={styles.fields}>` structure, existing field ordering (`Tags` entry this spec's `Keywords` entry is positioned after) | `frontend_spec_005_series_detail.md`, `frontend_spec_018_tags.md` |
 | Genre checkbox-list precedent this spec's `SearchFilter` keyword control and its failure-handling both mirror | `series_spec_010_genre_dropdown.md`, `frontend_spec_014_genre_dropdown.md` |
 | `SeriesList` sort-control re-fetch-on-change pattern this spec's `KeywordsView` column-sort mirrors | `frontend_spec_013_star_ratings.md` |
 | Top-level nav toggle pattern (`App.tsx`) this spec's `Keywords` view addition follows | `frontend_spec_010_recommendations.md` |
 | `buildSearchParams`, `getGenreOptions`, `{ data, count }` envelope-unwrapping convention | `frontend_spec_001.md`, `seriesApi.ts` |
+| `SeriesLookupDto.tmdbId`/`SeriesDto.tmdbId`, `SeriesService.create`'s conditional `KeywordSyncService.syncKeywords` call (Requirement 5's backend counterpart) | `series_spec_019_keyword_tracking.md` Requirement 6 |
+| `imdbId`/`originCountry`/`tmdbRating` hidden-field round-trip pattern Requirement 5's `tmdbId` field mirrors | `frontend_spec_022_tmdb_primary_lookup.md`, `frontend_spec_026_origin_country_and_tmdb_metadata_display.md` |
 
 ---
 
@@ -209,21 +227,66 @@ describe('FRONTEND-024-AC-14: keyword fetch failure degrades gracefully', () => 
 })
 ```
 
+### `src/components/AddSeriesForm.test.tsx` (additions, Requirement 5)
+
+```typescript
+describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () => {
+  it('includes tmdbId after a resolved lookup', async () => {
+    vi.mocked(seriesApi.searchTmdb).mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+    ])
+    vi.mocked(seriesApi.resolveTmdbCandidate).mockResolvedValue({
+      title: 'Spooks',
+      tmdbId: 4046,
+    })
+    render(<AddSeriesForm onCancel={vi.fn()} onSuccess={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/^title/i), { target: { value: 'Spooks' } })
+    fireEvent.click(screen.getByRole('button', { name: /look up/i }))
+    await screen.findByDisplayValue('Spooks')
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(seriesApi.create).toHaveBeenCalledWith(
+        expect.objectContaining({ tmdbId: 4046 }),
+      ),
+    )
+  })
+
+  it('omits tmdbId when no lookup was performed', async () => {
+    render(<AddSeriesForm onCancel={vi.fn()} onSuccess={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/^title/i), { target: { value: 'Homemade Show' } })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(seriesApi.create).toHaveBeenCalledWith(
+        expect.not.objectContaining({ tmdbId: expect.anything() }),
+      ),
+    )
+  })
+})
+```
+
 ---
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-024-AC-01: `KeywordStat` type
-- [ ] FRONTEND-024-AC-02: `Series.keywords: string[]`
-- [ ] FRONTEND-024-AC-03: `SearchCriteria.keywords?: string[]`
-- [ ] FRONTEND-024-AC-04: `seriesApi.getKeywordStats(sortBy?)`
-- [ ] FRONTEND-024-AC-05: `buildSearchParams` includes `keyword` when present
-- [ ] FRONTEND-024-AC-06: `SeriesDetail` Keywords `<dl>` entry, positioned after Tags
-- [ ] FRONTEND-024-AC-07: keyword chips rendered; dash when empty
-- [ ] FRONTEND-024-AC-08: `KeywordsView` table (keyword / count / avg rating)
-- [ ] FRONTEND-024-AC-09: sortable column headers re-fetch with `sortBy`
-- [ ] FRONTEND-024-AC-10: `App.tsx` gains a `Keywords` nav toggle
-- [ ] FRONTEND-024-AC-11: loading/error states on `KeywordsView`
-- [ ] FRONTEND-024-AC-12: `SearchFilter` keyword checkbox list, sourced from the backend
-- [ ] FRONTEND-024-AC-13: selected keywords included in criteria, omitted when none
-- [ ] FRONTEND-024-AC-14: keyword-fetch failure degrades gracefully, scoped error only
+- [x] FRONTEND-024-AC-01: `KeywordStat` type
+- [x] FRONTEND-024-AC-02: `Series.keywords: string[]`
+- [x] FRONTEND-024-AC-03: `SearchCriteria.keywords?: string[]`
+- [x] FRONTEND-024-AC-04: `seriesApi.getKeywordStats(sortBy?)`
+- [x] FRONTEND-024-AC-05: `buildSearchParams` includes `keyword` when present
+- [x] FRONTEND-024-AC-06: `SeriesDetail` Keywords `<dl>` entry, positioned after Tags
+- [x] FRONTEND-024-AC-07: keyword chips rendered; dash when empty
+- [x] FRONTEND-024-AC-08: `KeywordsView` table (keyword / count / avg rating)
+- [x] FRONTEND-024-AC-09: sortable column headers re-fetch with `sortBy`
+- [x] FRONTEND-024-AC-10: `App.tsx` gains a `Keywords` nav toggle
+- [x] FRONTEND-024-AC-11: loading/error states on `KeywordsView`
+- [x] FRONTEND-024-AC-12: `SearchFilter` keyword checkbox list, sourced from the backend
+- [x] FRONTEND-024-AC-13: selected keywords included in criteria, omitted when none
+- [x] FRONTEND-024-AC-14: keyword-fetch failure degrades gracefully, scoped error only
+- [x] FRONTEND-024-AC-15: `SeriesLookupResult` gains `tmdbId`
+- [x] FRONTEND-024-AC-16: `CreateSeriesRequest` gains `tmdbId`
+- [x] FRONTEND-024-AC-17: `AddSeriesForm` carries `tmdbId` through to the create payload

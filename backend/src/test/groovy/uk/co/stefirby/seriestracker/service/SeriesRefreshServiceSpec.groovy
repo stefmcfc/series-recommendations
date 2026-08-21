@@ -19,9 +19,11 @@ class SeriesRefreshServiceSpec extends Specification {
     SeriesRepository repository = Mock()
     TmdbClient tmdbClient = Mock()
     OmdbClient omdbClient = Mock()
-    SeriesService seriesService = new SeriesService(repository)
+    KeywordSyncService keywordSyncService = Mock()
+    SeriesService seriesService = new SeriesService(repository, keywordSyncService)
 
-    SeriesRefreshService refreshService = new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService)
+    SeriesRefreshService refreshService =
+        new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService)
 
     private static SeriesEntity existing(UUID id, String imdbId = "tt0903747") {
         new SeriesEntity(
@@ -228,5 +230,40 @@ class SeriesRefreshServiceSpec extends Specification {
 
         then: "the entity is saved exactly once"
             1 * repository.save(entity) >> entity
+    }
+
+    def "SERIES-019-AC-08: a successful TMDB refresh also syncs keywords for the resolved tmdbId"() {
+        given: "an existing series, TMDB resolves fine"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            refreshService.refresh(id)
+
+        then: "keyword syncing is delegated for the resolved tmdbId"
+            1 * keywordSyncService.syncKeywords(entity, 1396)
+    }
+
+    def "SERIES-019-AC-08: when no tmdbId is resolved, keyword syncing is not attempted"() {
+        given: "an existing series, TMDB fails to resolve a tmdbId"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.empty()
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            refreshService.refresh(id)
+
+        then: "no keyword sync is attempted"
+            0 * keywordSyncService.syncKeywords(_, _)
     }
 }

@@ -81,6 +81,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     lastRefreshedAt: null,
     originCountry: null,
     productionStatus: null,
+    keywords: [],
     ...overrides,
   }
 }
@@ -502,6 +503,62 @@ describe('FRONTEND-014-AC-01: getGenreOptions', () => {
 
     expect(client.get).toHaveBeenCalledWith('/series/genres')
     expect(result).toEqual(['Action', 'Drama'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-024-AC-04: getKeywordStats()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-024-AC-04: getKeywordStats', () => {
+  it('fetches /series/keywords and unwraps the envelope', async () => {
+    client.get.mockResolvedValue({
+      data: {
+        data: [{ name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 }],
+        count: 1,
+      },
+    })
+
+    const result = await seriesApi.getKeywordStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', { params: {} })
+    expect(result).toEqual([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+  })
+
+  it('passes sortBy as a query param when provided', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats('averagePersonalRating')
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', {
+      params: { sortBy: 'averagePersonalRating' },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-024-AC-05: buildSearchParams includes keyword when present
+// ---------------------------------------------------------------------------
+describe('FRONTEND-024-AC-05: search includes keyword param', () => {
+  it('should serialize keywords array as repeated keyword param', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ keywords: ['spy', 'mi5'] })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.keyword).toEqual(['spy', 'mi5'])
+  })
+
+  it('omits keyword param when keywords is absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ title: 'office' })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params).not.toHaveProperty('keyword')
   })
 })
 

@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.service;
 
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
+import uk.co.stefirby.seriestracker.model.KeywordEntity;
 import uk.co.stefirby.seriestracker.model.ProductionStatus;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,9 +25,11 @@ public class SeriesService {
     private static final Logger log = LoggerFactory.getLogger(SeriesService.class);
 
     private final SeriesRepository repository;
+    private final KeywordSyncService keywordSyncService;
 
-    public SeriesService(SeriesRepository repository) {
+    public SeriesService(SeriesRepository repository, KeywordSyncService keywordSyncService) {
         this.repository = repository;
+        this.keywordSyncService = keywordSyncService;
     }
 
     @Transactional
@@ -86,6 +90,15 @@ public class SeriesService {
 
         if (status == SeriesStatus.COMPLETED) {
             entity.setDateCompleted(LocalDateTime.now());
+        }
+
+        // SERIES-019-AC-24: when the incoming dto carries a tmdbId (round-tripped from
+        // resolveTmdbCandidate, SERIES-019-AC-22), populate this series' keyword set at
+        // creation time via the same reconciliation logic refresh already uses -- non-fatal on
+        // its own (KeywordSyncService never throws), so no extra error handling here. A
+        // manually-added series with no tmdbId is left with an empty keyword set, as today.
+        if (dto.getTmdbId() != null) {
+            keywordSyncService.syncKeywords(entity, dto.getTmdbId());
         }
 
         entity = repository.save(entity);
@@ -212,6 +225,10 @@ public class SeriesService {
         dto.setLastRefreshedAt(entity.getLastRefreshedAt());
         dto.setProductionStatus(entity.getProductionStatus() != null ? entity.getProductionStatus().name() : null);
         dto.setOriginCountry(entity.getOriginCountry());
+        dto.setKeywords(entity.getKeywords().stream()
+            .map(KeywordEntity::getName)
+            .sorted(Comparator.naturalOrder())
+            .collect(Collectors.toList()));
         return dto;
     }
 }

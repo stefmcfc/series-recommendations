@@ -31,6 +31,13 @@ export interface Series {
   lastRefreshedAt: string | null
   originCountry: string | null
   productionStatus: string | null
+  keywords: string[]
+}
+
+export interface KeywordStat {
+  name: string
+  seriesCount: number
+  averagePersonalRating: number | null
 }
 
 export interface RefreshResult {
@@ -65,6 +72,7 @@ export interface CreateSeriesRequest {
   tmdbVoteCount?: number
   originCountry?: string
   productionStatus?: string
+  tmdbId?: number
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
@@ -86,6 +94,7 @@ export interface SeriesLookupResult {
   imdbId?: string
   originCountry?: string
   productionStatus?: string
+  tmdbId?: number
 }
 
 export interface LookupTmdbCandidate {
@@ -130,6 +139,7 @@ export interface RecommendationQuery {
 export interface SearchCriteria {
   title?: string
   genres?: string[]
+  keywords?: string[]
   status?: SeriesStatus
   minPersonalRating?: number
   maxPersonalRating?: number

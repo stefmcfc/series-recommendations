@@ -239,6 +239,18 @@ export function SeriesDetail({
                 <dd>{formatValue(series.tags)}</dd>
               </div>
               <div className={styles.field}>
+                <dt>Keywords</dt>
+                <dd>
+                  {(series.keywords ?? []).length === 0
+                    ? '—'
+                    : series.keywords.map((keyword) => (
+                        <span key={keyword} className={styles.keywordChip}>
+                          {keyword}
+                        </span>
+                      ))}
+                </dd>
+              </div>
+              <div className={styles.field}>
                 <dt>Status</dt>
                 <dd>{series.status}</dd>
               </div>

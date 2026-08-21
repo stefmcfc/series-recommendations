@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { seriesApi } from '../services/seriesApi'
 import { SeriesStatus } from '../types/series'
 import type { SearchCriteria } from '../types/series'
 import styles from './SearchFilter.module.css'
@@ -11,6 +12,7 @@ interface SearchFilterProps {
 interface FormState {
   title: string
   genres: string
+  keywordsSelected: string[]
   status: SeriesStatus | ''
   minPersonalRating: string
   maxPersonalRating: string
@@ -22,6 +24,7 @@ interface FormState {
 const initialFormState: FormState = {
   title: '',
   genres: '',
+  keywordsSelected: [],
   status: '',
   minPersonalRating: '',
   maxPersonalRating: '',
@@ -41,6 +44,9 @@ function buildCriteria(form: FormState): SearchCriteria {
     .filter((genre) => genre !== '')
   if (genres.length > 0) criteria.genres = genres
 
+  if (form.keywordsSelected.length > 0)
+    criteria.keywords = form.keywordsSelected
+
   if (form.status !== '') criteria.status = form.status
 
   if (form.minPersonalRating.trim() !== '')
@@ -59,6 +65,21 @@ function buildCriteria(form: FormState): SearchCriteria {
 
 export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   const [form, setForm] = useState<FormState>(initialFormState)
+  const [keywordOptions, setKeywordOptions] = useState<string[]>([])
+  const [keywordOptionsError, setKeywordOptionsError] = useState<string | null>(
+    null,
+  )
+
+  useEffect(() => {
+    seriesApi
+      .getKeywordStats()
+      .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
+      .catch(() =>
+        setKeywordOptionsError(
+          'Failed to load keyword filter options. Please try again.',
+        ),
+      )
+  }, [])
 
   const updateField =
     (field: keyof FormState) =>
@@ -70,6 +91,17 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
     (field: keyof FormState) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.checked }))
+    }
+
+  const handleKeywordToggle =
+    (keyword: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const checked = event.target.checked
+      setForm((prev) => ({
+        ...prev,
+        keywordsSelected: checked
+          ? [...prev.keywordsSelected, keyword]
+          : prev.keywordsSelected.filter((k) => k !== keyword),
+      }))
     }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -102,6 +134,29 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
           value={form.genres}
           onChange={updateField('genres')}
         />
+      </div>
+
+      <div className={styles.field}>
+        <span>Keywords</span>
+        {keywordOptionsError ? (
+          <p className={styles.keywordError} role="alert">
+            {keywordOptionsError}
+          </p>
+        ) : (
+          <div className={styles.keywordPicker}>
+            {keywordOptions.map((keyword) => (
+              <div key={keyword} className={styles.keywordOption}>
+                <input
+                  id={`search-keyword-${keyword}`}
+                  type="checkbox"
+                  checked={form.keywordsSelected.includes(keyword)}
+                  onChange={handleKeywordToggle(keyword)}
+                />
+                <label htmlFor={`search-keyword-${keyword}`}>{keyword}</label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className={styles.field}>

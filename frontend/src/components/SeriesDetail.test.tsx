@@ -36,6 +36,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     lastRefreshedAt: null,
     originCountry: null,
     productionStatus: null,
+    keywords: [],
     ...overrides,
   }
 }
@@ -487,5 +488,24 @@ describe('FRONTEND-005-AC-30: no console logging of series data', () => {
     )
     expect(loggedNotes).toBe(false)
     consoleSpy.mockRestore()
+  })
+})
+
+describe('FRONTEND-024-AC-06/07: Keywords entry rendered', () => {
+  it('renders each keyword as a chip', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ keywords: ['spy', 'mi5'] }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('Keywords')).toBeInTheDocument()
+    expect(screen.getByText('spy')).toBeInTheDocument()
+    expect(screen.getByText('mi5')).toBeInTheDocument()
+  })
+
+  it('renders a dash when there are no keywords', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ keywords: [] }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('Keywords')
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 })
