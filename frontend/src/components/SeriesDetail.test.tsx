@@ -34,6 +34,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    originCountry: null,
+    productionStatus: null,
     ...overrides,
   }
 }
@@ -434,6 +436,40 @@ describe('FRONTEND-023-AC-09: last refreshed display', () => {
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
     await screen.findByText('The Office')
     expect(screen.queryByText(/last refreshed/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-026-AC-09/10/11: TMDB metadata fields', () => {
+  it('displays origin country, production status, and TMDB rating/vote count', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        originCountry: 'GB',
+        productionStatus: 'ENDED',
+        tmdbRating: 7.7,
+        tmdbVoteCount: 450,
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('United Kingdom')).toBeInTheDocument()
+    expect(screen.getByText('Ended')).toBeInTheDocument()
+    expect(screen.getByText('7.7')).toBeInTheDocument()
+    expect(screen.getByText('450')).toBeInTheDocument()
+  })
+
+  it('shows "—" for each field when null', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        originCountry: null,
+        productionStatus: null,
+        tmdbRating: null,
+        tmdbVoteCount: null,
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('The Office')
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4)
   })
 })
 

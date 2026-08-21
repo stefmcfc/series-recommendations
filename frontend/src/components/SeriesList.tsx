@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { Series, SearchCriteria, RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
+import { formatCountryName } from '../utils/countryName'
 import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
@@ -358,8 +359,14 @@ export function SeriesList({
                   className={styles.title}
                   onClick={() => handleRowClick(s.id)}
                 >
-                  {s.title}
+                  {s.year != null ? `${s.title} (${s.year})` : s.title}
                 </button>
+                {s.originCountry != null && (
+                  <span className={styles.country}>
+                    {' | '}
+                    {formatCountryName(s.originCountry)}
+                  </span>
+                )}
               </div>
               <span className={styles.status}>{s.status}</span>
               <span className={styles.rating}>

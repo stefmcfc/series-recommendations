@@ -29,6 +29,8 @@ export interface Series {
   dateAdded: string
   dateCompleted: string | null
   lastRefreshedAt: string | null
+  originCountry: string | null
+  productionStatus: string | null
 }
 
 export interface RefreshResult {
@@ -59,6 +61,10 @@ export interface CreateSeriesRequest {
   personalNotes?: string
   posterUrl?: string
   imdbId?: string
+  tmdbRating?: number
+  tmdbVoteCount?: number
+  originCountry?: string
+  productionStatus?: string
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
@@ -78,6 +84,8 @@ export interface SeriesLookupResult {
   tmdbVoteCount?: number
   posterUrl?: string
   imdbId?: string
+  originCountry?: string
+  productionStatus?: string
 }
 
 export interface LookupTmdbCandidate {
@@ -86,6 +94,7 @@ export interface LookupTmdbCandidate {
   year?: number
   originalTitle?: string
   posterUrl?: string
+  originCountry?: string
 }
 
 export interface Recommendation {

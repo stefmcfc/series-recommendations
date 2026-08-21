@@ -1,6 +1,6 @@
 # Frontend Spec 026: Origin Country & TMDB Metadata Display
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 022 (`SeriesLookupResult`, TMDB candidate picker) ✅, Series Spec 021 (`originCountry`, `productionStatus`-at-creation, companion backend spec)
 **Frontend Stage**: 26 of N
 
@@ -225,16 +225,16 @@ Note: every `makeSeries` test-fixture helper (`SeriesList.test.tsx`, `SeriesDeta
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-026-AC-01: `Series` gains `originCountry`/`productionStatus`
-- [ ] FRONTEND-026-AC-02: `CreateSeriesRequest` gains `tmdbRating`/`tmdbVoteCount`/`originCountry`/`productionStatus`
-- [ ] FRONTEND-026-AC-03: `SeriesLookupResult` gains `originCountry`/`productionStatus`
-- [ ] FRONTEND-026-AC-04: `LookupTmdbCandidate` gains `originCountry`
-- [ ] FRONTEND-026-AC-05: `formatCountryName` utility
-- [ ] FRONTEND-026-AC-06: `AddSeriesForm` autofill carries the four fields through
-- [ ] FRONTEND-026-AC-07: `AddSeriesForm` payload includes the four fields
-- [ ] FRONTEND-026-AC-08: candidate picker shows origin country
-- [ ] FRONTEND-026-AC-09: `SeriesDetail` shows Origin Country
-- [ ] FRONTEND-026-AC-10: `SeriesDetail` shows Production Status
-- [ ] FRONTEND-026-AC-11: `SeriesDetail` shows TMDB Rating/Vote Count
-- [ ] FRONTEND-026-AC-12: `SeriesList` title shows "(Year)"
-- [ ] FRONTEND-026-AC-13: `SeriesList` shows "| Country"
+- [x] FRONTEND-026-AC-01: `Series` gains `originCountry`/`productionStatus`
+- [x] FRONTEND-026-AC-02: `CreateSeriesRequest` gains `tmdbRating`/`tmdbVoteCount`/`originCountry`/`productionStatus`
+- [x] FRONTEND-026-AC-03: `SeriesLookupResult` gains `originCountry`/`productionStatus`
+- [x] FRONTEND-026-AC-04: `LookupTmdbCandidate` gains `originCountry`
+- [x] FRONTEND-026-AC-05: `formatCountryName` utility
+- [x] FRONTEND-026-AC-06: `AddSeriesForm` autofill carries the four fields through
+- [x] FRONTEND-026-AC-07: `AddSeriesForm` payload includes the four fields
+- [x] FRONTEND-026-AC-08: candidate picker shows origin country
+- [x] FRONTEND-026-AC-09: `SeriesDetail` shows Origin Country
+- [x] FRONTEND-026-AC-10: `SeriesDetail` shows Production Status
+- [x] FRONTEND-026-AC-11: `SeriesDetail` shows TMDB Rating/Vote Count
+- [x] FRONTEND-026-AC-12: `SeriesList` title shows "(Year)"
+- [x] FRONTEND-026-AC-13: `SeriesList` shows "| Country"

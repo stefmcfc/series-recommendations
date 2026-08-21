@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { Series } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
+import { formatCountryName } from '../utils/countryName'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -19,6 +20,15 @@ function formatValue(value: string | number | null): string {
 function formatDate(value: string | null): string {
   if (value === null) return '—'
   return new Date(value).toLocaleDateString()
+}
+
+function formatProductionStatus(value: string | null): string {
+  if (value == null) return '—'
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function buildRefreshSummary(
@@ -255,6 +265,22 @@ export function SeriesDetail({
               <div className={styles.field}>
                 <dt>Rotten Tomatoes Rating</dt>
                 <dd>{formatValue(series.rottenTomatoesRating)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>TMDB Rating</dt>
+                <dd>{formatValue(series.tmdbRating)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>TMDB Vote Count</dt>
+                <dd>{formatValue(series.tmdbVoteCount)}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Origin Country</dt>
+                <dd>{formatValue(formatCountryName(series.originCountry))}</dd>
+              </div>
+              <div className={styles.field}>
+                <dt>Production Status</dt>
+                <dd>{formatProductionStatus(series.productionStatus)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Personal Rating</dt>

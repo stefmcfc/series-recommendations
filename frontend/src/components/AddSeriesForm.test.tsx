@@ -851,6 +851,72 @@ describe('FRONTEND-018-AC-07: initialValues prefill includes tags', () => {
   })
 })
 
+describe('FRONTEND-026-AC-06/07: TMDB metadata carried through to the create payload', () => {
+  it('includes tmdbRating, tmdbVoteCount, originCountry, and productionStatus after a resolved lookup', async () => {
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 2996, title: 'The Office', year: 2001 },
+    ])
+    mockResolveTmdb.mockResolvedValue(
+      makeLookupResult({
+        title: 'The Office',
+        tmdbRating: 7.7,
+        tmdbVoteCount: 450,
+        originCountry: 'GB',
+        productionStatus: 'ENDED',
+      }),
+    )
+    mockCreate.mockResolvedValue({ id: '1', title: 'The Office' } as Series)
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'The Office' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    await screen.findByDisplayValue('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tmdbRating: 7.7,
+          tmdbVoteCount: 450,
+          originCountry: 'GB',
+          productionStatus: 'ENDED',
+        }),
+      ),
+    )
+  })
+
+  it('does not render tmdbRating/tmdbVoteCount/originCountry/productionStatus as inputs', () => {
+    renderForm()
+    expect(screen.queryByLabelText(/tmdb rating/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/tmdb vote count/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/origin country/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText(/production status/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-026-AC-08: candidate picker shows origin country', () => {
+  it("displays each candidate's country to disambiguate same-titled results", async () => {
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 2996, title: 'The Office', year: 2001, originCountry: 'GB' },
+      { tmdbId: 2316, title: 'The Office', year: 2005, originCountry: 'US' },
+    ])
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'The Office' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /look up/i }))
+
+    expect(await screen.findByText(/united kingdom/i)).toBeInTheDocument()
+    expect(screen.getByText(/united states/i)).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-003-AC-31/32: no leaked data, no out-of-contract fields', () => {
   it('never logs form values to the console', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)

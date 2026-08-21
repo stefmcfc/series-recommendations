@@ -36,6 +36,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    originCountry: null,
+    productionStatus: null,
     ...overrides,
   }
 }
@@ -595,6 +597,28 @@ describe('FRONTEND-022-AC-10: alternateTitle no longer displayed', () => {
 
     await waitFor(() => expect(screen.getByText('MI-5')).toBeInTheDocument())
     expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-026-AC-12/13: year and country next to the title', () => {
+  it('shows "(Year) | Country" for a series with both set', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'The Office', year: 2001, originCountry: 'GB' }),
+    ])
+    render(<SeriesList />)
+
+    expect(await screen.findByText('The Office (2001)')).toBeInTheDocument()
+    expect(screen.getByText('| United Kingdom')).toBeInTheDocument()
+  })
+
+  it('omits the year suffix and country span when both are null', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Obscure Show', year: null, originCountry: null }),
+    ])
+    render(<SeriesList />)
+
+    expect(await screen.findByText('Obscure Show')).toBeInTheDocument()
+    expect(screen.queryByText('|', { exact: false })).not.toBeInTheDocument()
   })
 })
 
