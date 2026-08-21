@@ -395,7 +395,7 @@ class TmdbClientSpec extends Specification {
             thrown(ExternalServiceException)
     }
 
-    def "SERIES-012-AC-08/09: details maps /tv/{id}, extracting genre ids from the {id,name} object array shape"() {
+    def "SERIES-012-AC-08/09 / SERIES-017-AC-11: details maps /tv/{id}, extracting genre ids from the {id,name} object array shape and vote_average/vote_count"() {
         given: "TMDB responds to /tv/4046 with the full detail shape"
             def body = '''
                 {
@@ -404,7 +404,9 @@ class TmdbClientSpec extends Specification {
                   "genres": [{"id": 10759, "name": "Action & Adventure"}, {"id": 18, "name": "Drama"}],
                   "poster_path": "/spooks.jpg",
                   "number_of_seasons": 10,
-                  "number_of_episodes": 108
+                  "number_of_episodes": 108,
+                  "vote_average": 7.8,
+                  "vote_count": 245
                 }
             '''
             mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046")))
@@ -422,6 +424,22 @@ class TmdbClientSpec extends Specification {
             result.posterPath() == "/spooks.jpg"
             result.numberOfSeasons() == 10
             result.numberOfEpisodes() == 108
+            result.voteAverage() == 7.8
+            result.voteCount() == 245
+    }
+
+    def "SERIES-017-AC-11: details maps absent vote_average/vote_count to null"() {
+        given: "TMDB responds to /tv/4047 with no vote fields"
+            def body = '{"name":"Obscure Show","number_of_seasons":1,"number_of_episodes":6}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4047")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.details(4047) is called"
+            def result = client().details(4047)
+
+        then: "both vote fields are null"
+            result.voteAverage() == null
+            result.voteCount() == null
     }
 
     def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {

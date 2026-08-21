@@ -5,7 +5,6 @@ import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
-import uk.co.stefirby.seriestracker.dto.SeriesLookupCandidateDto;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
 import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
@@ -33,6 +32,14 @@ import java.util.UUID;
 public class SeriesController {
 
     private static final DateTimeFormatter FILENAME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+
+    // SERIES-017-AC-01/05: constrains {id} to an actual UUID shape so a non-UUID literal
+    // path segment (e.g. the now-removed "lookup") doesn't ambiguously match this pattern
+    // ahead of falling through to "no mapping found" -- without this, GET /lookup would be
+    // routed here and fail UUID conversion with a 400, instead of correctly 404ing as an
+    // unmapped path.
+    private static final String UUID_PATH_PATTERN =
+        "{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}";
 
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
@@ -70,42 +77,20 @@ public class SeriesController {
         return ResponseEntity.ok(new ApiResponse<>(list, list.size()));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/" + UUID_PATH_PATTERN)
     public ResponseEntity<ApiResponse<SeriesDto>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(new ApiResponse<>(seriesService.getById(id)));
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/" + UUID_PATH_PATTERN)
     public ResponseEntity<ApiResponse<SeriesDto>> update(@PathVariable UUID id, @RequestBody SeriesDto dto) {
         return ResponseEntity.ok(new ApiResponse<>(seriesService.update(id, dto)));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/" + UUID_PATH_PATTERN)
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/lookup")
-    public ResponseEntity<ApiResponse<SeriesLookupDto>> lookup(
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String imdbId) {
-        boolean hasTitle = title != null && !title.isBlank();
-        boolean hasImdbId = imdbId != null && !imdbId.isBlank();
-        if (hasTitle == hasImdbId) {
-            throw new IllegalArgumentException("Exactly one of 'title' or 'imdbId' is required");
-        }
-        SeriesLookupDto dto = hasImdbId ? lookupService.lookupByImdbId(imdbId) : lookupService.lookup(title);
-        return ResponseEntity.ok(new ApiResponse<>(dto));
-    }
-
-    @GetMapping("/lookup/search")
-    public ResponseEntity<ApiResponse<List<SeriesLookupCandidateDto>>> lookupSearch(@RequestParam String title) {
-        if (title.isBlank()) {
-            throw new IllegalArgumentException("title is required");
-        }
-        List<SeriesLookupCandidateDto> results = lookupService.search(title);
-        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }
 
     @GetMapping("/lookup/search-tmdb")

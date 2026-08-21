@@ -1,1 +1,0 @@
-ALTER TABLE series ADD COLUMN poster_url VARCHAR(1000);

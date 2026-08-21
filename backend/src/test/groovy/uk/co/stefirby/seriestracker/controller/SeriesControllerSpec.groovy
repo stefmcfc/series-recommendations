@@ -94,9 +94,9 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data.imdbId').value("tt0903747"))
   }
 
-  def "SERIES-013-AC-03: POST /api/v1/series should accept and return alternateTitle"() {
-    given: "a series DTO with an alternateTitle"
-        def dto = new SeriesDto(title: "MI-5", alternateTitle: "Spooks")
+  def "SERIES-017-AC-10: POST /api/v1/series should accept and return tmdbRating/tmdbVoteCount"() {
+    given: "a series DTO with tmdbRating and tmdbVoteCount"
+        def dto = new SeriesDto(title: "Spooks", tmdbRating: 7.8, tmdbVoteCount: 245)
         def json = objectMapper.writeValueAsString(dto)
 
     when: "a POST request is made to create the series"
@@ -106,28 +106,10 @@ class SeriesControllerSpec extends Specification {
             .content(json)
         )
 
-    then: "the series is created with alternateTitle included"
+    then: "the series is created with tmdbRating/tmdbVoteCount included"
         result.andExpect(status().isCreated())
-        result.andExpect(jsonPath('$.data.alternateTitle').value("Spooks"))
-  }
-
-  def "SERIES-013-AC-03: GET /api/v1/series/{id} returns alternateTitle"() {
-    given: "a series exists with an alternateTitle"
-        def dto = new SeriesDto(title: "MI-5", alternateTitle: "Spooks")
-        def json = objectMapper.writeValueAsString(dto)
-        def createResult = mockMvc.perform(
-          post("/api/v1/series")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(json)
-        ).andReturn()
-        def id = objectMapper.readTree(createResult.response.contentAsString).get("data").get("id").asText()
-
-    when: "a GET request is made for that series"
-        def result = mockMvc.perform(get("/api/v1/series/" + id))
-
-    then: "the response includes alternateTitle"
-        result.andExpect(status().isOk())
-        result.andExpect(jsonPath('$.data.alternateTitle').value("Spooks"))
+        result.andExpect(jsonPath('$.data.tmdbRating').value(7.8))
+        result.andExpect(jsonPath('$.data.tmdbVoteCount').value(245))
   }
 
   def "SERIES-014-AC-07: POST /api/v1/series should accept and return tags"() {
@@ -391,15 +373,11 @@ class SeriesControllerSpec extends Specification {
         ignoredSeriesRepository.count() == 1
   }
 
-  def "SERIES-005-AC-17: GET /api/v1/series/lookup returns 502 when app.omdb.api-key is not configured"() {
-    when: "the lookup endpoint is invoked against the real OmdbClient/SeriesLookupService chain"
-        // The test profile deliberately leaves app.omdb.api-key unset (see
-        // src/test/resources/application.yml), so this exercises the real "key not
-        // configured" path end-to-end without calling the live OMDb API.
+  def "SERIES-017-AC-01: GET /api/v1/series/lookup is no longer mapped (404), even with a real (mocked-out) chain"() {
+    when: "the removed lookup endpoint is invoked against the real SeriesLookupService chain"
         def result = mockMvc.perform(get("/api/v1/series/lookup").param("title", "Any Show"))
 
-    then: "the response is a 502 Bad Gateway with a generic message"
-        result.andExpect(status().isBadGateway())
-        result.andExpect(jsonPath('$.error').value("Unable to reach the series lookup service. Please try again."))
+    then: "the response is a 404 Not Found, not the old 502 'key not configured' behavior"
+        result.andExpect(status().isNotFound())
   }
 }

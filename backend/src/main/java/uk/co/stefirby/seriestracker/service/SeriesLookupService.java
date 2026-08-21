@@ -1,12 +1,10 @@
 package uk.co.stefirby.seriestracker.service;
 
 import uk.co.stefirby.seriestracker.client.OmdbClient;
-import uk.co.stefirby.seriestracker.client.OmdbLookupResult;
-import uk.co.stefirby.seriestracker.client.OmdbSearchCandidate;
+import uk.co.stefirby.seriestracker.client.OmdbRatings;
 import uk.co.stefirby.seriestracker.client.TmdbClient;
 import uk.co.stefirby.seriestracker.client.TmdbSearchCandidate;
 import uk.co.stefirby.seriestracker.client.TmdbSeriesDetail;
-import uk.co.stefirby.seriestracker.dto.SeriesLookupCandidateDto;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
@@ -21,19 +19,20 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Backs {@code GET /api/v1/series/lookup}, {@code GET /api/v1/series/lookup/search}, and (per
- * {@code series_spec_012_tmdb_lookup_fallback.md}) {@code GET /api/v1/series/lookup/search-tmdb}
- * / {@code GET /api/v1/series/lookup/resolve-tmdb}. Delegates to {@link OmdbClient} and
- * {@link TmdbClient}, mapping their results onto {@link SeriesLookupDto}/
- * {@link SeriesLookupCandidateDto}/{@link TmdbLookupCandidateDto}.
+ * Backs {@code GET /api/v1/series/lookup/search-tmdb} and {@code GET /api/v1/series/lookup
+ * /resolve-tmdb} -- per {@code series_spec_017_tmdb_primary_lookup.md}, TMDB is now this
+ * app's sole search/detail source ({@link TmdbClient}); {@link OmdbClient} is narrowed to a
+ * single best-effort enrichment call for {@code imdbRating}/{@code rottenTomatoesRating},
+ * keyed off whatever {@code imdbId} TMDB itself resolves.
  *
- * <p>{@link EntityNotFoundException} (no OMDb match, SERIES-005-AC-16 / SERIES-011-AC-07) and
- * {@link ExternalServiceException} (upstream failure or unset API key, SERIES-005-AC-17 /
- * SERIES-011-AC-08) both originate in {@link OmdbClient} and are allowed to propagate
- * unchanged -- this class doesn't need to catch and rethrow them itself, except in
- * {@link #resolveTmdbCandidate(int)}, which deliberately catches {@link EntityNotFoundException}
- * (but not {@link ExternalServiceException}) from {@code OmdbClient.lookupByImdbId} to trigger
- * its TMDB-detail degraded fallback (SERIES-012-AC-16/17).
+ * <p>A failed/absent OMDb enrichment call is never fatal to a resolve request
+ * (SERIES-017-AC-07) -- both {@link EntityNotFoundException} (no OMDb record) and
+ * {@link ExternalServiceException} (a genuine upstream failure) are caught and logged,
+ * leaving {@code imdbRating}/{@code rottenTomatoesRating} {@code null} on the result. This is
+ * a deliberate posture change from the old TMDB-fallback design (SERIES-012-AC-17), where an
+ * {@code ExternalServiceException} from OMDb was allowed to propagate -- correct when OMDb
+ * was a required fallback data source, no longer correct now that it supplies only two
+ * optional rating fields.
  */
 @Service
 public class SeriesLookupService {
@@ -50,29 +49,10 @@ public class SeriesLookupService {
         this.genreTable = genreTable;
     }
 
-    public SeriesLookupDto lookup(String title) {
-        log.info("Looking up series via OMDb: {}", title);
-        OmdbLookupResult result = omdbClient.lookup(title);
-        return toDto(result);
-    }
-
-    public SeriesLookupDto lookupByImdbId(String imdbId) {
-        log.info("Looking up series via OMDb by imdbId: {}", imdbId);
-        OmdbLookupResult result = omdbClient.lookupByImdbId(imdbId);
-        return toDto(result);
-    }
-
-    public List<SeriesLookupCandidateDto> search(String title) {
-        log.info("Searching series via OMDb: {}", title);
-        return omdbClient.search(title).stream()
-            .map(this::toDto)
-            .collect(Collectors.toList());
-    }
-
     /**
-     * TMDB-backed search (SERIES-012-AC-12), a manual escape hatch for when OMDb's own
-     * {@code s=} search can't find a title it catalogues under a different AKA/alternate name.
-     * An empty result is a normal outcome, not an error (SERIES-012-AC-13).
+     * TMDB-backed search (SERIES-012-AC-12, unchanged by this spec per SERIES-017-AC-01), a
+     * manual escape hatch for when a title is catalogued under a different AKA/alternate name.
+     * An empty result is a normal outcome, not an error (SERIES-012-AC-13/SERIES-017-AC-03).
      */
     public List<TmdbLookupCandidateDto> searchTmdb(String title) {
         log.info("Searching series via TMDB: {}", title);
@@ -82,51 +62,35 @@ public class SeriesLookupService {
     }
 
     /**
-     * Resolves a TMDB search candidate to full lookup detail (SERIES-012-AC-14..19): tries
-     * OMDb's richer detail via the candidate's resolved {@code imdb_id} first, falling back to
-     * TMDB's own (thinner) detail when TMDB has no IMDb cross-reference for it at all, or OMDb
-     * genuinely has no record for the {@code imdb_id} that TMDB did resolve. A genuine upstream
-     * failure ({@link ExternalServiceException}) from either client is never swallowed into the
-     * fallback -- it propagates unchanged.
+     * Resolves a TMDB search candidate to full lookup detail, TMDB-primary
+     * (SERIES-017-AC-04/06/07/08): the result is built exclusively from
+     * {@code TmdbClient.details(tmdbId)}, never attempting {@code OmdbClient} as a primary
+     * source. If {@code TmdbClient.externalIds(tmdbId)} resolves a non-blank {@code imdbId},
+     * {@code OmdbClient.ratingsForImdbId} is then called to merge {@code imdbRating}/
+     * {@code rottenTomatoesRating} on top -- any failure from that call is caught and logged,
+     * never failing the overall resolve request. When no {@code imdbId} resolves, no OMDb call
+     * is attempted at all.
      */
     public SeriesLookupDto resolveTmdbCandidate(int tmdbId) {
         log.info("Resolving TMDB candidate: tmdbId={}", tmdbId);
-        Optional<String> imdbIdOpt = tmdbClient.externalIds(tmdbId);
+        TmdbSeriesDetail detail = tmdbClient.details(tmdbId);
+        SeriesLookupDto dto = toDto(detail);
 
-        if (imdbIdOpt.isPresent()) {
+        Optional<String> imdbIdOpt = tmdbClient.externalIds(tmdbId);
+        String imdbId = imdbIdOpt.filter(id -> !id.isBlank()).orElse(null);
+        dto.setImdbId(imdbId);
+
+        if (imdbId != null) {
             try {
-                return toDto(omdbClient.lookupByImdbId(imdbIdOpt.get()));
-            } catch (EntityNotFoundException e) {
-                log.info("OMDb has no record for imdbId={} (resolved from tmdbId={}); falling back to TMDB detail",
-                    imdbIdOpt.get(), tmdbId);
+                OmdbRatings ratings = omdbClient.ratingsForImdbId(imdbId);
+                dto.setImdbRating(ratings.imdbRating());
+                dto.setRottenTomatoesRating(ratings.rottenTomatoesRating());
+            } catch (EntityNotFoundException | ExternalServiceException e) {
+                log.info("OMDb ratings enrichment unavailable for imdbId={} (resolved from tmdbId={}): {}",
+                    imdbId, tmdbId, e.getMessage());
             }
         }
 
-        TmdbSeriesDetail detail = tmdbClient.details(tmdbId);
-        return toDto(detail, imdbIdOpt.orElse(null));
-    }
-
-    private SeriesLookupDto toDto(OmdbLookupResult result) {
-        SeriesLookupDto dto = new SeriesLookupDto();
-        dto.setTitle(result.title());
-        dto.setYear(result.year());
-        dto.setGenres(result.genres());
-        dto.setTotalSeasons(result.totalSeasons());
-        dto.setTotalEpisodes(result.totalEpisodes());
-        dto.setImdbRating(result.imdbRating());
-        dto.setMetacriticRating(result.metacriticRating());
-        dto.setRottenTomatoesRating(result.rottenTomatoesRating());
-        dto.setPosterUrl(result.posterUrl());
-        dto.setImdbId(result.imdbId());
-        return dto;
-    }
-
-    private SeriesLookupCandidateDto toDto(OmdbSearchCandidate candidate) {
-        SeriesLookupCandidateDto dto = new SeriesLookupCandidateDto();
-        dto.setTitle(candidate.title());
-        dto.setYear(candidate.year());
-        dto.setImdbId(candidate.imdbId());
-        dto.setPosterUrl(candidate.posterUrl());
         return dto;
     }
 
@@ -141,13 +105,11 @@ public class SeriesLookupService {
     }
 
     /**
-     * Builds the degraded-fallback {@link SeriesLookupDto} from TMDB's own detail
-     * (SERIES-012-AC-18): {@code imdbId} is whatever {@code externalIds} resolved (possibly
-     * {@code null}); {@code genres} is joined the same way
-     * {@code RecommendationService.joinGenres} already does; ratings are all {@code null} --
-     * no OMDb data is available in this path.
+     * Builds the TMDB-primary base of a {@link SeriesLookupDto} (SERIES-017-AC-04): every
+     * field here comes exclusively from TMDB's own detail. {@code imdbId} and any OMDb-sourced
+     * ratings are merged in afterward by {@link #resolveTmdbCandidate(int)}.
      */
-    private SeriesLookupDto toDto(TmdbSeriesDetail detail, String imdbId) {
+    private SeriesLookupDto toDto(TmdbSeriesDetail detail) {
         SeriesLookupDto dto = new SeriesLookupDto();
         dto.setTitle(detail.title());
         dto.setYear(detail.year());
@@ -155,7 +117,8 @@ public class SeriesLookupService {
         dto.setTotalSeasons(detail.numberOfSeasons());
         dto.setTotalEpisodes(detail.numberOfEpisodes());
         dto.setPosterUrl(detail.posterPath() != null ? TmdbClient.POSTER_BASE_URL + detail.posterPath() : null);
-        dto.setImdbId(imdbId);
+        dto.setTmdbRating(detail.voteAverage());
+        dto.setTmdbVoteCount(detail.voteCount());
         return dto;
     }
 

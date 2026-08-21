@@ -25,13 +25,6 @@ public class SeriesEntity {
     @NotBlank(message = "Title is required")
     private String title;
 
-    // SERIES-013-AC-01: nullable, mirrors title's own @Column definition minus the
-    // @NotBlank/nullable=false constraints -- storage for the "other" name a series is
-    // known by (e.g. OMDb's "MI-5" vs. the TMDB-searched "Spooks"). No index -- nothing
-    // in this spec's scope filters or looks up by alternateTitle.
-    @Column(nullable = true, length = 255)
-    private String alternateTitle;
-
     @Column(nullable = true)
     @Min(value = 1, message = "Year must be greater than 0")
     @Max(value = 2026, message = "Year must be <= current year")
@@ -66,14 +59,22 @@ public class SeriesEntity {
     private BigDecimal imdbRating;
 
     @Column(nullable = true)
-    @Min(value = 0, message = "Metacritic rating must be >= 0")
-    @Max(value = 100, message = "Metacritic rating must be <= 100")
-    private Integer metacriticRating;
-
-    @Column(nullable = true)
     @Min(value = 0, message = "Rotten Tomatoes rating must be >= 0")
     @Max(value = 100, message = "Rotten Tomatoes rating must be <= 100")
     private Integer rottenTomatoesRating;
+
+    // SERIES-017-AC-10: TMDB's own community rating/vote count, populated at create time
+    // from TmdbClient.details() -- an independent third rating source alongside imdbRating/
+    // rottenTomatoesRating, named to match RecommendationDto.tmdbRating/voteCount
+    // (series_spec_016) for the same TMDB concept.
+    @Column(nullable = true, precision = 3, scale = 1)
+    @DecimalMin(value = "0.0", message = "TMDB rating must be >= 0")
+    @DecimalMax(value = "10.0", message = "TMDB rating must be <= 10")
+    private BigDecimal tmdbRating;
+
+    @Column(nullable = true)
+    @Min(value = 0, message = "TMDB vote count must be >= 0")
+    private Integer tmdbVoteCount;
 
     @Column(nullable = true)
     @Min(value = 1, message = "Personal rating must be >= 1")
@@ -112,9 +113,6 @@ public class SeriesEntity {
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
 
-    public String getAlternateTitle() { return alternateTitle; }
-    public void setAlternateTitle(String alternateTitle) { this.alternateTitle = alternateTitle; }
-
     public Integer getYear() { return year; }
     public void setYear(Integer year) { this.year = year; }
 
@@ -139,11 +137,14 @@ public class SeriesEntity {
     public BigDecimal getImdbRating() { return imdbRating; }
     public void setImdbRating(BigDecimal imdbRating) { this.imdbRating = imdbRating; }
 
-    public Integer getMetacriticRating() { return metacriticRating; }
-    public void setMetacriticRating(Integer metacriticRating) { this.metacriticRating = metacriticRating; }
-
     public Integer getRottenTomatoesRating() { return rottenTomatoesRating; }
     public void setRottenTomatoesRating(Integer rottenTomatoesRating) { this.rottenTomatoesRating = rottenTomatoesRating; }
+
+    public BigDecimal getTmdbRating() { return tmdbRating; }
+    public void setTmdbRating(BigDecimal tmdbRating) { this.tmdbRating = tmdbRating; }
+
+    public Integer getTmdbVoteCount() { return tmdbVoteCount; }
+    public void setTmdbVoteCount(Integer tmdbVoteCount) { this.tmdbVoteCount = tmdbVoteCount; }
 
     public Integer getPersonalRating() { return personalRating; }
     public void setPersonalRating(Integer personalRating) { this.personalRating = personalRating; }

@@ -15,13 +15,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
- * Client for the OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), isolating
- * its raw JSON response shape behind {@link OmdbLookupResult}.
+ * Client for the OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), narrowed by
+ * {@code series_spec_017_tmdb_primary_lookup.md} to a single best-effort rating-enrichment
+ * call ({@link #ratingsForImdbId(String)}) -- TMDB is now this app's sole source for
+ * title/year/genres/season-episode counts (see {@code TmdbClient}); OMDb only ever supplies
+ * {@code imdbRating}/{@code rottenTomatoesRating} on top of a TMDB-resolved {@code imdbId}.
  *
  * <p>Built on Spring's {@link RestClient} (not {@code RestTemplate}, which is in
  * maintenance mode). A {@link RestClient.Builder} is constructor-injected rather than an
@@ -43,14 +43,6 @@ public class OmdbClient {
 
     private static final Logger log = LoggerFactory.getLogger(OmdbClient.class);
 
-    /**
-     * Upper bound on {@code totalSeasons} for which per-season episode-count aggregation
-     * (Requirement 4) is attempted, guarding against unbounded fan-out from a data-quality
-     * anomaly in OMDb's {@code totalSeasons} value.
-     */
-    static final int OMDB_MAX_SEASONS_FOR_EPISODE_COUNT = 30;
-
-    private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
     private static final String NOT_AVAILABLE = "N/A";
 
     private final String apiKey;
@@ -64,152 +56,37 @@ public class OmdbClient {
     }
 
     /**
-     * Looks up a series by title, via OMDb's {@code t=} ("best single match") parameter.
+     * Looks up {@code imdbRating}/{@code rottenTomatoesRating} for a series by its exact
+     * IMDb id, via OMDb's {@code i=} parameter (SERIES-017-AC-09).
      *
      * @throws EntityNotFoundException  if OMDb reports no match ({@code Response: False})
      * @throws ExternalServiceException if the OMDb API key is unset, or the call fails for
      *                                  any other reason (network error, timeout, unexpected
      *                                  non-200, unparseable response)
      */
-    public OmdbLookupResult lookup(String title) {
-        return performLookup("t", title, "No OMDb results for title: " + title);
-    }
-
-    /**
-     * Looks up a series by its exact IMDb id, via OMDb's {@code i=} parameter -- shares
-     * {@link #performLookup}'s mapping/aggregation implementation with {@link #lookup(String)},
-     * differing only in which query param carries the identifier (SERIES-011-AC-06).
-     *
-     * @throws EntityNotFoundException  if OMDb reports no match ({@code Response: False}),
-     *                                  identifying the searched imdbId (SERIES-011-AC-07)
-     * @throws ExternalServiceException if the OMDb API key is unset, or the call fails for
-     *                                  any other reason (SERIES-011-AC-08)
-     */
-    public OmdbLookupResult lookupByImdbId(String imdbId) {
-        return performLookup("i", imdbId, "No OMDb results for imdbId: " + imdbId);
-    }
-
-    /**
-     * Shared mapping/aggregation implementation behind {@link #lookup(String)} and
-     * {@link #lookupByImdbId(String)}, parameterized only by which OMDb query param
-     * ({@code t=} or {@code i=}) carries the identifier (SERIES-011-AC-06).
-     */
-    private OmdbLookupResult performLookup(String identifierParam, String identifierValue, String notFoundMessage) {
+    public OmdbRatings ratingsForImdbId(String imdbId) {
         if (apiKey == null || apiKey.isBlank()) {
-            log.error("OMDb lookup requested but app.omdb.api-key is not configured");
+            log.error("OMDb ratings lookup requested but app.omdb.api-key is not configured");
             throw new ExternalServiceException("OMDb API key is not configured");
         }
 
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder
             .queryParam("apikey", apiKey)
             .queryParam("type", "series")
-            .queryParam(identifierParam, identifierValue)
+            .queryParam("i", imdbId)
             .build());
 
         if (body == null || isFalseResponse(body)) {
-            throw new EntityNotFoundException(notFoundMessage);
+            throw new EntityNotFoundException("No OMDb results for imdbId: " + imdbId);
         }
-
-        Integer totalSeasons = parseInt(body.get("totalSeasons"));
-        Integer totalEpisodes = totalSeasons != null
-            ? aggregateEpisodeCount(identifierParam, identifierValue, totalSeasons)
-            : null;
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> ratings = (List<Map<String, Object>>) body.getOrDefault("Ratings", List.of());
 
-        return new OmdbLookupResult(
-            str(body.get("Title")),
-            extractYear(str(body.get("Year"))),
-            str(body.get("Genre")),
-            totalSeasons,
-            totalEpisodes,
+        return new OmdbRatings(
             parseBigDecimal(body.get("imdbRating")),
-            parseRatingFromSource(ratings, "Metacritic"),
-            parseRatingFromSource(ratings, "Rotten Tomatoes"),
-            str(body.get("Poster")),
-            str(body.get("imdbID"))
+            parseRatingFromSource(ratings, "Rotten Tomatoes")
         );
-    }
-
-    /**
-     * Searches for lightweight candidate matches for a title, via OMDb's {@code s=} parameter
-     * -- unlike {@link #lookup(String)}, a "no matches" outcome is this method's normal
-     * result (an empty list), not {@link EntityNotFoundException} (SERIES-011-AC-03).
-     *
-     * @throws ExternalServiceException if the OMDb API key is unset, or the call fails for
-     *                                  any other reason (SERIES-011-AC-04)
-     */
-    public List<OmdbSearchCandidate> search(String title) {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.error("OMDb search requested but app.omdb.api-key is not configured");
-            throw new ExternalServiceException("OMDb API key is not configured");
-        }
-
-        Map<String, Object> body = fetch(uriBuilder -> uriBuilder
-            .queryParam("apikey", apiKey)
-            .queryParam("type", "series")
-            .queryParam("s", title)
-            .build());
-
-        if (body == null || isFalseResponse(body)) {
-            return List.of();
-        }
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> entries = (List<Map<String, Object>>) body.getOrDefault("Search", List.of());
-
-        return entries.stream()
-            .map(entry -> new OmdbSearchCandidate(
-                str(entry.get("Title")),
-                extractYear(str(entry.get("Year"))),
-                str(entry.get("imdbID")),
-                str(entry.get("Poster"))
-            ))
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Sums episode counts across {@code Season=1..totalSeasons}. Degrades to {@code null}
-     * (rather than failing the whole lookup) if {@code totalSeasons} exceeds the cap, or if
-     * any individual season call fails or returns something unparseable (SERIES-005-AC-12).
-     * Each season call uses the same identifier type ({@code t=} or {@code i=}) as the
-     * lookup it originated from -- never mixed (SERIES-011-AC-06).
-     */
-    private Integer aggregateEpisodeCount(String identifierParam, String identifierValue, int totalSeasons) {
-        if (totalSeasons > OMDB_MAX_SEASONS_FOR_EPISODE_COUNT) {
-            log.warn("totalSeasons ({}) for '{}' exceeds the aggregation cap ({}); "
-                + "skipping episode count aggregation", totalSeasons, identifierValue, OMDB_MAX_SEASONS_FOR_EPISODE_COUNT);
-            return null;
-        }
-
-        int sum = 0;
-        for (int season = 1; season <= totalSeasons; season++) {
-            final int currentSeason = season;
-            Map<String, Object> seasonBody;
-            try {
-                seasonBody = fetch(uriBuilder -> uriBuilder
-                    .queryParam("apikey", apiKey)
-                    .queryParam(identifierParam, identifierValue)
-                    .queryParam("Season", currentSeason)
-                    .build());
-            } catch (RuntimeException e) {
-                log.warn("Failed to fetch season {} for '{}'; episode count aggregation abandoned",
-                    currentSeason, identifierValue, e);
-                return null;
-            }
-
-            if (seasonBody == null || isFalseResponse(seasonBody)) {
-                return null;
-            }
-
-            Object episodes = seasonBody.get("Episodes");
-            if (!(episodes instanceof List<?> episodeList)) {
-                return null;
-            }
-            sum += episodeList.size();
-        }
-        return sum;
     }
 
     @SuppressWarnings("unchecked")
@@ -226,26 +103,6 @@ public class OmdbClient {
 
     private static boolean isFalseResponse(Map<String, Object> body) {
         return "False".equalsIgnoreCase(str(body.get("Response")));
-    }
-
-    private static Integer extractYear(String yearRaw) {
-        if (yearRaw == null) {
-            return null;
-        }
-        Matcher matcher = YEAR_PATTERN.matcher(yearRaw);
-        return matcher.find() ? Integer.valueOf(matcher.group()) : null;
-    }
-
-    private static Integer parseInt(Object value) {
-        String s = str(value);
-        if (s == null) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(s.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     private static BigDecimal parseBigDecimal(Object value) {

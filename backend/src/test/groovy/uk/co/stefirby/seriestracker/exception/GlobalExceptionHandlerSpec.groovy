@@ -41,27 +41,14 @@ class GlobalExceptionHandlerSpec extends Specification {
   @MockitoBean
   SeriesLookupService seriesLookupService
 
-  def "SERIES-005-AC-16: no OMDb match for a lookup returns 404"() {
-    given: "the lookup service reports no OMDb match for the title"
-        when(seriesLookupService.lookup("Nonexistent Show"))
-          .thenThrow(new EntityNotFoundException("No OMDb results for title: Nonexistent Show"))
-
-    when: "the lookup endpoint is invoked"
-        def result = mockMvc.perform(get("/api/v1/series/lookup").param("title", "Nonexistent Show"))
-
-    then: "the specific 404 handler applies, not the generic 500 catch-all"
-        result.andExpect(status().isNotFound())
-        result.andExpect(jsonPath('$.error').value("No OMDb results for title: Nonexistent Show"))
-  }
-
-  def "SERIES-005-AC-17: an OMDb upstream failure returns 502 with a generic message, not the underlying exception's details"() {
+  def "SERIES-012-AC-26: an upstream failure resolving a TMDB candidate returns 502 with a generic message, not the underlying exception's details"() {
     given: "the lookup service reports an upstream failure with a sensitive underlying cause"
-        when(seriesLookupService.lookup("Any Show")).thenThrow(
-          new ExternalServiceException("OMDb request failed",
+        when(seriesLookupService.resolveTmdbCandidate(4046)).thenThrow(
+          new ExternalServiceException("TMDB request failed",
             new RuntimeException("Connection refused: connect to 10.0.0.5:443")))
 
-    when: "the lookup endpoint is invoked"
-        def result = mockMvc.perform(get("/api/v1/series/lookup").param("title", "Any Show"))
+    when: "the resolve-tmdb endpoint is invoked"
+        def result = mockMvc.perform(get("/api/v1/series/lookup/resolve-tmdb").param("tmdbId", "4046"))
 
     then: "the response is a 502 with a generic error body"
         result.andExpect(status().isBadGateway())

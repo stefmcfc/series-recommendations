@@ -189,7 +189,9 @@ public class TmdbClient {
             genreIdsFromObjects(body.get("genres")),
             str(body.get("poster_path")),
             toInteger(body.get("number_of_seasons")),
-            toInteger(body.get("number_of_episodes"))
+            toInteger(body.get("number_of_episodes")),
+            toBigDecimal(body.get("vote_average")),
+            toInteger(body.get("vote_count"))
         );
     }
 

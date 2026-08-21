@@ -10,6 +10,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -56,6 +57,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error("Invalid value for parameter '" + ex.getName() + "'"));
+    }
+
+    // SERIES-017-AC-01/05: without this explicit handler, an unmapped path (e.g. the
+    // now-removed GET /api/v1/series/lookup, GET /api/v1/series/lookup/search) falls through
+    // to this class's own catch-all Exception.class handler below and becomes a 500, instead
+    // of the 404 a genuinely nonexistent route should return.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ApiResponse.error("Not found"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -16,12 +16,13 @@ public class SeriesExportService {
 
     private static final Logger log = LoggerFactory.getLogger(SeriesExportService.class);
 
-    // SERIES-013-AC-04 / SERIES-014-AC-12: alternateTitle and tags appended alongside the
-    // other newer optional fields, before the date columns.
+    // SERIES-014-AC-12 / SERIES-017-AC-13: tags, tmdbRating, and tmdbVoteCount appended
+    // alongside the other newer optional fields, before the date columns. metacriticRating
+    // and alternateTitle are gone entirely (SERIES-017-AC-14/15).
     private static final String[] CSV_HEADERS = {
-        "id", "title", "alternateTitle", "year", "genres", "totalSeasons", "totalEpisodes",
+        "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
-        "metacriticRating", "rottenTomatoesRating", "personalRating",
+        "rottenTomatoesRating", "tmdbRating", "tmdbVoteCount", "personalRating",
         "personalNotes", "posterUrl", "tags", "dateAdded", "dateCompleted"
     };
 
@@ -57,7 +58,6 @@ public class SeriesExportService {
         return String.join(",",
             csv(s.getId() != null ? s.getId().toString() : null),
             csv(s.getTitle()),
-            csv(s.getAlternateTitle()),
             csv(s.getYear() != null ? s.getYear().toString() : null),
             csv(s.getGenres()),
             csv(s.getTotalSeasons() != null ? s.getTotalSeasons().toString() : null),
@@ -66,8 +66,9 @@ public class SeriesExportService {
             csv(s.getCurrentEpisode() != null ? s.getCurrentEpisode().toString() : null),
             csv(s.getStatus()),
             csv(s.getImdbRating() != null ? s.getImdbRating().toPlainString() : null),
-            csv(s.getMetacriticRating() != null ? s.getMetacriticRating().toString() : null),
             csv(s.getRottenTomatoesRating() != null ? s.getRottenTomatoesRating().toString() : null),
+            csv(s.getTmdbRating() != null ? s.getTmdbRating().toPlainString() : null),
+            csv(s.getTmdbVoteCount() != null ? s.getTmdbVoteCount().toString() : null),
             csv(s.getPersonalRating() != null ? s.getPersonalRating().toString() : null),
             csv(s.getPersonalNotes()),
             csv(s.getPosterUrl()),

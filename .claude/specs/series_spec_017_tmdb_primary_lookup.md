@@ -1,6 +1,6 @@
 # Spec 017: TMDB-Primary Lookup & Narrowed OMDb Rating Enrichment
 
-**Status**: Not started
+**Status**: ✅ Implemented — TMDB is now the sole search/detail source: `GET /api/v1/series/lookup`/`GET /api/v1/series/lookup/search` are unmapped (404, via a new `SeriesController.UUID_PATH_PATTERN` constraint on the `/{id}` routes plus a `GlobalExceptionHandler` handler for `NoResourceFoundException`, both needed to stop `/lookup`-shaped paths from colliding with `/{id}`); `client/OmdbClient.java` is reduced to `ratingsForImdbId(String)` returning the new `client/OmdbRatings.java` record (`OmdbLookupResult`/`OmdbSearchCandidate`/`dto/SeriesLookupCandidateDto.java` deleted); `service/SeriesLookupService.resolveTmdbCandidate` is rewritten TMDB-primary, catching both `EntityNotFoundException` and `ExternalServiceException` from the OMDb enrichment call as non-fatal. `client/TmdbSeriesDetail.java` gains `voteAverage`/`voteCount`, parsed by `TmdbClient.details`. `model/SeriesEntity.java`, `dto/SeriesDto.java`, and `dto/SeriesLookupDto.java` gain `tmdbRating`/`tmdbVoteCount` and lose `metacriticRating`; `SeriesEntity`/`SeriesDto` also lose `alternateTitle`. `service/SeriesExportService.java`'s CSV/JSON gain `tmdbRating`/`tmdbVoteCount`, lose `metacriticRating`/`alternateTitle`. Migration history squashed: `V001__create_series_table.sql` rewritten to the final column set (including `last_refreshed_at` for `series_spec_018`); `V002`/`V003`/`V005`/`V006` deleted; old `V004` renamed to `V002`; `backend/data/series.db` deleted. Tests: `client/OmdbClientSpec.groovy`, `client/TmdbClientSpec.groovy`, `service/SeriesLookupServiceSpec.groovy`, `controller/SeriesControllerLookupSpec.groovy`, `controller/SeriesControllerSpec.groovy`, `exception/GlobalExceptionHandlerSpec.groovy`, `model/SeriesEntitySpec.groovy`, `service/SeriesServiceSpec.groovy`, `service/SeriesExportServiceSpec.groovy` rewritten/updated. Full suite green (`gradlew.bat test`, 270 tests). One deviation from the spec's literal AC-16 text: `tmdb_rating` is declared `NUMERIC(3,1)`, not `DECIMAL(3,1)` as written — matching `imdb_rating`'s existing column, per the sqlite-jdbc/Hibernate schema-validation quirk already documented on that column (a literal `DECIMAL(3,1)` round-trips as JDBC type `FLOAT`, failing `ddl-auto: validate` for a `BigDecimal` field); manually verified via `gradlew.bat bootRun` against a freshly-deleted `series.db` (Flyway applied V001/V002, Hibernate validated cleanly, and a real `POST`/`GET` round-tripped `tmdbRating`/`tmdbVoteCount`).
 **Priority**: P1 (OMDb search/candidate flow has a real, unfixable data gap — TMDB search already superset-matches everything OMDb's own search does, per the "Spooks"/"MI-5" case proven in `series_spec_012`)
 **Depends on**: Series Spec 006 (`TmdbClient`), Series Spec 012 (`TmdbClient.search`/`details`/`externalIds`, the TMDB-fallback resolve logic this spec inverts into the primary path)
 **Backend Task**
@@ -223,19 +223,19 @@ def "SERIES-017-AC-16: fresh migrate() produces the final series shape with no l
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-017-AC-01: OMDb search/lookup routes removed (`404`)
-- [ ] SERIES-017-AC-02: `OmdbClient.search`/`lookup(String)`, `OmdbSearchCandidate`, `SeriesLookupCandidateDto`, `SeriesLookupService.search`/`lookup` deleted
-- [ ] SERIES-017-AC-03: empty TMDB search result stays a normal empty `200`
-- [ ] SERIES-017-AC-04: resolve builds exclusively from TMDB detail
-- [ ] SERIES-017-AC-05: `GET /lookup?imdbId=` removed (`404`)
-- [ ] SERIES-017-AC-06: OMDb ratings merged onto the TMDB-sourced result when `imdbId` resolves
-- [ ] SERIES-017-AC-07: any OMDb enrichment failure is non-fatal, ratings left `null`
-- [ ] SERIES-017-AC-08: no `imdbId` resolved → no OMDb call attempted
-- [ ] SERIES-017-AC-09: `OmdbClient` reduced to `ratingsForImdbId`, dead code deleted
-- [ ] SERIES-017-AC-10: `tmdbRating`/`tmdbVoteCount` on `SeriesEntity`/`SeriesDto`/`SeriesLookupDto`
-- [ ] SERIES-017-AC-11: `TmdbSeriesDetail` gains `voteAverage`/`voteCount`
-- [ ] SERIES-017-AC-12: `SeriesService.create` persists the two new fields
-- [ ] SERIES-017-AC-13: export includes `tmdbRating`/`tmdbVoteCount`
-- [ ] SERIES-017-AC-14: `metacriticRating` removed everywhere
-- [ ] SERIES-017-AC-15: `alternateTitle` removed everywhere
-- [ ] SERIES-017-AC-16: migration history squashed to a fresh `V001` baseline (final column set, no legacy columns, `V002` is `ignored_series`, local `series.db` deleted)
+- [x] SERIES-017-AC-01: OMDb search/lookup routes removed (`404`)
+- [x] SERIES-017-AC-02: `OmdbClient.search`/`lookup(String)`, `OmdbSearchCandidate`, `SeriesLookupCandidateDto`, `SeriesLookupService.search`/`lookup` deleted
+- [x] SERIES-017-AC-03: empty TMDB search result stays a normal empty `200`
+- [x] SERIES-017-AC-04: resolve builds exclusively from TMDB detail
+- [x] SERIES-017-AC-05: `GET /lookup?imdbId=` removed (`404`)
+- [x] SERIES-017-AC-06: OMDb ratings merged onto the TMDB-sourced result when `imdbId` resolves
+- [x] SERIES-017-AC-07: any OMDb enrichment failure is non-fatal, ratings left `null`
+- [x] SERIES-017-AC-08: no `imdbId` resolved → no OMDb call attempted
+- [x] SERIES-017-AC-09: `OmdbClient` reduced to `ratingsForImdbId`, dead code deleted
+- [x] SERIES-017-AC-10: `tmdbRating`/`tmdbVoteCount` on `SeriesEntity`/`SeriesDto`/`SeriesLookupDto`
+- [x] SERIES-017-AC-11: `TmdbSeriesDetail` gains `voteAverage`/`voteCount`
+- [x] SERIES-017-AC-12: `SeriesService.create` persists the two new fields
+- [x] SERIES-017-AC-13: export includes `tmdbRating`/`tmdbVoteCount`
+- [x] SERIES-017-AC-14: `metacriticRating` removed everywhere
+- [x] SERIES-017-AC-15: `alternateTitle` removed everywhere
+- [x] SERIES-017-AC-16: migration history squashed to a fresh `V001` baseline (final column set, no legacy columns, `V002` is `ignored_series`, local `series.db` deleted)

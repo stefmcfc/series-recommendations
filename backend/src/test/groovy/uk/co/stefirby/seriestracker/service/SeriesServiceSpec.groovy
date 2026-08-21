@@ -126,59 +126,33 @@ class SeriesServiceSpec extends Specification {
         result.title == "Show"
   }
 
-  def "SERIES-013-AC-02/03: alternateTitle flows through create and is persisted"() {
-    given: "a SeriesDto with alternateTitle set"
-        def dto = new SeriesDto(title: "MI-5", alternateTitle: "Spooks")
+  def "SERIES-017-AC-12: tmdbRating/tmdbVoteCount flow through create and are persisted"() {
+    given: "a SeriesDto with tmdbRating and tmdbVoteCount set"
+        def dto = new SeriesDto(title: "Spooks", tmdbRating: 7.8, tmdbVoteCount: 245)
 
     when: "the series is created"
         def created = seriesService.create(dto)
 
-    then: "alternateTitle round-trips"
-        created.alternateTitle == "Spooks"
+    then: "tmdbRating/tmdbVoteCount round-trip"
+        created.tmdbRating == 7.8
+        created.tmdbVoteCount == 245
 
-    and: "alternateTitle is persisted and retrievable"
-        seriesService.getById(created.id).alternateTitle == "Spooks"
+    and: "tmdbRating/tmdbVoteCount are persisted and retrievable"
+        def fetched = seriesService.getById(created.id)
+        fetched.tmdbRating == 7.8
+        fetched.tmdbVoteCount == 245
   }
 
-  def "SERIES-013-AC-03: should create a series without an alternateTitle, leaving it null"() {
-    given: "a series DTO with no alternateTitle"
-        def dto = new SeriesDto(title: "No Alternate Title Show")
+  def "SERIES-017-AC-12: should create a series without tmdbRating/tmdbVoteCount, leaving them null"() {
+    given: "a series DTO with no tmdbRating/tmdbVoteCount"
+        def dto = new SeriesDto(title: "No TMDB Rating Show")
 
     when: "the series is created"
         def result = seriesService.create(dto)
 
-    then: "alternateTitle is null, like other unset optional fields"
-        result.alternateTitle == null
-  }
-
-  def "SERIES-013-AC-03: should update a series's alternateTitle"() {
-    given: "a series has been created without an alternateTitle"
-        def created = seriesService.create(new SeriesDto(title: "MI-5"))
-
-    and: "an update DTO with an alternateTitle"
-        def updateDto = new SeriesDto(alternateTitle: "Spooks")
-
-    when: "the series is updated"
-        def result = seriesService.update(created.id, updateDto)
-
-    then: "alternateTitle is set, and other fields are unchanged"
-        result.alternateTitle == "Spooks"
-        result.title == "MI-5"
-  }
-
-  def "SERIES-013-AC-03: an update omitting alternateTitle leaves the stored value unchanged"() {
-    given: "a series has been created with an alternateTitle"
-        def created = seriesService.create(new SeriesDto(title: "MI-5", alternateTitle: "Spooks"))
-
-    and: "an update DTO that omits alternateTitle but changes another field"
-        def updateDto = new SeriesDto(personalRating: 5)
-
-    when: "the series is updated"
-        def result = seriesService.update(created.id, updateDto)
-
-    then: "alternateTitle is unchanged, matching every other optional field's update semantics"
-        result.alternateTitle == "Spooks"
-        result.personalRating == 5
+    then: "tmdbRating/tmdbVoteCount are null, like other unset optional fields"
+        result.tmdbRating == null
+        result.tmdbVoteCount == null
   }
 
   def "SERIES-014-AC-06/07: tags flows through create and is persisted"() {
