@@ -19,8 +19,8 @@ class SeriesRefreshServiceSpec extends Specification {
     SeriesRepository repository = Mock()
     TmdbClient tmdbClient = Mock()
     OmdbClient omdbClient = Mock()
-    SeriesService seriesService = new SeriesService(repository)
     KeywordSyncService keywordSyncService = Mock()
+    SeriesService seriesService = new SeriesService(repository, keywordSyncService)
 
     SeriesRefreshService refreshService =
         new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService)

@@ -60,7 +60,7 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 - **SERIES-019-AC-11** [AUTO]: If `TmdbClient.showKeywords` throws `ExternalServiceException`, `syncKeywords` shall catch and log it, leaving `entity`'s existing keyword set unchanged — matching the never-fail-the-surrounding-request posture already established for `productionStatus` resolution (`series_spec_008` SERIES-008-AC-10).
 - **SERIES-019-AC-12** [AUTO]: `syncKeywords` does not itself call `seriesRepository.save(...)` — persisting the entity (with its updated `keywords` association) is the caller's responsibility, matching how `RecommendationService`/other collaborators don't own persistence for entities they merely populate fields on.
 
-**Implementation note (call-site wiring)**: `syncKeywords` is wired into `SeriesRefreshService.refreshFromTmdb` — a `tmdbId` is already resolved there as a local variable, making the call site a one-line, minimal addition consistent with that method's existing non-fatal-on-failure posture. It is **not** wired into the series-creation path: unlike the refresh flow, creation never carries a `tmdbId` end-to-end — `SeriesLookupService.resolveTmdbCandidate` knows the `tmdbId` it resolved, but returns a `SeriesLookupDto` (used only to autofill the add-series form) that has no `tmdbId` field, and the later `POST /api/v1/series` create call takes a `SeriesDto` that likewise never carries one. Wiring creation would require threading a `tmdbId` field through `SeriesLookupDto` → the frontend form → `SeriesDto` → `SeriesService.create`, a materially larger, cross-cutting change out of scope for this spec's first pass. A freshly-created series simply has no keywords until its first refresh.
+**Implementation note (call-site wiring)**: `syncKeywords` is wired into `SeriesRefreshService.refreshFromTmdb` — a `tmdbId` is already resolved there as a local variable, making the call site a one-line, minimal addition consistent with that method's existing non-fatal-on-failure posture. It is also wired into the series-creation path, per Requirement 6 below — `SeriesLookupService.resolveTmdbCandidate` already knows the `tmdbId` it resolved (it's the method's own parameter), so rather than re-deriving it later, it's round-tripped through `SeriesLookupDto` → the frontend form → `SeriesDto` → `SeriesService.create`, the same hidden-field pattern already established for `imdbId`/`originCountry`/`tmdbRating` (`frontend_spec_022`/`frontend_spec_026`).
 
 ---
 
@@ -91,6 +91,20 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 
 ---
 
+### Requirement 6: Creation-Time Keyword Population
+
+**User story**: As a user, I want a newly added series to already have its keywords the moment I add it, not just after I later hit Refresh, since TMDB's keyword data was available the whole time via the same `tmdbId` I already picked in the candidate picker.
+
+Added after this spec's initial implementation, closing the gap Requirement 3's original "Implementation note" documented: `resolveTmdbCandidate` already has the `tmdbId` it needs in scope (it's the method's own parameter) — the only reason creation couldn't call `syncKeywords` was that nothing round-tripped that value back from the lookup response, through the add-series form, to the eventual create request. This requirement closes that round-trip using the exact hidden-field pattern already established for `imdbId`/`originCountry`/`tmdbRating`/`tmdbVoteCount` (`frontend_spec_022_tmdb_primary_lookup.md`/`frontend_spec_026_origin_country_and_tmdb_metadata_display.md`) — no new mechanism, just one more field carried the same way.
+
+#### Acceptance Criteria
+
+- **SERIES-019-AC-22** [AUTO]: `SeriesLookupDto` shall gain `tmdbId` (`Integer`), set by `SeriesLookupService.resolveTmdbCandidate` from its own `tmdbId` parameter — no extra TMDB call, since the value is already in scope.
+- **SERIES-019-AC-23** [AUTO]: `SeriesDto` shall gain `tmdbId` (`Integer`) as an **input-only** field: read by `SeriesService.create`, never persisted on `SeriesEntity` (which has no `tmdbId` column — this app resolves it fresh via `TmdbClient.findTvIdByImdbId` when needed, e.g. on refresh) and never echoed back via `entityToDto`, mirroring the output-only convention `dateAdded`/`lastRefreshedAt` already use in the opposite direction.
+- **SERIES-019-AC-24** [AUTO]: When `dto.getTmdbId()` is non-null, `SeriesService.create` shall call `KeywordSyncService.syncKeywords(entity, dto.getTmdbId())` before persisting the entity, populating its keyword set at creation time via the same reconciliation logic refresh already uses (`SERIES-019-AC-08`–`AC-11`, including the existing non-fatal-on-TMDB-failure posture — no additional error handling needed at this call site). When `dto.getTmdbId()` is `null` (e.g. a manually-added series with no TMDB lookup), no sync is attempted and the entity's keyword set remains empty, same as today.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -103,9 +117,10 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 | Nulls-last average/sort convention | `series_spec_009_rating_sort.md` |
 | Unrecognized-soft-param falls back to default, not `400` | `series_spec_015_multi_source_recommendations.md` |
 | `GET /series/genres` `{ data, count }` envelope convention this spec's `GET /series/keywords` matches | `series_spec_010_genre_dropdown.md` |
-| Population call site: refresh (creation-time population deferred — see Requirement 3's implementation note) | `series_spec_017_tmdb_primary_lookup.md`, `series_spec_018_series_refresh.md` |
+| Population call sites: refresh, and (Requirement 6) series-creation via a round-tripped `tmdbId` | `series_spec_017_tmdb_primary_lookup.md`, `series_spec_018_series_refresh.md` |
 | Never-leak-internals policy for upstream failures | `tooling_spec_001_code_quality_security.md` Requirement 1 |
-| Frontend consumer: keyword chips on `SeriesDetail`, Keywords stats view, `SearchFilter` keyword multi-select | `frontend_spec_024_keyword_tracking.md` (not yet written) |
+| `imdbId`/`originCountry`/`tmdbRating` hidden-field round-trip pattern Requirement 6's `tmdbId` field mirrors | `frontend_spec_022_tmdb_primary_lookup.md`, `frontend_spec_026_origin_country_and_tmdb_metadata_display.md` |
+| Frontend consumer: `tmdbId` carry-through (Requirement 6), keyword chips on `SeriesDetail`, Keywords stats view, `SearchFilter` keyword multi-select | `frontend_spec_024_keyword_tracking.md` (in progress) |
 | Deferred idea: weighting recommendations/filters by keyword popularity/average rating | `FUTURE_IDEAS.md` |
 
 ---
@@ -249,6 +264,50 @@ def "SERIES-019-AC-17: GET /api/v1/series/keywords returns 200 with the envelope
 }
 ```
 
+### `SeriesServiceSpec.groovy` (Requirement 6)
+
+```groovy
+def "SERIES-019-AC-24: create syncs keywords when the incoming dto carries a tmdbId"() {
+    given: "a SeriesDto with tmdbId set"
+        def dto = new SeriesDto(title: "Spooks", tmdbId: 4046)
+
+    when: "create(dto) is called"
+        seriesService.create(dto)
+
+    then: "syncKeywords is called with the resolved entity and tmdbId"
+        1 * keywordSyncService.syncKeywords(_ as SeriesEntity, 4046)
+}
+
+def "SERIES-019-AC-24: create does not attempt a sync when tmdbId is absent"() {
+    given: "a SeriesDto with no tmdbId (a manually-added series)"
+        def dto = new SeriesDto(title: "Homemade Show")
+
+    when: "create(dto) is called"
+        seriesService.create(dto)
+
+    then: "syncKeywords is never called"
+        0 * keywordSyncService.syncKeywords(_, _)
+}
+```
+
+### `SeriesLookupServiceSpec.groovy` (Requirement 6)
+
+```groovy
+def "SERIES-019-AC-22: resolve carries tmdbId through onto the lookup result"() {
+    given: "TmdbClient.details resolves a full detail"
+        tmdbClient.details(4046) >> new TmdbSeriesDetail(
+            "Spooks", 2002, [80], "/poster.jpg", 10, 81,
+            new BigDecimal("7.8"), 245, ProductionStatus.ENDED, "GB")
+        tmdbClient.externalIds(4046) >> Optional.empty()
+
+    when: "resolveTmdbCandidate(4046) is called"
+        def result = lookupService.resolveTmdbCandidate(4046)
+
+    then: "the result carries the same tmdbId"
+        result.tmdbId == 4046
+}
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -274,3 +333,6 @@ def "SERIES-019-AC-17: GET /api/v1/series/keywords returns 200 with the envelope
 - [x] SERIES-019-AC-19: `matchesKeywords` — exact, case-insensitive, OR logic
 - [x] SERIES-019-AC-20: repeatable `keyword` query param wired into `/search`
 - [x] SERIES-019-AC-21: unused filter is fully backward-compatible
+- [x] SERIES-019-AC-22: `SeriesLookupDto.tmdbId`, set by `resolveTmdbCandidate`
+- [x] SERIES-019-AC-23: `SeriesDto.tmdbId`, input-only
+- [x] SERIES-019-AC-24: `SeriesService.create` syncs keywords when `tmdbId` present

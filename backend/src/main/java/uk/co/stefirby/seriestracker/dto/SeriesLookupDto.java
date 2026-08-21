@@ -16,6 +16,12 @@ import java.math.BigDecimal;
  */
 public class SeriesLookupDto {
 
+    // series_spec_019_keyword_tracking.md (SERIES-019-AC-22): round-tripped by
+    // resolveTmdbCandidate from its own tmdbId parameter, so the add-series form (and
+    // eventually SeriesDto.create, Requirement 6) can populate keywords at creation time
+    // without a second TMDB lookup.
+    private Integer tmdbId;
+
     private String title;
     private Integer year;
     private String genres;
@@ -38,6 +44,9 @@ public class SeriesLookupDto {
     private String productionStatus;
 
     public SeriesLookupDto() {}
+
+    public Integer getTmdbId() { return tmdbId; }
+    public void setTmdbId(Integer tmdbId) { this.tmdbId = tmdbId; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

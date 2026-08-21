@@ -23,9 +23,11 @@ public class SeriesService {
     private static final Logger log = LoggerFactory.getLogger(SeriesService.class);
 
     private final SeriesRepository repository;
+    private final KeywordSyncService keywordSyncService;
 
-    public SeriesService(SeriesRepository repository) {
+    public SeriesService(SeriesRepository repository, KeywordSyncService keywordSyncService) {
         this.repository = repository;
+        this.keywordSyncService = keywordSyncService;
     }
 
     @Transactional
@@ -86,6 +88,15 @@ public class SeriesService {
 
         if (status == SeriesStatus.COMPLETED) {
             entity.setDateCompleted(LocalDateTime.now());
+        }
+
+        // SERIES-019-AC-24: when the incoming dto carries a tmdbId (round-tripped from
+        // resolveTmdbCandidate, SERIES-019-AC-22), populate this series' keyword set at
+        // creation time via the same reconciliation logic refresh already uses -- non-fatal on
+        // its own (KeywordSyncService never throws), so no extra error handling here. A
+        // manually-added series with no tmdbId is left with an empty keyword set, as today.
+        if (dto.getTmdbId() != null) {
+            keywordSyncService.syncKeywords(entity, dto.getTmdbId());
         }
 
         entity = repository.save(entity);

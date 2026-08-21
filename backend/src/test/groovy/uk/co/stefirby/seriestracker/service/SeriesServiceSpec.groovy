@@ -14,10 +14,15 @@ import java.util.UUID
 class SeriesServiceSpec extends Specification {
 
   @Autowired
+  SeriesRepository seriesRepository
+
+  KeywordSyncService keywordSyncService = Mock()
+
   SeriesService seriesService
 
-  @Autowired
-  SeriesRepository seriesRepository
+  def setup() {
+    seriesService = new SeriesService(seriesRepository, keywordSyncService)
+  }
 
   def cleanup() {
     seriesRepository.deleteAll()
@@ -237,6 +242,39 @@ class SeriesServiceSpec extends Specification {
     then: "tags is unchanged, matching every other optional field's update semantics"
         result.tags == "rewatch candidate"
         result.personalRating == 5
+  }
+
+  def "SERIES-019-AC-24: create syncs keywords when the incoming dto carries a tmdbId"() {
+    given: "a SeriesDto with tmdbId set"
+        def dto = new SeriesDto(title: "Spooks", tmdbId: 4046)
+
+    when: "create(dto) is called"
+        seriesService.create(dto)
+
+    then: "syncKeywords is called with the resolved entity and tmdbId"
+        1 * keywordSyncService.syncKeywords(_ as uk.co.stefirby.seriestracker.model.SeriesEntity, 4046)
+  }
+
+  def "SERIES-019-AC-24: create does not attempt a sync when tmdbId is absent"() {
+    given: "a SeriesDto with no tmdbId (a manually-added series)"
+        def dto = new SeriesDto(title: "Homemade Show")
+
+    when: "create(dto) is called"
+        seriesService.create(dto)
+
+    then: "syncKeywords is never called"
+        0 * keywordSyncService.syncKeywords(_, _)
+  }
+
+  def "SERIES-019-AC-23: tmdbId is never echoed back by entityToDto"() {
+    given: "a SeriesDto with tmdbId set"
+        def dto = new SeriesDto(title: "Spooks", tmdbId: 4046)
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "the returned dto does not carry tmdbId back"
+        created.tmdbId == null
   }
 
   def "should reject series creation with invalid IMDb rating"() {
