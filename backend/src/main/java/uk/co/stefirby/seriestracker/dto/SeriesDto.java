@@ -36,6 +36,11 @@ public class SeriesDto {
     // dateCompleted/productionStatus's own SERIES-008-AC-09 design.
     private String productionStatus;
 
+    // series_spec_021_origin_country.md (SERIES-021-AC-05): the raw ISO 3166-1 alpha-2 code
+    // TMDB reports as this series' first origin_country entry -- read at create time
+    // (SERIES-021-AC-06), same direct flow-through precedent as tmdbRating/tmdbVoteCount.
+    private String originCountry;
+
     public SeriesDto() {}
 
     public UUID getId() { return id; }
@@ -103,4 +108,7 @@ public class SeriesDto {
 
     public String getProductionStatus() { return productionStatus; }
     public void setProductionStatus(String productionStatus) { this.productionStatus = productionStatus; }
+
+    public String getOriginCountry() { return originCountry; }
+    public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
 }

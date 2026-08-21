@@ -68,10 +68,11 @@ public class SeriesRefreshService {
 
     /**
      * Updates {@code totalSeasons}/{@code totalEpisodes}/{@code tmdbRating}/{@code
-     * tmdbVoteCount}/{@code productionStatus} from a fresh TMDB detail lookup
-     * (SERIES-018-AC-02). Returns {@code false} without attempting a lookup when the entity
-     * has no {@code imdbId} to resolve a {@code tmdbId} from, or when TMDB is otherwise
-     * unresolvable/unreachable (SERIES-018-AC-05) -- never throws.
+     * tmdbVoteCount}/{@code productionStatus}/{@code originCountry} from a fresh TMDB detail
+     * lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09). Returns {@code
+     * false} without attempting a lookup when the entity has no {@code imdbId} to resolve a
+     * {@code tmdbId} from, or when TMDB is otherwise unresolvable/unreachable
+     * (SERIES-018-AC-05) -- never throws.
      */
     private boolean refreshFromTmdb(SeriesEntity entity) {
         String imdbId = entity.getImdbId();
@@ -89,6 +90,7 @@ public class SeriesRefreshService {
             entity.setTmdbRating(detail.voteAverage());
             entity.setTmdbVoteCount(detail.voteCount());
             entity.setProductionStatus(detail.productionStatus());
+            entity.setOriginCountry(detail.originCountry());
             return true;
         } catch (ExternalServiceException e) {
             log.info("TMDB refresh unavailable for series {} (imdbId={}): {}", entity.getId(), imdbId, e.getMessage());

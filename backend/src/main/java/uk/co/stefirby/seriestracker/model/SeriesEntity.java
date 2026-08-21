@@ -121,6 +121,13 @@ public class SeriesEntity {
     @Enumerated(EnumType.STRING)
     private ProductionStatus productionStatus;
 
+    // series_spec_021_origin_country.md (SERIES-021-AC-05): the raw ISO 3166-1 alpha-2 code
+    // TMDB reports as this series' first origin_country entry -- nullable (manually-added
+    // series never went through a TMDB lookup won't have one), no format validation, same
+    // posture as imdbId (see the spec's Design Decisions).
+    @Column(nullable = true, length = 2)
+    private String originCountry;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -186,4 +193,7 @@ public class SeriesEntity {
 
     public ProductionStatus getProductionStatus() { return productionStatus; }
     public void setProductionStatus(ProductionStatus productionStatus) { this.productionStatus = productionStatus; }
+
+    public String getOriginCountry() { return originCountry; }
+    public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
 }

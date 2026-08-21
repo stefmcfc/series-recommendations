@@ -58,7 +58,7 @@ class SeriesRefreshServiceSpec extends Specification {
             tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
             tmdbClient.details(1396) >> new TmdbSeriesDetail(
                 "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
-                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED)
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
             omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 97)
 
         when: "refresh is called"
@@ -71,7 +71,28 @@ class SeriesRefreshServiceSpec extends Specification {
             result.series().tmdbRating == new BigDecimal("8.9")
             result.series().tmdbVoteCount == 1200
             result.series().productionStatus == "ENDED"
+            result.series().originCountry == "US"
             result.series().lastRefreshedAt != null
+    }
+
+    def "SERIES-021-AC-09: a successful TMDB refresh updates originCountry"() {
+        given: "an existing series and a fresh TMDB detail with a different originCountry"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.originCountry = "GB"
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.4"), 96)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "originCountry reflects the fresh TMDB value"
+            result.series().originCountry == "US"
     }
 
     def "SERIES-018-AC-03: successful OMDb refresh updates imdbRating/rottenTomatoesRating, reports omdbRefreshed=true"() {
@@ -112,7 +133,7 @@ class SeriesRefreshServiceSpec extends Specification {
             tmdbClient.findTvIdByImdbId(_) >> Optional.of(1396)
             tmdbClient.details(1396) >> new TmdbSeriesDetail(
                 "Some Other TMDB Title", 2008, [18], "/other.jpg", 6, 63,
-                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED)
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
             omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
 
         when: "refresh is called"
@@ -199,7 +220,7 @@ class SeriesRefreshServiceSpec extends Specification {
             tmdbClient.findTvIdByImdbId(_) >> Optional.of(1396)
             tmdbClient.details(1396) >> new TmdbSeriesDetail(
                 "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
-                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED)
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
             omdbClient.ratingsForImdbId(_) >> { throw new ExternalServiceException("OMDb down") }
 
         when: "refresh is called"

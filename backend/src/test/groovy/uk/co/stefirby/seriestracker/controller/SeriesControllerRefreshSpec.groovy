@@ -82,7 +82,7 @@ class SeriesControllerRefreshSpec extends Specification {
             when(tmdbClient.findTvIdByImdbId("tt0903747")).thenReturn(Optional.of(1396))
             when(tmdbClient.details(1396)).thenReturn(new TmdbSeriesDetail(
                 "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
-                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED))
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US"))
             when(omdbClient.ratingsForImdbId("tt0903747")).thenReturn(new OmdbRatings(new BigDecimal("9.5"), 97))
 
         when: "POST /refresh is requested"
@@ -94,6 +94,7 @@ class SeriesControllerRefreshSpec extends Specification {
             result.andExpect(jsonPath('$.data.series.totalEpisodes').value(63))
             result.andExpect(jsonPath('$.data.series.tmdbVoteCount').value(1200))
             result.andExpect(jsonPath('$.data.series.productionStatus').value("ENDED"))
+            result.andExpect(jsonPath('$.data.series.originCountry').value("US"))
             result.andExpect(jsonPath('$.data.series.imdbRating').value(9.5))
             result.andExpect(jsonPath('$.data.tmdbRefreshed').value(true))
             result.andExpect(jsonPath('$.data.omdbRefreshed').value(true))

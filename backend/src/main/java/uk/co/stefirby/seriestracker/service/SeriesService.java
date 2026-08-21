@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.service;
 
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
+import uk.co.stefirby.seriestracker.model.ProductionStatus;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
@@ -59,6 +60,15 @@ public class SeriesService {
         entity.setPosterUrl(dto.getPosterUrl());
         entity.setTags(dto.getTags());
         entity.setImdbId(dto.getImdbId());
+        entity.setOriginCountry(dto.getOriginCountry());
+
+        // SERIES-021-AC-08: closes the gap where a freshly added series' productionStatus was
+        // always null until its first explicit refresh, even though TmdbSeriesDetail already
+        // supplies it for free at create time (same direct flow-through precedent as
+        // tmdbRating/tmdbVoteCount, SERIES-017-AC-12).
+        if (dto.getProductionStatus() != null && !dto.getProductionStatus().isBlank()) {
+            entity.setProductionStatus(ProductionStatus.valueOf(dto.getProductionStatus()));
+        }
 
         // Set dateAdded explicitly so it's available immediately after save
         entity.setDateAdded(LocalDateTime.now());
@@ -201,6 +211,7 @@ public class SeriesService {
         dto.setDateCompleted(entity.getDateCompleted());
         dto.setLastRefreshedAt(entity.getLastRefreshedAt());
         dto.setProductionStatus(entity.getProductionStatus() != null ? entity.getProductionStatus().name() : null);
+        dto.setOriginCountry(entity.getOriginCountry());
         return dto;
     }
 }

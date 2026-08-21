@@ -117,7 +117,7 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 016 | Recommendation TMDB rating & vote count | ✅ Done |
 | Frontend 020 | Recommendation rating/vote-count display | ✅ Done |
 | Frontend 021 | TMDB-primary title fix (TMDB search fallback keeps searched title as primary) | ✅ Done — folded into Frontend 022 |
-| Backend 008 | Series lifecycle data (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`) | ⬜ Not started — Requirement 3 (Refresh) superseded, see Backend 018. Requirement 2's `ProductionStatus` enum/column was pulled in early (minimal subset only) as a Backend 018 prerequisite; `excludeFromRecommendations`/`flaggedForRewatch` and create-time `productionStatus` resolution remain outstanding |
+| Backend 008 | Series lifecycle data (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`) | ⬜ Not started — Requirement 3 (Refresh) superseded, see Backend 018. Requirement 2's `ProductionStatus` enum/column was pulled in early (minimal subset only) as a Backend 018 prerequisite; create-time `productionStatus` resolution was closed by Backend 021; `excludeFromRecommendations`/`flaggedForRewatch` remain outstanding |
 | Frontend 012 | Series lifecycle controls (exclude checkbox, production-status badge, rewatch toggle/filter) | ⬜ Not started — Requirement 4 (Refresh) superseded, see Frontend 023 |
 | Backend 009 | Sort by personal rating (`sortBy`/`sortDirection` on listing endpoints) | ⬜ Not started |
 | Frontend 013 | Star ratings & sort (`StarRating` component, `SeriesList` sort control) | ⬜ Not started |
@@ -129,6 +129,8 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 024 | Keyword tracking UI (`SeriesDetail` keyword chips, sortable keyword stats view, `SearchFilter` keyword filter) | ⬜ Not started |
 | Backend 020 | Watch providers (TMDB/JustWatch streaming availability, UK-region default, attached to recommendation candidates) | ⬜ Not started |
 | Frontend 025 | Watch providers UI (`RecommendationsList` streaming badges, JustWatch attribution) | ⬜ Not started |
+| Backend 021 | TMDB origin country (`originCountry` on lookup candidates/lookup result/persisted series, kept fresh on refresh, included in export; closes a `productionStatus` create-time gap from Backend 008/018) | ✅ Done |
+| Frontend 026 | Origin country & TMDB metadata display (candidate-picker country badge, series-list "(Year) \| Country", `productionStatus`/`tmdbRating`/`tmdbVoteCount` surfaced) | ⬜ Not started |
 
 ## Future Ideas
 
