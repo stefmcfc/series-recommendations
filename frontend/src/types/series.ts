@@ -10,7 +10,6 @@ export type SeriesStatus = (typeof SeriesStatus)[keyof typeof SeriesStatus]
 export interface Series {
   id: string
   title: string
-  alternateTitle: string | null
   year: number | null
   genres: string | null
   tags: string | null
@@ -20,8 +19,9 @@ export interface Series {
   currentEpisode: number | null
   status: SeriesStatus
   imdbRating: number | null
-  metacriticRating: number | null
   rottenTomatoesRating: number | null
+  tmdbRating: number | null
+  tmdbVoteCount: number | null
   personalRating: number | null
   personalNotes: string | null
   posterUrl: string | null
@@ -32,7 +32,6 @@ export interface Series {
 
 export interface CreateSeriesRequest {
   title: string
-  alternateTitle?: string
   year?: number
   genres?: string
   tags?: string
@@ -40,7 +39,6 @@ export interface CreateSeriesRequest {
   totalEpisodes?: number
   status?: SeriesStatus
   imdbRating?: number
-  metacriticRating?: number
   rottenTomatoesRating?: number
   personalRating?: number
   personalNotes?: string
@@ -53,24 +51,18 @@ export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
   currentEpisode?: number
 }
 
-export interface OmdbLookupResult {
+export interface SeriesLookupResult {
   title: string
   year?: number
   genres?: string
   totalSeasons?: number
   totalEpisodes?: number
   imdbRating?: number
-  metacriticRating?: number
   rottenTomatoesRating?: number
+  tmdbRating?: number
+  tmdbVoteCount?: number
   posterUrl?: string
   imdbId?: string
-}
-
-export interface LookupCandidate {
-  title: string
-  year?: number
-  imdbId?: string
-  posterUrl?: string
 }
 
 export interface LookupTmdbCandidate {

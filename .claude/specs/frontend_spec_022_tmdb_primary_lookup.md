@@ -1,6 +1,6 @@
 # Frontend Spec 022: TMDB-Primary Lookup UI
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 015 (candidate picker being removed) ✅, Frontend Spec 016 (TMDB fallback UI being promoted to primary) ✅, Frontend Spec 017 (alternate title UI being removed) ✅, Series Spec 017 (backend companion)
 **Frontend Stage**: 22 of N
 
@@ -148,17 +148,17 @@ describe('FRONTEND-022-AC-14: removed OMDb-backed methods', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-022-AC-01: "Look Up" calls `searchTmdb` directly
-- [ ] FRONTEND-022-AC-02: single-match auto-resolve preserved
-- [ ] FRONTEND-022-AC-03: multi-match TMDB candidate picker preserved
-- [ ] FRONTEND-022-AC-04: escape-hatch button + OMDb picker removed
-- [ ] FRONTEND-022-AC-05: `alternateTitle` field removed from `AddSeriesForm`
-- [ ] FRONTEND-022-AC-06: `metacriticRating` field removed from `AddSeriesForm`
-- [ ] FRONTEND-022-AC-07: `alternateTitle` field removed from `EditSeriesForm`
-- [ ] FRONTEND-022-AC-08: `metacriticRating` field removed from `EditSeriesForm`
-- [ ] FRONTEND-022-AC-09: `SeriesDetail` alternateTitle display removed
-- [ ] FRONTEND-022-AC-10: `SeriesList` alternateTitle display removed
-- [ ] FRONTEND-022-AC-11: types cleaned of `alternateTitle`/`metacriticRating`
-- [ ] FRONTEND-022-AC-12: `OmdbLookupResult` renamed `SeriesLookupResult`, gains `tmdbRating`/`tmdbVoteCount`
-- [ ] FRONTEND-022-AC-13: `LookupCandidate` interface removed
-- [ ] FRONTEND-022-AC-14: `seriesApi` OMDb-backed methods removed
+- [x] FRONTEND-022-AC-01: "Look Up" calls `searchTmdb` directly
+- [x] FRONTEND-022-AC-02: single-match auto-resolve preserved
+- [x] FRONTEND-022-AC-03: multi-match TMDB candidate picker preserved
+- [x] FRONTEND-022-AC-04: escape-hatch button + OMDb picker removed
+- [x] FRONTEND-022-AC-05: `alternateTitle` field removed from `AddSeriesForm`
+- [x] FRONTEND-022-AC-06: `metacriticRating` field removed from `AddSeriesForm`
+- [x] FRONTEND-022-AC-07: `alternateTitle` field removed from `EditSeriesForm`
+- [x] FRONTEND-022-AC-08: `metacriticRating` field removed from `EditSeriesForm`
+- [x] FRONTEND-022-AC-09: `SeriesDetail` alternateTitle display removed
+- [x] FRONTEND-022-AC-10: `SeriesList` alternateTitle display removed
+- [x] FRONTEND-022-AC-11: types cleaned of `alternateTitle`/`metacriticRating`
+- [x] FRONTEND-022-AC-12: `OmdbLookupResult` renamed `SeriesLookupResult`, gains `tmdbRating`/`tmdbVoteCount`
+- [x] FRONTEND-022-AC-13: `LookupCandidate` interface removed
+- [x] FRONTEND-022-AC-14: `seriesApi` OMDb-backed methods removed

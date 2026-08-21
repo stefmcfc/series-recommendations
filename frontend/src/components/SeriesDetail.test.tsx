@@ -14,7 +14,6 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'abc-123',
     title: 'The Office',
-    alternateTitle: null,
     year: 2005,
     genres: 'Comedy',
     tags: null,
@@ -24,8 +23,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     currentEpisode: 10,
     status: SeriesStatus.WATCHING,
     imdbRating: 8.9,
-    metacriticRating: null,
     rottenTomatoesRating: null,
+    tmdbRating: null,
+    tmdbVoteCount: null,
     personalRating: 5,
     personalNotes: 'Rewatch of the year',
     posterUrl: null,
@@ -75,7 +75,7 @@ describe('FRONTEND-005-AC-05: re-fetches on id change', () => {
 
 describe('FRONTEND-005-AC-08/10: null fields and no UUID', () => {
   it('shows "—" for null fields and never renders the id', async () => {
-    mockGetById.mockResolvedValue(makeSeries({ metacriticRating: null }))
+    mockGetById.mockResolvedValue(makeSeries({ rottenTomatoesRating: null }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
     await waitFor(() => screen.getByText('The Office'))
@@ -286,26 +286,20 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
   })
 })
 
-describe('FRONTEND-017-AC-20/21: alternate title shown near the heading, not in the fields list', () => {
-  it('renders "aka {alternateTitle}" near the heading when present', async () => {
-    mockGetById.mockResolvedValue(
-      makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
-    )
+describe('FRONTEND-022-AC-09: alternateTitle no longer displayed', () => {
+  it('does not render an Alternate Title field', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ title: 'Spooks' }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'MI-5' })).toBeInTheDocument(),
-    )
-    expect(screen.getByText(/aka spooks/i)).toBeInTheDocument()
-    expect(screen.queryByText('Alternate Title')).not.toBeInTheDocument() // not in the <dl> fields list
+    await screen.findByText('Spooks')
+    expect(screen.queryByText(/alternate title/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
   })
 
-  it('renders nothing extra when alternateTitle is null', async () => {
-    mockGetById.mockResolvedValue(makeSeries({ alternateTitle: null }))
-    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-
-    await waitFor(() => expect(screen.getByRole('heading')).toBeInTheDocument())
-    expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
+  it('does not render a Metacritic Rating field', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.queryByText(/metacritic/i)).not.toBeInTheDocument()
   })
 })
 

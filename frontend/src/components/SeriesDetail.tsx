@@ -156,18 +156,7 @@ export function SeriesDetail({
 
       {!loading && !notFound && !error && series && (
         <div className={styles.detail}>
-          <h2
-            className={
-              series.alternateTitle !== null
-                ? `${styles.heading} ${styles.headingWithAlternate}`
-                : styles.heading
-            }
-          >
-            {series.title}
-          </h2>
-          {series.alternateTitle !== null && (
-            <p className={styles.alternateTitle}>aka {series.alternateTitle}</p>
-          )}
+          <h2 className={styles.heading}>{series.title}</h2>
 
           <div className={styles.content}>
             {series.posterUrl !== null && !posterError && (
@@ -215,10 +204,6 @@ export function SeriesDetail({
               <div className={styles.field}>
                 <dt>IMDb Rating</dt>
                 <dd>{formatValue(series.imdbRating)}</dd>
-              </div>
-              <div className={styles.field}>
-                <dt>Metacritic Rating</dt>
-                <dd>{formatValue(series.metacriticRating)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Rotten Tomatoes Rating</dt>

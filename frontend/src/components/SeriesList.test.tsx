@@ -15,7 +15,6 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'test-id',
     title: 'Test Show',
-    alternateTitle: null,
     year: null,
     genres: null,
     tags: null,
@@ -25,8 +24,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     currentEpisode: null,
     status: SeriesStatus.BACKLOG,
     imdbRating: null,
-    metacriticRating: null,
     rottenTomatoesRating: null,
+    tmdbRating: null,
+    tmdbVoteCount: null,
     personalRating: null,
     personalNotes: null,
     posterUrl: null,
@@ -578,37 +578,13 @@ describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
   })
 })
 
-describe('FRONTEND-017-AC-18/19: alternate title shown next to the row title', () => {
-  it('renders "aka {alternateTitle}" next to the title when present', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
-    ])
+describe('FRONTEND-022-AC-10: alternateTitle no longer displayed', () => {
+  it('does not render an "aka" line next to the row title', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'MI-5' })])
     render(<SeriesList />)
 
     await waitFor(() => expect(screen.getByText('MI-5')).toBeInTheDocument())
-    expect(screen.getByText(/aka spooks/i)).toBeInTheDocument()
-  })
-
-  it('renders nothing extra when alternateTitle is null', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Breaking Bad', alternateTitle: null }),
-    ])
-    render(<SeriesList />)
-
-    await waitFor(() =>
-      expect(screen.getByText('Breaking Bad')).toBeInTheDocument(),
-    )
     expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
-  })
-
-  it('does not nest the alternate title text inside the title button', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
-    ])
-    render(<SeriesList />)
-
-    const titleButton = await screen.findByRole('button', { name: 'MI-5' })
-    expect(titleButton).not.toHaveTextContent(/spooks/i)
   })
 })
 

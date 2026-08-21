@@ -13,7 +13,6 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'test-id',
     title: 'Test Show',
-    alternateTitle: null,
     year: 2020,
     genres: 'Drama',
     tags: null,
@@ -23,8 +22,9 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     currentEpisode: 10,
     status: SeriesStatus.WATCHING,
     imdbRating: 8.4,
-    metacriticRating: null,
     rottenTomatoesRating: null,
+    tmdbRating: null,
+    tmdbVoteCount: null,
     personalRating: null,
     personalNotes: null,
     posterUrl: null,
@@ -100,7 +100,6 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
       /current episode/i,
       /^status/i,
       /imdb rating/i,
-      /metacritic rating/i,
       /rotten tomatoes rating/i,
       /personal rating/i,
       /notes/i,
@@ -123,8 +122,16 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
   })
 
   it('renders null fields as empty', () => {
-    renderForm({ series: makeSeries({ metacriticRating: null }) })
-    expect(screen.getByLabelText(/metacritic rating/i)).toHaveValue(null)
+    renderForm({ series: makeSeries({ rottenTomatoesRating: null }) })
+    expect(screen.getByLabelText(/rotten tomatoes rating/i)).toHaveValue(null)
+  })
+})
+
+describe('FRONTEND-022-AC-07/08: alternateTitle and metacriticRating fields removed', () => {
+  it('does not render alternateTitle or metacriticRating inputs', () => {
+    renderForm()
+    expect(screen.queryByLabelText(/alternate title/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/metacritic/i)).not.toBeInTheDocument()
   })
 })
 
@@ -328,45 +335,6 @@ describe('FRONTEND-004-AC-30/31/32: server-side error handling', () => {
         0,
       ),
     )
-  })
-})
-
-describe('FRONTEND-017-AC-15/16: Alternate Title pre-populated from the series', () => {
-  it('pre-fills from series.alternateTitle', () => {
-    renderForm({
-      series: makeSeries({ title: 'MI-5', alternateTitle: 'Spooks' }),
-    })
-    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('Spooks')
-  })
-
-  it('renders blank when series.alternateTitle is null', () => {
-    renderForm({ series: makeSeries({ alternateTitle: null }) })
-    expect(screen.getByLabelText(/alternate title/i)).toHaveValue('')
-  })
-})
-
-describe('FRONTEND-017-AC-17: submission payload includes/omits alternateTitle', () => {
-  it('omits alternateTitle when blank', async () => {
-    const series = makeSeries({ alternateTitle: null })
-    mockUpdate.mockResolvedValue(series)
-    renderForm({ series })
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
-
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
-    expect(mockUpdate.mock.calls[0][1]).not.toHaveProperty('alternateTitle')
-  })
-
-  it('includes a trimmed alternateTitle when populated', async () => {
-    const series = makeSeries({ title: 'MI-5', alternateTitle: null })
-    mockUpdate.mockResolvedValue(series)
-    renderForm({ series })
-    fireEvent.change(screen.getByLabelText(/alternate title/i), {
-      target: { value: '  Spooks  ' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
-
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
-    expect(mockUpdate.mock.calls[0][1].alternateTitle).toBe('Spooks')
   })
 })
 

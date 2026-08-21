@@ -13,7 +13,6 @@ interface EditSeriesFormProps {
 
 interface FormState {
   title: string
-  alternateTitle: string
   year: string
   genres: string
   tags: string
@@ -23,7 +22,6 @@ interface FormState {
   currentEpisode: string
   status: SeriesStatus
   imdbRating: string
-  metacriticRating: string
   rottenTomatoesRating: string
   personalRating: string
   personalNotes: string
@@ -39,7 +37,6 @@ function numberToFormValue(value: number | null): string {
 function toFormState(series: Series): FormState {
   return {
     title: series.title,
-    alternateTitle: series.alternateTitle ?? '',
     year: numberToFormValue(series.year),
     genres: series.genres ?? '',
     tags: series.tags ?? '',
@@ -49,7 +46,6 @@ function toFormState(series: Series): FormState {
     currentEpisode: numberToFormValue(series.currentEpisode),
     status: series.status,
     imdbRating: numberToFormValue(series.imdbRating),
-    metacriticRating: numberToFormValue(series.metacriticRating),
     rottenTomatoesRating: numberToFormValue(series.rottenTomatoesRating),
     personalRating: numberToFormValue(series.personalRating),
     personalNotes: series.personalNotes ?? '',
@@ -111,17 +107,6 @@ function validate(form: FormState): FieldErrors {
     }
   }
 
-  if (form.metacriticRating.trim() !== '') {
-    const metacriticRating = Number(form.metacriticRating)
-    if (
-      Number.isNaN(metacriticRating) ||
-      metacriticRating < 0 ||
-      metacriticRating > 100
-    ) {
-      errors.metacriticRating = 'Metacritic rating must be between 0 and 100'
-    }
-  }
-
   if (form.rottenTomatoesRating.trim() !== '') {
     const rottenTomatoesRating = Number(form.rottenTomatoesRating)
     if (
@@ -154,8 +139,6 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
     status: form.status,
   }
 
-  if (form.alternateTitle.trim() !== '')
-    payload.alternateTitle = form.alternateTitle.trim()
   if (form.year.trim() !== '') payload.year = Number(form.year)
   if (form.genres.trim() !== '') payload.genres = form.genres.trim()
   if (form.tags.trim() !== '') payload.tags = form.tags.trim()
@@ -169,8 +152,6 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
     payload.currentEpisode = Number(form.currentEpisode)
   if (form.imdbRating.trim() !== '')
     payload.imdbRating = Number(form.imdbRating)
-  if (form.metacriticRating.trim() !== '')
-    payload.metacriticRating = Number(form.metacriticRating)
   if (form.rottenTomatoesRating.trim() !== '')
     payload.rottenTomatoesRating = Number(form.rottenTomatoesRating)
   if (form.personalRating.trim() !== '')
@@ -288,16 +269,6 @@ export function EditSeriesForm({
                 {fieldErrors.title}
               </span>
             )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="alternateTitle">Alternate Title</label>
-            <input
-              id="alternateTitle"
-              type="text"
-              value={form.alternateTitle}
-              onChange={updateField('alternateTitle')}
-            />
           </div>
 
           <div className={styles.field}>
@@ -437,26 +408,6 @@ export function EditSeriesForm({
             {fieldErrors.imdbRating && (
               <span id="imdbRating-error" className={styles.fieldError}>
                 {fieldErrors.imdbRating}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="metacriticRating">Metacritic Rating</label>
-            <input
-              id="metacriticRating"
-              type="number"
-              value={form.metacriticRating}
-              onChange={updateField('metacriticRating')}
-              aria-describedby={
-                fieldErrors.metacriticRating
-                  ? 'metacriticRating-error'
-                  : undefined
-              }
-            />
-            {fieldErrors.metacriticRating && (
-              <span id="metacriticRating-error" className={styles.fieldError}>
-                {fieldErrors.metacriticRating}
               </span>
             )}
           </div>
