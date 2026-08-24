@@ -837,4 +837,97 @@ class TmdbClientSpec extends Specification {
             result.size() == 1
             result[0].tmdbId() == 238754
     }
+
+    // -- SERIES-020: watchProviders() --
+
+    def "SERIES-020-AC-01: extracts flatrate providers for the given region"() {
+        given: "TMDB /tv/1396/watch/providers returns GB flatrate results"
+            def body = '''
+                {
+                  "results": {
+                    "GB": {
+                      "flatrate": [
+                        {"provider_name": "Netflix", "logo_path": "/abc.jpg"}
+                      ]
+                    }
+                  }
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/watch/providers")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("api_key", API_KEY))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "watchProviders(1396, 'GB') is called"
+            def result = client().watchProviders(1396, "GB")
+
+        then: "the Netflix entry is mapped"
+            result == [new TmdbWatchProvider("Netflix", "/abc.jpg")]
+    }
+
+    def "SERIES-020-AC-02: no entry for the region returns an empty list, not an error"() {
+        given: "TMDB /tv/1396/watch/providers returns results with no GB key"
+            def body = '{"results": {"US": {"flatrate": [{"provider_name": "Hulu", "logo_path": "/hulu.jpg"}]}}}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/watch/providers")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "watchProviders(1396, 'GB') is called"
+            def result = client().watchProviders(1396, "GB")
+
+        then: "the result is empty"
+            result == []
+    }
+
+    def "SERIES-020-AC-02: an absent results field returns an empty list, not an error"() {
+        given: "TMDB /tv/1396/watch/providers returns no results field"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/watch/providers")))
+                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+
+        when: "watchProviders(1396, 'GB') is called"
+            def result = client().watchProviders(1396, "GB")
+
+        then: "the result is empty"
+            result == []
+    }
+
+    def "SERIES-020-AC-02: a region entry with no flatrate array returns an empty list, not an error"() {
+        given: "TMDB /tv/1396/watch/providers returns a GB entry with only a rent array"
+            def body = '{"results": {"GB": {"rent": [{"provider_name": "Amazon Video", "logo_path": "/amazon.jpg"}]}}}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/watch/providers")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "watchProviders(1396, 'GB') is called"
+            def result = client().watchProviders(1396, "GB")
+
+        then: "the result is empty -- only flatrate is surfaced"
+            result == []
+    }
+
+    def "SERIES-020-AC-03: exposes the provider logo base URL as a public static final constant"() {
+        expect:
+            TmdbClient.PROVIDER_LOGO_BASE_URL == "https://image.tmdb.org/t/p/w92"
+    }
+
+    def "SERIES-020-AC-04: a non-2xx response from TMDB watch/providers raises ExternalServiceException"() {
+        given: "TMDB responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/watch/providers")))
+                .andRespond(withServerError())
+
+        when: "watchProviders(...) is called"
+            client().watchProviders(1396, "GB")
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
+    }
+
+    def "SERIES-020-AC-04: an unset/blank API key raises ExternalServiceException without calling TMDB"() {
+        when: "watchProviders(...) is called with no API key configured"
+            client(apiKey).watchProviders(1396, "GB")
+
+        then: "an ExternalServiceException is raised, and no HTTP request is attempted"
+            thrown(ExternalServiceException)
+
+        where:
+            apiKey << [null, "", "   "]
+    }
 }
