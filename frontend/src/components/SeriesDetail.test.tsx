@@ -39,6 +39,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     originCountry: null,
     productionStatus: null,
     keywords: [],
+    overview: null,
     ...overrides,
   }
 }
@@ -542,6 +543,27 @@ describe('FRONTEND-024-AC-18: keywords field carries a distinct class', () => {
     const dt = await screen.findByText('Keywords')
     expect(dt.parentElement?.className).toContain('field')
     expect(dt.parentElement?.className).toContain('keywordsField')
+  })
+})
+
+describe('FRONTEND-028-AC-14: overview field', () => {
+  it('displays the series overview', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ overview: 'A mockumentary sitcom.' }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(
+      await screen.findByText('A mockumentary sitcom.'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows "—" when overview is null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ overview: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('The Office')
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
   })
 })
 

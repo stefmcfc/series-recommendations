@@ -42,6 +42,11 @@ public class SeriesDto {
     // (SERIES-021-AC-06), same direct flow-through precedent as tmdbRating/tmdbVoteCount.
     private String originCountry;
 
+    // series_spec_023_recommendation_metadata_and_overview.md (SERIES-023-AC-10): read at
+    // create time (SERIES-023-AC-11) and refreshed alongside every other TMDB-sourced field --
+    // same direct flow-through precedent as originCountry above.
+    private String overview;
+
     // series_spec_018_series_refresh.md: output-only, like lastRefreshedAt -- never read from
     // the incoming DTO in create/update (SERIES-018-AC-23). Non-null means a refresh detected
     // new content not yet acknowledged (POST /series/{id}/acknowledge-new-content).
@@ -130,6 +135,9 @@ public class SeriesDto {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public String getOverview() { return overview; }
+    public void setOverview(String overview) { this.overview = overview; }
 
     public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
     public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }

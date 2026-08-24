@@ -765,6 +765,32 @@ describe('FRONTEND-022: no logging of search/resolve data', () => {
   })
 })
 
+describe('FRONTEND-028-AC-05: overview carried through initialValues (recommendation flow)', () => {
+  it('includes overview in the create payload when passed via initialValues without a lookup', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Ozark' } as Series)
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        initialValues={{
+          title: 'Ozark',
+          overview: 'A financial planner relocates his family.',
+        }}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          overview: 'A financial planner relocates his family.',
+        }),
+      ),
+    )
+  })
+})
+
 describe('FRONTEND-010-AC-11: initialValues prefill', () => {
   it('pre-populates fields from initialValues, only for provided fields', () => {
     render(
@@ -956,6 +982,55 @@ describe('FRONTEND-003-AC-31/32: no leaked data, no out-of-contract fields', () 
     const payload = mockCreate.mock.calls[0][0]
     expect(payload).not.toHaveProperty('currentSeason')
     expect(payload).not.toHaveProperty('currentEpisode')
+  })
+})
+
+describe('FRONTEND-028-AC-05/06/07: overview carried through to the create payload', () => {
+  it('includes overview in the create payload after a resolved lookup', async () => {
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 2996, title: 'The Office', year: 2001 },
+    ])
+    mockResolveTmdb.mockResolvedValue(
+      makeLookupResult({
+        title: 'The Office',
+        overview: 'A mockumentary sitcom.',
+      }),
+    )
+    mockCreate.mockResolvedValue({ id: '1', title: 'The Office' } as Series)
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'The Office' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /look up/i }))
+    await screen.findByDisplayValue('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ overview: 'A mockumentary sitcom.' }),
+      ),
+    )
+  })
+
+  it('omits overview when no lookup was performed', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Homemade Show' } as Series)
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Homemade Show' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    const payload = mockCreate.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('overview')
+  })
+
+  it('does not render a visible overview input', () => {
+    renderForm()
+    expect(screen.queryByLabelText(/overview/i)).not.toBeInTheDocument()
   })
 })
 

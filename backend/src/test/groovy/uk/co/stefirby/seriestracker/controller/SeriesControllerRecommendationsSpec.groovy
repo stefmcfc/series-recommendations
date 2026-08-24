@@ -43,7 +43,9 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 1500,
                 "tt3032476",
                 ["Breaking Bad"],
-                1
+                1,
+                "US",
+                1396
             )
             when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto, dto, dto])
 
@@ -71,7 +73,9 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 1500,
                 "tt3032476",
                 ["Breaking Bad"],
-                1
+                1,
+                "US",
+                1396
             )
             when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto])
 
@@ -320,5 +324,35 @@ class SeriesControllerRecommendationsSpec extends Specification {
 
         then: "the response is 400"
             result.andExpect(status().isBadRequest())
+    }
+
+    // -- SERIES-023: GET /api/v1/series/recommendations/{tmdbId}/keywords --
+
+    def "SERIES-023-AC-04/07: GET /api/v1/series/recommendations/{tmdbId}/keywords returns the envelope shape"() {
+        given: "the service resolves two keywords for tmdbId 4046"
+            when(recommendationService.getKeywordsForCandidate(4046)).thenReturn(["spy", "mi5"])
+
+        when: "GET /api/v1/series/recommendations/4046/keywords is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations/4046/keywords"))
+
+        then: "the response is 200 with both keywords in data, count 2"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data', org.hamcrest.Matchers.hasSize(2)))
+            result.andExpect(jsonPath('$.data[0]').value("spy"))
+            result.andExpect(jsonPath('$.data[1]').value("mi5"))
+            result.andExpect(jsonPath('$.count').value(2))
+    }
+
+    def "SERIES-023-AC-06: an unresolvable tmdbId still returns 200 with an empty list"() {
+        given: "the service finds nothing for tmdbId 1"
+            when(recommendationService.getKeywordsForCandidate(1)).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations/1/keywords is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations/1/keywords"))
+
+        then: "the response is 200 with an empty list"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data').isArray())
+            result.andExpect(jsonPath('$.count').value(0))
     }
 }

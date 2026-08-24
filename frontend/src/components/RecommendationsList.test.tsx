@@ -17,6 +17,9 @@ const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 const mockIgnoreSeries = vi.mocked(seriesApi.ignoreSeries)
 const mockCreate = vi.mocked(seriesApi.create)
 const mockRefresh = vi.mocked(seriesApi.refresh)
+const mockGetRecommendationKeywords = vi.mocked(
+  seriesApi.getRecommendationKeywords,
+)
 
 function makeRecommendation(
   overrides: Partial<Recommendation> = {},
@@ -32,6 +35,8 @@ function makeRecommendation(
     imdbId: 'tt5071412',
     sourceTitles: [],
     totalSourceCount: 0,
+    originCountry: null,
+    tmdbId: 1234,
     ...overrides,
   }
 }
@@ -387,5 +392,117 @@ describe('FRONTEND-020-AC-05: nothing rendered when tmdbRating is null', () => {
 
     await screen.findByText('Ozark')
     expect(screen.queryByText(/votes\)/)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-028-AC-04: origin country shown on every card', () => {
+  it('displays the resolved country name when originCountry is set', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ originCountry: 'GB' }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(await screen.findByText(/united kingdom/i)).toBeInTheDocument()
+  })
+
+  it('renders nothing extra when originCountry is null', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ originCountry: null }),
+    ])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    expect(screen.queryByText(/united/i)).not.toBeInTheDocument()
+  })
+})
+
+describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expand click", () => {
+  it('does not call getRecommendationKeywords on initial render', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    expect(mockGetRecommendationKeywords).not.toHaveBeenCalled()
+  })
+
+  it('calls getRecommendationKeywords with the card\'s tmdbId when "Show keywords" is clicked', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ tmdbId: 4046 }),
+    ])
+    mockGetRecommendationKeywords.mockResolvedValue(['spy', 'mi5'])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+
+    await waitFor(() =>
+      expect(mockGetRecommendationKeywords).toHaveBeenCalledWith(4046),
+    )
+  })
+})
+
+describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states', () => {
+  it('shows a scoped loading state while the fetch is in flight', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockGetRecommendationKeywords.mockReturnValue(new Promise(() => undefined))
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+
+    expect(await screen.findByText(/loading keywords/i)).toBeInTheDocument()
+  })
+
+  it('shows a scoped error message when the fetch rejects', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockGetRecommendationKeywords.mockRejectedValue(
+      new ApiError(500, 'Failed to load keywords'),
+    )
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+
+    expect(
+      await screen.findByText('Failed to load keywords'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders each keyword and an explicit empty message when none are found', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockGetRecommendationKeywords.mockResolvedValue([])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+
+    expect(await screen.findByText(/no keywords found/i)).toBeInTheDocument()
+  })
+
+  it('renders each keyword as a chip when the fetch resolves with results', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockGetRecommendationKeywords.mockResolvedValue(['spy', 'mi5'])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+
+    expect(await screen.findByText('spy')).toBeInTheDocument()
+    expect(screen.getByText('mi5')).toBeInTheDocument()
+  })
+
+  it('does not affect the list-wide error/loading state on a per-card keyword error', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockGetRecommendationKeywords.mockRejectedValue(
+      new ApiError(500, 'Failed to load keywords'),
+    )
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+
+    await screen.findByText('Failed to load keywords')
+    expect(screen.getByText('Ozark')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
