@@ -32,6 +32,11 @@ import java.util.List;
  * <p>{@code originCountry} (SERIES-021-AC-02) is the first entry of this same endpoint's
  * {@code origin_country} array -- {@code null} when absent or empty -- see
  * {@code series_spec_021_origin_country.md}.
+ *
+ * <p>{@code overview} (SERIES-023-AC-08) is parsed from this same endpoint's {@code overview}
+ * field via the same {@code str(...)} helper applied to every other string field here -- zero
+ * extra TMDB traffic, since this call is already made for every other field above. See
+ * {@code series_spec_023_recommendation_metadata_and_overview.md}.
  */
 public record TmdbSeriesDetail(
     String title,
@@ -43,6 +48,7 @@ public record TmdbSeriesDetail(
     BigDecimal voteAverage,
     Integer voteCount,
     ProductionStatus productionStatus,
-    String originCountry
+    String originCountry,
+    String overview
 ) {
 }

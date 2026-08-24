@@ -2,8 +2,10 @@ package uk.co.stefirby.seriestracker.service;
 
 import uk.co.stefirby.seriestracker.client.TmdbCandidate;
 import uk.co.stefirby.seriestracker.client.TmdbClient;
+import uk.co.stefirby.seriestracker.client.TmdbKeyword;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
+import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository;
@@ -71,6 +73,17 @@ public class RecommendationService {
      * from a handful of votes is closer to noise than signal.
      */
     private static final int DEFAULT_MIN_VOTE_COUNT = 20;
+
+    /**
+     * Mode-aware override of {@link #DEFAULT_MIN_VOTE_COUNT} applied only when {@code
+     * sourceMode == "topRated"} (SERIES-024-AC-09), at both the sourcing-time call site ({@link
+     * #sourceTopRated}, SERIES-024-AC-10) and the post-hoc output-filter call site ({@link
+     * #applyOutputFilters}, SERIES-024-AC-11). Every other mode keeps {@link
+     * #DEFAULT_MIN_VOTE_COUNT} (SERIES-024-AC-12) -- a global bump would over-filter
+     * Automatic/Specific/Genre recommendations, which don't need as high a confidence bar as
+     * "show me TMDB's objectively highest-rated shows" does.
+     */
+    private static final int DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200;
 
     private final SeriesRepository seriesRepository;
     private final IgnoredSeriesRepository ignoredSeriesRepository;
@@ -219,7 +232,8 @@ public class RecommendationService {
     // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
 
     private List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
-        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : DEFAULT_MIN_VOTE_COUNT;
+        // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
+        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
         return tmdbClient.discoverTopRated(effectiveMinVoteCount).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .collect(Collectors.toList());
@@ -437,13 +451,19 @@ public class RecommendationService {
     // -- Requirement 8: output filters (SERIES-007-AC-23..29) --
 
     private List<DedupedCandidate> applyOutputFilters(List<DedupedCandidate> candidates, RecommendationCriteria c) {
-        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : DEFAULT_MIN_VOTE_COUNT;
+        // SERIES-024-AC-11/12: the post-hoc default is likewise 200 for topRated, 20 otherwise.
+        int defaultMinVoteCount = "topRated".equals(c.getSourceMode())
+            ? DEFAULT_MIN_VOTE_COUNT_TOP_RATED : DEFAULT_MIN_VOTE_COUNT;
+        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
         return candidates.stream()
             .filter(dc -> matchesMinTmdbRating(dc.candidate(), c.getMinTmdbRating()))
             .filter(dc -> matchesMinVoteCount(dc.candidate(), effectiveMinVoteCount))
             .filter(dc -> matchesYearRange(dc.candidate(), c.getYearMin(), c.getYearMax()))
             .filter(dc -> matchesExcludeGenres(dc.candidate(), c.getExcludeGenres()))
             .filter(dc -> matchesLanguage(dc.candidate(), c.getLanguage()))
+            // SERIES-024-AC-05: run last -- the only filter with a per-candidate extra call,
+            // so it only ever runs against the smallest possible remaining pool.
+            .filter(dc -> matchesExcludeKeywords(dc.candidate(), c.getExcludeKeywords()))
             .collect(Collectors.toList());
     }
 
@@ -493,6 +513,31 @@ public class RecommendationService {
             return true;
         }
         return c.originalLanguage() != null && language.equalsIgnoreCase(c.originalLanguage());
+    }
+
+    /**
+     * SERIES-024-AC-03/04/06/07: a true no-op (zero {@code TmdbClient} calls) when {@code
+     * excludeKeywords} is null/empty. Otherwise fetches the candidate's TMDB keywords via
+     * {@link TmdbClient#showKeywords(int)} and excludes it if any keyword name
+     * case-insensitively matches an entry in {@code excludeKeywords}. A {@code
+     * showKeywords} failure fails this one candidate open (not excluded) rather than
+     * propagating, mirroring {@code KeywordSyncService.syncKeywords}'s degrade-gracefully
+     * pattern around the same {@code TmdbClient} method.
+     */
+    private boolean matchesExcludeKeywords(TmdbCandidate c, List<String> excludeKeywords) {
+        if (excludeKeywords == null || excludeKeywords.isEmpty()) {
+            return true;
+        }
+        List<TmdbKeyword> candidateKeywords;
+        try {
+            candidateKeywords = tmdbClient.showKeywords(c.tmdbId());
+        } catch (ExternalServiceException e) {
+            log.info("TMDB keyword lookup unavailable for candidate tmdbId={}, excludeKeywords filter fails open: {}",
+                c.tmdbId(), e.getMessage());
+            return true;
+        }
+        return excludeKeywords.stream().noneMatch(excluded ->
+            candidateKeywords.stream().anyMatch(k -> k.name() != null && k.name().equalsIgnoreCase(excluded.trim())));
     }
 
     // -- Requirement 7: output ranking & diversity cap (SERIES-007-AC-21/22) --
@@ -591,8 +636,32 @@ public class RecommendationService {
             c.voteCount(),
             dc.imdbId(),
             sourceTitles,
-            dc.sourceSeries().size()
+            dc.sourceSeries().size(),
+            c.originCountry(),
+            c.tmdbId()
         );
+    }
+
+    /**
+     * Backs {@code GET /api/v1/series/recommendations/{tmdbId}/keywords} (SERIES-023-AC-04/05):
+     * an on-demand, single-candidate keyword lookup, deliberately not folded into {@link
+     * #recommend(int, RecommendationCriteria)} itself -- fetching keywords for every card in a
+     * 10-20-result list would cost a TMDB call per card the user never asked to expand (see
+     * {@code series_spec_023_recommendation_metadata_and_overview.md}'s Overview). A TMDB
+     * failure or an unresolvable {@code tmdbId} both yield an empty list, never an exception
+     * (SERIES-023-AC-06) -- there's no persisted entity here for a "leave unchanged" posture to
+     * apply to, so this is simply "no keywords available right now".
+     */
+    @Transactional(readOnly = true)
+    public List<String> getKeywordsForCandidate(int tmdbId) {
+        try {
+            return tmdbClient.showKeywords(tmdbId).stream()
+                .map(TmdbKeyword::name)
+                .collect(Collectors.toList());
+        } catch (ExternalServiceException e) {
+            log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
+            return List.of();
+        }
     }
 
     private String joinGenres(List<Integer> genreIds) {

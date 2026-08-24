@@ -1,6 +1,10 @@
 # Frontend Spec 028: Recommendation Metadata & Overview Display
 
-**Status**: Not started
+**Status**: Implemented (2026-08-24). Files touched: `frontend/src/types/series.ts` (`Recommendation.originCountry`/`tmdbId`, `Series.overview`, `CreateSeriesRequest.overview?`, `SeriesLookupResult.overview?`), `frontend/src/services/seriesApi.ts` (`getRecommendationKeywords(tmdbId)`), `frontend/src/services/__tests__/seriesApi.test.ts`, `frontend/src/components/RecommendationsList.tsx`/`.module.css` (origin country span, per-card "Show keywords" button + scoped loading/error/result state, `overview` passed into `AddSeriesForm`'s `initialValues`), `frontend/src/components/RecommendationsList.test.tsx`, `frontend/src/components/AddSeriesForm.tsx` (hidden `overview` field: `FormState`, `applyLookupResult`, `buildPayload`, `buildInitialFormState`), `frontend/src/components/AddSeriesForm.test.tsx`, `frontend/src/components/SeriesDetail.tsx` (Overview field between Keywords and Status), `frontend/src/components/SeriesDetail.test.tsx`, plus fixture updates (`overview: null` added to the shared `makeSeries` shape) in `frontend/src/components/SeriesList.test.tsx`, `frontend/src/components/EditSeriesForm.test.tsx`, `frontend/src/components/RecommendationControls.test.tsx`. `npm test` (362/362 passed), `npm run lint` (clean), and `npm run build` (`tsc -b && vite build`, clean) all pass as of 2026-08-24.
+
+One deliberate extension beyond the spec's literal AC wording: `buildInitialFormState` and `RecommendationsList`'s `initialValues` object also carry `overview` through directly from a `Recommendation` (not just via `applyLookupResult`/a resolved TMDB lookup), mirroring the exact precedent already established for `imdbId` (passed unconditionally from `pendingAdd.recommendation.imdbId` today) — otherwise a recommendation card's already-visible overview text would be silently dropped on "Mark as Watched"/"Add to List" whenever the user never triggers a fresh Look Up, undermining the "closes the loop" intent Design Decisions describes. Covered by an added test (`FRONTEND-028-AC-05: overview carried through initialValues (recommendation flow)`) beyond the spec's sketches.
+
+**Real-browser verification**: completed. Both `gradlew.bat bootRun` (backend, restarted mid-session to pick up the just-merged `series_spec_023` backend changes — the previously running instance predated them and was still serving the old DTO shape) and `npm run dev` (frontend, restarted to pick up a temporary `frontend/.env.local` CORS workaround, removed again afterward) were run live. Verified via a headless Puppeteer (`puppeteer-core`, installed transiently with `--no-save` and removed from the install by not persisting it in `package.json`) driving the real dev server against the real backend and a live TMDB key: recommendation cards show origin country (e.g. "United Kingdom"/"United States") in both light and dark `prefers-color-scheme`; clicking "Show keywords" on a card (Sherlock, `tmdbId` 19885) fetched and rendered 25 real TMDB keyword chips with no fetch on initial list load; `SeriesDetail`'s Overview field was confirmed both as `—` (a pre-existing series with no `overview` yet) and, after using the existing Refresh action to backfill it from TMDB, showing real prose text ("Hotshot LA defense attorney Mickey Haller…") in both themes. `@axe-core/react` console output was captured and inspected: the only color-contrast violation present (`.country` span, `SeriesList`'s existing "(Year) | Country" badge from `frontend_spec_026`, dark mode, 4.09:1 vs the 4.5:1 threshold) is pre-existing and unrelated to this spec's changes — this spec's own new `.country` span on `RecommendationsList` (identical `color`/`opacity` CSS) was isolated and confirmed to raise zero axe violations of its own in either theme. No new accessibility violations were introduced.
 **Depends on**: Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 010 (`RecommendationsList`, card layout owner) ✅, Frontend Spec 020 (`RecommendationsList`, TMDB rating display) ✅, Frontend Spec 022 (`AddSeriesForm`, hidden-field carry-through pattern) ✅, Frontend Spec 026 (`formatCountryName`, origin-country display precedent) ✅, Series Spec 023 (`series_spec_023_recommendation_metadata_and_overview.md`, backend companion)
 **Frontend Stage**: 28 of N
 
@@ -238,17 +242,17 @@ describe('FRONTEND-028-AC-14: overview field', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-028-AC-01: `Recommendation` gains `originCountry`/`tmdbId`
-- [ ] FRONTEND-028-AC-02: `Series` gains `overview`
-- [ ] FRONTEND-028-AC-03: `CreateSeriesRequest`/`SeriesLookupResult` gain `overview?`
-- [ ] FRONTEND-028-AC-04: recommendation cards always show origin country
-- [ ] FRONTEND-028-AC-05: `AddSeriesForm.FormState` gains hidden `overview`
-- [ ] FRONTEND-028-AC-06: `applyLookupResult` carries `overview` through
-- [ ] FRONTEND-028-AC-07: `buildPayload` includes `overview`
-- [ ] FRONTEND-028-AC-08: "Show keywords" button per card
-- [ ] FRONTEND-028-AC-09: click calls `seriesApi.getRecommendationKeywords(tmdbId)`
-- [ ] FRONTEND-028-AC-10: no keyword fetch on mount/refresh, only on expand
-- [ ] FRONTEND-028-AC-11: scoped per-card loading state
-- [ ] FRONTEND-028-AC-12: scoped per-card error state
-- [ ] FRONTEND-028-AC-13: keyword chips rendered; explicit empty message
-- [ ] FRONTEND-028-AC-14: `SeriesDetail` shows Overview field
+- [x] FRONTEND-028-AC-01: `Recommendation` gains `originCountry`/`tmdbId`
+- [x] FRONTEND-028-AC-02: `Series` gains `overview`
+- [x] FRONTEND-028-AC-03: `CreateSeriesRequest`/`SeriesLookupResult` gain `overview?`
+- [x] FRONTEND-028-AC-04: recommendation cards always show origin country
+- [x] FRONTEND-028-AC-05: `AddSeriesForm.FormState` gains hidden `overview`
+- [x] FRONTEND-028-AC-06: `applyLookupResult` carries `overview` through
+- [x] FRONTEND-028-AC-07: `buildPayload` includes `overview`
+- [x] FRONTEND-028-AC-08: "Show keywords" button per card
+- [x] FRONTEND-028-AC-09: click calls `seriesApi.getRecommendationKeywords(tmdbId)`
+- [x] FRONTEND-028-AC-10: no keyword fetch on mount/refresh, only on expand
+- [x] FRONTEND-028-AC-11: scoped per-card loading state
+- [x] FRONTEND-028-AC-12: scoped per-card error state
+- [x] FRONTEND-028-AC-13: keyword chips rendered; explicit empty message
+- [x] FRONTEND-028-AC-14: `SeriesDetail` shows Overview field

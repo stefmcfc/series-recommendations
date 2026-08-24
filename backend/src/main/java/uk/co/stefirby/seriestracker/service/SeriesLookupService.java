@@ -125,6 +125,7 @@ public class SeriesLookupService {
         dto.setTmdbVoteCount(detail.voteCount());
         dto.setOriginCountry(detail.originCountry());
         dto.setProductionStatus(detail.productionStatus() != null ? detail.productionStatus().name() : null);
+        dto.setOverview(detail.overview());
         return dto;
     }
 

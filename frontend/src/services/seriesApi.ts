@@ -67,6 +67,8 @@ function buildRecommendationParams(
   if (query.yearMax != null) params.yearMax = query.yearMax
   if (query.excludeGenres?.length)
     params.excludeGenres = query.excludeGenres.join(',')
+  if (query.excludeKeywords?.length)
+    params.excludeKeywords = query.excludeKeywords.join(',')
   if (query.language != null && query.language !== '')
     params.language = query.language
   if (query.maxPerSource != null) params.maxPerSource = query.maxPerSource
@@ -178,6 +180,11 @@ export const seriesApi = {
       client.get('/series/recommendations', {
         params: buildRecommendationParams(query),
       }),
+    ).then((res) => res.data),
+
+  getRecommendationKeywords: (tmdbId: number): Promise<string[]> =>
+    request<{ data: string[]; count: number }>(() =>
+      client.get('/series/recommendations/' + tmdbId + '/keywords'),
     ).then((res) => res.data),
 
   refresh: (id: string): Promise<RefreshResult> =>

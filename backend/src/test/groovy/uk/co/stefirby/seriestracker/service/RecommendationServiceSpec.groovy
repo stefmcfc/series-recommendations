@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.service
 
 import uk.co.stefirby.seriestracker.client.TmdbCandidate
 import uk.co.stefirby.seriestracker.client.TmdbClient
+import uk.co.stefirby.seriestracker.client.TmdbKeyword
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
@@ -39,7 +40,7 @@ class RecommendationServiceSpec extends Specification {
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 100, String originalLanguage = "en") {
-        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage)
+        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
     }
 
     def "SERIES-016-AC-02: toDto populates voteCount from the TMDB candidate verbatim"() {
@@ -55,6 +56,62 @@ class RecommendationServiceSpec extends Specification {
 
         then: "voteCount is passed through unchanged"
             results[0].voteCount() == 1500
+    }
+
+    def "SERIES-023-AC-02/03: toDto carries originCountry and tmdbId from the candidate"() {
+        given: "one genre-directed candidate with originCountry/tmdbId set"
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+            tmdbClient.discover(_, _) >> [
+                new TmdbCandidate(2, "Show", 2020, "overview", null, new BigDecimal("7.0"), [], 100, "en", "US")
+            ]
+            tmdbClient.externalIds(2) >> Optional.of("tt0000002")
+            seriesRepository.existsByImdbId("tt0000002") >> false
+            ignoredSeriesRepository.existsByImdbId("tt0000002") >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the result carries both new fields"
+            results[0].originCountry == "US"
+            results[0].tmdbId == 2
+    }
+
+    def "SERIES-023-AC-05: getKeywordsForCandidate maps TmdbKeyword names to plain strings"() {
+        given: "TMDB returns two keywords for tmdbId 4046"
+            tmdbClient.showKeywords(4046) >> [
+                new uk.co.stefirby.seriestracker.client.TmdbKeyword(470, "spy"),
+                new uk.co.stefirby.seriestracker.client.TmdbKeyword(190904, "mi5")
+            ]
+
+        when: "getKeywordsForCandidate(4046) is called"
+            def result = recommendationService.getKeywordsForCandidate(4046)
+
+        then: "the plain names are returned, in TMDB's own order"
+            result == ["spy", "mi5"]
+    }
+
+    def "SERIES-023-AC-06: a TMDB failure returns an empty list, not an exception"() {
+        given: "TMDB fails for tmdbId 999"
+            tmdbClient.showKeywords(999) >> {
+                throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("TMDB down")
+            }
+
+        when: "getKeywordsForCandidate(999) is called"
+            def result = recommendationService.getKeywordsForCandidate(999)
+
+        then: "an empty list is returned, no exception propagates"
+            result == []
+    }
+
+    def "SERIES-023-AC-06: an empty TMDB keyword result returns an empty list"() {
+        given: "TMDB has no keywords for tmdbId 1"
+            tmdbClient.showKeywords(1) >> []
+
+        when: "getKeywordsForCandidate(1) is called"
+            def result = recommendationService.getKeywordsForCandidate(1)
+
+        then: "an empty list is returned"
+            result == []
     }
 
     def "SERIES-006-AC-20: empty watched pool returns an empty list without calling TMDB"() {
@@ -810,6 +867,92 @@ class RecommendationServiceSpec extends Specification {
             results[0].title() == "English Show"
     }
 
+    // -- Spec 024, Requirement 1 (SERIES-024-AC-03..08): excludeKeywords output filter --
+
+    def "SERIES-024-AC-03/04: matchesExcludeKeywords excludes a candidate whose TMDB keywords match, case-insensitively"() {
+        given: "a topRated-sourced candidate and excludeKeywords=['Zombie']"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", excludeKeywords: ["Zombie"])
+            tmdbClient.discoverTopRated(200) >> [candidate(10, "Undead Show", 2020, new BigDecimal("8.0"), [18], 300)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+            tmdbClient.showKeywords(10) >> [new TmdbKeyword(1, "zombie")]
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the candidate is excluded"
+            results.isEmpty()
+    }
+
+    def "SERIES-024-AC-05: matchesExcludeKeywords only runs its extra call against candidates surviving cheaper filters"() {
+        given: "two candidates, one already excluded by minTmdbRating"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", minTmdbRating: new BigDecimal("8.0"), excludeKeywords: ["Zombie"])
+            tmdbClient.discoverTopRated(200) >> [
+                candidate(10, "Low Rated", 2020, new BigDecimal("2.0"), [18], 300),
+                candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
+            ]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "showKeywords is only ever called for the surviving candidate"
+            0 * tmdbClient.showKeywords(10)
+            1 * tmdbClient.showKeywords(20) >> []
+    }
+
+    def "SERIES-024-AC-06: a showKeywords failure fails that candidate open, not the whole request"() {
+        given: "TmdbClient.showKeywords throws ExternalServiceException for the candidate"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", excludeKeywords: ["Zombie"])
+            tmdbClient.discoverTopRated(200) >> [candidate(10, "Some Show", 2020, new BigDecimal("8.0"), [18], 300)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+            tmdbClient.showKeywords(10) >> { throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("boom") }
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "no exception propagates and the candidate is still present"
+            noExceptionThrown()
+            results*.title() == ["Some Show"]
+    }
+
+    def "SERIES-024-AC-07: showKeywords is never called when excludeKeywords is unset"() {
+        given: "no excludeKeywords in the request"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+            tmdbClient.discoverTopRated(200) >> [candidate(10, "Some Show")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "no TmdbClient.showKeywords call is made"
+            0 * tmdbClient.showKeywords(_)
+    }
+
+    def "SERIES-024-AC-08: excludeKeywords applies to trending candidates too"() {
+        given: "a trending candidate matching excludeKeywords"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", excludeKeywords: ["Heist"])
+            tmdbClient.trending("week") >> [candidate(10, "Heist Show")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+            tmdbClient.showKeywords(10) >> [new TmdbKeyword(1, "heist")]
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the candidate is excluded despite trending's ranking-bypass"
+            results.isEmpty()
+    }
+
     def "SERIES-007-AC-29: Requirement 8 filters are applied before the diversity cap"() {
         given: "one source producing 4 candidates, 2 of which fail minTmdbRating; maxPerSource default is 3"
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
@@ -838,7 +981,7 @@ class RecommendationServiceSpec extends Specification {
         given: "a TMDB candidate with a poster_path"
             tmdbClient.discover(_, _) >> [
                 new TmdbCandidate(99, "Discovered Show", 2020, "overview", "/poster.jpg",
-                    new BigDecimal("7.5"), [18], 100, "en")
+                    new BigDecimal("7.5"), [18], 100, "en", null)
             ]
             tmdbClient.externalIds(99) >> Optional.of("tt0000099")
             def criteria = new RecommendationCriteria(genres: ["Drama"])
@@ -1228,25 +1371,40 @@ class RecommendationServiceSpec extends Specification {
 
     // -- Spec 022, Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated --
 
-    def "SERIES-022-AC-11/12: topRated mode sources via discoverTopRated with the effective minVoteCount"() {
-        given: "no explicit minVoteCount (defaults to 20)"
+    def "SERIES-024-AC-10: topRated mode sources via discoverTopRated with the mode-aware 200 default when minVoteCount is unset"() {
+        given: "no explicit minVoteCount (defaults to 200 for topRated, superseding SERIES-022-AC-11's 20)"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
 
         when: "recommend(20, criteria) is called"
             recommendationService.recommend(20, criteria)
 
-        then: "discoverTopRated is called with the default minVoteCount of 20"
-            1 * tmdbClient.discoverTopRated(20) >> []
+        then: "discoverTopRated is called with 200, not 20"
+            1 * tmdbClient.discoverTopRated(200) >> []
     }
 
-    def "SERIES-022-AC-11: an explicit minVoteCount is passed through to discoverTopRated"() {
+    def "SERIES-024-AC-11: applyOutputFilters' post-hoc minVoteCount default is also 200 for topRated when unset"() {
+        given: "a topRated candidate whose voteCount (150) is below the mode-aware 200 default"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+            tmdbClient.discoverTopRated(200) >> [candidate(10, "Below New Floor", 2020, new BigDecimal("9.0"), [18], 150)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the candidate is filtered out by the post-hoc filter"
+            results.isEmpty()
+    }
+
+    def "SERIES-022-AC-11/SERIES-024-AC-13: an explicit minVoteCount overrides the topRated 200 default"() {
         given: "criteria sets minVoteCount to 100"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
 
         when: "recommend(20, criteria) is called"
             recommendationService.recommend(20, criteria)
 
-        then: "discoverTopRated is called with 100"
+        then: "discoverTopRated is called with the explicit 100, not the 200 default"
             1 * tmdbClient.discoverTopRated(100) >> []
     }
 
@@ -1268,7 +1426,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-022-AC-13: topRated candidates have a null sourceTitle"() {
         given: "discoverTopRated returns one candidate"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(20) >> [candidate(10, "Acclaimed Show")]
+            tmdbClient.discoverTopRated(200) >> [candidate(10, "Acclaimed Show", 2020, new BigDecimal("8.0"), [18], 300)]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -1284,7 +1442,10 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-022-AC-14: an already-tracked/ignored topRated candidate is excluded"() {
         given: "discoverTopRated returns two candidates, one already tracked"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(20) >> [candidate(10, "Tracked"), candidate(20, "New")]
+            tmdbClient.discoverTopRated(200) >> [
+                candidate(10, "Tracked", 2020, new BigDecimal("8.0"), [18], 300),
+                candidate(20, "New", 2020, new BigDecimal("8.0"), [18], 300)
+            ]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId("tt1000010") >> true
@@ -1302,9 +1463,9 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-022-AC-15: the ranking/diversity cap applies normally to topRated candidates"() {
         given: "discoverTopRated returns candidates already in vote_average.desc order"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(20) >> [
-                candidate(10, "Higher Rated", 2020, new BigDecimal("9.0")),
-                candidate(20, "Lower Rated", 2020, new BigDecimal("7.0"))
+            tmdbClient.discoverTopRated(200) >> [
+                candidate(10, "Higher Rated", 2020, new BigDecimal("9.0"), [18], 300),
+                candidate(20, "Lower Rated", 2020, new BigDecimal("7.0"), [18], 300)
             ]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
@@ -1383,7 +1544,7 @@ class RecommendationServiceSpec extends Specification {
             recommendationService.recommend(20, criteria)
 
         then: "discoverTopRated is used, trending() is never called"
-            1 * tmdbClient.discoverTopRated(20) >> []
+            1 * tmdbClient.discoverTopRated(200) >> []
             0 * tmdbClient.trending(_)
     }
 
