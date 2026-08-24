@@ -332,7 +332,9 @@ export function RecommendationControls({
               onChange={() => handleSortByChange('recommendationCount')}
             />
             <label htmlFor="sort-by-recommendation-count">
-              {state.mode === 'topRated' ? 'Vote Average' : 'Most Recommended'}
+              {state.mode === 'topRated' || state.mode === 'genre'
+                ? 'Vote Average'
+                : 'Most Recommended'}
             </label>
           </div>
         </fieldset>
