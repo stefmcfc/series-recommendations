@@ -270,12 +270,8 @@ export function SeriesList({
     setPosterErrorIds((prev) => new Set(prev).add(id))
   }
 
-  const handleRewatchToggle = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    id: string,
-    previousValue: boolean,
-  ) => {
-    const nextValue = event.target.checked
+  const handleRewatchToggle = (id: string, previousValue: boolean) => {
+    const nextValue = !previousValue
     setRewatchErrors((prev) => {
       const next = { ...prev }
       delete next[id]
@@ -561,34 +557,40 @@ export function SeriesList({
               </div>
 
               <div className={styles.rowSecondary}>
-                <span className={styles.status}>{s.status}</span>
-                {s.newContentDetectedAt != null && (
-                  <span
-                    className={styles.newContentBadge}
-                    data-testid="new-content-badge"
-                  >
-                    New content
-                  </span>
-                )}
+                <div className={styles.rowSecondaryLeft}>
+                  <span className={styles.status}>{s.status}</span>
+                  {s.newContentDetectedAt != null && (
+                    <span
+                      className={styles.newContentBadge}
+                      data-testid="new-content-badge"
+                    >
+                      New content
+                    </span>
+                  )}
+                </div>
 
-                {s.status === SeriesStatus.COMPLETED && (
-                  <label className={styles.rewatchToggle}>
-                    <input
-                      type="checkbox"
+                <div className={styles.rowSecondaryRight}>
+                  {s.status === SeriesStatus.COMPLETED && (
+                    <button
+                      type="button"
+                      className={`${styles.rewatchToggle} ${
+                        s.flaggedForRewatch ? styles.rewatchToggleActive : ''
+                      }`}
                       aria-label="Flag for rewatch"
-                      checked={s.flaggedForRewatch}
-                      onChange={(e) =>
-                        handleRewatchToggle(e, s.id, s.flaggedForRewatch)
+                      aria-pressed={s.flaggedForRewatch}
+                      onClick={() =>
+                        handleRewatchToggle(s.id, s.flaggedForRewatch)
                       }
-                    />
-                    Rewatch
-                  </label>
-                )}
-                {rewatchErrors[s.id] && (
-                  <span className={styles.rewatchError} role="alert">
-                    {rewatchErrors[s.id]}
-                  </span>
-                )}
+                    >
+                      Rewatch
+                    </button>
+                  )}
+                  {rewatchErrors[s.id] && (
+                    <span className={styles.rewatchError} role="alert">
+                      {rewatchErrors[s.id]}
+                    </span>
+                  )}
+                </div>
               </div>
             </li>
           ))}
