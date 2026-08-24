@@ -43,6 +43,12 @@ public class SeriesLookupDto {
     // resolve-tmdb call but was never copied onto this DTO until now.
     private String productionStatus;
 
+    // series_spec_023_recommendation_metadata_and_overview.md (SERIES-023-AC-09): the resolved
+    // candidate's TMDB description, sourced from TmdbSeriesDetail.overview() -- round-tripped
+    // so the add-series form can carry it into the create payload (SERIES-023-AC-11), same
+    // precedent as originCountry/productionStatus above.
+    private String overview;
+
     public SeriesLookupDto() {}
 
     public Integer getTmdbId() { return tmdbId; }
@@ -86,4 +92,7 @@ public class SeriesLookupDto {
 
     public String getProductionStatus() { return productionStatus; }
     public void setProductionStatus(String productionStatus) { this.productionStatus = productionStatus; }
+
+    public String getOverview() { return overview; }
+    public void setOverview(String overview) { this.overview = overview; }
 }

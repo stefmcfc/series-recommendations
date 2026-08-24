@@ -22,6 +22,14 @@ import java.util.List;
  * frontend build a "Because you watched X, Y and N more" label without re-deriving
  * attribution itself (SERIES-015-AC-09/10/11).
  *
+ * <p>{@code originCountry} (SERIES-023-AC-02) is the candidate's first {@code origin_country}
+ * entry, passed through from {@link uk.co.stefirby.seriestracker.client.TmdbCandidate}
+ * verbatim. {@code tmdbId} (SERIES-023-AC-03) is the candidate's own TMDB id, already resolved
+ * internally on every candidate -- exposed here so the frontend can request this specific
+ * candidate's keywords ({@code GET /api/v1/series/recommendations/{tmdbId}/keywords}) without a
+ * separate title-based re-lookup. See {@code
+ * series_spec_023_recommendation_metadata_and_overview.md}.
+ *
  * <p>A record: always built fully, in one place ({@code RecommendationService.toDto}), and
  * never mutated afterward -- see the "Records over classes" guidance in this project's Java
  * conventions.
@@ -36,6 +44,8 @@ public record RecommendationDto(
     Integer voteCount,
     String imdbId,
     List<String> sourceTitles,
-    Integer totalSourceCount
+    Integer totalSourceCount,
+    String originCountry,
+    Integer tmdbId
 ) {
 }

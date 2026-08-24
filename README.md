@@ -135,6 +135,8 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 025 | Watch providers UI (`RecommendationsList` streaming badges, JustWatch attribution) | ⬜ Not started |
 | Backend 021 | TMDB origin country (`originCountry` on lookup candidates/lookup result/persisted series, kept fresh on refresh, included in export; closes a `productionStatus` create-time gap from Backend 008/018) | ✅ Done |
 | Frontend 026 | Origin country & TMDB metadata display (candidate-picker country badge, series-list "(Year) \| Country", `productionStatus`/`tmdbRating`/`tmdbVoteCount` surfaced) | ⬜ Not started |
+| Backend 023 | Recommendation metadata & persisted overview (`originCountry`/`tmdbId` on recommendation candidates, lazy per-candidate keyword lookup `GET /series/recommendations/{tmdbId}/keywords`, persisted series `overview` sourced from TMDB, kept fresh on refresh) | ✅ Done |
+| Frontend 028 | Recommendation metadata & overview display (recommendation-card origin country badge, lazy per-card keyword expand, `SeriesDetail` overview display, `AddSeriesForm` overview carry-through) | ✅ Done |
 
 ## Future Ideas
 

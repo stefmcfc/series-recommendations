@@ -33,6 +33,7 @@ export interface Series {
   originCountry: string | null
   productionStatus: string | null
   keywords: string[]
+  overview: string | null
 }
 
 export interface KeywordStat {
@@ -75,6 +76,7 @@ export interface CreateSeriesRequest {
   originCountry?: string
   productionStatus?: string
   tmdbId?: number
+  overview?: string
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
@@ -97,6 +99,7 @@ export interface SeriesLookupResult {
   originCountry?: string
   productionStatus?: string
   tmdbId?: number
+  overview?: string
 }
 
 export interface LookupTmdbCandidate {
@@ -119,6 +122,8 @@ export interface Recommendation {
   imdbId: string
   sourceTitles: string[]
   totalSourceCount: number
+  originCountry: string | null
+  tmdbId: number
 }
 
 export interface RecommendationQuery {

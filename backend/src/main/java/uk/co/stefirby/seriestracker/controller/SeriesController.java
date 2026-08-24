@@ -204,6 +204,12 @@ public class SeriesController {
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }
 
+    @GetMapping("/recommendations/{tmdbId}/keywords")
+    public ResponseEntity<ApiResponse<List<String>>> recommendationKeywords(@PathVariable int tmdbId) {
+        List<String> keywords = recommendationService.getKeywordsForCandidate(tmdbId);
+        return ResponseEntity.ok(new ApiResponse<>(keywords, keywords.size()));
+    }
+
     @PostMapping("/ignored")
     public ResponseEntity<ApiResponse<IgnoredSeriesDto>> ignore(@RequestBody IgnoredSeriesDto dto) {
         IgnoreOutcome outcome = ignoredSeriesService.ignore(dto);

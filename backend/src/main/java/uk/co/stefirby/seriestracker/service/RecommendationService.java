@@ -636,8 +636,32 @@ public class RecommendationService {
             c.voteCount(),
             dc.imdbId(),
             sourceTitles,
-            dc.sourceSeries().size()
+            dc.sourceSeries().size(),
+            c.originCountry(),
+            c.tmdbId()
         );
+    }
+
+    /**
+     * Backs {@code GET /api/v1/series/recommendations/{tmdbId}/keywords} (SERIES-023-AC-04/05):
+     * an on-demand, single-candidate keyword lookup, deliberately not folded into {@link
+     * #recommend(int, RecommendationCriteria)} itself -- fetching keywords for every card in a
+     * 10-20-result list would cost a TMDB call per card the user never asked to expand (see
+     * {@code series_spec_023_recommendation_metadata_and_overview.md}'s Overview). A TMDB
+     * failure or an unresolvable {@code tmdbId} both yield an empty list, never an exception
+     * (SERIES-023-AC-06) -- there's no persisted entity here for a "leave unchanged" posture to
+     * apply to, so this is simply "no keywords available right now".
+     */
+    @Transactional(readOnly = true)
+    public List<String> getKeywordsForCandidate(int tmdbId) {
+        try {
+            return tmdbClient.showKeywords(tmdbId).stream()
+                .map(TmdbKeyword::name)
+                .collect(Collectors.toList());
+        } catch (ExternalServiceException e) {
+            log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
+            return List.of();
+        }
     }
 
     private String joinGenres(List<Integer> genreIds) {

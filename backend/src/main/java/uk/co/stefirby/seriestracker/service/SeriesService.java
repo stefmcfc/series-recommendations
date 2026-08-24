@@ -65,6 +65,7 @@ public class SeriesService {
         entity.setTags(dto.getTags());
         entity.setImdbId(dto.getImdbId());
         entity.setOriginCountry(dto.getOriginCountry());
+        entity.setOverview(dto.getOverview());
 
         // SERIES-021-AC-08: closes the gap where a freshly added series' productionStatus was
         // always null until its first explicit refresh, even though TmdbSeriesDetail already
@@ -236,6 +237,7 @@ public class SeriesService {
         dto.setLastRefreshedAt(entity.getLastRefreshedAt());
         dto.setProductionStatus(entity.getProductionStatus() != null ? entity.getProductionStatus().name() : null);
         dto.setOriginCountry(entity.getOriginCountry());
+        dto.setOverview(entity.getOverview());
         dto.setNewContentDetectedAt(entity.getNewContentDetectedAt());
         dto.setKeywords(entity.getKeywords().stream()
             .map(KeywordEntity::getName)

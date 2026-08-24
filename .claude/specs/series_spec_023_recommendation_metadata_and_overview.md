@@ -1,6 +1,8 @@
 # Spec 023: Recommendation Origin Country/Keywords & Persisted Series Overview
 
-**Status**: Not started
+**Status**: Implemented (2026-08-24). Files touched: `backend/src/main/java/uk/co/stefirby/seriestracker/client/TmdbCandidate.java` (`originCountry`), `backend/src/main/java/uk/co/stefirby/seriestracker/client/TmdbClient.java` (`mapResults` parses `origin_country`; `details` parses `overview`), `backend/src/main/java/uk/co/stefirby/seriestracker/client/TmdbSeriesDetail.java` (`overview`), `backend/src/main/java/uk/co/stefirby/seriestracker/dto/RecommendationDto.java` (`originCountry`, `tmdbId`), `backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationService.java` (`toDto` populates the two new fields; new `getKeywordsForCandidate(int)`), `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesController.java` (`GET /api/v1/series/recommendations/{tmdbId}/keywords`), `backend/src/main/java/uk/co/stefirby/seriestracker/dto/SeriesLookupDto.java` (`overview`), `backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesLookupService.java` (`toDto` populates `overview`), `backend/src/main/java/uk/co/stefirby/seriestracker/model/SeriesEntity.java` (`overview` column), `backend/src/main/java/uk/co/stefirby/seriestracker/dto/SeriesDto.java` (`overview`), `backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesService.java` (`create`/`entityToDto` flow `overview` through), `backend/src/main/java/uk/co/stefirby/seriestracker/service/SeriesRefreshService.java` (`refreshFromTmdb` updates `overview`), `backend/src/main/resources/db/migration/V007__add_overview_to_series.sql`, plus extended Spock specs `TmdbClientSpec.groovy`, `RecommendationServiceSpec.groovy`, `SeriesControllerRecommendationsSpec.groovy`, `SeriesLookupServiceSpec.groovy`, `SeriesServiceSpec.groovy`, `SeriesRefreshServiceSpec.groovy`, and updated call sites (record-shape changes) in `SeriesControllerRefreshSpec.groovy`.
+**Live TMDB verification outcome**: confirmed working exactly as assumed, using the key in `backend/application-local.yml`. `GET /discover/tv?sort_by=vote_average.desc&vote_count.gte=100`, `GET /tv/1399/recommendations`, `GET /trending/tv/week`, and `GET /tv/1399/similar` were each hit directly against the real TMDB API: every result on every one of the four endpoints carried a non-empty `origin_country` array (e.g. `["US"]`, `["TH"]`, `["GB"]`), confirming `TmdbClient.mapResults`'s shared per-item mapper can safely parse `origin_country` for all five callers (`recommendations`/`similar`/`discover`/`trending`/`discoverTopRated`) without a per-endpoint exception. No deviation from the spec's assumed contract was needed.
+**No `frontend/` files are touched by this spec** — the frontend consumer is `frontend_spec_028_recommendation_metadata_and_overview_display.md`, a separate follow-up task on this same branch.
 **Priority**: P2 (quality-of-life — richer recommendation cards, and closes a real data-loss gap: a tracked series' description is currently lost the moment it's added)
 **Depends on**: Series Spec 006 (`series_spec_006_recommendations.md`, `RecommendationDto`/`TmdbCandidate` base shape), Series Spec 007 (`series_spec_007_recommendation_sourcing.md`, `RecommendationService.toDto`/`TmdbCandidate` field precedent), Series Spec 018 (`series_spec_018_series_refresh.md`, refresh mechanics), Series Spec 019 (`series_spec_019_keyword_tracking.md`, `TmdbClient.showKeywords`/`TmdbKeyword`), Series Spec 021 (`series_spec_021_origin_country.md`, the create+refresh population pattern this spec's overview work mirrors exactly)
 **Backend Task**
@@ -316,17 +318,17 @@ def "SERIES-023-AC-14: fresh migrate() adds the overview column"() {
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-023-AC-01: `TmdbClient.mapResults` parses `origin_country`'s first entry onto `TmdbCandidate`
-- [ ] SERIES-023-AC-02: `RecommendationDto` gains `originCountry`
-- [ ] SERIES-023-AC-03: `RecommendationDto` gains `tmdbId`
-- [ ] SERIES-023-AC-04: `GET /api/v1/series/recommendations/{tmdbId}/keywords` endpoint
-- [ ] SERIES-023-AC-05: `RecommendationService.getKeywordsForCandidate` maps `TmdbKeyword` names
-- [ ] SERIES-023-AC-06: TMDB failure or empty result returns an empty list, not an error
-- [ ] SERIES-023-AC-07: `200` + `{ data, count }` envelope
-- [ ] SERIES-023-AC-08: `TmdbClient.details` parses `overview` onto `TmdbSeriesDetail`
-- [ ] SERIES-023-AC-09: `SeriesLookupDto` gains `overview`
-- [ ] SERIES-023-AC-10: `SeriesEntity`/`SeriesDto` gain `overview`
-- [ ] SERIES-023-AC-11: `SeriesService.create` persists `overview`
-- [ ] SERIES-023-AC-12: manually-added series' `overview` stays `null`
-- [ ] SERIES-023-AC-13: `SeriesRefreshService.refresh` updates `overview`
-- [ ] SERIES-023-AC-14: `V007__add_overview_to_series.sql` migration
+- [x] SERIES-023-AC-01: `TmdbClient.mapResults` parses `origin_country`'s first entry onto `TmdbCandidate`
+- [x] SERIES-023-AC-02: `RecommendationDto` gains `originCountry`
+- [x] SERIES-023-AC-03: `RecommendationDto` gains `tmdbId`
+- [x] SERIES-023-AC-04: `GET /api/v1/series/recommendations/{tmdbId}/keywords` endpoint
+- [x] SERIES-023-AC-05: `RecommendationService.getKeywordsForCandidate` maps `TmdbKeyword` names
+- [x] SERIES-023-AC-06: TMDB failure or empty result returns an empty list, not an error
+- [x] SERIES-023-AC-07: `200` + `{ data, count }` envelope
+- [x] SERIES-023-AC-08: `TmdbClient.details` parses `overview` onto `TmdbSeriesDetail`
+- [x] SERIES-023-AC-09: `SeriesLookupDto` gains `overview`
+- [x] SERIES-023-AC-10: `SeriesEntity`/`SeriesDto` gain `overview`
+- [x] SERIES-023-AC-11: `SeriesService.create` persists `overview`
+- [x] SERIES-023-AC-12: manually-added series' `overview` stays `null`
+- [x] SERIES-023-AC-13: `SeriesRefreshService.refresh` updates `overview`
+- [x] SERIES-023-AC-14: `V007__add_overview_to_series.sql` migration

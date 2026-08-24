@@ -46,6 +46,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     originCountry: null,
     productionStatus: null,
     keywords: [],
+    overview: null,
     ...overrides,
   }
 }

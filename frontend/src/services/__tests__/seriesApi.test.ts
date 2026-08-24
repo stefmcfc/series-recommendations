@@ -83,6 +83,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     originCountry: null,
     productionStatus: null,
     keywords: [],
+    overview: null,
     ...overrides,
   }
 }
@@ -662,6 +663,24 @@ describe('FRONTEND-024-AC-04: getKeywordStats', () => {
     expect(client.get).toHaveBeenCalledWith('/series/keywords', {
       params: { sortBy: 'averagePersonalRating' },
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-028-AC-09: getRecommendationKeywords(tmdbId)
+// ---------------------------------------------------------------------------
+describe('FRONTEND-028-AC-09: getRecommendationKeywords', () => {
+  it('fetches /series/recommendations/{tmdbId}/keywords and unwraps the envelope', async () => {
+    client.get.mockResolvedValue({
+      data: { data: ['spy', 'mi5'], count: 2 },
+    })
+
+    const result = await seriesApi.getRecommendationKeywords(4046)
+
+    expect(client.get).toHaveBeenCalledWith(
+      '/series/recommendations/4046/keywords',
+    )
+    expect(result).toEqual(['spy', 'mi5'])
   })
 })
 

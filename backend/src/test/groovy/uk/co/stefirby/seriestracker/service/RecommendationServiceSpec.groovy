@@ -40,7 +40,7 @@ class RecommendationServiceSpec extends Specification {
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 100, String originalLanguage = "en") {
-        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage)
+        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
     }
 
     def "SERIES-016-AC-02: toDto populates voteCount from the TMDB candidate verbatim"() {
@@ -56,6 +56,62 @@ class RecommendationServiceSpec extends Specification {
 
         then: "voteCount is passed through unchanged"
             results[0].voteCount() == 1500
+    }
+
+    def "SERIES-023-AC-02/03: toDto carries originCountry and tmdbId from the candidate"() {
+        given: "one genre-directed candidate with originCountry/tmdbId set"
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+            tmdbClient.discover(_, _) >> [
+                new TmdbCandidate(2, "Show", 2020, "overview", null, new BigDecimal("7.0"), [], 100, "en", "US")
+            ]
+            tmdbClient.externalIds(2) >> Optional.of("tt0000002")
+            seriesRepository.existsByImdbId("tt0000002") >> false
+            ignoredSeriesRepository.existsByImdbId("tt0000002") >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the result carries both new fields"
+            results[0].originCountry == "US"
+            results[0].tmdbId == 2
+    }
+
+    def "SERIES-023-AC-05: getKeywordsForCandidate maps TmdbKeyword names to plain strings"() {
+        given: "TMDB returns two keywords for tmdbId 4046"
+            tmdbClient.showKeywords(4046) >> [
+                new uk.co.stefirby.seriestracker.client.TmdbKeyword(470, "spy"),
+                new uk.co.stefirby.seriestracker.client.TmdbKeyword(190904, "mi5")
+            ]
+
+        when: "getKeywordsForCandidate(4046) is called"
+            def result = recommendationService.getKeywordsForCandidate(4046)
+
+        then: "the plain names are returned, in TMDB's own order"
+            result == ["spy", "mi5"]
+    }
+
+    def "SERIES-023-AC-06: a TMDB failure returns an empty list, not an exception"() {
+        given: "TMDB fails for tmdbId 999"
+            tmdbClient.showKeywords(999) >> {
+                throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("TMDB down")
+            }
+
+        when: "getKeywordsForCandidate(999) is called"
+            def result = recommendationService.getKeywordsForCandidate(999)
+
+        then: "an empty list is returned, no exception propagates"
+            result == []
+    }
+
+    def "SERIES-023-AC-06: an empty TMDB keyword result returns an empty list"() {
+        given: "TMDB has no keywords for tmdbId 1"
+            tmdbClient.showKeywords(1) >> []
+
+        when: "getKeywordsForCandidate(1) is called"
+            def result = recommendationService.getKeywordsForCandidate(1)
+
+        then: "an empty list is returned"
+            result == []
     }
 
     def "SERIES-006-AC-20: empty watched pool returns an empty list without calling TMDB"() {
@@ -925,7 +981,7 @@ class RecommendationServiceSpec extends Specification {
         given: "a TMDB candidate with a poster_path"
             tmdbClient.discover(_, _) >> [
                 new TmdbCandidate(99, "Discovered Show", 2020, "overview", "/poster.jpg",
-                    new BigDecimal("7.5"), [18], 100, "en")
+                    new BigDecimal("7.5"), [18], 100, "en", null)
             ]
             tmdbClient.externalIds(99) >> Optional.of("tt0000099")
             def criteria = new RecommendationCriteria(genres: ["Drama"])

@@ -123,8 +123,9 @@ public class SeriesRefreshService {
 
     /**
      * Updates {@code totalSeasons}/{@code totalEpisodes}/{@code tmdbRating}/{@code
-     * tmdbVoteCount}/{@code productionStatus}/{@code originCountry} from a fresh TMDB detail
-     * lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09), and reconciles
+     * tmdbVoteCount}/{@code productionStatus}/{@code originCountry}/{@code overview} from a
+     * fresh TMDB detail lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09,
+     * {@code overview} per SERIES-023-AC-13), and reconciles
      * {@code keywords} via {@link KeywordSyncService#syncKeywords} using the same resolved
      * {@code tmdbId} (SERIES-019-AC-08). Returns {@code false} without attempting a lookup
      * when the entity has no {@code imdbId} to resolve a {@code tmdbId} from, or when TMDB is
@@ -147,6 +148,7 @@ public class SeriesRefreshService {
             entity.setTmdbVoteCount(detail.voteCount());
             entity.setProductionStatus(detail.productionStatus());
             entity.setOriginCountry(detail.originCountry());
+            entity.setOverview(detail.overview());
             // series_spec_019_keyword_tracking.md (SERIES-019-AC-08): reconciles this series'
             // keyword set against TMDB's current data using the same tmdbId just resolved
             // above -- non-fatal on its own (KeywordSyncService never throws).
