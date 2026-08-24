@@ -564,7 +564,7 @@ describe('FRONTEND-027-AC-07: minSourceRating hidden for both new modes', () => 
 })
 
 describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox list', () => {
-  it('adds a typed keyword to the query without fetching keyword options', async () => {
+  it('adds a typed keyword to the query', async () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -595,10 +595,35 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
   })
 })
 
-describe('FRONTEND-029-AC-11: no longer fetches seriesApi.getKeywordStats', () => {
-  it('does not call getKeywordStats on mount', () => {
+// FRONTEND-032-AC-07/AC-08 supersedes FRONTEND-029-AC-11: the field now
+// fetches getKeywordStats() to offer tracked keywords as suggestions
+// alongside free text (a real gap found in live use, per
+// frontend_spec_032's Overview), rather than never fetching at all.
+describe('FRONTEND-032-AC-07: fetches keyword stats and offers them as suggestions', () => {
+  it('fetches on mount and renders a fetched keyword as a clickable suggestion', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 3, averagePersonalRating: 4 },
+    ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    expect(mockGetKeywordStats).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(mockGetKeywordStats).toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByText('spy')).toBeInTheDocument())
+  })
+})
+
+describe('FRONTEND-032-AC-08: degrades silently on keyword stats fetch failure', () => {
+  it('renders no alert and free text still works when getKeywordStats rejects', async () => {
+    mockGetKeywordStats.mockRejectedValue(new Error('fail'))
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'still works' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByText('still works')).toBeInTheDocument()
   })
 })
 

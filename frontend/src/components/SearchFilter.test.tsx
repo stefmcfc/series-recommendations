@@ -164,26 +164,54 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
 })
 
 describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () => {
-  it('shows no suggestions until text is typed, and includes a chosen keyword on Search', async () => {
+  it('filters suggestions as text is typed, and includes a chosen keyword on Search', async () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      { name: 'heist', seriesCount: 2, averagePersonalRating: 3.1 },
     ])
     const onSearch = vi.fn()
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
 
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    expect(
-      screen.queryByRole('button', { name: 'spy' }),
-    ).not.toBeInTheDocument()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
+    expect(
+      screen.queryByRole('button', { name: 'heist' }),
+    ).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'spy' }))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({ keywords: ['spy'] }),
     )
+  })
+
+  // Live review (2026-08-24) found the default suggestion list read as
+  // cluttered in this field's narrower layout -- reverted to
+  // frontend_spec_029's original "no suggestions until typed" behavior
+  // here specifically; "Browse all keywords" is the dedicated surface for
+  // browsing without typing (frontend_spec_032 Requirement 4).
+  it('shows no suggestions until something is typed', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    await screen.findByPlaceholderText(/type to filter tracked keywords/i)
+    expect(
+      screen.queryByRole('button', { name: 'spy' }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/type to filter tracked keywords/i),
+      {
+        target: { value: 'sp' },
+      },
+    )
+    expect(
+      await screen.findByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
   })
 
   it('omits keywords from criteria when nothing is selected', async () => {
@@ -263,6 +291,35 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
     expect(
       screen.getByRole('button', { name: 'Remove spy' }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-032-AC-09: inline field accepts free text', () => {
+  it('adds typed text not present in options on Enter', () => {
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    const input = screen.getByPlaceholderText(
+      /type to filter tracked keywords/i,
+    )
+    fireEvent.change(input, { target: { value: 'brand-new-keyword' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByText('brand-new-keyword')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-032-AC-10: "Browse all keywords" modal shows the full list with nothing typed', () => {
+  it("renders every tracked keyword without a cap, including entries past the inline field's cap", async () => {
+    mockGetKeywordStats.mockResolvedValue(
+      Array.from({ length: 15 }, (_, i) => ({
+        name: `kw-${i}`,
+        seriesCount: 15 - i,
+        averagePersonalRating: null,
+      })),
+    )
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    fireEvent.click(await screen.findByText('Browse all keywords'))
+    const dialog = screen.getByRole('dialog')
+    expect(await within(dialog).findByText('kw-0')).toBeInTheDocument()
+    expect(within(dialog).getByText('kw-14')).toBeInTheDocument()
   })
 })
 

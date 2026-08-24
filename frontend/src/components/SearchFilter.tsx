@@ -146,6 +146,12 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
             onChange={handleKeywordsChange}
             options={keywordOptionsError ? [] : keywordOptions}
             placeholder="Type to filter tracked keywords"
+            allowFreeText
+            // A default suggestion list here (rather than only once typing)
+            // read as cluttered in this field's narrower layout, and the
+            // "Browse all keywords" modal already covers browsing without
+            // typing -- so this field only shows matches once you type.
+            maxSuggestionsWhenEmpty={0}
           />
           {keywordOptionsError && (
             <p className={styles.keywordError} role="alert">
@@ -271,6 +277,10 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
               options={keywordOptionsError ? [] : keywordOptions}
               placeholder="Type to filter tracked keywords"
               focusOnMount
+              allowFreeText
+              // FRONTEND-032-AC-10: no maxSuggestionsWhenEmpty here -- this
+              // modal is the dedicated "browse everything" surface, so it
+              // intentionally omits the cap the inline field uses.
             />
 
             <div className={styles.dialogActions}>

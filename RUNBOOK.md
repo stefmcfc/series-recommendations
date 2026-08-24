@@ -119,6 +119,7 @@ Create `frontend/.env.local` (not committed) to override Vite defaults:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `VITE_API_BASE` | `http://localhost:8080/api/v1` | API base URL used by `src/services/seriesApi.ts` |
+| `VITE_KEYWORD_SUGGESTIONS_LIMIT` | `10` | Caps how many tracked keywords `KeywordPicker` shows as default suggestions while its input is empty, on the Recommendations page's `Genre & Keyword` field and the List page's inline `Keywords` filter field (`src/utils/keywordSuggestions.ts`). Undefined or non-numeric values fall back to the default. Does not apply to the List page's "Browse all keywords" modal, which always shows every tracked keyword uncapped -- see `frontend_spec_032_hybrid_keyword_suggestions.md`. |
 
 ---
 
