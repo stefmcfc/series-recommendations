@@ -68,6 +68,7 @@ The app is versioned as one unit with [Semantic Versioning](https://semver.org/)
 ## Git workflow
 
 - **Branch naming**: `feature/<slug>` for new work, `fix/<slug>` for bug fixes (e.g. `feature/series-list`, `fix/export-null-rating`).
+- **Commit before starting the next spec.** Before beginning implementation on a new spec, run `git status` — if it shows uncommitted changes from a previously *completed* spec (tests green, Definition of Done met), commit and push that work first rather than starting the next one on top of it. This is what actually keeps commits atomic; splitting an already-tangled multi-feature working tree after the fact is expensive and sometimes impossible without risky manual patch surgery (this happened for real on 2026-08-24 — several unrelated features sat uncommitted together for two days before being pushed, and `SeriesController.java`/`types/series.ts`/`SeriesList.tsx`/`SeriesDetail.tsx` couldn't be cleanly separated between them; see PR #49's commit history and body for how that was untangled). Uncommitted changes that are mid-spec (not yet done) are fine to leave as-is while you keep working.
 - **Push and PR are pre-authorized** once a unit of work is done and its tests pass — push the branch and open the PR (`gh pr create`) without asking each time.
 - **Merging to `main` always needs a check-in first** — never merge without the user's explicit go-ahead in that instance, even if the PR is green.
 - **Merge strategy**: squash and delete the branch (`gh pr merge --squash --delete-branch`) once approved.
