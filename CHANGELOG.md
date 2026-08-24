@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-08-24
+
 ### Added
 
 - Trending & top-rated recommendation sourcing: `GET /api/v1/series/recommendations` gains a `sourceMode` param (`trending` | `topRated`), a third directed-sourcing mode alongside `seriesIds`/`genres`/`keywords` (mutually exclusive with all three, `400` on any combination or an unrecognized `sourceMode`/`trendingWindow` value). `trending` sources TMDB's globally trending shows (`GET /trending/tv/{day|week}`, `trendingWindow` param, default `week`) and preserves TMDB's own returned order rather than re-ranking it — the existing ranking/diversity-cap step is skipped for this mode only, though the existing output filters (`minTmdbRating`/`minVoteCount`/`yearMin`/`yearMax`/`excludeGenres`/`language`) still apply. `topRated` sources TMDB's highest-rated shows overall (`GET /discover/tv?sort_by=vote_average.desc&vote_count.gte={minVoteCount}`, reusing the existing `minVoteCount` param, default 20, as the actual query parameter rather than just a post-hoc filter) and otherwise flows through ranking/diversity-cap normally. Both modes exclude anything already tracked or ignored via the same mechanism every other sourcing mode uses (`series_spec_022`).
