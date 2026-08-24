@@ -126,9 +126,19 @@ public class RecommendationService {
     public List<RecommendationDto> recommend(int limit, RecommendationCriteria criteria) {
         validate(criteria);
 
-        List<RawCandidate> raw = isDirectedByGenreOrKeyword(criteria)
-            ? sourceByGenreOrKeyword(criteria)
-            : sourceFromPool(criteria, limit);
+        boolean trendingMode = "trending".equals(criteria.getSourceMode());
+        boolean topRatedMode = "topRated".equals(criteria.getSourceMode());
+
+        List<RawCandidate> raw;
+        if (trendingMode) {
+            raw = sourceTrending(criteria);
+        } else if (topRatedMode) {
+            raw = sourceTopRated(criteria);
+        } else if (isDirectedByGenreOrKeyword(criteria)) {
+            raw = sourceByGenreOrKeyword(criteria);
+        } else {
+            raw = sourceFromPool(criteria, limit);
+        }
 
         List<RawCandidate> capped = raw.size() > maxCandidates
             ? raw.subList(0, maxCandidates)
@@ -136,6 +146,17 @@ public class RecommendationService {
 
         List<DedupedCandidate> deduped = dedupeAndExclude(capped);
         List<DedupedCandidate> filtered = applyOutputFilters(deduped, criteria);
+
+        if (trendingMode) {
+            // SERIES-022-AC-08: trending candidates keep TMDB's own returned order -- output
+            // filters still run (above), but Requirement 7 (ranking/diversity cap) does not.
+            int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
+                ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
+            return filtered.stream()
+                .map(dc -> toDto(dc, effectiveMaxSourcesShown))
+                .limit(limit)
+                .collect(Collectors.toList());
+        }
 
         int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
             ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
@@ -157,18 +178,51 @@ public class RecommendationService {
     private void validate(RecommendationCriteria c) {
         boolean hasSeriesIds = c.getSeriesIds() != null && !c.getSeriesIds().isEmpty();
         boolean hasGenreOrKeyword = isDirectedByGenreOrKeyword(c);
+        boolean hasSourceMode = c.getSourceMode() != null && !c.getSourceMode().isBlank();
+
+        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !"topRated".equals(c.getSourceMode())) {
+            throw new IllegalArgumentException("sourceMode must be one of: trending, topRated");
+        }
         if (hasSeriesIds && hasGenreOrKeyword) {
             throw new IllegalArgumentException(
                 "seriesIds cannot be combined with genres/keywords -- these are mutually exclusive request modes");
         }
+        if (hasSourceMode && (hasSeriesIds || hasGenreOrKeyword)) {
+            throw new IllegalArgumentException(
+                "sourceMode cannot be combined with seriesIds/genres/keywords -- these are mutually exclusive request modes");
+        }
         if (c.getMinSourceRating() != null && (c.getMinSourceRating() < 1 || c.getMinSourceRating() > 5)) {
             throw new IllegalArgumentException("minSourceRating must be between 1 and 5");
+        }
+        String trendingWindow = c.getTrendingWindow();
+        if (trendingWindow != null && !trendingWindow.isBlank()
+            && !"day".equals(trendingWindow) && !"week".equals(trendingWindow)) {
+            throw new IllegalArgumentException("trendingWindow must be one of: day, week");
         }
     }
 
     private boolean isDirectedByGenreOrKeyword(RecommendationCriteria c) {
         return (c.getGenres() != null && !c.getGenres().isEmpty())
             || (c.getKeywords() != null && !c.getKeywords().isEmpty());
+    }
+
+    // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
+
+    private List<RawCandidate> sourceTrending(RecommendationCriteria c) {
+        String window = c.getTrendingWindow() != null && !c.getTrendingWindow().isBlank()
+            ? c.getTrendingWindow() : "week";
+        return tmdbClient.trending(window).stream()
+            .map(candidate -> new RawCandidate(candidate, null))
+            .collect(Collectors.toList());
+    }
+
+    // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
+
+    private List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
+        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : DEFAULT_MIN_VOTE_COUNT;
+        return tmdbClient.discoverTopRated(effectiveMinVoteCount).stream()
+            .map(candidate -> new RawCandidate(candidate, null))
+            .collect(Collectors.toList());
     }
 
     // -- Requirement 5: directed sourcing by genre/keyword, bypassing the watched pool entirely --

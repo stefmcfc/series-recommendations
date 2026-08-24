@@ -380,4 +380,40 @@ class SeriesControllerSpec extends Specification {
     then: "the response is a 404 Not Found, not the old 502 'key not configured' behavior"
         result.andExpect(status().isNotFound())
   }
+
+  def "SERIES-009-AC-03: GET /api/v1/series with an invalid sortDirection returns 400"() {
+    when: "a GET request is made with an invalid sortDirection"
+        def result = mockMvc.perform(get("/api/v1/series").param("sortDirection", "sideways"))
+
+    then: "the response is 400"
+        result.andExpect(status().isBadRequest())
+  }
+
+  def "SERIES-009-AC-02/11: GET /api/v1/series/search with an invalid sortBy returns 400"() {
+    when: "a GET request is made with an invalid sortBy"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("sortBy", "notAField"))
+
+    then: "the response is 400"
+        result.andExpect(status().isBadRequest())
+  }
+
+  def "SERIES-009-AC-01/07: GET /api/v1/series honors sortBy/sortDirection query params"() {
+    given: "three series with different personal ratings"
+        seriesService.create(new SeriesDto(title: "Controller Sort A", personalRating: 3))
+        seriesService.create(new SeriesDto(title: "Controller Sort B", personalRating: 5))
+        seriesService.create(new SeriesDto(title: "Controller Sort C"))
+
+    when: "a GET request is made with sortBy=personalRating, sortDirection=desc"
+        def result = mockMvc.perform(
+          get("/api/v1/series")
+            .param("sortBy", "personalRating")
+            .param("sortDirection", "desc")
+        )
+
+    then: "results are ordered by personalRating descending, nulls last"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data[0].title').value("Controller Sort B"))
+        result.andExpect(jsonPath('$.data[1].title').value("Controller Sort A"))
+        result.andExpect(jsonPath('$.data[2].title').value("Controller Sort C"))
+  }
 }

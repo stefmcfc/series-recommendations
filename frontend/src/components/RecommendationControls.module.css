@@ -101,6 +101,18 @@
   margin: 0;
 }
 
+.keywordError {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .keywordError {
+    color: #fca5a5;
+  }
+}
+
 .filtersSection {
   border-top: 1px solid var(--border);
   padding-top: 1rem;

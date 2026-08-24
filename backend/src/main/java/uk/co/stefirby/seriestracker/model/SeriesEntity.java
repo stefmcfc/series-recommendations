@@ -7,6 +7,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -128,6 +130,36 @@ public class SeriesEntity {
     @Column(nullable = true, length = 2)
     private String originCountry;
 
+    // series_spec_018_series_refresh.md (SERIES-018-AC-23): non-null means a refresh found
+    // totalSeasons/totalEpisodes had increased since the prior refresh, not yet acknowledged.
+    // Never auto-cleared by a subsequent refresh that finds no further increase
+    // (SERIES-018-AC-25) -- only POST /series/{id}/acknowledge-new-content clears it
+    // (SERIES-018-AC-27).
+    @Column(nullable = true)
+    private LocalDateTime newContentDetectedAt;
+
+    // series_spec_019_keyword_tracking.md (SERIES-019-AC-03): a series' TMDB keywords,
+    // normalized via a shared `keyword` table plus a `series_keyword` join table -- unlike
+    // `genres`/`tags`, this needs COUNT/AVG-style aggregation (KeywordStatsService), which a
+    // delimited string column can't support without parsing every row on every query.
+    // Populated/replaced wholesale by KeywordSyncService.syncKeywords rather than mutated
+    // piecemeal elsewhere.
+    //
+    // frontend_spec_024_keyword_tracking.md (FRONTEND-024-AC-02): eagerly fetched, not lazy --
+    // SeriesService.entityToDto now flattens this collection into SeriesDto.keywords on every
+    // read (getById/getAll/create/update), so it needs to be available whenever an entity is
+    // loaded, not just within an still-open session. KeywordStatsService already loads every
+    // series' full keyword set into memory for GET /series/keywords regardless (see its own
+    // javadoc's "fine at this app's scale" precedent), so this doesn't introduce a new class of
+    // cost -- it just makes the always-needed case the default instead of a lazy trap.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "series_keyword",
+        joinColumns = @JoinColumn(name = "series_id"),
+        inverseJoinColumns = @JoinColumn(name = "keyword_id")
+    )
+    private Set<KeywordEntity> keywords = new HashSet<>();
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -196,4 +228,10 @@ public class SeriesEntity {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
+    public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }
+
+    public Set<KeywordEntity> getKeywords() { return keywords; }
+    public void setKeywords(Set<KeywordEntity> keywords) { this.keywords = keywords; }
 }

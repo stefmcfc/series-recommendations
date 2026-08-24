@@ -79,8 +79,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
+    keywords: [],
     ...overrides,
   }
 }
@@ -113,6 +115,60 @@ describe('SH-001: getAll', () => {
   it('should return empty array when list is empty', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
     expect(await seriesApi.getAll()).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-013-AC-11: getAll(sort) / search(criteria, sort)
+// ---------------------------------------------------------------------------
+describe('FRONTEND-013-AC-11: getAll with sort', () => {
+  it('calls GET /series with no params when sort is omitted', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getAll()
+
+    expect(client.get).toHaveBeenCalledWith('/series')
+  })
+
+  it('passes sortBy/sortDirection as query params when sort is given', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getAll({ sortBy: 'personalRating', sortDirection: 'asc' })
+
+    expect(client.get).toHaveBeenCalledWith('/series', {
+      params: { sortBy: 'personalRating', sortDirection: 'asc' },
+    })
+  })
+})
+
+describe('FRONTEND-013-AC-11: search with sort', () => {
+  it('includes sortBy/sortDirection alongside the search criteria params', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.search(
+      { title: 'office' },
+      { sortBy: 'tmdbRating', sortDirection: 'desc' },
+    )
+
+    expect(client.get).toHaveBeenCalledWith('/series/search', {
+      params: {
+        title: 'office',
+        sortBy: 'tmdbRating',
+        sortDirection: 'desc',
+      },
+    })
+  })
+
+  it('omits sort params entirely when sort is not given', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.search({ title: 'office' })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params).not.toHaveProperty('sortBy')
+    expect(args.params).not.toHaveProperty('sortDirection')
   })
 })
 
@@ -257,6 +313,7 @@ describe('FRONTEND-023-AC-03: refreshAll', () => {
       status: 'IN_PROGRESS',
       totalCount: 10,
       completedCount: 0,
+      skippedCount: 0,
       startedAt: '2026-01-01T00:00:00Z',
       finishedAt: null,
     }
@@ -275,6 +332,7 @@ describe('FRONTEND-023-AC-03: getRefreshStatus', () => {
       status: 'IDLE',
       totalCount: 0,
       completedCount: 0,
+      skippedCount: 0,
       startedAt: null,
       finishedAt: null,
     }
@@ -284,6 +342,24 @@ describe('FRONTEND-023-AC-03: getRefreshStatus', () => {
 
     expect(client.get).toHaveBeenCalledWith('/series/refresh-all/status')
     expect(result).toEqual(mockStatus)
+  })
+})
+
+describe('FRONTEND-023-AC-17: acknowledgeNewContent', () => {
+  it('should POST /series/{id}/acknowledge-new-content and unwrap { data: Series }', async () => {
+    const mockSeries = makeSeries({
+      id: 'abc-123',
+      title: 'The Office',
+      newContentDetectedAt: null,
+    })
+    client.post.mockResolvedValue({ data: { data: mockSeries } })
+
+    const result = await seriesApi.acknowledgeNewContent('abc-123')
+
+    expect(client.post).toHaveBeenCalledWith(
+      '/series/abc-123/acknowledge-new-content',
+    )
+    expect(result).toEqual(mockSeries)
   })
 })
 
@@ -490,6 +566,34 @@ describe('FRONTEND-019-AC-04: getRecommendations wires sortBy', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-027-AC-02: getRecommendations includes sourceMode/trendingWindow
+// ---------------------------------------------------------------------------
+describe('FRONTEND-027-AC-02: getRecommendations includes sourceMode/trendingWindow', () => {
+  it('passes sourceMode and trendingWindow through to the query string', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({
+      sourceMode: 'trending',
+      trendingWindow: 'day',
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { sourceMode: 'trending', trendingWindow: 'day' },
+    })
+  })
+
+  it('includes sourceMode alone for topRated (no trendingWindow)', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ sourceMode: 'topRated' })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { sourceMode: 'topRated' },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-014-AC-01: getGenreOptions()
 // ---------------------------------------------------------------------------
 describe('FRONTEND-014-AC-01: getGenreOptions', () => {
@@ -502,6 +606,62 @@ describe('FRONTEND-014-AC-01: getGenreOptions', () => {
 
     expect(client.get).toHaveBeenCalledWith('/series/genres')
     expect(result).toEqual(['Action', 'Drama'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-024-AC-04: getKeywordStats()
+// ---------------------------------------------------------------------------
+describe('FRONTEND-024-AC-04: getKeywordStats', () => {
+  it('fetches /series/keywords and unwraps the envelope', async () => {
+    client.get.mockResolvedValue({
+      data: {
+        data: [{ name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 }],
+        count: 1,
+      },
+    })
+
+    const result = await seriesApi.getKeywordStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', { params: {} })
+    expect(result).toEqual([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+  })
+
+  it('passes sortBy as a query param when provided', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats('averagePersonalRating')
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', {
+      params: { sortBy: 'averagePersonalRating' },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-024-AC-05: buildSearchParams includes keyword when present
+// ---------------------------------------------------------------------------
+describe('FRONTEND-024-AC-05: search includes keyword param', () => {
+  it('should serialize keywords array as repeated keyword param', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ keywords: ['spy', 'mi5'] })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.keyword).toEqual(['spy', 'mi5'])
+  })
+
+  it('omits keyword param when keywords is absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ title: 'office' })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params).not.toHaveProperty('keyword')
   })
 })
 

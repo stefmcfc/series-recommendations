@@ -19,9 +19,11 @@ class SeriesRefreshServiceSpec extends Specification {
     SeriesRepository repository = Mock()
     TmdbClient tmdbClient = Mock()
     OmdbClient omdbClient = Mock()
-    SeriesService seriesService = new SeriesService(repository)
+    KeywordSyncService keywordSyncService = Mock()
+    SeriesService seriesService = new SeriesService(repository, keywordSyncService)
 
-    SeriesRefreshService refreshService = new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService)
+    SeriesRefreshService refreshService =
+        new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService)
 
     private static SeriesEntity existing(UUID id, String imdbId = "tt0903747") {
         new SeriesEntity(
@@ -228,5 +230,295 @@ class SeriesRefreshServiceSpec extends Specification {
 
         then: "the entity is saved exactly once"
             1 * repository.save(entity) >> entity
+    }
+
+    def "SERIES-019-AC-08: a successful TMDB refresh also syncs keywords for the resolved tmdbId"() {
+        given: "an existing series, TMDB resolves fine"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            refreshService.refresh(id)
+
+        then: "keyword syncing is delegated for the resolved tmdbId"
+            1 * keywordSyncService.syncKeywords(entity, 1396)
+    }
+
+    def "SERIES-019-AC-08: when no tmdbId is resolved, keyword syncing is not attempted"() {
+        given: "an existing series, TMDB fails to resolve a tmdbId"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.empty()
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            refreshService.refresh(id)
+
+        then: "no keyword sync is attempted"
+            0 * keywordSyncService.syncKeywords(_, _)
+    }
+
+    def "SERIES-018-AC-24: an increased totalSeasons sets newContentDetectedAt"() {
+        given: "an existing series with totalSeasons 5, TMDB now reports 6"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 62,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "newContentDetectedAt is set"
+            result.series().newContentDetectedAt != null
+    }
+
+    def "SERIES-018-AC-24: an increased totalEpisodes (unchanged totalSeasons) also sets newContentDetectedAt"() {
+        given: "an existing series with totalEpisodes 62, TMDB now reports 63"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 5, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "newContentDetectedAt is set"
+            result.series().newContentDetectedAt != null
+    }
+
+    def "SERIES-018-AC-25: an unchanged season/episode count leaves an existing flag untouched"() {
+        given: "a series already flagged, TMDB now reports the same totalSeasons/totalEpisodes"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            def priorFlag = LocalDateTime.now().minusDays(2)
+            entity.newContentDetectedAt = priorFlag
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 5, 62,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "newContentDetectedAt is unchanged, not cleared"
+            result.series().newContentDetectedAt == priorFlag
+    }
+
+    def "SERIES-018-AC-25: a decreased totalSeasons does not set newContentDetectedAt"() {
+        given: "an existing series with totalSeasons 5, TMDB now reports 4"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 4, 60,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "newContentDetectedAt remains null"
+            result.series().newContentDetectedAt == null
+    }
+
+    def "SERIES-018-AC-25: a failed TMDB fetch does not set newContentDetectedAt"() {
+        given: "an existing series, TMDB fetch fails"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId(_) >> { throw new ExternalServiceException("TMDB down") }
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "newContentDetectedAt remains null"
+            result.series().newContentDetectedAt == null
+    }
+
+    def "SERIES-018-AC-26: a null-to-populated totalSeasons is not treated as an increase"() {
+        given: "a manually-added series with totalSeasons/totalEpisodes null, TMDB now reports values"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.totalSeasons = null
+            entity.totalEpisodes = null
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 3, 30,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "newContentDetectedAt remains null"
+            result.series().newContentDetectedAt == null
+    }
+
+    def "SERIES-018-AC-27: acknowledging clears the flag"() {
+        given: "a series with newContentDetectedAt set"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.newContentDetectedAt = LocalDateTime.now()
+            repository.findById(id) >> Optional.of(entity)
+
+        when: "acknowledgeNewContent is called"
+            def dto = refreshService.acknowledgeNewContent(id)
+
+        then: "newContentDetectedAt is cleared and persisted"
+            dto.newContentDetectedAt == null
+            1 * repository.save({ SeriesEntity e -> e.newContentDetectedAt == null }) >> { SeriesEntity e -> e }
+    }
+
+    def "SERIES-018-AC-27: acknowledging an unknown id throws EntityNotFoundException"() {
+        given: "no series exists for the given id"
+            def id = UUID.randomUUID()
+            repository.findById(id) >> Optional.empty()
+
+        when: "acknowledgeNewContent is called"
+            refreshService.acknowledgeNewContent(id)
+
+        then: "an EntityNotFoundException is thrown"
+            thrown(EntityNotFoundException)
+    }
+
+    def "SERIES-018-AC-35/36: new content on a COMPLETED series flips it to BACKLOG and clears dateCompleted"() {
+        given: "a COMPLETED series with totalSeasons 5, dateCompleted set, TMDB now reports 6"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.COMPLETED
+            def dateCompleted = LocalDateTime.now().minusDays(1)
+            entity.dateCompleted = dateCompleted
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "status is now BACKLOG and dateCompleted is null, newContentDetectedAt is set"
+            result.series().status == "BACKLOG"
+            result.series().dateCompleted == null
+            result.series().newContentDetectedAt != null
+    }
+
+    def "SERIES-018-AC-37: a WATCHING series gaining new content is left WATCHING"() {
+        given: "a WATCHING series with totalSeasons 5, TMDB now reports 6"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.WATCHING
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "status is unchanged"
+            result.series().status == "WATCHING"
+    }
+
+    def "SERIES-018-AC-37: a DROPPED series gaining new content stays DROPPED"() {
+        given: "a DROPPED series with totalSeasons 5, TMDB now reports 6"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.DROPPED
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "status is unchanged"
+            result.series().status == "DROPPED"
+    }
+
+    def "SERIES-018-AC-38: acknowledging the flag never reverses a status change already made"() {
+        given: "a COMPLETED series whose refresh just flipped it to BACKLOG with content detected"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.COMPLETED
+            entity.dateCompleted = LocalDateTime.now().minusDays(1)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+            refreshService.refresh(id)
+
+        when: "acknowledgeNewContent is called afterwards"
+            def dto = refreshService.acknowledgeNewContent(id)
+
+        then: "the status change made by refresh remains, only the flag is cleared"
+            dto.status == "BACKLOG"
+            dto.newContentDetectedAt == null
+    }
+
+    def "SERIES-018-AC-39: no reactivation when the null-to-populated exception applies"() {
+        given: "a COMPLETED series with totalSeasons null, TMDB now reports a value"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.COMPLETED
+            def dateCompleted = LocalDateTime.now().minusDays(1)
+            entity.dateCompleted = dateCompleted
+            entity.totalSeasons = null
+            entity.totalEpisodes = null
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 3, 30,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US")
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "refresh is called"
+            def result = refreshService.refresh(id)
+
+        then: "status and dateCompleted are untouched, no detection fired"
+            result.series().status == "COMPLETED"
+            result.series().dateCompleted == dateCompleted
+            result.series().newContentDetectedAt == null
     }
 }

@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
+import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
@@ -11,6 +12,7 @@ import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
 import uk.co.stefirby.seriestracker.service.BulkRefreshService;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
+import uk.co.stefirby.seriestracker.service.KeywordStatsService;
 import uk.co.stefirby.seriestracker.service.RecommendationService;
 import uk.co.stefirby.seriestracker.service.RefreshJobStatus;
 import uk.co.stefirby.seriestracker.service.RefreshResult;
@@ -54,6 +56,7 @@ public class SeriesController {
     private final TmdbGenreTable genreTable;
     private final SeriesRefreshService refreshService;
     private final BulkRefreshService bulkRefreshService;
+    private final KeywordStatsService keywordStatsService;
 
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
@@ -63,7 +66,8 @@ public class SeriesController {
                             IgnoredSeriesService ignoredSeriesService,
                             TmdbGenreTable genreTable,
                             SeriesRefreshService refreshService,
-                            BulkRefreshService bulkRefreshService) {
+                            BulkRefreshService bulkRefreshService,
+                            KeywordStatsService keywordStatsService) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
@@ -73,6 +77,7 @@ public class SeriesController {
         this.genreTable = genreTable;
         this.refreshService = refreshService;
         this.bulkRefreshService = bulkRefreshService;
+        this.keywordStatsService = keywordStatsService;
     }
 
     @PostMapping
@@ -82,8 +87,10 @@ public class SeriesController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SeriesDto>>> getAll() {
-        List<SeriesDto> list = seriesService.getAll();
+    public ResponseEntity<ApiResponse<List<SeriesDto>>> getAll(
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        List<SeriesDto> list = seriesService.getAll(sortBy, sortDirection);
         return ResponseEntity.ok(new ApiResponse<>(list, list.size()));
     }
 
@@ -107,6 +114,12 @@ public class SeriesController {
     public ResponseEntity<ApiResponse<RefreshResult>> refresh(@PathVariable UUID id) {
         RefreshResult result = refreshService.refresh(id);
         return ResponseEntity.ok(new ApiResponse<>(result));
+    }
+
+    @PostMapping("/" + UUID_PATH_PATTERN + "/acknowledge-new-content")
+    public ResponseEntity<ApiResponse<SeriesDto>> acknowledgeNewContent(@PathVariable UUID id) {
+        SeriesDto dto = refreshService.acknowledgeNewContent(id);
+        return ResponseEntity.ok(new ApiResponse<>(dto));
     }
 
     @PostMapping("/refresh-all")
@@ -141,6 +154,13 @@ public class SeriesController {
         return ResponseEntity.ok(new ApiResponse<>(aliases, aliases.size()));
     }
 
+    @GetMapping("/keywords")
+    public ResponseEntity<ApiResponse<List<KeywordStatDto>>> keywords(
+            @RequestParam(required = false) String sortBy) {
+        List<KeywordStatDto> stats = keywordStatsService.getStats(sortBy);
+        return ResponseEntity.ok(new ApiResponse<>(stats, stats.size()));
+    }
+
     @GetMapping("/recommendations")
     public ResponseEntity<ApiResponse<List<RecommendationDto>>> recommendations(
             @RequestParam(required = false, defaultValue = "20") int limit,
@@ -156,7 +176,9 @@ public class SeriesController {
             @RequestParam(required = false) String language,
             @RequestParam(required = false) Integer maxPerSource,
             @RequestParam(required = false) Integer maxSourcesShown,
-            @RequestParam(required = false) String sortBy) {
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sourceMode,
+            @RequestParam(required = false) String trendingWindow) {
         int clampedLimit = Math.clamp(limit, 1, 50);
 
         RecommendationCriteria criteria = new RecommendationCriteria();
@@ -173,6 +195,8 @@ public class SeriesController {
         criteria.setMaxPerSource(maxPerSource);
         criteria.setMaxSourcesShown(maxSourcesShown);
         criteria.setSortBy(sortBy);
+        criteria.setSourceMode(sourceMode);
+        criteria.setTrendingWindow(trendingWindow);
 
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
@@ -189,22 +213,28 @@ public class SeriesController {
     public ResponseEntity<ApiResponse<List<SeriesDto>>> search(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) List<String> genre,
+            @RequestParam(required = false) List<String> keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer minPersonalRating,
             @RequestParam(required = false) Integer maxPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal maxImdbRating,
-            @RequestParam(required = false) Boolean startedNotFinished) {
+            @RequestParam(required = false) Boolean startedNotFinished,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
 
         SeriesSearchCriteria c = new SeriesSearchCriteria();
         c.setTitle(title);
         c.setGenres(genre);
+        c.setKeywords(keyword);
         c.setStatus(status);
         c.setMinPersonalRating(minPersonalRating);
         c.setMaxPersonalRating(maxPersonalRating);
         c.setMinImdbRating(minImdbRating);
         c.setMaxImdbRating(maxImdbRating);
         c.setStartedNotFinished(startedNotFinished);
+        c.setSortBy(sortBy);
+        c.setSortDirection(sortDirection);
 
         List<SeriesDto> results = searchService.search(c);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));

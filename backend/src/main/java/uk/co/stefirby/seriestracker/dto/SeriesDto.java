@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class SeriesDto {
@@ -40,6 +41,24 @@ public class SeriesDto {
     // TMDB reports as this series' first origin_country entry -- read at create time
     // (SERIES-021-AC-06), same direct flow-through precedent as tmdbRating/tmdbVoteCount.
     private String originCountry;
+
+    // series_spec_018_series_refresh.md: output-only, like lastRefreshedAt -- never read from
+    // the incoming DTO in create/update (SERIES-018-AC-23). Non-null means a refresh detected
+    // new content not yet acknowledged (POST /series/{id}/acknowledge-new-content).
+    private LocalDateTime newContentDetectedAt;
+
+    // series_spec_019_keyword_tracking.md (SERIES-019-AC-23): input-only, mirroring
+    // dateAdded/lastRefreshedAt's output-only convention in the opposite direction -- read by
+    // SeriesService.create to trigger KeywordSyncService.syncKeywords (SERIES-019-AC-24), never
+    // persisted on SeriesEntity (which has no tmdbId column) and never set by entityToDto.
+    private Integer tmdbId;
+
+    // series_spec_019_keyword_tracking.md / frontend_spec_024_keyword_tracking.md
+    // (FRONTEND-024-AC-02): output-only flattened KeywordEntity.name values for this series,
+    // sorted alphabetically for stable ordering -- never read from the incoming DTO (there is
+    // no user-authored keyword concept; keywords are populated wholesale by
+    // KeywordSyncService.syncKeywords). Never null, empty list when a series has none.
+    private List<String> keywords = List.of();
 
     public SeriesDto() {}
 
@@ -111,4 +130,13 @@ public class SeriesDto {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
+    public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }
+
+    public Integer getTmdbId() { return tmdbId; }
+    public void setTmdbId(Integer tmdbId) { this.tmdbId = tmdbId; }
+
+    public List<String> getKeywords() { return keywords; }
+    public void setKeywords(List<String> keywords) { this.keywords = keywords; }
 }

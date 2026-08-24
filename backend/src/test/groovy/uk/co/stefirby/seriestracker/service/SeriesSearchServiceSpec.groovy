@@ -6,6 +6,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria
+import uk.co.stefirby.seriestracker.model.KeywordEntity
+import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
 @SpringBootTest
@@ -21,8 +24,12 @@ class SeriesSearchServiceSpec extends Specification {
     @Autowired
     SeriesRepository seriesRepository
 
+    @Autowired
+    KeywordRepository keywordRepository
+
     def setup() {
         seriesRepository.deleteAll()
+        keywordRepository.deleteAll()
 
         seriesService.create(new SeriesDto(
             title: "The Office",
@@ -224,5 +231,192 @@ class SeriesSearchServiceSpec extends Specification {
             // Most recently added first (Stranger Things was added last in setup)
             results[0].title == "Stranger Things"
             results[-1].title == "The Office"
+    }
+
+    def "SERIES-019-AC-19: keyword filter matches exactly (case-insensitive), not by substring"() {
+        given: "a series carrying 'spy', another carrying 'espionage'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def espionage = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 5265, name: "espionage"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "Homeland", keywords: [espionage] as Set))
+
+        when: "search is called with keywords: ['spy']"
+            def results = searchService.search(new SeriesSearchCriteria(keywords: ["spy"]))
+
+        then: "only the exact match is returned -- 'espionage' does not match 'spy'"
+            results*.title == ["Spooks"]
+    }
+
+    def "SERIES-019-AC-19: keyword filter is case-insensitive"() {
+        given: "a series carrying 'spy'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", keywords: [spy] as Set))
+
+        when: "search is called with a differently-cased keyword"
+            def results = searchService.search(new SeriesSearchCriteria(keywords: ["SPY"]))
+
+        then: "the series is still matched"
+            results*.title == ["Spooks"]
+    }
+
+    def "SERIES-019-AC-19: multiple requested keywords use OR logic"() {
+        given: "one series carrying 'spy', another carrying 'mi5', a third carrying neither"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def mi5 = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 190904, name: "mi5"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "Homeland", keywords: [mi5] as Set))
+            seriesRepository.save(new SeriesEntity(title: "The Office"))
+
+        when: "search is called with both keywords"
+            def results = searchService.search(new SeriesSearchCriteria(keywords: ["spy", "mi5"]))
+
+        then: "both matching series are returned"
+            results*.title as Set == ["Spooks", "Homeland"] as Set
+    }
+
+    def "SERIES-019-AC-21: an empty keywords list applies no filtering"() {
+        given: "two series, neither carrying any keyword"
+            seriesRepository.save(new SeriesEntity(title: "No Keywords One"))
+            seriesRepository.save(new SeriesEntity(title: "No Keywords Two"))
+
+        when: "search is called with no keywords criteria"
+            def results = searchService.search(new SeriesSearchCriteria())
+
+        then: "both series are returned (plus the four from setup)"
+            results.size() == 6
+    }
+
+    def "SERIES-009-AC-01/04: sorts by personalRating descending, nulls last"() {
+        given: "three additional series: rating 3, rating 5, rating null"
+            seriesService.create(new SeriesDto(title: "Rating Test Three", personalRating: 3))
+            seriesService.create(new SeriesDto(title: "Rating Test Five", personalRating: 5))
+            seriesService.create(new SeriesDto(title: "Rating Test Null"))
+
+        when: "search is called with sortBy=personalRating, sortDirection=desc, scoped to these three"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Rating Test", sortBy: "personalRating", sortDirection: "desc"))
+
+        then: "order is 5, 3, null"
+            results*.personalRating == [5, 3, null]
+    }
+
+    def "SERIES-009-AC-04: nulls stay last even under ascending order"() {
+        given: "three additional series: rating 3, rating 5, rating null"
+            seriesService.create(new SeriesDto(title: "Rating Test Three", personalRating: 3))
+            seriesService.create(new SeriesDto(title: "Rating Test Five", personalRating: 5))
+            seriesService.create(new SeriesDto(title: "Rating Test Null"))
+
+        when: "search is called with sortBy=personalRating, sortDirection=asc, scoped to these three"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Rating Test", sortBy: "personalRating", sortDirection: "asc"))
+
+        then: "order is 3, 5, null -- not null, 3, 5"
+            results*.personalRating == [3, 5, null]
+    }
+
+    def "SERIES-009-AC-02: an invalid sortBy value is rejected"() {
+        when: "search is called with sortBy=notAField"
+            searchService.search(new SeriesSearchCriteria(sortBy: "notAField"))
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-009-AC-03: an invalid sortDirection value is rejected"() {
+        when: "search is called with sortDirection=sideways"
+            searchService.search(new SeriesSearchCriteria(sortDirection: "sideways"))
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-009-AC-08: sortBy=title compares case-insensitively"() {
+        given: "two additional series: 'the Office Redux' and 'Archer Redux'"
+            seriesService.create(new SeriesDto(title: "the Office Redux"))
+            seriesService.create(new SeriesDto(title: "Archer Redux"))
+
+        when: "search is called with sortBy=title, sortDirection=asc, scoped to these two"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Redux", sortBy: "title", sortDirection: "asc"))
+
+        then: "'Archer Redux' sorts before 'the Office Redux' despite the lowercase 't'"
+            results*.title == ["Archer Redux", "the Office Redux"]
+    }
+
+    def "SERIES-009-AC-09: sortBy=year sorts nulls last regardless of direction"() {
+        given: "three additional series: year 2020, year 2010, year null"
+            seriesService.create(new SeriesDto(title: "Year Test A", year: 2020))
+            seriesService.create(new SeriesDto(title: "Year Test B", year: 2010))
+            seriesService.create(new SeriesDto(title: "Year Test C"))
+
+        when: "search is called with sortBy=year, sortDirection=asc"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Year Test", sortBy: "year", sortDirection: "asc"))
+
+        then: "oldest year first, null last -- not first"
+            results*.year == [2010, 2020, null]
+    }
+
+    def "SERIES-009-AC-09: sortBy=imdbRating sorts nulls last regardless of direction"() {
+        given: "two additional series: one rated, one unrated"
+            seriesService.create(new SeriesDto(title: "Imdb Sort Test A", imdbRating: 7.0))
+            seriesService.create(new SeriesDto(title: "Imdb Sort Test B"))
+
+        when: "search is called with sortBy=imdbRating, sortDirection=desc"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Imdb Sort Test", sortBy: "imdbRating", sortDirection: "desc"))
+
+        then: "the rated series comes first, the unrated one last"
+            results*.title == ["Imdb Sort Test A", "Imdb Sort Test B"]
+    }
+
+    def "SERIES-009-AC-09: sortBy=tmdbRating sorts nulls last regardless of direction"() {
+        given: "two additional series: one rated, one unrated"
+            seriesService.create(new SeriesDto(title: "Tmdb Sort Test A", tmdbRating: 7.0, tmdbVoteCount: 10))
+            seriesService.create(new SeriesDto(title: "Tmdb Sort Test B"))
+
+        when: "search is called with sortBy=tmdbRating, sortDirection=asc"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Tmdb Sort Test", sortBy: "tmdbRating", sortDirection: "asc"))
+
+        then: "the rated series comes first (ascending order among the non-null values), the unrated one last"
+            results*.title == ["Tmdb Sort Test A", "Tmdb Sort Test B"]
+    }
+
+    def "SERIES-009-AC-10: tmdbRating ties break on tmdbVoteCount descending"() {
+        given: "two series both with tmdbRating 8.5: one with voteCount 50, one with voteCount 5000"
+            seriesService.create(new SeriesDto(title: "Tmdb Tie A", tmdbRating: 8.5, tmdbVoteCount: 50))
+            seriesService.create(new SeriesDto(title: "Tmdb Tie B", tmdbRating: 8.5, tmdbVoteCount: 5000))
+
+        when: "search is called with sortBy=tmdbRating, sortDirection=desc"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Tmdb Tie", sortBy: "tmdbRating", sortDirection: "desc"))
+
+        then: "the higher-vote-count series comes first"
+            results[0].title == "Tmdb Tie B"
+            results[0].tmdbVoteCount == 5000
+    }
+
+    def "SERIES-009-AC-10: the tmdbVoteCount tiebreak direction does not flip with sortDirection=asc"() {
+        given: "two series both with tmdbRating 8.5: one with voteCount 50, one with voteCount 5000"
+            seriesService.create(new SeriesDto(title: "Tmdb Tie C", tmdbRating: 8.5, tmdbVoteCount: 50))
+            seriesService.create(new SeriesDto(title: "Tmdb Tie D", tmdbRating: 8.5, tmdbVoteCount: 5000))
+
+        when: "search is called with sortBy=tmdbRating, sortDirection=asc"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "Tmdb Tie", sortBy: "tmdbRating", sortDirection: "asc"))
+
+        then: "the higher-vote-count series still comes first among the tied pair"
+            def tieC = results.find { it.title == "Tmdb Tie C" }
+            def tieD = results.find { it.title == "Tmdb Tie D" }
+            results.indexOf(tieD) < results.indexOf(tieC)
+    }
+
+    def "SERIES-009-AC-11: an invalid sortBy value is still rejected under the enlarged enum"() {
+        when: "search is called with sortBy=notAField"
+            searchService.search(new SeriesSearchCriteria(sortBy: "notAField"))
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
     }
 }

@@ -6,12 +6,21 @@ import java.util.List;
 public class SeriesSearchCriteria {
     private String title;
     private List<String> genres;
+    // series_spec_019_keyword_tracking.md (SERIES-019-AC-18): mirrors genres' shape/OR-logic
+    // exactly, but matched exactly (case-insensitively) rather than by substring -- see
+    // SeriesSearchService.matchesKeywords.
+    private List<String> keywords;
     private String status;
     private Integer minPersonalRating;
     private Integer maxPersonalRating;
     private BigDecimal minImdbRating;
     private BigDecimal maxImdbRating;
     private Boolean startedNotFinished;
+    // series_spec_009_rating_sort.md (SERIES-009-AC-01/07): dateAdded (default) |
+    // personalRating | title | year | imdbRating | tmdbRating.
+    private String sortBy;
+    // series_spec_009_rating_sort.md (SERIES-009-AC-01): asc | desc, default desc.
+    private String sortDirection;
 
     public SeriesSearchCriteria() {}
 
@@ -19,6 +28,8 @@ public class SeriesSearchCriteria {
     public void setTitle(String title) { this.title = title; }
     public List<String> getGenres() { return genres; }
     public void setGenres(List<String> genres) { this.genres = genres; }
+    public List<String> getKeywords() { return keywords; }
+    public void setKeywords(List<String> keywords) { this.keywords = keywords; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Integer getMinPersonalRating() { return minPersonalRating; }
@@ -31,4 +42,8 @@ public class SeriesSearchCriteria {
     public void setMaxImdbRating(BigDecimal maxImdbRating) { this.maxImdbRating = maxImdbRating; }
     public Boolean getStartedNotFinished() { return startedNotFinished; }
     public void setStartedNotFinished(Boolean startedNotFinished) { this.startedNotFinished = startedNotFinished; }
+    public String getSortBy() { return sortBy; }
+    public void setSortBy(String sortBy) { this.sortBy = sortBy; }
+    public String getSortDirection() { return sortDirection; }
+    public void setSortDirection(String sortDirection) { this.sortDirection = sortDirection; }
 }

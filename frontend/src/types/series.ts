@@ -29,8 +29,16 @@ export interface Series {
   dateAdded: string
   dateCompleted: string | null
   lastRefreshedAt: string | null
+  newContentDetectedAt: string | null
   originCountry: string | null
   productionStatus: string | null
+  keywords: string[]
+}
+
+export interface KeywordStat {
+  name: string
+  seriesCount: number
+  averagePersonalRating: number | null
 }
 
 export interface RefreshResult {
@@ -43,6 +51,7 @@ export interface RefreshJobStatus {
   status: 'IDLE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
   totalCount: number
   completedCount: number
+  skippedCount: number
   startedAt: string | null
   finishedAt: string | null
 }
@@ -65,6 +74,7 @@ export interface CreateSeriesRequest {
   tmdbVoteCount?: number
   originCountry?: string
   productionStatus?: string
+  tmdbId?: number
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
@@ -86,6 +96,7 @@ export interface SeriesLookupResult {
   imdbId?: string
   originCountry?: string
   productionStatus?: string
+  tmdbId?: number
 }
 
 export interface LookupTmdbCandidate {
@@ -125,15 +136,32 @@ export interface RecommendationQuery {
   maxPerSource?: number
   maxSourcesShown?: number
   sortBy?: 'score' | 'recommendationCount'
+  sourceMode?: 'trending' | 'topRated'
+  trendingWindow?: 'day' | 'week'
 }
 
 export interface SearchCriteria {
   title?: string
   genres?: string[]
+  keywords?: string[]
   status?: SeriesStatus
   minPersonalRating?: number
   maxPersonalRating?: number
   minImdbRating?: number
   maxImdbRating?: number
   startedNotFinished?: boolean
+}
+
+// FRONTEND-013-AC-10/14: mirrors series_spec_009_rating_sort.md's sortBy/sortDirection
+// params on GET /series and GET /series/search -- the full six-member enum from that
+// spec's Requirement 1 + Requirement 2 amendment.
+export interface SortOptions {
+  sortBy?:
+    | 'dateAdded'
+    | 'personalRating'
+    | 'title'
+    | 'year'
+    | 'imdbRating'
+    | 'tmdbRating'
+  sortDirection?: 'asc' | 'desc'
 }

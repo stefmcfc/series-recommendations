@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
-import type { Series, SearchCriteria, RefreshJobStatus } from '../types/series'
+import type {
+  Series,
+  SearchCriteria,
+  RefreshJobStatus,
+  SortOptions,
+} from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
 import styles from './SeriesList.module.css'
@@ -13,10 +18,56 @@ interface SeriesListProps {
   criteria?: SearchCriteria
 }
 
+// FRONTEND-013-AC-12: sort field options, in display order. Extended by
+// Requirement 5 (FRONTEND-013-AC-14/15) with title/year/imdbRating/tmdbRating
+// alongside the original dateAdded/personalRating pair.
+type SortByOption = NonNullable<SortOptions['sortBy']>
+type SortDirection = NonNullable<SortOptions['sortDirection']>
+
+const SORT_BY_OPTIONS: { value: SortByOption; label: string }[] = [
+  { value: 'dateAdded', label: 'Date Added' },
+  { value: 'personalRating', label: 'Personal Rating' },
+  { value: 'title', label: 'Title' },
+  { value: 'year', label: 'Year' },
+  { value: 'imdbRating', label: 'IMDb Rating' },
+  { value: 'tmdbRating', label: 'TMDB Rating' },
+]
+
+// Matches the backend's own default (series_spec_009_rating_sort.md,
+// SERIES-009-AC-06) -- when the control is at its default, no sort argument
+// is passed through to getAll()/search() at all (see buildSortParam below).
+const DEFAULT_SORT_BY: SortByOption = 'dateAdded'
+const DEFAULT_SORT_DIRECTION: SortDirection = 'desc'
+
+function buildSortParam(
+  sortBy: SortByOption,
+  sortDirection: SortDirection,
+): SortOptions | undefined {
+  if (sortBy === DEFAULT_SORT_BY && sortDirection === DEFAULT_SORT_DIRECTION) {
+    return undefined
+  }
+  return { sortBy, sortDirection }
+}
+
 // Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
 // enough that a short bulk job's progress feels live, infrequent enough not
 // to hammer the status endpoint.
 const REFRESH_POLL_INTERVAL_MS = 2500
+
+function buildRefreshProgressText(status: RefreshJobStatus): string {
+  const skippedSuffix =
+    status.skippedCount > 0 ? ` (${status.skippedCount} skipped)` : ''
+  return `Refreshing ${status.completedCount} of ${status.totalCount}${skippedSuffix}...`
+}
+
+function buildLastFullRefreshText(status: RefreshJobStatus): string {
+  const finishedAt = status.finishedAt as string
+  const skippedSuffix =
+    status.skippedCount > 0
+      ? ` (${status.skippedCount} skipped, already up to date)`
+      : ''
+  return `Last full refresh: ${formatRelativeTime(finishedAt)}${skippedSuffix}`
+}
 
 function hasActiveCriteria(criteria?: SearchCriteria): boolean {
   if (!criteria) return false
@@ -47,6 +98,12 @@ export function SeriesList({
   const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
+  // FRONTEND-013-AC-12: sort state lives here, local to the list -- see the
+  // spec's Design Decisions for why this isn't lifted into App.tsx/SearchFilter.
+  const [sortBy, setSortBy] = useState<SortByOption>(DEFAULT_SORT_BY)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(
+    DEFAULT_SORT_DIRECTION,
+  )
 
   const criteriaActive = hasActiveCriteria(criteria)
   const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
@@ -54,9 +111,12 @@ export function SeriesList({
   useEffect(() => {
     let cancelled = false
 
+    // FRONTEND-013-AC-13/16: whichever of getAll()/search() is active per
+    // criteriaActive gets the current sortBy/sortDirection.
+    const sortParam = buildSortParam(sortBy, sortDirection)
     const fetchSeries = criteriaActive
-      ? seriesApi.search(criteria as SearchCriteria)
-      : seriesApi.getAll()
+      ? seriesApi.search(criteria as SearchCriteria, sortParam)
+      : seriesApi.getAll(sortParam)
 
     fetchSeries
       .then((data) => {
@@ -74,7 +134,7 @@ export function SeriesList({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- criteriaActive is derived from criteria; including both is redundant and would cause criteria's object identity to trigger duplicate re-fetches.
-  }, [refreshIndex, criteria])
+  }, [refreshIndex, criteria, sortBy, sortDirection])
 
   // FRONTEND-023-AC-11: check once on mount so a page reload mid-batch
   // resumes the disabled/polling state instead of showing a stale enabled
@@ -141,6 +201,7 @@ export function SeriesList({
             status: 'IN_PROGRESS',
             totalCount: 0,
             completedCount: 0,
+            skippedCount: 0,
             startedAt: null,
             finishedAt: null,
           })
@@ -192,6 +253,14 @@ export function SeriesList({
     setConfirmingDeleteId(id)
   }
 
+  const handleSortByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(event.target.value as SortByOption)
+  }
+
+  const handleSortDirectionToggle = () => {
+    setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
+  }
+
   const handlePosterError = (id: string) => {
     setPosterErrorIds((prev) => new Set(prev).add(id))
   }
@@ -231,6 +300,34 @@ export function SeriesList({
     <div className={styles.container} data-testid="series-list">
       <div className={styles.header}>
         <h2 className={styles.heading}>My Series</h2>
+        <div className={styles.sortControl}>
+          <label htmlFor="series-sort-by" className={styles.sortLabel}>
+            Sort by
+          </label>
+          <select
+            id="series-sort-by"
+            className={styles.sortSelect}
+            aria-label="Sort by"
+            value={sortBy}
+            onChange={handleSortByChange}
+          >
+            {SORT_BY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className={styles.sortDirectionButton}
+            aria-label={
+              sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'
+            }
+            onClick={handleSortDirectionToggle}
+          >
+            {sortDirection === 'asc' ? '↑' : '↓'}
+          </button>
+        </div>
         <div className={styles.headerActions}>
           <button
             type="button"
@@ -243,13 +340,12 @@ export function SeriesList({
           </button>
           {refreshAllInProgress && jobStatus && (
             <span className={styles.refreshProgress}>
-              Refreshing {jobStatus.completedCount} of {jobStatus.totalCount}
-              ...
+              {buildRefreshProgressText(jobStatus)}
             </span>
           )}
           {jobStatus?.finishedAt != null && (
             <span className={styles.lastFullRefresh}>
-              Last full refresh: {formatRelativeTime(jobStatus.finishedAt)}
+              {buildLastFullRefreshText(jobStatus)}
             </span>
           )}
           <button
@@ -372,6 +468,14 @@ export function SeriesList({
               <span className={styles.rating}>
                 {s.imdbRating !== null ? s.imdbRating : '—'}
               </span>
+              {s.newContentDetectedAt != null && (
+                <span
+                  className={styles.newContentBadge}
+                  data-testid="new-content-badge"
+                >
+                  New content
+                </span>
+              )}
 
               {confirmingDeleteId === s.id ? (
                 <div className={styles.rowActions}>

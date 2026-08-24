@@ -42,14 +42,20 @@ public class SeriesSearchService {
             }
         }
 
+        // SERIES-009-AC-01/02/03/07/11: also validates sortBy/sortDirection, throwing
+        // IllegalArgumentException (-> 400) for an unrecognized value.
+        Comparator<SeriesEntity> sortComparator =
+            SeriesSortResolver.resolve(criteria.getSortBy(), criteria.getSortDirection());
+
         return repository.findAll().stream()
             .filter(s -> matchesTitle(s, criteria.getTitle()))
             .filter(s -> matchesGenres(s, criteria.getGenres()))
+            .filter(s -> matchesKeywords(s, criteria.getKeywords()))
             .filter(s -> matchesStatus(s, criteria.getStatus()))
             .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating(), criteria.getMaxPersonalRating()))
             .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating(), criteria.getMaxImdbRating()))
             .filter(s -> matchesStartedNotFinished(s, criteria.getStartedNotFinished()))
-            .sorted(Comparator.comparing(SeriesEntity::getDateAdded).reversed())
+            .sorted(sortComparator)
             .map(seriesService::entityToDto)
             .collect(Collectors.toList());
     }
@@ -64,6 +70,16 @@ public class SeriesSearchService {
         if (s.getGenres() == null || s.getGenres().isBlank()) return false;
         String lower = s.getGenres().toLowerCase(Locale.ROOT);
         return genres.stream().anyMatch(g -> lower.contains(g.toLowerCase(Locale.ROOT)));
+    }
+
+    // SERIES-019-AC-19: exact (case-insensitive) match against the normalized keyword set,
+    // not the substring match matchesGenres uses -- keyword names come from a real,
+    // spelling-stable TMDB vocabulary rather than free text.
+    private boolean matchesKeywords(SeriesEntity s, List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) return true;
+        if (s.getKeywords() == null || s.getKeywords().isEmpty()) return false;
+        return s.getKeywords().stream()
+            .anyMatch(k -> keywords.stream().anyMatch(requested -> requested.equalsIgnoreCase(k.getName())));
     }
 
     private boolean matchesStatus(SeriesEntity s, String status) {

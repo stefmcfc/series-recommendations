@@ -958,3 +958,49 @@ describe('FRONTEND-003-AC-31/32: no leaked data, no out-of-contract fields', () 
     expect(payload).not.toHaveProperty('currentEpisode')
   })
 })
+
+describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () => {
+  it('includes tmdbId after a resolved lookup', async () => {
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 4046, title: 'Spooks', year: 2002 },
+    ])
+    mockResolveTmdb.mockResolvedValue(
+      makeLookupResult({ title: 'Spooks', tmdbId: 4046 }),
+    )
+    mockCreate.mockResolvedValue({ id: '1', title: 'Spooks' } as Series)
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Spooks' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /look up/i }))
+    await screen.findByDisplayValue('Spooks')
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ tmdbId: 4046 }),
+      ),
+    )
+  })
+
+  it('omits tmdbId when no lookup was performed', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Homemade Show' } as Series)
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Homemade Show' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    const payload = mockCreate.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('tmdbId')
+  })
+
+  it('does not render a visible tmdbId input', () => {
+    renderForm()
+    expect(screen.queryByLabelText(/tmdb id/i)).not.toBeInTheDocument()
+  })
+})

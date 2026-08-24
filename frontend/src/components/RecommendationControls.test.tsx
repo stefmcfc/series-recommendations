@@ -2,11 +2,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationControls } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
+import { ApiError } from '../types/api'
 import type { Series } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
 const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
+const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -31,8 +33,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2024-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
+    keywords: [],
     ...overrides,
   }
 }
@@ -41,6 +45,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockGetAll.mockResolvedValue([])
   mockGetGenreOptions.mockResolvedValue([])
+  mockGetKeywordStats.mockResolvedValue([])
 })
 
 describe('FRONTEND-011-AC-03: three-way sourcing mode selector', () => {
@@ -100,7 +105,7 @@ describe('FRONTEND-014-AC-03: degrades gracefully if getGenreOptions() rejects',
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
     await waitFor(() => expect(mockGetGenreOptions).toHaveBeenCalled())
-    expect(screen.getByLabelText(/^keywords/i)).toBeInTheDocument()
+    expect(screen.getByText(/^keywords/i)).toBeInTheDocument()
   })
 })
 
@@ -143,20 +148,24 @@ describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
     expect(
       screen.queryByRole('textbox', { name: /^genres/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getByLabelText(/^keywords/i)).toBeInTheDocument()
+    expect(
+      screen.queryByRole('textbox', { name: /^keywords/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/^keywords/i)).toBeInTheDocument()
   })
 })
 
 describe('FRONTEND-014-AC-08: empty genresSelected omits genres from the query', () => {
-  it('omits genres when no checkbox is checked', () => {
+  it('omits genres when no checkbox is checked', async () => {
     mockGetGenreOptions.mockResolvedValue(['Action'])
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'heist', seriesCount: 2, averagePersonalRating: null },
+    ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    fireEvent.change(screen.getByLabelText(/^keywords/i), {
-      target: { value: 'heist' },
-    })
+    fireEvent.click(await screen.findByLabelText('heist'))
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ genres: expect.anything() }),
@@ -439,5 +448,213 @@ describe('specific-series fetch failure', () => {
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
     await waitFor(() => expect(mockGetAll).toHaveBeenCalled())
+  })
+})
+
+describe('FRONTEND-027-AC-03: mode selector gains Popular Right Now / Highest Rated', () => {
+  it('renders the two new options, unchecked by default', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    expect(screen.getByLabelText(/popular right now/i)).not.toBeChecked()
+    expect(screen.getByLabelText(/highest rated/i)).not.toBeChecked()
+  })
+})
+
+describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch', () => {
+  it('selects Popular Right Now and clears a prior Specific Series selection', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED' }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    fireEvent.click(await screen.findByLabelText('Ozark (COMPLETED)'))
+    fireEvent.click(screen.getByLabelText(/popular right now/i))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sourceMode: 'trending' }),
+    )
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ seriesIds: expect.anything() }),
+    )
+  })
+
+  it('selects Highest Rated, sending sourceMode=topRated with no trendingWindow', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith({ sourceMode: 'topRated' })
+  })
+})
+
+describe('FRONTEND-027-AC-05: Day/Week toggle only under Popular Right Now', () => {
+  it('renders the toggle under Popular Right Now, defaulting to week', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    expect(screen.getByLabelText(/^week$/i)).toBeChecked()
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        sourceMode: 'trending',
+        trendingWindow: 'week',
+      }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    expect(screen.queryByLabelText(/^week$/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/^day$/i)).not.toBeInTheDocument()
+  })
+
+  it('switches trendingWindow to day when selected', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    fireEvent.click(screen.getByLabelText(/^day$/i))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        sourceMode: 'trending',
+        trendingWindow: 'day',
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-027-AC-06: no additional control for Highest Rated beyond minVoteCount', () => {
+  it('exposes minVoteCount in Filters, with no mode-specific control outside it', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    expect(screen.queryByLabelText(/^week$/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/^day$/i)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-027-AC-07: minSourceRating hidden for both new modes', () => {
+  it('hides Min Source Rating under Popular Right Now', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByLabelText(/popular right now/i))
+
+    expect(
+      screen.queryByLabelText(/min source rating/i),
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides Min Source Rating under Highest Rated', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+
+    expect(
+      screen.queryByLabelText(/min source rating/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-011-AC-14: fetches keyword options on mount', () => {
+  it('calls seriesApi.getKeywordStats() once on mount', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    expect(mockGetKeywordStats).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-011-AC-14/15: keyword checkbox list replaces free text', () => {
+  it('renders keyword checkboxes from getKeywordStats and includes selections in the query', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      { name: 'heist', seriesCount: 2, averagePersonalRating: null },
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+
+    const spyCheckbox = await screen.findByLabelText('spy')
+    expect(screen.getByLabelText('heist')).toBeInTheDocument()
+
+    fireEvent.click(spyCheckbox)
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['spy'] }),
+    )
+
+    fireEvent.click(screen.getByLabelText('heist'))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['spy', 'heist'] }),
+    )
+
+    fireEvent.click(spyCheckbox)
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['heist'] }),
+    )
+  })
+})
+
+describe('FRONTEND-011-AC-16: mode switch clears keywordsSelected', () => {
+  it('clears selected keywords when switching away from Genre & Keyword', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    fireEvent.click(await screen.findByLabelText('spy'))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['spy'] }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ keywords: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-011-AC-17: hint recomputed from keywordsSelected', () => {
+  it('hides the hint once a keyword checkbox is checked, shows it again once unchecked', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(
+      screen.getByText(/enter at least one genre or keyword/i),
+    ).toBeInTheDocument()
+
+    const spyCheckbox = await screen.findByLabelText('spy')
+    fireEvent.click(spyCheckbox)
+    expect(
+      screen.queryByText(/enter at least one genre or keyword/i),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(spyCheckbox)
+    expect(
+      screen.getByText(/enter at least one genre or keyword/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-011-AC-18: keyword fetch failure degrades gracefully', () => {
+  it('shows a scoped error without blocking the rest of the panel', async () => {
+    mockGetKeywordStats.mockRejectedValue(
+      new ApiError(500, 'Internal server error'),
+    )
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.getByLabelText(/automatic/i)).toBeInTheDocument()
   })
 })

@@ -32,8 +32,10 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
+    keywords: [],
     ...overrides,
   }
 }

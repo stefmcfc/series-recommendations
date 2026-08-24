@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import { SeriesStatus } from '../types/series'
 import type { Series } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
@@ -66,6 +67,8 @@ export function SeriesDetail({
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [refreshSummary, setRefreshSummary] = useState<string | null>(null)
+  const [acknowledging, setAcknowledging] = useState(false)
+  const [acknowledgeError, setAcknowledgeError] = useState<string | null>(null)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -77,6 +80,8 @@ export function SeriesDetail({
     setRefreshing(false)
     setRefreshError(null)
     setRefreshSummary(null)
+    setAcknowledging(false)
+    setAcknowledgeError(null)
   }
 
   useEffect(() => {
@@ -171,6 +176,26 @@ export function SeriesDetail({
       })
   }
 
+  const handleDismissNewContentClick = () => {
+    setAcknowledgeError(null)
+    setAcknowledging(true)
+
+    seriesApi
+      .acknowledgeNewContent(id)
+      .then((updated) => {
+        setAcknowledging(false)
+        setSeries(updated)
+      })
+      .catch((err: unknown) => {
+        setAcknowledging(false)
+        if (err instanceof ApiError) {
+          setAcknowledgeError(err.message)
+        } else {
+          setAcknowledgeError('An unexpected error occurred. Please try again.')
+        }
+      })
+  }
+
   const backButton = (
     <button
       type="button"
@@ -238,6 +263,18 @@ export function SeriesDetail({
                 <dt>Tags</dt>
                 <dd>{formatValue(series.tags)}</dd>
               </div>
+              <div className={`${styles.field} ${styles.keywordsField}`}>
+                <dt>Keywords</dt>
+                <dd>
+                  {(series.keywords ?? []).length === 0
+                    ? '—'
+                    : series.keywords.map((keyword) => (
+                        <span key={keyword} className={styles.keywordChip}>
+                          {keyword}
+                        </span>
+                      ))}
+                </dd>
+              </div>
               <div className={styles.field}>
                 <dt>Status</dt>
                 <dd>{series.status}</dd>
@@ -250,14 +287,18 @@ export function SeriesDetail({
                 <dt>Total Episodes</dt>
                 <dd>{formatValue(series.totalEpisodes)}</dd>
               </div>
-              <div className={styles.field}>
-                <dt>Current Season</dt>
-                <dd>{formatValue(series.currentSeason)}</dd>
-              </div>
-              <div className={styles.field}>
-                <dt>Current Episode</dt>
-                <dd>{formatValue(series.currentEpisode)}</dd>
-              </div>
+              {series.status !== SeriesStatus.COMPLETED && (
+                <>
+                  <div className={styles.field}>
+                    <dt>Current Season</dt>
+                    <dd>{formatValue(series.currentSeason)}</dd>
+                  </div>
+                  <div className={styles.field}>
+                    <dt>Current Episode</dt>
+                    <dd>{formatValue(series.currentEpisode)}</dd>
+                  </div>
+                </>
+              )}
               <div className={styles.field}>
                 <dt>IMDb Rating</dt>
                 <dd>{formatValue(series.imdbRating)}</dd>
@@ -359,6 +400,25 @@ export function SeriesDetail({
                   Last refreshed {formatRelativeTime(series.lastRefreshedAt)}
                 </span>
               )}
+              {series.newContentDetectedAt !== null && (
+                <>
+                  <span
+                    className={styles.newContentBadge}
+                    data-testid="new-content-badge"
+                  >
+                    New content
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.dismissNewContentButton}
+                    data-testid="dismiss-new-content-btn"
+                    disabled={acknowledging}
+                    onClick={handleDismissNewContentClick}
+                  >
+                    {acknowledging ? 'Dismissing...' : 'Dismiss'}
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -369,6 +429,11 @@ export function SeriesDetail({
           )}
           {refreshSummary && (
             <p className={styles.refreshSummary}>{refreshSummary}</p>
+          )}
+          {acknowledgeError && (
+            <div className={styles.error} role="alert">
+              <p>{acknowledgeError}</p>
+            </div>
           )}
         </div>
       )}

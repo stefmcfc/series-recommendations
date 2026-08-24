@@ -521,4 +521,180 @@ class TmdbClientSpec extends Specification {
         then: "an ExternalServiceException is raised"
             thrown(ExternalServiceException)
     }
+
+    def "SERIES-019-AC-05: showKeywords maps each results[] entry onto TmdbKeyword"() {
+        given: "TMDB /tv/4046/keywords returns two keywords"
+            def body = '{"id":4046,"results":[{"id":470,"name":"spy"},{"id":190904,"name":"mi5"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046/keywords")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("api_key", API_KEY))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.showKeywords(4046) is called"
+            def result = client().showKeywords(4046)
+
+        then: "each result is mapped to a TmdbKeyword"
+            result.size() == 2
+            result[0].id() == 470
+            result[0].name() == "spy"
+            result[1].id() == 190904
+            result[1].name() == "mi5"
+    }
+
+    def "SERIES-019-AC-06: an absent results array maps to an empty list, not an error"() {
+        given: "TMDB responds with no results field"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046/keywords")))
+                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.showKeywords(4046) is called"
+            def result = client().showKeywords(4046)
+
+        then: "an empty list is returned"
+            result == []
+    }
+
+    def "SERIES-019-AC-06: a malformed results entry (no id) is skipped, not an error"() {
+        given: "TMDB responds with one valid and one malformed entry"
+            def body = '{"results":[{"id":470,"name":"spy"},{"name":"missing id"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046/keywords")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.showKeywords(4046) is called"
+            def result = client().showKeywords(4046)
+
+        then: "only the valid entry is mapped"
+            result.size() == 1
+            result[0].id() == 470
+    }
+
+    def "SERIES-019-AC-07: a non-2xx response from TMDB keywords raises ExternalServiceException"() {
+        given: "TMDB responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/4046/keywords")))
+                .andRespond(withServerError())
+
+        when: "TmdbClient.showKeywords(...) is called"
+            client().showKeywords(4046)
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
+    }
+
+    // -- SERIES-022: trending() / discoverTopRated() --
+
+    def "SERIES-022-AC-01: trending() maps TMDB's trending/tv response to TmdbCandidate, preserving order"() {
+        given: "TMDB GET /trending/tv/week returns two results"
+            def body = '''
+                {
+                  "results": [
+                    {"id": 95350, "name": "Lanterns", "first_air_date": "2026-08-16",
+                     "overview": "Two intergalactic cops.", "poster_path": "/lanterns.jpg",
+                     "vote_average": 8.166, "genre_ids": [18, 9648], "vote_count": 145,
+                     "original_language": "en"},
+                    {"id": 125988, "name": "Silo", "first_air_date": "2023-05-04",
+                     "overview": "A giant silo underground.", "poster_path": "/silo.jpg",
+                     "vote_average": 8.191, "genre_ids": [10765, 18], "vote_count": 2484,
+                     "original_language": "en"}
+                  ]
+                }
+            '''
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("trending/tv/week")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("api_key", API_KEY))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.trending('week') is called"
+            def result = client().trending("week")
+
+        then: "both candidates are mapped, in the returned order"
+            result.size() == 2
+            result[0].tmdbId() == 95350
+            result[0].title() == "Lanterns"
+            result[0].voteCount() == 145
+            result[1].tmdbId() == 125988
+            result[1].title() == "Silo"
+    }
+
+    def "SERIES-022-AC-01: trending() calls /trending/tv/day when timeWindow is 'day'"() {
+        given: "TMDB GET /trending/tv/day returns one result"
+            def body = '{"results":[{"id":1,"name":"Daily Show"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("trending/tv/day")))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.trending('day') is called"
+            def result = client().trending("day")
+
+        then: "the result is mapped"
+            result.size() == 1
+    }
+
+    def "SERIES-022-AC-02: an invalid timeWindow is rejected before any TMDB call"() {
+        when: "TmdbClient.trending('month') is called"
+            client().trending("month")
+
+        then: "an IllegalArgumentException is thrown, and no TMDB call is made"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-02: a null timeWindow is rejected before any TMDB call"() {
+        when: "TmdbClient.trending(null) is called"
+            client().trending(null)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-03: discoverTopRated() sends sort_by=vote_average.desc and vote_count.gte"() {
+        given: "a mocked TMDB server expecting GET /discover/tv?sort_by=vote_average.desc&vote_count.gte=100"
+            def body = '{"results":[{"id":238754,"name":"The Loyal Pin","vote_average":9.648,"vote_count":105}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("sort_by", "vote_average.desc"))
+                .andExpect(queryParam("vote_count.gte", "100"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discoverTopRated(100) is called"
+            def result = client().discoverTopRated(100)
+
+        then: "the expected request was made and the result mapped"
+            result.size() == 1
+            result[0].tmdbId() == 238754
+            result[0].title() == "The Loyal Pin"
+    }
+
+    def "SERIES-022-AC-05: an absent results array maps trending() to an empty list, not an error"() {
+        given: "TMDB returns a body with no results field"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("trending/tv/week")))
+                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.trending('week') is called"
+            def result = client().trending("week")
+
+        then: "an empty list is returned"
+            result == []
+    }
+
+    def "SERIES-022-AC-05: a failed trending() call raises ExternalServiceException"() {
+        given: "TMDB is unreachable"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("trending/tv/week")))
+                .andRespond(withServerError())
+
+        when: "TmdbClient.trending('week') is called"
+            client().trending("week")
+
+        then: "an ExternalServiceException is thrown"
+            thrown(ExternalServiceException)
+    }
+
+    def "SERIES-022-AC-05: a failed discoverTopRated() call raises ExternalServiceException"() {
+        given: "TMDB is unreachable"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
+                .andRespond(withServerError())
+
+        when: "TmdbClient.discoverTopRated(20) is called"
+            client().discoverTopRated(20)
+
+        then: "an ExternalServiceException is thrown"
+            thrown(ExternalServiceException)
+    }
 }

@@ -1,8 +1,12 @@
 # Frontend Spec 011: Recommendation Sourcing & Filter Controls
 
-**Status**: Done — all 13 acceptance criteria implemented and covered by Vitest (`npm test`: 210/210 passing across the suite), `npm run lint` clean, `npm run build` clean.
+**Status**: Done (Requirements 1–5). **Requirement 5 (2026-08-23)**: replaced the free-text "Keywords" input under `Genre & Keyword` mode with a fixed-vocabulary checkbox multi-select sourced from `GET /series/keywords`, matching `SearchFilter`'s own keyword picker (`frontend_spec_024_keyword_tracking.md`) and this same component's existing `genres` checkbox-list precedent.
 
-Files touched: `frontend/src/types/series.ts` (new `RecommendationQuery` interface), `frontend/src/services/seriesApi.ts` + `frontend/src/services/__tests__/seriesApi.test.ts` (`getRecommendations` signature changed from `(limit?: number)` to `(query?: RecommendationQuery)`, new `buildRecommendationParams` helper joining array fields with commas and omitting absent/empty fields; the pre-existing `getRecommendations(10)` call-site test was updated to `getRecommendations({ limit: 10 })` to match the new signature), `frontend/src/components/RecommendationControls.tsx` + `.test.tsx` + `.module.css` (new component — three-way radio mode selector `Automatic`/`Specific Series`/`Genre & Keyword`, `Specific Series` checkbox multi-select populated from `seriesApi.getAll()`, `Genre & Keyword` comma-separated text inputs with an at-least-one hint, a collapsed-by-default `Filters` section covering every Series Spec 007 output filter plus a mode-gated `minSourceRating` dropdown, and a `Reset Filters` action that clears only the filter fields), `frontend/src/components/RecommendationsList.tsx` + `.test.tsx` (new optional `query?: RecommendationQuery` prop, threaded into `getRecommendations` and added to the existing `refreshIndex`-keyed effect's dependency array), `frontend/src/App.tsx` + `frontend/src/App.test.tsx` (new `recommendationQuery` state, `RecommendationControls` rendered above `RecommendationsList` only in the Recommendations view, wired via `onQueryChange`/`query`).
+Original scope (Requirements 1–4) — all 13 acceptance criteria implemented and covered by Vitest (`npm test`: 210/210 passing across the suite), `npm run lint` clean, `npm run build` clean. Requirement 5 (5 more acceptance criteria) verified the same way: `npm test`: 333/333 passing across the full suite (29/29 in `RecommendationControls.test.tsx`), `npm run lint` clean, `npm run build` clean. Additionally verified against the real backend (`gradlew.bat bootRun`, no `APP_TMDB_API_KEY` configured in this environment): `GET /api/v1/series/keywords` returns real keyword data from this collection, and `GET /api/v1/series/recommendations?keywords=spy` returns `200` (confirming the endpoint accepts and processes the param rather than rejecting it) — a full browser click-through was not additionally captured for this narrowly-scoped follow-up, since it reuses `SearchFilter`'s already browser-verified checkbox-list pattern verbatim (`frontend_spec_024_keyword_tracking.md`) with no new interaction shape introduced.
+
+Files touched (Requirements 1–4): `frontend/src/types/series.ts` (new `RecommendationQuery` interface), `frontend/src/services/seriesApi.ts` + `frontend/src/services/__tests__/seriesApi.test.ts` (`getRecommendations` signature changed from `(limit?: number)` to `(query?: RecommendationQuery)`, new `buildRecommendationParams` helper joining array fields with commas and omitting absent/empty fields; the pre-existing `getRecommendations(10)` call-site test was updated to `getRecommendations({ limit: 10 })` to match the new signature), `frontend/src/components/RecommendationControls.tsx` + `.test.tsx` + `.module.css` (new component — three-way radio mode selector `Automatic`/`Specific Series`/`Genre & Keyword`, `Specific Series` checkbox multi-select populated from `seriesApi.getAll()`, `Genre & Keyword` comma-separated text inputs with an at-least-one hint, a collapsed-by-default `Filters` section covering every Series Spec 007 output filter plus a mode-gated `minSourceRating` dropdown, and a `Reset Filters` action that clears only the filter fields), `frontend/src/components/RecommendationsList.tsx` + `.test.tsx` (new optional `query?: RecommendationQuery` prop, threaded into `getRecommendations` and added to the existing `refreshIndex`-keyed effect's dependency array), `frontend/src/App.tsx` + `frontend/src/App.test.tsx` (new `recommendationQuery` state, `RecommendationControls` rendered above `RecommendationsList` only in the Recommendations view, wired via `onQueryChange`/`query`).
+
+**Files touched (Requirement 5, 2026-08-23)**: `frontend/src/components/RecommendationControls.tsx` (`ControlsState.keywordsText: string` replaced with `keywordsSelected: string[]`; new `getKeywordStats()` effect on mount alongside the existing `getGenreOptions()` effect; the `Genre & Keyword` mode's Keywords field is now a checkbox multi-select — identical markup/interaction shape to the adjacent `genresSelected` list — instead of a free-text `recommendation-keywords` input; `buildQuery` populates `query.keywords` from `keywordsSelected` directly; mode-switch clearing and the at-least-one hint both recomputed off `keywordsSelected`; a `getKeywordStats()` rejection renders a scoped `role="alert"` error in place of the checkbox list without affecting the rest of the panel), `frontend/src/components/RecommendationControls.module.css` (new `.keywordError` class, copied from `SearchFilter.module.css`'s own), `frontend/src/components/RecommendationControls.test.tsx` (new `mockGetKeywordStats` mock; three pre-existing tests that exercised the old free-text `recommendation-keywords` input — the `getGenreOptions()`-rejection smoke test, the "free-text Genres input is gone" test, and the "empty genresSelected omits genres" test — updated to the new checkbox shape; five new test blocks for AC-14 through AC-18).
 
 **Design/implementation note**: `RecommendationControls` emits changes by computing the next full state object directly (`{ ...state, ...patch }`) and calling both `setState` and `onQueryChange` with it synchronously in the event handler, rather than deriving the next value inside a `setState` updater callback — the latter triggered a real React warning ("Cannot update a component while rendering a different component") in a live browser check, because the updater runs during React's render phase and calling the parent's `setState` (`App`'s `setRecommendationQuery`) from inside it is exactly the case that warning covers. Caught only by the real-browser pass below, not by jsdom/Vitest.
 
@@ -74,6 +78,22 @@ Adds a control panel above `RecommendationsList` — analogous to `SearchFilter`
 
 ---
 
+### Requirement 5: Keyword Filter — Fixed Vocabulary, Not Free Text
+
+**User story**: As a user picking `Genre & Keyword` sourcing mode, I want to choose keywords from the same real, spelling-stable vocabulary the series list's own keyword filter already uses, instead of typing free text I might misspell or that might not match any TMDB keyword this collection actually has.
+
+**Design decision**: `RecommendationControls.tsx`'s `genresSelected` field is already a checkbox list sourced from `seriesApi.getGenreOptions()` (`state.mode === 'genre'` block, `genreOptions.map(...)`) — but its sibling `keywordsText` field, in the same block, is still a raw comma-separated `<input type="text">` (`recommendation-keywords`), parsed via `parseCommaList`. This is the one inconsistency the user flagged directly: the series list's `SearchFilter` keyword control (`frontend_spec_024_keyword_tracking.md`, `FRONTEND-024-AC-12`) is already a fixed-vocabulary checkbox list sourced from `GET /series/keywords`, for exactly the reason `frontend_spec_014`'s genre-checkbox-list fix and this component's own `genresSelected` field already exist — free text against a real, backend-known vocabulary just reintroduces a silent-typo-mismatch risk. This requirement brings `keywordsText` in line with its own sibling field and with `SearchFilter`'s established pattern, rather than inventing a new one.
+
+#### Acceptance Criteria
+
+- **FRONTEND-011-AC-14** [AUTO]: `RecommendationControls` shall fetch `seriesApi.getKeywordStats()` on mount (mirroring the existing `getGenreOptions()` effect) and, under `Genre & Keyword` mode, render the result's `name` values as a checkbox multi-select (replacing the free-text `keywordsText` input and its `recommendation-keywords` id), following exactly the same markup/interaction shape as the adjacent `genresSelected` checkbox list in the same component.
+- **FRONTEND-011-AC-15** [AUTO]: `ControlsState` shall replace its `keywordsText: string` field with `keywordsSelected: string[]`; `buildQuery` shall populate `RecommendationQuery.keywords` from `keywordsSelected` directly (no `parseCommaList` step, since selections are already discrete values) whenever it is non-empty, following the exact convention `genresSelected` → `query.genres` already uses.
+- **FRONTEND-011-AC-16** [AUTO]: Switching away from `Genre & Keyword` mode shall clear `keywordsSelected` (extending the existing mode-switch clearing behavior, `FRONTEND-011-AC-06`, to the renamed field) exactly as it already clears `genresSelected`.
+- **FRONTEND-011-AC-17** [AUTO]: The existing "enter at least one genre or keyword" hint (`showGenreKeywordHint`, `FRONTEND-011-AC-05`) shall be recomputed from `keywordsSelected.length === 0` instead of `parseCommaList(keywordsText).length === 0` — same condition, adapted to the new field shape.
+- **FRONTEND-011-AC-18** [AUTO]: If `seriesApi.getKeywordStats()` rejects, the keyword checkbox section shall render a scoped inline error and simply show no checkboxes, without blocking the rest of `RecommendationControls` from rendering or functioning — mirroring `FRONTEND-024-AC-14`'s established degrade-gracefully posture for the same failure mode on `SearchFilter`.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -81,6 +101,8 @@ Adds a control panel above `RecommendationsList` — analogous to `SearchFilter`
 | `RecommendationsList`, `Recommendation` type, existing `getRecommendations`/error/empty/loading behavior | `frontend_spec_010_recommendations.md` |
 | `seriesIds`, `genres`/`keywords`, `minSourceRating`, output filters, `maxPerSource`, mutual-exclusivity `400` | `series_spec_007_recommendation_sourcing.md` |
 | `seriesApi.getAll()`, comma-separated free-text list convention (`Genres` field) | `SearchFilter.tsx` (Frontend Spec 006) |
+| `GET /series/keywords`, `seriesApi.getKeywordStats()`, `SearchFilter`'s fixed-vocabulary keyword checkbox list and its degrade-gracefully-on-failure behavior (`FRONTEND-024-AC-12`/`AC-14`) that Requirement 5 mirrors | `frontend_spec_024_keyword_tracking.md` |
+| `genresSelected` checkbox-list field in this same component, whose shape Requirement 5's `keywordsSelected` field copies exactly | `RecommendationControls.tsx` (this spec, Requirement 2) |
 
 ---
 
@@ -165,6 +187,56 @@ describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
 })
 ```
 
+### `src/components/RecommendationControls.test.tsx` (additions, Requirement 5)
+
+```typescript
+describe('FRONTEND-011-AC-14/15: keyword checkbox list replaces free text', () => {
+  it('renders keyword checkboxes from getKeywordStats and includes selections in the query', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    fireEvent.click(await screen.findByLabelText('spy'))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['spy'] }),
+    )
+  })
+})
+
+describe('FRONTEND-011-AC-16: mode switch clears keywordsSelected', () => {
+  it('clears selected keywords when switching away from Genre & Keyword', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    fireEvent.click(await screen.findByLabelText('spy'))
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ keywords: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-011-AC-18: keyword fetch failure degrades gracefully', () => {
+  it('shows a scoped error without blocking the rest of the panel', async () => {
+    mockGetKeywordStats.mockRejectedValue(new ApiError(500, 'Internal server error'))
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.getByLabelText(/automatic/i)).toBeInTheDocument()
+  })
+})
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -182,3 +254,8 @@ describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
 - [x] FRONTEND-011-AC-11: `RecommendationsList` re-fetches on `query` prop change
 - [x] FRONTEND-011-AC-12: any control change triggers re-fetch, no Apply button
 - [x] FRONTEND-011-AC-13: fetch errors use existing error/Retry path, no new one
+- [x] FRONTEND-011-AC-14: keyword checkbox list sourced from `getKeywordStats()`, replaces free text
+- [x] FRONTEND-011-AC-15: `keywordsSelected` populates `RecommendationQuery.keywords`
+- [x] FRONTEND-011-AC-16: mode switch clears `keywordsSelected`
+- [x] FRONTEND-011-AC-17: at-least-one hint recomputed from `keywordsSelected`
+- [x] FRONTEND-011-AC-18: keyword-fetch failure degrades gracefully, scoped error only

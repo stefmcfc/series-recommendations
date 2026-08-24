@@ -61,7 +61,7 @@ class GlobalExceptionHandlerSpec extends Specification {
 
   def "TOOLING-001-AC-01: unhandled exception returns generic 500, no internals leaked"() {
     given: "a service call that throws an unexpected RuntimeException with sensitive details"
-        when(seriesService.getAll()).thenThrow(
+        when(seriesService.getAll(null, null)).thenThrow(
           new RuntimeException("db connection string: postgres://user:pass@host/db"))
 
     when: "the endpoint is invoked"
@@ -83,7 +83,7 @@ class GlobalExceptionHandlerSpec extends Specification {
         logger.addAppender(appender)
 
     and: "a service call that throws an unexpected RuntimeException"
-        when(seriesService.getAll()).thenThrow(new RuntimeException("boom"))
+        when(seriesService.getAll(null, null)).thenThrow(new RuntimeException("boom"))
 
     when: "the endpoint is invoked"
         mockMvc.perform(get("/api/v1/series"))

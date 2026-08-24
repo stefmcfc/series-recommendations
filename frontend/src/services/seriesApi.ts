@@ -10,6 +10,8 @@ import type {
   RecommendationQuery,
   RefreshResult,
   RefreshJobStatus,
+  KeywordStat,
+  SortOptions,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -71,6 +73,19 @@ function buildRecommendationParams(
   if (query.maxSourcesShown != null)
     params.maxSourcesShown = query.maxSourcesShown
   if (query.sortBy != null) params.sortBy = query.sortBy
+  if (query.sourceMode != null) params.sourceMode = query.sourceMode
+  if (query.trendingWindow != null) params.trendingWindow = query.trendingWindow
+  return params
+}
+
+// FRONTEND-013-AC-11: sortBy/sortDirection are only added when present, so an
+// omitted (or default) sort produces no query params -- consistent with
+// backend defaults (series_spec_009_rating_sort.md, SERIES-009-AC-06).
+function buildSortParams(sort?: SortOptions): Record<string, unknown> {
+  if (!sort) return {}
+  const params: Record<string, unknown> = {}
+  if (sort.sortBy != null) params.sortBy = sort.sortBy
+  if (sort.sortDirection != null) params.sortDirection = sort.sortDirection
   return params
 }
 
@@ -79,6 +94,7 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   const params: Record<string, unknown> = {}
   if (criteria.title != null) params.title = criteria.title
   if (criteria.genres?.length) params.genre = criteria.genres
+  if (criteria.keywords?.length) params.keyword = criteria.keywords
   if (criteria.status != null) params.status = criteria.status
   if (criteria.minPersonalRating != null)
     params.minPersonalRating = criteria.minPersonalRating
@@ -94,10 +110,17 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
 }
 
 export const seriesApi = {
-  getAll: (): Promise<Series[]> =>
-    request<{ data: Series[]; count: number }>(() =>
-      client.get('/series'),
-    ).then((res) => res.data),
+  // FRONTEND-013-AC-11: sort is optional -- omitting it (or leaving it
+  // undefined) preserves the pre-existing no-params GET /series call exactly,
+  // so callers/tests that never pass a sort see no behavior change.
+  getAll: (sort?: SortOptions): Promise<Series[]> => {
+    const sortParams = buildSortParams(sort)
+    return request<{ data: Series[]; count: number }>(() =>
+      Object.keys(sortParams).length > 0
+        ? client.get('/series', { params: sortParams })
+        : client.get('/series'),
+    ).then((res) => res.data)
+  },
 
   getById: (id: string): Promise<Series> =>
     request<{ data: Series }>(() => client.get('/series/' + id)).then(
@@ -117,9 +140,11 @@ export const seriesApi = {
   delete: (id: string): Promise<void> =>
     request<null>(() => client.delete('/series/' + id)).then(() => undefined),
 
-  search: (criteria: SearchCriteria): Promise<Series[]> =>
+  search: (criteria: SearchCriteria, sort?: SortOptions): Promise<Series[]> =>
     request<{ data: Series[]; count: number }>(() =>
-      client.get('/series/search', { params: buildSearchParams(criteria) }),
+      client.get('/series/search', {
+        params: { ...buildSearchParams(criteria), ...buildSortParams(sort) },
+      }),
     ).then((res) => res.data),
 
   searchTmdb: (title: string): Promise<LookupTmdbCandidate[]> =>
@@ -135,6 +160,15 @@ export const seriesApi = {
   getGenreOptions: (): Promise<string[]> =>
     request<{ data: string[]; count: number }>(() =>
       client.get('/series/genres'),
+    ).then((res) => res.data),
+
+  getKeywordStats: (
+    sortBy?: 'seriesCount' | 'averagePersonalRating',
+  ): Promise<KeywordStat[]> =>
+    request<{ data: KeywordStat[]; count: number }>(() =>
+      client.get('/series/keywords', {
+        params: sortBy !== undefined ? { sortBy } : {},
+      }),
     ).then((res) => res.data),
 
   getRecommendations: (
@@ -159,6 +193,11 @@ export const seriesApi = {
   getRefreshStatus: (): Promise<RefreshJobStatus> =>
     request<{ data: RefreshJobStatus }>(() =>
       client.get('/series/refresh-all/status'),
+    ).then((res) => res.data),
+
+  acknowledgeNewContent: (id: string): Promise<Series> =>
+    request<{ data: Series }>(() =>
+      client.post('/series/' + id + '/acknowledge-new-content'),
     ).then((res) => res.data),
 
   ignoreSeries: (

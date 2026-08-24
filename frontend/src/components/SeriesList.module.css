@@ -21,6 +21,42 @@
   gap: 0.75rem;
 }
 
+.sortControl {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sortLabel {
+  font-size: 0.8125rem;
+  color: var(--text);
+  opacity: 0.75;
+}
+
+.sortSelect {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.sortDirectionButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.sortDirectionButton:hover {
+  background: var(--social-bg);
+}
+
 .addButton {
   background: var(--accent);
   color: #000;
@@ -215,6 +251,17 @@
   min-width: 2.5rem;
   text-align: right;
   color: var(--text);
+}
+
+.newContentBadge {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #000;
+  border-radius: 999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .rowActions {

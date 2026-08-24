@@ -163,4 +163,31 @@ class SeriesControllerRefreshSpec extends Specification {
         then: "the response is 409, and no second job starts"
             result.andExpect(status().isConflict())
     }
+
+    def "SERIES-018-AC-24/27: a refresh detecting new content is acknowledged via POST /acknowledge-new-content"() {
+        given: "an existing series, TMDB now reports more seasons than before"
+            def created = seriesService.create(new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747", totalSeasons: 5))
+            when(tmdbClient.findTvIdByImdbId("tt0903747")).thenReturn(Optional.of(1396))
+            when(tmdbClient.details(1396)).thenReturn(new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US"))
+            when(omdbClient.ratingsForImdbId("tt0903747")).thenReturn(new OmdbRatings(new BigDecimal("9.5"), 97))
+            mockMvc.perform(post("/api/v1/series/${created.id}/refresh")).andExpect(status().isOk())
+                .andExpect(jsonPath('$.data.series.newContentDetectedAt').exists())
+
+        when: "POST /acknowledge-new-content is requested"
+            def result = mockMvc.perform(post("/api/v1/series/${created.id}/acknowledge-new-content"))
+
+        then: "the response is 200 with the flag cleared"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data.newContentDetectedAt').doesNotExist())
+    }
+
+    def "SERIES-018-AC-27: acknowledging an unknown id returns 404"() {
+        when: "an unknown id is acknowledged"
+            def result = mockMvc.perform(post("/api/v1/series/${UUID.randomUUID()}/acknowledge-new-content"))
+
+        then: "the response is 404"
+            result.andExpect(status().isNotFound())
+    }
 }

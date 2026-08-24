@@ -75,6 +75,9 @@ public class SeriesLookupService {
         log.info("Resolving TMDB candidate: tmdbId={}", tmdbId);
         TmdbSeriesDetail detail = tmdbClient.details(tmdbId);
         SeriesLookupDto dto = toDto(detail);
+        // SERIES-019-AC-22: round-trip the already-in-scope tmdbId parameter onto the result,
+        // no extra TMDB call needed.
+        dto.setTmdbId(tmdbId);
 
         Optional<String> imdbIdOpt = tmdbClient.externalIds(tmdbId);
         String imdbId = imdbIdOpt.filter(id -> !id.isBlank()).orElse(null);

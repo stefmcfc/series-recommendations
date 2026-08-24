@@ -1,8 +1,12 @@
 # Frontend Spec 010: Recommendations View
 
-**Status**: Done — all 19 acceptance criteria implemented and covered by Vitest (`npm test`: 190/190 passing across the suite), `npm run lint` clean, `npm run build` clean.
+**Status**: Done (Requirements 1–7).
 
-Files touched: `frontend/src/types/series.ts` (`imdbId` added to `Series`/`CreateSeriesRequest`/`OmdbLookupResult`, new `Recommendation` type — `UpdateSeriesRequest` inherits `imdbId?` via `Partial<CreateSeriesRequest>`), `frontend/src/services/seriesApi.ts` + `frontend/src/services/__tests__/seriesApi.test.ts` (`getRecommendations`, `ignoreSeries`), `frontend/src/components/AddSeriesForm.tsx` + `.test.tsx` (new `initialValues` prop, plus a same-pattern `imdbId` form field — not a visible input, just carried through `buildPayload`/`applyLookupResult`/`buildInitialFormState` so a recommendation's `imdbId` survives into the create payload), `frontend/src/components/RecommendationsList.tsx` + `.test.tsx` + `.module.css` (new component), `frontend/src/components/SeriesList.tsx` (added `data-testid="series-list"` to the container, needed to distinguish it from `RecommendationsList` in `App.tsx`'s tests), `frontend/src/App.tsx` + `frontend/src/App.test.tsx` (nav toggle, `mainView` state), and `imdbId: null` added to the `makeSeries()` test helpers in `SeriesList.test.tsx`/`SeriesDetail.test.tsx`/`EditSeriesForm.test.tsx` (required once `Series.imdbId` became non-optional).
+Original scope (Requirements 1–6) — all 19 acceptance criteria implemented and covered by Vitest (`npm test`: 190/190 passing across the suite), `npm run lint` clean, `npm run build` clean.
+
+**Amendment (2026-08-23, Requirement 7, done)**: auto-triggers a single-series refresh (`series_spec_018_series_refresh.md`) immediately after a recommendation is saved via Mark as Watched/Add to List, so IMDb rating, season/episode counts, TMDB rating, and keywords are populated automatically instead of requiring a separate manual refresh afterward. Files touched: `frontend/src/components/RecommendationsList.tsx` (`handleAddSuccess` now receives the created `Series` from `AddSeriesForm`'s `onSuccess` and fires `seriesApi.refresh(series.id).catch(() => undefined)` after removing the card — fire-and-forget, no state tracking, no error surfaced on rejection) and `frontend/src/components/RecommendationsList.test.tsx` (three new tests under `FRONTEND-010-AC-21/22` and `FRONTEND-010-AC-23`, covering Mark as Watched, Add to List, and a rejected refresh staying silent). `npm test`: 336/336 passing; `npm run lint` clean. No other files needed changes — `RecommendationControls.tsx` (the query-filter panel touched by Frontend Spec 011's Requirement 5) is unrelated to this create-then-refresh flow, which lives entirely in `RecommendationsList.tsx`'s existing `handleAddSuccess`.
+
+Files touched (Requirements 1–6): `frontend/src/types/series.ts` (`imdbId` added to `Series`/`CreateSeriesRequest`/`OmdbLookupResult`, new `Recommendation` type — `UpdateSeriesRequest` inherits `imdbId?` via `Partial<CreateSeriesRequest>`), `frontend/src/services/seriesApi.ts` + `frontend/src/services/__tests__/seriesApi.test.ts` (`getRecommendations`, `ignoreSeries`), `frontend/src/components/AddSeriesForm.tsx` + `.test.tsx` (new `initialValues` prop, plus a same-pattern `imdbId` form field — not a visible input, just carried through `buildPayload`/`applyLookupResult`/`buildInitialFormState` so a recommendation's `imdbId` survives into the create payload), `frontend/src/components/RecommendationsList.tsx` + `.test.tsx` + `.module.css` (new component), `frontend/src/components/SeriesList.tsx` (added `data-testid="series-list"` to the container, needed to distinguish it from `RecommendationsList` in `App.tsx`'s tests), `frontend/src/App.tsx` + `frontend/src/App.test.tsx` (nav toggle, `mainView` state), and `imdbId: null` added to the `makeSeries()` test helpers in `SeriesList.test.tsx`/`SeriesDetail.test.tsx`/`EditSeriesForm.test.tsx` (required once `Series.imdbId` became non-optional).
 
 **Real-browser verification caveat**: `app.tmdb.api-key` is not configured in this environment, so `GET /api/v1/series/recommendations` correctly 502s once a `COMPLETED` series with an `imdbId` exists (verified directly via curl and through the UI — loading → error state → `role="alert"` → Retry re-fetches, confirmed with two 502s in the network log) and returns an empty list when there's no `imdbId`-bearing watched series to seed a TMDB lookup from (the empty-state path, also confirmed in-browser). The one thing that could **not** be verified against a live TMDB response is an actual populated recommendations list from the real API. To still verify the populated-list UI (card content, "Because you watched", poster fallback, Mark as Watched/Add to List prefill, Ignore) in a real browser rather than only under jsdom, the `GET /series/recommendations` network response was intercepted (Puppeteer's `page.setRequestInterception`, pointed at the same running Vite dev server + real backend) and stubbed with one `RecommendationDto`-shaped result; every subsequent interaction (nav toggle, card render, Mark as Watched → `AddSeriesForm` prefilled with `title`/`year`/`genres`/`status: COMPLETED`, Add to List → `status: BACKLOG`, Ignore → real `POST /series/ignored` call, confirmed 200 via curl afterward) ran against the real dev server and real backend, only the one upstream TMDB-dependent GET was faked. Nav toggle, `SearchFilter`/`ExportControls` criteria persistence across the view switch, and the error+Retry path were all verified with zero mocking, directly against the real backend.
 **Priority**: P2 (quality-of-life discovery feature — not core CRUD)
@@ -101,11 +105,28 @@ Adds a `RecommendationsList` view: fetches `GET /api/v1/series/recommendations` 
 
 ---
 
+### Requirement 7: Auto-Refresh After Mark as Watched / Add to List
+
+**User story**: As a user adding a series from Recommendations, I want its IMDb rating, season/episode counts, TMDB rating, and keywords to already be populated, so I don't have to remember to separately hit Refresh right after adding it.
+
+**Design decision**: A `Recommendation` (`FRONTEND-010-AC-02`) only carries the fields TMDB's recommendation/discover endpoints return directly — `title`, `year`, `genres`, `overview`, `posterUrl`, `tmdbRating`, `imdbId`, etc. It never carries `totalSeasons`/`totalEpisodes`/`imdbRating`/`rottenTomatoesRating`/`keywords`, so a series created straight from `AddSeriesForm`'s recommendation-prefilled `initialValues` (Requirement 3) starts with those fields blank, exactly as the user observed — today, only a separate manual "Refresh" click on `SeriesDetail` (`frontend_spec_023_series_refresh.md`) populates them. Rather than adding a second, parallel "fetch these fields at creation time" code path, this requirement reuses the *existing* single-series refresh endpoint (`POST /series/{id}/refresh`, `series_spec_018_series_refresh.md`) by calling it automatically, in the background, right after `AddSeriesForm`'s `onSuccess` fires for a recommendation-sourced save — that endpoint already re-fetches every one of those fields in one call, including keywords (`series_spec_019_keyword_tracking.md`'s keyword sync is already wired into the refresh flow, not just creation). This applies to **both** Mark as Watched and Add to List — the user's own framing ("once a series is selected") isn't specific to the `COMPLETED` case, and a `BACKLOG` addition benefits from accurate season/episode counts just as much. The call is fire-and-forget from the user's perspective: it must never block card removal, and a failure here is no worse than the pre-existing status quo (the series was still saved; the user can still refresh manually), so it fails silently rather than surfacing a page-level error for a background convenience action.
+
+#### Acceptance Criteria
+
+- **FRONTEND-010-AC-21** [AUTO]: `RecommendationsList`'s `AddSeriesForm` instance (Requirement 3) shall pass an `onSuccess` handler that receives the created `Series` and, after removing the recommendation's card (`FRONTEND-010-AC-14`, unchanged), calls `seriesApi.refresh(series.id)` — for a save from **either** Mark as Watched or Add to List.
+- **FRONTEND-010-AC-22** [AUTO]: The `seriesApi.refresh` call from `FRONTEND-010-AC-21` shall not block or delay the card's removal from the displayed list, and its promise's resolution is not awaited by any UI state change on `RecommendationsList` itself.
+- **FRONTEND-010-AC-23** [AUTO]: If the `seriesApi.refresh` call from `FRONTEND-010-AC-21` rejects, `RecommendationsList` shall not display any error to the user (no alert, no console logging of series data) — the series remains saved and trackable; a failed background refresh is not worse than today's pre-amendment behavior, where no auto-refresh was attempted at all.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
 |-----------|--------|
 | `GET /api/v1/series/recommendations`, `RecommendationDto` shape, `limit` clamping | `series_spec_006_recommendations.md` Requirement 7 |
+| `POST /series/{id}/refresh`, fields populated by a refresh (`totalSeasons`/`totalEpisodes`/`imdbRating`/`rottenTomatoesRating`/`tmdbRating`/`tmdbVoteCount`/`productionStatus`) | `series_spec_018_series_refresh.md` |
+| `seriesApi.refresh(id)` | `frontend_spec_023_series_refresh.md` (`FRONTEND-023-AC-03`) |
+| Keyword sync already wired into the refresh flow (not just creation), so `FRONTEND-010-AC-21`'s auto-refresh also populates keywords | `series_spec_019_keyword_tracking.md` (`SERIES-019-AC-08`, Implementation Note) |
 | `POST /api/v1/series/ignored`, idempotency behavior | `series_spec_006_recommendations.md` Requirement 8 |
 | `imdbId` on `Series`/CRUD | `series_spec_006_recommendations.md` Requirement 1 |
 | `AddSeriesForm` field/payload conventions being extended with `initialValues` | `AddSeriesForm.tsx` (Frontend Spec 003), `frontend_spec_009_omdb_autofill.md` |
@@ -274,6 +295,52 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
 })
 ```
 
+### `src/components/RecommendationsList.test.tsx` (additions, Requirement 7)
+
+```typescript
+describe('FRONTEND-010-AC-21/22: auto-refresh after a successful save', () => {
+  it('calls seriesApi.refresh with the new series id after Mark as Watched succeeds, without blocking card removal', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      { title: 'Ozark', year: 2017, genres: null, overview: null, posterUrl: null,
+        tmdbRating: null, voteCount: null, imdbId: 'tt5071412', sourceTitles: [], totalSourceCount: 0 },
+    ])
+    vi.mocked(seriesApi.create).mockResolvedValue({ id: 'new-id', title: 'Ozark' } as Series)
+    mockRefresh.mockResolvedValue({
+      series: { id: 'new-id', title: 'Ozark' } as Series,
+      omdbRefreshed: true,
+      tmdbRefreshed: true,
+    })
+    render(<RecommendationsList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(screen.queryByText('Ozark')).not.toBeInTheDocument())
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledWith('new-id'))
+  })
+})
+
+describe('FRONTEND-010-AC-23: a failed auto-refresh is silent', () => {
+  it('does not show an error when the background refresh call rejects', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      { title: 'Ozark', year: 2017, genres: null, overview: null, posterUrl: null,
+        tmdbRating: null, voteCount: null, imdbId: 'tt5071412', sourceTitles: [], totalSourceCount: 0 },
+    ])
+    vi.mocked(seriesApi.create).mockResolvedValue({ id: 'new-id', title: 'Ozark' } as Series)
+    mockRefresh.mockRejectedValue(new ApiError(502, 'Unable to reach the series lookup service.'))
+    render(<RecommendationsList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledWith('new-id'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -298,3 +365,6 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
 - [x] FRONTEND-010-AC-18: "Recommendations" nav toggle in `App.tsx`
 - [x] FRONTEND-010-AC-19: toggling views doesn't disturb `SearchFilter`/`ExportControls` state
 - [x] FRONTEND-010-AC-20: persistent TMDB attribution notice
+- [x] FRONTEND-010-AC-21: auto-calls `seriesApi.refresh(series.id)` after a successful save
+- [x] FRONTEND-010-AC-22: auto-refresh doesn't block card removal
+- [x] FRONTEND-010-AC-23: a failed auto-refresh is silent, no error shown

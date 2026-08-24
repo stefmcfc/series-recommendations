@@ -1131,6 +1131,280 @@ class RecommendationServiceSpec extends Specification {
             results[0].title() == "Candidate B"
     }
 
+    // -- Spec 022, Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending --
+
+    def "SERIES-022-AC-07/08/09: trending mode bypasses the watched pool, preserves TMDB order, sourceTitle null"() {
+        given: "3 COMPLETED series exist (would normally source title-based candidates)"
+            seriesRepository.findAll() >> [
+                completedSeries("A", "tt0000001", LocalDateTime.now()),
+                completedSeries("B", "tt0000002", LocalDateTime.now()),
+                completedSeries("C", "tt0000003", LocalDateTime.now())
+            ]
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        and: "TMDB trending returns candidates in a fixed order, higher-rated candidate second"
+            tmdbClient.trending("week") >> [candidate(10, "Second Place", 2020, new BigDecimal("9.9")),
+                                             candidate(20, "First Place", 2020, new BigDecimal("1.0"))]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "no title-based or genre-based sourcing occurs"
+            0 * tmdbClient.findTvIdByImdbId(_)
+            0 * tmdbClient.recommendations(_)
+            0 * tmdbClient.discover(_, _)
+
+        and: "results preserve TMDB's returned order (not re-ranked by rating) and have a null sourceTitle"
+            results*.title() == ["Second Place", "First Place"]
+            results*.sourceTitles().every { it == [] }
+    }
+
+    def "SERIES-022-AC-07: trendingWindow defaults to 'week' when not supplied"() {
+        given: "criteria requests trending mode with no trendingWindow"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "TmdbClient.trending is called with 'week'"
+            1 * tmdbClient.trending("week") >> []
+    }
+
+    def "SERIES-022-AC-07: an explicit trendingWindow is passed through to TmdbClient.trending"() {
+        given: "criteria requests trending mode with trendingWindow=day"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", trendingWindow: "day")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "TmdbClient.trending is called with 'day'"
+            1 * tmdbClient.trending("day") >> []
+    }
+
+    def "SERIES-022-AC-08: output filters still apply to trending candidates, in TMDB's returned order"() {
+        given: "trending returns a low-vote-count candidate and a high-vote-count candidate"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+            tmdbClient.trending("week") >> [
+                candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5),
+                candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 25)
+            ]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called (default minVoteCount 20)"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "only the high-vote-count candidate survives the existing output filter"
+            results.size() == 1
+            results[0].title() == "High Votes"
+    }
+
+    def "SERIES-022-AC-10: an already-tracked/ignored trending candidate is excluded"() {
+        given: "trending returns two candidates, one already tracked and one already ignored"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+            tmdbClient.trending("week") >> [candidate(10, "Tracked"), candidate(20, "Ignored"), candidate(30, "New")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            tmdbClient.externalIds(30) >> Optional.of("tt1000030")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            seriesRepository.existsByImdbId("tt1000020") >> false
+            seriesRepository.existsByImdbId("tt1000030") >> false
+            ignoredSeriesRepository.existsByImdbId("tt1000020") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000030") >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "only the new candidate remains"
+            results.size() == 1
+            results[0].title() == "New"
+    }
+
+    // -- Spec 022, Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated --
+
+    def "SERIES-022-AC-11/12: topRated mode sources via discoverTopRated with the effective minVoteCount"() {
+        given: "no explicit minVoteCount (defaults to 20)"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "discoverTopRated is called with the default minVoteCount of 20"
+            1 * tmdbClient.discoverTopRated(20) >> []
+    }
+
+    def "SERIES-022-AC-11: an explicit minVoteCount is passed through to discoverTopRated"() {
+        given: "criteria sets minVoteCount to 100"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "discoverTopRated is called with 100"
+            1 * tmdbClient.discoverTopRated(100) >> []
+    }
+
+    def "SERIES-022-AC-12: the post-hoc minVoteCount output filter still applies to topRated candidates"() {
+        given: "discoverTopRated returns a candidate whose voteCount is below the requested floor"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
+            tmdbClient.discoverTopRated(100) >> [candidate(10, "Below Floor", 2020, new BigDecimal("9.0"), [18], 50)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the candidate is filtered out"
+            results.isEmpty()
+    }
+
+    def "SERIES-022-AC-13: topRated candidates have a null sourceTitle"() {
+        given: "discoverTopRated returns one candidate"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+            tmdbClient.discoverTopRated(20) >> [candidate(10, "Acclaimed Show")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "sourceTitles is empty and totalSourceCount is 0"
+            results[0].sourceTitles() == []
+            results[0].totalSourceCount() == 0
+    }
+
+    def "SERIES-022-AC-14: an already-tracked/ignored topRated candidate is excluded"() {
+        given: "discoverTopRated returns two candidates, one already tracked"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+            tmdbClient.discoverTopRated(20) >> [candidate(10, "Tracked"), candidate(20, "New")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            seriesRepository.existsByImdbId("tt1000020") >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "only the new candidate remains"
+            results.size() == 1
+            results[0].title() == "New"
+    }
+
+    def "SERIES-022-AC-15: the ranking/diversity cap applies normally to topRated candidates"() {
+        given: "discoverTopRated returns candidates already in vote_average.desc order"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+            tmdbClient.discoverTopRated(20) >> [
+                candidate(10, "Higher Rated", 2020, new BigDecimal("9.0")),
+                candidate(20, "Lower Rated", 2020, new BigDecimal("7.0"))
+            ]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the higher-rated candidate ranks first, consistent with rankScore == tmdbRating for a null-sourceTitle candidate"
+            results*.title() == ["Higher Rated", "Lower Rated"]
+    }
+
+    // -- Spec 022, Requirement 4 (SERIES-022-AC-16..19): mutual exclusivity & validation --
+
+    def "SERIES-022-AC-16: sourceMode combined with seriesIds is rejected"() {
+        given: "criteria sets both sourceMode and seriesIds"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", seriesIds: [UUID.randomUUID().toString()])
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-16: sourceMode combined with genres is rejected"() {
+        given: "criteria sets both sourceMode and genres"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", genres: ["Drama"])
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-16: sourceMode combined with keywords is rejected"() {
+        given: "criteria sets both sourceMode and keywords"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", keywords: ["Spy"])
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-17: an unrecognized sourceMode value is rejected"() {
+        given: "criteria sets an unrecognized sourceMode"
+            def criteria = new RecommendationCriteria(sourceMode: "bogus")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-18: an unrecognized trendingWindow value is rejected"() {
+        given: "criteria sets an unrecognized trendingWindow"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", trendingWindow: "month")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-022-AC-18: trendingWindow is ignored (no-op) when sourceMode is not trending"() {
+        given: "criteria sets a valid trendingWindow but sourceMode is topRated"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", trendingWindow: "day")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "discoverTopRated is used, trending() is never called"
+            1 * tmdbClient.discoverTopRated(20) >> []
+            0 * tmdbClient.trending(_)
+    }
+
+    def "SERIES-022-AC-19: no sourceMode leaves existing behavior unchanged (automatic watched pool sourcing)"() {
+        given: "one completed series, no sourceMode supplied"
+            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
+            seriesRepository.findAll() >> [source]
+            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
+            tmdbClient.recommendations(1) >> [candidate(10, "Recommended")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20) is called with the default (no-sourceMode) criteria"
+            def results = recommendationService.recommend(20)
+
+        then: "the normal automatic pool sourcing runs, unaffected"
+            results.size() == 1
+            results[0].title() == "Recommended"
+    }
+
     def "SERIES-015-AC-22: the diversity cap and limit still apply after a recommendationCount sort"() {
         given: "one source producing 6 raw candidates, sortBy=recommendationCount"
             def source = completedSeries("Breaking Bad", "tt1234568", LocalDateTime.now())

@@ -3,8 +3,9 @@ import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series } from '../types/series'
 import styles from './RecommendationControls.module.css'
 
-type SourceMode = 'automatic' | 'specific' | 'genre'
+type SourceMode = 'automatic' | 'specific' | 'genre' | 'trending' | 'topRated'
 type SortByOption = 'score' | 'recommendationCount'
+type TrendingWindow = 'day' | 'week'
 
 interface RecommendationControlsProps {
   onQueryChange: (query: RecommendationQuery) => void
@@ -14,7 +15,8 @@ interface ControlsState {
   mode: SourceMode
   selectedSeriesIds: string[]
   genresSelected: string[]
-  keywordsText: string
+  keywordsSelected: string[]
+  trendingWindow: TrendingWindow
   minSourceRating: string
   minTmdbRating: string
   minVoteCount: string
@@ -31,7 +33,8 @@ const initialState: ControlsState = {
   mode: 'automatic',
   selectedSeriesIds: [],
   genresSelected: [],
-  keywordsText: '',
+  keywordsSelected: [],
+  trendingWindow: 'week',
   minSourceRating: '',
   minTmdbRating: '',
   minVoteCount: '',
@@ -59,12 +62,22 @@ function buildQuery(state: ControlsState): RecommendationQuery {
   }
 
   if (state.mode === 'genre') {
-    const keywords = parseCommaList(state.keywordsText)
     if (state.genresSelected.length > 0) query.genres = state.genresSelected
-    if (keywords.length > 0) query.keywords = keywords
+    if (state.keywordsSelected.length > 0)
+      query.keywords = state.keywordsSelected
   }
 
-  if (state.mode !== 'genre' && state.minSourceRating.trim() !== '') {
+  if (state.mode === 'trending') {
+    query.sourceMode = 'trending'
+    query.trendingWindow = state.trendingWindow
+  }
+
+  if (state.mode === 'topRated') {
+    query.sourceMode = 'topRated'
+  }
+
+  const hasSourcePool = state.mode === 'automatic' || state.mode === 'specific'
+  if (hasSourcePool && state.minSourceRating.trim() !== '') {
     query.minSourceRating = Number(state.minSourceRating)
   }
   if (state.minTmdbRating.trim() !== '')
@@ -95,6 +108,10 @@ export function RecommendationControls({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [allSeries, setAllSeries] = useState<Series[]>([])
   const [genreOptions, setGenreOptions] = useState<string[]>([])
+  const [keywordOptions, setKeywordOptions] = useState<string[]>([])
+  const [keywordOptionsError, setKeywordOptionsError] = useState<string | null>(
+    null,
+  )
 
   useEffect(() => {
     seriesApi
@@ -110,6 +127,17 @@ export function RecommendationControls({
       .catch(() => undefined)
   }, [])
 
+  useEffect(() => {
+    seriesApi
+      .getKeywordStats()
+      .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
+      .catch(() =>
+        setKeywordOptionsError(
+          'Failed to load keyword filter options. Please try again.',
+        ),
+      )
+  }, [])
+
   const updateState = (patch: Partial<ControlsState>) => {
     const next = { ...state, ...patch }
     setState(next)
@@ -121,7 +149,7 @@ export function RecommendationControls({
       mode,
       selectedSeriesIds: [],
       genresSelected: [],
-      keywordsText: '',
+      keywordsSelected: [],
     })
   }
 
@@ -142,6 +170,16 @@ export function RecommendationControls({
         genresSelected: checked
           ? [...state.genresSelected, genre]
           : state.genresSelected.filter((g) => g !== genre),
+      })
+    }
+
+  const handleKeywordToggle =
+    (keyword: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const checked = event.target.checked
+      updateState({
+        keywordsSelected: checked
+          ? [...state.keywordsSelected, keyword]
+          : state.keywordsSelected.filter((k) => k !== keyword),
       })
     }
 
@@ -172,7 +210,10 @@ export function RecommendationControls({
   const showGenreKeywordHint =
     state.mode === 'genre' &&
     state.genresSelected.length === 0 &&
-    parseCommaList(state.keywordsText).length === 0
+    state.keywordsSelected.length === 0
+
+  const showMinSourceRating =
+    state.mode === 'automatic' || state.mode === 'specific'
 
   return (
     <div className={styles.container}>
@@ -211,7 +252,57 @@ export function RecommendationControls({
           />
           <label htmlFor="source-mode-genre">Genre &amp; Keyword</label>
         </div>
+
+        <div className={styles.modeOption}>
+          <input
+            id="source-mode-trending"
+            type="radio"
+            name="source-mode"
+            checked={state.mode === 'trending'}
+            onChange={() => handleModeChange('trending')}
+          />
+          <label htmlFor="source-mode-trending">Popular Right Now</label>
+        </div>
+
+        <div className={styles.modeOption}>
+          <input
+            id="source-mode-top-rated"
+            type="radio"
+            name="source-mode"
+            checked={state.mode === 'topRated'}
+            onChange={() => handleModeChange('topRated')}
+          />
+          <label htmlFor="source-mode-top-rated">Highest Rated</label>
+        </div>
       </fieldset>
+
+      {state.mode === 'trending' && (
+        <fieldset className={styles.modeFieldset}>
+          <legend>Trending Window</legend>
+
+          <div className={styles.modeOption}>
+            <input
+              id="trending-window-day"
+              type="radio"
+              name="trending-window"
+              checked={state.trendingWindow === 'day'}
+              onChange={() => updateState({ trendingWindow: 'day' })}
+            />
+            <label htmlFor="trending-window-day">Day</label>
+          </div>
+
+          <div className={styles.modeOption}>
+            <input
+              id="trending-window-week"
+              type="radio"
+              name="trending-window"
+              checked={state.trendingWindow === 'week'}
+              onChange={() => updateState({ trendingWindow: 'week' })}
+            />
+            <label htmlFor="trending-window-week">Week</label>
+          </div>
+        </fieldset>
+      )}
 
       <fieldset className={styles.sortByFieldset}>
         <legend>Sort By</legend>
@@ -284,13 +375,33 @@ export function RecommendationControls({
             </div>
           </div>
           <div className={styles.field}>
-            <label htmlFor="recommendation-keywords">Keywords</label>
-            <input
-              id="recommendation-keywords"
-              type="text"
-              value={state.keywordsText}
-              onChange={updateField('keywordsText')}
-            />
+            <span>Keywords</span>
+            {keywordOptionsError && (
+              <p className={styles.keywordError} role="alert">
+                {keywordOptionsError}
+              </p>
+            )}
+            {!keywordOptionsError && (
+              <div className={styles.seriesPicker}>
+                {keywordOptions.length === 0 ? (
+                  <p className={styles.hint}>No keywords to choose from yet.</p>
+                ) : (
+                  keywordOptions.map((keyword) => (
+                    <div key={keyword} className={styles.seriesOption}>
+                      <input
+                        id={`keyword-checkbox-${keyword}`}
+                        type="checkbox"
+                        checked={state.keywordsSelected.includes(keyword)}
+                        onChange={handleKeywordToggle(keyword)}
+                      />
+                      <label htmlFor={`keyword-checkbox-${keyword}`}>
+                        {keyword}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
           {showGenreKeywordHint && (
             <p className={styles.hint}>
@@ -313,7 +424,7 @@ export function RecommendationControls({
 
         {filtersOpen && (
           <div className={styles.filtersBody}>
-            {state.mode !== 'genre' && (
+            {showMinSourceRating && (
               <div className={styles.field}>
                 <label htmlFor="recommendation-min-source-rating">
                   Min Source Rating

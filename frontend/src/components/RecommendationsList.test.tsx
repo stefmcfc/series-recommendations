@@ -16,6 +16,7 @@ vi.mock('../services/seriesApi')
 const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 const mockIgnoreSeries = vi.mocked(seriesApi.ignoreSeries)
 const mockCreate = vi.mocked(seriesApi.create)
+const mockRefresh = vi.mocked(seriesApi.refresh)
 
 function makeRecommendation(
   overrides: Partial<Recommendation> = {},
@@ -199,6 +200,66 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByText('Ozark')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-010-AC-21/22: auto-refresh after a successful save', () => {
+  it('calls seriesApi.refresh with the new series id after Mark as Watched succeeds, without blocking card removal', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockCreate.mockResolvedValue({ id: 'new-id', title: 'Ozark' } as Series)
+    mockRefresh.mockResolvedValue({
+      series: { id: 'new-id', title: 'Ozark' } as Series,
+      omdbRefreshed: true,
+      tmdbRefreshed: true,
+    })
+    render(<RecommendationsList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(screen.queryByText('Ozark')).not.toBeInTheDocument(),
+    )
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledWith('new-id'))
+  })
+
+  it('calls seriesApi.refresh with the new series id after Add to List succeeds', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockCreate.mockResolvedValue({ id: 'new-id', title: 'Ozark' } as Series)
+    mockRefresh.mockResolvedValue({
+      series: { id: 'new-id', title: 'Ozark' } as Series,
+      omdbRefreshed: true,
+      tmdbRefreshed: true,
+    })
+    render(<RecommendationsList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.click(screen.getByRole('button', { name: /add to list/i }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledWith('new-id'))
+  })
+})
+
+describe('FRONTEND-010-AC-23: a failed auto-refresh is silent', () => {
+  it('does not show an error when the background refresh call rejects', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    mockCreate.mockResolvedValue({ id: 'new-id', title: 'Ozark' } as Series)
+    mockRefresh.mockRejectedValue(
+      new ApiError(502, 'Unable to reach the series lookup service.'),
+    )
+    render(<RecommendationsList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalledWith('new-id'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
 

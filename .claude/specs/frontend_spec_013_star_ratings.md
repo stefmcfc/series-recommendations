@@ -1,7 +1,7 @@
 # Frontend Spec 013: Star Ratings & Sort
 
-**Status**: Not started
-**Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Series Spec 009 (`sortBy`/`sortDirection` on `GET /series`/`GET /series/search`)
+**Status**: Requirements 1-3 (`StarRating` component, display/input integration) not started. **Requirements 4 and 5 implemented together (2026-08-23)**: when Requirement 5 work began, Requirement 4's sort control (`SortOptions` type, `seriesApi.getAll`/`search` sort params, `SeriesList`'s field selector + direction toggle) turned out not to actually exist yet in the codebase despite this file's structure implying it was a separate prior step — so, following the same reasoning `series_spec_009_rating_sort.md` used for its own Requirements 1+2 (Requirement 2 can't stand on its own), both were built in one pass directly to the full six-field enum (`dateAdded`/`personalRating`/`title`/`year`/`imdbRating`/`tmdbRating`). **Design decision**: the sort control passes `sort: undefined` to `getAll()`/`search()` whenever the control is at its default (`dateAdded`/`desc`, matching the backend's own default), and only a populated `{ sortBy, sortDirection }` object once the user changes it away from default — this keeps a no-sort caller's request wire-identical to before the control existed. Files touched: `src/types/series.ts` (`SortOptions`), `src/services/seriesApi.ts` (`getAll(sort?)`, `search(criteria, sort?)`, `buildSortParams`), `src/components/SeriesList.tsx` (sort field `<select>` + direction toggle `<button>`, local `sortBy`/`sortDirection` state), plus test updates in `SeriesList.test.tsx`, `App.test.tsx`, and `seriesApi.test.ts` (three pre-existing `search(...)`-argument assertions needed a second `sort` argument added to stay accurate to the new two-argument signature).
+**Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Series Spec 009 (`sortBy`/`sortDirection` on `GET /series`/`GET /series/search`, including its Requirement 2 amendment)
 **Frontend Stage**: 13 of N
 
 ## Overview
@@ -67,11 +67,24 @@ Replaces every numeric `personalRating` display/input in the app with a shared `
 
 ---
 
+### Requirement 5: Additional Sort Options
+
+**User story**: As a user, I want to sort my series list by title, year, IMDb rating, or TMDB rating from the same sort control, so I'm not limited to date-added or my own rating when deciding how to view my collection.
+
+#### Acceptance Criteria
+
+- **FRONTEND-013-AC-14** [AUTO]: `SortOptions.sortBy` (`FRONTEND-013-AC-10`) shall be extended to `'dateAdded' | 'personalRating' | 'title' | 'year' | 'imdbRating' | 'tmdbRating'`, matching `series_spec_009_rating_sort.md`'s enlarged `sortBy` enum (`SERIES-009-AC-07`).
+- **FRONTEND-013-AC-15** [AUTO]: The sort control's field selector (`FRONTEND-013-AC-12`) shall gain four additional options — "Title", "Year", "IMDb Rating", "TMDB Rating" — alongside the existing "Date Added"/"Personal Rating". The existing direction toggle applies uniformly across all six fields; no field gets bespoke direction UI.
+- **FRONTEND-013-AC-16** [AUTO]: Changing the sort control to any of the four new fields re-fetches via whichever of `getAll()`/`search()` is currently active, passing the selected `sortBy` and current `sortDirection` — the same re-fetch behavior `FRONTEND-013-AC-13` already established, applied unchanged to the new options.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
 |-----------|--------|
 | `sortBy`/`sortDirection` params on both listing endpoints, null-`personalRating`-sorts-last | `series_spec_009_rating_sort.md` |
+| Enlarged `sortBy` enum (`title`/`year`/`imdbRating`/`tmdbRating`), `tmdbRating`/`tmdbVoteCount` tiebreak | `series_spec_009_rating_sort.md` Requirement 2 (`SERIES-009-AC-07`–`AC-10`) |
 | `SeriesEntity.personalRating` (`1`–`5`, nullable) | `series_spec_001_entity.md` |
 | `SeriesDetail`'s `formatValue` field pattern being replaced for this one field | `frontend_spec_005_series_detail.md` |
 | `AddSeriesForm`/`EditSeriesForm`'s existing `personalRating` field, validation, and omit-when-empty payload convention | `frontend_spec_003_add_series_form.md`, `frontend_spec_004_edit_delete_series.md` |
@@ -155,6 +168,24 @@ describe('FRONTEND-013-AC-07: star input replaces numeric input', () => {
 })
 ```
 
+### `src/components/SeriesList.test.tsx` (addition, Requirement 5)
+
+```typescript
+describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', () => {
+  it('re-fetches with sortBy=tmdbRating when that option is selected', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), { target: { value: 'tmdbRating' } })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({ sortBy: 'tmdbRating', sortDirection: 'desc' }),
+    )
+  })
+})
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -168,7 +199,10 @@ describe('FRONTEND-013-AC-07: star input replaces numeric input', () => {
 - [ ] FRONTEND-013-AC-07: `AddSeriesForm` star input
 - [ ] FRONTEND-013-AC-08: `EditSeriesForm` star input
 - [ ] FRONTEND-013-AC-09: dead numeric-range validation removed
-- [ ] FRONTEND-013-AC-10: `SortOptions` type
-- [ ] FRONTEND-013-AC-11: `getAll`/`search` accept `sort`
-- [ ] FRONTEND-013-AC-12: `SeriesList` sort control + local state
-- [ ] FRONTEND-013-AC-13: changing sort re-fetches with current params
+- [x] FRONTEND-013-AC-10: `SortOptions` type
+- [x] FRONTEND-013-AC-11: `getAll`/`search` accept `sort`
+- [x] FRONTEND-013-AC-12: `SeriesList` sort control + local state
+- [x] FRONTEND-013-AC-13: changing sort re-fetches with current params
+- [x] FRONTEND-013-AC-14: `SortOptions.sortBy` extended with `title`/`year`/`imdbRating`/`tmdbRating`
+- [x] FRONTEND-013-AC-15: sort control gains four new field options
+- [x] FRONTEND-013-AC-16: re-fetch behavior applies unchanged to the new options

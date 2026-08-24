@@ -1,6 +1,6 @@
 # Spec 009: Sort by Personal Rating
 
-**Status**: Not started
+**Status**: Implemented (2026-08-23, Requirements 1 and 2). Requirement 1 (`SERIES-009-AC-01` through `AC-06`) had not actually been built yet when Requirement 2 work started — `SeriesSearchService.search()` still hard-sorted by `dateAdded` descending and `SeriesService.getAll()` had no sort params at all — so both requirements were implemented together in one pass, since Requirement 2 extends the same `sortBy`/`sortDirection` mechanism Requirement 1 defines and can't stand on its own. Files touched: `SeriesSortResolver` (new, package-private, `service/`), `SeriesSearchCriteria` (`sortBy`/`sortDirection` fields), `SeriesSearchService.search()`, `SeriesService.getAll(String, String)` (new overload; the existing no-arg `getAll()` delegates to it with `null, null`), `SeriesController` (`sortBy`/`sortDirection` query params on both `GET /api/v1/series` and `GET /api/v1/series/search`), plus Spock coverage in `SeriesSearchServiceSpec`, `SeriesServiceSpec`, and `SeriesControllerSpec` (and a fix to two pre-existing `GlobalExceptionHandlerSpec` mocks that stubbed the now-superseded no-arg `getAll()`). **Amendment (2026-08-23, Requirement 2)**: extends the `sortBy` enum with `title`/`year`/`imdbRating`/`tmdbRating`, confirmed by the user alongside the original `dateAdded`/`personalRating` pair — see Requirement 2. `genres`/`tags`/`keywords` (multi-value, better suited to filtering than sorting) and `rottenTomatoesRating` (too often null in practice to sort meaningfully) were considered and deliberately excluded from the sort field list.
 **No `frontend/` files are touched by this spec** — the sort control UI, star display/input, and the `personalRating` column on `SeriesList` are `frontend_spec_013_star_ratings.md`, a separate follow-up task.
 **Priority**: P3 (small, self-contained UX gap)
 **Depends on**: Spec 001 (`SeriesEntity.personalRating`), Spec 003 (`SeriesSearchService`, `SeriesSearchCriteria`)
@@ -35,6 +35,22 @@ Adds sorting to both series-listing endpoints (`GET /api/v1/series` and `GET /ap
 
 ---
 
+### Requirement 2: Additional Sort Fields
+
+**User story**: As a user, I want to sort my series list by title, release year, IMDb rating, or TMDB rating — not only date added or my own rating — so I can view my collection in whichever order actually helps me decide what to watch next.
+
+**Design decision**: The user asked for recommendations grounded in data the app already has, then confirmed the full set as proposed: `title`, `year`, `imdbRating` alongside `dateAdded`/`personalRating` (Requirement 1), plus `tmdbRating` paired with `tmdbVoteCount` as a tiebreaker (mirroring `series_spec_007_recommendation_sourcing.md`'s own reasoning for why a bare rating needs a vote-count companion, `SERIES-007-AC-25`'s "a 9.0 from 3 votes is noise" rationale) — so a plain `ORDER BY tmdbRating` can't let a near-unrated show equal-rank or edge out a well-established one. Every field here reuses Requirement 1's shared comparator-resolution mechanism (`SERIES-009-AC-05`) — this is additional enum coverage, not a new sorting mechanism.
+
+#### Acceptance Criteria
+
+- **SERIES-009-AC-07** [AUTO]: `sortBy` (`SERIES-009-AC-01`) shall additionally accept `title`, `year`, `imdbRating`, and `tmdbRating` — the full accepted set becomes `dateAdded | personalRating | title | year | imdbRating | tmdbRating`.
+- **SERIES-009-AC-08** [AUTO]: `sortBy=title` shall compare titles case-insensitively (`String.compareToIgnoreCase`), so "the Office" and "The Office" sort identically regardless of case.
+- **SERIES-009-AC-09** [AUTO]: Under `sortBy=year`, `sortBy=imdbRating`, or `sortBy=tmdbRating`, a series with a null value for that field shall sort after every non-null value, regardless of `sortDirection` — extending `SERIES-009-AC-04`'s nulls-last convention to these fields identically (`title` has no null case — `SeriesEntity.title` is not-null).
+- **SERIES-009-AC-10** [AUTO]: Under `sortBy=tmdbRating`, when two series have an equal (including both-null, per `SERIES-009-AC-09`) `tmdbRating`, `tmdbVoteCount` descending shall be used as a secondary tiebreaker — the more statistically confident rating surfaces first among equally-rated candidates, regardless of `sortDirection` (the tiebreaker direction does not flip with the primary sort's direction).
+- **SERIES-009-AC-11** [AUTO]: `SERIES-009-AC-02`'s invalid-`sortBy` → `400` validation applies unchanged to the enlarged enum from `SERIES-009-AC-07` — any value outside the full six-member set is still rejected.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -42,6 +58,7 @@ Adds sorting to both series-listing endpoints (`GET /api/v1/series` and `GET /ap
 | `SeriesEntity.personalRating` (`1`–`5`, nullable) | `series_spec_001_entity.md` |
 | `SeriesSearchService.search()`'s existing hardcoded `dateAdded` descending sort, `SeriesSearchCriteria`, invalid-`status` → `400` validation style | `series_spec_003_search.md` |
 | Future frontend consumer: sort control, star display/input, `personalRating` column on `SeriesList` | `frontend_spec_013_star_ratings.md` (not yet written) |
+| `tmdbRating`/`tmdbVoteCount` fields; "a high rating with a low vote count is noise" rationale mirrored by `SERIES-009-AC-10`'s tiebreaker | `series_spec_017_tmdb_primary_lookup.md`, `series_spec_007_recommendation_sourcing.md` (`SERIES-007-AC-25`) |
 
 ---
 
@@ -108,13 +125,52 @@ def "SERIES-009-AC-03: an invalid sortDirection returns 400"() {
 }
 ```
 
+### `SeriesSearchServiceSpec.groovy` (Requirement 2, addition)
+
+```groovy
+def "SERIES-009-AC-08: sortBy=title compares case-insensitively"() {
+    given: "two series: 'the Office' and 'Archer'"
+        // ...
+
+    when: "search is called with sortBy=title, sortDirection=asc"
+        def results = searchService.search(new SeriesSearchCriteria(sortBy: "title", sortDirection: "asc"))
+
+    then: "Archer sorts before 'the Office' despite the lowercase 't'"
+        results*.title == ["Archer", "the Office"]
+}
+
+def "SERIES-009-AC-10: tmdbRating ties break on tmdbVoteCount descending"() {
+    given: "two series both with tmdbRating 8.5: one with voteCount 50, one with voteCount 5000"
+        // ...
+
+    when: "search is called with sortBy=tmdbRating, sortDirection=desc"
+        def results = searchService.search(new SeriesSearchCriteria(sortBy: "tmdbRating", sortDirection: "desc"))
+
+    then: "the higher-vote-count series comes first"
+        results[0].tmdbVoteCount == 5000
+}
+
+def "SERIES-009-AC-11: an invalid sortBy value is still rejected under the enlarged enum"() {
+    when: "search is called with sortBy=notAField"
+        searchService.search(new SeriesSearchCriteria(sortBy: "notAField"))
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+}
+```
+
 ---
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-009-AC-01: `sortBy`/`sortDirection` params on both listing endpoints
-- [ ] SERIES-009-AC-02: invalid `sortBy` → 400
-- [ ] SERIES-009-AC-03: invalid `sortDirection` → 400
-- [ ] SERIES-009-AC-04: null `personalRating` always sorts last
-- [ ] SERIES-009-AC-05: shared comparator resolution, not duplicated
-- [ ] SERIES-009-AC-06: unset params → today's `search` default; new default for `getAll`
+- [x] SERIES-009-AC-01: `sortBy`/`sortDirection` params on both listing endpoints
+- [x] SERIES-009-AC-02: invalid `sortBy` → 400
+- [x] SERIES-009-AC-03: invalid `sortDirection` → 400
+- [x] SERIES-009-AC-04: null `personalRating` always sorts last
+- [x] SERIES-009-AC-05: shared comparator resolution, not duplicated
+- [x] SERIES-009-AC-06: unset params → today's `search` default; new default for `getAll`
+- [x] SERIES-009-AC-07: `sortBy` enum extended with `title`/`year`/`imdbRating`/`tmdbRating`
+- [x] SERIES-009-AC-08: `title` sort is case-insensitive
+- [x] SERIES-009-AC-09: nulls-last for `year`/`imdbRating`/`tmdbRating`
+- [x] SERIES-009-AC-10: `tmdbRating` ties break on `tmdbVoteCount` descending
+- [x] SERIES-009-AC-11: invalid `sortBy` still rejected under the enlarged enum
