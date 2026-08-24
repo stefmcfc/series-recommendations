@@ -345,6 +345,36 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(status().isBadRequest())
     }
 
+    // -- SERIES-025-AC-03: discoverSortBy endpoint wiring --
+
+    def "SERIES-025-AC-03: discoverSortBy query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?sourceMode=topRated&discoverSortBy=popularity.desc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("sourceMode", "topRated")
+                .param("discoverSortBy", "popularity.desc"))
+
+        then: "the response is 200 and RecommendationService received discoverSortBy=popularity.desc"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.discoverSortBy == "popularity.desc"
+            }))
+    }
+
+    def "SERIES-025-AC-04: an unrecognized discoverSortBy is rejected"() {
+        given: "RecommendationService rejects the request as it would for an unrecognized discoverSortBy"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("discoverSortBy must be one of: [...]"))
+
+        when: "GET /api/v1/series/recommendations?discoverSortBy=bogus is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("discoverSortBy", "bogus"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
     // -- SERIES-023: GET /api/v1/series/recommendations/{tmdbId}/keywords --
 
     def "SERIES-023-AC-04/07: GET /api/v1/series/recommendations/{tmdbId}/keywords returns the envelope shape"() {

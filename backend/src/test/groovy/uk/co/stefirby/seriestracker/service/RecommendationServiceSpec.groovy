@@ -46,7 +46,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-016-AC-02: toDto populates voteCount from the TMDB candidate verbatim"() {
         given: "a genre-directed candidate with voteCount 1500"
             def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _) >> [candidate(500, "Genre Candidate", 2020, new BigDecimal("8.0"), [18], 1500)]
+            tmdbClient.discover(_, _, _) >> [candidate(500, "Genre Candidate", 2020, new BigDecimal("8.0"), [18], 1500)]
             tmdbClient.externalIds(500) >> Optional.of("tt5005005")
             seriesRepository.existsByImdbId("tt5005005") >> false
             ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
@@ -61,7 +61,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-023-AC-02/03: toDto carries originCountry and tmdbId from the candidate"() {
         given: "one genre-directed candidate with originCountry/tmdbId set"
             def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _) >> [
+            tmdbClient.discover(_, _, _) >> [
                 new TmdbCandidate(2, "Show", 2020, "overview", null, new BigDecimal("7.0"), [], 100, "en", "US")
             ]
             tmdbClient.externalIds(2) >> Optional.of("tt0000002")
@@ -125,7 +125,7 @@ class RecommendationServiceSpec extends Specification {
             0 * tmdbClient.findTvIdByImdbId(_)
             0 * tmdbClient.recommendations(_)
             0 * tmdbClient.similar(_)
-            0 * tmdbClient.discover(_, _)
+            0 * tmdbClient.discover(_, _, _)
             results.isEmpty()
     }
 
@@ -236,7 +236,7 @@ class RecommendationServiceSpec extends Specification {
             def results = recommendationService.recommend(20)
 
         then: "discover is called with the TMDB ids for Drama (18) and Crime (80), no keywords"
-            1 * tmdbClient.discover([18, 80], []) >> [candidate(20)]
+            1 * tmdbClient.discover([18, 80], [], "popularity.desc") >> [candidate(20)]
 
         and: "the genre-sourced candidate has a null sourceTitle"
             results.size() == 2
@@ -255,7 +255,7 @@ class RecommendationServiceSpec extends Specification {
             def results = recommendationService.recommend(20)
 
         then: "discover is never called, and no exception is thrown"
-            0 * tmdbClient.discover(_, _)
+            0 * tmdbClient.discover(_, _, _)
             results.isEmpty()
     }
 
@@ -488,7 +488,7 @@ class RecommendationServiceSpec extends Specification {
         then: "no title-based sourcing occurs; discover() is called with Drama's id (18) only -- Spy has no genre mapping"
             0 * tmdbClient.recommendations(_)
             0 * tmdbClient.findTvIdByImdbId(_)
-            1 * tmdbClient.discover([18], []) >> [candidate(50, "Drama Show")]
+            1 * tmdbClient.discover([18], [], "popularity.desc") >> [candidate(50, "Drama Show")]
             tmdbClient.externalIds(50) >> Optional.of("tt5000000")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -508,7 +508,7 @@ class RecommendationServiceSpec extends Specification {
 
         then: "searchKeyword resolves Spy, and discover is called with both resolved ids"
             1 * tmdbClient.searchKeyword("Spy") >> Optional.of(9720)
-            1 * tmdbClient.discover([18], [9720]) >> []
+            1 * tmdbClient.discover([18], [9720], "popularity.desc") >> []
     }
 
     def "SERIES-007-AC-14: an unresolvable keyword is skipped, not an error"() {
@@ -520,7 +520,7 @@ class RecommendationServiceSpec extends Specification {
 
         then: "discover is called with an empty keyword id list, and no exception is thrown"
             1 * tmdbClient.searchKeyword("nonexistent") >> Optional.empty()
-            1 * tmdbClient.discover([], []) >> []
+            1 * tmdbClient.discover([], [], "popularity.desc") >> []
             results.isEmpty()
     }
 
@@ -607,7 +607,7 @@ class RecommendationServiceSpec extends Specification {
             recommendationService.recommend(20, criteria)
 
         then: "discover is still called normally, unaffected by minSourceRating"
-            1 * tmdbClient.discover([18], []) >> []
+            1 * tmdbClient.discover([18], [], "popularity.desc") >> []
     }
 
     // -- Requirement 7 (SERIES-007-AC-21/22): output ranking & diversity cap --
@@ -704,7 +704,7 @@ class RecommendationServiceSpec extends Specification {
             def results = recommendationService.recommend(20, criteria)
 
         then: "discover supplies the 5 candidates, and none are dropped by the diversity cap"
-            1 * tmdbClient.discover([18], []) >> candidates
+            1 * tmdbClient.discover([18], [], "popularity.desc") >> candidates
             results.size() == 5
     }
 
@@ -872,7 +872,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-024-AC-03/04: matchesExcludeKeywords excludes a candidate whose TMDB keywords match, case-insensitively"() {
         given: "a topRated-sourced candidate and excludeKeywords=['Zombie']"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", excludeKeywords: ["Zombie"])
-            tmdbClient.discoverTopRated(200) >> [candidate(10, "Undead Show", 2020, new BigDecimal("8.0"), [18], 300)]
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Undead Show", 2020, new BigDecimal("8.0"), [18], 300)]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -888,7 +888,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-024-AC-05: matchesExcludeKeywords only runs its extra call against candidates surviving cheaper filters"() {
         given: "two candidates, one already excluded by minTmdbRating"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", minTmdbRating: new BigDecimal("8.0"), excludeKeywords: ["Zombie"])
-            tmdbClient.discoverTopRated(200) >> [
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [
                 candidate(10, "Low Rated", 2020, new BigDecimal("2.0"), [18], 300),
                 candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
             ]
@@ -908,7 +908,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-024-AC-06: a showKeywords failure fails that candidate open, not the whole request"() {
         given: "TmdbClient.showKeywords throws ExternalServiceException for the candidate"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", excludeKeywords: ["Zombie"])
-            tmdbClient.discoverTopRated(200) >> [candidate(10, "Some Show", 2020, new BigDecimal("8.0"), [18], 300)]
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Some Show", 2020, new BigDecimal("8.0"), [18], 300)]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -925,7 +925,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-024-AC-07: showKeywords is never called when excludeKeywords is unset"() {
         given: "no excludeKeywords in the request"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200) >> [candidate(10, "Some Show")]
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Some Show")]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -979,7 +979,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-012-AC-02: candidate poster URLs are built from TmdbClient.POSTER_BASE_URL"() {
         given: "a TMDB candidate with a poster_path"
-            tmdbClient.discover(_, _) >> [
+            tmdbClient.discover(_, _, _) >> [
                 new TmdbCandidate(99, "Discovered Show", 2020, "overview", "/poster.jpg",
                     new BigDecimal("7.5"), [18], 100, "en", null)
             ]
@@ -1020,7 +1020,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-03: a genre/keyword-sourced-only candidate has an empty sourceTitles list, not null"() {
         given: "no watched series exist; a genres-directed request"
             def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _) >> [candidate(500)]
+            tmdbClient.discover(_, _, _) >> [candidate(500)]
             tmdbClient.externalIds(500) >> Optional.of("tt5005005")
             seriesRepository.existsByImdbId("tt5005005") >> false
             ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
@@ -1189,7 +1189,7 @@ class RecommendationServiceSpec extends Specification {
             def titleCandidates = (1..6).collect { candidate(it) }
             tmdbClient.recommendations(1) >> titleCandidates
             (1..6).each { i -> tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0')) }
-            tmdbClient.discover([18], []) >> [candidate(500, "Genre-Sourced Candidate")]
+            tmdbClient.discover([18], [], "popularity.desc") >> [candidate(500, "Genre-Sourced Candidate")]
             tmdbClient.externalIds(500) >> Optional.of("tt5000000")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -1299,7 +1299,7 @@ class RecommendationServiceSpec extends Specification {
         then: "no title-based or genre-based sourcing occurs"
             0 * tmdbClient.findTvIdByImdbId(_)
             0 * tmdbClient.recommendations(_)
-            0 * tmdbClient.discover(_, _)
+            0 * tmdbClient.discover(_, _, _)
 
         and: "results preserve TMDB's returned order (not re-ranked by rating) and have a null sourceTitle"
             results*.title() == ["Second Place", "First Place"]
@@ -1379,13 +1379,13 @@ class RecommendationServiceSpec extends Specification {
             recommendationService.recommend(20, criteria)
 
         then: "discoverTopRated is called with 200, not 20"
-            1 * tmdbClient.discoverTopRated(200) >> []
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> []
     }
 
     def "SERIES-024-AC-11: applyOutputFilters' post-hoc minVoteCount default is also 200 for topRated when unset"() {
         given: "a topRated candidate whose voteCount (150) is below the mode-aware 200 default"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200) >> [candidate(10, "Below New Floor", 2020, new BigDecimal("9.0"), [18], 150)]
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Below New Floor", 2020, new BigDecimal("9.0"), [18], 150)]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -1405,13 +1405,13 @@ class RecommendationServiceSpec extends Specification {
             recommendationService.recommend(20, criteria)
 
         then: "discoverTopRated is called with the explicit 100, not the 200 default"
-            1 * tmdbClient.discoverTopRated(100) >> []
+            1 * tmdbClient.discoverTopRated(100, "vote_average.desc") >> []
     }
 
     def "SERIES-022-AC-12: the post-hoc minVoteCount output filter still applies to topRated candidates"() {
         given: "discoverTopRated returns a candidate whose voteCount is below the requested floor"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
-            tmdbClient.discoverTopRated(100) >> [candidate(10, "Below Floor", 2020, new BigDecimal("9.0"), [18], 50)]
+            tmdbClient.discoverTopRated(100, "vote_average.desc") >> [candidate(10, "Below Floor", 2020, new BigDecimal("9.0"), [18], 50)]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -1426,7 +1426,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-022-AC-13: topRated candidates have a null sourceTitle"() {
         given: "discoverTopRated returns one candidate"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200) >> [candidate(10, "Acclaimed Show", 2020, new BigDecimal("8.0"), [18], 300)]
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Acclaimed Show", 2020, new BigDecimal("8.0"), [18], 300)]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -1442,7 +1442,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-022-AC-14: an already-tracked/ignored topRated candidate is excluded"() {
         given: "discoverTopRated returns two candidates, one already tracked"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200) >> [
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [
                 candidate(10, "Tracked", 2020, new BigDecimal("8.0"), [18], 300),
                 candidate(20, "New", 2020, new BigDecimal("8.0"), [18], 300)
             ]
@@ -1460,23 +1460,25 @@ class RecommendationServiceSpec extends Specification {
             results[0].title() == "New"
     }
 
-    def "SERIES-022-AC-15: the ranking/diversity cap applies normally to topRated candidates"() {
-        given: "discoverTopRated returns candidates already in vote_average.desc order"
+    def "SERIES-025-AC-07: topRated candidates keep TMDB's own returned order (supersedes SERIES-022-AC-15)"() {
+        given: "discoverTopRated returns candidates in a specific, non-tmdbRating-sorted order"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200) >> [
-                candidate(10, "Higher Rated", 2020, new BigDecimal("9.0"), [18], 300),
-                candidate(20, "Lower Rated", 2020, new BigDecimal("7.0"), [18], 300)
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [
+                candidate(10, "Mid Rated", 2020, new BigDecimal("6.0"), [18], 300),
+                candidate(20, "Highest Rated", 2020, new BigDecimal("9.0"), [18], 300),
+                candidate(30, "High Rated", 2020, new BigDecimal("7.5"), [18], 300)
             ]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            tmdbClient.externalIds(30) >> Optional.of("tt1000030")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "recommend(20, criteria) is called"
             def results = recommendationService.recommend(20, criteria)
 
-        then: "the higher-rated candidate ranks first, consistent with rankScore == tmdbRating for a null-sourceTitle candidate"
-            results*.title() == ["Higher Rated", "Lower Rated"]
+        then: "the result preserves TMDB's own order, not tmdbRating-descending"
+            results*.title() == ["Mid Rated", "Highest Rated", "High Rated"]
     }
 
     // -- Spec 022, Requirement 4 (SERIES-022-AC-16..19): mutual exclusivity & validation --
@@ -1544,7 +1546,7 @@ class RecommendationServiceSpec extends Specification {
             recommendationService.recommend(20, criteria)
 
         then: "discoverTopRated is used, trending() is never called"
-            1 * tmdbClient.discoverTopRated(200) >> []
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> []
             0 * tmdbClient.trending(_)
     }
 
@@ -1583,5 +1585,144 @@ class RecommendationServiceSpec extends Specification {
 
         then: "the diversity cap is still enforced and the result is still truncated to 2"
             results.size() <= 2
+    }
+
+    // -- Spec 025: TMDB-native sort_by for topRated/genre modes --
+
+    def "SERIES-025-AC-04: rejects an unrecognized discoverSortBy"() {
+        given: "criteria with an invalid discoverSortBy"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", discoverSortBy: "not-a-real-value")
+
+        when: "recommend is called"
+            recommendationService.recommend(10, criteria)
+
+        then: "IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-025-AC-04: accepts every documented TMDB sort_by value"() {
+        given: "discoverTopRated resolves to an empty list for any sortBy"
+            tmdbClient.discoverTopRated(200, _) >> []
+
+        expect: "no exception for any of the 12 documented values"
+            ["first_air_date.asc", "first_air_date.desc", "name.asc", "name.desc",
+             "original_name.asc", "original_name.desc", "popularity.asc", "popularity.desc",
+             "vote_average.asc", "vote_average.desc", "vote_count.asc", "vote_count.desc"].each { value ->
+                recommendationService.recommend(10, new RecommendationCriteria(sourceMode: "topRated", discoverSortBy: value))
+            }
+    }
+
+    def "SERIES-025-AC-04: discoverSortBy is validated even under automatic sourcing, matching trendingWindow's existing mode-independent validation convention"() {
+        given: "no sourceMode/genres/keywords set (automatic sourcing), but a bogus discoverSortBy"
+            def criteria = new RecommendationCriteria(discoverSortBy: "not-a-real-value")
+
+        when: "recommend(10, criteria) is called"
+            recommendationService.recommend(10, criteria)
+
+        then: "IllegalArgumentException is thrown regardless of mode"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-025-AC-05: topRated defaults discoverSortBy to vote_average.desc"() {
+        given: "criteria with sourceMode=topRated and no discoverSortBy"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+
+        when: "recommend is called"
+            recommendationService.recommend(10, criteria)
+
+        then: "discoverTopRated is called with vote_average.desc"
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> []
+    }
+
+    def "SERIES-025-AC-05: topRated forwards an explicit discoverSortBy"() {
+        given: "criteria requesting popularity.desc"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", discoverSortBy: "popularity.desc")
+
+        when: "recommend is called"
+            recommendationService.recommend(10, criteria)
+
+        then: "discoverTopRated is called with popularity.desc"
+            1 * tmdbClient.discoverTopRated(200, "popularity.desc") >> []
+    }
+
+    def "SERIES-025-AC-06: genre-directed sourcing defaults discoverSortBy to popularity.desc"() {
+        given: "criteria requesting genres, no discoverSortBy"
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+
+        when: "recommend is called"
+            recommendationService.recommend(10, criteria)
+
+        then: "discover is called with popularity.desc"
+            1 * tmdbClient.discover([18], [], "popularity.desc") >> []
+    }
+
+    def "SERIES-025-AC-06: genre-directed sourcing forwards an explicit discoverSortBy"() {
+        given: "criteria requesting genres and an explicit discoverSortBy"
+            def criteria = new RecommendationCriteria(genres: ["Drama"], discoverSortBy: "vote_count.desc")
+
+        when: "recommend is called"
+            recommendationService.recommend(10, criteria)
+
+        then: "discover is called with vote_count.desc"
+            1 * tmdbClient.discover([18], [], "vote_count.desc") >> []
+    }
+
+    def "SERIES-025-AC-07: genre-directed candidates keep TMDB's own returned order"() {
+        given: "discover returns candidates in a specific, non-tmdbRating-sorted order"
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+            tmdbClient.discover([18], [], "popularity.desc") >> [
+                candidate(10, "Low Rated", 2020, new BigDecimal("6.0"), [18], 300),
+                candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
+            ]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(10, criteria) is called"
+            def results = recommendationService.recommend(10, criteria)
+
+        then: "the result preserves TMDB's own order"
+            results*.title() == ["Low Rated", "High Rated"]
+    }
+
+    def "SERIES-025-AC-08: legacy sortBy has no effect under topRated"() {
+        given: "criteria with sourceMode=topRated and sortBy=recommendationCount"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated", sortBy: "recommendationCount")
+            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [
+                candidate(10, "A", 2020, new BigDecimal("6.0"), [18], 300),
+                candidate(20, "B", 2020, new BigDecimal("9.0"), [18], 300)
+            ]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(10, criteria) is called, compared against the same criteria without sortBy"
+            def withLegacySortBy = recommendationService.recommend(10, criteria)
+            def withoutLegacySortBy = recommendationService.recommend(10, new RecommendationCriteria(sourceMode: "topRated"))
+
+        then: "the legacy sortBy has no effect -- both results are identical, in TMDB's own order"
+            withLegacySortBy*.title() == withoutLegacySortBy*.title()
+            withLegacySortBy*.title() == ["A", "B"]
+    }
+
+    def "SERIES-025-AC-08: legacy sortBy has no effect under genre-directed sourcing"() {
+        given: "criteria with genres set and sortBy=recommendationCount"
+            def criteria = new RecommendationCriteria(genres: ["Drama"], sortBy: "recommendationCount")
+            tmdbClient.discover([18], [], "popularity.desc") >> [
+                candidate(10, "A", 2020, new BigDecimal("6.0"), [18], 300),
+                candidate(20, "B", 2020, new BigDecimal("9.0"), [18], 300)
+            ]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(10, criteria) is called"
+            def results = recommendationService.recommend(10, criteria)
+
+        then: "the result is in TMDB's own returned order, unaffected by the legacy sortBy"
+            results*.title() == ["A", "B"]
     }
 }

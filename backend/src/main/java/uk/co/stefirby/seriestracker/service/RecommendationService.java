@@ -85,6 +85,33 @@ public class RecommendationService {
      */
     private static final int DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200;
 
+    /**
+     * TMDB's full confirmed {@code discover/tv} {@code sort_by} enum (SERIES-025-AC-04),
+     * validated in {@link #validate} whenever {@link RecommendationCriteria#getDiscoverSortBy()}
+     * is non-blank. Deliberately the complete 12-value enum, not just the subset a given
+     * frontend release exposes -- see {@code series_spec_025_discover_native_sort.md}'s Design
+     * Decisions.
+     */
+    private static final Set<String> VALID_DISCOVER_SORT_BY = Set.of(
+        "first_air_date.asc", "first_air_date.desc",
+        "name.asc", "name.desc",
+        "original_name.asc", "original_name.desc",
+        "popularity.asc", "popularity.desc",
+        "vote_average.asc", "vote_average.desc",
+        "vote_count.asc", "vote_count.desc"
+    );
+
+    /** {@link #sourceTopRated}'s default {@code discoverSortBy} when unset (SERIES-025-AC-05) -- preserves pre-spec-025 behavior exactly. */
+    private static final String DEFAULT_TOP_RATED_SORT_BY = "vote_average.desc";
+
+    /**
+     * {@link #sourceByGenreOrKeyword}'s default {@code discoverSortBy} when unset
+     * (SERIES-025-AC-06) -- TMDB's own {@code discover/tv} default, so an unset {@code
+     * discoverSortBy} is functionally identical to the pre-spec-025 behavior of sending no
+     * {@code sort_by} at all.
+     */
+    private static final String DEFAULT_GENRE_SORT_BY = "popularity.desc";
+
     private final SeriesRepository seriesRepository;
     private final IgnoredSeriesRepository ignoredSeriesRepository;
     private final TmdbClient tmdbClient;
@@ -141,13 +168,14 @@ public class RecommendationService {
 
         boolean trendingMode = "trending".equals(criteria.getSourceMode());
         boolean topRatedMode = "topRated".equals(criteria.getSourceMode());
+        boolean genreOrKeywordDirected = isDirectedByGenreOrKeyword(criteria);
 
         List<RawCandidate> raw;
         if (trendingMode) {
             raw = sourceTrending(criteria);
         } else if (topRatedMode) {
             raw = sourceTopRated(criteria);
-        } else if (isDirectedByGenreOrKeyword(criteria)) {
+        } else if (genreOrKeywordDirected) {
             raw = sourceByGenreOrKeyword(criteria);
         } else {
             raw = sourceFromPool(criteria, limit);
@@ -160,9 +188,14 @@ public class RecommendationService {
         List<DedupedCandidate> deduped = dedupeAndExclude(capped);
         List<DedupedCandidate> filtered = applyOutputFilters(deduped, criteria);
 
-        if (trendingMode) {
-            // SERIES-022-AC-08: trending candidates keep TMDB's own returned order -- output
-            // filters still run (above), but Requirement 7 (ranking/diversity cap) does not.
+        if (trendingMode || topRatedMode || genreOrKeywordDirected) {
+            // SERIES-022-AC-08 (trending), generalized by SERIES-025-AC-07 to topRated and
+            // genre/keyword-directed sourcing: none of the three ever link a candidate to a
+            // source series, so Requirement 7's ranking/diversity-cap step is a full no-op for
+            // them (rankScore always equals tmdbRating, and the diversity cap never caps a
+            // candidate with no contributing sources -- SERIES-015-AC-15). Rather than run that
+            // no-op and silently discard TMDB's own (now sort_by-driven) order, these three
+            // modes keep TMDB's own returned order. Output filters still run above, unaffected.
             int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
                 ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
             return filtered.stream()
@@ -212,6 +245,10 @@ public class RecommendationService {
             && !"day".equals(trendingWindow) && !"week".equals(trendingWindow)) {
             throw new IllegalArgumentException("trendingWindow must be one of: day, week");
         }
+        String discoverSortBy = c.getDiscoverSortBy();
+        if (discoverSortBy != null && !discoverSortBy.isBlank() && !VALID_DISCOVER_SORT_BY.contains(discoverSortBy)) {
+            throw new IllegalArgumentException("discoverSortBy must be one of: " + VALID_DISCOVER_SORT_BY);
+        }
     }
 
     private boolean isDirectedByGenreOrKeyword(RecommendationCriteria c) {
@@ -234,7 +271,9 @@ public class RecommendationService {
     private List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
         // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
-        return tmdbClient.discoverTopRated(effectiveMinVoteCount).stream()
+        // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
+        String effectiveSortBy = resolveDiscoverSortBy(c, DEFAULT_TOP_RATED_SORT_BY);
+        return tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .collect(Collectors.toList());
     }
@@ -244,9 +283,17 @@ public class RecommendationService {
     private List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c) {
         List<Integer> genreIds = resolveGenreIds(c.getGenres());
         List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
-        return tmdbClient.discover(genreIds, keywordIds).stream()
+        // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
+        String effectiveSortBy = resolveDiscoverSortBy(c, DEFAULT_GENRE_SORT_BY);
+        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .collect(Collectors.toList());
+    }
+
+    /** Shared by {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword}: an explicit, non-blank {@code discoverSortBy} wins; otherwise the mode's own default. */
+    private String resolveDiscoverSortBy(RecommendationCriteria c, String modeDefault) {
+        String discoverSortBy = c.getDiscoverSortBy();
+        return discoverSortBy != null && !discoverSortBy.isBlank() ? discoverSortBy : modeDefault;
     }
 
     private List<Integer> resolveGenreIds(List<String> genres) {
@@ -384,7 +431,11 @@ public class RecommendationService {
             return List.of();
         }
 
-        return tmdbClient.discover(genreIds, List.of()).stream()
+        // Not a directed-sourcing call (RecommendationCriteria.discoverSortBy doesn't apply
+        // here -- this candidate pool still flows through Requirement 7's ranking/diversity
+        // cap normally, unlike sourceByGenreOrKeyword's bypassed path), so TMDB's own default
+        // is used directly rather than resolving discoverSortBy.
+        return tmdbClient.discover(genreIds, List.of(), DEFAULT_GENRE_SORT_BY).stream()
             .map(c -> new RawCandidate(c, null))
             .collect(Collectors.toList());
     }

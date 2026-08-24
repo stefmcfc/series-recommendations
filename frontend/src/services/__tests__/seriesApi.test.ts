@@ -620,6 +620,34 @@ describe('FRONTEND-027-AC-02: getRecommendations includes sourceMode/trendingWin
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-033: getRecommendations wires discoverSortBy
+// ---------------------------------------------------------------------------
+describe('FRONTEND-033: getRecommendations includes discoverSortBy', () => {
+  it('passes discoverSortBy through to the query string when present', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({
+      sourceMode: 'topRated',
+      discoverSortBy: 'vote_count.desc',
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { sourceMode: 'topRated', discoverSortBy: 'vote_count.desc' },
+    })
+  })
+
+  it('omits discoverSortBy from the query string when absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ sourceMode: 'topRated' })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { sourceMode: 'topRated' },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-014-AC-01: getGenreOptions()
 // ---------------------------------------------------------------------------
 describe('FRONTEND-014-AC-01: getGenreOptions', () => {

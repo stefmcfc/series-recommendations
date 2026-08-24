@@ -77,6 +77,7 @@ function buildRecommendationParams(
   if (query.sortBy != null) params.sortBy = query.sortBy
   if (query.sourceMode != null) params.sourceMode = query.sourceMode
   if (query.trendingWindow != null) params.trendingWindow = query.trendingWindow
+  if (query.discoverSortBy != null) params.discoverSortBy = query.discoverSortBy
   return params
 }
 

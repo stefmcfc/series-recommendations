@@ -179,7 +179,8 @@ public class SeriesController {
             @RequestParam(required = false) Integer maxSourcesShown,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sourceMode,
-            @RequestParam(required = false) String trendingWindow) {
+            @RequestParam(required = false) String trendingWindow,
+            @RequestParam(required = false) String discoverSortBy) {
         int clampedLimit = Math.clamp(limit, 1, 50);
 
         RecommendationCriteria criteria = new RecommendationCriteria();
@@ -199,6 +200,7 @@ public class SeriesController {
         criteria.setSortBy(sortBy);
         criteria.setSourceMode(sourceMode);
         criteria.setTrendingWindow(trendingWindow);
+        criteria.setDiscoverSortBy(discoverSortBy);
 
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
