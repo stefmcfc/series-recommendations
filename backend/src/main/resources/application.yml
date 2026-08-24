@@ -59,6 +59,11 @@ app:
     # / APP_TMDB_MAX_CANDIDATES without a code change.
     max-source-series: 20
     max-candidates: 50
+    # SERIES-007-AC-22: RecommendationService's per-source diversity cap -- how many
+    # recommendations can come from any single source series in "Specific Series" mode,
+    # replacing what was previously a hardcoded constant. Overridable via
+    # APP_TMDB_MAX_PER_SOURCE without a code change.
+    max-per-source: 8
     # series_spec_018_series_refresh.md (SERIES-018-AC-15): fixed delay (milliseconds) between
     # items during a bulk refresh (POST /api/v1/series/refresh-all), sized to stay well under
     # TMDB's free-tier rate limit (~40 requests/10s) for a personal collection's realistic

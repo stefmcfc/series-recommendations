@@ -46,9 +46,6 @@ public class RecommendationService {
 
     private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
 
-    /** Default for {@link #maxPerSource} when {@link RecommendationCriteria#getMaxPerSource()} is unset (SERIES-007-AC-22). */
-    private static final int DEFAULT_MAX_PER_SOURCE = 3;
-
     /**
      * Default for {@code maxSourcesShown} when {@link RecommendationCriteria#getMaxSourcesShown()}
      * is unset (SERIES-015-AC-13).
@@ -140,13 +137,22 @@ public class RecommendationService {
      */
     private final String diversityCapMode;
 
+    /**
+     * Default for {@link #maxPerSource} when {@link RecommendationCriteria#getMaxPerSource()}
+     * is unset (SERIES-007-AC-22, superseding the previously hardcoded {@code
+     * DEFAULT_MAX_PER_SOURCE = 3}). Upper bound on how many recommendations can come from any
+     * single source series in "Specific Series" mode's diversity cap.
+     */
+    private final int maxPerSource;
+
     public RecommendationService(SeriesRepository seriesRepository,
                                   IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
                                   TmdbGenreTable genreTable,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
-                                  @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode) {
+                                  @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode,
+                                  @Value("${app.tmdb.max-per-source:8}") int maxPerSource) {
         this.seriesRepository = seriesRepository;
         this.ignoredSeriesRepository = ignoredSeriesRepository;
         this.tmdbClient = tmdbClient;
@@ -154,6 +160,7 @@ public class RecommendationService {
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
         this.diversityCapMode = diversityCapMode;
+        this.maxPerSource = maxPerSource;
     }
 
     /** Convenience overload -- equivalent to {@code recommend(limit, new RecommendationCriteria())}. */
@@ -212,7 +219,7 @@ public class RecommendationService {
             .sorted(resolveSortComparator(criteria))
             .collect(Collectors.toList());
 
-        int effectiveMaxPerSource = criteria.getMaxPerSource() != null ? criteria.getMaxPerSource() : DEFAULT_MAX_PER_SOURCE;
+        int effectiveMaxPerSource = criteria.getMaxPerSource() != null ? criteria.getMaxPerSource() : maxPerSource;
         List<ScoredCandidate> diversified = applyDiversityCap(ranked, effectiveMaxPerSource);
 
         return diversified.stream()
