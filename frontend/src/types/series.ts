@@ -144,6 +144,14 @@ export interface RecommendationQuery {
   sortBy?: 'score' | 'recommendationCount'
   sourceMode?: 'trending' | 'topRated'
   trendingWindow?: 'day' | 'week'
+  // FRONTEND-033-AC-04: TMDB-native discover sort, applicable only when
+  // sourceMode is 'topRated' or the query is genre/keyword-directed --
+  // mirrors series_spec_025_discover_native_sort.md's discoverSortBy param.
+  discoverSortBy?:
+    | 'vote_average.desc'
+    | 'popularity.desc'
+    | 'first_air_date.desc'
+    | 'vote_count.desc'
 }
 
 export interface SearchCriteria {

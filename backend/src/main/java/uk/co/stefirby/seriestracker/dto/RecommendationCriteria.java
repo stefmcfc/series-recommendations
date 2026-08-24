@@ -37,6 +37,7 @@ public class RecommendationCriteria {
     private String sortBy;
     private String sourceMode;
     private String trendingWindow;
+    private String discoverSortBy;
 
     public RecommendationCriteria() {}
 
@@ -103,4 +104,15 @@ public class RecommendationCriteria {
      */
     public String getTrendingWindow() { return trendingWindow; }
     public void setTrendingWindow(String trendingWindow) { this.trendingWindow = trendingWindow; }
+
+    /**
+     * TMDB's native {@code discover/tv} {@code sort_by} value (SERIES-025-AC-03), read only
+     * when {@code sourceMode} is {@code "topRated"} or the request is genre/keyword-directed
+     * -- ignored, not an error, otherwise (SERIES-025-AC-04's Design Decisions), matching
+     * {@code trendingWindow}'s existing mode-scoped-param convention. Validated in {@code
+     * RecommendationService#validate} against TMDB's full confirmed {@code sort_by} enum when
+     * non-blank.
+     */
+    public String getDiscoverSortBy() { return discoverSortBy; }
+    public void setDiscoverSortBy(String discoverSortBy) { this.discoverSortBy = discoverSortBy; }
 }

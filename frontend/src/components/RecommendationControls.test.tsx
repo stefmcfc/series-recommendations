@@ -797,42 +797,148 @@ describe('FRONTEND-030-AC-11/12: Sort By hidden under Popular Right Now', () => 
   })
 })
 
-describe('FRONTEND-030-AC-13/14/15, FRONTEND-031-AC-01: "Vote Average" relabel under Highest Rated and Genre & Keyword', () => {
-  it('relabels the second Sort By option under Highest Rated, keeping the same underlying value', () => {
+// FRONTEND-033 supersedes FRONTEND-030-AC-13/14/15 and FRONTEND-031-AC-01/02:
+// the "Vote Average"/"Most Recommended" relabel under Highest Rated and
+// Genre & Keyword (two labels for one identical output) is replaced by four
+// real, TMDB-backed sort options for those two modes only. See
+// frontend_spec_033_discover_native_sort_controls.md.
+describe('FRONTEND-033-AC-01: four TMDB-native sort options under Highest Rated and Genre & Keyword', () => {
+  it('shows the four TMDB-native sort options under Highest Rated', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+
+    for (const label of [
+      /vote average/i,
+      /most popular/i,
+      /^newest$/i,
+      /most voted/i,
+    ]) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument()
+    }
+    expect(screen.queryByLabelText(/^best match$/i)).not.toBeInTheDocument()
+  })
+
+  it('shows the same four options under Genre & Keyword', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+
+    for (const label of [
+      /vote average/i,
+      /most popular/i,
+      /^newest$/i,
+      /most voted/i,
+    ]) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument()
+    }
+    expect(screen.queryByLabelText(/^best match$/i)).not.toBeInTheDocument()
+  })
+
+  it('still renders the Sort By fieldset under Genre & Keyword', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-033-AC-02: Automatic and Specific Series are unaffected', () => {
+  it('continues to show exactly Best Match/Most Recommended', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    expect(screen.getByLabelText(/^best match$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    expect(screen.getByLabelText(/^best match$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-033-AC-03: correct per-mode default is selected', () => {
+  it('Vote Average is the default under Highest Rated', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    expect(screen.getByLabelText(/vote average/i)).toBeChecked()
+  })
+
+  it('Most Popular is the default under Genre & Keyword', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(screen.getByLabelText(/most popular/i)).toBeChecked()
+  })
+})
+
+describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, included otherwise', () => {
+  it('omits discoverSortBy at the default, includes it once a non-default option is picked', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/highest rated/i))
-    expect(screen.getByLabelText(/vote average/i)).toBeInTheDocument()
-    expect(screen.queryByLabelText(/most recommended/i)).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByLabelText(/vote average/i))
     expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ sortBy: 'recommendationCount' }),
+      expect.not.objectContaining({ discoverSortBy: expect.anything() }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/most popular/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ discoverSortBy: 'popularity.desc' }),
     )
   })
 
-  it('FRONTEND-031-AC-01: also relabels the second Sort By option under Genre & Keyword', () => {
-    render(<RecommendationControls onQueryChange={vi.fn()} />)
+  it('omits discoverSortBy under Genre & Keyword at the default, includes it once changed', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    expect(screen.getByLabelText(/vote average/i)).toBeInTheDocument()
-    expect(screen.queryByLabelText(/most recommended/i)).not.toBeInTheDocument()
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ discoverSortBy: expect.anything() }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/^newest$/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ discoverSortBy: 'first_air_date.desc' }),
+    )
   })
 
-  it('FRONTEND-031-AC-02: Sort By fieldset still renders under Genre & Keyword', () => {
-    render(<RecommendationControls onQueryChange={vi.fn()} />)
+  it('sends vote_average.desc/vote_count.desc for the remaining two options under Highest Rated', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
 
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    fireEvent.click(screen.getByLabelText(/most voted/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ discoverSortBy: 'vote_count.desc' }),
+    )
+
+    fireEvent.click(screen.getByLabelText(/vote average/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ discoverSortBy: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an unrelated request', () => {
+  it('clears discoverSortBy from the request when switching from Highest Rated to Automatic', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    fireEvent.click(screen.getByLabelText(/most voted/i))
+    fireEvent.click(screen.getByLabelText(/^automatic$/i))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ discoverSortBy: expect.anything() }),
+    )
+  })
+
+  it('resets to the Genre & Keyword default when switching there from a non-default Highest Rated selection', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    fireEvent.click(screen.getByLabelText(/most voted/i))
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
-  })
 
-  it('leaves the label as "Most Recommended" for Automatic and Specific Series', () => {
-    render(<RecommendationControls onQueryChange={vi.fn()} />)
-
-    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
-
-    fireEvent.click(screen.getByLabelText(/specific series/i))
-    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/most popular/i)).toBeChecked()
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ discoverSortBy: expect.anything() }),
+    )
   })
 })

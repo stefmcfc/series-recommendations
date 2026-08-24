@@ -26,6 +26,10 @@ pre-existing `color-contrast` violation was flagged, traced via a captured-conso
 `.sortLabel` ("Sort by" dropdown label on the My Series view) — unrelated to any file this spec touched, not a
 regression introduced here. A `page-has-heading-one` moderate violation (pre-existing, app-wide, no `<h1>` anywhere in
 `App.tsx`) was also observed in both themes, likewise unrelated to this change.
+**Addendum (2026-08-24)**: this spec's `Sort By` UI change for `topRated` — relabeling the second radio to "Vote
+Average" — was superseded by `frontend_spec_033_discover_native_sort_controls.md`, which replaces it with four
+real, distinct TMDB-backed sort options for `topRated` (and `genre`, see `frontend_spec_031`). The relabel
+described above is no longer present in the codebase; this entry is left as-is as a historical record.
 **Priority**: P3 (mirrors the backend spec's own tier)
 **Depends on**: Series Spec 024 (`excludeKeywords` param, mode-aware `minVoteCount` default of 200 for `topRated`) ✅, Frontend Spec 011 (`RecommendationControls`, `excludeGenresText` free-text pattern, `Filters` section, `handleResetFilters`) ✅, Frontend Spec 019 (`Sort By` fieldset, `Best Match`/`Most Recommended` radios, `sortBy` query wiring) ✅, Frontend Spec 027 (five-way mode selector including `topRated`/`trending`, mode-switch clearing behavior, mode-based visibility gating precedent) ✅
 **Frontend Stage**: 30 of N

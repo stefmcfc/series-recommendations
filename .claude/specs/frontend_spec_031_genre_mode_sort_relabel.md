@@ -5,6 +5,10 @@ from `state.mode === 'topRated'` to `state.mode === 'topRated' || state.mode ===
 `RecommendationControls.test.tsx` (50/50 passing) — a pre-existing test that asserted the old (wrong) behavior
 for Genre & Keyword mode was updated as part of this fix's red/green cycle rather than left contradicting the
 new spec.
+**Addendum (2026-08-24)**: this spec's "Vote Average" relabel for `genre` mode was superseded by
+`frontend_spec_033_discover_native_sort_controls.md`, which replaces it (and `topRated`'s matching relabel from
+`frontend_spec_030`) with four real, distinct TMDB-backed sort options for both modes. The relabel described
+above is no longer present in the codebase; this entry is left as-is as a historical record.
 **Priority**: Low
 **Depends on**: `frontend_spec_030_discover_filters_and_sort_controls.md`, `series_spec_024_discover_filters_and_vote_threshold.md`
 **Area**: Frontend (`RecommendationControls.tsx`)

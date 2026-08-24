@@ -8,6 +8,14 @@ import styles from './RecommendationControls.module.css'
 type SourceMode = 'automatic' | 'specific' | 'genre' | 'trending' | 'topRated'
 type SortByOption = 'score' | 'recommendationCount'
 type TrendingWindow = 'day' | 'week'
+// FRONTEND-033-AC-01: real, TMDB-backed sort options for topRated/genre mode
+// -- replaces the previous "Best Match"/"Vote Average" no-op pair for those
+// two modes only. See frontend_spec_033_discover_native_sort_controls.md.
+type DiscoverSortByOption =
+  | 'vote_average.desc'
+  | 'popularity.desc'
+  | 'first_air_date.desc'
+  | 'vote_count.desc'
 
 interface RecommendationControlsProps {
   onQueryChange: (query: RecommendationQuery) => void
@@ -31,6 +39,18 @@ interface ControlsState {
   maxPerSource: string
   maxSourcesShown: string
   sortBy: SortByOption
+  discoverSortBy: DiscoverSortByOption
+}
+
+// FRONTEND-033-AC-03: each mode's default matches its current implicit
+// behavior exactly, so a user who never touches the control sees no
+// behavior change from before this spec.
+const DISCOVER_SORT_BY_DEFAULTS: Record<
+  'topRated' | 'genre',
+  DiscoverSortByOption
+> = {
+  topRated: 'vote_average.desc',
+  genre: 'popularity.desc',
 }
 
 const initialState: ControlsState = {
@@ -51,6 +71,7 @@ const initialState: ControlsState = {
   maxPerSource: '',
   maxSourcesShown: '',
   sortBy: 'score',
+  discoverSortBy: DISCOVER_SORT_BY_DEFAULTS.topRated,
 }
 
 function parseCommaList(value: string): string[] {
@@ -80,6 +101,16 @@ function buildQuery(state: ControlsState): RecommendationQuery {
 
   if (state.mode === 'topRated') {
     query.sourceMode = 'topRated'
+  }
+
+  // FRONTEND-033-AC-04: only sent when it differs from the current mode's
+  // own default -- mirrors SeriesList.tsx's buildSortParam wire-minimization
+  // convention (series_spec_009) so a client at the default behaves
+  // identically to a pre-FRONTEND-033 client.
+  if (state.mode === 'topRated' || state.mode === 'genre') {
+    if (state.discoverSortBy !== DISCOVER_SORT_BY_DEFAULTS[state.mode]) {
+      query.discoverSortBy = state.discoverSortBy
+    }
   }
 
   const hasSourcePool = state.mode === 'automatic' || state.mode === 'specific'
@@ -167,6 +198,15 @@ export function RecommendationControls({
       }
     }
 
+    // FRONTEND-033-AC-05: entering topRated/genre resets the sort selection
+    // to that mode's own default, mirroring the minVoteCount mode-switch
+    // reset pattern above -- never leaks a discoverSortBy value chosen under
+    // one of these modes into the other, or into an unrelated mode's request
+    // (buildQuery only ever reads it for topRated/genre in the first place).
+    if (mode === 'topRated' || mode === 'genre') {
+      patch.discoverSortBy = DISCOVER_SORT_BY_DEFAULTS[mode]
+    }
+
     updateState(patch)
   }
 
@@ -225,6 +265,10 @@ export function RecommendationControls({
     updateState({ sortBy })
   }
 
+  const handleDiscoverSortByChange = (discoverSortBy: DiscoverSortByOption) => {
+    updateState({ discoverSortBy })
+  }
+
   const showGenreKeywordHint =
     state.mode === 'genre' &&
     state.genresSelected.length === 0 &&
@@ -232,6 +276,11 @@ export function RecommendationControls({
 
   const showMinSourceRating =
     state.mode === 'automatic' || state.mode === 'specific'
+
+  // FRONTEND-033-AC-01: topRated/genre get four real, TMDB-native options in
+  // place of the legacy Best Match/Vote Average(-relabeled) pair.
+  const showDiscoverSortByOptions =
+    state.mode === 'topRated' || state.mode === 'genre'
 
   return (
     <div className={styles.container}>
@@ -326,31 +375,83 @@ export function RecommendationControls({
         <fieldset className={styles.sortByFieldset}>
           <legend>Sort By</legend>
 
-          <div className={styles.modeOption}>
-            <input
-              id="sort-by-score"
-              type="radio"
-              name="sort-by"
-              checked={state.sortBy === 'score'}
-              onChange={() => handleSortByChange('score')}
-            />
-            <label htmlFor="sort-by-score">Best Match</label>
-          </div>
+          {showDiscoverSortByOptions ? (
+            <>
+              <div className={styles.modeOption}>
+                <input
+                  id="sort-by-vote-average"
+                  type="radio"
+                  name="sort-by"
+                  checked={state.discoverSortBy === 'vote_average.desc'}
+                  onChange={() =>
+                    handleDiscoverSortByChange('vote_average.desc')
+                  }
+                />
+                <label htmlFor="sort-by-vote-average">Vote Average</label>
+              </div>
 
-          <div className={styles.modeOption}>
-            <input
-              id="sort-by-recommendation-count"
-              type="radio"
-              name="sort-by"
-              checked={state.sortBy === 'recommendationCount'}
-              onChange={() => handleSortByChange('recommendationCount')}
-            />
-            <label htmlFor="sort-by-recommendation-count">
-              {state.mode === 'topRated' || state.mode === 'genre'
-                ? 'Vote Average'
-                : 'Most Recommended'}
-            </label>
-          </div>
+              <div className={styles.modeOption}>
+                <input
+                  id="sort-by-most-popular"
+                  type="radio"
+                  name="sort-by"
+                  checked={state.discoverSortBy === 'popularity.desc'}
+                  onChange={() => handleDiscoverSortByChange('popularity.desc')}
+                />
+                <label htmlFor="sort-by-most-popular">Most Popular</label>
+              </div>
+
+              <div className={styles.modeOption}>
+                <input
+                  id="sort-by-newest"
+                  type="radio"
+                  name="sort-by"
+                  checked={state.discoverSortBy === 'first_air_date.desc'}
+                  onChange={() =>
+                    handleDiscoverSortByChange('first_air_date.desc')
+                  }
+                />
+                <label htmlFor="sort-by-newest">Newest</label>
+              </div>
+
+              <div className={styles.modeOption}>
+                <input
+                  id="sort-by-most-voted"
+                  type="radio"
+                  name="sort-by"
+                  checked={state.discoverSortBy === 'vote_count.desc'}
+                  onChange={() => handleDiscoverSortByChange('vote_count.desc')}
+                />
+                <label htmlFor="sort-by-most-voted">Most Voted</label>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={styles.modeOption}>
+                <input
+                  id="sort-by-score"
+                  type="radio"
+                  name="sort-by"
+                  checked={state.sortBy === 'score'}
+                  onChange={() => handleSortByChange('score')}
+                />
+                <label htmlFor="sort-by-score">Best Match</label>
+              </div>
+
+              <div className={styles.modeOption}>
+                <input
+                  id="sort-by-recommendation-count"
+                  type="radio"
+                  name="sort-by"
+                  checked={state.sortBy === 'recommendationCount'}
+                  onChange={() => handleSortByChange('recommendationCount')}
+                />
+                <label htmlFor="sort-by-recommendation-count">
+                  Most Recommended
+                </label>
+              </div>
+            </>
+          )}
         </fieldset>
       )}
 

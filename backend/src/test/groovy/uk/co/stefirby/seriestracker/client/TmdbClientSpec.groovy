@@ -215,8 +215,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_genres", "18,80"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([18, 80], []) is called"
-            def result = client().discover([18, 80], [])
+        when: "TmdbClient.discover([18, 80], [], 'popularity.desc') is called"
+            def result = client().discover([18, 80], [], "popularity.desc")
 
         then: "with_genres is sent and with_keywords is omitted; the result is mapped to a TmdbCandidate"
             result.size() == 1
@@ -232,8 +232,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_keywords", "9720"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([18], [9720]) is called"
-            def result = client().discover([18], [9720])
+        when: "TmdbClient.discover([18], [9720], 'popularity.desc') is called"
+            def result = client().discover([18], [9720], "popularity.desc")
 
         then: "the expected request was made and the result is mapped"
             result.size() == 1
@@ -248,8 +248,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_keywords", "9720"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([], [9720]) is called"
-            def result = client().discover([], [9720])
+        when: "TmdbClient.discover([], [9720], 'popularity.desc') is called"
+            def result = client().discover([], [9720], "popularity.desc")
 
         then: "the result is mapped"
             result.size() == 1
@@ -705,8 +705,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("vote_count.gte", "100"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discoverTopRated(100) is called"
-            def result = client().discoverTopRated(100)
+        when: "TmdbClient.discoverTopRated(100, 'vote_average.desc') is called"
+            def result = client().discoverTopRated(100, "vote_average.desc")
 
         then: "the expected request was made and the result mapped"
             result.size() == 1
@@ -743,10 +743,46 @@ class TmdbClientSpec extends Specification {
             mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
                 .andRespond(withServerError())
 
-        when: "TmdbClient.discoverTopRated(20) is called"
-            client().discoverTopRated(20)
+        when: "TmdbClient.discoverTopRated(20, 'vote_average.desc') is called"
+            client().discoverTopRated(20, "vote_average.desc")
 
         then: "an ExternalServiceException is thrown"
             thrown(ExternalServiceException)
+    }
+
+    // -- SERIES-025: TMDB-native sort_by on discover()/discoverTopRated() --
+
+    def "SERIES-025-AC-01: discover() sends sort_by as a query parameter"() {
+        given: "TMDB /discover/tv returns one result"
+            def body = '{"results":[{"id":28,"name":"Action Show"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("with_genres", "28"))
+                .andExpect(queryParam("sort_by", "popularity.desc"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "discover is called with a sortBy value"
+            def result = client().discover([28], [], "popularity.desc")
+
+        then: "the request includes sort_by=popularity.desc, and the result is mapped"
+            result.size() == 1
+            result[0].tmdbId() == 28
+    }
+
+    def "SERIES-025-AC-02: discoverTopRated() sends the given sortBy, not a hardcoded value"() {
+        given: "TMDB /discover/tv returns one result"
+            def body = '{"results":[{"id":238754,"name":"The Loyal Pin"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("sort_by", "popularity.desc"))
+                .andExpect(queryParam("vote_count.gte", "200"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "discoverTopRated is called with sortBy=popularity.desc"
+            def result = client().discoverTopRated(200, "popularity.desc")
+
+        then: "the request's sort_by is popularity.desc, not vote_average.desc"
+            result.size() == 1
+            result[0].tmdbId() == 238754
     }
 }
