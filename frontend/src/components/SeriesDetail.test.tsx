@@ -59,7 +59,7 @@ describe('FRONTEND-005-AC-04/06/07: fetch, loading, render', () => {
       /loading series details/i,
     )
     await waitFor(() =>
-      expect(screen.getByText('The Office')).toBeInTheDocument(),
+      expect(screen.getByText(/^The Office/)).toBeInTheDocument(),
     )
     expect(mockGetById).toHaveBeenCalledWith('abc-123')
     expect(screen.getByText('Rewatch of the year')).toBeInTheDocument()
@@ -88,7 +88,7 @@ describe('FRONTEND-005-AC-08/10: null fields and no UUID', () => {
     mockGetById.mockResolvedValue(makeSeries({ rottenTomatoesRating: null }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
     expect(screen.queryByText('abc-123')).not.toBeInTheDocument()
   })
@@ -99,7 +99,7 @@ describe('FRONTEND-005-AC-09: dates rendered as human-readable', () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     const expected = new Date('2026-01-01T00:00:00Z').toLocaleDateString()
     expect(screen.getByText(expected)).toBeInTheDocument()
   })
@@ -121,7 +121,7 @@ describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
 
     mockGetById.mockResolvedValueOnce(makeSeries({ id: '2', posterUrl: null }))
     rerender(<SeriesDetail id="2" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.queryByAltText('')).not.toBeInTheDocument()
   })
 
@@ -169,7 +169,7 @@ describe('FRONTEND-005-AC-12/13: error state', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
 
     await waitFor(() =>
-      expect(screen.getByText('The Office')).toBeInTheDocument(),
+      expect(screen.getByText(/^The Office/)).toBeInTheDocument(),
     )
     expect(mockGetById).toHaveBeenCalledTimes(2)
   })
@@ -300,7 +300,7 @@ describe('FRONTEND-022-AC-09: alternateTitle no longer displayed', () => {
   it('does not render an Alternate Title field', async () => {
     mockGetById.mockResolvedValue(makeSeries({ title: 'Spooks' }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('Spooks')
+    await screen.findByText(/^Spooks/)
     expect(screen.queryByText(/alternate title/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
   })
@@ -308,7 +308,7 @@ describe('FRONTEND-022-AC-09: alternateTitle no longer displayed', () => {
   it('does not render a Metacritic Rating field', async () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.queryByText(/metacritic/i)).not.toBeInTheDocument()
   })
 })
@@ -320,7 +320,7 @@ describe('FRONTEND-018-AC-13/14: Tags entry rendered', () => {
     )
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.getByText('Tags')).toBeInTheDocument()
     expect(
       screen.getByText('rewatch candidate,watch with partner'),
@@ -331,7 +331,7 @@ describe('FRONTEND-018-AC-13/14: Tags entry rendered', () => {
     mockGetById.mockResolvedValue(makeSeries({ tags: null }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.getByText('Tags')).toBeInTheDocument()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
@@ -348,7 +348,7 @@ describe('FRONTEND-023-AC-05/06/07: refresh action', () => {
       tmdbRefreshed: false,
     })
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
 
     fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
     expect(screen.getByRole('button', { name: /refreshing/i })).toBeDisabled()
@@ -365,7 +365,7 @@ describe('FRONTEND-023-AC-05/06/07: refresh action', () => {
       tmdbRefreshed: true,
     })
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
 
     fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
 
@@ -382,7 +382,7 @@ describe('FRONTEND-023-AC-05/06/07: refresh action', () => {
       tmdbRefreshed: false,
     })
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
 
     fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
 
@@ -399,7 +399,7 @@ describe('FRONTEND-023-AC-05/06/07: refresh action', () => {
       tmdbRefreshed: true,
     })
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
 
     fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
 
@@ -419,7 +419,7 @@ describe('FRONTEND-023-AC-08: refresh failure', () => {
       ),
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
 
     fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
 
@@ -440,7 +440,7 @@ describe('FRONTEND-023-AC-09: last refreshed display', () => {
   it('shows no last-refreshed text when lastRefreshedAt is null', async () => {
     mockGetById.mockResolvedValue(makeSeries({ lastRefreshedAt: null }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
     expect(screen.queryByText(/last refreshed/i)).not.toBeInTheDocument()
   })
 })
@@ -457,7 +457,7 @@ describe('FRONTEND-026-AC-09/10/11: TMDB metadata fields', () => {
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    expect(await screen.findByText('United Kingdom')).toBeInTheDocument()
+    expect(await screen.findByText('| United Kingdom')).toBeInTheDocument()
     expect(screen.getByText('Ended')).toBeInTheDocument()
     expect(screen.getByText('7.7')).toBeInTheDocument()
     expect(screen.getByText('450')).toBeInTheDocument()
@@ -474,7 +474,7 @@ describe('FRONTEND-026-AC-09/10/11: TMDB metadata fields', () => {
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4)
   })
 })
@@ -493,7 +493,7 @@ describe('FRONTEND-012-AC-06: production status label', () => {
     mockGetById.mockResolvedValue(makeSeries({ productionStatus: null }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 })
@@ -504,7 +504,7 @@ describe('FRONTEND-012-AC-13/14: rewatch toggle', () => {
   it('renders only when status is COMPLETED', async () => {
     mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
 
     expect(screen.queryByLabelText(/flag for rewatch/i)).not.toBeInTheDocument()
   })
@@ -552,7 +552,7 @@ describe('FRONTEND-005-AC-30: no console logging of series data', () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     const loggedNotes = consoleSpy.mock.calls.some((call) =>
       call.some(
         (arg) => typeof arg === 'string' && arg.includes('Rewatch of the year'),
@@ -570,7 +570,7 @@ describe('FRONTEND-005-AC-31: current season/episode hidden when COMPLETED', () 
     )
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.queryByText('Current Season')).not.toBeInTheDocument()
     expect(screen.queryByText('Current Episode')).not.toBeInTheDocument()
   })
@@ -579,7 +579,7 @@ describe('FRONTEND-005-AC-31: current season/episode hidden when COMPLETED', () 
     mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText('The Office'))
+    await waitFor(() => screen.getByText(/^The Office/))
     expect(screen.getByText('Current Season')).toBeInTheDocument()
     expect(screen.getByText('Current Episode')).toBeInTheDocument()
   })
@@ -631,7 +631,7 @@ describe('FRONTEND-028-AC-14: overview field', () => {
     mockGetById.mockResolvedValue(makeSeries({ overview: null }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
   })
 })
@@ -641,7 +641,7 @@ describe('FRONTEND-023-AC-19/20: new-content badge and dismiss', () => {
     mockGetById.mockResolvedValue(makeSeries({ newContentDetectedAt: null }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await screen.findByText('The Office')
+    await screen.findByText(/^The Office/)
     expect(
       screen.queryByTestId('dismiss-new-content-btn'),
     ).not.toBeInTheDocument()
@@ -689,5 +689,68 @@ describe('FRONTEND-023-AC-19/20: new-content badge and dismiss', () => {
     )
     expect(screen.getByTestId('dismiss-new-content-btn')).toBeInTheDocument()
     expect(screen.getByText(/new content/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-012 amendment (live review): year/country in heading', () => {
+  it('renders year in the heading text, not as a separate field', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ year: 2005 }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('The Office (2005)')).toBeInTheDocument()
+    expect(screen.queryByText('Year')).not.toBeInTheDocument()
+  })
+
+  it('renders the heading without a year suffix when year is null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ year: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() =>
+      expect(screen.getByText(/^The Office/)).toBeInTheDocument(),
+    )
+    expect(screen.queryByText(/The Office \(/)).not.toBeInTheDocument()
+  })
+
+  it('renders origin country next to the heading, not as a separate field', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ originCountry: 'GB' }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('| United Kingdom')).toBeInTheDocument()
+    expect(screen.queryByText('Origin Country')).not.toBeInTheDocument()
+  })
+
+  it('renders no country span when origin country is null', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ originCountry: null, year: null }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText(/^The Office/)
+    expect(screen.queryByText(/^\| /)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-012 amendment (live review): full-width Overview field', () => {
+  it('applies the overviewField class alongside field on the Overview entry', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ overview: 'A mockumentary sitcom.' }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    const dt = await screen.findByText('Overview')
+    expect(dt.parentElement?.className).toContain('field')
+    expect(dt.parentElement?.className).toContain('overviewField')
+  })
+
+  it('renders Overview as the first field in the grid', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ overview: 'A mockumentary sitcom.' }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    const dt = await screen.findByText('Overview')
+    const fieldsList = dt.closest('dl')
+    const firstField = fieldsList?.firstElementChild
+    expect(firstField).toBe(dt.parentElement)
   })
 })

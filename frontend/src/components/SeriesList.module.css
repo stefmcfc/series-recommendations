@@ -183,9 +183,8 @@
 
 .row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.375rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
@@ -194,6 +193,22 @@
 
 .row:hover {
   background-color: var(--social-bg);
+}
+
+.rowPrimary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Aligned under the title, not the thumbnail: thumbnail width (2.5rem) +
+   the gap between it and titleGroup in .rowPrimary (1rem). */
+.rowSecondary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-left: calc(2.5rem + 1rem);
 }
 
 .thumbnail {

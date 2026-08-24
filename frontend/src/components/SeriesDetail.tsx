@@ -264,7 +264,19 @@ export function SeriesDetail({
 
       {!loading && !notFound && !error && series && (
         <div className={styles.detail}>
-          <h2 className={styles.heading}>{series.title}</h2>
+          <div className={styles.headingRow}>
+            <h2 className={styles.heading}>
+              {series.year != null
+                ? `${series.title} (${series.year})`
+                : series.title}
+            </h2>
+            {series.originCountry != null && (
+              <span className={styles.country}>
+                {' | '}
+                {formatCountryName(series.originCountry)}
+              </span>
+            )}
+          </div>
 
           <div className={styles.content}>
             {series.posterUrl !== null && !posterError && (
@@ -277,9 +289,9 @@ export function SeriesDetail({
             )}
 
             <dl className={styles.fields}>
-              <div className={styles.field}>
-                <dt>Year</dt>
-                <dd>{formatValue(series.year)}</dd>
+              <div className={`${styles.field} ${styles.overviewField}`}>
+                <dt>Overview</dt>
+                <dd>{formatValue(series.overview)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Genres</dt>
@@ -300,10 +312,6 @@ export function SeriesDetail({
                         </span>
                       ))}
                 </dd>
-              </div>
-              <div className={styles.field}>
-                <dt>Overview</dt>
-                <dd>{formatValue(series.overview)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Status</dt>
@@ -344,10 +352,6 @@ export function SeriesDetail({
               <div className={styles.field}>
                 <dt>TMDB Vote Count</dt>
                 <dd>{formatValue(series.tmdbVoteCount)}</dd>
-              </div>
-              <div className={styles.field}>
-                <dt>Origin Country</dt>
-                <dd>{formatValue(formatCountryName(series.originCountry))}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Production Status</dt>
