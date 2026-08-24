@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import { SeriesStatus } from '../types/series'
 import type { SearchCriteria } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
+import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import styles from './SearchFilter.module.css'
 
 interface SearchFilterProps {
@@ -146,6 +147,8 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
             onChange={handleKeywordsChange}
             options={keywordOptionsError ? [] : keywordOptions}
             placeholder="Type to filter tracked keywords"
+            allowFreeText
+            maxSuggestionsWhenEmpty={KEYWORD_SUGGESTIONS_LIMIT}
           />
           {keywordOptionsError && (
             <p className={styles.keywordError} role="alert">
@@ -271,6 +274,10 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
               options={keywordOptionsError ? [] : keywordOptions}
               placeholder="Type to filter tracked keywords"
               focusOnMount
+              allowFreeText
+              // FRONTEND-032-AC-10: no maxSuggestionsWhenEmpty here -- this
+              // modal is the dedicated "browse everything" surface, so it
+              // intentionally omits the cap the inline field uses.
             />
 
             <div className={styles.dialogActions}>

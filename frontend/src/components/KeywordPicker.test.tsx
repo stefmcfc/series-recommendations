@@ -65,6 +65,11 @@ describe('FRONTEND-029-AC-03/04: vocabulary-constrained mode filters and adds vi
         selected={[]}
         onChange={onChange}
         options={['spy', 'period drama', 'heist']}
+        // FRONTEND-032-AC-04: capped at 0 so this test's premise ("nothing
+        // shown before typing") is isolated from the new empty-input default
+        // suggestions behavior (covered separately below), keeping this
+        // test focused on typed-filter behavior only.
+        maxSuggestionsWhenEmpty={0}
       />,
     )
 
@@ -84,7 +89,7 @@ describe('FRONTEND-029-AC-03/04: vocabulary-constrained mode filters and adds vi
     expect(input).toHaveValue('')
   })
 
-  it('renders no suggestions for an empty input', () => {
+  it('shows all non-selected options as suggestions for an empty input (FRONTEND-032-AC-05: no maxSuggestionsWhenEmpty cap)', () => {
     render(
       <KeywordPicker
         id="kw"
@@ -95,12 +100,8 @@ describe('FRONTEND-029-AC-03/04: vocabulary-constrained mode filters and adds vi
       />,
     )
 
-    expect(
-      screen.queryByRole('button', { name: 'spy' }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'heist' }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'spy' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'heist' })).toBeInTheDocument()
   })
 
   it('renders no suggestions when typed text matches no option', () => {
@@ -284,6 +285,104 @@ describe('FRONTEND-029-AC-08: chip list item is not itself interactive', () => {
     const chip = screen.getByText('spy').closest('li')
     expect(chip).not.toHaveAttribute('role')
     expect(chip).not.toHaveAttribute('tabindex')
+  })
+})
+
+describe('FRONTEND-032-AC-01: allowFreeText defaults to false', () => {
+  it('does not add non-matching free text on Enter when allowFreeText is omitted', () => {
+    render(
+      <KeywordPicker
+        id="k"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['spy', 'heist']}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Keywords'), {
+      target: { value: 'zzz-not-a-match' },
+    })
+    fireEvent.keyDown(screen.getByLabelText('Keywords'), { key: 'Enter' })
+    expect(screen.queryByText('zzz-not-a-match')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-032-AC-02: Enter adds free text when allowFreeText is true', () => {
+  it('adds the typed text even though options are present and none match', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="k"
+        label="Keywords"
+        selected={[]}
+        onChange={onChange}
+        options={['spy', 'heist']}
+        allowFreeText
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Keywords'), {
+      target: { value: 'zombie apocalypse' },
+    })
+    fireEvent.keyDown(screen.getByLabelText('Keywords'), { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith(['zombie apocalypse'])
+  })
+})
+
+describe('FRONTEND-032-AC-03: clicking a suggestion still adds that option when allowFreeText is true', () => {
+  it('adds the clicked suggestion, not the raw typed text', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="k"
+        label="Keywords"
+        selected={[]}
+        onChange={onChange}
+        options={['spy', 'heist']}
+        allowFreeText
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Keywords'), {
+      target: { value: 'sp' },
+    })
+    fireEvent.click(screen.getByText('spy'))
+    expect(onChange).toHaveBeenCalledWith(['spy'])
+  })
+})
+
+describe('FRONTEND-032-AC-04: empty input shows the first maxSuggestionsWhenEmpty options', () => {
+  it('shows only the first N options, preserving order, excluding already-selected', () => {
+    render(
+      <KeywordPicker
+        id="k"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['spy', 'heist', 'crime', 'drama', 'noir']}
+        maxSuggestionsWhenEmpty={3}
+      />,
+    )
+    expect(screen.getByText('spy')).toBeInTheDocument()
+    expect(screen.getByText('heist')).toBeInTheDocument()
+    expect(screen.getByText('crime')).toBeInTheDocument()
+    expect(screen.queryByText('drama')).not.toBeInTheDocument()
+    expect(screen.queryByText('noir')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-032-AC-05: omitting maxSuggestionsWhenEmpty shows all options when empty', () => {
+  it('renders every option with no query typed', () => {
+    const many = Array.from({ length: 15 }, (_, i) => `keyword-${i}`)
+    render(
+      <KeywordPicker
+        id="k"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={many}
+      />,
+    )
+    expect(screen.getByText('keyword-0')).toBeInTheDocument()
+    expect(screen.getByText('keyword-14')).toBeInTheDocument()
   })
 })
 

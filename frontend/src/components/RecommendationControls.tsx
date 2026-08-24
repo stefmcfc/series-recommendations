@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
+import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import styles from './RecommendationControls.module.css'
 
 type SourceMode = 'automatic' | 'specific' | 'genre' | 'trending' | 'topRated'
@@ -116,6 +117,7 @@ export function RecommendationControls({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [allSeries, setAllSeries] = useState<Series[]>([])
   const [genreOptions, setGenreOptions] = useState<string[]>([])
+  const [keywordOptions, setKeywordOptions] = useState<string[]>([])
 
   useEffect(() => {
     seriesApi
@@ -128,6 +130,18 @@ export function RecommendationControls({
     seriesApi
       .getGenreOptions()
       .then(setGenreOptions)
+      .catch(() => undefined)
+  }, [])
+
+  // FRONTEND-032-AC-07/AC-08: offers tracked keywords as type-ahead
+  // suggestions alongside free text. Unlike SearchFilter's stricter
+  // fetch-failure handling (keywords are that field's only input method),
+  // this field stays fully usable via free text on its own, so a failed
+  // fetch degrades silently here -- no error banner, options just stay [].
+  useEffect(() => {
+    seriesApi
+      .getKeywordStats()
+      .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
       .catch(() => undefined)
   }, [])
 
@@ -389,6 +403,9 @@ export function RecommendationControls({
               selected={state.keywordsSelected}
               onChange={(next) => updateState({ keywordsSelected: next })}
               placeholder="Type a keyword and press Enter"
+              options={keywordOptions}
+              allowFreeText
+              maxSuggestionsWhenEmpty={KEYWORD_SUGGESTIONS_LIMIT}
             />
           </div>
           {showGenreKeywordHint && (

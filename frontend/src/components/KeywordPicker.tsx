@@ -9,6 +9,8 @@ interface KeywordPickerProps {
   options?: string[]
   placeholder?: string
   focusOnMount?: boolean
+  allowFreeText?: boolean
+  maxSuggestionsWhenEmpty?: number
 }
 
 function isSameKeyword(a: string, b: string): boolean {
@@ -23,6 +25,8 @@ export function KeywordPicker({
   options,
   placeholder,
   focusOnMount,
+  allowFreeText = false,
+  maxSuggestionsWhenEmpty,
 }: KeywordPickerProps) {
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -35,7 +39,12 @@ export function KeywordPicker({
   }, [])
 
   const trimmedInput = inputValue.trim()
-  const matches =
+
+  // Suggestions used to decide what Enter adds in constrained (non-free-text)
+  // mode -- only ever derived from what's actually typed, so the pre-existing
+  // "Enter with an empty input does nothing" behavior (frontend_spec_029)
+  // stays unchanged even now that empty-input default suggestions exist.
+  const typedMatches =
     options && trimmedInput !== ''
       ? options.filter(
           (option) =>
@@ -43,6 +52,23 @@ export function KeywordPicker({
             !selected.some((keyword) => isSameKeyword(keyword, option)),
         )
       : []
+
+  // FRONTEND-032-AC-04/05: when the input is empty, offer the first N
+  // (or, if maxSuggestionsWhenEmpty is omitted, all) non-selected options as
+  // suggestions -- options already arrive most-common-first, so a prefix
+  // slice is sufficient (no re-sorting needed).
+  const emptyInputSuggestions =
+    options && trimmedInput === ''
+      ? options
+          .filter(
+            (option) =>
+              !selected.some((keyword) => isSameKeyword(keyword, option)),
+          )
+          .slice(0, maxSuggestionsWhenEmpty ?? options.length)
+      : []
+
+  const visibleSuggestions =
+    trimmedInput !== '' ? typedMatches : emptyInputSuggestions
 
   const addKeyword = (raw: string) => {
     const trimmed = raw.trim()
@@ -60,8 +86,13 @@ export function KeywordPicker({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
-      if (options) {
-        if (matches.length > 0) addKeyword(matches[0])
+      // FRONTEND-032-AC-02: when allowFreeText is true, Enter always adds
+      // whatever's currently typed, regardless of whether options were
+      // supplied or whether the text matches one of them.
+      if (allowFreeText) {
+        addKeyword(inputValue)
+      } else if (options) {
+        if (typedMatches.length > 0) addKeyword(typedMatches[0])
       } else {
         addKeyword(inputValue)
       }
@@ -86,9 +117,9 @@ export function KeywordPicker({
         onKeyDown={handleKeyDown}
       />
 
-      {options && matches.length > 0 && (
+      {options && visibleSuggestions.length > 0 && (
         <ul className={styles.suggestions}>
-          {matches.map((option) => (
+          {visibleSuggestions.map((option) => (
             <li key={option}>
               <button
                 type="button"
