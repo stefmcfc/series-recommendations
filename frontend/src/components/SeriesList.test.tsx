@@ -1013,7 +1013,7 @@ describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
     await waitFor(() =>
       expect(mockUpdate).toHaveBeenCalledWith('1', { flaggedForRewatch: true }),
     )
-    expect(toggles[0]).toBeChecked()
+    expect(toggles[0]).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('reverts and shows a scoped error on failure', async () => {
@@ -1031,7 +1031,7 @@ describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
     fireEvent.click(toggle)
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
-    expect(toggle).not.toBeChecked()
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
   })
 })
 

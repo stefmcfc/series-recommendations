@@ -115,10 +115,48 @@
 }
 
 .fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   flex: 1 1 300px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fieldSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sectionHeader {
+  margin: 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.fieldRow {
+  display: grid;
+  gap: 1rem 1.5rem;
+}
+
+/* Fixed 3-track grid used by every non-full-width row, whether it holds 2 or
+   3 fields -- keeps column boundaries aligned across every row in the page,
+   rather than each row's column widths depending on how many fields it has.
+   A 2-field row simply leaves the third track's cell empty (fields populate
+   left-to-right: left, middle). */
+.threeColRow {
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
 }
 
 .field {
@@ -138,14 +176,6 @@
   color: var(--text-h);
 }
 
-.keywordsField {
-  grid-column: 1 / -1;
-}
-
-.overviewField {
-  grid-column: 1 / -1;
-}
-
 .keywordChip {
   display: inline-block;
   background: var(--social-bg);
@@ -157,6 +187,33 @@
 }
 
 .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actionsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.actionsLeft,
+.actionsRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actionsInfo {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -282,12 +339,28 @@
 }
 
 .rewatchToggle {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
+  background: transparent;
   color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
   cursor: pointer;
+}
+
+.rewatchToggle:hover {
+  background: var(--social-bg);
+}
+
+.rewatchToggleActive {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+.rewatchToggleActive:hover {
+  filter: brightness(0.9);
+  background: var(--accent);
 }
 
 .rewatchError {

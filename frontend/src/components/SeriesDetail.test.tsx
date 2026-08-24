@@ -524,7 +524,7 @@ describe('FRONTEND-012-AC-13/14: rewatch toggle', () => {
     await waitFor(() =>
       expect(mockUpdate).toHaveBeenCalledWith('1', { flaggedForRewatch: true }),
     )
-    expect(toggle).toBeChecked()
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('reverts and shows a scoped alert on failure', async () => {
@@ -542,7 +542,7 @@ describe('FRONTEND-012-AC-13/14: rewatch toggle', () => {
         /internal server error/i,
       ),
     )
-    expect(toggle).not.toBeChecked()
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
@@ -604,14 +604,16 @@ describe('FRONTEND-024-AC-06/07: Keywords entry rendered', () => {
   })
 })
 
-describe('FRONTEND-024-AC-18: keywords field carries a distinct class', () => {
-  it('applies the keywordsField class alongside field on the Keywords entry', async () => {
+describe('FRONTEND-024-AC-18: keywords field renders as its own full-width row', () => {
+  it('renders Keywords alone in its field row, not alongside other fields', async () => {
     mockGetById.mockResolvedValue(makeSeries({ keywords: ['spy'] }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
     const dt = await screen.findByText('Keywords')
-    expect(dt.parentElement?.className).toContain('field')
-    expect(dt.parentElement?.className).toContain('keywordsField')
+    const field = dt.parentElement
+    expect(field?.className).toContain('field')
+    const row = field?.parentElement
+    expect(row?.children).toHaveLength(1)
   })
 })
 
@@ -731,18 +733,20 @@ describe('FRONTEND-012 amendment (live review): year/country in heading', () => 
 })
 
 describe('FRONTEND-012 amendment (live review): full-width Overview field', () => {
-  it('applies the overviewField class alongside field on the Overview entry', async () => {
+  it('renders Overview alone in its field row, not alongside other fields', async () => {
     mockGetById.mockResolvedValue(
       makeSeries({ overview: 'A mockumentary sitcom.' }),
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
     const dt = await screen.findByText('Overview')
-    expect(dt.parentElement?.className).toContain('field')
-    expect(dt.parentElement?.className).toContain('overviewField')
+    const field = dt.parentElement
+    expect(field?.className).toContain('field')
+    const row = field?.parentElement
+    expect(row?.children).toHaveLength(1)
   })
 
-  it('renders Overview as the first field in the grid', async () => {
+  it('renders Overview as the first field row in the grid', async () => {
     mockGetById.mockResolvedValue(
       makeSeries({ overview: 'A mockumentary sitcom.' }),
     )
@@ -750,7 +754,8 @@ describe('FRONTEND-012 amendment (live review): full-width Overview field', () =
 
     const dt = await screen.findByText('Overview')
     const fieldsList = dt.closest('dl')
-    const firstField = fieldsList?.firstElementChild
-    expect(firstField).toBe(dt.parentElement)
+    const firstRow = fieldsList?.firstElementChild
+    const overviewRow = dt.parentElement?.parentElement
+    expect(firstRow).toBe(overviewRow)
   })
 })
