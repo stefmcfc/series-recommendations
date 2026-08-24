@@ -21,6 +21,11 @@ are committed to; picking one up means writing a proper EARS spec first, per
 - **Pagination.** (`series_spec_002_crud.md` and `series_spec_003_search.md`, both "Out of Scope.") Every list-returning endpoint (`GET /series`, `/series/search`) currently returns the full result set.
 - **Advanced sorting options.** (`series_spec_003_search.md`, "Out of Scope.")
 - **Full-text search.** (`series_spec_003_search.md`, "Out of Scope" — current search matches on exact/partial field values, not a full-text index over notes/overview text.)
+- **`SearchFilter`'s top-of-page filter panel is getting cluttered as more fields are added to it.** Raised
+  2026-08-24 alongside the keyword-picker layout tweak (`frontend_spec_032`). Worth considering a collapsible
+  left-hand filter panel or a slide-out sheet instead of the current always-expanded top bar, once there's a
+  concrete sense of how many more fields are coming. Same shape of layout question as `RecommendationControls`'
+  own `Filters` disclosure, so a consistent answer for both is probably better than solving it twice.
 
 ## Add/Edit Series Forms
 
