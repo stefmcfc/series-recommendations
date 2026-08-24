@@ -1,6 +1,17 @@
 # Spec 024: Discover Filters (Keyword Exclusion) & Mode-Aware Vote-Count Threshold
 
-**Status**: Not started **Priority**: P3 (discovery feature refinement, same tier as `series_spec_022`)
+**Status**: Implemented (2026-08-24). Files touched: `backend/src/main/java/uk/co/stefirby/seriestracker/dto/RecommendationCriteria.java`
+(`excludeKeywords`), `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesController.java` (`excludeKeywords` request
+param), `backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationService.java` (`DEFAULT_MIN_VOTE_COUNT_TOP_RATED`
+constant, mode-aware `minVoteCount` default at both `sourceTopRated` and `applyOutputFilters` call sites, `matchesExcludeKeywords`
+wired last in the `applyOutputFilters` chain with a `try`/`catch (ExternalServiceException)` fail-open around
+`TmdbClient.showKeywords`), plus extended Spock specs `RecommendationServiceSpec.groovy` (new AC-03..08/10/11 cases, and the existing
+`SERIES-022-AC-11/12/13/14/15/18` topRated fixtures updated to the new 200 sourcing-time default and bumped `voteCount` fixtures so
+they still clear the raised post-hoc floor) and `SeriesControllerRecommendationsSpec.groovy` (new `excludeKeywords` param-binding
+case, `excludeKeywords` added to the existing full-param-list case). No `frontend/` files touched — that's
+`frontend_spec_030_discover_filters_and_sort_controls.md`, a separate follow-up on the same branch.
+**Verification**: `gradlew.bat test` from `backend/` — full suite green (`BUILD SUCCESSFUL`).
+**Priority**: P3 (discovery feature refinement, same tier as `series_spec_022`)
 **Depends on**: Series Spec 007 (`RecommendationCriteria`, `matchesExcludeGenres`/output-filter chain, `minVoteCount`
 default) ✅, Series Spec 022 (`sourceMode=topRated`, `discoverTopRated`, trending's output-filters-still-run precedent)
 ✅, Series Spec 019 (`TmdbClient.showKeywords`, `TmdbKeyword`, `KeywordSyncService`'s degrade-gracefully pattern) ✅
@@ -259,16 +270,16 @@ per candidate), and the two `DEFAULT_MIN_VOTE_COUNT_TOP_RATED`-aware call sites,
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-024-AC-01: `RecommendationCriteria.excludeKeywords` (`List<String>`)
-- [ ] SERIES-024-AC-02: `excludeKeywords` request param bound and threaded through
-- [ ] SERIES-024-AC-03: `matchesExcludeKeywords` no-op when unset
-- [ ] SERIES-024-AC-04: case-insensitive keyword-name match excludes a candidate
-- [ ] SERIES-024-AC-05: `matchesExcludeKeywords` runs last in the output-filter chain
-- [ ] SERIES-024-AC-06: a per-candidate `showKeywords` failure fails open, not the whole request
-- [ ] SERIES-024-AC-07: zero `showKeywords` calls when `excludeKeywords` is unset
-- [ ] SERIES-024-AC-08: `excludeKeywords` applies to every sourcing mode, including trending
-- [ ] SERIES-024-AC-09: `DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200` constant added
-- [ ] SERIES-024-AC-10: `sourceTopRated`'s sourcing-time default is 200 when unset
-- [ ] SERIES-024-AC-11: `applyOutputFilters`'s post-hoc default is 200 for `topRated` when unset
-- [ ] SERIES-024-AC-12: `applyOutputFilters`'s post-hoc default stays 20 for every other mode
-- [ ] SERIES-024-AC-13: an explicit `minVoteCount` overrides the mode-aware default at both call sites
+- [x] SERIES-024-AC-01: `RecommendationCriteria.excludeKeywords` (`List<String>`)
+- [x] SERIES-024-AC-02: `excludeKeywords` request param bound and threaded through
+- [x] SERIES-024-AC-03: `matchesExcludeKeywords` no-op when unset
+- [x] SERIES-024-AC-04: case-insensitive keyword-name match excludes a candidate
+- [x] SERIES-024-AC-05: `matchesExcludeKeywords` runs last in the output-filter chain
+- [x] SERIES-024-AC-06: a per-candidate `showKeywords` failure fails open, not the whole request
+- [x] SERIES-024-AC-07: zero `showKeywords` calls when `excludeKeywords` is unset
+- [x] SERIES-024-AC-08: `excludeKeywords` applies to every sourcing mode, including trending
+- [x] SERIES-024-AC-09: `DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200` constant added
+- [x] SERIES-024-AC-10: `sourceTopRated`'s sourcing-time default is 200 when unset
+- [x] SERIES-024-AC-11: `applyOutputFilters`'s post-hoc default is 200 for `topRated` when unset
+- [x] SERIES-024-AC-12: `applyOutputFilters`'s post-hoc default stays 20 for every other mode
+- [x] SERIES-024-AC-13: an explicit `minVoteCount` overrides the mode-aware default at both call sites

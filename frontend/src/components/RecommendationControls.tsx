@@ -20,9 +20,11 @@ interface ControlsState {
   minSourceRating: string
   minTmdbRating: string
   minVoteCount: string
+  minVoteCountTouched: boolean
   yearMin: string
   yearMax: string
   excludeGenresText: string
+  excludeKeywordsText: string
   language: string
   maxPerSource: string
   maxSourcesShown: string
@@ -38,9 +40,11 @@ const initialState: ControlsState = {
   minSourceRating: '',
   minTmdbRating: '',
   minVoteCount: '',
+  minVoteCountTouched: false,
   yearMin: '',
   yearMax: '',
   excludeGenresText: '',
+  excludeKeywordsText: '',
   language: '',
   maxPerSource: '',
   maxSourcesShown: '',
@@ -89,6 +93,9 @@ function buildQuery(state: ControlsState): RecommendationQuery {
 
   const excludeGenres = parseCommaList(state.excludeGenresText)
   if (excludeGenres.length > 0) query.excludeGenres = excludeGenres
+
+  const excludeKeywords = parseCommaList(state.excludeKeywordsText)
+  if (excludeKeywords.length > 0) query.excludeKeywords = excludeKeywords
 
   if (state.language.trim() !== '') query.language = state.language.trim()
   if (state.maxPerSource.trim() !== '')
@@ -145,12 +152,22 @@ export function RecommendationControls({
   }
 
   const handleModeChange = (mode: SourceMode) => {
-    updateState({
+    const patch: Partial<ControlsState> = {
       mode,
       selectedSeriesIds: [],
       genresSelected: [],
       keywordsSelected: [],
-    })
+    }
+
+    if (!state.minVoteCountTouched) {
+      if (mode === 'topRated') {
+        patch.minVoteCount = '200'
+      } else if (state.mode === 'topRated') {
+        patch.minVoteCount = ''
+      }
+    }
+
+    updateState(patch)
   }
 
   const handleSeriesToggle =
@@ -189,14 +206,25 @@ export function RecommendationControls({
       updateState({ [field]: event.target.value } as Partial<ControlsState>)
     }
 
+  const handleMinVoteCountChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    updateState({
+      minVoteCount: event.target.value,
+      minVoteCountTouched: true,
+    })
+  }
+
   const handleResetFilters = () => {
     updateState({
       minSourceRating: '',
       minTmdbRating: '',
       minVoteCount: '',
+      minVoteCountTouched: false,
       yearMin: '',
       yearMax: '',
       excludeGenresText: '',
+      excludeKeywordsText: '',
       language: '',
       maxPerSource: '',
       maxSourcesShown: '',
@@ -304,31 +332,35 @@ export function RecommendationControls({
         </fieldset>
       )}
 
-      <fieldset className={styles.sortByFieldset}>
-        <legend>Sort By</legend>
+      {state.mode !== 'trending' && (
+        <fieldset className={styles.sortByFieldset}>
+          <legend>Sort By</legend>
 
-        <div className={styles.modeOption}>
-          <input
-            id="sort-by-score"
-            type="radio"
-            name="sort-by"
-            checked={state.sortBy === 'score'}
-            onChange={() => handleSortByChange('score')}
-          />
-          <label htmlFor="sort-by-score">Best Match</label>
-        </div>
+          <div className={styles.modeOption}>
+            <input
+              id="sort-by-score"
+              type="radio"
+              name="sort-by"
+              checked={state.sortBy === 'score'}
+              onChange={() => handleSortByChange('score')}
+            />
+            <label htmlFor="sort-by-score">Best Match</label>
+          </div>
 
-        <div className={styles.modeOption}>
-          <input
-            id="sort-by-recommendation-count"
-            type="radio"
-            name="sort-by"
-            checked={state.sortBy === 'recommendationCount'}
-            onChange={() => handleSortByChange('recommendationCount')}
-          />
-          <label htmlFor="sort-by-recommendation-count">Most Recommended</label>
-        </div>
-      </fieldset>
+          <div className={styles.modeOption}>
+            <input
+              id="sort-by-recommendation-count"
+              type="radio"
+              name="sort-by"
+              checked={state.sortBy === 'recommendationCount'}
+              onChange={() => handleSortByChange('recommendationCount')}
+            />
+            <label htmlFor="sort-by-recommendation-count">
+              {state.mode === 'topRated' ? 'Vote Average' : 'Most Recommended'}
+            </label>
+          </div>
+        </fieldset>
+      )}
 
       {state.mode === 'specific' && (
         <div className={styles.seriesPicker}>
@@ -465,7 +497,7 @@ export function RecommendationControls({
                 id="recommendation-min-vote-count"
                 type="number"
                 value={state.minVoteCount}
-                onChange={updateField('minVoteCount')}
+                onChange={handleMinVoteCountChange}
               />
             </div>
 
@@ -498,6 +530,18 @@ export function RecommendationControls({
                 type="text"
                 value={state.excludeGenresText}
                 onChange={updateField('excludeGenresText')}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="recommendation-exclude-keywords">
+                Exclude Keywords
+              </label>
+              <input
+                id="recommendation-exclude-keywords"
+                type="text"
+                value={state.excludeKeywordsText}
+                onChange={updateField('excludeKeywordsText')}
               />
             </div>
 

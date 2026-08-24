@@ -30,6 +30,7 @@ public class RecommendationCriteria {
     private Integer yearMin;
     private Integer yearMax;
     private List<String> excludeGenres;
+    private List<String> excludeKeywords;
     private String language;
     private Integer maxPerSource;
     private Integer maxSourcesShown;
@@ -65,6 +66,16 @@ public class RecommendationCriteria {
 
     public List<String> getExcludeGenres() { return excludeGenres; }
     public void setExcludeGenres(List<String> excludeGenres) { this.excludeGenres = excludeGenres; }
+
+    /**
+     * {@code List<String>} of TMDB keyword names to exclude a candidate on a match
+     * (SERIES-024-AC-01), following the exact null/empty-means-no-op convention {@code
+     * excludeGenres} already uses. Unlike {@code excludeGenres}, checking this filter requires
+     * a per-candidate {@code TmdbClient.showKeywords} call -- see {@code
+     * RecommendationService#matchesExcludeKeywords}.
+     */
+    public List<String> getExcludeKeywords() { return excludeKeywords; }
+    public void setExcludeKeywords(List<String> excludeKeywords) { this.excludeKeywords = excludeKeywords; }
 
     public String getLanguage() { return language; }
     public void setLanguage(String language) { this.language = language; }

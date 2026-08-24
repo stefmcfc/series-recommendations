@@ -1,8 +1,33 @@
 # Frontend Spec 030: Discover Filters (Exclude Keywords) & Mode-Aware Sort/Vote Controls
 
-**Status**: Not started
+**Status**: Implemented (2026-08-24)
+**Files touched**: `src/types/series.ts` (`RecommendationQuery.excludeKeywords`), `src/services/seriesApi.ts`
+(`buildRecommendationParams` wires `excludeKeywords` comma-joined), `src/services/__tests__/seriesApi.test.ts` (new
+`FRONTEND-030-AC-02` describe block), `src/components/RecommendationControls.tsx` (`ControlsState.excludeKeywordsText`/
+`minVoteCountTouched`, "Exclude Keywords" input adjacent to "Exclude Genres", `handleModeChange`'s mode-aware
+`minVoteCount` auto-fill/revert gated on `minVoteCountTouched`, a dedicated `handleMinVoteCountChange` that sets the
+touched flag, `handleResetFilters` clearing both new fields, the `Sort By` fieldset hidden outright when
+`state.mode === 'trending'` and its second radio's label switched to "Vote Average" when `state.mode === 'topRated'`),
+`src/components/RecommendationControls.test.tsx` (new `FRONTEND-030-AC-03/04/05/07/08/09/10/11/12/13/14/15` describe
+blocks, plus one pre-existing `FRONTEND-027` test updated to reflect the new `minVoteCount: 200` auto-fill it now
+triggers when selecting Highest Rated).
+**Verification**: `npm test` from `frontend/` — full suite green (358 tests, 13 files, including the new/updated
+`RecommendationControls.test.tsx` and `seriesApi.test.ts` cases). `npm run lint` — clean. Real browser pass done: both
+servers already running (`gradlew.bat bootRun` on :8080, `npm run dev` on :5173, restarted once to pick up a
+CORS-workaround `.env.local` per `.claude/skills/verify/SKILL.md`, then reverted afterward), driven with a scripted
+`puppeteer-core` pass (Chrome, headless) rather than manual clicking — confirmed: `Sort By` fieldset disappears when
+switching into "Popular Right Now" and reappears switching back to "Automatic"; switching into "Highest Rated"
+pre-fills `Min Vote Count` to `200` and relabels the second `Sort By` radio to "Vote Average" (with "Most Recommended"
+absent), switching back out to "Automatic" reverts it to empty; typing into "Exclude Keywords" produced a live
+`GET /api/v1/series/recommendations?excludeKeywords=Zombie,Heist` request (observed via intercepted network requests).
+Checked both light and dark `prefers-color-scheme` (screenshots taken and reviewed) — no visual regressions in either.
+Checked the browser console for `@axe-core/react` violations after driving through Automatic/Trending/Highest Rated: one
+pre-existing `color-contrast` violation was flagged, traced via a captured-console-log script to `SeriesList.tsx`'s
+`.sortLabel` ("Sort by" dropdown label on the My Series view) — unrelated to any file this spec touched, not a
+regression introduced here. A `page-has-heading-one` moderate violation (pre-existing, app-wide, no `<h1>` anywhere in
+`App.tsx`) was also observed in both themes, likewise unrelated to this change.
 **Priority**: P3 (mirrors the backend spec's own tier)
-**Depends on**: Series Spec 024 (`excludeKeywords` param, mode-aware `minVoteCount` default of 200 for `topRated`) — Not started, Frontend Spec 011 (`RecommendationControls`, `excludeGenresText` free-text pattern, `Filters` section, `handleResetFilters`) ✅, Frontend Spec 019 (`Sort By` fieldset, `Best Match`/`Most Recommended` radios, `sortBy` query wiring) ✅, Frontend Spec 027 (five-way mode selector including `topRated`/`trending`, mode-switch clearing behavior, mode-based visibility gating precedent) ✅
+**Depends on**: Series Spec 024 (`excludeKeywords` param, mode-aware `minVoteCount` default of 200 for `topRated`) ✅, Frontend Spec 011 (`RecommendationControls`, `excludeGenresText` free-text pattern, `Filters` section, `handleResetFilters`) ✅, Frontend Spec 019 (`Sort By` fieldset, `Best Match`/`Most Recommended` radios, `sortBy` query wiring) ✅, Frontend Spec 027 (five-way mode selector including `topRated`/`trending`, mode-switch clearing behavior, mode-based visibility gating precedent) ✅
 **Frontend Stage**: 30 of N
 
 ## Overview
@@ -202,18 +227,18 @@ describe('FRONTEND-030-AC-13/14: "Vote Average" relabel under Highest Rated', ()
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-030-AC-01: `RecommendationQuery.excludeKeywords`
-- [ ] FRONTEND-030-AC-02: `buildRecommendationParams` wires `excludeKeywords` (comma-joined)
-- [ ] FRONTEND-030-AC-03: "Exclude Keywords" text input, mirrors "Exclude Genres"
-- [ ] FRONTEND-030-AC-04: `buildQuery` populates `excludeKeywords` from parsed free text
-- [ ] FRONTEND-030-AC-05: `Reset Filters` clears `excludeKeywordsText`
-- [ ] FRONTEND-030-AC-06: `minVoteCountTouched` state, set on direct edit
-- [ ] FRONTEND-030-AC-07: switching to `topRated` pre-fills `minVoteCount` to `'200'` when untouched
-- [ ] FRONTEND-030-AC-08: switching away from `topRated` reverts `minVoteCount` to `''` when untouched
-- [ ] FRONTEND-030-AC-09: a touched `minVoteCount` is never overwritten by a mode change
-- [ ] FRONTEND-030-AC-10: `Reset Filters` clears `minVoteCount` and `minVoteCountTouched`
-- [ ] FRONTEND-030-AC-11: `Sort By` fieldset hidden under `'trending'`
-- [ ] FRONTEND-030-AC-12: `Sort By` fieldset unaffected for every other mode
-- [ ] FRONTEND-030-AC-13: "Vote Average" label under `'topRated'`
-- [ ] FRONTEND-030-AC-14: relabeled option still sends `sortBy: 'recommendationCount'`
-- [ ] FRONTEND-030-AC-15: "Most Recommended" label unchanged for every other mode
+- [x] FRONTEND-030-AC-01: `RecommendationQuery.excludeKeywords`
+- [x] FRONTEND-030-AC-02: `buildRecommendationParams` wires `excludeKeywords` (comma-joined)
+- [x] FRONTEND-030-AC-03: "Exclude Keywords" text input, mirrors "Exclude Genres"
+- [x] FRONTEND-030-AC-04: `buildQuery` populates `excludeKeywords` from parsed free text
+- [x] FRONTEND-030-AC-05: `Reset Filters` clears `excludeKeywordsText`
+- [x] FRONTEND-030-AC-06: `minVoteCountTouched` state, set on direct edit
+- [x] FRONTEND-030-AC-07: switching to `topRated` pre-fills `minVoteCount` to `'200'` when untouched
+- [x] FRONTEND-030-AC-08: switching away from `topRated` reverts `minVoteCount` to `''` when untouched
+- [x] FRONTEND-030-AC-09: a touched `minVoteCount` is never overwritten by a mode change
+- [x] FRONTEND-030-AC-10: `Reset Filters` clears `minVoteCount` and `minVoteCountTouched`
+- [x] FRONTEND-030-AC-11: `Sort By` fieldset hidden under `'trending'`
+- [x] FRONTEND-030-AC-12: `Sort By` fieldset unaffected for every other mode
+- [x] FRONTEND-030-AC-13: "Vote Average" label under `'topRated'`
+- [x] FRONTEND-030-AC-14: relabeled option still sends `sortBy: 'recommendationCount'`
+- [x] FRONTEND-030-AC-15: "Most Recommended" label unchanged for every other mode

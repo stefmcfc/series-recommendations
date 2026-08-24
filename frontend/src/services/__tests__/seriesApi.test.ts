@@ -527,6 +527,31 @@ describe('FRONTEND-011-AC-02: getRecommendations with a full query', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-030-AC-02: getRecommendations includes excludeKeywords
+// ---------------------------------------------------------------------------
+describe('FRONTEND-030-AC-02: getRecommendations includes excludeKeywords', () => {
+  it('joins excludeKeywords and passes it through to the query string', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ excludeKeywords: ['Zombie', 'Heist'] })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { excludeKeywords: 'Zombie,Heist' },
+    })
+  })
+
+  it('omits excludeKeywords entirely when unset', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({})
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-019-AC-03: getRecommendations wires maxSourcesShown
 // ---------------------------------------------------------------------------
 describe('FRONTEND-019-AC-03: getRecommendations wires maxSourcesShown', () => {
