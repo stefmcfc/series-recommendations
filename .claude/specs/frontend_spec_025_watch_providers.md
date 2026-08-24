@@ -1,6 +1,6 @@
 # Frontend Spec 025: Streaming/Network Watch Providers Display
 
-**Status**: Not started
+**Status**: Done. Implemented on `feature/watch-providers-ui`. All five ACs verified by Vitest and a real-browser (Playwright, Chromium) pass against a live backend with a configured TMDB API key — confirmed actual provider logos render (no broken images), the empty-state note renders for candidates with no UK match, and both attribution lines are present. One deviation from the spec's TDD sketch: the AC-05 test's `await screen.findByText(/./)` matched multiple elements once the new provider row/attribution line were added (ambiguous regex against a fuller page), so it was changed to `await screen.findByText('Ozark')` — same wait-for-render intent, just a non-ambiguous target, consistent with this test file's existing pattern elsewhere.
 **Depends on**: Series Spec 020 (`RecommendationDto.streamingProviders`), Frontend Spec 010 (`RecommendationsList`, existing TMDB attribution notice) ✅, Frontend Spec 020 (`.cardHeader` rating display precedent) ✅
 
 ## Overview
@@ -114,8 +114,8 @@ describe('FRONTEND-025-AC-05: JustWatch attribution', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-025-AC-01: `StreamingProvider` type
-- [ ] FRONTEND-025-AC-02: `Recommendation.streamingProviders` field
-- [ ] FRONTEND-025-AC-03: provider name/logo rendered per entry
-- [ ] FRONTEND-025-AC-04: empty list → "Not currently streaming in the UK" note
-- [ ] FRONTEND-025-AC-05: JustWatch attribution line alongside the existing TMDB one
+- [x] FRONTEND-025-AC-01: `StreamingProvider` type
+- [x] FRONTEND-025-AC-02: `Recommendation.streamingProviders` field
+- [x] FRONTEND-025-AC-03: provider name/logo rendered per entry
+- [x] FRONTEND-025-AC-04: empty list → "Not currently streaming in the UK" note
+- [x] FRONTEND-025-AC-05: JustWatch attribution line alongside the existing TMDB one

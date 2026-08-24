@@ -115,6 +115,11 @@ export interface LookupTmdbCandidate {
   originCountry?: string
 }
 
+export interface StreamingProvider {
+  name: string
+  logoUrl: string | null
+}
+
 export interface Recommendation {
   title: string
   year: number | null
@@ -123,6 +128,7 @@ export interface Recommendation {
   posterUrl: string | null
   tmdbRating: number | null
   voteCount: number | null
+  streamingProviders: StreamingProvider[]
   imdbId: string
   sourceTitles: string[]
   totalSourceCount: number

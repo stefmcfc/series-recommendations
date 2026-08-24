@@ -32,6 +32,7 @@ function makeRecommendation(
     posterUrl: null,
     tmdbRating: 8.4,
     voteCount: null,
+    streamingProviders: [],
     imdbId: 'tt5071412',
     sourceTitles: [],
     totalSourceCount: 0,
@@ -413,6 +414,68 @@ describe('FRONTEND-028-AC-04: origin country shown on every card', () => {
 
     await screen.findByText('Ozark')
     expect(screen.queryByText(/united/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-025-AC-03: streaming providers rendered', () => {
+  it('renders provider name and logo when present', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({
+        streamingProviders: [
+          {
+            name: 'Netflix',
+            logoUrl: 'https://image.tmdb.org/t/p/w92/abc.jpg',
+          },
+        ],
+      }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(await screen.findByText('Netflix')).toBeInTheDocument()
+    expect(screen.getByAltText('Netflix')).toHaveAttribute(
+      'src',
+      'https://image.tmdb.org/t/p/w92/abc.jpg',
+    )
+  })
+
+  it('renders the name alone when logoUrl is null', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({
+        streamingProviders: [{ name: 'BBC iPlayer', logoUrl: null }],
+      }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(await screen.findByText('BBC iPlayer')).toBeInTheDocument()
+    expect(screen.queryByAltText('BBC iPlayer')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-025-AC-04: empty streamingProviders shows a quiet note', () => {
+  it('renders the not-streaming note instead of a provider list', async () => {
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ streamingProviders: [] }),
+    ])
+    render(<RecommendationsList />)
+
+    expect(
+      await screen.findByText('Not currently streaming in the UK'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-025-AC-05: JustWatch attribution', () => {
+  it('renders a JustWatch attribution line alongside the TMDB one', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation({})])
+    render(<RecommendationsList />)
+
+    await screen.findByText('Ozark')
+    expect(
+      screen.getByText('Streaming data via JustWatch.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/uses the TMDB API but is not endorsed/),
+    ).toBeInTheDocument()
   })
 })
 
