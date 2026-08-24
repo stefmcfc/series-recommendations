@@ -12,6 +12,7 @@ import type {
   RefreshJobStatus,
   KeywordStat,
   SortOptions,
+  StreamingProvider,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -188,6 +189,11 @@ export const seriesApi = {
   getRecommendationKeywords: (tmdbId: number): Promise<string[]> =>
     request<{ data: string[]; count: number }>(() =>
       client.get('/series/recommendations/' + tmdbId + '/keywords'),
+    ).then((res) => res.data),
+
+  getWatchProviders: (id: string): Promise<StreamingProvider[]> =>
+    request<{ data: StreamingProvider[]; count: number }>(() =>
+      client.get('/series/' + id + '/watch-providers'),
     ).then((res) => res.data),
 
   refresh: (id: string): Promise<RefreshResult> =>
