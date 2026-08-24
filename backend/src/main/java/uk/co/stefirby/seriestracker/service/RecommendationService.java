@@ -353,12 +353,20 @@ public class RecommendationService {
             .collect(Collectors.toList());
     }
 
-    /** Automatic "watched" pool (SERIES-006-AC-14): every {@code COMPLETED} series with a resolvable {@code imdbId}. */
+    /**
+     * Automatic "watched" pool (SERIES-006-AC-14): every {@code COMPLETED} series with a
+     * resolvable {@code imdbId}, excluding any series with {@code excludeFromRecommendations
+     * == true} (SERIES-008-AC-04) -- this filter applies here, not in {@link #explicitPool},
+     * so an explicit {@code seriesIds} selection is deliberately unaffected by it
+     * (SERIES-008-AC-05). Because {@link #genreBasedSupplement} is derived from this same
+     * pool, excluding a series here also removes it from the genre frequency count.
+     */
     private List<SeriesEntity> automaticPool() {
         return seriesRepository.findAll().stream()
             .filter(e -> e.getStatus() == SeriesStatus.COMPLETED
                 && e.getImdbId() != null
-                && !e.getImdbId().isBlank())
+                && !e.getImdbId().isBlank()
+                && !e.isExcludeFromRecommendations())
             .collect(Collectors.toList());
     }
 

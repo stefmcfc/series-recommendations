@@ -146,6 +146,24 @@ public class SeriesEntity {
     @Column(nullable = true)
     private LocalDateTime newContentDetectedAt;
 
+    // series_spec_008_series_lifecycle_data.md (SERIES-008-AC-01): "don't use me as an
+    // automatic taste signal" -- suppresses this series from RecommendationService's automatic
+    // watched-pool sourcing only (SERIES-008-AC-04), never an explicit seriesIds selection
+    // (SERIES-008-AC-05, see the spec's Design Decisions). NOT NULL DEFAULT FALSE: a series
+    // that's never been touched is simply "not excluded", so a primitive boolean is enough here
+    // even though SeriesDto's own field is boxed (SERIES-008-AC-02) for partial-update null
+    // semantics.
+    @Column(nullable = false)
+    private boolean excludeFromRecommendations = false;
+
+    // series_spec_008_series_lifecycle_data.md (SERIES-008-AC-18): a persistent "rewatch
+    // candidate" marker the user sets while browsing, filtered on via
+    // SeriesSearchCriteria.flaggedForRewatch (SERIES-008-AC-20) -- no server-side status
+    // restriction (SERIES-008-AC-21). Same NOT NULL DEFAULT FALSE / primitive-vs-boxed-DTO
+    // shape as excludeFromRecommendations above.
+    @Column(nullable = false)
+    private boolean flaggedForRewatch = false;
+
     // series_spec_019_keyword_tracking.md (SERIES-019-AC-03): a series' TMDB keywords,
     // normalized via a shared `keyword` table plus a `series_keyword` join table -- unlike
     // `genres`/`tags`, this needs COUNT/AVG-style aggregation (KeywordStatsService), which a
@@ -245,4 +263,10 @@ public class SeriesEntity {
 
     public Set<KeywordEntity> getKeywords() { return keywords; }
     public void setKeywords(Set<KeywordEntity> keywords) { this.keywords = keywords; }
+
+    public boolean isExcludeFromRecommendations() { return excludeFromRecommendations; }
+    public void setExcludeFromRecommendations(boolean excludeFromRecommendations) { this.excludeFromRecommendations = excludeFromRecommendations; }
+
+    public boolean isFlaggedForRewatch() { return flaggedForRewatch; }
+    public void setFlaggedForRewatch(boolean flaggedForRewatch) { this.flaggedForRewatch = flaggedForRewatch; }
 }

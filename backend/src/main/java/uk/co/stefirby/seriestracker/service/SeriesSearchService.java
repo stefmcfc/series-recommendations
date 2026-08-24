@@ -55,6 +55,7 @@ public class SeriesSearchService {
             .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating(), criteria.getMaxPersonalRating()))
             .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating(), criteria.getMaxImdbRating()))
             .filter(s -> matchesStartedNotFinished(s, criteria.getStartedNotFinished()))
+            .filter(s -> matchesFlaggedForRewatch(s, criteria.getFlaggedForRewatch()))
             .sorted(sortComparator)
             .map(seriesService::entityToDto)
             .collect(Collectors.toList());
@@ -105,5 +106,12 @@ public class SeriesSearchService {
         if (startedNotFinished == null || !startedNotFinished) return true;
         return (s.getStatus() == SeriesStatus.WATCHING || s.getStatus() == SeriesStatus.DROPPED)
             && s.getCurrentSeason() != null;
+    }
+
+    // SERIES-008-AC-20/21: same nullable-boolean-filter shape as matchesStartedNotFinished --
+    // a null or false criteria value is a no-op, and no status restriction is applied.
+    private boolean matchesFlaggedForRewatch(SeriesEntity s, Boolean flaggedForRewatch) {
+        if (flaggedForRewatch == null || !flaggedForRewatch) return true;
+        return s.isFlaggedForRewatch();
     }
 }

@@ -574,6 +574,58 @@ class TmdbClientSpec extends Specification {
             thrown(ExternalServiceException)
     }
 
+    def "SERIES-008-AC-08: showStatus maps TMDB's status field to ProductionStatus"() {
+        given: "TMDB /tv/1396 returns status: 'Ended'"
+            def body = '{"status":"Ended"}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("api_key", API_KEY))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.showStatus(1396) is called"
+            def result = client().showStatus(1396)
+
+        then: "ProductionStatus.ENDED is returned"
+            result.get() == ProductionStatus.ENDED
+    }
+
+    def "SERIES-008-AC-08: an unrecognized status value returns empty, not an error"() {
+        given: "TMDB /tv/1397 returns a status value with no matching ProductionStatus constant"
+            def body = '{"status":"SomeNewValueTmdbAddedLater"}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1397")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.showStatus(1397) is called"
+            def result = client().showStatus(1397)
+
+        then: "no exception is thrown, and the result is empty"
+            result.isEmpty()
+    }
+
+    def "SERIES-008-AC-08: an absent status field returns empty, not an error"() {
+        given: "TMDB /tv/1398 returns a body with no status field"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1398")))
+                .andRespond(withSuccess('{}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.showStatus(1398) is called"
+            def result = client().showStatus(1398)
+
+        then: "the result is empty"
+            result.isEmpty()
+    }
+
+    def "SERIES-008-AC-08: a non-2xx response from TMDB raises ExternalServiceException"() {
+        given: "TMDB responds with a server error"
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396")))
+                .andRespond(withServerError())
+
+        when: "TmdbClient.showStatus(...) is called"
+            client().showStatus(1396)
+
+        then: "an ExternalServiceException is raised"
+            thrown(ExternalServiceException)
+    }
+
     def "SERIES-019-AC-05: showKeywords maps each results[] entry onto TmdbKeyword"() {
         given: "TMDB /tv/4046/keywords returns two keywords"
             def body = '{"id":4046,"results":[{"id":470,"name":"spy"},{"id":190904,"name":"mi5"}]}'

@@ -216,6 +216,22 @@ public class TmdbClient {
     }
 
     /**
+     * Resolves a show's current TMDB production status via {@code GET /tv/{tmdbId}}
+     * (SERIES-008-AC-08) -- a narrower, single-field counterpart to {@link #details(int)} for
+     * callers that only need {@code status}, not a show's full detail. An absent {@code
+     * status} field or one with no matching {@link ProductionStatus} constant maps to {@link
+     * Optional#empty()}, not an error, via the same {@link ProductionStatus#fromTmdbStatus}
+     * mapping {@link #details(int)} itself uses.
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public Optional<ProductionStatus> showStatus(int tmdbId) {
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId));
+        return ProductionStatus.fromTmdbStatus(str(body.get("status")));
+    }
+
+    /**
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
      */

@@ -334,6 +334,86 @@ class SeriesServiceSpec extends Specification {
         result.keywords == ["mi5", "spy"]
   }
 
+  def "SERIES-008-AC-03: create defaults excludeFromRecommendations to false when unset"() {
+    given: "a SeriesDto with no excludeFromRecommendations value"
+        def dto = new SeriesDto(title: "Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "excludeFromRecommendations defaults to false"
+        result.excludeFromRecommendations == false
+  }
+
+  def "SERIES-008-AC-03: create persists excludeFromRecommendations when explicitly set"() {
+    given: "a SeriesDto with excludeFromRecommendations true"
+        def dto = new SeriesDto(title: "Kids Show", excludeFromRecommendations: true)
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "the flag is persisted"
+        result.excludeFromRecommendations == true
+        seriesService.getById(result.id).excludeFromRecommendations == true
+  }
+
+  def "SERIES-008-AC-03: update only overwrites excludeFromRecommendations when explicitly provided"() {
+    given: "an existing series with excludeFromRecommendations = true"
+        def existing = seriesService.create(new SeriesDto(title: "Show", excludeFromRecommendations: true))
+
+    when: "update is called with a DTO that omits excludeFromRecommendations (null)"
+        seriesService.update(existing.id, new SeriesDto(title: "Show (renamed)"))
+
+    then: "the flag is unchanged"
+        seriesService.getById(existing.id).excludeFromRecommendations == true
+
+    when: "update is called with excludeFromRecommendations explicitly set to false"
+        seriesService.update(existing.id, new SeriesDto(excludeFromRecommendations: false))
+
+    then: "the flag is cleared"
+        seriesService.getById(existing.id).excludeFromRecommendations == false
+  }
+
+  def "SERIES-008-AC-19: create defaults flaggedForRewatch to false when unset"() {
+    given: "a SeriesDto with no flaggedForRewatch value"
+        def dto = new SeriesDto(title: "Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "flaggedForRewatch defaults to false"
+        result.flaggedForRewatch == false
+  }
+
+  def "SERIES-008-AC-19: create persists flaggedForRewatch when explicitly set"() {
+    given: "a SeriesDto with flaggedForRewatch true"
+        def dto = new SeriesDto(title: "Rewatch Candidate", flaggedForRewatch: true)
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "the flag is persisted"
+        result.flaggedForRewatch == true
+        seriesService.getById(result.id).flaggedForRewatch == true
+  }
+
+  def "SERIES-008-AC-19: update only overwrites flaggedForRewatch when explicitly provided"() {
+    given: "an existing series with flaggedForRewatch = true"
+        def existing = seriesService.create(new SeriesDto(title: "Show", flaggedForRewatch: true))
+
+    when: "update is called with a DTO that omits flaggedForRewatch (null)"
+        seriesService.update(existing.id, new SeriesDto(title: "Show (renamed)"))
+
+    then: "the flag is unchanged"
+        seriesService.getById(existing.id).flaggedForRewatch == true
+
+    when: "update is called with flaggedForRewatch explicitly set to false"
+        seriesService.update(existing.id, new SeriesDto(flaggedForRewatch: false))
+
+    then: "the flag is cleared"
+        seriesService.getById(existing.id).flaggedForRewatch == false
+  }
+
   def "should reject series creation with invalid IMDb rating"() {
     given: "a series DTO with an out-of-range IMDb rating"
         def dto = new SeriesDto(title: "Show", imdbRating: 15.0)
