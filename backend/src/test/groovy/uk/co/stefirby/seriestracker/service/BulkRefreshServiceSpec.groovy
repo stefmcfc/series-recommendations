@@ -6,6 +6,7 @@ import uk.co.stefirby.seriestracker.exception.ConflictException
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
+import java.time.LocalDateTime
 import java.util.UUID
 
 class BulkRefreshServiceSpec extends Specification {
@@ -15,11 +16,13 @@ class BulkRefreshServiceSpec extends Specification {
     PollingConditions conditions = new PollingConditions(timeout: 5)
 
     // A near-zero delay keeps these tests fast without changing the production default
-    // (app.tmdb.refresh-delay-ms, 250) -- see series_spec_018's Design Decisions.
-    BulkRefreshService bulkRefreshService = new BulkRefreshService(repository, refreshService, 5L)
+    // (app.tmdb.refresh-delay-ms, 250) -- see series_spec_018's Design Decisions. Threshold
+    // defaults to the production default (60 minutes); tests exercising the skip behavior
+    // (SERIES-018-AC-30/34) build their own instance with an explicit threshold.
+    BulkRefreshService bulkRefreshService = new BulkRefreshService(repository, refreshService, 5L, 60)
 
-    private static SeriesEntity series(UUID id) {
-        new SeriesEntity(id: id, title: "Show ${id}")
+    private static SeriesEntity series(UUID id, LocalDateTime lastRefreshedAt = null) {
+        new SeriesEntity(id: id, title: "Show ${id}", lastRefreshedAt: lastRefreshedAt)
     }
 
     def "SERIES-018-AC-19: before any job has run, status is IDLE with zeroed counts"() {
@@ -149,6 +152,80 @@ class BulkRefreshServiceSpec extends Specification {
                 def status = bulkRefreshService.status()
                 status.status() == "FAILED"
                 status.finishedAt() != null
+            }
+    }
+
+    def "SERIES-018-AC-30/32: a recently-refreshed series is skipped and counted in skippedCount, not refreshed"() {
+        given: "three series: two lastRefreshedAt 5 minutes ago, one lastRefreshedAt 2 hours ago; threshold 60 minutes"
+            def now = LocalDateTime.now()
+            def recentId1 = UUID.randomUUID()
+            def recentId2 = UUID.randomUUID()
+            def staleId = UUID.randomUUID()
+            def entities = [
+                series(recentId1, now.minusMinutes(5)),
+                series(recentId2, now.minusMinutes(5)),
+                series(staleId, now.minusHours(2)),
+            ]
+            repository.count() >> 3L
+            repository.findAll() >> entities
+            def refreshedIds = Collections.synchronizedList([])
+            refreshService.refresh(_) >> { UUID id -> refreshedIds << id; null }
+            def thresholdService = new BulkRefreshService(repository, refreshService, 5L, 60)
+
+        when: "the bulk job runs to completion"
+            thresholdService.start()
+
+        then: "only the 2-hours-old series was actually refreshed, skippedCount is 2, completedCount is 3"
+            conditions.eventually {
+                def status = thresholdService.status()
+                status.status() == "COMPLETED"
+                status.skippedCount() == 2
+                status.completedCount() == 3
+                status.totalCount() == 3
+            }
+            refreshedIds == [staleId]
+    }
+
+    def "SERIES-018-AC-31: a null lastRefreshedAt is never skipped"() {
+        given: "one series with a null lastRefreshedAt, threshold 60 minutes"
+            def id = UUID.randomUUID()
+            def refreshedIds = Collections.synchronizedList([])
+            repository.count() >> 1L
+            repository.findAll() >> [series(id, null)]
+            refreshService.refresh(_) >> { UUID i -> refreshedIds << i; null }
+            def thresholdService = new BulkRefreshService(repository, refreshService, 5L, 60)
+
+        when: "the bulk job runs to completion"
+            thresholdService.start()
+
+        then: "the series is refreshed, not skipped"
+            conditions.eventually {
+                def status = thresholdService.status()
+                status.status() == "COMPLETED"
+                status.skippedCount() == 0
+                status.completedCount() == 1
+                refreshedIds == [id]
+            }
+    }
+
+    def "SERIES-018-AC-34: a zero threshold disables skipping entirely"() {
+        given: "app.tmdb.refresh-skip-threshold-minutes=0, a series refreshed 1 second ago"
+            def id = UUID.randomUUID()
+            def refreshedIds = Collections.synchronizedList([])
+            repository.count() >> 1L
+            repository.findAll() >> [series(id, LocalDateTime.now().minusSeconds(1))]
+            refreshService.refresh(_) >> { UUID i -> refreshedIds << i; null }
+            def zeroThresholdService = new BulkRefreshService(repository, refreshService, 5L, 0)
+
+        when: "the bulk job runs to completion"
+            zeroThresholdService.start()
+
+        then: "the series is refreshed, not skipped"
+            conditions.eventually {
+                def status = zeroThresholdService.status()
+                status.status() == "COMPLETED"
+                status.skippedCount() == 0
+                refreshedIds == [id]
             }
     }
 }

@@ -4,9 +4,11 @@ import uk.co.stefirby.seriestracker.client.OmdbClient;
 import uk.co.stefirby.seriestracker.client.OmdbRatings;
 import uk.co.stefirby.seriestracker.client.TmdbClient;
 import uk.co.stefirby.seriestracker.client.TmdbSeriesDetail;
+import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
+import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +60,12 @@ public class SeriesRefreshService {
         SeriesEntity entity = repository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
 
+        // SERIES-018-AC-24/26: captured before the TMDB fetch overwrites these fields, so they
+        // represent the "previous" value the fresh result is compared against.
+        Integer preSeasons = entity.getTotalSeasons();
+        Integer preEpisodes = entity.getTotalEpisodes();
+        SeriesStatus preStatus = entity.getStatus();
+
         boolean tmdbRefreshed = refreshFromTmdb(entity);
         boolean omdbRefreshed = refreshFromOmdb(entity);
 
@@ -65,8 +73,52 @@ public class SeriesRefreshService {
             entity.setLastRefreshedAt(LocalDateTime.now());
         }
 
+        applyNewContentDetection(entity, preSeasons, preEpisodes, preStatus);
+
         entity = repository.save(entity);
         return new RefreshResult(seriesService.entityToDto(entity), omdbRefreshed, tmdbRefreshed);
+    }
+
+    /**
+     * SERIES-018-AC-24/25/26: sets {@code newContentDetectedAt} when the freshly-fetched
+     * {@code totalSeasons}/{@code totalEpisodes} strictly increased over the pre-refresh
+     * values captured before the TMDB fetch -- a pre-refresh {@code null} is never treated as
+     * having "increased" (AC-26), and no increase leaves an existing flag exactly as it was
+     * (AC-25, never auto-cleared here). Requirement 6 (SERIES-018-AC-35/36/37/39): when
+     * detection fires and the pre-refresh status was {@code COMPLETED}, also reactivates the
+     * series to {@code BACKLOG} and clears {@code dateCompleted}, in the same save.
+     */
+    private void applyNewContentDetection(SeriesEntity entity, Integer preSeasons, Integer preEpisodes,
+                                           SeriesStatus preStatus) {
+        boolean increased =
+            (preSeasons != null && entity.getTotalSeasons() != null && entity.getTotalSeasons() > preSeasons)
+            || (preEpisodes != null && entity.getTotalEpisodes() != null && entity.getTotalEpisodes() > preEpisodes);
+
+        if (!increased) {
+            return;
+        }
+
+        entity.setNewContentDetectedAt(LocalDateTime.now());
+
+        if (preStatus == SeriesStatus.COMPLETED) {
+            entity.setStatus(SeriesStatus.BACKLOG);
+            entity.setDateCompleted(null);
+        }
+    }
+
+    /**
+     * Backs {@code POST /api/v1/series/{id}/acknowledge-new-content} (SERIES-018-AC-27) --
+     * clears {@code newContentDetectedAt} and persists. Never reverses a status change already
+     * made by {@link #applyNewContentDetection} (SERIES-018-AC-38); it only clears the flag.
+     */
+    @Transactional
+    public SeriesDto acknowledgeNewContent(UUID id) {
+        log.info("Acknowledging new content for series: {}", id);
+        SeriesEntity entity = repository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
+        entity.setNewContentDetectedAt(null);
+        entity = repository.save(entity);
+        return seriesService.entityToDto(entity);
     }
 
     /**

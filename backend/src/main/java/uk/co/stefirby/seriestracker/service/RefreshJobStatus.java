@@ -8,7 +8,12 @@ import java.time.LocalDateTime;
  * A plain {@code String} rather than an enum: it's serialized straight to JSON with no other
  * consumer needing type-safe handling, the same shape {@code SeriesStatus} already uses on
  * {@code SeriesDto}.
+ *
+ * <p>{@code skippedCount} (SERIES-018-AC-32) counts series skipped under the
+ * {@code app.tmdb.refresh-skip-threshold-minutes} threshold (SERIES-018-AC-30) -- each skip is
+ * also counted toward {@code completedCount}, so {@code skippedCount} is a subset of it, not an
+ * addition to {@code totalCount}.
  */
-public record RefreshJobStatus(String status, int totalCount, int completedCount,
+public record RefreshJobStatus(String status, int totalCount, int completedCount, int skippedCount,
                                 LocalDateTime startedAt, LocalDateTime finishedAt) {
 }

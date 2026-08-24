@@ -42,6 +42,11 @@ public class SeriesSearchService {
             }
         }
 
+        // SERIES-009-AC-01/02/03/07/11: also validates sortBy/sortDirection, throwing
+        // IllegalArgumentException (-> 400) for an unrecognized value.
+        Comparator<SeriesEntity> sortComparator =
+            SeriesSortResolver.resolve(criteria.getSortBy(), criteria.getSortDirection());
+
         return repository.findAll().stream()
             .filter(s -> matchesTitle(s, criteria.getTitle()))
             .filter(s -> matchesGenres(s, criteria.getGenres()))
@@ -50,7 +55,7 @@ public class SeriesSearchService {
             .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating(), criteria.getMaxPersonalRating()))
             .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating(), criteria.getMaxImdbRating()))
             .filter(s -> matchesStartedNotFinished(s, criteria.getStartedNotFinished()))
-            .sorted(Comparator.comparing(SeriesEntity::getDateAdded).reversed())
+            .sorted(sortComparator)
             .map(seriesService::entityToDto)
             .collect(Collectors.toList());
     }

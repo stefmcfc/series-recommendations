@@ -115,8 +115,19 @@ public class SeriesService {
 
     @Transactional(readOnly = true)
     public List<SeriesDto> getAll() {
+        return getAll(null, null);
+    }
+
+    // SERIES-009-AC-06: getAll() gains an explicit default order (dateAdded descending, via
+    // SeriesSortResolver's null-args default) where none existed before -- see
+    // series_spec_009_rating_sort.md's Design Decisions for why an undefined findAll() order
+    // was worth replacing even though nothing else asked for it.
+    @Transactional(readOnly = true)
+    public List<SeriesDto> getAll(String sortBy, String sortDirection) {
         log.debug("Fetching all series");
+        Comparator<SeriesEntity> comparator = SeriesSortResolver.resolve(sortBy, sortDirection);
         return repository.findAll().stream()
+            .sorted(comparator)
             .map(this::entityToDto)
             .collect(Collectors.toList());
     }
@@ -225,6 +236,7 @@ public class SeriesService {
         dto.setLastRefreshedAt(entity.getLastRefreshedAt());
         dto.setProductionStatus(entity.getProductionStatus() != null ? entity.getProductionStatus().name() : null);
         dto.setOriginCountry(entity.getOriginCountry());
+        dto.setNewContentDetectedAt(entity.getNewContentDetectedAt());
         dto.setKeywords(entity.getKeywords().stream()
             .map(KeywordEntity::getName)
             .sorted(Comparator.naturalOrder())

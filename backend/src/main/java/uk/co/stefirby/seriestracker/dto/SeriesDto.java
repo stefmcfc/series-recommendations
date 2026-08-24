@@ -42,6 +42,11 @@ public class SeriesDto {
     // (SERIES-021-AC-06), same direct flow-through precedent as tmdbRating/tmdbVoteCount.
     private String originCountry;
 
+    // series_spec_018_series_refresh.md: output-only, like lastRefreshedAt -- never read from
+    // the incoming DTO in create/update (SERIES-018-AC-23). Non-null means a refresh detected
+    // new content not yet acknowledged (POST /series/{id}/acknowledge-new-content).
+    private LocalDateTime newContentDetectedAt;
+
     // series_spec_019_keyword_tracking.md (SERIES-019-AC-23): input-only, mirroring
     // dateAdded/lastRefreshedAt's output-only convention in the opposite direction -- read by
     // SeriesService.create to trigger KeywordSyncService.syncKeywords (SERIES-019-AC-24), never
@@ -125,6 +130,9 @@ public class SeriesDto {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
+    public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }
 
     public Integer getTmdbId() { return tmdbId; }
     public void setTmdbId(Integer tmdbId) { this.tmdbId = tmdbId; }

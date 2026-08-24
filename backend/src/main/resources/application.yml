@@ -66,6 +66,16 @@ app:
     # rate-limiter -- see the spec's Design Decisions. Overridable via
     # APP_TMDB_REFRESH_DELAY_MS without a code change.
     refresh-delay-ms: 250
+    # series_spec_018_series_refresh.md (SERIES-018-AC-29/33/34): during a bulk refresh only,
+    # a series whose lastRefreshedAt is within this many minutes of now is skipped rather than
+    # re-fetched -- a repeat "Refresh All" click shouldn't burn TMDB rate-limit budget and
+    # wall-clock time re-fetching data that's already current. Single-series refresh
+    # (POST /series/{id}/refresh) never applies this threshold -- it always forces a real
+    # refresh. A value of 0 disables skipping entirely (every series is refreshed on every
+    # bulk run), the same "0 disables the filter" convention as app.tmdb's minVoteCount
+    # (SERIES-007-AC-25). Overridable via APP_TMDB_REFRESH_SKIP_THRESHOLD_MINUTES without a
+    # code change.
+    refresh-skip-threshold-minutes: 60
   recommendations:
     # SERIES-015-AC-14: selects RecommendationService's per-source diversity-cap strategy --
     # "best-source" (default) caps on each candidate's single best contributing source only;

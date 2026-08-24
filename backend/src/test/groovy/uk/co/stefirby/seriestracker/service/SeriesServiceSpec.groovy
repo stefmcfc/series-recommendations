@@ -340,6 +340,49 @@ class SeriesServiceSpec extends Specification {
         results.isEmpty()
   }
 
+  def "SERIES-009-AC-06: getAll defaults to dateAdded descending"() {
+    given: "three series added in sequence"
+        seriesService.create(new SeriesDto(title: "First Added"))
+        seriesService.create(new SeriesDto(title: "Second Added"))
+        seriesService.create(new SeriesDto(title: "Third Added"))
+
+    when: "getAll() is called with no sort params"
+        def results = seriesService.getAll(null, null)
+
+    then: "results are ordered by dateAdded, most recent first"
+        results*.title == ["Third Added", "Second Added", "First Added"]
+  }
+
+  def "SERIES-009-AC-05: getAll shares the same sortBy resolution search() uses"() {
+    given: "three series with different personal ratings"
+        seriesService.create(new SeriesDto(title: "Shared Sort A", personalRating: 3))
+        seriesService.create(new SeriesDto(title: "Shared Sort B", personalRating: 5))
+        seriesService.create(new SeriesDto(title: "Shared Sort C"))
+
+    when: "getAll() is called with sortBy=personalRating, sortDirection=desc"
+        def results = seriesService.getAll("personalRating", "desc")
+
+    then: "results follow the same nulls-last descending order search() applies"
+        def scoped = results.findAll { it.title.startsWith("Shared Sort") }
+        scoped*.personalRating == [5, 3, null]
+  }
+
+  def "SERIES-009-AC-02: getAll rejects an invalid sortBy value"() {
+    when: "getAll() is called with an invalid sortBy value"
+        seriesService.getAll("notAField", null)
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-009-AC-03: getAll rejects an invalid sortDirection value"() {
+    when: "getAll() is called with an invalid sortDirection value"
+        seriesService.getAll(null, "sideways")
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
   def "should retrieve series by ID"() {
     given: "a series has been created"
         def created = seriesService.create(new SeriesDto(title: "The Office"))

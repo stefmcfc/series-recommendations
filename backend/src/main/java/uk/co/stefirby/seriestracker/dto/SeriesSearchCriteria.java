@@ -16,6 +16,11 @@ public class SeriesSearchCriteria {
     private BigDecimal minImdbRating;
     private BigDecimal maxImdbRating;
     private Boolean startedNotFinished;
+    // series_spec_009_rating_sort.md (SERIES-009-AC-01/07): dateAdded (default) |
+    // personalRating | title | year | imdbRating | tmdbRating.
+    private String sortBy;
+    // series_spec_009_rating_sort.md (SERIES-009-AC-01): asc | desc, default desc.
+    private String sortDirection;
 
     public SeriesSearchCriteria() {}
 
@@ -37,4 +42,8 @@ public class SeriesSearchCriteria {
     public void setMaxImdbRating(BigDecimal maxImdbRating) { this.maxImdbRating = maxImdbRating; }
     public Boolean getStartedNotFinished() { return startedNotFinished; }
     public void setStartedNotFinished(Boolean startedNotFinished) { this.startedNotFinished = startedNotFinished; }
+    public String getSortBy() { return sortBy; }
+    public void setSortBy(String sortBy) { this.sortBy = sortBy; }
+    public String getSortDirection() { return sortDirection; }
+    public void setSortDirection(String sortDirection) { this.sortDirection = sortDirection; }
 }

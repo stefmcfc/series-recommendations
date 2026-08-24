@@ -130,6 +130,14 @@ public class SeriesEntity {
     @Column(nullable = true, length = 2)
     private String originCountry;
 
+    // series_spec_018_series_refresh.md (SERIES-018-AC-23): non-null means a refresh found
+    // totalSeasons/totalEpisodes had increased since the prior refresh, not yet acknowledged.
+    // Never auto-cleared by a subsequent refresh that finds no further increase
+    // (SERIES-018-AC-25) -- only POST /series/{id}/acknowledge-new-content clears it
+    // (SERIES-018-AC-27).
+    @Column(nullable = true)
+    private LocalDateTime newContentDetectedAt;
+
     // series_spec_019_keyword_tracking.md (SERIES-019-AC-03): a series' TMDB keywords,
     // normalized via a shared `keyword` table plus a `series_keyword` join table -- unlike
     // `genres`/`tags`, this needs COUNT/AVG-style aggregation (KeywordStatsService), which a
@@ -220,6 +228,9 @@ public class SeriesEntity {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
+    public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }
 
     public Set<KeywordEntity> getKeywords() { return keywords; }
     public void setKeywords(Set<KeywordEntity> keywords) { this.keywords = keywords; }

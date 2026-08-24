@@ -41,17 +41,20 @@ public class BulkRefreshService {
     private final SeriesRepository repository;
     private final SeriesRefreshService refreshService;
     private final long refreshDelayMs;
+    private final int refreshSkipThresholdMinutes;
     private final ExecutorService executor;
 
     private final AtomicReference<RefreshJobStatus> currentJob =
-        new AtomicReference<>(new RefreshJobStatus(IDLE, 0, 0, null, null));
+        new AtomicReference<>(new RefreshJobStatus(IDLE, 0, 0, 0, null, null));
 
     public BulkRefreshService(SeriesRepository repository,
                                SeriesRefreshService refreshService,
-                               @Value("${app.tmdb.refresh-delay-ms:250}") long refreshDelayMs) {
+                               @Value("${app.tmdb.refresh-delay-ms:250}") long refreshDelayMs,
+                               @Value("${app.tmdb.refresh-skip-threshold-minutes:60}") int refreshSkipThresholdMinutes) {
         this.repository = repository;
         this.refreshService = refreshService;
         this.refreshDelayMs = refreshDelayMs;
+        this.refreshSkipThresholdMinutes = refreshSkipThresholdMinutes;
         this.executor = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "bulk-refresh-worker");
             thread.setDaemon(true);
@@ -74,7 +77,7 @@ public class BulkRefreshService {
         }
 
         int totalCount = (int) repository.count();
-        RefreshJobStatus started = new RefreshJobStatus(IN_PROGRESS, totalCount, 0, LocalDateTime.now(), null);
+        RefreshJobStatus started = new RefreshJobStatus(IN_PROGRESS, totalCount, 0, 0, LocalDateTime.now(), null);
         currentJob.set(started);
 
         executor.submit(() -> runJob(started));
@@ -89,24 +92,35 @@ public class BulkRefreshService {
     /**
      * Refreshes every series sequentially via {@link SeriesRefreshService#refresh(UUID)}, with
      * a fixed delay between items (SERIES-018-AC-15) to stay within TMDB's free-tier rate
-     * limit. One series' refresh failing does not stop the batch (SERIES-018-AC-17) -- it's
-     * caught, logged, and still counted toward {@code completedCount}. An unexpected exception
-     * in the loop's own mechanics (not a per-item failure) is caught here too, setting the
-     * job's status to {@code FAILED} rather than letting it propagate -- there is no caller
-     * waiting on this async task (SERIES-018-AC-22).
+     * limit. A series whose {@code lastRefreshedAt} is within {@code
+     * app.tmdb.refresh-skip-threshold-minutes} of now is skipped entirely -- no refresh call,
+     * no delay -- but still counted toward {@code completedCount} (SERIES-018-AC-30/31/34). One
+     * series' refresh failing does not stop the batch (SERIES-018-AC-17) -- it's caught,
+     * logged, and still counted toward {@code completedCount}. An unexpected exception in the
+     * loop's own mechanics (not a per-item failure) is caught here too, setting the job's
+     * status to {@code FAILED} rather than letting it propagate -- there is no caller waiting on
+     * this async task (SERIES-018-AC-22).
      */
     private void runJob(RefreshJobStatus started) {
         try {
-            List<UUID> ids = repository.findAll().stream().map(SeriesEntity::getId).toList();
+            List<SeriesEntity> entities = repository.findAll();
             int completed = 0;
-            for (UUID id : ids) {
+            int skipped = 0;
+            for (SeriesEntity entity : entities) {
+                if (shouldSkip(entity)) {
+                    skipped++;
+                    completed++;
+                    currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null));
+                    continue;
+                }
+
                 try {
-                    refreshService.refresh(id);
+                    refreshService.refresh(entity.getId());
                 } catch (RuntimeException e) {
-                    log.warn("Bulk refresh: refreshing series {} failed, continuing with the batch", id, e);
+                    log.warn("Bulk refresh: refreshing series {} failed, continuing with the batch", entity.getId(), e);
                 }
                 completed++;
-                currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, started.startedAt(), null));
+                currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null));
 
                 if (refreshDelayMs > 0) {
                     try {
@@ -117,11 +131,30 @@ public class BulkRefreshService {
                     }
                 }
             }
-            currentJob.set(new RefreshJobStatus(COMPLETED, started.totalCount(), completed, started.startedAt(), LocalDateTime.now()));
+            currentJob.set(new RefreshJobStatus(COMPLETED, started.totalCount(), completed, skipped, started.startedAt(), LocalDateTime.now()));
         } catch (RuntimeException e) {
             log.error("Bulk refresh job failed unexpectedly", e);
             RefreshJobStatus current = currentJob.get();
-            currentJob.set(new RefreshJobStatus(FAILED, started.totalCount(), current.completedCount(), started.startedAt(), LocalDateTime.now()));
+            currentJob.set(new RefreshJobStatus(FAILED, started.totalCount(), current.completedCount(), current.skippedCount(), started.startedAt(), LocalDateTime.now()));
         }
+    }
+
+    /**
+     * SERIES-018-AC-30/31/34: a series is skipped only when {@code
+     * app.tmdb.refresh-skip-threshold-minutes} is positive (0 disables skipping entirely, same
+     * "0 disables the filter" convention as {@code minVoteCount}, {@code
+     * series_spec_007_recommendation_sourcing.md} SERIES-007-AC-25) and its {@code
+     * lastRefreshedAt} is both non-null and within that many minutes of now.
+     */
+    private boolean shouldSkip(SeriesEntity entity) {
+        if (refreshSkipThresholdMinutes <= 0) {
+            return false;
+        }
+        LocalDateTime lastRefreshedAt = entity.getLastRefreshedAt();
+        if (lastRefreshedAt == null) {
+            return false;
+        }
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(refreshSkipThresholdMinutes);
+        return lastRefreshedAt.isAfter(cutoff);
     }
 }
