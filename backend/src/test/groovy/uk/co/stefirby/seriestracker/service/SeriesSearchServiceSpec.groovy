@@ -171,6 +171,40 @@ class SeriesSearchServiceSpec extends Specification {
             results.every { it.status in ["WATCHING", "DROPPED"] }
     }
 
+    def "SERIES-008-AC-20: flaggedForRewatch=true filters to only flagged series"() {
+        given: "one series flagged for rewatch, on top of the four unflagged series from setup()"
+            seriesService.create(new SeriesDto(title: "Rewatch Me", flaggedForRewatch: true))
+
+        when: "search is called with flaggedForRewatch: true"
+            def criteria = new SeriesSearchCriteria(flaggedForRewatch: true)
+            def results = searchService.search(criteria)
+
+        then: "only the flagged series is returned"
+            results*.title == ["Rewatch Me"]
+    }
+
+    def "SERIES-008-AC-20: flaggedForRewatch unset returns everything, same as today"() {
+        given: "one series flagged for rewatch, on top of the four unflagged series from setup()"
+            seriesService.create(new SeriesDto(title: "Rewatch Me", flaggedForRewatch: true))
+
+        when: "search is called with no flaggedForRewatch criteria"
+            def results = searchService.search(new SeriesSearchCriteria())
+
+        then: "all five series are returned"
+            results.size() == 5
+    }
+
+    def "SERIES-008-AC-21: flaggedForRewatch is not restricted by status"() {
+        given: "a BACKLOG series flagged for rewatch"
+            seriesService.create(new SeriesDto(title: "Backlog Rewatch", status: "BACKLOG", flaggedForRewatch: true))
+
+        when: "search is called with flaggedForRewatch: true"
+            def results = searchService.search(new SeriesSearchCriteria(flaggedForRewatch: true))
+
+        then: "the flagged BACKLOG series is returned regardless of status"
+            results*.title == ["Backlog Rewatch"]
+    }
+
     def "search combines multiple filters"() {
         given: "search criteria combining title, status, and rating filters"
             def criteria = new SeriesSearchCriteria(

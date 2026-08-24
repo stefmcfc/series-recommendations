@@ -366,4 +366,36 @@ class SeriesEntitySpec extends Specification {
         then: "no validation violations are raised"
             violations.isEmpty()
     }
+
+    def "SERIES-008-AC-01: excludeFromRecommendations defaults to false"() {
+        given: "a new SeriesEntity with no explicit excludeFromRecommendations value"
+            def entity = new SeriesEntity(title: "Some Show")
+
+        expect: "it defaults to false"
+            !entity.excludeFromRecommendations
+    }
+
+    def "SERIES-008-AC-01: excludeFromRecommendations can be set to true"() {
+        given: "a SeriesEntity with excludeFromRecommendations explicitly true"
+            def entity = new SeriesEntity(title: "Some Show", excludeFromRecommendations: true)
+
+        expect: "the value is held"
+            entity.excludeFromRecommendations
+    }
+
+    def "SERIES-008-AC-18: flaggedForRewatch defaults to false"() {
+        given: "a new SeriesEntity with no explicit flaggedForRewatch value"
+            def entity = new SeriesEntity(title: "Some Show")
+
+        expect: "it defaults to false"
+            !entity.flaggedForRewatch
+    }
+
+    def "SERIES-008-AC-18: flaggedForRewatch can be set to true"() {
+        given: "a SeriesEntity with flaggedForRewatch explicitly true"
+            def entity = new SeriesEntity(title: "Some Show", flaggedForRewatch: true)
+
+        expect: "the value is held"
+            entity.flaggedForRewatch
+    }
 }

@@ -58,6 +58,17 @@ public class SeriesDto {
     // persisted on SeriesEntity (which has no tmdbId column) and never set by entityToDto.
     private Integer tmdbId;
 
+    // series_spec_008_series_lifecycle_data.md (SERIES-008-AC-02): boxed Boolean, not
+    // primitive -- must represent "omitted from the request" (null) distinctly from
+    // "explicitly set to false", the same partial-update-capable shape as every other
+    // PATCH-able field on this class (SeriesEntity's own field stays a plain primitive; see
+    // its own javadoc).
+    private Boolean excludeFromRecommendations;
+
+    // series_spec_008_series_lifecycle_data.md (SERIES-008-AC-19): same boxed-Boolean,
+    // partial-update-capable shape as excludeFromRecommendations above.
+    private Boolean flaggedForRewatch;
+
     // series_spec_019_keyword_tracking.md / frontend_spec_024_keyword_tracking.md
     // (FRONTEND-024-AC-02): output-only flattened KeywordEntity.name values for this series,
     // sorted alphabetically for stable ordering -- never read from the incoming DTO (there is
@@ -147,4 +158,10 @@ public class SeriesDto {
 
     public List<String> getKeywords() { return keywords; }
     public void setKeywords(List<String> keywords) { this.keywords = keywords; }
+
+    public Boolean getExcludeFromRecommendations() { return excludeFromRecommendations; }
+    public void setExcludeFromRecommendations(Boolean excludeFromRecommendations) { this.excludeFromRecommendations = excludeFromRecommendations; }
+
+    public Boolean getFlaggedForRewatch() { return flaggedForRewatch; }
+    public void setFlaggedForRewatch(Boolean flaggedForRewatch) { this.flaggedForRewatch = flaggedForRewatch; }
 }

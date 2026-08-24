@@ -1,6 +1,8 @@
 # Spec 008: Series Lifecycle Data — Exclude Flag, Production Status & Refresh
 
-**Status**: Not started
+**Status**: Requirements 1, 2, and 4 done (2026-08-24); Requirement 3 superseded, not implemented (see its own heading). Two deviations from this spec's original text, both judgment calls made during implementation and left here for traceability:
+- **Requirement 2 (AC-06/07/09/10/11) was substantially pre-implemented** by `series_spec_018_series_refresh.md`/`series_spec_021_origin_country.md` before this spec itself shipped — `ProductionStatus` (enum + nullable `production_status` column, added by `V003`, not this spec's own `V008`) and `SeriesDto.productionStatus` already existed, and `SeriesService.create` already resolves it at create time. However, the *mechanism* differs from AC-09/AC-10's literal text: rather than `SeriesService.create` calling `TmdbClient.findTvIdByImdbId`/`showStatus` itself, `productionStatus` is resolved earlier by `SeriesLookupService` (via `TmdbClient.details`) during the TMDB lookup/resolve flow and round-tripped back through the create `SeriesDto` — the same precedent already established for `tmdbId`/`originCountry`/`overview`. `SeriesService.create` reads `dto.getProductionStatus()` directly (see `SERIES-021-AC-08`'s own comment and its covering test), which is not "output-only" per AC-09's literal wording. This was **not** reverted — doing so would regress an already-shipped, tested feature and add a redundant second TMDB call for no behavioral gain. `TmdbClient.showStatus(int tmdbId)` (AC-08) was added net-new for spec completeness/parity, but production code doesn't currently call it (it's independently unit-tested and available for a future direct caller).
+- **Migration numbering**: the next free Flyway version at implementation time was `V008` (`V001`-`V007` already existed, including `V003` for `production_status` and `V005` for keyword tables — both taken by the time this spec was implemented), not `V005` as originally drafted. The migration is `V008__add_lifecycle_fields_to_series.sql` and adds only `exclude_from_recommendations`/`flagged_for_rewatch` (not `production_status`, already covered by `V003`).
 **No `frontend/` files are touched by this spec** — the exclude checkbox and production-status badge are `frontend_spec_012_series_lifecycle_controls.md`, a separate follow-up task.
 **Priority**: P2 (quality-of-life improvement — not core CRUD)
 **Depends on**: Spec 001 (entity/migration conventions, `SeriesStatus` enum precedent), Spec 003 (`SeriesSearchCriteria`/`SeriesSearchService`, extended by this spec's rewatch filter), Spec 005 (`OmdbClient.lookup`, episode-count aggregation precedent — largely superseded by Spec 017), Spec 006 (`TmdbClient`, `IgnoreOutcome` outcome-record precedent), Spec 007 (adds a filter predicate into the automatic watched-pool sourcing that spec builds)
@@ -272,24 +274,24 @@ def "SERIES-008-AC-20: flaggedForRewatch unset returns everything, same as today
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-008-AC-01: `excludeFromRecommendations` column (`V005` migration)
-- [ ] SERIES-008-AC-02: `SeriesDto.excludeFromRecommendations` (boxed `Boolean`)
-- [ ] SERIES-008-AC-03: create/update partial-update semantics for the flag
-- [ ] SERIES-008-AC-04: automatic watched-pool sourcing excludes flagged series
-- [ ] SERIES-008-AC-05: explicit `seriesIds` selection is not filtered by the flag
-- [ ] SERIES-008-AC-06: `ProductionStatus` enum
-- [ ] SERIES-008-AC-07: `productionStatus` column (`V005` migration)
-- [ ] SERIES-008-AC-08: `TmdbClient.showStatus`, unrecognized value → empty
-- [ ] SERIES-008-AC-09: `SeriesDto.productionStatus`, output-only
-- [ ] SERIES-008-AC-10: resolved at create time, non-fatal on failure
-- [ ] SERIES-008-AC-11: not auto-re-resolved on update/PATCH
+- [x] SERIES-008-AC-01: `excludeFromRecommendations` column (`V008` migration — see Status line on migration numbering)
+- [x] SERIES-008-AC-02: `SeriesDto.excludeFromRecommendations` (boxed `Boolean`)
+- [x] SERIES-008-AC-03: create/update partial-update semantics for the flag
+- [x] SERIES-008-AC-04: automatic watched-pool sourcing excludes flagged series
+- [x] SERIES-008-AC-05: explicit `seriesIds` selection is not filtered by the flag
+- [x] SERIES-008-AC-06: `ProductionStatus` enum (pre-existing, see Status line)
+- [x] SERIES-008-AC-07: `productionStatus` column (pre-existing on `V003`, see Status line)
+- [x] SERIES-008-AC-08: `TmdbClient.showStatus`, unrecognized value → empty
+- [x] SERIES-008-AC-09: `SeriesDto.productionStatus` (pre-existing) — **deviation**: not strictly output-only, see Status line
+- [x] SERIES-008-AC-10: resolved at create time, non-fatal on failure (pre-existing, via a different mechanism — see Status line)
+- [x] SERIES-008-AC-11: not auto-re-resolved on update/PATCH (pre-existing)
 - [ ] ~~SERIES-008-AC-12~~: superseded, not implementable — see SERIES-018-AC-01
 - [ ] ~~SERIES-008-AC-13~~: superseded, not implementable — see SERIES-018-AC-02/AC-03
 - [ ] ~~SERIES-008-AC-14~~: superseded, not implementable — see SERIES-018-AC-06
 - [ ] ~~SERIES-008-AC-15~~: superseded, not implementable — see SERIES-018-AC-02/AC-05
 - [ ] ~~SERIES-008-AC-16~~: superseded, not implementable — see SERIES-018-AC-07
 - [ ] ~~SERIES-008-AC-17~~: superseded, not implementable — see SERIES-018-AC-08
-- [ ] SERIES-008-AC-18: `flaggedForRewatch` column (`V005` migration)
-- [ ] SERIES-008-AC-19: `SeriesDto.flaggedForRewatch` (boxed `Boolean`), same partial-update semantics as `excludeFromRecommendations`
-- [ ] SERIES-008-AC-20: `SeriesSearchCriteria.flaggedForRewatch` filter
-- [ ] SERIES-008-AC-21: no server-side status restriction on flagging/filtering
+- [x] SERIES-008-AC-18: `flaggedForRewatch` column (`V008` migration — see Status line on migration numbering)
+- [x] SERIES-008-AC-19: `SeriesDto.flaggedForRewatch` (boxed `Boolean`), same partial-update semantics as `excludeFromRecommendations`
+- [x] SERIES-008-AC-20: `SeriesSearchCriteria.flaggedForRewatch` filter
+- [x] SERIES-008-AC-21: no server-side status restriction on flagging/filtering

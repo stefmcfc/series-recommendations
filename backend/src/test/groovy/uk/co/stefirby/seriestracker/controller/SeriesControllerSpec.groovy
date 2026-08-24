@@ -416,4 +416,18 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data[1].title').value("Controller Sort A"))
         result.andExpect(jsonPath('$.data[2].title').value("Controller Sort C"))
   }
+
+  def "SERIES-008-AC-20: GET /api/v1/series/search honors the flaggedForRewatch query param"() {
+    given: "one flagged series, one unflagged series"
+        seriesService.create(new SeriesDto(title: "Rewatch Me", flaggedForRewatch: true))
+        seriesService.create(new SeriesDto(title: "Not Flagged", flaggedForRewatch: false))
+
+    when: "a GET request is made with flaggedForRewatch=true"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("flaggedForRewatch", "true"))
+
+    then: "only the flagged series is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.length()').value(1))
+        result.andExpect(jsonPath('$.data[0].title').value("Rewatch Me"))
+  }
 }

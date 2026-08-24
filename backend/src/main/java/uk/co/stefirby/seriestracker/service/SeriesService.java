@@ -67,6 +67,15 @@ public class SeriesService {
         entity.setOriginCountry(dto.getOriginCountry());
         entity.setOverview(dto.getOverview());
 
+        // SERIES-008-AC-03: defaults to false when the dto value is null, same as the
+        // entity's own field default.
+        entity.setExcludeFromRecommendations(
+            dto.getExcludeFromRecommendations() != null && dto.getExcludeFromRecommendations());
+
+        // SERIES-008-AC-19: same create-time default-to-false semantics as
+        // excludeFromRecommendations above.
+        entity.setFlaggedForRewatch(dto.getFlaggedForRewatch() != null && dto.getFlaggedForRewatch());
+
         // SERIES-021-AC-08: closes the gap where a freshly added series' productionStatus was
         // always null until its first explicit refresh, even though TmdbSeriesDetail already
         // supplies it for free at create time (same direct flow-through precedent as
@@ -187,6 +196,12 @@ public class SeriesService {
         if (dto.getImdbId() != null) {
             entity.setImdbId(dto.getImdbId());
         }
+        if (dto.getExcludeFromRecommendations() != null) {
+            entity.setExcludeFromRecommendations(dto.getExcludeFromRecommendations());
+        }
+        if (dto.getFlaggedForRewatch() != null) {
+            entity.setFlaggedForRewatch(dto.getFlaggedForRewatch());
+        }
 
         if (dto.getStatus() != null) {
             SeriesStatus newStatus = SeriesStatus.valueOf(dto.getStatus());
@@ -239,6 +254,8 @@ public class SeriesService {
         dto.setOriginCountry(entity.getOriginCountry());
         dto.setOverview(entity.getOverview());
         dto.setNewContentDetectedAt(entity.getNewContentDetectedAt());
+        dto.setExcludeFromRecommendations(entity.isExcludeFromRecommendations());
+        dto.setFlaggedForRewatch(entity.isFlaggedForRewatch());
         dto.setKeywords(entity.getKeywords().stream()
             .map(KeywordEntity::getName)
             .sorted(Comparator.naturalOrder())

@@ -163,6 +163,42 @@ class RecommendationServiceSpec extends Specification {
             20 * tmdbClient.similar(_) >> []
     }
 
+    def "SERIES-008-AC-04: a COMPLETED series with excludeFromRecommendations=true is skipped by the automatic pool"() {
+        given: "one eligible COMPLETED series and one excluded COMPLETED series, both with an imdbId"
+            def eligible = completedSeries("Eligible Show", "tt1111111", LocalDateTime.now())
+            def excluded = completedSeries("Excluded Show", "tt2222222", LocalDateTime.now())
+            excluded.excludeFromRecommendations = true
+            seriesRepository.findAll() >> [eligible, excluded]
+            tmdbClient.recommendations(1) >> []
+            tmdbClient.similar(1) >> []
+
+        when: "recommend(20) is called with no source override"
+            recommendationService.recommend(20)
+
+        then: "only the non-excluded series is consulted as a source"
+            1 * tmdbClient.findTvIdByImdbId("tt1111111") >> Optional.of(1)
+            0 * tmdbClient.findTvIdByImdbId("tt2222222")
+    }
+
+    def "SERIES-008-AC-05: an explicit seriesIds selection is not filtered by excludeFromRecommendations"() {
+        given: "a COMPLETED series with excludeFromRecommendations=true"
+            def excluded = completedSeries("Excluded Show", "tt3333333", LocalDateTime.now())
+            excluded.excludeFromRecommendations = true
+            excluded.id = UUID.randomUUID()
+            seriesRepository.findAllById([excluded.id]) >> [excluded]
+            tmdbClient.recommendations(123) >> []
+            tmdbClient.similar(123) >> []
+
+        and: "criteria explicitly selects that series"
+            def criteria = new RecommendationCriteria(seriesIds: [excluded.id.toString()])
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "the excluded series IS consulted, since it was explicitly selected"
+            1 * tmdbClient.findTvIdByImdbId("tt3333333") >> Optional.of(123)
+    }
+
     def "SERIES-006-AC-16: falls back to similar() when recommendations() is empty"() {
         given: "one completed series with an imdbId resolvable to a tmdb id"
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
