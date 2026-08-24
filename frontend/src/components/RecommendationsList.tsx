@@ -247,9 +247,6 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                     </span>
                   )}
                 </div>
-                {r.genres !== null && (
-                  <span className={styles.genres}>{r.genres}</span>
-                )}
                 {r.streamingProviders.length > 0 ? (
                   <ul className={styles.streamingProviders}>
                     {r.streamingProviders.map((provider) => (
@@ -272,6 +269,9 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                   <span className={styles.streamingProvidersEmpty}>
                     Not currently streaming in the UK
                   </span>
+                )}
+                {r.genres !== null && (
+                  <span className={styles.genres}>{r.genres}</span>
                 )}
                 {r.originCountry !== null && (
                   <span className={styles.country}>
