@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Searchable keyword picker: a new shared `KeywordPicker` component (type-to-filter/type-to-add input with removable chips) replaces the keyword checkbox lists on both the Recommendations page (`RecommendationControls`' `Genre & Keyword` mode, free-text — any keyword can be typed and added, resolved server-side, not limited to already-tracked keywords) and the List page (`SearchFilter`, vocabulary-constrained to `GET /api/v1/series/keywords`' tracked keywords). The List page also gains a "Browse all keywords" modal, sharing selection state with the inline picker, for browsing the full tracked vocabulary without typing (`frontend_spec_029`).
+
 ## [2.1.0] - 2026-08-24
 
 ### Added

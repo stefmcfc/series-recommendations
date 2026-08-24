@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series } from '../types/series'
+import { KeywordPicker } from './KeywordPicker'
 import styles from './RecommendationControls.module.css'
 
 type SourceMode = 'automatic' | 'specific' | 'genre' | 'trending' | 'topRated'
@@ -108,10 +109,6 @@ export function RecommendationControls({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [allSeries, setAllSeries] = useState<Series[]>([])
   const [genreOptions, setGenreOptions] = useState<string[]>([])
-  const [keywordOptions, setKeywordOptions] = useState<string[]>([])
-  const [keywordOptionsError, setKeywordOptionsError] = useState<string | null>(
-    null,
-  )
 
   useEffect(() => {
     seriesApi
@@ -125,17 +122,6 @@ export function RecommendationControls({
       .getGenreOptions()
       .then(setGenreOptions)
       .catch(() => undefined)
-  }, [])
-
-  useEffect(() => {
-    seriesApi
-      .getKeywordStats()
-      .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
-      .catch(() =>
-        setKeywordOptionsError(
-          'Failed to load keyword filter options. Please try again.',
-        ),
-      )
   }, [])
 
   const updateState = (patch: Partial<ControlsState>) => {
@@ -170,16 +156,6 @@ export function RecommendationControls({
         genresSelected: checked
           ? [...state.genresSelected, genre]
           : state.genresSelected.filter((g) => g !== genre),
-      })
-    }
-
-  const handleKeywordToggle =
-    (keyword: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = event.target.checked
-      updateState({
-        keywordsSelected: checked
-          ? [...state.keywordsSelected, keyword]
-          : state.keywordsSelected.filter((k) => k !== keyword),
       })
     }
 
@@ -375,33 +351,13 @@ export function RecommendationControls({
             </div>
           </div>
           <div className={styles.field}>
-            <span>Keywords</span>
-            {keywordOptionsError && (
-              <p className={styles.keywordError} role="alert">
-                {keywordOptionsError}
-              </p>
-            )}
-            {!keywordOptionsError && (
-              <div className={styles.seriesPicker}>
-                {keywordOptions.length === 0 ? (
-                  <p className={styles.hint}>No keywords to choose from yet.</p>
-                ) : (
-                  keywordOptions.map((keyword) => (
-                    <div key={keyword} className={styles.seriesOption}>
-                      <input
-                        id={`keyword-checkbox-${keyword}`}
-                        type="checkbox"
-                        checked={state.keywordsSelected.includes(keyword)}
-                        onChange={handleKeywordToggle(keyword)}
-                      />
-                      <label htmlFor={`keyword-checkbox-${keyword}`}>
-                        {keyword}
-                      </label>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+            <KeywordPicker
+              id="recommendation-keywords"
+              label="Keywords"
+              selected={state.keywordsSelected}
+              onChange={(next) => updateState({ keywordsSelected: next })}
+              placeholder="Type a keyword and press Enter"
+            />
           </div>
           {showGenreKeywordHint && (
             <p className={styles.hint}>

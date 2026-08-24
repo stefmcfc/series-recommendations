@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationControls } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
-import { ApiError } from '../types/api'
 import type { Series } from '../types/series'
 
 vi.mock('../services/seriesApi')
@@ -138,7 +137,7 @@ describe('FRONTEND-014-AC-04/05: genre checkbox list', () => {
 })
 
 describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
-  it('does not render a text input labelled Genres', async () => {
+  it('does not render a text input labelled Genres, but does render the free-text Keywords picker input', async () => {
     mockGetGenreOptions.mockResolvedValue(['Action'])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
@@ -148,24 +147,20 @@ describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
     expect(
       screen.queryByRole('textbox', { name: /^genres/i }),
     ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('textbox', { name: /^keywords/i }),
-    ).not.toBeInTheDocument()
-    expect(screen.getByText(/^keywords/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
   })
 })
 
 describe('FRONTEND-014-AC-08: empty genresSelected omits genres from the query', () => {
   it('omits genres when no checkbox is checked', async () => {
     mockGetGenreOptions.mockResolvedValue(['Action'])
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'heist', seriesCount: 2, averagePersonalRating: null },
-    ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    fireEvent.click(await screen.findByLabelText('heist'))
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'heist' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ genres: expect.anything() }),
@@ -562,70 +557,64 @@ describe('FRONTEND-027-AC-07: minSourceRating hidden for both new modes', () => 
   })
 })
 
-describe('FRONTEND-011-AC-14: fetches keyword options on mount', () => {
-  it('calls seriesApi.getKeywordStats() once on mount', () => {
+describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox list', () => {
+  it('adds a typed keyword to the query without fetching keyword options', async () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'submarine' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['submarine'] }),
+    )
+  })
+
+  it('accepts multiple typed keywords', async () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'submarine' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    fireEvent.change(input, { target: { value: 'spy' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ keywords: ['submarine', 'spy'] }),
+    )
+  })
+})
+
+describe('FRONTEND-029-AC-11: no longer fetches seriesApi.getKeywordStats', () => {
+  it('does not call getKeywordStats on mount', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    expect(mockGetKeywordStats).toHaveBeenCalledTimes(1)
+    expect(mockGetKeywordStats).not.toHaveBeenCalled()
   })
 })
 
-describe('FRONTEND-011-AC-14/15: keyword checkbox list replaces free text', () => {
-  it('renders keyword checkboxes from getKeywordStats and includes selections in the query', async () => {
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-      { name: 'heist', seriesCount: 2, averagePersonalRating: null },
-    ])
+describe('FRONTEND-029-AC-12: mode switch still clears keywordsSelected', () => {
+  it('clears typed keywords when switching away from Genre & Keyword', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-
-    const spyCheckbox = await screen.findByLabelText('spy')
-    expect(screen.getByLabelText('heist')).toBeInTheDocument()
-
-    fireEvent.click(spyCheckbox)
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ keywords: ['spy'] }),
-    )
-
-    fireEvent.click(screen.getByLabelText('heist'))
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ keywords: ['spy', 'heist'] }),
-    )
-
-    fireEvent.click(spyCheckbox)
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ keywords: ['heist'] }),
-    )
-  })
-})
-
-describe('FRONTEND-011-AC-16: mode switch clears keywordsSelected', () => {
-  it('clears selected keywords when switching away from Genre & Keyword', async () => {
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-    ])
-    const onQueryChange = vi.fn()
-    render(<RecommendationControls onQueryChange={onQueryChange} />)
-
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    fireEvent.click(await screen.findByLabelText('spy'))
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ keywords: ['spy'] }),
-    )
-
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'submarine' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
     fireEvent.click(screen.getByLabelText(/specific series/i))
+
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ keywords: expect.anything() }),
     )
   })
 })
 
-describe('FRONTEND-011-AC-17: hint recomputed from keywordsSelected', () => {
-  it('hides the hint once a keyword checkbox is checked, shows it again once unchecked', async () => {
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-    ])
+describe('FRONTEND-029-AC-13: hint recomputed from keywordsSelected', () => {
+  it('hides the hint once a keyword is added, shows it again once removed', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
@@ -633,28 +622,31 @@ describe('FRONTEND-011-AC-17: hint recomputed from keywordsSelected', () => {
       screen.getByText(/enter at least one genre or keyword/i),
     ).toBeInTheDocument()
 
-    const spyCheckbox = await screen.findByLabelText('spy')
-    fireEvent.click(spyCheckbox)
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'spy' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
     expect(
       screen.queryByText(/enter at least one genre or keyword/i),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(spyCheckbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove spy' }))
     expect(
       screen.getByText(/enter at least one genre or keyword/i),
     ).toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-011-AC-18: keyword fetch failure degrades gracefully', () => {
-  it('shows a scoped error without blocking the rest of the panel', async () => {
-    mockGetKeywordStats.mockRejectedValue(
-      new ApiError(500, 'Internal server error'),
-    )
+describe('FRONTEND-029-AC-24/25: accessible names for the keyword picker embedding', () => {
+  it('keyword field is reachable by label with named buttons', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
-    expect(screen.getByLabelText(/automatic/i)).toBeInTheDocument()
+
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'spy' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(
+      screen.getByRole('button', { name: 'Remove spy' }),
+    ).toBeInTheDocument()
   })
 })
