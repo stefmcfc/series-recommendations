@@ -230,6 +230,7 @@ public class SeriesController {
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal maxImdbRating,
             @RequestParam(required = false) Boolean startedNotFinished,
+            @RequestParam(required = false) Boolean flaggedForRewatch,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
 
@@ -243,6 +244,7 @@ public class SeriesController {
         c.setMinImdbRating(minImdbRating);
         c.setMaxImdbRating(maxImdbRating);
         c.setStartedNotFinished(startedNotFinished);
+        c.setFlaggedForRewatch(flaggedForRewatch);
         c.setSortBy(sortBy);
         c.setSortDirection(sortDirection);
 
