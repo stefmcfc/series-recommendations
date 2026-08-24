@@ -10,6 +10,7 @@ vi.mock('../services/seriesApi')
 const mockGetById = vi.mocked(seriesApi.getById)
 const mockDelete = vi.mocked(seriesApi.delete)
 const mockRefresh = vi.mocked(seriesApi.refresh)
+const mockAcknowledgeNewContent = vi.mocked(seriesApi.acknowledgeNewContent)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -34,6 +35,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
     keywords: [],
@@ -491,6 +493,28 @@ describe('FRONTEND-005-AC-30: no console logging of series data', () => {
   })
 })
 
+describe('FRONTEND-005-AC-31: current season/episode hidden when COMPLETED', () => {
+  it('does not render Current Season/Current Episode for a COMPLETED series', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ status: SeriesStatus.COMPLETED }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.queryByText('Current Season')).not.toBeInTheDocument()
+    expect(screen.queryByText('Current Episode')).not.toBeInTheDocument()
+  })
+
+  it('still renders Current Season/Current Episode for a non-COMPLETED series', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.getByText('Current Season')).toBeInTheDocument()
+    expect(screen.getByText('Current Episode')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-024-AC-06/07: Keywords entry rendered', () => {
   it('renders each keyword as a chip', async () => {
     mockGetById.mockResolvedValue(makeSeries({ keywords: ['spy', 'mi5'] }))
@@ -507,5 +531,72 @@ describe('FRONTEND-024-AC-06/07: Keywords entry rendered', () => {
 
     await screen.findByText('Keywords')
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+})
+
+describe('FRONTEND-024-AC-18: keywords field carries a distinct class', () => {
+  it('applies the keywordsField class alongside field on the Keywords entry', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ keywords: ['spy'] }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    const dt = await screen.findByText('Keywords')
+    expect(dt.parentElement?.className).toContain('field')
+    expect(dt.parentElement?.className).toContain('keywordsField')
+  })
+})
+
+describe('FRONTEND-023-AC-19/20: new-content badge and dismiss', () => {
+  it('shows no badge/dismiss button when newContentDetectedAt is null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ newContentDetectedAt: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('The Office')
+    expect(
+      screen.queryByTestId('dismiss-new-content-btn'),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/new content/i)).not.toBeInTheDocument()
+  })
+
+  it('shows a badge and clears it on successful dismiss', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ newContentDetectedAt: new Date().toISOString() }),
+    )
+    mockAcknowledgeNewContent.mockResolvedValue(
+      makeSeries({ newContentDetectedAt: null }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByTestId('dismiss-new-content-btn')
+    expect(screen.getByText(/new content/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('dismiss-new-content-btn'))
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('dismiss-new-content-btn'),
+      ).not.toBeInTheDocument(),
+    )
+    expect(mockAcknowledgeNewContent).toHaveBeenCalledWith('1')
+    expect(screen.queryByText(/new content/i)).not.toBeInTheDocument()
+  })
+
+  it('keeps the badge and shows an alert if dismiss fails', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ newContentDetectedAt: new Date().toISOString() }),
+    )
+    mockAcknowledgeNewContent.mockRejectedValue(
+      new ApiError(500, 'Internal server error'),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByTestId('dismiss-new-content-btn')
+    fireEvent.click(screen.getByTestId('dismiss-new-content-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /internal server error/i,
+      ),
+    )
+    expect(screen.getByTestId('dismiss-new-content-btn')).toBeInTheDocument()
+    expect(screen.getByText(/new content/i)).toBeInTheDocument()
   })
 })

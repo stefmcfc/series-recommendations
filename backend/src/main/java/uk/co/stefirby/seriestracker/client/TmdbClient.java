@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,6 +53,9 @@ public class TmdbClient {
     public static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
+
+    /** Valid {@code timeWindow} values for {@link #trending(String)} (SERIES-022-AC-02). */
+    private static final Set<String> VALID_TIME_WINDOWS = Set.of("day", "week");
 
     private final String apiKey;
     private final RestClient restClient;
@@ -147,6 +151,43 @@ public class TmdbClient {
 
     private static String joinIds(List<Integer> ids) {
         return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    /**
+     * Globally trending TV shows via {@code GET /trending/tv/{timeWindow}} (SERIES-022-AC-01),
+     * mapped identically to {@link #recommendations(int)}/{@link #similar(int)}/{@link
+     * #discover(List, List)} -- TMDB's own {@code results[]} ordering (its popularity ranking)
+     * is preserved, never re-sorted (SERIES-022-AC-04).
+     *
+     * @throws IllegalArgumentException if {@code timeWindow} is not {@code "day"} or {@code
+     *                                  "week"} -- checked before any TMDB call is attempted
+     *                                  (SERIES-022-AC-02)
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> trending(String timeWindow) {
+        if (timeWindow == null || !VALID_TIME_WINDOWS.contains(timeWindow)) {
+            throw new IllegalArgumentException("timeWindow must be 'day' or 'week'");
+        }
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("trending/tv/" + timeWindow));
+        return mapResults(body);
+    }
+
+    /**
+     * TMDB's highest-rated TV shows overall, with a minimum vote-count floor, via {@code GET
+     * /discover/tv?sort_by=vote_average.desc&vote_count.gte={minVoteCount}} (SERIES-022-AC-03)
+     * -- mapped identically to {@link #discover(List, List)}, preserving TMDB's own returned
+     * order (SERIES-022-AC-04).
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> discoverTopRated(int minVoteCount) {
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder
+            .path("discover/tv")
+            .queryParam("sort_by", "vote_average.desc")
+            .queryParam("vote_count.gte", minVoteCount));
+        return mapResults(body);
     }
 
     /**

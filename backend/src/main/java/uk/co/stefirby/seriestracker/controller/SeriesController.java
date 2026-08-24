@@ -87,8 +87,10 @@ public class SeriesController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SeriesDto>>> getAll() {
-        List<SeriesDto> list = seriesService.getAll();
+    public ResponseEntity<ApiResponse<List<SeriesDto>>> getAll(
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
+        List<SeriesDto> list = seriesService.getAll(sortBy, sortDirection);
         return ResponseEntity.ok(new ApiResponse<>(list, list.size()));
     }
 
@@ -112,6 +114,12 @@ public class SeriesController {
     public ResponseEntity<ApiResponse<RefreshResult>> refresh(@PathVariable UUID id) {
         RefreshResult result = refreshService.refresh(id);
         return ResponseEntity.ok(new ApiResponse<>(result));
+    }
+
+    @PostMapping("/" + UUID_PATH_PATTERN + "/acknowledge-new-content")
+    public ResponseEntity<ApiResponse<SeriesDto>> acknowledgeNewContent(@PathVariable UUID id) {
+        SeriesDto dto = refreshService.acknowledgeNewContent(id);
+        return ResponseEntity.ok(new ApiResponse<>(dto));
     }
 
     @PostMapping("/refresh-all")
@@ -168,7 +176,9 @@ public class SeriesController {
             @RequestParam(required = false) String language,
             @RequestParam(required = false) Integer maxPerSource,
             @RequestParam(required = false) Integer maxSourcesShown,
-            @RequestParam(required = false) String sortBy) {
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sourceMode,
+            @RequestParam(required = false) String trendingWindow) {
         int clampedLimit = Math.clamp(limit, 1, 50);
 
         RecommendationCriteria criteria = new RecommendationCriteria();
@@ -185,6 +195,8 @@ public class SeriesController {
         criteria.setMaxPerSource(maxPerSource);
         criteria.setMaxSourcesShown(maxSourcesShown);
         criteria.setSortBy(sortBy);
+        criteria.setSourceMode(sourceMode);
+        criteria.setTrendingWindow(trendingWindow);
 
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
@@ -207,7 +219,9 @@ public class SeriesController {
             @RequestParam(required = false) Integer maxPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal maxImdbRating,
-            @RequestParam(required = false) Boolean startedNotFinished) {
+            @RequestParam(required = false) Boolean startedNotFinished,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDirection) {
 
         SeriesSearchCriteria c = new SeriesSearchCriteria();
         c.setTitle(title);
@@ -219,6 +233,8 @@ public class SeriesController {
         c.setMinImdbRating(minImdbRating);
         c.setMaxImdbRating(maxImdbRating);
         c.setStartedNotFinished(startedNotFinished);
+        c.setSortBy(sortBy);
+        c.setSortDirection(sortDirection);
 
         List<SeriesDto> results = searchService.search(c);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));

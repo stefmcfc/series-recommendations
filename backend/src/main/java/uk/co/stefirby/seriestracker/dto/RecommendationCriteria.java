@@ -34,6 +34,8 @@ public class RecommendationCriteria {
     private Integer maxPerSource;
     private Integer maxSourcesShown;
     private String sortBy;
+    private String sourceMode;
+    private String trendingWindow;
 
     public RecommendationCriteria() {}
 
@@ -75,4 +77,19 @@ public class RecommendationCriteria {
 
     public String getSortBy() { return sortBy; }
     public void setSortBy(String sortBy) { this.sortBy = sortBy; }
+
+    /**
+     * {@code "trending"} or {@code "topRated"} (SERIES-022-AC-06) -- a third directed-sourcing
+     * mode alongside {@code seriesIds}/{@code genres}/{@code keywords}, mutually exclusive with
+     * all three (SERIES-022-AC-16).
+     */
+    public String getSourceMode() { return sourceMode; }
+    public void setSourceMode(String sourceMode) { this.sourceMode = sourceMode; }
+
+    /**
+     * {@code "day"} or {@code "week"} (SERIES-022-AC-07), read only when {@code sourceMode} is
+     * {@code "trending"} -- ignored, not an error, otherwise (SERIES-022-AC-18).
+     */
+    public String getTrendingWindow() { return trendingWindow; }
+    public void setTrendingWindow(String trendingWindow) { this.trendingWindow = trendingWindow; }
 }

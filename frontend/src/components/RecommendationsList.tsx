@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { Recommendation, RecommendationQuery } from '../types/series'
+import type {
+  Recommendation,
+  RecommendationQuery,
+  Series,
+} from '../types/series'
 import { AddSeriesForm } from './AddSeriesForm'
 import styles from './RecommendationsList.module.css'
 
@@ -68,11 +72,18 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
     setPendingAdd(null)
   }
 
-  const handleAddSuccess = () => {
+  const handleAddSuccess = (series: Series) => {
     if (!pendingAdd) return
     const { imdbId } = pendingAdd.recommendation
     setRecommendations((prev) => prev.filter((r) => r.imdbId !== imdbId))
     setPendingAdd(null)
+
+    // Fire-and-forget: populates IMDb rating, season/episode counts, TMDB
+    // rating, and keywords in the background (FRONTEND-010-AC-21/22/23).
+    // Must not block card removal above, and a failure here is silent —
+    // the series is already saved, so this is no worse than the
+    // pre-amendment status quo of requiring a separate manual refresh.
+    seriesApi.refresh(series.id).catch(() => undefined)
   }
 
   const handleIgnore = (recommendation: Recommendation) => {

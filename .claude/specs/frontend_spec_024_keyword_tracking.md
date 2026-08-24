@@ -1,6 +1,6 @@
 # Frontend Spec 024: Keyword Tracking (Display, Stats View, Filter)
 
-**Status**: Implemented
+**Status**: Implemented (Requirements 1–7). **Amendment (2026-08-23, Requirements 6–7)**: restyles `SeriesDetail`'s keyword chips onto their own full-width row (Requirement 6), and redesigns `SearchFilter`'s keyword picker as a collapsible, height-bounded control so a large keyword vocabulary no longer pushes page content down (Requirement 7). Files touched: `frontend/src/components/SeriesDetail.tsx`, `frontend/src/components/SeriesDetail.module.css`, `frontend/src/components/SeriesDetail.test.tsx`, `frontend/src/components/SearchFilter.tsx`, `frontend/src/components/SearchFilter.module.css`, `frontend/src/components/SearchFilter.test.tsx`, `frontend/src/App.test.tsx` (disambiguated the top-level `Keywords` nav toggle from `SearchFilter`'s new same-named disclosure toggle via `pressed: false` in `getByRole`, a pre-existing test that broke under the new control — no `App.tsx` source change). `AC-19`/`AC-21` (real-browser visual checks) are reasoned through the CSS (a `grid-column: 1 / -1` child in a `grid-template-columns: repeat(auto-fit, minmax(...))` parent spans the full row; `max-height` + `overflow-y: auto` bounds the picker) but not confirmed with an actual browser pass in this session — no browser automation tool was available; a human should still do the real-browser check `.claude/skills/verify/SKILL.md`/root `CLAUDE.md` call for before treating this as fully done.
 **Depends on**: Series Spec 019 (`series_spec_019_keyword_tracking.md`, `GET /series/keywords`, `SeriesSearchCriteria.keywords`, Requirement 6's `tmdbId` round-trip) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Frontend Spec 018 (`tags` display precedent) ✅, Frontend Spec 022 (`AddSeriesForm` hidden-field round-trip pattern) ✅
 **Frontend Stage**: 24 of N
 
@@ -84,11 +84,43 @@ Implemented ahead of Requirements 1-4 (display) — this is prerequisite plumbin
 
 ---
 
+### Requirement 6: `SeriesDetail` — Full-Row Keyword Layout
+
+**User story**: As a user, I want a series' keyword chips to have their own full-width row on the detail view, so a longer list of chips isn't squeezed into the same narrow column as a two-word field like "Year".
+
+**Design decision**: `SeriesDetail`'s `<dl className={styles.fields}>` is a CSS grid (`grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))`, `SeriesDetail.module.css`), so every `.field` entry — including `Keywords` (Requirement 2 above) — currently shares one grid cell like any other two-line label/value pair. A variable-length, wrapping list of chips reads poorly constrained to a single ~200px-minimum column; spanning the entry across the full grid width (`grid-column: 1 / -1`) gives it room to wrap naturally regardless of how many keywords a series carries.
+
+#### Acceptance Criteria
+
+- **FRONTEND-024-AC-18** [AUTO]: The `Keywords` `<dl>` entry (`FRONTEND-024-AC-06`) shall render with a distinct class (e.g. `styles.keywordsField`) applied alongside the existing `styles.field` class, so it can be targeted independently in CSS without changing any other field's markup.
+- **FRONTEND-024-AC-19** [MANUAL]: `SeriesDetail.module.css`'s `.keywordsField` rule shall set `grid-column: 1 / -1`, so the Keywords entry visually spans the full width of the `.fields` grid instead of sharing a column with a neighboring field, and its chips (`.keywordChip`, unchanged) wrap cleanly across that full width without overlapping or truncating. Verified by a visual check in a real browser, in both light and dark `prefers-color-scheme` — jsdom doesn't render CSS, so no Vitest assertion can confirm actual grid placement (per this project's "Vitest/jsdom can't validate real CSS rendering" convention, root `CLAUDE.md`).
+
+---
+
+### Requirement 7: `SearchFilter` — Collapsible, Bounded Keyword Picker
+
+**User story**: As a user filtering my series list, I want the keyword picker to stay out of the way until I open it, so a large keyword vocabulary doesn't push the Status/rating/other filter fields down the page just by existing.
+
+**Design decision**: `SearchFilter.tsx`'s keyword field (`FRONTEND-024-AC-12`) currently renders every keyword from `getKeywordStats()` as an always-visible, unconstrained flex-wrap list (`.keywordPicker`, `SearchFilter.module.css`) — with enough tracked series this can be dozens of checkboxes, each pushing the rest of the form (and the list below it) further down the page. `RecommendationControls.tsx` already solved an analogous problem for its own "Filters" section with a collapsed-by-default disclosure (`filtersOpen` state, `aria-expanded` toggle button, `FRONTEND-011-AC-07`) — this requirement applies the same pattern to `SearchFilter`'s keyword picker specifically, plus a `max-height`/`overflow-y: auto` scroll boundary for when the list is open, so an open picker has a bounded footprint even with a very large vocabulary.
+
+#### Acceptance Criteria
+
+- **FRONTEND-024-AC-20** [AUTO]: `SearchFilter`'s keyword field shall render a disclosure toggle button (`aria-expanded`, mirroring `RecommendationControls`' `styles.filtersToggle` pattern) that shows/hides the keyword checkbox list; the list shall be collapsed (hidden) by default on mount.
+- **FRONTEND-024-AC-21** [AUTO]: When expanded, the keyword checkbox list (`.keywordPicker`) shall render inside a container with a bounded `max-height` and `overflow-y: auto` (CSS, verified by a `[MANUAL]` browser check per `FRONTEND-024-AC-19`'s convention) rather than growing unbounded with the number of keywords, so opening it can never itself push page content down by more than that fixed height.
+- **FRONTEND-024-AC-22** [AUTO]: When the picker is collapsed and at least one keyword is currently selected, the toggle button's label shall include the selected count (e.g. "Keywords (3 selected)"), so a collapsed-but-active filter is never silently invisible to the user. When collapsed with nothing selected, the label shall read plain "Keywords".
+- **FRONTEND-024-AC-23** [AUTO]: Toggling the disclosure shall not clear `form.keywordsSelected` — collapsing the list after selecting keywords keeps those selections intact (verified by re-expanding and finding them still checked).
+- **FRONTEND-024-AC-24** [AUTO]: The existing degrade-gracefully behavior on a failed `getKeywordStats()` fetch (`FRONTEND-024-AC-14`) is unchanged by this requirement — the scoped error still renders regardless of the disclosure's open/closed state.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
 |-----------|--------|
 | `GET /series/keywords`, `KeywordStatDto` shape, `SeriesSearchCriteria.keywords`, exact-match keyword filter semantics | `series_spec_019_keyword_tracking.md` |
+| Collapsed-by-default disclosure pattern (`filtersOpen`, `aria-expanded` toggle) this spec's Requirement 7 mirrors | `frontend_spec_011_recommendation_controls.md` (`FRONTEND-011-AC-07`) |
+| `SeriesDetail`'s `.fields` CSS grid (`grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))`) that Requirement 6's full-row span applies against | `frontend_spec_005_series_detail.md`, `SeriesDetail.module.css` |
+| "Vitest/jsdom can't validate real CSS rendering" — real-browser verification requirement for layout-only ACs | Root `CLAUDE.md` (user's global instructions) |
 | `formatValue` null-dash convention, `<dl className={styles.fields}>` structure, existing field ordering (`Tags` entry this spec's `Keywords` entry is positioned after) | `frontend_spec_005_series_detail.md`, `frontend_spec_018_tags.md` |
 | Genre checkbox-list precedent this spec's `SearchFilter` keyword control and its failure-handling both mirror | `series_spec_010_genre_dropdown.md`, `frontend_spec_014_genre_dropdown.md` |
 | `SeriesList` sort-control re-fetch-on-change pattern this spec's `KeywordsView` column-sort mirrors | `frontend_spec_013_star_ratings.md` |
@@ -269,6 +301,59 @@ describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () 
 })
 ```
 
+### `src/components/SeriesDetail.test.tsx` (addition, Requirement 6)
+
+```typescript
+describe('FRONTEND-024-AC-18: keywords field carries a distinct class', () => {
+  it('applies the keywordsField class alongside field on the Keywords entry', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ keywords: ['spy'] }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    const dt = await screen.findByText('Keywords')
+    expect(dt.parentElement).toHaveClass('keywordsField')
+  })
+})
+```
+
+### `src/components/SearchFilter.test.tsx` (additions, Requirement 7)
+
+```typescript
+describe('FRONTEND-024-AC-20/21: keyword picker collapsed by default, expands on click', () => {
+  it('hides the checkbox list until the toggle is clicked', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    expect(screen.queryByLabelText('spy')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    expect(await screen.findByLabelText('spy')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-024-AC-22/23: selected count shown collapsed, selections survive collapse', () => {
+  it('shows a selected count on the collapsed toggle and keeps selections after re-collapsing', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    fireEvent.click(await screen.findByLabelText('spy'))
+    fireEvent.click(screen.getByRole('button', { name: /keywords/i }))
+
+    expect(
+      screen.getByRole('button', { name: /keywords \(1 selected\)/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /keywords \(1 selected\)/i }))
+    expect(screen.getByLabelText('spy')).toBeChecked()
+  })
+})
+```
+
 ---
 
 ## Acceptance Criteria Summary
@@ -290,3 +375,10 @@ describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () 
 - [x] FRONTEND-024-AC-15: `SeriesLookupResult` gains `tmdbId`
 - [x] FRONTEND-024-AC-16: `CreateSeriesRequest` gains `tmdbId`
 - [x] FRONTEND-024-AC-17: `AddSeriesForm` carries `tmdbId` through to the create payload
+- [x] FRONTEND-024-AC-18: Keywords `<dl>` entry carries a distinct `keywordsField` class
+- [x] FRONTEND-024-AC-19: `.keywordsField` spans the full grid row (visual check — CSS reasoned through, real-browser pass still pending; see header note)
+- [x] FRONTEND-024-AC-20: keyword picker collapsed by default behind a toggle
+- [x] FRONTEND-024-AC-21: expanded list is height-bounded and scrollable (visual check — CSS reasoned through, real-browser pass still pending; see header note)
+- [x] FRONTEND-024-AC-22: collapsed toggle label shows selected count
+- [x] FRONTEND-024-AC-23: collapsing the picker doesn't clear selections
+- [x] FRONTEND-024-AC-24: failed keyword fetch still degrades gracefully regardless of open/closed state

@@ -27,6 +27,7 @@ beforeEach(() => {
     status: 'IDLE',
     totalCount: 0,
     completedCount: 0,
+    skippedCount: 0,
     startedAt: null,
     finishedAt: null,
   })
@@ -159,6 +160,7 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'office' }),
+        undefined,
       ),
     )
   })
@@ -228,6 +230,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'office' }),
+        undefined,
       ),
     )
 
@@ -295,7 +298,9 @@ describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
     render(<App />)
     await waitFor(() => screen.getByTestId('add-series-btn'))
 
-    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^keywords$/i, pressed: false }),
+    )
     expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
     expect(screen.queryByTestId('series-list')).not.toBeInTheDocument()
 

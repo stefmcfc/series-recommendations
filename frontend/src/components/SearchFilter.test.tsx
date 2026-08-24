@@ -165,8 +165,8 @@ describe('FRONTEND-024-AC-12/13: keyword checkbox filter', () => {
     const onSearch = vi.fn()
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
 
-    await screen.findByLabelText('spy')
-    fireEvent.click(screen.getByLabelText('spy'))
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    fireEvent.click(await screen.findByLabelText('spy'))
     fireEvent.click(screen.getByRole('button', { name: /search/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
@@ -181,6 +181,7 @@ describe('FRONTEND-024-AC-12/13: keyword checkbox filter', () => {
     const onSearch = vi.fn()
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
 
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
     await screen.findByLabelText('spy')
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
@@ -197,5 +198,69 @@ describe('FRONTEND-024-AC-14: keyword fetch failure degrades gracefully', () => 
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
     expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-024-AC-20/21: keyword picker collapsed by default, expands on click', () => {
+  it('hides the checkbox list until the toggle is clicked', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    expect(screen.queryByLabelText('spy')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    expect(await screen.findByLabelText('spy')).toBeInTheDocument()
+  })
+
+  it('renders the toggle with aria-expanded reflecting open state', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    const toggle = screen.getByRole('button', { name: /^keywords$/i })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('FRONTEND-024-AC-22/23: selected count shown collapsed, selections survive collapse', () => {
+  it('shows a selected count on the collapsed toggle and keeps selections after re-collapsing', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    fireEvent.click(await screen.findByLabelText('spy'))
+    fireEvent.click(screen.getByRole('button', { name: /keywords/i }))
+
+    expect(
+      screen.getByRole('button', { name: /keywords \(1 selected\)/i }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /keywords \(1 selected\)/i }),
+    )
+    expect(screen.getByLabelText('spy')).toBeChecked()
+  })
+})
+
+describe('FRONTEND-024-AC-24: failed keyword fetch degrades gracefully regardless of open/closed state', () => {
+  it('renders the scoped error whether or not the picker is expanded', async () => {
+    mockGetKeywordStats.mockRejectedValue(
+      new ApiError(500, 'Internal server error'),
+    )
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
   })
 })

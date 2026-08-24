@@ -255,4 +255,70 @@ class SeriesControllerRecommendationsSpec extends Specification {
         then: "the response is 400"
             result.andExpect(status().isBadRequest())
     }
+
+    // -- SERIES-022: sourceMode / trendingWindow endpoint wiring --
+
+    def "SERIES-022-AC-06: sourceMode=trending and trendingWindow are accepted and passed through"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?sourceMode=trending&trendingWindow=day is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("sourceMode", "trending")
+                .param("trendingWindow", "day"))
+
+        then: "the request succeeds"
+            result.andExpect(status().isOk())
+    }
+
+    def "SERIES-022-AC-06: sourceMode=topRated is accepted"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?sourceMode=topRated is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("sourceMode", "topRated"))
+
+        then: "the request succeeds"
+            result.andExpect(status().isOk())
+    }
+
+    def "SERIES-022-AC-16: sourceMode combined with seriesIds is rejected"() {
+        given: "RecommendationService rejects the request as it would for a combined sourceMode+seriesIds"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("sourceMode cannot be combined with seriesIds/genres/keywords"))
+
+        when: "GET /api/v1/series/recommendations?sourceMode=trending&seriesIds={id} is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("sourceMode", "trending")
+                .param("seriesIds", UUID.randomUUID().toString()))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-022-AC-17: an unrecognized sourceMode value is rejected"() {
+        given: "RecommendationService rejects the request as it would for an unrecognized sourceMode"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("sourceMode must be one of: trending, topRated"))
+
+        when: "GET /api/v1/series/recommendations?sourceMode=bogus is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("sourceMode", "bogus"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-022-AC-18: an unrecognized trendingWindow value is rejected"() {
+        given: "RecommendationService rejects the request as it would for an unrecognized trendingWindow"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("trendingWindow must be one of: day, week"))
+
+        when: "GET /api/v1/series/recommendations?sourceMode=trending&trendingWindow=month is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("sourceMode", "trending")
+                .param("trendingWindow", "month"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
 }

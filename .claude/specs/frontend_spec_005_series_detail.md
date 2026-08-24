@@ -1,6 +1,7 @@
 # Frontend Spec 005: Series Detail View
 
 **Status**: Implemented. `src/services/seriesApi.ts` (`getById`/`create`/`update` now unwrap `{ data: Series }`, fixing the pre-existing latent bug), `src/services/__tests__/seriesApi.test.ts` (SH-002/003/004 mocks corrected to the real double-wrapped shape), `src/components/SeriesDetail.tsx` + `SeriesDetail.module.css` + `SeriesDetail.test.tsx` (new), `src/App.tsx` (full-view swap between `SeriesList`/`SeriesDetail`, `seriesDetailKey` remount wiring), `src/App.test.tsx` (navigation + edit-from-detail coverage added). All work done red/green TDD. `npm test` (120/120 passing), `npm run lint` (clean — required switching the `id`-change reset logic from an in-effect `setState` to the React-recommended render-time "adjust state" pattern to satisfy `react-hooks/set-state-in-effect`), `npm run build` (clean) all verified on 2026-08-18. No real-browser pass done for this stage (not called out as required — see PR notes).
+**Amendment (2026-08-23, Requirement 13, implemented)**: adds status-aware hiding of `currentSeason`/`currentEpisode` for `COMPLETED` series — see Requirement 13. `src/components/SeriesDetail.tsx` (conditional render of the "Current Season"/"Current Episode" `<dl>` entries keyed off `series.status !== SeriesStatus.COMPLETED`) and `src/components/SeriesDetail.test.tsx` (new tests) touched. `npm test` (301/301 passing), `npm run lint` (clean) verified on 2026-08-23.
 **Priority**: P1 (third write-path-adjacent UI — first read view beyond the list)
 **Depends on**: Frontend Spec 001 (Types & API Service Layer) ✅, Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 004 (`EditSeriesForm`, delete-confirmation pattern) ✅, Backend Spec 002 (CRUD) ✅
 **Frontend Stage**: 5 of N
@@ -180,6 +181,20 @@ This spec covers `SeriesDetail` — a dedicated view showing a single series' fu
 #### Acceptance Criteria
 
 - **FRONTEND-005-AC-30** [AUTO]: `SeriesDetail` shall not log series data (including `personalNotes`) to the console.
+
+---
+
+### Requirement 13: Status-Aware Progress Fields
+
+**User story**: As a user, I want a completed series' detail view to skip showing "Current Season"/"Current Episode", so a field that's meaningless once a series is finished doesn't clutter the record.
+
+**Non-goal (out of scope for this amendment)**: the user has separately flagged that the overall field order on this view may be revisited at some point (e.g. grouping progress fields together, moving ratings up). That's a distinct, larger layout decision with no concrete requirement yet — this amendment only adds a conditional *hide*, and does not reorder any existing field. Revisit field ordering in its own future spec when there's a concrete proposal.
+
+#### Acceptance Criteria
+
+- **FRONTEND-005-AC-31** [AUTO]: When `series.status === SeriesStatus.COMPLETED`, `SeriesDetail` shall not render the "Current Season" or "Current Episode" `<dl>` entries at all (not even with a `—` placeholder) — for every other status, both entries render exactly as they do today (`FRONTEND-005-AC-07`/`AC-08`).
+
+**Note**: this AC keys purely off the currently-displayed `series.status`, with no special-casing for *why* it changed. That's deliberate — it's what lets `series_spec_018_series_refresh.md`'s Requirement 6 (an automatic `COMPLETED → BACKLOG` status change when a refresh detects new content on a completed series) resurface these fields for free, with no separate frontend change needed: once the backend flips `status` away from `COMPLETED`, this same AC's "every other status" branch already renders them again.
 
 ---
 
@@ -422,6 +437,30 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
 })
 ```
 
+### `src/components/SeriesDetail.test.tsx` (addition, Requirement 13)
+
+```typescript
+describe('FRONTEND-005-AC-31: current season/episode hidden when COMPLETED', () => {
+  it('does not render Current Season/Current Episode for a COMPLETED series', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.COMPLETED }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.queryByText('Current Season')).not.toBeInTheDocument()
+    expect(screen.queryByText('Current Episode')).not.toBeInTheDocument()
+  })
+
+  it('still renders Current Season/Current Episode for a non-COMPLETED series', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await waitFor(() => screen.getByText('The Office'))
+    expect(screen.getByText('Current Season')).toBeInTheDocument()
+    expect(screen.getByText('Current Episode')).toBeInTheDocument()
+  })
+})
+```
+
 ### `src/App.test.tsx` (additions)
 
 ```typescript
@@ -511,3 +550,4 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
 - [x] FRONTEND-005-AC-28: `onEditClick` wired to shared edit state
 - [x] FRONTEND-005-AC-29: edit success bumps a `SeriesDetail`-specific key
 - [x] FRONTEND-005-AC-30: no series data logged to console
+- [x] FRONTEND-005-AC-31: Current Season/Current Episode hidden for `COMPLETED` series

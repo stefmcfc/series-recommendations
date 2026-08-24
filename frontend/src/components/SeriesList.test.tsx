@@ -1,4 +1,10 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SeriesList } from './SeriesList'
 import { seriesApi } from '../services/seriesApi'
@@ -36,6 +42,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     dateAdded: '2026-01-01T00:00:00Z',
     dateCompleted: null,
     lastRefreshedAt: null,
+    newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
     keywords: [],
@@ -49,6 +56,7 @@ beforeEach(() => {
     status: 'IDLE',
     totalCount: 0,
     completedCount: 0,
+    skippedCount: 0,
     startedAt: null,
     finishedAt: null,
   })
@@ -559,7 +567,7 @@ describe('FRONTEND-006-AC-09/10/11: criteria-driven fetching', () => {
     mockSearch.mockResolvedValue([])
     render(<SeriesList criteria={{ title: 'office' }} />)
     await waitFor(() =>
-      expect(mockSearch).toHaveBeenCalledWith({ title: 'office' }),
+      expect(mockSearch).toHaveBeenCalledWith({ title: 'office' }, undefined),
     )
     expect(mockGetAll).not.toHaveBeenCalled()
   })
@@ -569,10 +577,14 @@ describe('FRONTEND-006-AC-12: re-fetch on criteria change', () => {
   it('re-fetches when criteria changes', async () => {
     mockSearch.mockResolvedValue([])
     const { rerender } = render(<SeriesList criteria={{ title: 'a' }} />)
-    await waitFor(() => expect(mockSearch).toHaveBeenCalledWith({ title: 'a' }))
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith({ title: 'a' }, undefined),
+    )
 
     rerender(<SeriesList criteria={{ title: 'b' }} />)
-    await waitFor(() => expect(mockSearch).toHaveBeenCalledWith({ title: 'b' }))
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith({ title: 'b' }, undefined),
+    )
     expect(mockSearch).toHaveBeenCalledTimes(2)
   })
 })
@@ -630,6 +642,7 @@ describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () 
       status: 'IN_PROGRESS',
       totalCount: 15,
       completedCount: 0,
+      skippedCount: 0,
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
@@ -644,6 +657,7 @@ describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () 
       status: 'COMPLETED',
       totalCount: 15,
       completedCount: 15,
+      skippedCount: 0,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
@@ -666,6 +680,7 @@ describe('FRONTEND-023-AC-11: resumes polling on mount if a job is already runni
       status: 'IN_PROGRESS',
       totalCount: 15,
       completedCount: 4,
+      skippedCount: 0,
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
@@ -704,11 +719,259 @@ describe('FRONTEND-023-AC-15: last full refresh display', () => {
       status: 'COMPLETED',
       totalCount: 15,
       completedCount: 15,
+      skippedCount: 0,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
     render(<SeriesList />)
     expect(await screen.findByText(/last full refresh/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-023-AC-18: new-content badge per row', () => {
+  it('shows a "New content" badge on a row whose newContentDetectedAt is set', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'Flagged Show',
+        newContentDetectedAt: new Date().toISOString(),
+      }),
+      makeSeries({
+        id: '2',
+        title: 'Unflagged Show',
+        newContentDetectedAt: null,
+      }),
+    ])
+    render(<SeriesList />)
+
+    await waitFor(() => screen.getByText('Flagged Show'))
+    const rows = screen.getAllByTestId('series-row')
+    expect(within(rows[0]).getByText(/new content/i)).toBeInTheDocument()
+    expect(within(rows[1]).queryByText(/new content/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
+  it('includes the skipped count when greater than zero', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      totalCount: 15,
+      completedCount: 4,
+      skippedCount: 3,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+    })
+    render(<SeriesList />)
+
+    expect(
+      await screen.findByText(/refreshing 4 of 15 \(3 skipped\)/i),
+    ).toBeInTheDocument()
+  })
+
+  it('omits the parenthetical when skippedCount is zero', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      totalCount: 15,
+      completedCount: 4,
+      skippedCount: 0,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+    })
+    render(<SeriesList />)
+
+    expect(
+      await screen.findByText(/refreshing 4 of 15\.\.\./i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () => {
+  it('includes the skipped count when greater than zero, and it stays visible after completion', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'COMPLETED',
+      totalCount: 15,
+      completedCount: 15,
+      skippedCount: 3,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    })
+    render(<SeriesList />)
+
+    expect(
+      await screen.findByText(
+        /last full refresh:.*\(3 skipped, already up to date\)/i,
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('omits the parenthetical when skippedCount is zero', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'COMPLETED',
+      totalCount: 15,
+      completedCount: 15,
+      skippedCount: 0,
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    })
+    render(<SeriesList />)
+
+    await screen.findByText(/last full refresh/i)
+    expect(screen.queryByText(/skipped/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-013-AC-12/13: sort control', () => {
+  it('renders a "Sort by" field selector defaulting to Date Added', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    expect(screen.getByLabelText(/sort by/i)).toHaveValue('dateAdded')
+  })
+
+  it('re-fetches getAll with sort params on change', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'personalRating' },
+    })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'personalRating',
+        sortDirection: 'desc',
+      }),
+    )
+  })
+
+  it('re-fetches via search (not getAll) with sort params when criteria is active', async () => {
+    mockSearch.mockResolvedValue([])
+    render(<SeriesList criteria={{ title: 'office' }} />)
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith({ title: 'office' }, undefined),
+    )
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'personalRating' },
+    })
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenLastCalledWith(
+        { title: 'office' },
+        { sortBy: 'personalRating', sortDirection: 'desc' },
+      ),
+    )
+    expect(mockGetAll).not.toHaveBeenCalled()
+  })
+
+  it('toggles sort direction and re-fetches with the new direction', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.click(screen.getByRole('button', { name: /sort descending/i }))
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'dateAdded',
+        sortDirection: 'asc',
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', () => {
+  it('offers Title/Year/IMDb Rating/TMDB Rating alongside Date Added/Personal Rating', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    const select = screen.getByLabelText(/sort by/i)
+    const optionLabels = within(select)
+      .getAllByRole('option')
+      .map((option) => option.textContent)
+    expect(optionLabels).toEqual([
+      'Date Added',
+      'Personal Rating',
+      'Title',
+      'Year',
+      'IMDb Rating',
+      'TMDB Rating',
+    ])
+  })
+
+  it('re-fetches with sortBy=tmdbRating when that option is selected', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'tmdbRating' },
+    })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'tmdbRating',
+        sortDirection: 'desc',
+      }),
+    )
+  })
+
+  it('re-fetches with sortBy=title when that option is selected', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'title' },
+    })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'title',
+        sortDirection: 'desc',
+      }),
+    )
+  })
+
+  it('re-fetches with sortBy=year when that option is selected', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'year' },
+    })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'year',
+        sortDirection: 'desc',
+      }),
+    )
+  })
+
+  it('re-fetches with sortBy=imdbRating when that option is selected', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'imdbRating' },
+    })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'imdbRating',
+        sortDirection: 'desc',
+      }),
+    )
   })
 })
 

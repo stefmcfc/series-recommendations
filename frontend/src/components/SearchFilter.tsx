@@ -69,6 +69,7 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   const [keywordOptionsError, setKeywordOptionsError] = useState<string | null>(
     null,
   )
+  const [keywordsOpen, setKeywordsOpen] = useState(false)
 
   useEffect(() => {
     seriesApi
@@ -137,12 +138,22 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
       </div>
 
       <div className={styles.field}>
-        <span>Keywords</span>
-        {keywordOptionsError ? (
+        <button
+          type="button"
+          className={styles.keywordsToggle}
+          aria-expanded={keywordsOpen}
+          onClick={() => setKeywordsOpen((open) => !open)}
+        >
+          {form.keywordsSelected.length > 0
+            ? `Keywords (${form.keywordsSelected.length} selected)`
+            : 'Keywords'}
+        </button>
+        {keywordOptionsError && (
           <p className={styles.keywordError} role="alert">
             {keywordOptionsError}
           </p>
-        ) : (
+        )}
+        {keywordsOpen && !keywordOptionsError && (
           <div className={styles.keywordPicker}>
             {keywordOptions.map((keyword) => (
               <div key={keyword} className={styles.keywordOption}>
