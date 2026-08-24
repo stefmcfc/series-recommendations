@@ -47,6 +47,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     productionStatus: null,
     keywords: [],
     overview: null,
+    excludeFromRecommendations: false,
+    flaggedForRewatch: false,
     ...overrides,
   }
 }
@@ -973,6 +975,63 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
         sortDirection: 'desc',
       }),
     )
+  })
+})
+
+describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
+  const mockUpdate = vi.mocked(seriesApi.update)
+
+  it('renders only for COMPLETED rows and updates on toggle', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'Finished Show',
+        status: SeriesStatus.COMPLETED,
+        flaggedForRewatch: false,
+      }),
+      makeSeries({
+        id: '2',
+        title: 'Ongoing Show',
+        status: SeriesStatus.WATCHING,
+        flaggedForRewatch: false,
+      }),
+    ])
+    mockUpdate.mockResolvedValue(
+      makeSeries({
+        id: '1',
+        status: SeriesStatus.COMPLETED,
+        flaggedForRewatch: true,
+      }),
+    )
+    render(<SeriesList />)
+    await screen.findByText('Finished Show')
+
+    const toggles = screen.getAllByLabelText(/flag for rewatch/i)
+    expect(toggles).toHaveLength(1)
+
+    fireEvent.click(toggles[0])
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith('1', { flaggedForRewatch: true }),
+    )
+    expect(toggles[0]).toBeChecked()
+  })
+
+  it('reverts and shows a scoped error on failure', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        status: SeriesStatus.COMPLETED,
+        flaggedForRewatch: false,
+      }),
+    ])
+    mockUpdate.mockRejectedValue(new ApiError(500, 'Internal server error'))
+    render(<SeriesList />)
+    const toggle = await screen.findByLabelText(/flag for rewatch/i)
+
+    fireEvent.click(toggle)
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(toggle).not.toBeChecked()
   })
 })
 

@@ -69,6 +69,7 @@ export function SeriesDetail({
   const [refreshSummary, setRefreshSummary] = useState<string | null>(null)
   const [acknowledging, setAcknowledging] = useState(false)
   const [acknowledgeError, setAcknowledgeError] = useState<string | null>(null)
+  const [rewatchError, setRewatchError] = useState<string | null>(null)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -82,6 +83,7 @@ export function SeriesDetail({
     setRefreshSummary(null)
     setAcknowledging(false)
     setAcknowledgeError(null)
+    setRewatchError(null)
   }
 
   useEffect(() => {
@@ -196,6 +198,30 @@ export function SeriesDetail({
       })
   }
 
+  const handleRewatchToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!series) return
+    const previousValue = series.flaggedForRewatch
+    const nextValue = event.target.checked
+
+    setRewatchError(null)
+    setSeries((prev) =>
+      prev ? { ...prev, flaggedForRewatch: nextValue } : prev,
+    )
+
+    seriesApi
+      .update(id, { flaggedForRewatch: nextValue })
+      .catch((err: unknown) => {
+        setSeries((prev) =>
+          prev ? { ...prev, flaggedForRewatch: previousValue } : prev,
+        )
+        if (err instanceof ApiError) {
+          setRewatchError(err.message)
+        } else {
+          setRewatchError('An unexpected error occurred. Please try again.')
+        }
+      })
+  }
+
   const backButton = (
     <button
       type="button"
@@ -238,7 +264,19 @@ export function SeriesDetail({
 
       {!loading && !notFound && !error && series && (
         <div className={styles.detail}>
-          <h2 className={styles.heading}>{series.title}</h2>
+          <div className={styles.headingRow}>
+            <h2 className={styles.heading}>
+              {series.year != null
+                ? `${series.title} (${series.year})`
+                : series.title}
+            </h2>
+            {series.originCountry != null && (
+              <span className={styles.country}>
+                {' | '}
+                {formatCountryName(series.originCountry)}
+              </span>
+            )}
+          </div>
 
           <div className={styles.content}>
             {series.posterUrl !== null && !posterError && (
@@ -251,9 +289,9 @@ export function SeriesDetail({
             )}
 
             <dl className={styles.fields}>
-              <div className={styles.field}>
-                <dt>Year</dt>
-                <dd>{formatValue(series.year)}</dd>
+              <div className={`${styles.field} ${styles.overviewField}`}>
+                <dt>Overview</dt>
+                <dd>{formatValue(series.overview)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Genres</dt>
@@ -274,10 +312,6 @@ export function SeriesDetail({
                         </span>
                       ))}
                 </dd>
-              </div>
-              <div className={styles.field}>
-                <dt>Overview</dt>
-                <dd>{formatValue(series.overview)}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Status</dt>
@@ -318,10 +352,6 @@ export function SeriesDetail({
               <div className={styles.field}>
                 <dt>TMDB Vote Count</dt>
                 <dd>{formatValue(series.tmdbVoteCount)}</dd>
-              </div>
-              <div className={styles.field}>
-                <dt>Origin Country</dt>
-                <dd>{formatValue(formatCountryName(series.originCountry))}</dd>
               </div>
               <div className={styles.field}>
                 <dt>Production Status</dt>
@@ -423,9 +453,25 @@ export function SeriesDetail({
                   </button>
                 </>
               )}
+              {series.status === SeriesStatus.COMPLETED && (
+                <label className={styles.rewatchToggle}>
+                  <input
+                    type="checkbox"
+                    aria-label="Flag for rewatch"
+                    checked={series.flaggedForRewatch}
+                    onChange={handleRewatchToggle}
+                  />
+                  Flag for rewatch
+                </label>
+              )}
             </div>
           )}
 
+          {rewatchError && (
+            <div className={styles.error} role="alert">
+              <p>{rewatchError}</p>
+            </div>
+          )}
           {refreshError && (
             <div className={styles.error} role="alert">
               <p>{refreshError}</p>

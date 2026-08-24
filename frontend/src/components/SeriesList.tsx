@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import { SeriesStatus } from '../types/series'
 import type {
   Series,
   SearchCriteria,
@@ -98,6 +99,10 @@ export function SeriesList({
   const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
+  // FRONTEND-012-AC-12/14: per-row rewatch toggle errors, keyed by series id
+  // -- mirrors RecommendationsList's per-card scoped-error pattern
+  // (FRONTEND-010-AC-17) since more than one row's toggle can be in flight.
+  const [rewatchErrors, setRewatchErrors] = useState<Record<string, string>>({})
   // FRONTEND-013-AC-12: sort state lives here, local to the list -- see the
   // spec's Design Decisions for why this isn't lifted into App.tsx/SearchFilter.
   const [sortBy, setSortBy] = useState<SortByOption>(DEFAULT_SORT_BY)
@@ -263,6 +268,39 @@ export function SeriesList({
 
   const handlePosterError = (id: string) => {
     setPosterErrorIds((prev) => new Set(prev).add(id))
+  }
+
+  const handleRewatchToggle = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    id: string,
+    previousValue: boolean,
+  ) => {
+    const nextValue = event.target.checked
+    setRewatchErrors((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    setSeries((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, flaggedForRewatch: nextValue } : s,
+      ),
+    )
+
+    seriesApi
+      .update(id, { flaggedForRewatch: nextValue })
+      .catch((err: unknown) => {
+        setSeries((prev) =>
+          prev.map((s) =>
+            s.id === id ? { ...s, flaggedForRewatch: previousValue } : s,
+          ),
+        )
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : 'An unexpected error occurred. Please try again.'
+        setRewatchErrors((prev) => ({ ...prev, [id]: message }))
+      })
   }
 
   const handleCancelDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -439,92 +477,119 @@ export function SeriesList({
               data-testid="series-row"
               onKeyDown={(e) => handleRowKeyDown(e, s.id)}
             >
-              <div className={styles.thumbnail} data-testid="series-thumbnail">
-                {s.posterUrl !== null && !posterErrorIds.has(s.id) && (
-                  <img
-                    src={s.posterUrl}
-                    alt=""
-                    className={styles.thumbnailImage}
-                    onError={() => handlePosterError(s.id)}
-                  />
+              <div className={styles.rowPrimary}>
+                <div
+                  className={styles.thumbnail}
+                  data-testid="series-thumbnail"
+                >
+                  {s.posterUrl !== null && !posterErrorIds.has(s.id) && (
+                    <img
+                      src={s.posterUrl}
+                      alt=""
+                      className={styles.thumbnailImage}
+                      onError={() => handlePosterError(s.id)}
+                    />
+                  )}
+                </div>
+                <div className={styles.titleGroup}>
+                  <button
+                    type="button"
+                    className={styles.title}
+                    onClick={() => handleRowClick(s.id)}
+                  >
+                    {s.year != null ? `${s.title} (${s.year})` : s.title}
+                  </button>
+                  {s.originCountry != null && (
+                    <span className={styles.country}>
+                      {' | '}
+                      {formatCountryName(s.originCountry)}
+                    </span>
+                  )}
+                </div>
+                <span className={styles.rating}>
+                  {s.imdbRating !== null ? s.imdbRating : '—'}
+                </span>
+
+                {confirmingDeleteId === s.id ? (
+                  <div className={styles.rowActions}>
+                    {deleteError && (
+                      <span className={styles.deleteError} role="alert">
+                        {deleteError}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.confirmDeleteButton}
+                      data-testid="confirm-delete-btn"
+                      disabled={deleting}
+                      onClick={(e) => handleConfirmDelete(e, s.id)}
+                    >
+                      {deleting ? 'Deleting...' : 'Confirm'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.cancelDeleteButton}
+                      data-testid="cancel-delete-btn"
+                      disabled={deleting}
+                      onClick={handleCancelDelete}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.rowActions}>
+                    <button
+                      type="button"
+                      className={styles.editButton}
+                      data-testid="edit-series-btn"
+                      aria-label={`Edit ${s.title}`}
+                      onClick={(e) => handleEditClick(e, s)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      data-testid="delete-series-btn"
+                      aria-label={`Delete ${s.title}`}
+                      onClick={(e) => handleDeleteClick(e, s.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 )}
               </div>
-              <div className={styles.titleGroup}>
-                <button
-                  type="button"
-                  className={styles.title}
-                  onClick={() => handleRowClick(s.id)}
-                >
-                  {s.year != null ? `${s.title} (${s.year})` : s.title}
-                </button>
-                {s.originCountry != null && (
-                  <span className={styles.country}>
-                    {' | '}
-                    {formatCountryName(s.originCountry)}
+
+              <div className={styles.rowSecondary}>
+                <span className={styles.status}>{s.status}</span>
+                {s.newContentDetectedAt != null && (
+                  <span
+                    className={styles.newContentBadge}
+                    data-testid="new-content-badge"
+                  >
+                    New content
+                  </span>
+                )}
+
+                {s.status === SeriesStatus.COMPLETED && (
+                  <label className={styles.rewatchToggle}>
+                    <input
+                      type="checkbox"
+                      aria-label="Flag for rewatch"
+                      checked={s.flaggedForRewatch}
+                      onChange={(e) =>
+                        handleRewatchToggle(e, s.id, s.flaggedForRewatch)
+                      }
+                    />
+                    Rewatch
+                  </label>
+                )}
+                {rewatchErrors[s.id] && (
+                  <span className={styles.rewatchError} role="alert">
+                    {rewatchErrors[s.id]}
                   </span>
                 )}
               </div>
-              <span className={styles.status}>{s.status}</span>
-              <span className={styles.rating}>
-                {s.imdbRating !== null ? s.imdbRating : '—'}
-              </span>
-              {s.newContentDetectedAt != null && (
-                <span
-                  className={styles.newContentBadge}
-                  data-testid="new-content-badge"
-                >
-                  New content
-                </span>
-              )}
-
-              {confirmingDeleteId === s.id ? (
-                <div className={styles.rowActions}>
-                  {deleteError && (
-                    <span className={styles.deleteError} role="alert">
-                      {deleteError}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className={styles.confirmDeleteButton}
-                    data-testid="confirm-delete-btn"
-                    disabled={deleting}
-                    onClick={(e) => handleConfirmDelete(e, s.id)}
-                  >
-                    {deleting ? 'Deleting...' : 'Confirm'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.cancelDeleteButton}
-                    data-testid="cancel-delete-btn"
-                    disabled={deleting}
-                    onClick={handleCancelDelete}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className={styles.rowActions}>
-                  <button
-                    type="button"
-                    className={styles.editButton}
-                    data-testid="edit-series-btn"
-                    aria-label={`Edit ${s.title}`}
-                    onClick={(e) => handleEditClick(e, s)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.deleteButton}
-                    data-testid="delete-series-btn"
-                    aria-label={`Delete ${s.title}`}
-                    onClick={(e) => handleDeleteClick(e, s.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
             </li>
           ))}
         </ul>

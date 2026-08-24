@@ -26,6 +26,7 @@ interface FormState {
   personalRating: string
   personalNotes: string
   posterUrl: string
+  excludeFromRecommendations: boolean
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -50,6 +51,7 @@ function toFormState(series: Series): FormState {
     personalRating: numberToFormValue(series.personalRating),
     personalNotes: series.personalNotes ?? '',
     posterUrl: series.posterUrl ?? '',
+    excludeFromRecommendations: series.excludeFromRecommendations,
   }
 }
 
@@ -159,6 +161,7 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
   if (form.personalNotes.trim() !== '')
     payload.personalNotes = form.personalNotes.trim()
   if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
+  payload.excludeFromRecommendations = form.excludeFromRecommendations
 
   return payload
 }
@@ -194,6 +197,15 @@ export function EditSeriesForm({
   ) => {
     setForm((prev) => ({ ...prev, posterUrl: event.target.value }))
     setPosterPreviewError(false)
+  }
+
+  const handleExcludeFromRecommendationsChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      excludeFromRecommendations: event.target.checked,
+    }))
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -478,6 +490,18 @@ export function EditSeriesForm({
                 onError={() => setPosterPreviewError(true)}
               />
             )}
+          </div>
+
+          <div className={styles.checkboxField}>
+            <label htmlFor="excludeFromRecommendations">
+              Exclude from recommendations
+            </label>
+            <input
+              id="excludeFromRecommendations"
+              type="checkbox"
+              checked={form.excludeFromRecommendations}
+              onChange={handleExcludeFromRecommendationsChange}
+            />
           </div>
 
           <div className={styles.actions}>

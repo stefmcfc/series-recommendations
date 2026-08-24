@@ -354,3 +354,31 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
     ).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
+  it('renders unchecked by default', () => {
+    renderFilter()
+    expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
+  })
+
+  it('includes flaggedForRewatch in criteria only when checked', () => {
+    const { onSearch } = renderFilter()
+
+    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
+    fireEvent.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ flaggedForRewatch: true }),
+    )
+  })
+
+  it('omits flaggedForRewatch when left unchecked', () => {
+    const { onSearch } = renderFilter()
+
+    fireEvent.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.not.objectContaining({ flaggedForRewatch: expect.anything() }),
+    )
+  })
+})

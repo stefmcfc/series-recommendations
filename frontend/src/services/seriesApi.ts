@@ -109,6 +109,8 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
     params.maxImdbRating = criteria.maxImdbRating
   if (criteria.startedNotFinished != null)
     params.startedNotFinished = criteria.startedNotFinished
+  if (criteria.flaggedForRewatch != null)
+    params.flaggedForRewatch = criteria.flaggedForRewatch
   return params
 }
 

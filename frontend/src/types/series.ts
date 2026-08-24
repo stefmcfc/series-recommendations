@@ -34,6 +34,8 @@ export interface Series {
   productionStatus: string | null
   keywords: string[]
   overview: string | null
+  excludeFromRecommendations: boolean
+  flaggedForRewatch: boolean
 }
 
 export interface KeywordStat {
@@ -77,11 +79,13 @@ export interface CreateSeriesRequest {
   productionStatus?: string
   tmdbId?: number
   overview?: string
+  excludeFromRecommendations?: boolean
 }
 
 export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
   currentSeason?: number
   currentEpisode?: number
+  flaggedForRewatch?: boolean
 }
 
 export interface SeriesLookupResult {
@@ -164,6 +168,7 @@ export interface SearchCriteria {
   minImdbRating?: number
   maxImdbRating?: number
   startedNotFinished?: boolean
+  flaggedForRewatch?: boolean
 }
 
 // FRONTEND-013-AC-10/14: mirrors series_spec_009_rating_sort.md's sortBy/sortDirection

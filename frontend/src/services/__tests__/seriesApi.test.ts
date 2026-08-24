@@ -84,6 +84,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     productionStatus: null,
     keywords: [],
     overview: null,
+    excludeFromRecommendations: false,
+    flaggedForRewatch: false,
     ...overrides,
   }
 }
@@ -286,6 +288,16 @@ describe('SH-006: search', () => {
   it('should return empty array on no matches without throwing', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
     expect(await seriesApi.search({ title: 'nonexistent' })).toEqual([])
+  })
+
+  it('should include flaggedForRewatch when set (FRONTEND-012-AC-11)', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ flaggedForRewatch: true })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.flaggedForRewatch).toBe(true)
   })
 })
 

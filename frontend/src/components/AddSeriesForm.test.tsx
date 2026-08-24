@@ -1079,3 +1079,41 @@ describe('FRONTEND-024-AC-17: tmdbId carried through to the create payload', () 
     expect(screen.queryByLabelText(/tmdb id/i)).not.toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-012-AC-04: exclude checkbox omitted from payload unless checked', () => {
+  it('renders unchecked by default', () => {
+    renderForm()
+    expect(
+      screen.getByLabelText(/exclude from recommendations/i),
+    ).not.toBeChecked()
+  })
+
+  it('omits excludeFromRecommendations when left unchecked', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Ozark' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Ozark' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    const payload = mockCreate.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('excludeFromRecommendations')
+  })
+
+  it('includes excludeFromRecommendations: true when checked', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Ozark' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Ozark' },
+    })
+    fireEvent.click(screen.getByLabelText(/exclude from recommendations/i))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ excludeFromRecommendations: true }),
+      ),
+    )
+  })
+})
