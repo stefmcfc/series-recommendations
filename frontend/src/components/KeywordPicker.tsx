@@ -1,0 +1,124 @@
+import { useEffect, useRef, useState } from 'react'
+import styles from './KeywordPicker.module.css'
+
+interface KeywordPickerProps {
+  id: string
+  label: string
+  selected: string[]
+  onChange: (next: string[]) => void
+  options?: string[]
+  placeholder?: string
+  focusOnMount?: boolean
+}
+
+function isSameKeyword(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase()
+}
+
+export function KeywordPicker({
+  id,
+  label,
+  selected,
+  onChange,
+  options,
+  placeholder,
+  focusOnMount,
+}: KeywordPickerProps) {
+  const [inputValue, setInputValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (focusOnMount) {
+      inputRef.current?.focus()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focus-on-mount only, intentionally not re-running if focusOnMount changes later
+  }, [])
+
+  const trimmedInput = inputValue.trim()
+  const matches =
+    options && trimmedInput !== ''
+      ? options.filter(
+          (option) =>
+            option.toLowerCase().includes(trimmedInput.toLowerCase()) &&
+            !selected.some((keyword) => isSameKeyword(keyword, option)),
+        )
+      : []
+
+  const addKeyword = (raw: string) => {
+    const trimmed = raw.trim()
+    if (trimmed === '') return
+    if (selected.some((keyword) => isSameKeyword(keyword, trimmed))) return
+
+    onChange([...selected, trimmed])
+    setInputValue('')
+  }
+
+  const removeKeyword = (keyword: string) => {
+    onChange(selected.filter((k) => k !== keyword))
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      if (options) {
+        if (matches.length > 0) addKeyword(matches[0])
+      } else {
+        addKeyword(inputValue)
+      }
+      return
+    }
+
+    if (event.key === 'Backspace' && inputValue === '' && selected.length > 0) {
+      onChange(selected.slice(0, -1))
+    }
+  }
+
+  return (
+    <div className={styles.container}>
+      <label htmlFor={id}>{label}</label>
+      <input
+        ref={inputRef}
+        id={id}
+        type="text"
+        value={inputValue}
+        placeholder={placeholder}
+        onChange={(event) => setInputValue(event.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+
+      {options && matches.length > 0 && (
+        <ul className={styles.suggestions}>
+          {matches.map((option) => (
+            <li key={option}>
+              <button
+                type="button"
+                className={styles.suggestionButton}
+                onClick={() => addKeyword(option)}
+              >
+                {option}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {selected.length > 0 && (
+        <ul className={styles.chips}>
+          {selected.map((keyword) => (
+            <li key={keyword} className={styles.chip}>
+              <span>{keyword}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${keyword}`}
+                className={styles.chipRemove}
+                onClick={() => removeKeyword(keyword)}
+              >
+                &times;
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}

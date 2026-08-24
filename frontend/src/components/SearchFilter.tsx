@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { SeriesStatus } from '../types/series'
 import type { SearchCriteria } from '../types/series'
+import { KeywordPicker } from './KeywordPicker'
 import styles from './SearchFilter.module.css'
 
 interface SearchFilterProps {
@@ -69,7 +70,7 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   const [keywordOptionsError, setKeywordOptionsError] = useState<string | null>(
     null,
   )
-  const [keywordsOpen, setKeywordsOpen] = useState(false)
+  const [browseModalOpen, setBrowseModalOpen] = useState(false)
 
   useEffect(() => {
     seriesApi
@@ -94,16 +95,9 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
       setForm((prev) => ({ ...prev, [field]: event.target.checked }))
     }
 
-  const handleKeywordToggle =
-    (keyword: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = event.target.checked
-      setForm((prev) => ({
-        ...prev,
-        keywordsSelected: checked
-          ? [...prev.keywordsSelected, keyword]
-          : prev.keywordsSelected.filter((k) => k !== keyword),
-      }))
-    }
+  const handleKeywordsChange = (next: string[]) => {
+    setForm((prev) => ({ ...prev, keywordsSelected: next }))
+  }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -115,143 +109,182 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
     onClear()
   }
 
+  const handleModalKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      setBrowseModalOpen(false)
+    }
+  }
+
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <div className={styles.field}>
-        <label htmlFor="search-title">Title</label>
-        <input
-          id="search-title"
-          type="text"
-          value={form.title}
-          onChange={updateField('title')}
-        />
-      </div>
+    <>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.field}>
+          <label htmlFor="search-title">Title</label>
+          <input
+            id="search-title"
+            type="text"
+            value={form.title}
+            onChange={updateField('title')}
+          />
+        </div>
 
-      <div className={styles.field}>
-        <label htmlFor="search-genres">Genres</label>
-        <input
-          id="search-genres"
-          type="text"
-          value={form.genres}
-          onChange={updateField('genres')}
-        />
-      </div>
+        <div className={styles.field}>
+          <label htmlFor="search-genres">Genres</label>
+          <input
+            id="search-genres"
+            type="text"
+            value={form.genres}
+            onChange={updateField('genres')}
+          />
+        </div>
 
-      <div className={styles.field}>
-        <button
-          type="button"
-          className={styles.keywordsToggle}
-          aria-expanded={keywordsOpen}
-          onClick={() => setKeywordsOpen((open) => !open)}
-        >
-          {form.keywordsSelected.length > 0
-            ? `Keywords (${form.keywordsSelected.length} selected)`
-            : 'Keywords'}
-        </button>
-        {keywordOptionsError && (
-          <p className={styles.keywordError} role="alert">
-            {keywordOptionsError}
-          </p>
-        )}
-        {keywordsOpen && !keywordOptionsError && (
-          <div className={styles.keywordPicker}>
-            {keywordOptions.map((keyword) => (
-              <div key={keyword} className={styles.keywordOption}>
-                <input
-                  id={`search-keyword-${keyword}`}
-                  type="checkbox"
-                  checked={form.keywordsSelected.includes(keyword)}
-                  onChange={handleKeywordToggle(keyword)}
-                />
-                <label htmlFor={`search-keyword-${keyword}`}>{keyword}</label>
-              </div>
-            ))}
+        <div className={styles.field}>
+          <KeywordPicker
+            id="search-keywords"
+            label="Keywords"
+            selected={form.keywordsSelected}
+            onChange={handleKeywordsChange}
+            options={keywordOptionsError ? [] : keywordOptions}
+            placeholder="Type to filter tracked keywords"
+          />
+          {keywordOptionsError && (
+            <p className={styles.keywordError} role="alert">
+              {keywordOptionsError}
+            </p>
+          )}
+          <button
+            type="button"
+            className={styles.browseKeywordsButton}
+            onClick={() => setBrowseModalOpen(true)}
+          >
+            Browse all keywords
+          </button>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="search-status">Status</label>
+          <select
+            id="search-status"
+            value={form.status}
+            onChange={updateField('status')}
+          >
+            <option value="">Any status</option>
+            <option value={SeriesStatus.WATCHING}>Watching</option>
+            <option value={SeriesStatus.COMPLETED}>Completed</option>
+            <option value={SeriesStatus.DROPPED}>Dropped</option>
+            <option value={SeriesStatus.BACKLOG}>Backlog</option>
+          </select>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="search-min-personal-rating">
+            Min Personal Rating
+          </label>
+          <input
+            id="search-min-personal-rating"
+            type="number"
+            value={form.minPersonalRating}
+            onChange={updateField('minPersonalRating')}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="search-max-personal-rating">
+            Max Personal Rating
+          </label>
+          <input
+            id="search-max-personal-rating"
+            type="number"
+            value={form.maxPersonalRating}
+            onChange={updateField('maxPersonalRating')}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
+          <input
+            id="search-min-imdb-rating"
+            type="number"
+            step="0.1"
+            value={form.minImdbRating}
+            onChange={updateField('minImdbRating')}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="search-max-imdb-rating">Max IMDb Rating</label>
+          <input
+            id="search-max-imdb-rating"
+            type="number"
+            step="0.1"
+            value={form.maxImdbRating}
+            onChange={updateField('maxImdbRating')}
+          />
+        </div>
+
+        <div className={styles.checkboxField}>
+          <label htmlFor="search-started-not-finished">
+            Started, not finished
+          </label>
+          <input
+            id="search-started-not-finished"
+            type="checkbox"
+            checked={form.startedNotFinished}
+            onChange={updateCheckbox('startedNotFinished')}
+          />
+        </div>
+
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.clearButton}
+            data-testid="clear-filters-btn"
+            onClick={handleClear}
+          >
+            Clear Filters
+          </button>
+          <button type="submit" className={styles.searchButton}>
+            Search
+          </button>
+        </div>
+      </form>
+
+      {browseModalOpen && (
+        <div className={styles.overlay}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior, matching AddSeriesForm's convention (frontend_spec_003.md FRONTEND-003-AC-08); the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
+          <div
+            className={styles.dialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="browse-keywords-heading"
+            onKeyDown={handleModalKeyDown}
+          >
+            <h2 id="browse-keywords-heading" className={styles.dialogHeading}>
+              Browse Keywords
+            </h2>
+
+            <KeywordPicker
+              id="browse-keywords"
+              label="Keywords"
+              selected={form.keywordsSelected}
+              onChange={handleKeywordsChange}
+              options={keywordOptionsError ? [] : keywordOptions}
+              placeholder="Type to filter tracked keywords"
+              focusOnMount
+            />
+
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.doneButton}
+                onClick={() => setBrowseModalOpen(false)}
+              >
+                Done
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="search-status">Status</label>
-        <select
-          id="search-status"
-          value={form.status}
-          onChange={updateField('status')}
-        >
-          <option value="">Any status</option>
-          <option value={SeriesStatus.WATCHING}>Watching</option>
-          <option value={SeriesStatus.COMPLETED}>Completed</option>
-          <option value={SeriesStatus.DROPPED}>Dropped</option>
-          <option value={SeriesStatus.BACKLOG}>Backlog</option>
-        </select>
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="search-min-personal-rating">Min Personal Rating</label>
-        <input
-          id="search-min-personal-rating"
-          type="number"
-          value={form.minPersonalRating}
-          onChange={updateField('minPersonalRating')}
-        />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="search-max-personal-rating">Max Personal Rating</label>
-        <input
-          id="search-max-personal-rating"
-          type="number"
-          value={form.maxPersonalRating}
-          onChange={updateField('maxPersonalRating')}
-        />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
-        <input
-          id="search-min-imdb-rating"
-          type="number"
-          step="0.1"
-          value={form.minImdbRating}
-          onChange={updateField('minImdbRating')}
-        />
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="search-max-imdb-rating">Max IMDb Rating</label>
-        <input
-          id="search-max-imdb-rating"
-          type="number"
-          step="0.1"
-          value={form.maxImdbRating}
-          onChange={updateField('maxImdbRating')}
-        />
-      </div>
-
-      <div className={styles.checkboxField}>
-        <label htmlFor="search-started-not-finished">
-          Started, not finished
-        </label>
-        <input
-          id="search-started-not-finished"
-          type="checkbox"
-          checked={form.startedNotFinished}
-          onChange={updateCheckbox('startedNotFinished')}
-        />
-      </div>
-
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.clearButton}
-          data-testid="clear-filters-btn"
-          onClick={handleClear}
-        >
-          Clear Filters
-        </button>
-        <button type="submit" className={styles.searchButton}>
-          Search
-        </button>
-      </div>
-    </form>
+        </div>
+      )}
+    </>
   )
 }

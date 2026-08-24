@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SearchFilter } from './SearchFilter'
 import { SeriesStatus } from '../types/series'
@@ -157,17 +163,23 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
   })
 })
 
-describe('FRONTEND-024-AC-12/13: keyword checkbox filter', () => {
-  it('includes selected keywords in criteria, omits when none selected', async () => {
+describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () => {
+  it('shows no suggestions until text is typed, and includes a chosen keyword on Search', async () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
     const onSearch = vi.fn()
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
-    fireEvent.click(await screen.findByLabelText('spy'))
-    fireEvent.click(screen.getByRole('button', { name: /search/i }))
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    expect(
+      screen.queryByRole('button', { name: 'spy' }),
+    ).not.toBeInTheDocument()
+
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'sp' } })
+    fireEvent.click(screen.getByRole('button', { name: 'spy' }))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({ keywords: ['spy'] }),
@@ -181,86 +193,107 @@ describe('FRONTEND-024-AC-12/13: keyword checkbox filter', () => {
     const onSearch = vi.fn()
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
-    await screen.findByLabelText('spy')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith({})
   })
 })
 
-describe('FRONTEND-024-AC-14: keyword fetch failure degrades gracefully', () => {
-  it('renders the rest of SearchFilter when getKeywordStats rejects', async () => {
+describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => {
+  it('renders a scoped inline error and still renders the rest of SearchFilter', async () => {
     mockGetKeywordStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
-    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument()
-  })
-})
-
-describe('FRONTEND-024-AC-20/21: keyword picker collapsed by default, expands on click', () => {
-  it('hides the checkbox list until the toggle is clicked', async () => {
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-    ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-
-    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    expect(screen.queryByLabelText('spy')).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
-    expect(await screen.findByLabelText('spy')).toBeInTheDocument()
-  })
-
-  it('renders the toggle with aria-expanded reflecting open state', async () => {
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-    ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-
-    const toggle = screen.getByRole('button', { name: /^keywords$/i })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-
-    fireEvent.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  })
-})
-
-describe('FRONTEND-024-AC-22/23: selected count shown collapsed, selections survive collapse', () => {
-  it('shows a selected count on the collapsed toggle and keeps selections after re-collapsing', async () => {
-    mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-    ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-
-    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
-    fireEvent.click(await screen.findByLabelText('spy'))
-    fireEvent.click(screen.getByRole('button', { name: /keywords/i }))
-
     expect(
-      screen.getByRole('button', { name: /keywords \(1 selected\)/i }),
+      screen.getByRole('button', { name: /^search$/i }),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
+  it('opens a labelled dialog, focuses its input, and shares selection state with the inline picker', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
 
     fireEvent.click(
-      screen.getByRole('button', { name: /keywords \(1 selected\)/i }),
+      screen.getByRole('button', { name: /browse all keywords/i }),
     )
-    expect(screen.getByLabelText('spy')).toBeChecked()
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(within(dialog).getByLabelText('Keywords')).toHaveFocus()
+
+    fireEvent.change(within(dialog).getByLabelText('Keywords'), {
+      target: { value: 'sp' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'spy' }))
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^done$/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove spy' }),
+    ).toBeInTheDocument()
+  })
+
+  it('closes on Escape without clearing selections', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const dialog = screen.getByRole('dialog')
+    fireEvent.change(within(dialog).getByLabelText('Keywords'), {
+      target: { value: 'sp' },
+    })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'spy' }))
+
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove spy' }),
+    ).toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-024-AC-24: failed keyword fetch degrades gracefully regardless of open/closed state', () => {
-  it('renders the scoped error whether or not the picker is expanded', async () => {
-    mockGetKeywordStats.mockRejectedValue(
-      new ApiError(500, 'Internal server error'),
-    )
+describe('FRONTEND-029-AC-23: opening the modal does not re-fetch keyword options', () => {
+  it('calls getKeywordStats exactly once across mount + modal open', async () => {
+    mockGetKeywordStats.mockResolvedValue([])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalledTimes(1))
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    expect(mockGetKeywordStats).toHaveBeenCalledTimes(1)
+  })
+})
 
-    fireEvent.click(screen.getByRole('button', { name: /^keywords$/i }))
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field', () => {
+  it('inline keyword field is reachable by label with named suggestion/remove buttons', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+    ])
+    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+
+    const input = screen.getByLabelText('Keywords')
+    fireEvent.change(input, { target: { value: 'sp' } })
+    expect(screen.getByRole('button', { name: 'spy' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'spy' }))
+    expect(
+      screen.getByRole('button', { name: 'Remove spy' }),
+    ).toBeInTheDocument()
   })
 })

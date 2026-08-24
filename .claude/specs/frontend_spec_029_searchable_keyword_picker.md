@@ -1,6 +1,14 @@
 # Frontend Spec 029: Searchable Keyword Picker (Shared Component)
 
-**Status**: Not started
+**Status**: Implemented (2026-08-24). New shared component `frontend/src/components/KeywordPicker.tsx` (+ `KeywordPicker.module.css`, `KeywordPicker.test.tsx`, 16 tests) implements Requirement 1 in full: labelled input, free-text Enter-to-add when `options` is omitted, vocabulary-constrained type-to-filter/click-to-add (plus Enter-on-first-match) when `options` is supplied, case-insensitive duplicate-add no-op, removable chips (`<li>` with no `role`/`tabIndex`, a sibling `<button aria-label="Remove {keyword}">`), and Backspace-on-empty-input removes the last chip. An optional `focusOnMount` prop (deliberately not named `autoFocus`, to avoid tripping `eslint-plugin-jsx-a11y`'s `no-autofocus` rule, which matches on prop name regardless of the owning component) supports the browse-all modal's focus-on-mount requirement.
+
+`RecommendationControls.tsx` (Requirement 2): Genre & Keyword mode's Keywords field now renders `<KeywordPicker>` with no `options` prop (free text); `getKeywordStats()`, `keywordOptions`/`keywordOptionsError` state, and `handleKeywordToggle` are all removed. Mode-switch clearing and the "enter at least one genre or keyword" hint are unchanged (both keyed off `keywordsSelected.length`).
+
+`SearchFilter.tsx` (Requirements 3–4): the inline Keywords field now renders `<KeywordPicker>` with `options` from the existing `getKeywordStats()` fetch (unchanged call site/error handling — a failed fetch still degrades gracefully via a scoped `role="alert"`, passing `options={[]}` so the picker keeps rendering and any existing chips stay visible/removable). The collapsible checkbox list and its `keywordsOpen` state are removed. A new "Browse all keywords" button opens a `role="dialog"`/`aria-modal="true"`/`aria-labelledby` modal (same overlay/dialog structure and Escape-to-dismiss convention as `AddSeriesForm`/`EditSeriesForm`, no React portal) containing a second `<KeywordPicker>` instance bound to the *same* `form.keywordsSelected` state and `onChange` handler as the inline picker (no duplicate state), with `focusOnMount` set and a "Done" button that closes the modal (equivalent to Escape) without clearing selections. Opening the modal does not re-fetch `getKeywordStats()`.
+
+Files touched: `frontend/src/components/KeywordPicker.tsx`, `KeywordPicker.module.css`, `KeywordPicker.test.tsx` (new); `frontend/src/components/RecommendationControls.tsx`, `RecommendationControls.test.tsx`; `frontend/src/components/SearchFilter.tsx`, `SearchFilter.module.css`, `SearchFilter.test.tsx`. No `seriesApi.ts` or backend changes, as anticipated.
+
+Verified: `npm test` — 363/363 passing across the full suite (16 in `KeywordPicker.test.tsx`, 37 in `RecommendationControls.test.tsx`, 15 in `SearchFilter.test.tsx`); `npm run lint` clean. Real-browser pass completed (`gradlew.bat bootRun` + `npm run dev` against the real backend with 11 tracked series carrying real keywords, driven via a scripted `puppeteer-core` session against local Chrome per the `verify` skill's documented fallback, in both `light` and `dark` `prefers-color-scheme`): confirmed a free-text keyword not in the tracked vocabulary (`submarine-not-tracked`) is accepted as a chip on the Recommendations page; confirmed type-filtering against real tracked keywords (`spy`) and click-to-add on the List page's inline picker; confirmed the "Browse all keywords" modal opens with its input focused, selecting `office` inside the modal and clicking Done immediately reflects both `spy` and `office` as chips in the inline picker (shared-state contract, `FRONTEND-029-AC-19`); inspected the full browser console in both themes — the only axe violations present (`color-contrast` on `SeriesList`'s pre-existing `Sort by` label and `.country` span, `page-has-heading-one`) are unrelated to `KeywordPicker` and pre-date this change; no "nested-interactive", "list", or "aria-allowed-role" findings and no violation referencing the picker's chip/suggestion/remove-button markup in either theme. Screenshots of all three embeddings in both themes were reviewed for visual contrast/layout sanity. `.env.local` (CORS workaround) and the verification script were deleted afterward; both dev servers were stopped.
 **Priority**: P2 (UX improvement — replaces an existing control's interaction shape, no new data capability)
 **Depends on**: Frontend Spec 011 (`frontend_spec_011_recommendation_controls.md`, Requirement 5 — the checkbox field this spec replaces) ✅, Frontend Spec 024 (`frontend_spec_024_keyword_tracking.md`, Requirement 7 — the checkbox list this spec replaces, and `GET /series/keywords` consumption pattern) ✅, Series Spec 007 (`series_spec_007_recommendation_sourcing.md`, `SERIES-007-AC-12`–`AC-16` — free-text keyword resolution via `TmdbClient.searchKeyword`) ✅, Series Spec 019 (`series_spec_019_keyword_tracking.md`, `GET /series/keywords`, `SeriesSearchCriteria.keywords` exact-match semantics) ✅, Frontend Spec 008 (`frontend_spec_008_accessible_row_interactions.md` — the no-nested-interactive-controls convention this component follows) ✅
 **Frontend Stage**: 29 of N
@@ -416,29 +424,29 @@ describe('FRONTEND-029-AC-24/25: accessible names across embeddings', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-029-AC-01: `KeywordPicker` renders a labelled text input
-- [ ] FRONTEND-029-AC-02: free-text mode adds trimmed value on Enter, clears input
-- [ ] FRONTEND-029-AC-03: constrained mode filters `options` as you type; empty/no-match input renders no suggestions
-- [ ] FRONTEND-029-AC-04: constrained mode adds via suggestion click or Enter-on-first-match; unmatched text isn't addable
-- [ ] FRONTEND-029-AC-05: adding an already-selected keyword (case-insensitive) is a no-op
-- [ ] FRONTEND-029-AC-06: each chip has an explicit, accessibly-named remove button
-- [ ] FRONTEND-029-AC-07: Backspace-on-empty-input removes the last chip; non-empty input Backspace does not
-- [ ] FRONTEND-029-AC-08: chip `<li>` carries no `role`/`tabIndex`, matching `frontend_spec_008`'s pattern
-- [ ] FRONTEND-029-AC-09: `RecommendationControls` Genre & Keyword field uses `KeywordPicker` in free-text mode, replacing the checkbox list
-- [ ] FRONTEND-029-AC-10: added keywords populate `RecommendationQuery.keywords` unchanged, resolved server-side, unconstrained by tracked vocabulary
-- [ ] FRONTEND-029-AC-11: `RecommendationControls` no longer calls `getKeywordStats()`
-- [ ] FRONTEND-029-AC-12: mode-switch clearing of `keywordsSelected` unaffected
-- [ ] FRONTEND-029-AC-13: at-least-one-genre-or-keyword hint unaffected
-- [ ] FRONTEND-029-AC-14: `SearchFilter` keyword field uses `KeywordPicker` in constrained mode, options from `getKeywordStats()`, replacing the checkbox list
-- [ ] FRONTEND-029-AC-15: empty input renders no suggestion list (replaces the disclosure toggle)
-- [ ] FRONTEND-029-AC-16: selected keywords included in `criteria.keywords`, omitted when empty
-- [ ] FRONTEND-029-AC-17: failed `getKeywordStats()` fetch degrades gracefully, scoped error, picker still usable
-- [ ] FRONTEND-029-AC-18: "Browse all keywords" button opens a labelled `role="dialog"` modal
-- [ ] FRONTEND-029-AC-19: modal's `KeywordPicker` shares `SearchFilter`'s own `form.keywordsSelected` state
-- [ ] FRONTEND-029-AC-20: modal's input receives focus on mount
-- [ ] FRONTEND-029-AC-21: Escape closes the modal without clearing selections
-- [ ] FRONTEND-029-AC-22: a "Done" button also closes the modal
-- [ ] FRONTEND-029-AC-23: opening the modal does not trigger a new `getKeywordStats()` fetch
-- [ ] FRONTEND-029-AC-24: `KeywordPicker` input is reachable by label text in every embedding
-- [ ] FRONTEND-029-AC-25: every `KeywordPicker`-rendered button has a non-empty accessible name
-- [ ] FRONTEND-029-AC-26: real-browser `@axe-core/react` pass (light + dark) across all three embeddings reports zero new violations
+- [x] FRONTEND-029-AC-01: `KeywordPicker` renders a labelled text input
+- [x] FRONTEND-029-AC-02: free-text mode adds trimmed value on Enter, clears input
+- [x] FRONTEND-029-AC-03: constrained mode filters `options` as you type; empty/no-match input renders no suggestions
+- [x] FRONTEND-029-AC-04: constrained mode adds via suggestion click or Enter-on-first-match; unmatched text isn't addable
+- [x] FRONTEND-029-AC-05: adding an already-selected keyword (case-insensitive) is a no-op
+- [x] FRONTEND-029-AC-06: each chip has an explicit, accessibly-named remove button
+- [x] FRONTEND-029-AC-07: Backspace-on-empty-input removes the last chip; non-empty input Backspace does not
+- [x] FRONTEND-029-AC-08: chip `<li>` carries no `role`/`tabIndex`, matching `frontend_spec_008`'s pattern
+- [x] FRONTEND-029-AC-09: `RecommendationControls` Genre & Keyword field uses `KeywordPicker` in free-text mode, replacing the checkbox list
+- [x] FRONTEND-029-AC-10: added keywords populate `RecommendationQuery.keywords` unchanged, resolved server-side, unconstrained by tracked vocabulary
+- [x] FRONTEND-029-AC-11: `RecommendationControls` no longer calls `getKeywordStats()`
+- [x] FRONTEND-029-AC-12: mode-switch clearing of `keywordsSelected` unaffected
+- [x] FRONTEND-029-AC-13: at-least-one-genre-or-keyword hint unaffected
+- [x] FRONTEND-029-AC-14: `SearchFilter` keyword field uses `KeywordPicker` in constrained mode, options from `getKeywordStats()`, replacing the checkbox list
+- [x] FRONTEND-029-AC-15: empty input renders no suggestion list (replaces the disclosure toggle)
+- [x] FRONTEND-029-AC-16: selected keywords included in `criteria.keywords`, omitted when empty
+- [x] FRONTEND-029-AC-17: failed `getKeywordStats()` fetch degrades gracefully, scoped error, picker still usable
+- [x] FRONTEND-029-AC-18: "Browse all keywords" button opens a labelled `role="dialog"` modal
+- [x] FRONTEND-029-AC-19: modal's `KeywordPicker` shares `SearchFilter`'s own `form.keywordsSelected` state
+- [x] FRONTEND-029-AC-20: modal's input receives focus on mount
+- [x] FRONTEND-029-AC-21: Escape closes the modal without clearing selections
+- [x] FRONTEND-029-AC-22: a "Done" button also closes the modal
+- [x] FRONTEND-029-AC-23: opening the modal does not trigger a new `getKeywordStats()` fetch
+- [x] FRONTEND-029-AC-24: `KeywordPicker` input is reachable by label text in every embedding
+- [x] FRONTEND-029-AC-25: every `KeywordPicker`-rendered button has a non-empty accessible name
+- [x] FRONTEND-029-AC-26: real-browser `@axe-core/react` pass (light + dark) across all three embeddings reports zero new violations
