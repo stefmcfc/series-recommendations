@@ -40,6 +40,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     productionStatus: null,
     keywords: [],
     overview: null,
+    excludeFromRecommendations: false,
+    flaggedForRewatch: false,
     ...overrides,
   }
 }
@@ -474,6 +476,73 @@ describe('FRONTEND-026-AC-09/10/11: TMDB metadata fields', () => {
 
     await screen.findByText('The Office')
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4)
+  })
+})
+
+describe('FRONTEND-012-AC-06: production status label', () => {
+  it('renders a human-readable label for RETURNING_SERIES', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ productionStatus: 'RETURNING_SERIES' }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('Returning Series')).toBeInTheDocument()
+  })
+
+  it('renders a dash when null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ productionStatus: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('The Office')
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+})
+
+describe('FRONTEND-012-AC-13/14: rewatch toggle', () => {
+  const mockUpdate = vi.mocked(seriesApi.update)
+
+  it('renders only when status is COMPLETED', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('The Office')
+
+    expect(screen.queryByLabelText(/flag for rewatch/i)).not.toBeInTheDocument()
+  })
+
+  it('toggles and calls seriesApi.update for a COMPLETED series', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ status: SeriesStatus.COMPLETED, flaggedForRewatch: false }),
+    )
+    mockUpdate.mockResolvedValue(
+      makeSeries({ status: SeriesStatus.COMPLETED, flaggedForRewatch: true }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    const toggle = await screen.findByLabelText(/flag for rewatch/i)
+
+    fireEvent.click(toggle)
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith('1', { flaggedForRewatch: true }),
+    )
+    expect(toggle).toBeChecked()
+  })
+
+  it('reverts and shows a scoped alert on failure', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ status: SeriesStatus.COMPLETED, flaggedForRewatch: false }),
+    )
+    mockUpdate.mockRejectedValue(new ApiError(500, 'Internal server error'))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    const toggle = await screen.findByLabelText(/flag for rewatch/i)
+
+    fireEvent.click(toggle)
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /internal server error/i,
+      ),
+    )
+    expect(toggle).not.toBeChecked()
   })
 })
 

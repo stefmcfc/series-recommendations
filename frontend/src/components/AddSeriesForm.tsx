@@ -37,6 +37,7 @@ interface FormState {
   productionStatus: string
   tmdbId: string
   overview: string
+  excludeFromRecommendations: boolean
 }
 
 const initialFormState: FormState = {
@@ -59,6 +60,7 @@ const initialFormState: FormState = {
   productionStatus: '',
   tmdbId: '',
   overview: '',
+  excludeFromRecommendations: false,
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -157,6 +159,7 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.productionStatus = form.productionStatus.trim()
   if (form.tmdbId.trim() !== '') payload.tmdbId = Number(form.tmdbId)
   if (form.overview.trim() !== '') payload.overview = form.overview.trim()
+  if (form.excludeFromRecommendations) payload.excludeFromRecommendations = true
 
   return payload
 }
@@ -260,6 +263,15 @@ export function AddSeriesForm({
   ) => {
     setForm((prev) => ({ ...prev, posterUrl: event.target.value }))
     setPosterPreviewError(false)
+  }
+
+  const handleExcludeFromRecommendationsChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      excludeFromRecommendations: event.target.checked,
+    }))
   }
 
   const applyResolvedResult = (result: SeriesLookupResult) => {
@@ -637,6 +649,18 @@ export function AddSeriesForm({
                 onError={() => setPosterPreviewError(true)}
               />
             )}
+          </div>
+
+          <div className={styles.checkboxField}>
+            <label htmlFor="excludeFromRecommendations">
+              Exclude from recommendations
+            </label>
+            <input
+              id="excludeFromRecommendations"
+              type="checkbox"
+              checked={form.excludeFromRecommendations}
+              onChange={handleExcludeFromRecommendationsChange}
+            />
           </div>
 
           <div className={styles.actions}>

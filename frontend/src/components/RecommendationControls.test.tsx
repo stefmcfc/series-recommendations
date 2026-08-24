@@ -37,6 +37,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     productionStatus: null,
     keywords: [],
     overview: null,
+    excludeFromRecommendations: false,
+    flaggedForRewatch: false,
     ...overrides,
   }
 }

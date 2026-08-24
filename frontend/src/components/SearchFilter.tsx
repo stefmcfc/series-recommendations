@@ -20,6 +20,7 @@ interface FormState {
   minImdbRating: string
   maxImdbRating: string
   startedNotFinished: boolean
+  flaggedForRewatch: boolean
 }
 
 const initialFormState: FormState = {
@@ -32,6 +33,7 @@ const initialFormState: FormState = {
   minImdbRating: '',
   maxImdbRating: '',
   startedNotFinished: false,
+  flaggedForRewatch: false,
 }
 
 function buildCriteria(form: FormState): SearchCriteria {
@@ -60,6 +62,7 @@ function buildCriteria(form: FormState): SearchCriteria {
     criteria.maxImdbRating = Number(form.maxImdbRating)
 
   if (form.startedNotFinished) criteria.startedNotFinished = true
+  if (form.flaggedForRewatch) criteria.flaggedForRewatch = true
 
   return criteria
 }
@@ -237,6 +240,18 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
             type="checkbox"
             checked={form.startedNotFinished}
             onChange={updateCheckbox('startedNotFinished')}
+          />
+        </div>
+
+        <div className={styles.checkboxField}>
+          <label htmlFor="search-flagged-for-rewatch">
+            Flagged for rewatch
+          </label>
+          <input
+            id="search-flagged-for-rewatch"
+            type="checkbox"
+            checked={form.flaggedForRewatch}
+            onChange={updateCheckbox('flaggedForRewatch')}
           />
         </div>
 

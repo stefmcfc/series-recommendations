@@ -209,6 +209,19 @@
   border: 1px solid var(--border);
 }
 
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkboxField label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

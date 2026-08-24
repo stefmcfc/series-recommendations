@@ -1,6 +1,9 @@
 # Frontend Spec 012: Exclude Flag, Production Status, Refresh & Rewatch Flag
 
-**Status**: Not started — Requirement 4 (Refresh Action) superseded by `frontend_spec_023_series_refresh.md`, now implemented there; Requirements 1–3 and 5 remain not started
+**Status**: Done — Requirement 4 (Refresh Action) superseded by `frontend_spec_023_series_refresh.md`, already implemented there; Requirements 1–3 and 5 implemented on `feature/series-lifecycle-controls`. Notes/deviations:
+- Requirement 3 (AC-06, production-status display) turned out to already be fully implemented in `SeriesDetail.tsx`'s existing `formatProductionStatus` helper (shipped earlier alongside the backend field via `series_spec_018`/`021`) — no component code changed for this requirement, only a dedicated `FRONTEND-012-AC-06` test was added to `SeriesDetail.test.tsx` to pin the RETURNING_SERIES-label/null-dash contract explicitly under this spec's own AC id.
+- Requirement 5's rewatch toggle UI uses a visible `<label>` ("Rewatch" on `SeriesList` rows, "Flag for rewatch" on `SeriesDetail`) with `aria-label="Flag for rewatch"` on the `<input>` so `getByLabelText(/flag for rewatch/i)` resolves consistently in both components, per the sketches in this spec.
+- **Found backend gap, not fixed here (frontend-only task)**: `SeriesController.search()` (`GET /series/search`) never binds a `flaggedForRewatch` query param into `SeriesSearchCriteria`, even though `SeriesSearchCriteria`/`SeriesSearchService.matchesFlaggedForRewatch` fully support it (`series_spec_008` Requirement 4, SERIES-008-AC-20/21). Verified live: `GET /series/search?flaggedForRewatch=true` returns all series unfiltered because the controller method has no matching `@RequestParam`. The frontend (`SearchFilter` → `seriesApi.search` → `buildSearchParams`) correctly sends `flaggedForRewatch=true` on the wire, matching `FRONTEND-012-AC-15`'s literal ask (criteria-building only) — this is purely a backend controller wiring gap and needs a small follow-up on the `series_spec_008`/backend side (add the missing `@RequestParam Boolean flaggedForRewatch` + `c.setFlaggedForRewatch(...)` in `SeriesController.search`).
 **Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 006 (`SearchFilter`) ✅, Series Spec 008 (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`)
 **Frontend Stage**: 12 of N
 **Note**: Requirement 4 (Refresh Action) below is **superseded in full by `frontend_spec_023_series_refresh.md`** — see that requirement's heading for details. Requirements 1–3 and 5 are unaffected and remain current.
@@ -265,18 +268,18 @@ describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-012-AC-01: `excludeFromRecommendations`/`productionStatus` on `Series`/request types
+- [x] FRONTEND-012-AC-01: `excludeFromRecommendations`/`productionStatus` on `Series`/request types
 - [ ] ~~FRONTEND-012-AC-02~~: superseded, not implementable — see FRONTEND-023-AC-02
 - [ ] ~~FRONTEND-012-AC-03~~: superseded, not implementable — see FRONTEND-023-AC-03
-- [ ] FRONTEND-012-AC-04: `AddSeriesForm` exclude checkbox, omitted unless checked
-- [ ] FRONTEND-012-AC-05: `EditSeriesForm` exclude checkbox, always sent explicitly
-- [ ] FRONTEND-012-AC-06: `SeriesDetail` production-status label / dash
+- [x] FRONTEND-012-AC-04: `AddSeriesForm` exclude checkbox, omitted unless checked
+- [x] FRONTEND-012-AC-05: `EditSeriesForm` exclude checkbox, always sent explicitly
+- [x] FRONTEND-012-AC-06: `SeriesDetail` production-status label / dash
 - [ ] ~~FRONTEND-012-AC-07~~: superseded, not implementable — see FRONTEND-023-AC-05
 - [ ] ~~FRONTEND-012-AC-08~~: superseded, not implementable — see FRONTEND-023-AC-06
 - [ ] ~~FRONTEND-012-AC-09~~: superseded, not implementable — see FRONTEND-023-AC-07
 - [ ] ~~FRONTEND-012-AC-10~~: superseded, not implementable — see FRONTEND-023-AC-08
-- [ ] FRONTEND-012-AC-11: `flaggedForRewatch` on `Series`/`UpdateSeriesRequest`/`SearchCriteria`
-- [ ] FRONTEND-012-AC-12: `SeriesList` rewatch toggle, `COMPLETED` rows only
-- [ ] FRONTEND-012-AC-13: `SeriesDetail` rewatch toggle, `COMPLETED` only
-- [ ] FRONTEND-012-AC-14: toggle reverts + scoped error on failure
-- [ ] FRONTEND-012-AC-15: `SearchFilter` rewatch checkbox
+- [x] FRONTEND-012-AC-11: `flaggedForRewatch` on `Series`/`UpdateSeriesRequest`/`SearchCriteria`
+- [x] FRONTEND-012-AC-12: `SeriesList` rewatch toggle, `COMPLETED` rows only
+- [x] FRONTEND-012-AC-13: `SeriesDetail` rewatch toggle, `COMPLETED` only
+- [x] FRONTEND-012-AC-14: toggle reverts + scoped error on failure
+- [x] FRONTEND-012-AC-15: `SearchFilter` rewatch checkbox (builds the criteria correctly; see Status note above re: a backend controller gap in actually applying this filter server-side)

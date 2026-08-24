@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import { SeriesStatus } from '../types/series'
 import type {
   Series,
   SearchCriteria,
@@ -98,6 +99,10 @@ export function SeriesList({
   const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
+  // FRONTEND-012-AC-12/14: per-row rewatch toggle errors, keyed by series id
+  // -- mirrors RecommendationsList's per-card scoped-error pattern
+  // (FRONTEND-010-AC-17) since more than one row's toggle can be in flight.
+  const [rewatchErrors, setRewatchErrors] = useState<Record<string, string>>({})
   // FRONTEND-013-AC-12: sort state lives here, local to the list -- see the
   // spec's Design Decisions for why this isn't lifted into App.tsx/SearchFilter.
   const [sortBy, setSortBy] = useState<SortByOption>(DEFAULT_SORT_BY)
@@ -263,6 +268,39 @@ export function SeriesList({
 
   const handlePosterError = (id: string) => {
     setPosterErrorIds((prev) => new Set(prev).add(id))
+  }
+
+  const handleRewatchToggle = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    id: string,
+    previousValue: boolean,
+  ) => {
+    const nextValue = event.target.checked
+    setRewatchErrors((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
+    setSeries((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, flaggedForRewatch: nextValue } : s,
+      ),
+    )
+
+    seriesApi
+      .update(id, { flaggedForRewatch: nextValue })
+      .catch((err: unknown) => {
+        setSeries((prev) =>
+          prev.map((s) =>
+            s.id === id ? { ...s, flaggedForRewatch: previousValue } : s,
+          ),
+        )
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : 'An unexpected error occurred. Please try again.'
+        setRewatchErrors((prev) => ({ ...prev, [id]: message }))
+      })
   }
 
   const handleCancelDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -474,6 +512,25 @@ export function SeriesList({
                   data-testid="new-content-badge"
                 >
                   New content
+                </span>
+              )}
+
+              {s.status === SeriesStatus.COMPLETED && (
+                <label className={styles.rewatchToggle}>
+                  <input
+                    type="checkbox"
+                    aria-label="Flag for rewatch"
+                    checked={s.flaggedForRewatch}
+                    onChange={(e) =>
+                      handleRewatchToggle(e, s.id, s.flaggedForRewatch)
+                    }
+                  />
+                  Rewatch
+                </label>
+              )}
+              {rewatchErrors[s.id] && (
+                <span className={styles.rewatchError} role="alert">
+                  {rewatchErrors[s.id]}
                 </span>
               )}
 

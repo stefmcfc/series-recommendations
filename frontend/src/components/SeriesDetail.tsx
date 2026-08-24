@@ -69,6 +69,7 @@ export function SeriesDetail({
   const [refreshSummary, setRefreshSummary] = useState<string | null>(null)
   const [acknowledging, setAcknowledging] = useState(false)
   const [acknowledgeError, setAcknowledgeError] = useState<string | null>(null)
+  const [rewatchError, setRewatchError] = useState<string | null>(null)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -82,6 +83,7 @@ export function SeriesDetail({
     setRefreshSummary(null)
     setAcknowledging(false)
     setAcknowledgeError(null)
+    setRewatchError(null)
   }
 
   useEffect(() => {
@@ -192,6 +194,30 @@ export function SeriesDetail({
           setAcknowledgeError(err.message)
         } else {
           setAcknowledgeError('An unexpected error occurred. Please try again.')
+        }
+      })
+  }
+
+  const handleRewatchToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!series) return
+    const previousValue = series.flaggedForRewatch
+    const nextValue = event.target.checked
+
+    setRewatchError(null)
+    setSeries((prev) =>
+      prev ? { ...prev, flaggedForRewatch: nextValue } : prev,
+    )
+
+    seriesApi
+      .update(id, { flaggedForRewatch: nextValue })
+      .catch((err: unknown) => {
+        setSeries((prev) =>
+          prev ? { ...prev, flaggedForRewatch: previousValue } : prev,
+        )
+        if (err instanceof ApiError) {
+          setRewatchError(err.message)
+        } else {
+          setRewatchError('An unexpected error occurred. Please try again.')
         }
       })
   }
@@ -423,9 +449,25 @@ export function SeriesDetail({
                   </button>
                 </>
               )}
+              {series.status === SeriesStatus.COMPLETED && (
+                <label className={styles.rewatchToggle}>
+                  <input
+                    type="checkbox"
+                    aria-label="Flag for rewatch"
+                    checked={series.flaggedForRewatch}
+                    onChange={handleRewatchToggle}
+                  />
+                  Flag for rewatch
+                </label>
+              )}
             </div>
           )}
 
+          {rewatchError && (
+            <div className={styles.error} role="alert">
+              <p>{rewatchError}</p>
+            </div>
+          )}
           {refreshError && (
             <div className={styles.error} role="alert">
               <p>{refreshError}</p>

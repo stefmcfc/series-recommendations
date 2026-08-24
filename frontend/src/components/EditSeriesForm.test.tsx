@@ -37,6 +37,8 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     productionStatus: null,
     keywords: [],
     overview: null,
+    excludeFromRecommendations: false,
+    flaggedForRewatch: false,
     ...overrides,
   }
 }
@@ -384,6 +386,51 @@ describe('FRONTEND-018-AC-12: submission payload includes/omits tags', () => {
     await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
     const payload = mockUpdate.mock.calls[0][1]
     expect(payload).not.toHaveProperty('tags')
+  })
+})
+
+describe('FRONTEND-012-AC-05: exclude checkbox initialized from series, always sent', () => {
+  it('initializes checked when series.excludeFromRecommendations is true', () => {
+    renderForm({ series: makeSeries({ excludeFromRecommendations: true }) })
+    expect(screen.getByLabelText(/exclude from recommendations/i)).toBeChecked()
+  })
+
+  it('initializes unchecked when series.excludeFromRecommendations is false', () => {
+    renderForm({ series: makeSeries({ excludeFromRecommendations: false }) })
+    expect(
+      screen.getByLabelText(/exclude from recommendations/i),
+    ).not.toBeChecked()
+  })
+
+  it('sends excludeFromRecommendations: false explicitly when unchecked', async () => {
+    const series = makeSeries({ excludeFromRecommendations: true })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+
+    fireEvent.click(screen.getByLabelText(/exclude from recommendations/i))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        series.id,
+        expect.objectContaining({ excludeFromRecommendations: false }),
+      ),
+    )
+  })
+
+  it('sends excludeFromRecommendations: true explicitly when left checked', async () => {
+    const series = makeSeries({ excludeFromRecommendations: true })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        series.id,
+        expect.objectContaining({ excludeFromRecommendations: true }),
+      ),
+    )
   })
 })
 
