@@ -187,15 +187,28 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
     )
   })
 
-  // FRONTEND-032-AC-09: superseding frontend_spec_029's "no suggestions
-  // until typed" default -- the inline field now shows its most-common
-  // tracked keywords immediately, up to KEYWORD_SUGGESTIONS_LIMIT.
-  it('shows tracked keywords as suggestions immediately, before typing anything', async () => {
+  // Live review (2026-08-24) found the default suggestion list read as
+  // cluttered in this field's narrower layout -- reverted to
+  // frontend_spec_029's original "no suggestions until typed" behavior
+  // here specifically; "Browse all keywords" is the dedicated surface for
+  // browsing without typing (frontend_spec_032 Requirement 4).
+  it('shows no suggestions until something is typed', async () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
 
+    await screen.findByPlaceholderText(/type to filter tracked keywords/i)
+    expect(
+      screen.queryByRole('button', { name: 'spy' }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/type to filter tracked keywords/i),
+      {
+        target: { value: 'sp' },
+      },
+    )
     expect(
       await screen.findByRole('button', { name: 'spy' }),
     ).toBeInTheDocument()

@@ -3,7 +3,6 @@ import { seriesApi } from '../services/seriesApi'
 import { SeriesStatus } from '../types/series'
 import type { SearchCriteria } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
-import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import styles from './SearchFilter.module.css'
 
 interface SearchFilterProps {
@@ -148,7 +147,11 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
             options={keywordOptionsError ? [] : keywordOptions}
             placeholder="Type to filter tracked keywords"
             allowFreeText
-            maxSuggestionsWhenEmpty={KEYWORD_SUGGESTIONS_LIMIT}
+            // A default suggestion list here (rather than only once typing)
+            // read as cluttered in this field's narrower layout, and the
+            // "Browse all keywords" modal already covers browsing without
+            // typing -- so this field only shows matches once you type.
+            maxSuggestionsWhenEmpty={0}
           />
           {keywordOptionsError && (
             <p className={styles.keywordError} role="alert">
