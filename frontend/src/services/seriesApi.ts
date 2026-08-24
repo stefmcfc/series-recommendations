@@ -180,6 +180,11 @@ export const seriesApi = {
       }),
     ).then((res) => res.data),
 
+  getRecommendationKeywords: (tmdbId: number): Promise<string[]> =>
+    request<{ data: string[]; count: number }>(() =>
+      client.get('/series/recommendations/' + tmdbId + '/keywords'),
+    ).then((res) => res.data),
+
   refresh: (id: string): Promise<RefreshResult> =>
     request<{ data: RefreshResult }>(() =>
       client.post('/series/' + id + '/refresh'),

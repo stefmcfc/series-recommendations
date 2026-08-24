@@ -36,6 +36,7 @@ interface FormState {
   originCountry: string
   productionStatus: string
   tmdbId: string
+  overview: string
 }
 
 const initialFormState: FormState = {
@@ -57,6 +58,7 @@ const initialFormState: FormState = {
   originCountry: '',
   productionStatus: '',
   tmdbId: '',
+  overview: '',
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
@@ -154,6 +156,7 @@ function buildPayload(form: FormState): CreateSeriesRequest {
   if (form.productionStatus.trim() !== '')
     payload.productionStatus = form.productionStatus.trim()
   if (form.tmdbId.trim() !== '') payload.tmdbId = Number(form.tmdbId)
+  if (form.overview.trim() !== '') payload.overview = form.overview.trim()
 
   return payload
 }
@@ -182,6 +185,7 @@ function applyLookupResult(
   if (result.productionStatus != null)
     next.productionStatus = result.productionStatus
   if (result.tmdbId != null) next.tmdbId = String(result.tmdbId)
+  if (result.overview != null) next.overview = result.overview
 
   return next
 }
@@ -212,6 +216,7 @@ function buildInitialFormState(
     next.personalNotes = initialValues.personalNotes
   if (initialValues.posterUrl != null) next.posterUrl = initialValues.posterUrl
   if (initialValues.imdbId != null) next.imdbId = initialValues.imdbId
+  if (initialValues.overview != null) next.overview = initialValues.overview
 
   return next
 }

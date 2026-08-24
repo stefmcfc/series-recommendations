@@ -276,6 +276,10 @@ export function SeriesDetail({
                 </dd>
               </div>
               <div className={styles.field}>
+                <dt>Overview</dt>
+                <dd>{formatValue(series.overview)}</dd>
+              </div>
+              <div className={styles.field}>
                 <dt>Status</dt>
                 <dd>{series.status}</dd>
               </div>

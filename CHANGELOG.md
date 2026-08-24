@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Recommendation cards now show origin country (e.g. "United Kingdom") and carry a `tmdbId`, and can reveal a candidate's TMDB keywords on demand via a per-card "Show keywords" button (loading/error/empty states scoped to that card only, no automatic fetch for the rest of the list) via a new `GET /api/v1/series/recommendations/{tmdbId}/keywords` endpoint. Tracked series now persist their TMDB `overview` (parsed from the same `GET /tv/{id}` call already used for `tmdbRating`/`productionStatus`/`originCountry`, at no extra TMDB-call cost), populated at creation via `AddSeriesForm`'s TMDB lookup, kept fresh on refresh, and displayed on `SeriesDetail` — closing a gap where a series' description, visible on the recommendation card that led to adding it, was previously lost the moment it was tracked (`series_spec_023`, `frontend_spec_028`).
+
 ## [2.1.0] - 2026-08-24
 
 ### Added

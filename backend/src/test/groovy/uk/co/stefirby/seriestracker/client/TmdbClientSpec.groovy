@@ -138,6 +138,32 @@ class TmdbClientSpec extends Specification {
             result[0].originalLanguage() == "en"
     }
 
+    def "SERIES-023-AC-01: recommendations() maps origin_country's first entry onto TmdbCandidate"() {
+        given: "a TMDB recommendations response with an origin_country array"
+            def body = '{"results": [{"id": 2, "name": "Show", "origin_country": ["US"]}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/recommendations")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "recommendations(1396) is called"
+            def results = client().recommendations(1396)
+
+        then: "originCountry is the array's first entry"
+            results[0].originCountry() == "US"
+    }
+
+    def "SERIES-023-AC-01: an absent origin_country maps to a null originCountry on TmdbCandidate"() {
+        given: "a TMDB recommendations result with no origin_country field"
+            def body = '{"results": [{"id": 2, "name": "Show"}]}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/1396/recommendations")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "recommendations(1396) is called"
+            def results = client().recommendations(1396)
+
+        then: "originCountry is null"
+            results[0].originCountry() == null
+    }
+
     def "SERIES-007-AC-23: vote_count/original_language are null when absent"() {
         given: "TMDB /tv/1396/recommendations returns a result with neither field"
             def body = '{"results":[{"id":2316,"name":"The Office"}]}'
@@ -508,6 +534,32 @@ class TmdbClientSpec extends Specification {
 
         then: "originCountry is null"
             result.originCountry() == null
+    }
+
+    def "SERIES-023-AC-08: details maps overview onto TmdbSeriesDetail"() {
+        given: "a TMDB detail response with an overview field"
+            def body = '{"name": "The Office", "overview": "A mockumentary sitcom.", "genres": []}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/2998")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details(2998) is called"
+            def result = client().details(2998)
+
+        then: "overview is parsed"
+            result.overview() == "A mockumentary sitcom."
+    }
+
+    def "SERIES-023-AC-08: an absent overview maps to null on TmdbSeriesDetail"() {
+        given: "a TMDB detail response with no overview field"
+            def body = '{"name": "Obscure Show", "genres": []}'
+            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString("tv/2999")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details(2999) is called"
+            def result = client().details(2999)
+
+        then: "overview is null"
+            result.overview() == null
     }
 
     def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {

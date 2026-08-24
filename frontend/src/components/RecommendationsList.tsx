@@ -8,6 +8,7 @@ import type {
   Series,
 } from '../types/series'
 import { AddSeriesForm } from './AddSeriesForm'
+import { formatCountryName } from '../utils/countryName'
 import styles from './RecommendationsList.module.css'
 
 interface PendingAdd {
@@ -28,6 +29,13 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
   const [ignoringIds, setIgnoringIds] = useState<Set<string>>(new Set())
   const [ignoreErrors, setIgnoreErrors] = useState<Record<string, string>>({})
   const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
+  const [keywordsLoadingIds, setKeywordsLoadingIds] = useState<Set<string>>(
+    new Set(),
+  )
+  const [keywordResults, setKeywordResults] = useState<
+    Record<string, string[]>
+  >({})
+  const [keywordErrors, setKeywordErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -116,6 +124,39 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
             ? err.message
             : 'An unexpected error occurred. Please try again.'
         setIgnoreErrors((prev) => ({ ...prev, [imdbId]: message }))
+      })
+  }
+
+  const handleShowKeywords = (recommendation: Recommendation) => {
+    const { imdbId, tmdbId } = recommendation
+    setKeywordErrors((prev) => {
+      const next = { ...prev }
+      delete next[imdbId]
+      return next
+    })
+    setKeywordsLoadingIds((prev) => new Set(prev).add(imdbId))
+
+    seriesApi
+      .getRecommendationKeywords(tmdbId)
+      .then((keywords) => {
+        setKeywordsLoadingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(imdbId)
+          return next
+        })
+        setKeywordResults((prev) => ({ ...prev, [imdbId]: keywords }))
+      })
+      .catch((err: unknown) => {
+        setKeywordsLoadingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(imdbId)
+          return next
+        })
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : 'An unexpected error occurred. Please try again.'
+        setKeywordErrors((prev) => ({ ...prev, [imdbId]: message }))
       })
   }
 
@@ -209,6 +250,11 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                 {r.genres !== null && (
                   <span className={styles.genres}>{r.genres}</span>
                 )}
+                {r.originCountry !== null && (
+                  <span className={styles.country}>
+                    {formatCountryName(r.originCountry)}
+                  </span>
+                )}
                 {r.overview !== null && (
                   <p className={styles.overview}>{r.overview}</p>
                 )}
@@ -244,12 +290,48 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                   >
                     Ignore
                   </button>
+                  <button
+                    type="button"
+                    className={styles.keywordsButton}
+                    data-testid="show-keywords-btn"
+                    disabled={keywordsLoadingIds.has(r.imdbId)}
+                    onClick={() => handleShowKeywords(r)}
+                  >
+                    Show keywords
+                  </button>
                   {ignoreErrors[r.imdbId] && (
                     <span className={styles.ignoreError} role="alert">
                       {ignoreErrors[r.imdbId]}
                     </span>
                   )}
                 </div>
+
+                {keywordsLoadingIds.has(r.imdbId) && (
+                  <div
+                    className={styles.keywordsLoading}
+                    role="status"
+                    aria-label="Loading keywords"
+                  >
+                    Loading keywords...
+                  </div>
+                )}
+                {keywordErrors[r.imdbId] && (
+                  <span className={styles.keywordsError} role="alert">
+                    {keywordErrors[r.imdbId]}
+                  </span>
+                )}
+                {keywordResults[r.imdbId] !== undefined &&
+                  (keywordResults[r.imdbId].length === 0 ? (
+                    <p className={styles.keywordsEmpty}>No keywords found</p>
+                  ) : (
+                    <ul className={styles.keywordsList}>
+                      {keywordResults[r.imdbId].map((keyword) => (
+                        <li key={keyword} className={styles.keywordChip}>
+                          {keyword}
+                        </li>
+                      ))}
+                    </ul>
+                  ))}
               </div>
             </li>
           ))}
@@ -271,6 +353,9 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
               : {}),
             ...(pendingAdd.recommendation.posterUrl != null
               ? { posterUrl: pendingAdd.recommendation.posterUrl }
+              : {}),
+            ...(pendingAdd.recommendation.overview != null
+              ? { overview: pendingAdd.recommendation.overview }
               : {}),
             imdbId: pendingAdd.recommendation.imdbId,
           }}

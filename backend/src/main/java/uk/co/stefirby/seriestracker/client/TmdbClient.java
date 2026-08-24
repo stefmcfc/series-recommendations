@@ -249,7 +249,8 @@ public class TmdbClient {
             toBigDecimal(body.get("vote_average")),
             toInteger(body.get("vote_count")),
             ProductionStatus.fromTmdbStatus(str(body.get("status"))).orElse(null),
-            firstOriginCountry(body.get("origin_country"))
+            firstOriginCountry(body.get("origin_country")),
+            str(body.get("overview"))
         );
     }
 
@@ -308,7 +309,8 @@ public class TmdbClient {
                 toBigDecimal(item.get("vote_average")),
                 toIntegerList(item.get("genre_ids")),
                 toInteger(item.get("vote_count")),
-                str(item.get("original_language"))
+                str(item.get("original_language")),
+                firstOriginCountry(item.get("origin_country"))
             ));
         }
         return candidates;

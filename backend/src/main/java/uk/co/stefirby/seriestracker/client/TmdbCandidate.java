@@ -19,6 +19,10 @@ import java.util.List;
  * ({@code original_language}) were added by SERIES-007-AC-23 to back the new
  * {@code minVoteCount}/{@code language} output filters -- both are documented as present on
  * every result object of the same three endpoints.
+ *
+ * <p>{@code originCountry} (SERIES-023-AC-01) is the first entry of this same result's
+ * {@code origin_country} array, parsed by the shared {@code mapResults} helper -- {@code null}
+ * when absent or empty. See {@code series_spec_023_recommendation_metadata_and_overview.md}.
  */
 public record TmdbCandidate(
     int tmdbId,
@@ -29,6 +33,7 @@ public record TmdbCandidate(
     BigDecimal voteAverage,
     List<Integer> genreIds,
     Integer voteCount,
-    String originalLanguage
+    String originalLanguage,
+    String originCountry
 ) {
 }

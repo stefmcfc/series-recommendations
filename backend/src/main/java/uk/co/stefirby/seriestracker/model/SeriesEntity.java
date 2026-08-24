@@ -130,6 +130,14 @@ public class SeriesEntity {
     @Column(nullable = true, length = 2)
     private String originCountry;
 
+    // series_spec_023_recommendation_metadata_and_overview.md (SERIES-023-AC-10): a series'
+    // TMDB description, sourced from TmdbSeriesDetail.overview() -- nullable (a manually-added
+    // series with no tmdbId, or one whose TMDB lookup never resolved a detail, has no
+    // overview), same TEXT storage shape as personalNotes since it's a long free-text
+    // paragraph, not a short delimited field.
+    @Column(nullable = true, columnDefinition = "TEXT")
+    private String overview;
+
     // series_spec_018_series_refresh.md (SERIES-018-AC-23): non-null means a refresh found
     // totalSeasons/totalEpisodes had increased since the prior refresh, not yet acknowledged.
     // Never auto-cleared by a subsequent refresh that finds no further increase
@@ -228,6 +236,9 @@ public class SeriesEntity {
 
     public String getOriginCountry() { return originCountry; }
     public void setOriginCountry(String originCountry) { this.originCountry = originCountry; }
+
+    public String getOverview() { return overview; }
+    public void setOverview(String overview) { this.overview = overview; }
 
     public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
     public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }

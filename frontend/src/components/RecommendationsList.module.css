@@ -152,6 +152,13 @@
   font-size: 0.875rem;
 }
 
+.country {
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
 .overview {
   margin: 0;
   color: var(--text);
@@ -229,6 +236,66 @@
   .ignoreError {
     color: #fca5a5;
   }
+}
+
+.keywordsButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.keywordsButton:hover:not(:disabled) {
+  background: var(--social-bg);
+}
+
+.keywordsButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.keywordsLoading {
+  color: var(--text);
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.keywordsError {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .keywordsError {
+    color: #fca5a5;
+  }
+}
+
+.keywordsEmpty {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+.keywordsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.keywordChip {
+  background: var(--social-bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
 }
 
 .attribution {
