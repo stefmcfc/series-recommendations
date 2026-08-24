@@ -65,6 +65,16 @@ public class SeriesEntity {
     @Max(value = 100, message = "Rotten Tomatoes rating must be <= 100")
     private Integer rottenTomatoesRating;
 
+    // series_spec_027_rotten_tomatoes_popcornmeter_and_refresh_safety.md (SERIES-027-AC-01):
+    // Rotten Tomatoes' audience (Popcornmeter) score, distinct from rottenTomatoesRating above
+    // (the critics' Tomatometer score, sourced from OMDb). Purely user-entered -- there is no
+    // external source for it, so it is never touched by SeriesRefreshService. Same shape as
+    // rottenTomatoesRating (nullable, 0-100).
+    @Column(nullable = true)
+    @Min(value = 0, message = "Rotten Tomatoes Popcornmeter must be >= 0")
+    @Max(value = 100, message = "Rotten Tomatoes Popcornmeter must be <= 100")
+    private Integer rottenTomatoesPopcornmeter;
+
     // SERIES-017-AC-10: TMDB's own community rating/vote count, populated at create time
     // from TmdbClient.details() -- an independent third rating source alongside imdbRating/
     // rottenTomatoesRating, named to match RecommendationDto.tmdbRating/voteCount
@@ -218,6 +228,9 @@ public class SeriesEntity {
 
     public Integer getRottenTomatoesRating() { return rottenTomatoesRating; }
     public void setRottenTomatoesRating(Integer rottenTomatoesRating) { this.rottenTomatoesRating = rottenTomatoesRating; }
+
+    public Integer getRottenTomatoesPopcornmeter() { return rottenTomatoesPopcornmeter; }
+    public void setRottenTomatoesPopcornmeter(Integer rottenTomatoesPopcornmeter) { this.rottenTomatoesPopcornmeter = rottenTomatoesPopcornmeter; }
 
     public BigDecimal getTmdbRating() { return tmdbRating; }
     public void setTmdbRating(BigDecimal tmdbRating) { this.tmdbRating = tmdbRating; }

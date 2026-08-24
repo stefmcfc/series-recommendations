@@ -18,6 +18,13 @@ public class SeriesDto {
     private String status;
     private BigDecimal imdbRating;
     private Integer rottenTomatoesRating;
+
+    // series_spec_027_rotten_tomatoes_popcornmeter_and_refresh_safety.md (SERIES-027-AC-02):
+    // Rotten Tomatoes' audience (Popcornmeter) score, distinct from rottenTomatoesRating above
+    // (the critics' Tomatometer score) -- same partial-update-capable shape, purely
+    // user-entered, never touched by SeriesRefreshService.
+    private Integer rottenTomatoesPopcornmeter;
+
     private BigDecimal tmdbRating;
     private Integer tmdbVoteCount;
     private Integer personalRating;
@@ -110,6 +117,9 @@ public class SeriesDto {
 
     public Integer getRottenTomatoesRating() { return rottenTomatoesRating; }
     public void setRottenTomatoesRating(Integer rottenTomatoesRating) { this.rottenTomatoesRating = rottenTomatoesRating; }
+
+    public Integer getRottenTomatoesPopcornmeter() { return rottenTomatoesPopcornmeter; }
+    public void setRottenTomatoesPopcornmeter(Integer rottenTomatoesPopcornmeter) { this.rottenTomatoesPopcornmeter = rottenTomatoesPopcornmeter; }
 
     public BigDecimal getTmdbRating() { return tmdbRating; }
     public void setTmdbRating(BigDecimal tmdbRating) { this.tmdbRating = tmdbRating; }
