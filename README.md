@@ -137,6 +137,8 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 026 | Origin country & TMDB metadata display (candidate-picker country badge, series-list "(Year) \| Country", `productionStatus`/`tmdbRating`/`tmdbVoteCount` surfaced) | ⬜ Not started |
 | Backend 023 | Recommendation metadata & persisted overview (`originCountry`/`tmdbId` on recommendation candidates, lazy per-candidate keyword lookup `GET /series/recommendations/{tmdbId}/keywords`, persisted series `overview` sourced from TMDB, kept fresh on refresh) | ✅ Done |
 | Frontend 028 | Recommendation metadata & overview display (recommendation-card origin country badge, lazy per-card keyword expand, `SeriesDetail` overview display, `AddSeriesForm` overview carry-through) | ✅ Done |
+| Backend 026 | On-demand streaming availability for a tracked series (`GET /series/{id}/watch-providers`, reuses Backend 020's `TmdbClient.watchProviders`/region config, never persisted, graceful degradation to an empty list) | ✅ Done |
+| Frontend 036 | "Check Streaming Availability" button on `SeriesDetail` | ⬜ Not started |
 
 ## Future Ideas
 

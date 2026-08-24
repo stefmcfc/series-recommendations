@@ -6,6 +6,7 @@ import uk.co.stefirby.seriestracker.client.TmdbKeyword;
 import uk.co.stefirby.seriestracker.client.TmdbWatchProvider;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
+import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
@@ -768,6 +769,31 @@ public class RecommendationService {
             log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
             return List.of();
         }
+    }
+
+    /**
+     * Backs {@code GET /api/v1/series/{id}/watch-providers} (SERIES-026-AC-01..05): an
+     * on-demand streaming-availability check for a <em>tracked</em> series, never persisted.
+     * A genuinely unknown {@code id} is the only error case (404, matching {@code
+     * getById}/{@code update}/{@code delete}/{@code refresh}); a missing/unresolvable {@code
+     * imdbId} both yield an empty list rather than an error (SERIES-026-AC-03/04), and once a
+     * {@code tmdbId} is resolved this delegates straight to the existing {@link
+     * #streamingProviders(int)} helper (Series Spec 020), reusing its own graceful degradation
+     * on a {@code watchProviders} failure verbatim (SERIES-026-AC-05).
+     */
+    @Transactional(readOnly = true)
+    public List<RecommendationDto.StreamingProvider> getStreamingProvidersForSeries(UUID id) {
+        SeriesEntity series = seriesRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
+
+        String imdbId = series.getImdbId();
+        if (imdbId == null || imdbId.isBlank()) {
+            return List.of();
+        }
+
+        return tmdbClient.findTvIdByImdbId(imdbId)
+            .map(this::streamingProviders)
+            .orElse(List.of());
     }
 
     private String joinGenres(List<Integer> genreIds) {
