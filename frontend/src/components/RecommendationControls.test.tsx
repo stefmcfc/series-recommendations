@@ -772,8 +772,8 @@ describe('FRONTEND-030-AC-11/12: Sort By hidden under Popular Right Now', () => 
   })
 })
 
-describe('FRONTEND-030-AC-13/14/15: "Vote Average" relabel under Highest Rated', () => {
-  it('relabels the second Sort By option, keeping the same underlying value', () => {
+describe('FRONTEND-030-AC-13/14/15, FRONTEND-031-AC-01: "Vote Average" relabel under Highest Rated and Genre & Keyword', () => {
+  it('relabels the second Sort By option under Highest Rated, keeping the same underlying value', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -787,15 +787,27 @@ describe('FRONTEND-030-AC-13/14/15: "Vote Average" relabel under Highest Rated',
     )
   })
 
-  it('leaves the label as "Most Recommended" for every other visible-Sort-By mode', () => {
+  it('FRONTEND-031-AC-01: also relabels the second Sort By option under Genre & Keyword', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(screen.getByLabelText(/vote average/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/most recommended/i)).not.toBeInTheDocument()
+  })
+
+  it('FRONTEND-031-AC-02: Sort By fieldset still renders under Genre & Keyword', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
+  })
+
+  it('leaves the label as "Most Recommended" for Automatic and Specific Series', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
-    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
-
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
     expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
   })
 })
