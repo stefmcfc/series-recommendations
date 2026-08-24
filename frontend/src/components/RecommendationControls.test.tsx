@@ -486,7 +486,12 @@ describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch'
 
     fireEvent.click(screen.getByLabelText(/highest rated/i))
 
-    expect(onQueryChange).toHaveBeenLastCalledWith({ sourceMode: 'topRated' })
+    // FRONTEND-030-AC-07: switching into Highest Rated also pre-fills
+    // minVoteCount to 200 when untouched.
+    expect(onQueryChange).toHaveBeenLastCalledWith({
+      sourceMode: 'topRated',
+      minVoteCount: 200,
+    })
   })
 })
 
@@ -656,5 +661,148 @@ describe('FRONTEND-011-AC-18: keyword fetch failure degrades gracefully', () => 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
     expect(screen.getByLabelText(/automatic/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-030-AC-03/04: Exclude Keywords filter field', () => {
+  it('populates excludeKeywords from comma-separated free text', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
+      target: { value: 'Zombie, Heist' },
+    })
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ excludeKeywords: ['Zombie', 'Heist'] }),
+    )
+  })
+
+  it('renders Exclude Keywords immediately adjacent to Exclude Genres', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    expect(screen.getByLabelText(/exclude genres/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/exclude keywords/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-030-AC-05: Reset Filters clears Exclude Keywords', () => {
+  it('clears the field and omits excludeKeywords from the next query', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
+      target: { value: 'Zombie' },
+    })
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+
+    expect(screen.getByLabelText(/exclude keywords/i)).toHaveValue('')
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ excludeKeywords: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-030-AC-07/08: mode-aware Min Vote Count auto-fill', () => {
+  it('pre-fills 200 when switching to Highest Rated, reverts to empty when switching away', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
+
+    fireEvent.click(screen.getByLabelText(/^automatic/i))
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
+  })
+})
+
+describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbered by a mode switch', () => {
+  it('preserves a user-typed value across mode changes in either direction', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    fireEvent.change(screen.getByLabelText(/min vote count/i), {
+      target: { value: '500' },
+    })
+    fireEvent.click(screen.getByLabelText(/^automatic/i))
+
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(500)
+  })
+
+  it('preserves a user-typed value when switching into Highest Rated too', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.change(screen.getByLabelText(/min vote count/i), {
+      target: { value: '50' },
+    })
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(50)
+  })
+})
+
+describe('FRONTEND-030-AC-10: Reset Filters clears minVoteCount and minVoteCountTouched', () => {
+  it('clears a touched, manually-edited value and does not re-trigger the topRated auto-fill', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    fireEvent.change(screen.getByLabelText(/min vote count/i), {
+      target: { value: '500' },
+    })
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ minVoteCount: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-030-AC-11/12: Sort By hidden under Popular Right Now', () => {
+  it('renders Sort By under every mode except Popular Right Now', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    expect(screen.queryByText(/^sort by$/i)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-030-AC-13/14/15: "Vote Average" relabel under Highest Rated', () => {
+  it('relabels the second Sort By option, keeping the same underlying value', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+
+    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    expect(screen.getByLabelText(/vote average/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/most recommended/i)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText(/vote average/i))
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sortBy: 'recommendationCount' }),
+    )
+  })
+
+  it('leaves the label as "Most Recommended" for every other visible-Sort-By mode', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
   })
 })

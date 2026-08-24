@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
 
 import static org.mockito.ArgumentMatchers.any
+import static org.mockito.ArgumentMatchers.argThat
 import static org.mockito.ArgumentMatchers.eq
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
@@ -140,11 +141,29 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 .param("yearMin", "2010")
                 .param("yearMax", "2020")
                 .param("excludeGenres", "Horror")
+                .param("excludeKeywords", "Zombie")
                 .param("language", "en")
                 .param("maxPerSource", "5"))
 
         then: "the response is 200"
             result.andExpect(status().isOk())
+    }
+
+    // -- SERIES-024-AC-02: excludeKeywords endpoint wiring --
+
+    def "SERIES-024-AC-02: excludeKeywords query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?excludeKeywords=Zombie,Heist is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("excludeKeywords", "Zombie", "Heist"))
+
+        then: "the response is 200 and RecommendationService received excludeKeywords=['Zombie','Heist']"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.excludeKeywords == ["Zombie", "Heist"]
+            }))
     }
 
     // -- SERIES-007-AC-09/17/20: service-level IllegalArgumentException maps to 400 --

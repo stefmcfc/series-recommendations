@@ -173,6 +173,7 @@ public class SeriesController {
             @RequestParam(required = false) Integer yearMin,
             @RequestParam(required = false) Integer yearMax,
             @RequestParam(required = false) List<String> excludeGenres,
+            @RequestParam(required = false) List<String> excludeKeywords,
             @RequestParam(required = false) String language,
             @RequestParam(required = false) Integer maxPerSource,
             @RequestParam(required = false) Integer maxSourcesShown,
@@ -191,6 +192,7 @@ public class SeriesController {
         criteria.setYearMin(yearMin);
         criteria.setYearMax(yearMax);
         criteria.setExcludeGenres(excludeGenres);
+        criteria.setExcludeKeywords(excludeKeywords);
         criteria.setLanguage(language);
         criteria.setMaxPerSource(maxPerSource);
         criteria.setMaxSourcesShown(maxSourcesShown);

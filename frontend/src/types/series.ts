@@ -132,6 +132,7 @@ export interface RecommendationQuery {
   yearMin?: number
   yearMax?: number
   excludeGenres?: string[]
+  excludeKeywords?: string[]
   language?: string
   maxPerSource?: number
   maxSourcesShown?: number

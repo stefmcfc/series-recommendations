@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Discover filters and mode-aware vote-count threshold: `GET /api/v1/series/recommendations` gains an `excludeKeywords` param (comma-separated, bound identically to the existing `excludeGenres`), excluding candidates whose TMDB keywords case-insensitively match, checked last in the output-filter chain (after every cheaper filter) with a per-candidate fail-open on a TMDB lookup error so one bad candidate doesn't fail the whole request. `sourceMode=topRated` ("Highest Rated") now defaults `minVoteCount` to 200 instead of the shared 20 default (still overridable), so its results have a meaningfully higher confidence bar without affecting Automatic/Specific/Genre/Trending. On the frontend, `RecommendationControls` gains an "Exclude Keywords" filter input (mirroring "Exclude Genres"), pre-fills `Min Vote Count` to 200 when switching into "Highest Rated" (reverting to empty when switching away, never overwriting a value the user typed themselves), hides the `Sort By` control entirely under "Popular Right Now" (a true no-op there), and relabels its "Most Recommended" option to "Vote Average" under "Highest Rated" (`series_spec_024`, `frontend_spec_030`).
+
 ## [2.1.0] - 2026-08-24
 
 ### Added
