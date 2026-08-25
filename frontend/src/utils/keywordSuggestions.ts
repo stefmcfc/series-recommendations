@@ -8,7 +8,7 @@
 export function resolveKeywordSuggestionsLimit(
   raw: string | undefined,
 ): number {
-  const parsed = raw !== undefined ? Number(raw) : NaN
+  const parsed = raw !== undefined ? Number(raw) : Number.NaN
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 10
 }
 

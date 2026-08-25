@@ -18,7 +18,7 @@ type DiscoverSortByOption =
   | 'vote_count.desc'
 
 interface RecommendationControlsProps {
-  onQueryChange: (query: RecommendationQuery) => void
+  readonly onQueryChange: (query: RecommendationQuery) => void
 }
 
 interface ControlsState {
@@ -81,9 +81,10 @@ function parseCommaList(value: string): string[] {
     .filter((v) => v !== '')
 }
 
-function buildQuery(state: ControlsState): RecommendationQuery {
-  const query: RecommendationQuery = {}
-
+function applySourceModeQuery(
+  state: ControlsState,
+  query: RecommendationQuery,
+): void {
   if (state.mode === 'specific' && state.selectedSeriesIds.length > 0) {
     query.seriesIds = state.selectedSeriesIds
   }
@@ -112,7 +113,12 @@ function buildQuery(state: ControlsState): RecommendationQuery {
       query.discoverSortBy = state.discoverSortBy
     }
   }
+}
 
+function applyRatingAndRangeFilters(
+  state: ControlsState,
+  query: RecommendationQuery,
+): void {
   const hasSourcePool = state.mode === 'automatic' || state.mode === 'specific'
   if (hasSourcePool && state.minSourceRating.trim() !== '') {
     query.minSourceRating = Number(state.minSourceRating)
@@ -123,7 +129,12 @@ function buildQuery(state: ControlsState): RecommendationQuery {
     query.minVoteCount = Number(state.minVoteCount)
   if (state.yearMin.trim() !== '') query.yearMin = Number(state.yearMin)
   if (state.yearMax.trim() !== '') query.yearMax = Number(state.yearMax)
+}
 
+function applyExcludeAndMiscFilters(
+  state: ControlsState,
+  query: RecommendationQuery,
+): void {
   const excludeGenres = parseCommaList(state.excludeGenresText)
   if (excludeGenres.length > 0) query.excludeGenres = excludeGenres
 
@@ -135,9 +146,14 @@ function buildQuery(state: ControlsState): RecommendationQuery {
     query.maxPerSource = Number(state.maxPerSource)
   if (state.maxSourcesShown.trim() !== '')
     query.maxSourcesShown = Number(state.maxSourcesShown)
+}
 
+function buildQuery(state: ControlsState): RecommendationQuery {
+  const query: RecommendationQuery = {}
+  applySourceModeQuery(state, query)
+  applyRatingAndRangeFilters(state, query)
+  applyExcludeAndMiscFilters(state, query)
   if (state.sortBy === 'recommendationCount') query.sortBy = state.sortBy
-
   return query
 }
 

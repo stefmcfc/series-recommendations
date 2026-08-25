@@ -6,9 +6,9 @@ import type { Series, UpdateSeriesRequest } from '../types/series'
 import styles from './EditSeriesForm.module.css'
 
 interface EditSeriesFormProps {
-  series: Series
-  onCancel: () => void
-  onSuccess: (series: Series) => void
+  readonly series: Series
+  readonly onCancel: () => void
+  readonly onSuccess: (series: Series) => void
 }
 
 interface FormState {
@@ -59,6 +59,103 @@ function toFormState(series: Series): FormState {
   }
 }
 
+function validateYear(form: FormState, errors: FieldErrors): void {
+  if (form.year.trim() === '') return
+  const year = Number(form.year)
+  if (Number.isNaN(year) || year < 1 || year > 2026) {
+    errors.year = 'Year must be between 1 and 2026'
+  }
+}
+
+function validateTotalSeasons(form: FormState, errors: FieldErrors): void {
+  if (form.totalSeasons.trim() === '') return
+  const totalSeasons = Number(form.totalSeasons)
+  if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
+    errors.totalSeasons = 'Total seasons must be at least 1'
+  }
+}
+
+function validateTotalEpisodes(form: FormState, errors: FieldErrors): void {
+  if (form.totalEpisodes.trim() === '') return
+  const totalEpisodes = Number(form.totalEpisodes)
+  if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
+    errors.totalEpisodes = 'Total episodes must be at least 1'
+  }
+}
+
+function validateCurrentSeason(form: FormState, errors: FieldErrors): void {
+  if (form.currentSeason.trim() === '') return
+  const currentSeason = Number(form.currentSeason)
+  if (Number.isNaN(currentSeason) || currentSeason < 1) {
+    errors.currentSeason = 'Current season must be at least 1'
+  } else if (
+    form.totalSeasons.trim() !== '' &&
+    currentSeason > Number(form.totalSeasons)
+  ) {
+    errors.currentSeason = 'Current season cannot exceed total seasons'
+  }
+}
+
+function validateCurrentEpisode(form: FormState, errors: FieldErrors): void {
+  if (form.currentEpisode.trim() === '') return
+  const currentEpisode = Number(form.currentEpisode)
+  if (Number.isNaN(currentEpisode) || currentEpisode < 1) {
+    errors.currentEpisode = 'Current episode must be at least 1'
+  }
+}
+
+function validateImdbRating(form: FormState, errors: FieldErrors): void {
+  if (form.imdbRating.trim() === '') return
+  const imdbRating = Number(form.imdbRating)
+  if (Number.isNaN(imdbRating) || imdbRating < 0 || imdbRating > 10) {
+    errors.imdbRating = 'IMDb rating must be between 0 and 10'
+  }
+}
+
+function validateRottenTomatoesRating(
+  form: FormState,
+  errors: FieldErrors,
+): void {
+  if (form.rottenTomatoesRating.trim() === '') return
+  const rottenTomatoesRating = Number(form.rottenTomatoesRating)
+  if (
+    Number.isNaN(rottenTomatoesRating) ||
+    rottenTomatoesRating < 0 ||
+    rottenTomatoesRating > 100
+  ) {
+    errors.rottenTomatoesRating =
+      'Rotten Tomatoes rating must be between 0 and 100'
+  }
+}
+
+function validateRottenTomatoesPopcornmeter(
+  form: FormState,
+  errors: FieldErrors,
+): void {
+  if (form.rottenTomatoesPopcornmeter.trim() === '') return
+  const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
+  if (
+    Number.isNaN(rottenTomatoesPopcornmeter) ||
+    rottenTomatoesPopcornmeter < 0 ||
+    rottenTomatoesPopcornmeter > 100
+  ) {
+    errors.rottenTomatoesPopcornmeter =
+      'Rotten Tomatoes rating must be between 0 and 100'
+  }
+}
+
+function validatePersonalRating(form: FormState, errors: FieldErrors): void {
+  if (form.personalRating.trim() === '') return
+  const personalRating = Number(form.personalRating)
+  if (
+    Number.isNaN(personalRating) ||
+    personalRating < 1 ||
+    personalRating > 5
+  ) {
+    errors.personalRating = 'Personal rating must be between 1 and 5'
+  }
+}
+
 function validate(form: FormState): FieldErrors {
   const errors: FieldErrors = {}
 
@@ -66,87 +163,15 @@ function validate(form: FormState): FieldErrors {
     errors.title = 'Title is required'
   }
 
-  if (form.year.trim() !== '') {
-    const year = Number(form.year)
-    if (Number.isNaN(year) || year < 1 || year > 2026) {
-      errors.year = 'Year must be between 1 and 2026'
-    }
-  }
-
-  if (form.totalSeasons.trim() !== '') {
-    const totalSeasons = Number(form.totalSeasons)
-    if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
-      errors.totalSeasons = 'Total seasons must be at least 1'
-    }
-  }
-
-  if (form.totalEpisodes.trim() !== '') {
-    const totalEpisodes = Number(form.totalEpisodes)
-    if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
-      errors.totalEpisodes = 'Total episodes must be at least 1'
-    }
-  }
-
-  if (form.currentSeason.trim() !== '') {
-    const currentSeason = Number(form.currentSeason)
-    if (Number.isNaN(currentSeason) || currentSeason < 1) {
-      errors.currentSeason = 'Current season must be at least 1'
-    } else if (
-      form.totalSeasons.trim() !== '' &&
-      currentSeason > Number(form.totalSeasons)
-    ) {
-      errors.currentSeason = 'Current season cannot exceed total seasons'
-    }
-  }
-
-  if (form.currentEpisode.trim() !== '') {
-    const currentEpisode = Number(form.currentEpisode)
-    if (Number.isNaN(currentEpisode) || currentEpisode < 1) {
-      errors.currentEpisode = 'Current episode must be at least 1'
-    }
-  }
-
-  if (form.imdbRating.trim() !== '') {
-    const imdbRating = Number(form.imdbRating)
-    if (Number.isNaN(imdbRating) || imdbRating < 0 || imdbRating > 10) {
-      errors.imdbRating = 'IMDb rating must be between 0 and 10'
-    }
-  }
-
-  if (form.rottenTomatoesRating.trim() !== '') {
-    const rottenTomatoesRating = Number(form.rottenTomatoesRating)
-    if (
-      Number.isNaN(rottenTomatoesRating) ||
-      rottenTomatoesRating < 0 ||
-      rottenTomatoesRating > 100
-    ) {
-      errors.rottenTomatoesRating =
-        'Rotten Tomatoes rating must be between 0 and 100'
-    }
-  }
-
-  if (form.rottenTomatoesPopcornmeter.trim() !== '') {
-    const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
-    if (
-      Number.isNaN(rottenTomatoesPopcornmeter) ||
-      rottenTomatoesPopcornmeter < 0 ||
-      rottenTomatoesPopcornmeter > 100
-    ) {
-      errors.rottenTomatoesPopcornmeter =
-        'Rotten Tomatoes rating must be between 0 and 100'
-    }
-  }
-
-  if (form.personalRating.trim() !== '') {
-    const personalRating = Number(form.personalRating)
-    if (
-      Number.isNaN(personalRating) ||
-      personalRating < 1 ||
-      personalRating > 5
-    ) {
-      errors.personalRating = 'Personal rating must be between 1 and 5'
-    }
-  }
+  validateYear(form, errors)
+  validateTotalSeasons(form, errors)
+  validateTotalEpisodes(form, errors)
+  validateCurrentSeason(form, errors)
+  validateCurrentEpisode(form, errors)
+  validateImdbRating(form, errors)
+  validateRottenTomatoesRating(form, errors)
+  validateRottenTomatoesPopcornmeter(form, errors)
+  validatePersonalRating(form, errors)
 
   return errors
 }
@@ -232,7 +257,7 @@ export function EditSeriesForm({
     }
   }
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const errors = validate(form)
@@ -264,8 +289,9 @@ export function EditSeriesForm({
 
   return (
     <div className={styles.overlay}>
+      {/* A native <dialog> needs showModal()/close() lifecycle management (focus trap, native backdrop) to behave correctly, not just a tag swap -- a bigger, riskier change than this div+role warrants right now (jsdom's <dialog> support has known gaps). Deliberately not converted. */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior (frontend_spec_004.md FRONTEND-004-AC-19); the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
-      <div
+      <div // NOSONAR: typescript:S6819, see comment above
         className={styles.dialog}
         role="dialog"
         aria-modal="true"

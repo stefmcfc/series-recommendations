@@ -9,10 +9,10 @@ import { StreamingProviders } from './StreamingProviders'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
-  id: string
-  onBack: () => void
-  onDeleted: () => void
-  onEditClick?: (series: Series) => void
+  readonly id: string
+  readonly onBack: () => void
+  readonly onDeleted: () => void
+  readonly onEditClick?: (series: Series) => void
 }
 
 function formatValue(value: string | number | null): string {
@@ -284,9 +284,9 @@ export function SeriesDetail({
       {backButton}
 
       {loading && (
-        <div className={styles.loading} role="status">
+        <output className={styles.loading}>
           <span>Loading series details...</span>
-        </div>
+        </output>
       )}
 
       {!loading && notFound && (

@@ -47,9 +47,9 @@ export function KeywordsView() {
       <h2 className={styles.heading}>Keywords</h2>
 
       {loading && (
-        <div className={styles.loading} role="status" aria-label="Loading">
+        <output className={styles.loading} aria-label="Loading">
           <span>Loading keyword stats...</span>
-        </div>
+        </output>
       )}
 
       {!loading && error && (

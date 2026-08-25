@@ -71,6 +71,6 @@ describe('FRONTEND-024-AC-11: loading and error states', () => {
       new ApiError(500, 'Internal server error'),
     )
     render(<KeywordsView />)
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })

@@ -610,7 +610,7 @@ describe('FRONTEND-032-AC-07: fetches keyword stats and offers them as suggestio
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
     expect(mockGetKeywordStats).toHaveBeenCalled()
-    await waitFor(() => expect(screen.getByText('spy')).toBeInTheDocument())
+    await screen.findByText('spy')
   })
 })
 

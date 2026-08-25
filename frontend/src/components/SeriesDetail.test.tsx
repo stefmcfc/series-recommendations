@@ -60,9 +60,7 @@ describe('FRONTEND-005-AC-04/06/07: fetch, loading, render', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       /loading series details/i,
     )
-    await waitFor(() =>
-      expect(screen.getByText(/^The Office/)).toBeInTheDocument(),
-    )
+    await screen.findByText(/^The Office/)
     expect(mockGetById).toHaveBeenCalledWith('abc-123')
     expect(screen.getByText('Rewatch of the year')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
@@ -124,7 +122,7 @@ describe('FRONTEND-005-AC-08/10: null fields and no UUID', () => {
     mockGetById.mockResolvedValue(makeSeries({ rottenTomatoesRating: null }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
     expect(screen.queryByText('abc-123')).not.toBeInTheDocument()
   })
@@ -135,7 +133,7 @@ describe('FRONTEND-005-AC-09: dates rendered as human-readable', () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     const expected = new Date('2026-01-01T00:00:00Z').toLocaleDateString()
     expect(screen.getByText(expected)).toBeInTheDocument()
   })
@@ -149,7 +147,7 @@ describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
     const { rerender } = render(
       <SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />,
     )
-    await waitFor(() => screen.getByAltText(''))
+    await screen.findByAltText('')
     expect(screen.getByAltText('')).toHaveAttribute(
       'src',
       'https://example.com/p.jpg',
@@ -157,7 +155,7 @@ describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
 
     mockGetById.mockResolvedValueOnce(makeSeries({ id: '2', posterUrl: null }))
     rerender(<SeriesDetail id="2" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.queryByAltText('')).not.toBeInTheDocument()
   })
 
@@ -166,7 +164,7 @@ describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
       makeSeries({ posterUrl: 'https://example.com/p.jpg' }),
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await waitFor(() => screen.getByAltText(''))
+    await screen.findByAltText('')
 
     fireEvent.error(screen.getByAltText(''))
     expect(screen.queryByAltText('')).not.toBeInTheDocument()
@@ -180,9 +178,7 @@ describe('FRONTEND-005-AC-11: not-found state', () => {
       <SeriesDetail id="missing-id" onBack={vi.fn()} onDeleted={vi.fn()} />,
     )
 
-    await waitFor(() =>
-      expect(screen.getByText(/series not found/i)).toBeInTheDocument(),
-    )
+    await screen.findByText(/series not found/i)
     expect(
       screen.queryByRole('button', { name: /retry/i }),
     ).not.toBeInTheDocument()
@@ -204,9 +200,7 @@ describe('FRONTEND-005-AC-12/13: error state', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
 
-    await waitFor(() =>
-      expect(screen.getByText(/^The Office/)).toBeInTheDocument(),
-    )
+    await screen.findByText(/^The Office/)
     expect(mockGetById).toHaveBeenCalledTimes(2)
   })
 })
@@ -223,7 +217,7 @@ describe('FRONTEND-005-AC-14/15: back navigation', () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={onBack} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByTestId('back-btn'))
+    await screen.findByTestId('back-btn')
     fireEvent.click(screen.getByTestId('back-btn'))
     expect(onBack).toHaveBeenCalledTimes(1)
   })
@@ -243,7 +237,7 @@ describe('FRONTEND-005-AC-16/17/18: edit wiring', () => {
       />,
     )
 
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
     expect(onEditClick).toHaveBeenCalledWith(series)
   })
@@ -251,8 +245,9 @@ describe('FRONTEND-005-AC-16/17/18: edit wiring', () => {
   it('does not throw when Edit is clicked without onEditClick', async () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
+    expect(screen.getByTestId('edit-series-btn')).toBeInTheDocument()
   })
 })
 
@@ -263,7 +258,7 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={onDeleted} />)
 
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
 
@@ -276,7 +271,7 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('cancel-delete-btn'))
 
@@ -290,7 +285,7 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
     const onDeleted = vi.fn()
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={onDeleted} />)
 
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
 
@@ -313,7 +308,7 @@ describe('FRONTEND-005-AC-19..24: delete flow', () => {
     )
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
 
@@ -344,7 +339,7 @@ describe('FRONTEND-022-AC-09: alternateTitle no longer displayed', () => {
   it('does not render a Metacritic Rating field', async () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.queryByText(/metacritic/i)).not.toBeInTheDocument()
   })
 })
@@ -356,7 +351,7 @@ describe('FRONTEND-018-AC-13/14: Tags entry rendered', () => {
     )
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.getByText('Tags')).toBeInTheDocument()
     expect(
       screen.getByText('rewatch candidate,watch with partner'),
@@ -367,7 +362,7 @@ describe('FRONTEND-018-AC-13/14: Tags entry rendered', () => {
     mockGetById.mockResolvedValue(makeSeries({ tags: null }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.getByText('Tags')).toBeInTheDocument()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
@@ -459,7 +454,7 @@ describe('FRONTEND-023-AC-08: refresh failure', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^refresh$/i }))
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 })
@@ -588,7 +583,7 @@ describe('FRONTEND-005-AC-30: no console logging of series data', () => {
     mockGetById.mockResolvedValue(makeSeries())
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     const loggedNotes = consoleSpy.mock.calls.some((call) =>
       call.some(
         (arg) => typeof arg === 'string' && arg.includes('Rewatch of the year'),
@@ -606,7 +601,7 @@ describe('FRONTEND-005-AC-31: current season/episode hidden when COMPLETED', () 
     )
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.queryByText('Current Season')).not.toBeInTheDocument()
     expect(screen.queryByText('Current Episode')).not.toBeInTheDocument()
   })
@@ -615,7 +610,7 @@ describe('FRONTEND-005-AC-31: current season/episode hidden when COMPLETED', () 
     mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
     render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() => screen.getByText(/^The Office/))
+    await screen.findByText(/^The Office/)
     expect(screen.getByText('Current Season')).toBeInTheDocument()
     expect(screen.getByText('Current Episode')).toBeInTheDocument()
   })
@@ -743,9 +738,7 @@ describe('FRONTEND-012 amendment (live review): year/country in heading', () => 
     mockGetById.mockResolvedValue(makeSeries({ year: null }))
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    await waitFor(() =>
-      expect(screen.getByText(/^The Office/)).toBeInTheDocument(),
-    )
+    await screen.findByText(/^The Office/)
     expect(screen.queryByText(/The Office \(/)).not.toBeInTheDocument()
   })
 
@@ -874,7 +867,7 @@ describe('FRONTEND-036-AC-06: check failure', () => {
     expect(await screen.findByText('Netflix')).toBeInTheDocument()
 
     fireEvent.click(button)
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(screen.queryByText('Netflix')).not.toBeInTheDocument()
   })
 })

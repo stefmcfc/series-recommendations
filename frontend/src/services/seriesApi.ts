@@ -51,34 +51,49 @@ async function request<T>(fn: () => Promise<{ data: T }>): Promise<T> {
   }
 }
 
+// Both helpers exist once (java/typescript:S3776 -- buildRecommendationParams
+// had 17 flat `if`s, one per field) so the field list below is a straight-line
+// sequence of calls instead.
+function addIfPresent(
+  params: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): void {
+  if (value != null) params[key] = value
+}
+
+function addJoinedIfNonEmpty(
+  params: Record<string, unknown>,
+  key: string,
+  value: string[] | undefined,
+): void {
+  if (value?.length) params[key] = value.join(',')
+}
+
 function buildRecommendationParams(
   query?: RecommendationQuery,
 ): Record<string, unknown> {
   if (!query) return {}
   const params: Record<string, unknown> = {}
-  if (query.limit != null) params.limit = query.limit
-  if (query.seriesIds?.length) params.seriesIds = query.seriesIds.join(',')
-  if (query.genres?.length) params.genres = query.genres.join(',')
-  if (query.keywords?.length) params.keywords = query.keywords.join(',')
-  if (query.minSourceRating != null)
-    params.minSourceRating = query.minSourceRating
-  if (query.minTmdbRating != null) params.minTmdbRating = query.minTmdbRating
-  if (query.minVoteCount != null) params.minVoteCount = query.minVoteCount
-  if (query.yearMin != null) params.yearMin = query.yearMin
-  if (query.yearMax != null) params.yearMax = query.yearMax
-  if (query.excludeGenres?.length)
-    params.excludeGenres = query.excludeGenres.join(',')
-  if (query.excludeKeywords?.length)
-    params.excludeKeywords = query.excludeKeywords.join(',')
+  addIfPresent(params, 'limit', query.limit)
+  addJoinedIfNonEmpty(params, 'seriesIds', query.seriesIds)
+  addJoinedIfNonEmpty(params, 'genres', query.genres)
+  addJoinedIfNonEmpty(params, 'keywords', query.keywords)
+  addIfPresent(params, 'minSourceRating', query.minSourceRating)
+  addIfPresent(params, 'minTmdbRating', query.minTmdbRating)
+  addIfPresent(params, 'minVoteCount', query.minVoteCount)
+  addIfPresent(params, 'yearMin', query.yearMin)
+  addIfPresent(params, 'yearMax', query.yearMax)
+  addJoinedIfNonEmpty(params, 'excludeGenres', query.excludeGenres)
+  addJoinedIfNonEmpty(params, 'excludeKeywords', query.excludeKeywords)
   if (query.language != null && query.language !== '')
     params.language = query.language
-  if (query.maxPerSource != null) params.maxPerSource = query.maxPerSource
-  if (query.maxSourcesShown != null)
-    params.maxSourcesShown = query.maxSourcesShown
-  if (query.sortBy != null) params.sortBy = query.sortBy
-  if (query.sourceMode != null) params.sourceMode = query.sourceMode
-  if (query.trendingWindow != null) params.trendingWindow = query.trendingWindow
-  if (query.discoverSortBy != null) params.discoverSortBy = query.discoverSortBy
+  addIfPresent(params, 'maxPerSource', query.maxPerSource)
+  addIfPresent(params, 'maxSourcesShown', query.maxSourcesShown)
+  addIfPresent(params, 'sortBy', query.sortBy)
+  addIfPresent(params, 'sourceMode', query.sourceMode)
+  addIfPresent(params, 'trendingWindow', query.trendingWindow)
+  addIfPresent(params, 'discoverSortBy', query.discoverSortBy)
   return params
 }
 

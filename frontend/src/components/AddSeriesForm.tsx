@@ -12,9 +12,9 @@ import { formatCountryName } from '../utils/countryName'
 import styles from './AddSeriesForm.module.css'
 
 interface AddSeriesFormProps {
-  onCancel: () => void
-  onSuccess: (series: Series) => void
-  initialValues?: Partial<CreateSeriesRequest>
+  readonly onCancel: () => void
+  readonly onSuccess: (series: Series) => void
+  readonly initialValues?: Partial<CreateSeriesRequest>
 }
 
 interface FormState {
@@ -67,6 +67,82 @@ const initialFormState: FormState = {
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
 
+function validateYear(form: FormState, errors: FieldErrors): void {
+  if (form.year.trim() === '') return
+  const year = Number(form.year)
+  if (Number.isNaN(year) || year < 1 || year > 2026) {
+    errors.year = 'Year must be between 1 and 2026'
+  }
+}
+
+function validateTotalSeasons(form: FormState, errors: FieldErrors): void {
+  if (form.totalSeasons.trim() === '') return
+  const totalSeasons = Number(form.totalSeasons)
+  if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
+    errors.totalSeasons = 'Total seasons must be at least 1'
+  }
+}
+
+function validateTotalEpisodes(form: FormState, errors: FieldErrors): void {
+  if (form.totalEpisodes.trim() === '') return
+  const totalEpisodes = Number(form.totalEpisodes)
+  if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
+    errors.totalEpisodes = 'Total episodes must be at least 1'
+  }
+}
+
+function validateImdbRating(form: FormState, errors: FieldErrors): void {
+  if (form.imdbRating.trim() === '') return
+  const imdbRating = Number(form.imdbRating)
+  if (Number.isNaN(imdbRating) || imdbRating < 0 || imdbRating > 10) {
+    errors.imdbRating = 'IMDb rating must be between 0 and 10'
+  }
+}
+
+function validateRottenTomatoesRating(
+  form: FormState,
+  errors: FieldErrors,
+): void {
+  if (form.rottenTomatoesRating.trim() === '') return
+  const rottenTomatoesRating = Number(form.rottenTomatoesRating)
+  if (
+    Number.isNaN(rottenTomatoesRating) ||
+    rottenTomatoesRating < 0 ||
+    rottenTomatoesRating > 100
+  ) {
+    errors.rottenTomatoesRating =
+      'Rotten Tomatoes rating must be between 0 and 100'
+  }
+}
+
+function validateRottenTomatoesPopcornmeter(
+  form: FormState,
+  errors: FieldErrors,
+): void {
+  if (form.rottenTomatoesPopcornmeter.trim() === '') return
+  const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
+  if (
+    Number.isNaN(rottenTomatoesPopcornmeter) ||
+    rottenTomatoesPopcornmeter < 0 ||
+    rottenTomatoesPopcornmeter > 100
+  ) {
+    errors.rottenTomatoesPopcornmeter =
+      'Rotten Tomatoes rating must be between 0 and 100'
+  }
+}
+
+function validatePersonalRating(form: FormState, errors: FieldErrors): void {
+  if (form.personalRating.trim() === '') return
+  const personalRating = Number(form.personalRating)
+  if (
+    Number.isNaN(personalRating) ||
+    personalRating < 1 ||
+    personalRating > 5
+  ) {
+    errors.personalRating = 'Personal rating must be between 1 and 5'
+  }
+}
+
 function validate(form: FormState): FieldErrors {
   const errors: FieldErrors = {}
 
@@ -74,78 +150,21 @@ function validate(form: FormState): FieldErrors {
     errors.title = 'Title is required'
   }
 
-  if (form.year.trim() !== '') {
-    const year = Number(form.year)
-    if (Number.isNaN(year) || year < 1 || year > 2026) {
-      errors.year = 'Year must be between 1 and 2026'
-    }
-  }
-
-  if (form.totalSeasons.trim() !== '') {
-    const totalSeasons = Number(form.totalSeasons)
-    if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
-      errors.totalSeasons = 'Total seasons must be at least 1'
-    }
-  }
-
-  if (form.totalEpisodes.trim() !== '') {
-    const totalEpisodes = Number(form.totalEpisodes)
-    if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
-      errors.totalEpisodes = 'Total episodes must be at least 1'
-    }
-  }
-
-  if (form.imdbRating.trim() !== '') {
-    const imdbRating = Number(form.imdbRating)
-    if (Number.isNaN(imdbRating) || imdbRating < 0 || imdbRating > 10) {
-      errors.imdbRating = 'IMDb rating must be between 0 and 10'
-    }
-  }
-
-  if (form.rottenTomatoesRating.trim() !== '') {
-    const rottenTomatoesRating = Number(form.rottenTomatoesRating)
-    if (
-      Number.isNaN(rottenTomatoesRating) ||
-      rottenTomatoesRating < 0 ||
-      rottenTomatoesRating > 100
-    ) {
-      errors.rottenTomatoesRating =
-        'Rotten Tomatoes rating must be between 0 and 100'
-    }
-  }
-
-  if (form.rottenTomatoesPopcornmeter.trim() !== '') {
-    const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
-    if (
-      Number.isNaN(rottenTomatoesPopcornmeter) ||
-      rottenTomatoesPopcornmeter < 0 ||
-      rottenTomatoesPopcornmeter > 100
-    ) {
-      errors.rottenTomatoesPopcornmeter =
-        'Rotten Tomatoes rating must be between 0 and 100'
-    }
-  }
-
-  if (form.personalRating.trim() !== '') {
-    const personalRating = Number(form.personalRating)
-    if (
-      Number.isNaN(personalRating) ||
-      personalRating < 1 ||
-      personalRating > 5
-    ) {
-      errors.personalRating = 'Personal rating must be between 1 and 5'
-    }
-  }
+  validateYear(form, errors)
+  validateTotalSeasons(form, errors)
+  validateTotalEpisodes(form, errors)
+  validateImdbRating(form, errors)
+  validateRottenTomatoesRating(form, errors)
+  validateRottenTomatoesPopcornmeter(form, errors)
+  validatePersonalRating(form, errors)
 
   return errors
 }
 
-function buildPayload(form: FormState): CreateSeriesRequest {
-  const payload: CreateSeriesRequest = {
-    title: form.title.trim(),
-    status: form.status,
-  }
-
+function applyMetadataToPayload(
+  form: FormState,
+  payload: CreateSeriesRequest,
+): void {
   if (form.year.trim() !== '') payload.year = Number(form.year)
   if (form.genres.trim() !== '') payload.genres = form.genres.trim()
   if (form.tags.trim() !== '') payload.tags = form.tags.trim()
@@ -153,6 +172,15 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.totalSeasons = Number(form.totalSeasons)
   if (form.totalEpisodes.trim() !== '')
     payload.totalEpisodes = Number(form.totalEpisodes)
+  if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
+  if (form.imdbId.trim() !== '') payload.imdbId = form.imdbId.trim()
+  if (form.overview.trim() !== '') payload.overview = form.overview.trim()
+}
+
+function applyRatingsToPayload(
+  form: FormState,
+  payload: CreateSeriesRequest,
+): void {
   if (form.imdbRating.trim() !== '')
     payload.imdbRating = Number(form.imdbRating)
   if (form.rottenTomatoesRating.trim() !== '')
@@ -161,21 +189,35 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
   if (form.personalRating.trim() !== '')
     payload.personalRating = Number(form.personalRating)
-  if (form.personalNotes.trim() !== '')
-    payload.personalNotes = form.personalNotes.trim()
-  if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
-  if (form.imdbId.trim() !== '') payload.imdbId = form.imdbId.trim()
   if (form.tmdbRating.trim() !== '')
     payload.tmdbRating = Number(form.tmdbRating)
   if (form.tmdbVoteCount.trim() !== '')
     payload.tmdbVoteCount = Number(form.tmdbVoteCount)
+}
+
+function applyTmdbMetadataToPayload(
+  form: FormState,
+  payload: CreateSeriesRequest,
+): void {
   if (form.originCountry.trim() !== '')
     payload.originCountry = form.originCountry.trim()
   if (form.productionStatus.trim() !== '')
     payload.productionStatus = form.productionStatus.trim()
   if (form.tmdbId.trim() !== '') payload.tmdbId = Number(form.tmdbId)
-  if (form.overview.trim() !== '') payload.overview = form.overview.trim()
+  if (form.personalNotes.trim() !== '')
+    payload.personalNotes = form.personalNotes.trim()
   if (form.excludeFromRecommendations) payload.excludeFromRecommendations = true
+}
+
+function buildPayload(form: FormState): CreateSeriesRequest {
+  const payload: CreateSeriesRequest = {
+    title: form.title.trim(),
+    status: form.status,
+  }
+
+  applyMetadataToPayload(form, payload)
+  applyRatingsToPayload(form, payload)
+  applyTmdbMetadataToPayload(form, payload)
 
   return payload
 }
@@ -209,13 +251,10 @@ function applyLookupResult(
   return next
 }
 
-function buildInitialFormState(
-  initialValues?: Partial<CreateSeriesRequest>,
-): FormState {
-  if (!initialValues) return initialFormState
-
-  const next: FormState = { ...initialFormState }
-
+function applyInitialCoreFields(
+  initialValues: Partial<CreateSeriesRequest>,
+  next: FormState,
+): void {
   if (initialValues.title != null) next.title = initialValues.title
   if (initialValues.year != null) next.year = String(initialValues.year)
   if (initialValues.genres != null) next.genres = initialValues.genres
@@ -225,6 +264,12 @@ function buildInitialFormState(
   if (initialValues.totalEpisodes != null)
     next.totalEpisodes = String(initialValues.totalEpisodes)
   if (initialValues.status != null) next.status = initialValues.status
+}
+
+function applyInitialRatingsAndNotes(
+  initialValues: Partial<CreateSeriesRequest>,
+  next: FormState,
+): void {
   if (initialValues.imdbRating != null)
     next.imdbRating = String(initialValues.imdbRating)
   if (initialValues.rottenTomatoesRating != null)
@@ -240,6 +285,16 @@ function buildInitialFormState(
   if (initialValues.posterUrl != null) next.posterUrl = initialValues.posterUrl
   if (initialValues.imdbId != null) next.imdbId = initialValues.imdbId
   if (initialValues.overview != null) next.overview = initialValues.overview
+}
+
+function buildInitialFormState(
+  initialValues?: Partial<CreateSeriesRequest>,
+): FormState {
+  if (!initialValues) return initialFormState
+
+  const next: FormState = { ...initialFormState }
+  applyInitialCoreFields(initialValues, next)
+  applyInitialRatingsAndNotes(initialValues, next)
 
   return next
 }
@@ -365,7 +420,7 @@ export function AddSeriesForm({
     }
   }
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const errors = validate(form)
@@ -397,8 +452,9 @@ export function AddSeriesForm({
 
   return (
     <div className={styles.overlay}>
+      {/* A native <dialog> needs showModal()/close() lifecycle management (focus trap, native backdrop) to behave correctly, not just a tag swap -- a bigger, riskier change than this div+role warrants right now (jsdom's <dialog> support has known gaps). Deliberately not converted. */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior (frontend_spec_003.md FRONTEND-003-AC-08); the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
-      <div
+      <div // NOSONAR: typescript:S6819, see comment above
         className={styles.dialog}
         role="dialog"
         aria-modal="true"

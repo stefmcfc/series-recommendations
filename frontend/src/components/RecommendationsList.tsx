@@ -166,7 +166,7 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
       <h2 className={styles.heading}>Recommendations</h2>
 
       {loading && (
-        <div className={styles.loading} role="status" aria-label="Loading">
+        <output className={styles.loading} aria-label="Loading">
           <svg
             className={styles.spinner}
             width="32"
@@ -191,7 +191,7 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
             />
           </svg>
           <span>Loading recommendations...</span>
-        </div>
+        </output>
       )}
 
       {!loading && error && (
@@ -310,13 +310,12 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                 </div>
 
                 {keywordsLoadingIds.has(r.imdbId) && (
-                  <div
+                  <output
                     className={styles.keywordsLoading}
-                    role="status"
                     aria-label="Loading keywords"
                   >
                     Loading keywords...
-                  </div>
+                  </output>
                 )}
                 {keywordErrors[r.imdbId] && (
                   <span className={styles.keywordsError} role="alert">

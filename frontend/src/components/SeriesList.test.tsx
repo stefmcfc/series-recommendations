@@ -119,7 +119,7 @@ describe('SH-003: Render series data', () => {
       makeSeries({ title: 'Show', imdbRating: 8.4 }),
     ])
     render(<SeriesList />)
-    await waitFor(() => expect(screen.getByText('8.4')).toBeInTheDocument())
+    expect(await screen.findByText('8.4')).toBeInTheDocument()
   })
 
   it('should display "—" when imdbRating is null', async () => {
@@ -127,7 +127,7 @@ describe('SH-003: Render series data', () => {
       makeSeries({ title: 'Show', imdbRating: null }),
     ])
     render(<SeriesList />)
-    await waitFor(() => expect(screen.getByText('—')).toBeInTheDocument())
+    expect(await screen.findByText('—')).toBeInTheDocument()
   })
 
   it('should render one series-row per series', async () => {
@@ -153,7 +153,7 @@ describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
       }),
     ])
     render(<SeriesList />)
-    await waitFor(() => screen.getByText('No Poster'))
+    await screen.findByText('No Poster')
 
     expect(screen.getAllByTestId('series-thumbnail')).toHaveLength(2)
     expect(screen.getByAltText('')).toHaveAttribute(
@@ -171,7 +171,7 @@ describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
       }),
     ])
     render(<SeriesList />)
-    await waitFor(() => screen.getByText('Has Poster'))
+    await screen.findByText('Has Poster')
 
     const img = screen.getByAltText('')
     fireEvent.error(img)
@@ -184,17 +184,15 @@ describe('IF-004: Empty state', () => {
   it('should show "No series yet." when list is empty', async () => {
     mockGetAll.mockResolvedValue([])
     render(<SeriesList />)
-    await waitFor(() =>
-      expect(screen.getByText(/no series yet/i)).toBeInTheDocument(),
-    )
+    expect(await screen.findByText(/no series yet/i)).toBeInTheDocument()
   })
 
   it('should show "Add your first series" button in empty state', async () => {
     mockGetAll.mockResolvedValue([])
     render(<SeriesList />)
-    await waitFor(() =>
-      expect(screen.getByText(/add your first series/i)).toBeInTheDocument(),
-    )
+    expect(
+      await screen.findByText(/add your first series/i),
+    ).toBeInTheDocument()
   })
 
   it('should not render any series rows in empty state', async () => {
@@ -210,19 +208,17 @@ describe('IF-005: Error state', () => {
   it('should show error message when fetch fails', async () => {
     mockGetAll.mockRejectedValue(new Error('Network error'))
     render(<SeriesList />)
-    await waitFor(() =>
-      expect(screen.getByText(/failed to load series/i)).toBeInTheDocument(),
-    )
+    expect(
+      await screen.findByText(/failed to load series/i),
+    ).toBeInTheDocument()
   })
 
   it('should show Retry button in error state', async () => {
     mockGetAll.mockRejectedValue(new Error('Network error'))
     render(<SeriesList />)
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /retry/i }),
-      ).toBeInTheDocument(),
-    )
+    expect(
+      await screen.findByRole('button', { name: /retry/i }),
+    ).toBeInTheDocument()
   })
 
   it('should re-fetch when Retry is clicked', async () => {
@@ -232,17 +228,11 @@ describe('IF-005: Error state', () => {
 
     render(<SeriesList />)
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /retry/i }),
-      ).toBeInTheDocument(),
-    )
+    await screen.findByRole('button', { name: /retry/i })
 
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
 
-    await waitFor(() =>
-      expect(screen.getByText('Loaded on retry')).toBeInTheDocument(),
-    )
+    await screen.findByText('Loaded on retry')
     expect(mockGetAll).toHaveBeenCalledTimes(2)
   })
 
@@ -250,24 +240,18 @@ describe('IF-005: Error state', () => {
     mockGetAll.mockRejectedValue(new Error('Still broken'))
     render(<SeriesList />)
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /retry/i }),
-      ).toBeInTheDocument(),
-    )
+    await screen.findByRole('button', { name: /retry/i })
 
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
 
-    await waitFor(() =>
-      expect(screen.getByText(/failed to load series/i)).toBeInTheDocument(),
-    )
+    await screen.findByText(/failed to load series/i)
     expect(mockGetAll).toHaveBeenCalledTimes(2)
   })
 
   it('error container should have role="alert"', async () => {
     mockGetAll.mockRejectedValue(new Error('Network error'))
     render(<SeriesList />)
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })
 
@@ -275,9 +259,7 @@ describe('SH-006: Add Series button', () => {
   it('should show Add Series button when list is populated', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList />)
-    await waitFor(() =>
-      expect(screen.getByTestId('add-series-btn')).toBeInTheDocument(),
-    )
+    expect(await screen.findByTestId('add-series-btn')).toBeInTheDocument()
   })
 })
 
@@ -303,6 +285,7 @@ describe('SH-007: Series row click', () => {
 
     const titleButton = await screen.findByRole('button', { name: 'Show' })
     fireEvent.click(titleButton)
+    expect(titleButton).toBeInTheDocument()
   })
 })
 
@@ -321,7 +304,7 @@ describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
     const onAddClick = vi.fn()
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList onAddClick={onAddClick} />)
-    await waitFor(() => screen.getByText('Show'))
+    await screen.findByText('Show')
     fireEvent.click(screen.getByTestId('add-series-btn'))
     expect(onAddClick).toHaveBeenCalledTimes(1)
   })
@@ -340,6 +323,7 @@ describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
     render(<SeriesList />)
     const emptyStateButton = await screen.findByText(/add your first series/i)
     fireEvent.click(emptyStateButton)
+    expect(emptyStateButton).toBeInTheDocument()
   })
 })
 
@@ -347,7 +331,7 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
   it('renders labelled Edit and Delete buttons per row', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'The Office' })])
     render(<SeriesList />)
-    await waitFor(() => screen.getByText('The Office'))
+    await screen.findByText('The Office')
     expect(
       screen.getByRole('button', { name: /edit the office/i }),
     ).toBeInTheDocument()
@@ -364,7 +348,7 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
     render(
       <SeriesList onEditClick={onEditClick} onSeriesClick={onSeriesClick} />,
     )
-    await waitFor(() => screen.getByText('The Office'))
+    await screen.findByText('The Office')
 
     fireEvent.click(screen.getByTestId('edit-series-btn'))
     expect(onEditClick).toHaveBeenCalledWith(series)
@@ -374,8 +358,9 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
   it('does not throw when Edit is clicked without onEditClick', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
+    expect(screen.getByTestId('edit-series-btn')).toBeInTheDocument()
   })
 
   it('does not call onSeriesClick, onEditClick, or seriesApi.delete when Delete is clicked', async () => {
@@ -385,7 +370,7 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
     render(
       <SeriesList onSeriesClick={onSeriesClick} onEditClick={onEditClick} />,
     )
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     expect(onSeriesClick).not.toHaveBeenCalled()
     expect(onEditClick).not.toHaveBeenCalled()
@@ -397,7 +382,7 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
   it('shows Confirm/Cancel in place of Edit/Delete when Delete is clicked', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
 
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
@@ -408,7 +393,7 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
   it('restores Edit/Delete when the confirmation Cancel is clicked, without deleting', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
 
     fireEvent.click(screen.getByTestId('cancel-delete-btn'))
@@ -419,7 +404,7 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
   it('restores Edit/Delete on Escape without deleting', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
 
     fireEvent.keyDown(screen.getByTestId('series-row'), { key: 'Escape' })
@@ -431,7 +416,7 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
     const onSeriesClick = vi.fn()
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     render(<SeriesList onSeriesClick={onSeriesClick} />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
 
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))
@@ -444,7 +429,7 @@ describe('FRONTEND-004-AC-10/11/12: delete loading state', () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     mockDelete.mockReturnValue(new Promise(() => undefined))
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
 
@@ -464,7 +449,7 @@ describe('FRONTEND-004-AC-13/14: delete success', () => {
     ])
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesList />)
-    await waitFor(() => screen.getAllByTestId('delete-series-btn'))
+    await screen.findAllByTestId('delete-series-btn')
 
     fireEvent.click(screen.getAllByTestId('delete-series-btn')[0])
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
@@ -480,13 +465,11 @@ describe('FRONTEND-004-AC-13/14: delete success', () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Only Show' })])
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
 
-    await waitFor(() =>
-      expect(screen.getByText(/no series yet/i)).toBeInTheDocument(),
-    )
+    expect(await screen.findByText(/no series yet/i)).toBeInTheDocument()
   })
 })
 
@@ -495,7 +478,7 @@ describe('FRONTEND-004-AC-15: delete error handling', () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     mockDelete.mockRejectedValue(new ApiError(500, 'Internal server error'))
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
 
@@ -521,7 +504,7 @@ describe('FRONTEND-004-AC-39: no series data logged during delete', () => {
     ])
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesList />)
-    await waitFor(() => screen.getByTestId('delete-series-btn'))
+    await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
     fireEvent.click(screen.getByTestId('confirm-delete-btn'))
 
@@ -538,7 +521,7 @@ describe('SN-008: No sensitive data exposed', () => {
       makeSeries({ id: 'secret-uuid-123', title: 'Show' }),
     ])
     render(<SeriesList />)
-    await waitFor(() => screen.getByText('Show'))
+    await screen.findByText('Show')
     expect(screen.queryByText('secret-uuid-123')).not.toBeInTheDocument()
   })
 
@@ -547,7 +530,7 @@ describe('SN-008: No sensitive data exposed', () => {
       makeSeries({ title: 'Show', personalNotes: 'My private note' }),
     ])
     render(<SeriesList />)
-    await waitFor(() => screen.getByText('Show'))
+    await screen.findByText('Show')
     expect(screen.queryByText('My private note')).not.toBeInTheDocument()
   })
 })
@@ -599,7 +582,7 @@ describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
       .mockRejectedValueOnce(new Error('fail'))
       .mockResolvedValueOnce([])
     render(<SeriesList criteria={{ title: 'office' }} />)
-    await waitFor(() => screen.getByRole('button', { name: /retry/i }))
+    await screen.findByRole('button', { name: /retry/i })
 
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
     await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(2))
@@ -612,7 +595,7 @@ describe('FRONTEND-022-AC-10: alternateTitle no longer displayed', () => {
     mockGetAll.mockResolvedValue([makeSeries({ title: 'MI-5' })])
     render(<SeriesList />)
 
-    await waitFor(() => expect(screen.getByText('MI-5')).toBeInTheDocument())
+    await screen.findByText('MI-5')
     expect(screen.queryByText(/^aka /i)).not.toBeInTheDocument()
   })
 })
@@ -748,7 +731,7 @@ describe('FRONTEND-023-AC-18: new-content badge per row', () => {
     ])
     render(<SeriesList />)
 
-    await waitFor(() => screen.getByText('Flagged Show'))
+    await screen.findByText('Flagged Show')
     const rows = screen.getAllByTestId('series-row')
     expect(within(rows[0]).getByText(/new content/i)).toBeInTheDocument()
     expect(within(rows[1]).queryByText(/new content/i)).not.toBeInTheDocument()
@@ -910,73 +893,25 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
     ])
   })
 
-  it('re-fetches with sortBy=tmdbRating when that option is selected', async () => {
-    mockGetAll.mockResolvedValue([])
-    render(<SeriesList />)
-    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+  it.each(['tmdbRating', 'title', 'year', 'imdbRating'])(
+    're-fetches with sortBy=%s when that option is selected',
+    async (sortBy) => {
+      mockGetAll.mockResolvedValue([])
+      render(<SeriesList />)
+      await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
-    fireEvent.change(screen.getByLabelText(/sort by/i), {
-      target: { value: 'tmdbRating' },
-    })
+      fireEvent.change(screen.getByLabelText(/sort by/i), {
+        target: { value: sortBy },
+      })
 
-    await waitFor(() =>
-      expect(mockGetAll).toHaveBeenLastCalledWith({
-        sortBy: 'tmdbRating',
-        sortDirection: 'desc',
-      }),
-    )
-  })
-
-  it('re-fetches with sortBy=title when that option is selected', async () => {
-    mockGetAll.mockResolvedValue([])
-    render(<SeriesList />)
-    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
-
-    fireEvent.change(screen.getByLabelText(/sort by/i), {
-      target: { value: 'title' },
-    })
-
-    await waitFor(() =>
-      expect(mockGetAll).toHaveBeenLastCalledWith({
-        sortBy: 'title',
-        sortDirection: 'desc',
-      }),
-    )
-  })
-
-  it('re-fetches with sortBy=year when that option is selected', async () => {
-    mockGetAll.mockResolvedValue([])
-    render(<SeriesList />)
-    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
-
-    fireEvent.change(screen.getByLabelText(/sort by/i), {
-      target: { value: 'year' },
-    })
-
-    await waitFor(() =>
-      expect(mockGetAll).toHaveBeenLastCalledWith({
-        sortBy: 'year',
-        sortDirection: 'desc',
-      }),
-    )
-  })
-
-  it('re-fetches with sortBy=imdbRating when that option is selected', async () => {
-    mockGetAll.mockResolvedValue([])
-    render(<SeriesList />)
-    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
-
-    fireEvent.change(screen.getByLabelText(/sort by/i), {
-      target: { value: 'imdbRating' },
-    })
-
-    await waitFor(() =>
-      expect(mockGetAll).toHaveBeenLastCalledWith({
-        sortBy: 'imdbRating',
-        sortDirection: 'desc',
-      }),
-    )
-  })
+      await waitFor(() =>
+        expect(mockGetAll).toHaveBeenLastCalledWith({
+          sortBy,
+          sortDirection: 'desc',
+        }),
+      )
+    },
+  )
 })
 
 describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
@@ -1031,7 +966,7 @@ describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
 
     fireEvent.click(toggle)
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
   })
 })
@@ -1040,11 +975,7 @@ describe('FRONTEND-006-AC-14/15: filtered empty state', () => {
   it('shows "No series match your filters." without the add-first-series button', async () => {
     mockSearch.mockResolvedValue([])
     render(<SeriesList criteria={{ title: 'nonexistent' }} />)
-    await waitFor(() =>
-      expect(
-        screen.getByText(/no series match your filters/i),
-      ).toBeInTheDocument(),
-    )
+    await screen.findByText(/no series match your filters/i)
     expect(screen.queryByText(/add your first series/i)).not.toBeInTheDocument()
     expect(screen.getByTestId('add-series-btn')).toBeInTheDocument()
   })
