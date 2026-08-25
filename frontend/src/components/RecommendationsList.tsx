@@ -8,6 +8,7 @@ import type {
   Series,
 } from '../types/series'
 import { AddSeriesForm } from './AddSeriesForm'
+import { StreamingProviders } from './StreamingProviders'
 import { formatCountryName } from '../utils/countryName'
 import styles from './RecommendationsList.module.css'
 
@@ -239,6 +240,12 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                   {r.year !== null && (
                     <span className={styles.year}>{r.year}</span>
                   )}
+                  {r.originCountry !== null && (
+                    <span className={styles.country}>
+                      {' | '}
+                      {formatCountryName(r.originCountry)}
+                    </span>
+                  )}
                   {r.tmdbRating !== null && (
                     <span className={styles.rating}>
                       {r.tmdbRating.toFixed(1)}
@@ -247,36 +254,9 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                     </span>
                   )}
                 </div>
-                {r.streamingProviders.length > 0 ? (
-                  <ul className={styles.streamingProviders}>
-                    {r.streamingProviders.map((provider) => (
-                      <li
-                        key={provider.name}
-                        className={styles.streamingProvider}
-                      >
-                        {provider.logoUrl !== null && (
-                          <img
-                            src={provider.logoUrl}
-                            alt={provider.name}
-                            className={styles.streamingProviderLogo}
-                          />
-                        )}
-                        <span>{provider.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className={styles.streamingProvidersEmpty}>
-                    Not currently streaming in the UK
-                  </span>
-                )}
+                <StreamingProviders providers={r.streamingProviders} />
                 {r.genres !== null && (
                   <span className={styles.genres}>{r.genres}</span>
-                )}
-                {r.originCountry !== null && (
-                  <span className={styles.country}>
-                    {formatCountryName(r.originCountry)}
-                  </span>
                 )}
                 {r.overview !== null && (
                   <p className={styles.overview}>{r.overview}</p>

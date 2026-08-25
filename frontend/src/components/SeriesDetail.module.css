@@ -176,6 +176,44 @@
   color: var(--text-h);
 }
 
+.streamingCheck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.streamingCheckButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.streamingCheckButton:hover:not(:disabled) {
+  background: var(--social-bg);
+}
+
+.streamingCheckButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.streamingCheckError {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .streamingCheckError {
+    color: #fca5a5;
+  }
+}
+
 .keywordChip {
   display: inline-block;
   background: var(--social-bg);
