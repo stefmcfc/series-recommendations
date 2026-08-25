@@ -26,7 +26,10 @@ public class SeriesSearchCriteria {
     // series_spec_009_rating_sort.md (SERIES-009-AC-01): asc | desc, default desc.
     private String sortDirection;
 
-    public SeriesSearchCriteria() {}
+
+    public SeriesSearchCriteria() {
+        // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
+    }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

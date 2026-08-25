@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +41,7 @@ public class BulkRefreshService {
 
     private final SeriesRepository repository;
     private final SeriesRefreshService refreshService;
+    private final Clock clock;
     private final long refreshDelayMs;
     private final int refreshSkipThresholdMinutes;
     private final ExecutorService executor;
@@ -49,10 +51,12 @@ public class BulkRefreshService {
 
     public BulkRefreshService(SeriesRepository repository,
                                SeriesRefreshService refreshService,
+                               Clock clock,
                                @Value("${app.tmdb.refresh-delay-ms:250}") long refreshDelayMs,
                                @Value("${app.tmdb.refresh-skip-threshold-minutes:60}") int refreshSkipThresholdMinutes) {
         this.repository = repository;
         this.refreshService = refreshService;
+        this.clock = clock;
         this.refreshDelayMs = refreshDelayMs;
         this.refreshSkipThresholdMinutes = refreshSkipThresholdMinutes;
         this.executor = Executors.newSingleThreadExecutor(runnable -> {
@@ -77,7 +81,7 @@ public class BulkRefreshService {
         }
 
         int totalCount = (int) repository.count();
-        RefreshJobStatus started = new RefreshJobStatus(IN_PROGRESS, totalCount, 0, 0, LocalDateTime.now(), null);
+        RefreshJobStatus started = new RefreshJobStatus(IN_PROGRESS, totalCount, 0, 0, LocalDateTime.now(clock), null);
         currentJob.set(started);
 
         executor.submit(() -> runJob(started));
@@ -114,28 +118,38 @@ public class BulkRefreshService {
                     continue;
                 }
 
-                try {
-                    refreshService.refresh(entity.getId());
-                } catch (RuntimeException e) {
-                    log.warn("Bulk refresh: refreshing series {} failed, continuing with the batch", entity.getId(), e);
-                }
+                refreshOneEntity(entity);
                 completed++;
                 currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null));
 
                 if (refreshDelayMs > 0) {
-                    try {
-                        Thread.sleep(refreshDelayMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new IllegalStateException("Bulk refresh job interrupted", ie);
-                    }
+                    applyDelay();
                 }
             }
-            currentJob.set(new RefreshJobStatus(COMPLETED, started.totalCount(), completed, skipped, started.startedAt(), LocalDateTime.now()));
+            currentJob.set(new RefreshJobStatus(COMPLETED, started.totalCount(), completed, skipped, started.startedAt(), LocalDateTime.now(clock)));
         } catch (RuntimeException e) {
             log.error("Bulk refresh job failed unexpectedly", e);
             RefreshJobStatus current = currentJob.get();
-            currentJob.set(new RefreshJobStatus(FAILED, started.totalCount(), current.completedCount(), current.skippedCount(), started.startedAt(), LocalDateTime.now()));
+            currentJob.set(new RefreshJobStatus(FAILED, started.totalCount(), current.completedCount(), current.skippedCount(), started.startedAt(), LocalDateTime.now(clock)));
+        }
+    }
+
+    /** Extracted so the loop in {@link #runJob} doesn't nest a try/catch inside its own try/catch (java:S1141). */
+    private void refreshOneEntity(SeriesEntity entity) {
+        try {
+            refreshService.refresh(entity.getId());
+        } catch (RuntimeException e) {
+            log.warn("Bulk refresh: refreshing series {} failed, continuing with the batch", entity.getId(), e);
+        }
+    }
+
+    /** Extracted so the loop in {@link #runJob} doesn't nest a try/catch inside its own try/catch (java:S1141). */
+    private void applyDelay() {
+        try {
+            Thread.sleep(refreshDelayMs);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Bulk refresh job interrupted", ie);
         }
     }
 
@@ -154,7 +168,7 @@ public class BulkRefreshService {
         if (lastRefreshedAt == null) {
             return false;
         }
-        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(refreshSkipThresholdMinutes);
+        LocalDateTime cutoff = LocalDateTime.now(clock).minusMinutes(refreshSkipThresholdMinutes);
         return lastRefreshedAt.isAfter(cutoff);
     }
 }

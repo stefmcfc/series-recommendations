@@ -11,6 +11,7 @@ import uk.co.stefirby.seriestracker.model.ProductionStatus
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
+import java.time.Clock
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -20,10 +21,10 @@ class SeriesRefreshServiceSpec extends Specification {
     TmdbClient tmdbClient = Mock()
     OmdbClient omdbClient = Mock()
     KeywordSyncService keywordSyncService = Mock()
-    SeriesService seriesService = new SeriesService(repository, keywordSyncService)
+    SeriesService seriesService = new SeriesService(repository, keywordSyncService, Clock.systemDefaultZone())
 
     SeriesRefreshService refreshService =
-        new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService)
+        new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService, Clock.systemDefaultZone())
 
     private static SeriesEntity existing(UUID id, String imdbId = "tt0903747") {
         new SeriesEntity(

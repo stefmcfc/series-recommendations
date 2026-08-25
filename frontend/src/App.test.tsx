@@ -38,7 +38,7 @@ describe('FRONTEND-003-AC-27/28: opening the form', () => {
   it('does not render AddSeriesForm until Add Series is clicked', async () => {
     mockGetAll.mockResolvedValue([])
     render(<App />)
-    await waitFor(() => screen.getByTestId('add-series-btn'))
+    await screen.findByTestId('add-series-btn')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getAllByTestId('add-series-btn')[0])
@@ -50,7 +50,7 @@ describe('FRONTEND-003-AC-29: cancelling', () => {
   it('closes the dialog without re-fetching', async () => {
     mockGetAll.mockResolvedValue([])
     render(<App />)
-    await waitFor(() => screen.getAllByTestId('add-series-btn'))
+    await screen.findAllByTestId('add-series-btn')
     fireEvent.click(screen.getAllByTestId('add-series-btn')[0])
 
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
@@ -67,7 +67,7 @@ describe('FRONTEND-003-AC-30: successful creation refreshes the list', () => {
     mockCreate.mockResolvedValue({ id: '1', title: 'New Show' } as Series)
 
     render(<App />)
-    await waitFor(() => screen.getAllByTestId('add-series-btn'))
+    await screen.findAllByTestId('add-series-btn')
     fireEvent.click(screen.getAllByTestId('add-series-btn')[0])
 
     fireEvent.change(
@@ -92,7 +92,7 @@ describe('FRONTEND-004-AC-34/35: opening the edit form', () => {
       { id: '1', title: 'Show', status: 'WATCHING' } as Series,
     ])
     render(<App />)
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
 
     fireEvent.click(screen.getByTestId('edit-series-btn'))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -106,7 +106,7 @@ describe('FRONTEND-004-AC-36: cancelling an edit', () => {
   it('closes the dialog without re-fetching', async () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
     render(<App />)
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
 
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
@@ -119,7 +119,7 @@ describe('FRONTEND-007-AC-13: export controls rendered', () => {
   it('renders ExportControls on the main page', async () => {
     mockGetAll.mockResolvedValue([])
     render(<App />)
-    await waitFor(() => screen.getByTestId('export-json-btn'))
+    await screen.findByTestId('export-json-btn')
     expect(screen.getByTestId('export-csv-btn')).toBeInTheDocument()
   })
 })
@@ -132,7 +132,7 @@ describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
     mockUpdate.mockResolvedValue({ id: '1', title: 'Updated Show' } as Series)
 
     render(<App />)
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
@@ -150,7 +150,7 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
 
     render(<App />)
-    await waitFor(() => screen.getByText('The Office'))
+    await screen.findByText('The Office')
 
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
@@ -169,7 +169,7 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     mockGetAll.mockResolvedValue([])
     mockSearch.mockResolvedValue([])
     render(<App />)
-    await waitFor(() => screen.getByTestId('clear-filters-btn'))
+    await screen.findByTestId('clear-filters-btn')
 
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
@@ -187,12 +187,10 @@ describe('FRONTEND-005-AC-25/26: navigating to detail', () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     render(<App />)
-    await waitFor(() => screen.getByTestId('series-row'))
+    await screen.findByTestId('series-row')
 
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))
-    await waitFor(() =>
-      expect(screen.getByTestId('back-btn')).toBeInTheDocument(),
-    )
+    await screen.findByTestId('back-btn')
     expect(screen.queryByTestId('series-row')).not.toBeInTheDocument()
   })
 })
@@ -202,10 +200,10 @@ describe('FRONTEND-005-AC-27: returning to the list', () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     render(<App />)
-    await waitFor(() => screen.getByTestId('series-row'))
+    await screen.findByTestId('series-row')
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))
 
-    await waitFor(() => screen.getByTestId('back-btn'))
+    await screen.findByTestId('back-btn')
     fireEvent.click(screen.getByTestId('back-btn'))
 
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(2))
@@ -221,7 +219,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     mockGetGenreOptions.mockResolvedValue([])
 
     render(<App />)
-    await waitFor(() => screen.getByText('The Office'))
+    await screen.findByText('The Office')
 
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
@@ -273,7 +271,7 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
     mockGetGenreOptions.mockResolvedValue([])
 
     render(<App />)
-    await waitFor(() => screen.getByTestId('add-series-btn'))
+    await screen.findByTestId('add-series-btn')
     expect(
       screen.queryByRole('button', { name: /^automatic$/i }),
     ).not.toBeInTheDocument()
@@ -284,9 +282,7 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
     fireEvent.click(
       screen.getByRole('button', { name: /series list|my series/i }),
     )
-    await waitFor(() =>
-      expect(screen.getByTestId('series-list')).toBeInTheDocument(),
-    )
+    await screen.findByTestId('series-list')
     expect(screen.queryByLabelText(/^automatic/i)).not.toBeInTheDocument()
   })
 })
@@ -296,7 +292,7 @@ describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
     mockGetAll.mockResolvedValue([])
 
     render(<App />)
-    await waitFor(() => screen.getByTestId('add-series-btn'))
+    await screen.findByTestId('add-series-btn')
 
     fireEvent.click(
       screen.getByRole('button', { name: /^keywords$/i, pressed: false }),
@@ -307,9 +303,7 @@ describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /series list|my series/i }),
     )
-    await waitFor(() =>
-      expect(screen.getByTestId('series-list')).toBeInTheDocument(),
-    )
+    await screen.findByTestId('series-list')
     expect(screen.queryByTestId('keywords-view')).not.toBeInTheDocument()
   })
 })
@@ -331,9 +325,9 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
     mockUpdate.mockResolvedValue({ id: '1', title: 'Updated Show' } as Series)
 
     render(<App />)
-    await waitFor(() => screen.getByTestId('series-row'))
+    await screen.findByTestId('series-row')
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))
-    await waitFor(() => screen.getByTestId('edit-series-btn'))
+    await screen.findByTestId('edit-series-btn')
 
     fireEvent.click(screen.getByTestId('edit-series-btn'))
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))

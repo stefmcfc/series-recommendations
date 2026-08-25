@@ -144,7 +144,7 @@ describe('FRONTEND-010-AC-07: error and retry', () => {
     mockGetRecommendations.mockResolvedValueOnce([])
     render(<RecommendationsList />)
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
 
     await waitFor(() => expect(mockGetRecommendations).toHaveBeenCalledTimes(2))
@@ -296,7 +296,7 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
 
     fireEvent.click(screen.getByTestId('ignore-btn'))
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(screen.getByText('Ozark')).toBeInTheDocument()
   })
 
@@ -313,7 +313,7 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
 
     fireEvent.click(screen.getAllByTestId('ignore-btn')[0])
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(screen.getByText('Game of Thrones')).toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(1)
   })
@@ -351,9 +351,7 @@ describe('FRONTEND-010-AC-20: TMDB attribution', () => {
       ),
     ).toBeInTheDocument()
 
-    await waitFor(() =>
-      expect(screen.getByText(/no recommendations yet/i)).toBeInTheDocument(),
-    )
+    await screen.findByText(/no recommendations yet/i)
     expect(
       screen.getByText(
         /this product uses the tmdb api but is not endorsed or certified by tmdb/i,

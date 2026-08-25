@@ -37,7 +37,7 @@
   gap: 0.75rem;
   padding: 2rem;
   color: #b91c1c;
-  background: rgba(185, 28, 28, 0.08);
+  background: #fdf0f0;
   border: 1px solid rgba(185, 28, 28, 0.3);
   border-radius: 0.5rem;
 }
@@ -45,7 +45,7 @@
 @media (prefers-color-scheme: dark) {
   .error {
     color: #fca5a5;
-    background: rgba(248, 113, 113, 0.1);
+    background: #3a1a1a;
     border-color: rgba(248, 113, 113, 0.35);
   }
 }
@@ -294,6 +294,7 @@
 }
 
 .keywordsLoading {
+  display: block;
   color: var(--text);
   font-size: 0.8125rem;
   opacity: 0.8;

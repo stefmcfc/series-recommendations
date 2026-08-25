@@ -6,8 +6,8 @@ import { KeywordPicker } from './KeywordPicker'
 import styles from './SearchFilter.module.css'
 
 interface SearchFilterProps {
-  onSearch: (criteria: SearchCriteria) => void
-  onClear: () => void
+  readonly onSearch: (criteria: SearchCriteria) => void
+  readonly onClear: () => void
 }
 
 interface FormState {
@@ -102,7 +102,7 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
     setForm((prev) => ({ ...prev, keywordsSelected: next }))
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     onSearch(buildCriteria(form))
   }
@@ -272,8 +272,9 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
 
       {browseModalOpen && (
         <div className={styles.overlay}>
+          {/* A native <dialog> needs showModal()/close() lifecycle management (focus trap, native backdrop) to behave correctly, not just a tag swap -- a bigger, riskier change than this div+role warrants right now (jsdom's <dialog> support has known gaps). Deliberately not converted. */}
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior, matching AddSeriesForm's convention (frontend_spec_003.md FRONTEND-003-AC-08); the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
-          <div
+          <div // NOSONAR: typescript:S6819, see comment above
             className={styles.dialog}
             role="dialog"
             aria-modal="true"

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -43,15 +44,17 @@ public class SeriesRefreshService {
     private final OmdbClient omdbClient;
     private final SeriesService seriesService;
     private final KeywordSyncService keywordSyncService;
+    private final Clock clock;
 
     public SeriesRefreshService(SeriesRepository repository, TmdbClient tmdbClient,
                                  OmdbClient omdbClient, SeriesService seriesService,
-                                 KeywordSyncService keywordSyncService) {
+                                 KeywordSyncService keywordSyncService, Clock clock) {
         this.repository = repository;
         this.tmdbClient = tmdbClient;
         this.omdbClient = omdbClient;
         this.seriesService = seriesService;
         this.keywordSyncService = keywordSyncService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -70,7 +73,7 @@ public class SeriesRefreshService {
         boolean omdbRefreshed = refreshFromOmdb(entity);
 
         if (tmdbRefreshed || omdbRefreshed) {
-            entity.setLastRefreshedAt(LocalDateTime.now());
+            entity.setLastRefreshedAt(LocalDateTime.now(clock));
         }
 
         applyNewContentDetection(entity, preSeasons, preEpisodes, preStatus);
@@ -98,7 +101,7 @@ public class SeriesRefreshService {
             return;
         }
 
-        entity.setNewContentDetectedAt(LocalDateTime.now());
+        entity.setNewContentDetectedAt(LocalDateTime.now(clock));
 
         if (preStatus == SeriesStatus.COMPLETED) {
             entity.setStatus(SeriesStatus.BACKLOG);

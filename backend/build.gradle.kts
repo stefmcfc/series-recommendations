@@ -10,6 +10,12 @@ plugins {
 group = "uk.co.stefirby"
 version = "2.1.0"
 
+// Centralized here (kotlin:S6624) rather than inline in the dependencies block below --
+// single place to bump each, and easier for dependabot's version-bump PRs to reason about.
+val sqliteJdbcVersion = "3.53.2.1"
+val spockVersion = "2.4-groovy-5.0"
+val groovyVersion = "5.1.0"
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -39,7 +45,7 @@ dependencies {
     // with whatever hibernate-core the BOM actually resolves (NoSuchMethodError at
     // runtime in SQLiteDialect). Let the BOM manage it so bumps only happen when
     // Spring Boot has actually validated the pairing.
-    implementation("org.xerial:sqlite-jdbc:3.53.2.1")
+    implementation("org.xerial:sqlite-jdbc:$sqliteJdbcVersion")
     implementation("org.hibernate.orm:hibernate-community-dialects")
 
     // Flyway. spring-boot-flyway is required in addition to flyway-core: Boot 4 split
@@ -51,9 +57,9 @@ dependencies {
     // Test - Groovy 5 supports Java 25 class files
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-    testImplementation("org.spockframework:spock-core:2.4-groovy-5.0")
-    testImplementation("org.spockframework:spock-spring:2.4-groovy-5.0")
-    testImplementation("org.apache.groovy:groovy:5.1.0")
+    testImplementation("org.spockframework:spock-core:$spockVersion")
+    testImplementation("org.spockframework:spock-spring:$spockVersion")
+    testImplementation("org.apache.groovy:groovy:$groovyVersion")
 }
 
 tasks.withType<Test> {

@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 @Service
 public class SeriesSearchService {
@@ -36,7 +35,7 @@ public class SeriesSearchService {
         if (criteria.getStatus() != null && !criteria.getStatus().isBlank()) {
             try {
                 SeriesStatus.valueOf(criteria.getStatus());
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException _) {
                 throw new IllegalArgumentException("Invalid status: " + criteria.getStatus()
                     + ". Must be one of: WATCHING, COMPLETED, DROPPED, BACKLOG");
             }
@@ -58,7 +57,7 @@ public class SeriesSearchService {
             .filter(s -> matchesFlaggedForRewatch(s, criteria.getFlaggedForRewatch()))
             .sorted(sortComparator)
             .map(seriesService::entityToDto)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     private boolean matchesTitle(SeriesEntity s, String title) {
@@ -91,15 +90,13 @@ public class SeriesSearchService {
     private boolean matchesPersonalRating(SeriesEntity s, Integer min, Integer max) {
         if (s.getPersonalRating() == null) return min == null && max == null;
         if (min != null && s.getPersonalRating() < min) return false;
-        if (max != null && s.getPersonalRating() > max) return false;
-        return true;
+        return max == null || s.getPersonalRating() <= max;
     }
 
     private boolean matchesImdbRating(SeriesEntity s, BigDecimal min, BigDecimal max) {
         if (s.getImdbRating() == null) return min == null && max == null;
         if (min != null && s.getImdbRating().compareTo(min) < 0) return false;
-        if (max != null && s.getImdbRating().compareTo(max) > 0) return false;
-        return true;
+        return max == null || s.getImdbRating().compareTo(max) <= 0;
     }
 
     private boolean matchesStartedNotFinished(SeriesEntity s, Boolean startedNotFinished) {

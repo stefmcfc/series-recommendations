@@ -2,7 +2,7 @@ import type { StreamingProvider } from '../types/series'
 import styles from './StreamingProviders.module.css'
 
 interface StreamingProvidersProps {
-  providers: StreamingProvider[]
+  readonly providers: StreamingProvider[]
 }
 
 export function StreamingProviders({ providers }: StreamingProvidersProps) {

@@ -375,7 +375,7 @@ describe('FRONTEND-003-AC-24/25/26: server-side error handling', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(screen.getByLabelText(/^title/i)).toHaveValue('Show')
     expect(screen.getByRole('button', { name: /^save$/i })).not.toBeDisabled()
     expect(screen.getByRole('button', { name: /cancel/i })).not.toBeDisabled()
@@ -432,7 +432,7 @@ describe('FRONTEND-022-AC-04: no escape-hatch button', () => {
     renderForm()
     await runLookup('Spooks')
 
-    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+    await screen.findAllByTestId('lookup-tmdb-candidate')
     expect(screen.queryByTestId('lookup-candidates')).not.toBeInTheDocument()
     expect(screen.queryByTestId('lookup-candidate')).not.toBeInTheDocument()
   })
@@ -571,14 +571,10 @@ describe('FRONTEND-022-AC-02: single-result auto-resolve autofill overwrite rule
       target: { value: 'Xyzzy' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() =>
-      expect(screen.getByText(/no tmdb results/i)).toBeInTheDocument(),
-    )
+    await screen.findByText(/no tmdb results/i)
 
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
-    await waitFor(() =>
-      expect(screen.getByText(/internal server error/i)).toBeInTheDocument(),
-    )
+    await screen.findByText(/internal server error/i)
     expect(screen.getByText(/no tmdb results/i)).toBeInTheDocument()
     expect(screen.getAllByRole('alert')).toHaveLength(2)
   })
@@ -634,7 +630,7 @@ describe('FRONTEND-022-AC-03: selecting a TMDB candidate resolves and applies it
       target: { value: 'Spooks' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+    await screen.findAllByTestId('lookup-tmdb-candidate')
 
     fireEvent.click(screen.getByRole('button', { name: /^spooks \(2002\)$/i }))
 
@@ -658,7 +654,7 @@ describe('FRONTEND-022-AC-03: selecting a TMDB candidate resolves and applies it
       target: { value: 'Spooks' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+    await screen.findAllByTestId('lookup-tmdb-candidate')
 
     fireEvent.click(screen.getByRole('button', { name: /^spooks \(2002\)$/i }))
 
@@ -687,7 +683,7 @@ describe('FRONTEND-022-AC-03: a failed TMDB candidate resolution keeps the picke
       target: { value: 'Spooks' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+    await screen.findAllByTestId('lookup-tmdb-candidate')
 
     fireEvent.click(screen.getByRole('button', { name: /^spooks \(2002\)$/i }))
 
@@ -713,7 +709,7 @@ describe('FRONTEND-022-AC-03: dismissing the picker', () => {
       target: { value: 'Spooks' },
     })
     fireEvent.click(screen.getByTestId('lookup-btn'))
-    await waitFor(() => screen.getAllByTestId('lookup-tmdb-candidate'))
+    await screen.findAllByTestId('lookup-tmdb-candidate')
 
     fireEvent.click(screen.getByTestId('lookup-tmdb-candidates-cancel'))
 

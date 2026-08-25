@@ -58,7 +58,7 @@ public class SeriesLookupService {
         log.info("Searching series via TMDB: {}", title);
         return tmdbClient.search(title).stream()
             .map(this::toDto)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**

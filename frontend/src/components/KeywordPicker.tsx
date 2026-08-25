@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import styles from './KeywordPicker.module.css'
 
 interface KeywordPickerProps {
-  id: string
-  label: string
-  selected: string[]
-  onChange: (next: string[]) => void
-  options?: string[]
-  placeholder?: string
-  focusOnMount?: boolean
-  allowFreeText?: boolean
-  maxSuggestionsWhenEmpty?: number
+  readonly id: string
+  readonly label: string
+  readonly selected: string[]
+  readonly onChange: (next: string[]) => void
+  readonly options?: string[]
+  readonly placeholder?: string
+  readonly focusOnMount?: boolean
+  readonly allowFreeText?: boolean
+  readonly maxSuggestionsWhenEmpty?: number
 }
 
 function isSameKeyword(a: string, b: string): boolean {

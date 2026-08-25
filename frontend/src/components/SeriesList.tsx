@@ -13,10 +13,10 @@ import { formatCountryName } from '../utils/countryName'
 import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
-  onSeriesClick?: (id: string) => void
-  onAddClick?: () => void
-  onEditClick?: (series: Series) => void
-  criteria?: SearchCriteria
+  readonly onSeriesClick?: (id: string) => void
+  readonly onAddClick?: () => void
+  readonly onEditClick?: (series: Series) => void
+  readonly criteria?: SearchCriteria
 }
 
 // FRONTEND-013-AC-12: sort field options, in display order. Extended by
@@ -401,7 +401,7 @@ export function SeriesList({
       )}
 
       {loading && (
-        <div className={styles.loading} role="status" aria-label="Loading">
+        <output className={styles.loading} aria-label="Loading">
           <svg
             className={styles.spinner}
             width="32"
@@ -426,7 +426,7 @@ export function SeriesList({
             />
           </svg>
           <span>Loading series...</span>
-        </div>
+        </output>
       )}
 
       {!loading && error && (
@@ -502,9 +502,7 @@ export function SeriesList({
                     </span>
                   )}
                 </div>
-                <span className={styles.rating}>
-                  {s.imdbRating !== null ? s.imdbRating : '—'}
-                </span>
+                <span className={styles.rating}>{s.imdbRating ?? '—'}</span>
 
                 {confirmingDeleteId === s.id ? (
                   <div className={styles.rowActions}>

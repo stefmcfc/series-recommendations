@@ -39,7 +39,9 @@ public class RecommendationCriteria {
     private String trendingWindow;
     private String discoverSortBy;
 
-    public RecommendationCriteria() {}
+    public RecommendationCriteria() {
+        // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
+    }
 
     public List<String> getSeriesIds() { return seriesIds; }
     public void setSeriesIds(List<String> seriesIds) { this.seriesIds = seriesIds; }

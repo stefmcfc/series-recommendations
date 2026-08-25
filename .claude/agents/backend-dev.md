@@ -28,6 +28,16 @@ Before making changes, read what's relevant:
 - Use `@Transactional` on service methods that mutate data.
 - Known gaps worth being aware of: no controller-level (`MockMvc`) tests exist yet for `/search` or `/export` (see `series_spec_003_search.md` / `series_spec_004_export.md`); only the Windows Gradle wrapper (`gradlew.bat`) is checked in.
 
+## Static-analysis / Sonar cleanup patterns
+
+Learned resolving a full SonarQube pass (2026-08-25, see `chore/sonar-findings-cleanup`) — reuse these rather than re-deriving them:
+
+- **Cognitive-complexity on a flat/nested sequence of independent guard-clause checks** (e.g. a `validate(...)`/field-copy method with a dozen `if (x != null) ...`): extract each independent check into its own well-named private method; the calling method becomes a straight-line sequence of calls. If one check genuinely depends on another's side effect (e.g. a `currentSeason` bound-check reading a `totalSeasons` value another branch may have just set), keep that call order — don't parallelize/reorder blindly.
+- **Self-invocation of a `@Transactional` method from a sibling public method in the same class bypasses Spring's proxy** (`java:S6809`) even when both carry the same annotation. Fix: extract the shared body into a private, non-`@Transactional` helper that both public entry points call — don't reach for self-injection (`@Lazy` self-reference) unless propagation/isolation genuinely differs between the two.
+- **A wide constructor on a class that's deliberately "one thing backing many endpoints/operations"** (e.g. a controller for a whole resource) is often not a real design smell — inventing an artificial grouping object purely to shrink the parameter count is the over-engineering CLAUDE.md warns against. `@SuppressWarnings("java:S107")` plus a one-line comment explaining the architectural reason is the right call there.
+- **`.collect(Collectors.toList())` → `.toList()`** is only safe when the result is never mutated afterward (`.toList()` is unmodifiable) — check every call site's downstream usage before a bulk replace, don't assume.
+- **Root-cause over per-site patching**: if the same nullable-return concern is flagged at several call sites of one shared method (e.g. `RestClient.body(Map.class)` can return `null`), fix it once at the source (normalize to an empty/default value there) rather than adding a null-check at each flagged call site — it also closes the gap at unflagged call sites that share the same risk.
+
 ## Commands
 
 ```bash

@@ -112,7 +112,7 @@ public class OmdbClient {
         }
         try {
             return new BigDecimal(s.trim());
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return null;
         }
     }
@@ -130,7 +130,7 @@ public class OmdbClient {
                 String numeric = value.split("[/%]")[0].trim();
                 try {
                     return Integer.valueOf(numeric);
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException _) {
                     return null;
                 }
             }

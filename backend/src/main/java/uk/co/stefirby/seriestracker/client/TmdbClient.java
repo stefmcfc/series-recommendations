@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -61,6 +62,11 @@ public class TmdbClient {
     public static final String PROVIDER_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w92";
 
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
+
+    private static final String FIELD_RESULTS = "results";
+    private static final String FIELD_ORIGIN_COUNTRY = "origin_country";
+    private static final String FIELD_FIRST_AIR_DATE = "first_air_date";
+    private static final String FIELD_POSTER_PATH = "poster_path";
 
     /** Valid {@code timeWindow} values for {@link #trending(String)} (SERIES-022-AC-02). */
     private static final Set<String> VALID_TIME_WINDOWS = Set.of("day", "week");
@@ -124,7 +130,7 @@ public class TmdbClient {
             .path("search/keyword")
             .queryParam("query", name));
 
-        List<Map<String, Object>> results = listOfMaps(body, "results");
+        List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         if (results.isEmpty()) {
             return Optional.empty();
         }
@@ -170,7 +176,7 @@ public class TmdbClient {
     /**
      * Globally trending TV shows via {@code GET /trending/tv/{timeWindow}} (SERIES-022-AC-01),
      * mapped identically to {@link #recommendations(int)}/{@link #similar(int)}/{@link
-     * #discover(List, List)} -- TMDB's own {@code results[]} ordering (its popularity ranking)
+     * #discover(List, List, String)} -- TMDB's own {@code results[]} ordering (its popularity ranking)
      * is preserved, never re-sorted (SERIES-022-AC-04).
      *
      * @throws IllegalArgumentException if {@code timeWindow} is not {@code "day"} or {@code
@@ -238,7 +244,7 @@ public class TmdbClient {
     @SuppressWarnings("unchecked")
     public List<TmdbWatchProvider> watchProviders(int tmdbId, String regionCode) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId + "/watch/providers"));
-        if (!(body.get("results") instanceof Map<?, ?> results)) {
+        if (!(body.get(FIELD_RESULTS) instanceof Map<?, ?> results)) {
             return List.of();
         }
         if (!(results.get(regionCode) instanceof Map<?, ?> regionEntry)) {
@@ -305,26 +311,35 @@ public class TmdbClient {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId));
         return new TmdbSeriesDetail(
             str(body.get("name")),
-            extractYear(str(body.get("first_air_date"))),
+            extractYear(str(body.get(FIELD_FIRST_AIR_DATE))),
             genreIdsFromObjects(body.get("genres")),
-            str(body.get("poster_path")),
+            str(body.get(FIELD_POSTER_PATH)),
             toInteger(body.get("number_of_seasons")),
             toInteger(body.get("number_of_episodes")),
             toBigDecimal(body.get("vote_average")),
             toInteger(body.get("vote_count")),
             ProductionStatus.fromTmdbStatus(str(body.get("status"))).orElse(null),
-            firstOriginCountry(body.get("origin_country")),
+            firstOriginCountry(body.get(FIELD_ORIGIN_COUNTRY)),
             str(body.get("overview"))
         );
     }
 
-    private Map<String, Object> fetch(Function<UriBuilder, UriBuilder> customizer) {
+    /**
+     * Never returns {@code null} -- {@code RestClient.body(Map.class)} can return {@code null}
+     * for an empty response body, which every caller here would otherwise have to null-check
+     * individually (java:S2259); a truly empty result is indistinguishable in practice from
+     * TMDB simply reporting nothing for this call, so it's normalized to an empty map once,
+     * here.
+     */
+    private Map<String, Object> fetch(UnaryOperator<UriBuilder> customizer) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("TMDB call requested but app.tmdb.api-key is not configured");
             throw new ExternalServiceException("TMDB API key is not configured");
         }
         try {
-            return doFetch(uriBuilder -> customizer.apply(uriBuilder).queryParam("api_key", apiKey).build());
+            Map<String, Object> body =
+                doFetch(uriBuilder -> customizer.apply(uriBuilder).queryParam("api_key", apiKey).build());
+            return body != null ? body : Map.of();
         } catch (RestClientException e) {
             throw new ExternalServiceException("TMDB request failed", e);
         }
@@ -357,7 +372,7 @@ public class TmdbClient {
     }
 
     private static List<TmdbCandidate> mapResults(Map<String, Object> body) {
-        List<Map<String, Object>> results = listOfMaps(body, "results");
+        List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         List<TmdbCandidate> candidates = new ArrayList<>();
         for (Map<String, Object> item : results) {
             Integer id = toInteger(item.get("id"));
@@ -367,21 +382,21 @@ public class TmdbClient {
             candidates.add(new TmdbCandidate(
                 id,
                 str(item.get("name")),
-                extractYear(str(item.get("first_air_date"))),
+                extractYear(str(item.get(FIELD_FIRST_AIR_DATE))),
                 str(item.get("overview")),
-                str(item.get("poster_path")),
+                str(item.get(FIELD_POSTER_PATH)),
                 toBigDecimal(item.get("vote_average")),
                 toIntegerList(item.get("genre_ids")),
                 toInteger(item.get("vote_count")),
                 str(item.get("original_language")),
-                firstOriginCountry(item.get("origin_country"))
+                firstOriginCountry(item.get(FIELD_ORIGIN_COUNTRY))
             ));
         }
         return candidates;
     }
 
     private static List<TmdbKeyword> mapKeywords(Map<String, Object> body) {
-        List<Map<String, Object>> results = listOfMaps(body, "results");
+        List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         List<TmdbKeyword> keywords = new ArrayList<>();
         for (Map<String, Object> item : results) {
             Integer id = toInteger(item.get("id"));
@@ -394,7 +409,7 @@ public class TmdbClient {
     }
 
     private static List<TmdbSearchCandidate> mapSearchResults(Map<String, Object> body) {
-        List<Map<String, Object>> results = listOfMaps(body, "results");
+        List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         List<TmdbSearchCandidate> candidates = new ArrayList<>();
         for (Map<String, Object> item : results) {
             Integer id = toInteger(item.get("id"));
@@ -410,10 +425,10 @@ public class TmdbClient {
                 id,
                 title,
                 originalTitle,
-                extractYear(str(item.get("first_air_date"))),
-                str(item.get("poster_path")),
+                extractYear(str(item.get(FIELD_FIRST_AIR_DATE))),
+                str(item.get(FIELD_POSTER_PATH)),
                 toIntegerList(item.get("genre_ids")),
-                firstOriginCountry(item.get("origin_country"))
+                firstOriginCountry(item.get(FIELD_ORIGIN_COUNTRY))
             ));
         }
         return candidates;
@@ -453,7 +468,7 @@ public class TmdbClient {
         if (!(value instanceof List<?> list) || list.isEmpty()) {
             return null;
         }
-        return str(((List<Object>) list).get(0));
+        return str(((List<Object>) list).getFirst());
     }
 
     private static List<Integer> toIntegerList(Object value) {
@@ -477,7 +492,7 @@ public class TmdbClient {
         if (value instanceof String s) {
             try {
                 return Integer.valueOf(s.trim());
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 return null;
             }
         }
@@ -491,7 +506,7 @@ public class TmdbClient {
         if (value instanceof String s) {
             try {
                 return new BigDecimal(s.trim());
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException _) {
                 return null;
             }
         }

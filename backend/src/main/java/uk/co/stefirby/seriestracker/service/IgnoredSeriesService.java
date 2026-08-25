@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -22,9 +23,11 @@ public class IgnoredSeriesService {
     private static final Logger log = LoggerFactory.getLogger(IgnoredSeriesService.class);
 
     private final IgnoredSeriesRepository repository;
+    private final Clock clock;
 
-    public IgnoredSeriesService(IgnoredSeriesRepository repository) {
+    public IgnoredSeriesService(IgnoredSeriesRepository repository, Clock clock) {
         this.repository = repository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -50,7 +53,7 @@ public class IgnoredSeriesService {
         // Set explicitly so it's available immediately after save, mirroring
         // SeriesService.create's handling of dateAdded (@CreationTimestamp alone isn't
         // guaranteed to be reflected on the in-memory entity returned by save()).
-        entity.setIgnoredAt(LocalDateTime.now());
+        entity.setIgnoredAt(LocalDateTime.now(clock));
         entity = repository.save(entity);
         return new IgnoreOutcome(toDto(entity), true);
     }

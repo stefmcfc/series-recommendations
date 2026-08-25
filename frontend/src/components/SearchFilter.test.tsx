@@ -235,7 +235,7 @@ describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => 
     )
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    await screen.findByRole('alert')
     expect(
       screen.getByRole('button', { name: /^search$/i }),
     ).toBeInTheDocument()

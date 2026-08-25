@@ -5,7 +5,7 @@ import type { SearchCriteria } from '../types/series'
 import styles from './ExportControls.module.css'
 
 interface ExportControlsProps {
-  criteria?: SearchCriteria
+  readonly criteria?: SearchCriteria
 }
 
 type ExportFormat = 'json' | 'csv'

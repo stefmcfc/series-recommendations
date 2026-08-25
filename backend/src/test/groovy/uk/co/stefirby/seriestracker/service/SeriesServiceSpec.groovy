@@ -8,6 +8,7 @@ import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
+import java.time.Clock
 import java.util.UUID
 
 @SpringBootTest
@@ -25,7 +26,7 @@ class SeriesServiceSpec extends Specification {
   SeriesService seriesService
 
   def setup() {
-    seriesService = new SeriesService(seriesRepository, keywordSyncService)
+    seriesService = new SeriesService(seriesRepository, keywordSyncService, Clock.systemDefaultZone())
   }
 
   def cleanup() {
