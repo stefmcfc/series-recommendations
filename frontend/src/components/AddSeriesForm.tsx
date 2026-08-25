@@ -27,6 +27,7 @@ interface FormState {
   status: SeriesStatus
   imdbRating: string
   rottenTomatoesRating: string
+  rottenTomatoesPopcornmeter: string
   personalRating: string
   personalNotes: string
   posterUrl: string
@@ -50,6 +51,7 @@ const initialFormState: FormState = {
   status: SeriesStatus.BACKLOG,
   imdbRating: '',
   rottenTomatoesRating: '',
+  rottenTomatoesPopcornmeter: '',
   personalRating: '',
   personalNotes: '',
   posterUrl: '',
@@ -112,6 +114,18 @@ function validate(form: FormState): FieldErrors {
     }
   }
 
+  if (form.rottenTomatoesPopcornmeter.trim() !== '') {
+    const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
+    if (
+      Number.isNaN(rottenTomatoesPopcornmeter) ||
+      rottenTomatoesPopcornmeter < 0 ||
+      rottenTomatoesPopcornmeter > 100
+    ) {
+      errors.rottenTomatoesPopcornmeter =
+        'Rotten Tomatoes rating must be between 0 and 100'
+    }
+  }
+
   if (form.personalRating.trim() !== '') {
     const personalRating = Number(form.personalRating)
     if (
@@ -143,6 +157,8 @@ function buildPayload(form: FormState): CreateSeriesRequest {
     payload.imdbRating = Number(form.imdbRating)
   if (form.rottenTomatoesRating.trim() !== '')
     payload.rottenTomatoesRating = Number(form.rottenTomatoesRating)
+  if (form.rottenTomatoesPopcornmeter.trim() !== '')
+    payload.rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
   if (form.personalRating.trim() !== '')
     payload.personalRating = Number(form.personalRating)
   if (form.personalNotes.trim() !== '')
@@ -213,6 +229,10 @@ function buildInitialFormState(
     next.imdbRating = String(initialValues.imdbRating)
   if (initialValues.rottenTomatoesRating != null)
     next.rottenTomatoesRating = String(initialValues.rottenTomatoesRating)
+  if (initialValues.rottenTomatoesPopcornmeter != null)
+    next.rottenTomatoesPopcornmeter = String(
+      initialValues.rottenTomatoesPopcornmeter,
+    )
   if (initialValues.personalRating != null)
     next.personalRating = String(initialValues.personalRating)
   if (initialValues.personalNotes != null)
@@ -584,7 +604,9 @@ export function AddSeriesForm({
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="rottenTomatoesRating">Rotten Tomatoes Rating</label>
+            <label htmlFor="rottenTomatoesRating">
+              Rotten Tomatoes Rating (Tomatometer)
+            </label>
             <input
               id="rottenTomatoesRating"
               type="number"
@@ -602,6 +624,31 @@ export function AddSeriesForm({
                 className={styles.fieldError}
               >
                 {fieldErrors.rottenTomatoesRating}
+              </span>
+            )}
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="rottenTomatoesPopcornmeter">
+              Rotten Tomatoes Rating (Popcornmeter)
+            </label>
+            <input
+              id="rottenTomatoesPopcornmeter"
+              type="number"
+              value={form.rottenTomatoesPopcornmeter}
+              onChange={updateField('rottenTomatoesPopcornmeter')}
+              aria-describedby={
+                fieldErrors.rottenTomatoesPopcornmeter
+                  ? 'rottenTomatoesPopcornmeter-error'
+                  : undefined
+              }
+            />
+            {fieldErrors.rottenTomatoesPopcornmeter && (
+              <span
+                id="rottenTomatoesPopcornmeter-error"
+                className={styles.fieldError}
+              >
+                {fieldErrors.rottenTomatoesPopcornmeter}
               </span>
             )}
           </div>

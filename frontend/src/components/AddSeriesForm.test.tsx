@@ -86,7 +86,8 @@ describe('FRONTEND-003-AC-10/11/12: fields', () => {
       /total episodes/i,
       /^status/i,
       /imdb rating/i,
-      /rotten tomatoes rating/i,
+      /rotten tomatoes rating \(tomatometer\)/i,
+      /rotten tomatoes rating \(popcornmeter\)/i,
       /personal rating/i,
       /notes/i,
     ]) {
@@ -110,6 +111,43 @@ describe('FRONTEND-022-AC-05/06: alternateTitle and metacriticRating fields remo
     renderForm()
     expect(screen.queryByLabelText(/alternate title/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/metacritic/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-037-AC-02: Popcornmeter field on AddSeriesForm', () => {
+  it('validates 0-100, omits from payload when empty, includes when provided', async () => {
+    render(<AddSeriesForm onCancel={vi.fn()} onSuccess={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Ozark' },
+    })
+    fireEvent.change(
+      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+      { target: { value: '150' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    expect(
+      await screen.findByText(/must be between 0 and 100/i),
+    ).toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+      { target: { value: '91' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ rottenTomatoesPopcornmeter: 91 }),
+      ),
+    )
+  })
+
+  it('relabels the existing field to clarify it is the Tomatometer', () => {
+    render(<AddSeriesForm onCancel={vi.fn()} onSuccess={vi.fn()} />)
+    expect(
+      screen.getByLabelText(/rotten tomatoes rating \(tomatometer\)/i),
+    ).toBeInTheDocument()
   })
 })
 
@@ -186,9 +224,10 @@ describe('FRONTEND-013..18: client-side validation', () => {
     fireEvent.change(screen.getByLabelText(/^title/i), {
       target: { value: 'Show' },
     })
-    fireEvent.change(screen.getByLabelText(/rotten tomatoes rating/i), {
-      target: { value: '150' },
-    })
+    fireEvent.change(
+      screen.getByLabelText(/rotten tomatoes rating \(tomatometer\)/i),
+      { target: { value: '150' } },
+    )
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(mockCreate).not.toHaveBeenCalled()
     expect(

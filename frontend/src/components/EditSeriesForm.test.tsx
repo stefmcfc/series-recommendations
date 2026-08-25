@@ -23,6 +23,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     status: SeriesStatus.WATCHING,
     imdbRating: 8.4,
     rottenTomatoesRating: null,
+    rottenTomatoesPopcornmeter: null,
     tmdbRating: null,
     tmdbVoteCount: null,
     personalRating: null,
@@ -108,7 +109,8 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
       /current episode/i,
       /^status/i,
       /imdb rating/i,
-      /rotten tomatoes rating/i,
+      /rotten tomatoes rating \(tomatometer\)/i,
+      /rotten tomatoes rating \(popcornmeter\)/i,
       /personal rating/i,
       /notes/i,
     ]) {
@@ -130,8 +132,44 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
   })
 
   it('renders null fields as empty', () => {
-    renderForm({ series: makeSeries({ rottenTomatoesRating: null }) })
-    expect(screen.getByLabelText(/rotten tomatoes rating/i)).toHaveValue(null)
+    renderForm({
+      series: makeSeries({
+        rottenTomatoesRating: null,
+        rottenTomatoesPopcornmeter: null,
+      }),
+    })
+    expect(
+      screen.getByLabelText(/rotten tomatoes rating \(tomatometer\)/i),
+    ).toHaveValue(null)
+    expect(
+      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+    ).toHaveValue(null)
+  })
+})
+
+describe('FRONTEND-037-AC-03: Popcornmeter field on EditSeriesForm', () => {
+  it('initializes from series.rottenTomatoesPopcornmeter and sends updates explicitly', async () => {
+    const series = makeSeries({ rottenTomatoesPopcornmeter: 91 })
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    expect(
+      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+    ).toHaveValue(91)
+
+    fireEvent.change(
+      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+      { target: { value: '85' } },
+    )
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        series.id,
+        expect.objectContaining({ rottenTomatoesPopcornmeter: 85 }),
+      ),
+    )
   })
 })
 

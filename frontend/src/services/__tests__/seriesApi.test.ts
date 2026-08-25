@@ -70,6 +70,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     status: SeriesStatus.BACKLOG,
     imdbRating: null,
     rottenTomatoesRating: null,
+    rottenTomatoesPopcornmeter: null,
     tmdbRating: null,
     tmdbVoteCount: null,
     personalRating: null,

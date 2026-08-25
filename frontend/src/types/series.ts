@@ -20,6 +20,7 @@ export interface Series {
   status: SeriesStatus
   imdbRating: number | null
   rottenTomatoesRating: number | null
+  rottenTomatoesPopcornmeter: number | null
   tmdbRating: number | null
   tmdbVoteCount: number | null
   personalRating: number | null
@@ -69,6 +70,7 @@ export interface CreateSeriesRequest {
   status?: SeriesStatus
   imdbRating?: number
   rottenTomatoesRating?: number
+  rottenTomatoesPopcornmeter?: number
   personalRating?: number
   personalNotes?: string
   posterUrl?: string

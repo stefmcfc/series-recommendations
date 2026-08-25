@@ -27,6 +27,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     status: SeriesStatus.WATCHING,
     imdbRating: 8.9,
     rottenTomatoesRating: null,
+    rottenTomatoesPopcornmeter: null,
     tmdbRating: null,
     tmdbVoteCount: null,
     personalRating: 5,
@@ -65,6 +66,40 @@ describe('FRONTEND-005-AC-04/06/07: fetch, loading, render', () => {
     expect(mockGetById).toHaveBeenCalledWith('abc-123')
     expect(screen.getByText('Rewatch of the year')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-037-AC-04: Rotten Tomatoes percentage display', () => {
+  it('renders both scores as percentages with clarifying labels', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ rottenTomatoesRating: 96, rottenTomatoesPopcornmeter: 91 }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('96% 🍅')).toBeInTheDocument()
+    expect(screen.getByText('91% 🍿')).toBeInTheDocument()
+    expect(
+      screen.getByText('Rotten Tomatoes Rating (Tomatometer)'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Rotten Tomatoes Rating (Popcornmeter)'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders a dash for a null Popcornmeter without affecting the Tomatometer value', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        rottenTomatoesRating: 96,
+        rottenTomatoesPopcornmeter: null,
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('96% 🍅')).toBeInTheDocument()
+    const popcornmeterLabel = screen.getByText(
+      'Rotten Tomatoes Rating (Popcornmeter)',
+    )
+    expect(popcornmeterLabel.nextElementSibling).toHaveTextContent('—')
   })
 })
 

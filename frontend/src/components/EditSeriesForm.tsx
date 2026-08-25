@@ -23,6 +23,7 @@ interface FormState {
   status: SeriesStatus
   imdbRating: string
   rottenTomatoesRating: string
+  rottenTomatoesPopcornmeter: string
   personalRating: string
   personalNotes: string
   posterUrl: string
@@ -48,6 +49,9 @@ function toFormState(series: Series): FormState {
     status: series.status,
     imdbRating: numberToFormValue(series.imdbRating),
     rottenTomatoesRating: numberToFormValue(series.rottenTomatoesRating),
+    rottenTomatoesPopcornmeter: numberToFormValue(
+      series.rottenTomatoesPopcornmeter,
+    ),
     personalRating: numberToFormValue(series.personalRating),
     personalNotes: series.personalNotes ?? '',
     posterUrl: series.posterUrl ?? '',
@@ -121,6 +125,18 @@ function validate(form: FormState): FieldErrors {
     }
   }
 
+  if (form.rottenTomatoesPopcornmeter.trim() !== '') {
+    const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
+    if (
+      Number.isNaN(rottenTomatoesPopcornmeter) ||
+      rottenTomatoesPopcornmeter < 0 ||
+      rottenTomatoesPopcornmeter > 100
+    ) {
+      errors.rottenTomatoesPopcornmeter =
+        'Rotten Tomatoes rating must be between 0 and 100'
+    }
+  }
+
   if (form.personalRating.trim() !== '') {
     const personalRating = Number(form.personalRating)
     if (
@@ -156,6 +172,8 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
     payload.imdbRating = Number(form.imdbRating)
   if (form.rottenTomatoesRating.trim() !== '')
     payload.rottenTomatoesRating = Number(form.rottenTomatoesRating)
+  if (form.rottenTomatoesPopcornmeter.trim() !== '')
+    payload.rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
   if (form.personalRating.trim() !== '')
     payload.personalRating = Number(form.personalRating)
   if (form.personalNotes.trim() !== '')
@@ -425,7 +443,9 @@ export function EditSeriesForm({
           </div>
 
           <div className={styles.field}>
-            <label htmlFor="rottenTomatoesRating">Rotten Tomatoes Rating</label>
+            <label htmlFor="rottenTomatoesRating">
+              Rotten Tomatoes Rating (Tomatometer)
+            </label>
             <input
               id="rottenTomatoesRating"
               type="number"
@@ -443,6 +463,31 @@ export function EditSeriesForm({
                 className={styles.fieldError}
               >
                 {fieldErrors.rottenTomatoesRating}
+              </span>
+            )}
+          </div>
+
+          <div className={styles.field}>
+            <label htmlFor="rottenTomatoesPopcornmeter">
+              Rotten Tomatoes Rating (Popcornmeter)
+            </label>
+            <input
+              id="rottenTomatoesPopcornmeter"
+              type="number"
+              value={form.rottenTomatoesPopcornmeter}
+              onChange={updateField('rottenTomatoesPopcornmeter')}
+              aria-describedby={
+                fieldErrors.rottenTomatoesPopcornmeter
+                  ? 'rottenTomatoesPopcornmeter-error'
+                  : undefined
+              }
+            />
+            {fieldErrors.rottenTomatoesPopcornmeter && (
+              <span
+                id="rottenTomatoesPopcornmeter-error"
+                className={styles.fieldError}
+              >
+                {fieldErrors.rottenTomatoesPopcornmeter}
               </span>
             )}
           </div>
