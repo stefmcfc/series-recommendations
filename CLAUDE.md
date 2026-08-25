@@ -10,7 +10,7 @@ These are hard rules, not suggestions — follow them even if training data or h
 - **All frontend backend calls go through `frontend/src/services/seriesApi.ts`.** No raw `axios`/`fetch` calls in components, ever.
 - **Backend business logic lives in `service/`.** Controllers stay thin and delegate; repositories stay plain `JpaRepository` extensions with no custom queries (filtering is done in the service layer — see `series_spec_003_search.md` for the rationale and the threshold at which that should change).
 - **Types are centralized** in `frontend/src/types/` (backend: the `dto/` package). Don't redeclare or duplicate a shape inline in a component or controller.
-- **Spec first.** Write or update the relevant `.claude/specs/` EARS spec before implementing a new requirement — see `.claude/steering/ears_format.md` and the `ears-spec` skill.
+- **Spec first.** Write or update the relevant `.claude/specs/` EARS spec before implementing a new requirement — see `.claude/steering/ears_format.md` and the `ears-spec` skill. Exception: a one-off, no-behavior-change quality/maintenance pass (e.g. resolving a batch of SonarQube/lint findings) doesn't need a spec — there's no new requirement to write acceptance criteria against. If a "cleanup" turns out to need a real behavior change (e.g. converting `role="dialog"` to a native `<dialog>` with proper focus-trap lifecycle), that specific piece reverts to needing a spec.
 - **Never commit secrets.** No `.env`, API keys, or credentials — see `.claude/steering/tech.md`.
 - **Only `gradlew.bat` (Windows) is checked in** for the Gradle wrapper. Don't add a Unix `gradlew` script unless asked — it risks wrapper-jar/version drift with no one to keep it in sync.
 
