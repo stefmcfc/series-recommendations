@@ -30,6 +30,12 @@ import java.util.List;
  * separate title-based re-lookup. See {@code
  * series_spec_023_recommendation_metadata_and_overview.md}.
  *
+ * <p>{@code streamingProviders} (SERIES-020-AC-07) is the candidate's currently-available
+ * {@code flatrate} (subscription-streaming) watch providers in the configured region ({@code
+ * app.tmdb.watch-region}, default {@code GB}), resolved live per request -- never persisted,
+ * never {@code null} (an empty list when none are found or the lookup fails). See {@code
+ * series_spec_020_watch_providers.md}.
+ *
  * <p>A record: always built fully, in one place ({@code RecommendationService.toDto}), and
  * never mutated afterward -- see the "Records over classes" guidance in this project's Java
  * conventions.
@@ -42,10 +48,22 @@ public record RecommendationDto(
     String posterUrl,
     BigDecimal tmdbRating,
     Integer voteCount,
+    List<StreamingProvider> streamingProviders,
     String imdbId,
     List<String> sourceTitles,
     Integer totalSourceCount,
     String originCountry,
     Integer tmdbId
 ) {
+
+    /**
+     * A single streaming service a recommended candidate is currently available on
+     * (SERIES-020-AC-05), mapped from {@link uk.co.stefirby.seriestracker.client.TmdbWatchProvider}.
+     * {@code logoUrl} is already a fully-built URL ({@link
+     * uk.co.stefirby.seriestracker.client.TmdbClient#PROVIDER_LOGO_BASE_URL} + the raw {@code
+     * logo_path}), or {@code null} when TMDB didn't supply a logo path -- callers never need to
+     * know TMDB's base-URL-plus-path convention themselves.
+     */
+    public record StreamingProvider(String name, String logoUrl) {
+    }
 }

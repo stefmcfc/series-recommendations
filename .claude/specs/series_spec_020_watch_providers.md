@@ -1,6 +1,11 @@
 # Spec 020: Streaming/Network Watch Providers on Recommendations
 
-**Status**: Not started
+**Status**: Backend done (this spec's Requirements 1–2); frontend consumer is `frontend_spec_025_watch_providers.md`, a separate follow-up.
+
+Implementation notes / judgment calls:
+- `RecommendationService.streamingProviders` includes a defensive `null` guard around `TmdbClient.watchProviders`'s return value in addition to the `ExternalServiceException` catch the spec calls for. `watchProviders` itself never returns `null` (SERIES-020-AC-02) — this is defense-in-depth only, added because Spock's `Mock()` (unlike `Stub()`) returns `null`, not an empty collection, for an unstubbed method call, and `toDto` now calls `watchProviders` unconditionally for every candidate; without the guard, every pre-existing `RecommendationServiceSpec` test that doesn't care about streaming providers would need its own explicit stub.
+- `watchRegion` is appended as the 9th constructor parameter on `RecommendationService`, after `maxPerSource`, matching the order `@Value`-injected tuning constants were already added in.
+
 **Priority**: P3 (informational display addition — not core CRUD)
 **Depends on**: Series Spec 006 (Recommendations, `RecommendationDto`/`RecommendationService.toDto`) ✅, Series Spec 016 (`voteCount` passthrough precedent) ✅
 **Backend Task**
@@ -121,10 +126,10 @@ def "SERIES-020-AC-06: a watchProviders failure yields an empty list, not a fail
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-020-AC-01: `TmdbClient.watchProviders(tmdbId, regionCode)`, mapped `TmdbWatchProvider` record
-- [ ] SERIES-020-AC-02: no region match → empty list, not an error
-- [ ] SERIES-020-AC-03: `PROVIDER_LOGO_BASE_URL` constant
-- [ ] SERIES-020-AC-04: `ExternalServiceException` on failure, same as every other `TmdbClient` method
-- [ ] SERIES-020-AC-05: `toDto` populates `streamingProviders` via `app.tmdb.watch-region`-configured lookup
-- [ ] SERIES-020-AC-06: lookup failure is non-fatal, empty list for that candidate
-- [ ] SERIES-020-AC-07: `RecommendationDto.streamingProviders` field, never `null`
+- [x] SERIES-020-AC-01: `TmdbClient.watchProviders(tmdbId, regionCode)`, mapped `TmdbWatchProvider` record
+- [x] SERIES-020-AC-02: no region match → empty list, not an error
+- [x] SERIES-020-AC-03: `PROVIDER_LOGO_BASE_URL` constant
+- [x] SERIES-020-AC-04: `ExternalServiceException` on failure, same as every other `TmdbClient` method
+- [x] SERIES-020-AC-05: `toDto` populates `streamingProviders` via `app.tmdb.watch-region`-configured lookup
+- [x] SERIES-020-AC-06: lookup failure is non-fatal, empty list for that candidate
+- [x] SERIES-020-AC-07: `RecommendationDto.streamingProviders` field, never `null`

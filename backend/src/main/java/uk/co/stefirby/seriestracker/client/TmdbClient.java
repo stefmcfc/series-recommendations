@@ -52,6 +52,14 @@ public class TmdbClient {
      */
     public static final String POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500";
 
+    /**
+     * TMDB's watch-provider logo-image base URL, prepended to a {@code logo_path} to build a
+     * displayable provider logo URL -- the single owner of this literal (SERIES-020-AC-03),
+     * mirroring {@link #POSTER_BASE_URL}'s role. {@code RecommendationService} is the sole
+     * caller.
+     */
+    public static final String PROVIDER_LOGO_BASE_URL = "https://image.tmdb.org/t/p/w92";
+
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
 
     /** Valid {@code timeWindow} values for {@link #trending(String)} (SERIES-022-AC-02). */
@@ -213,6 +221,35 @@ public class TmdbClient {
     public List<TmdbKeyword> showKeywords(int tmdbId) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId + "/keywords"));
         return mapKeywords(body);
+    }
+
+    /**
+     * Resolves a show's currently-available {@code flatrate} (subscription-streaming) watch
+     * providers for a given region via {@code GET /tv/{tmdbId}/watch/providers}
+     * (SERIES-020-AC-01), extracting {@code results.{regionCode}.flatrate[]} -- deliberately
+     * narrowed to {@code flatrate} only, not {@code rent}/{@code buy}/{@code ads}, per {@code
+     * series_spec_020_watch_providers.md}'s Design Decisions. An absent {@code results} field,
+     * no entry for {@code regionCode}, or an entry with no {@code flatrate} array all yield an
+     * empty list, never {@code null} or an exception (SERIES-020-AC-02).
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    @SuppressWarnings("unchecked")
+    public List<TmdbWatchProvider> watchProviders(int tmdbId, String regionCode) {
+        Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId + "/watch/providers"));
+        if (!(body.get("results") instanceof Map<?, ?> results)) {
+            return List.of();
+        }
+        if (!(results.get(regionCode) instanceof Map<?, ?> regionEntry)) {
+            return List.of();
+        }
+        List<Map<String, Object>> flatrate = listOfMaps((Map<String, Object>) regionEntry, "flatrate");
+        List<TmdbWatchProvider> providers = new ArrayList<>();
+        for (Map<String, Object> item : flatrate) {
+            providers.add(new TmdbWatchProvider(str(item.get("provider_name")), str(item.get("logo_path"))));
+        }
+        return providers;
     }
 
     /**
