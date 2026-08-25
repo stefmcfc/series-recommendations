@@ -18,6 +18,10 @@ function formatValue(value: string | number | null): string {
   return value === null ? '—' : String(value)
 }
 
+function formatPercent(value: number | null): string {
+  return value === null ? '—' : `${value}%`
+}
+
 function formatDate(value: string | null): string {
   if (value === null) return '—'
   return new Date(value).toLocaleDateString()
@@ -391,8 +395,14 @@ export function SeriesDetail({
 
                   <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
                     <div className={styles.field}>
-                      <dt>Rotten Tomatoes Rating</dt>
-                      <dd>{formatValue(series.rottenTomatoesRating)}</dd>
+                      <dt>Rotten Tomatoes Rating (Tomatometer)</dt>
+                      <dd>{formatPercent(series.rottenTomatoesRating)}</dd>
+                    </div>
+                    <div className={styles.field}>
+                      <dt>Rotten Tomatoes Rating (Popcornmeter)</dt>
+                      <dd>
+                        {formatPercent(series.rottenTomatoesPopcornmeter)}
+                      </dd>
                     </div>
                     <div className={styles.field}>
                       <dt>Personal Rating</dt>

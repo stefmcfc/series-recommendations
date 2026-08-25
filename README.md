@@ -138,7 +138,7 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 023 | Recommendation metadata & persisted overview (`originCountry`/`tmdbId` on recommendation candidates, lazy per-candidate keyword lookup `GET /series/recommendations/{tmdbId}/keywords`, persisted series `overview` sourced from TMDB, kept fresh on refresh) | ✅ Done |
 | Frontend 028 | Recommendation metadata & overview display (recommendation-card origin country badge, lazy per-card keyword expand, `SeriesDetail` overview display, `AddSeriesForm` overview carry-through) | ✅ Done |
 | Backend 027 | Rotten Tomatoes Popcornmeter field (user-entered audience score, distinct from the existing Tomatometer-sourced `rottenTomatoesRating`) + refresh null-safety fix (`SeriesRefreshService` no longer wipes an existing field when the fresh external value is `null`) | ✅ Done |
-| Frontend 037 | Rotten Tomatoes Popcornmeter UI (`AddSeriesForm`/`EditSeriesForm` field, `SeriesDetail`/`SeriesList` display, "% (Tomatometer)"/"% (Popcornmeter)" labeling) | ⬜ Not started |
+| Frontend 037 | Rotten Tomatoes Popcornmeter UI (`AddSeriesForm`/`EditSeriesForm` field, `SeriesDetail` percentage display, "(Tomatometer)"/"(Popcornmeter)" labeling) | ✅ Done |
 
 ## Future Ideas
 

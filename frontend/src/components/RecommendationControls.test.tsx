@@ -23,6 +23,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     status: 'COMPLETED',
     imdbRating: 8.4,
     rottenTomatoesRating: null,
+    rottenTomatoesPopcornmeter: null,
     tmdbRating: null,
     tmdbVoteCount: null,
     personalRating: null,
