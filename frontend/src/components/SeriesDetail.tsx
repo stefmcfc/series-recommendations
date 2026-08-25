@@ -18,8 +18,8 @@ function formatValue(value: string | number | null): string {
   return value === null ? '—' : String(value)
 }
 
-function formatPercent(value: number | null): string {
-  return value === null ? '—' : `${value}%`
+function formatPercent(value: number | null, emoji: string): string {
+  return value === null ? '—' : `${value}% ${emoji}`
 }
 
 function formatDate(value: string | null): string {
@@ -396,12 +396,14 @@ export function SeriesDetail({
                   <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
                     <div className={styles.field}>
                       <dt>Rotten Tomatoes Rating (Tomatometer)</dt>
-                      <dd>{formatPercent(series.rottenTomatoesRating)}</dd>
+                      <dd>
+                        {formatPercent(series.rottenTomatoesRating, '🍅')}
+                      </dd>
                     </div>
                     <div className={styles.field}>
                       <dt>Rotten Tomatoes Rating (Popcornmeter)</dt>
                       <dd>
-                        {formatPercent(series.rottenTomatoesPopcornmeter)}
+                        {formatPercent(series.rottenTomatoesPopcornmeter, '🍿')}
                       </dd>
                     </div>
                     <div className={styles.field}>

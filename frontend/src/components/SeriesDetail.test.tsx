@@ -75,8 +75,8 @@ describe('FRONTEND-037-AC-04: Rotten Tomatoes percentage display', () => {
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    expect(await screen.findByText('96%')).toBeInTheDocument()
-    expect(screen.getByText('91%')).toBeInTheDocument()
+    expect(await screen.findByText('96% 🍅')).toBeInTheDocument()
+    expect(screen.getByText('91% 🍿')).toBeInTheDocument()
     expect(
       screen.getByText('Rotten Tomatoes Rating (Tomatometer)'),
     ).toBeInTheDocument()
@@ -94,7 +94,7 @@ describe('FRONTEND-037-AC-04: Rotten Tomatoes percentage display', () => {
     )
     render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
 
-    expect(await screen.findByText('96%')).toBeInTheDocument()
+    expect(await screen.findByText('96% 🍅')).toBeInTheDocument()
     const popcornmeterLabel = screen.getByText(
       'Rotten Tomatoes Rating (Popcornmeter)',
     )
