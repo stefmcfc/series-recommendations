@@ -247,6 +247,29 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
                     </span>
                   )}
                 </div>
+                {r.streamingProviders.length > 0 ? (
+                  <ul className={styles.streamingProviders}>
+                    {r.streamingProviders.map((provider) => (
+                      <li
+                        key={provider.name}
+                        className={styles.streamingProvider}
+                      >
+                        {provider.logoUrl !== null && (
+                          <img
+                            src={provider.logoUrl}
+                            alt={provider.name}
+                            className={styles.streamingProviderLogo}
+                          />
+                        )}
+                        <span>{provider.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className={styles.streamingProvidersEmpty}>
+                    Not currently streaming in the UK
+                  </span>
+                )}
                 {r.genres !== null && (
                   <span className={styles.genres}>{r.genres}</span>
                 )}
@@ -365,6 +388,7 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
       <p className={styles.attribution}>
         This product uses the TMDB API but is not endorsed or certified by TMDB.
       </p>
+      <p className={styles.attribution}>Streaming data via JustWatch.</p>
     </div>
   )
 }
