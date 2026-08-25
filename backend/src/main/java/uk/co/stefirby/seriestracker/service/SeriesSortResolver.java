@@ -59,7 +59,7 @@ final class SeriesSortResolver {
     // the (possibly reversed) natural-order comparator, so this holds for either direction.
     private static <T extends Comparable<T>> Comparator<SeriesEntity> comparingNullsLast(
             Function<SeriesEntity, T> extractor, boolean descending) {
-        Comparator<T> order = descending ? Comparator.<T>reverseOrder() : Comparator.<T>naturalOrder();
+        Comparator<T> order = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
         return Comparator.comparing(extractor, Comparator.nullsLast(order));
     }
 

@@ -84,21 +84,8 @@ public class RecommendationService {
      */
     private static final int DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200;
 
-    /**
-     * TMDB's full confirmed {@code discover/tv} {@code sort_by} enum (SERIES-025-AC-04),
-     * validated in {@link #validate} whenever {@link RecommendationCriteria#getDiscoverSortBy()}
-     * is non-blank. Deliberately the complete 12-value enum, not just the subset a given
-     * frontend release exposes -- see {@code series_spec_025_discover_native_sort.md}'s Design
-     * Decisions.
-     */
-    private static final Set<String> VALID_DISCOVER_SORT_BY = Set.of(
-        "first_air_date.asc", "first_air_date.desc",
-        "name.asc", "name.desc",
-        "original_name.asc", "original_name.desc",
-        "popularity.asc", "popularity.desc",
-        "vote_average.asc", "vote_average.desc",
-        "vote_count.asc", "vote_count.desc"
-    );
+    /** {@link RecommendationCriteria#getSourceMode()} value selecting directed top-rated sourcing (SERIES-022-AC-11..15). */
+    private static final String SOURCE_MODE_TOP_RATED = "topRated";
 
     /** {@link #sourceTopRated}'s default {@code discoverSortBy} when unset (SERIES-025-AC-05) -- preserves pre-spec-025 behavior exactly. */
     private static final String DEFAULT_TOP_RATED_SORT_BY = "vote_average.desc";
@@ -110,6 +97,22 @@ public class RecommendationService {
      * {@code sort_by} at all.
      */
     private static final String DEFAULT_GENRE_SORT_BY = "popularity.desc";
+
+    /**
+     * TMDB's full confirmed {@code discover/tv} {@code sort_by} enum (SERIES-025-AC-04),
+     * validated in {@link #validate} whenever {@link RecommendationCriteria#getDiscoverSortBy()}
+     * is non-blank. Deliberately the complete 12-value enum, not just the subset a given
+     * frontend release exposes -- see {@code series_spec_025_discover_native_sort.md}'s Design
+     * Decisions.
+     */
+    private static final Set<String> VALID_DISCOVER_SORT_BY = Set.of(
+        "first_air_date.asc", "first_air_date.desc",
+        "name.asc", "name.desc",
+        "original_name.asc", "original_name.desc",
+        "popularity.asc", DEFAULT_GENRE_SORT_BY,
+        "vote_average.asc", DEFAULT_TOP_RATED_SORT_BY,
+        "vote_count.asc", "vote_count.desc"
+    );
 
     private final SeriesRepository seriesRepository;
     private final IgnoredSeriesRepository ignoredSeriesRepository;
@@ -140,10 +143,10 @@ public class RecommendationService {
     private final String diversityCapMode;
 
     /**
-     * Default for {@link #maxPerSource} when {@link RecommendationCriteria#getMaxPerSource()}
-     * is unset (SERIES-007-AC-22, superseding the previously hardcoded {@code
-     * DEFAULT_MAX_PER_SOURCE = 3}). Upper bound on how many recommendations can come from any
-     * single source series in "Specific Series" mode's diversity cap.
+     * Default upper bound on how many recommendations can come from any single source series
+     * in "Specific Series" mode's diversity cap ({@link #applyDiversityCap}), used when {@link
+     * RecommendationCriteria#getMaxPerSource()} is unset (SERIES-007-AC-22, superseding the
+     * previously hardcoded {@code DEFAULT_MAX_PER_SOURCE = 3}).
      */
     private final int maxPerSource;
 
@@ -178,15 +181,25 @@ public class RecommendationService {
     /** Convenience overload -- equivalent to {@code recommend(limit, new RecommendationCriteria())}. */
     @Transactional(readOnly = true)
     public List<RecommendationDto> recommend(int limit) {
-        return recommend(limit, new RecommendationCriteria());
+        return doRecommend(limit, new RecommendationCriteria());
     }
 
     @Transactional(readOnly = true)
     public List<RecommendationDto> recommend(int limit, RecommendationCriteria criteria) {
+        return doRecommend(limit, criteria);
+    }
+
+    /**
+     * Shared implementation for both {@link #recommend(int)} and {@link #recommend(int,
+     * RecommendationCriteria)} -- kept private (not itself {@code @Transactional}) so neither
+     * public overload calls the other via {@code this}, which would bypass Spring's
+     * transactional proxy (java:S6809).
+     */
+    private List<RecommendationDto> doRecommend(int limit, RecommendationCriteria criteria) {
         validate(criteria);
 
         boolean trendingMode = "trending".equals(criteria.getSourceMode());
-        boolean topRatedMode = "topRated".equals(criteria.getSourceMode());
+        boolean topRatedMode = SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
         boolean genreOrKeywordDirected = isDirectedByGenreOrKeyword(criteria);
 
         List<RawCandidate> raw;
@@ -220,7 +233,7 @@ public class RecommendationService {
             return filtered.stream()
                 .map(dc -> toDto(dc, effectiveMaxSourcesShown))
                 .limit(limit)
-                .collect(Collectors.toList());
+                .toList();
         }
 
         int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
@@ -229,7 +242,7 @@ public class RecommendationService {
         List<ScoredCandidate> ranked = filtered.stream()
             .map(dc -> score(dc, effectiveMaxSourcesShown))
             .sorted(resolveSortComparator(criteria))
-            .collect(Collectors.toList());
+            .toList();
 
         int effectiveMaxPerSource = criteria.getMaxPerSource() != null ? criteria.getMaxPerSource() : maxPerSource;
         List<ScoredCandidate> diversified = applyDiversityCap(ranked, effectiveMaxPerSource);
@@ -237,17 +250,32 @@ public class RecommendationService {
         return diversified.stream()
             .map(ScoredCandidate::dto)
             .limit(limit)
-            .collect(Collectors.toList());
+            .toList();
     }
 
+    /**
+     * Each independent check is its own method (java:S3776) -- this method's own job is just to
+     * run them all in order; none of them depend on another's outcome.
+     */
     private void validate(RecommendationCriteria c) {
         boolean hasSeriesIds = c.getSeriesIds() != null && !c.getSeriesIds().isEmpty();
         boolean hasGenreOrKeyword = isDirectedByGenreOrKeyword(c);
         boolean hasSourceMode = c.getSourceMode() != null && !c.getSourceMode().isBlank();
 
-        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !"topRated".equals(c.getSourceMode())) {
+        validateSourceMode(c, hasSourceMode);
+        validateMutuallyExclusiveModes(hasSeriesIds, hasGenreOrKeyword, hasSourceMode);
+        validateMinSourceRating(c);
+        validateTrendingWindow(c);
+        validateDiscoverSortBy(c);
+    }
+
+    private void validateSourceMode(RecommendationCriteria c, boolean hasSourceMode) {
+        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())) {
             throw new IllegalArgumentException("sourceMode must be one of: trending, topRated");
         }
+    }
+
+    private void validateMutuallyExclusiveModes(boolean hasSeriesIds, boolean hasGenreOrKeyword, boolean hasSourceMode) {
         if (hasSeriesIds && hasGenreOrKeyword) {
             throw new IllegalArgumentException(
                 "seriesIds cannot be combined with genres/keywords -- these are mutually exclusive request modes");
@@ -256,14 +284,23 @@ public class RecommendationService {
             throw new IllegalArgumentException(
                 "sourceMode cannot be combined with seriesIds/genres/keywords -- these are mutually exclusive request modes");
         }
+    }
+
+    private void validateMinSourceRating(RecommendationCriteria c) {
         if (c.getMinSourceRating() != null && (c.getMinSourceRating() < 1 || c.getMinSourceRating() > 5)) {
             throw new IllegalArgumentException("minSourceRating must be between 1 and 5");
         }
+    }
+
+    private void validateTrendingWindow(RecommendationCriteria c) {
         String trendingWindow = c.getTrendingWindow();
         if (trendingWindow != null && !trendingWindow.isBlank()
             && !"day".equals(trendingWindow) && !"week".equals(trendingWindow)) {
             throw new IllegalArgumentException("trendingWindow must be one of: day, week");
         }
+    }
+
+    private void validateDiscoverSortBy(RecommendationCriteria c) {
         String discoverSortBy = c.getDiscoverSortBy();
         if (discoverSortBy != null && !discoverSortBy.isBlank() && !VALID_DISCOVER_SORT_BY.contains(discoverSortBy)) {
             throw new IllegalArgumentException("discoverSortBy must be one of: " + VALID_DISCOVER_SORT_BY);
@@ -282,7 +319,7 @@ public class RecommendationService {
             ? c.getTrendingWindow() : "week";
         return tmdbClient.trending(window).stream()
             .map(candidate -> new RawCandidate(candidate, null))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
@@ -294,7 +331,7 @@ public class RecommendationService {
         String effectiveSortBy = resolveDiscoverSortBy(c, DEFAULT_TOP_RATED_SORT_BY);
         return tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy).stream()
             .map(candidate -> new RawCandidate(candidate, null))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     // -- Requirement 5: directed sourcing by genre/keyword, bypassing the watched pool entirely --
@@ -306,7 +343,7 @@ public class RecommendationService {
         String effectiveSortBy = resolveDiscoverSortBy(c, DEFAULT_GENRE_SORT_BY);
         return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy).stream()
             .map(candidate -> new RawCandidate(candidate, null))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /** Shared by {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword}: an explicit, non-blank {@code discoverSortBy} wins; otherwise the mode's own default. */
@@ -323,7 +360,7 @@ public class RecommendationService {
             .map(genreTable::idFor)
             .filter(Objects::nonNull)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
     }
 
     private List<Integer> resolveKeywordIds(List<String> keywords) {
@@ -335,7 +372,7 @@ public class RecommendationService {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
     }
 
     // -- Requirement 4 (Spec 006) / Requirement 4+6 (Spec 007): pool-based (title + genre supplement) sourcing --
@@ -369,7 +406,7 @@ public class RecommendationService {
                 || (e.getPersonalRating() != null && e.getPersonalRating() >= c.getMinSourceRating()))
             .sorted(SOURCE_ORDER_COMPARATOR)
             .limit(maxSourceSeries)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -386,7 +423,7 @@ public class RecommendationService {
                 && e.getImdbId() != null
                 && !e.getImdbId().isBlank()
                 && !e.isExcludeFromRecommendations())
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -395,11 +432,11 @@ public class RecommendationService {
      * doesn't match an existing {@link SeriesEntity}.
      */
     private List<SeriesEntity> explicitPool(List<String> rawSeriesIds) {
-        List<UUID> ids = rawSeriesIds.stream().map(this::parseUuid).distinct().collect(Collectors.toList());
+        List<UUID> ids = rawSeriesIds.stream().map(this::parseUuid).distinct().toList();
         List<SeriesEntity> found = seriesRepository.findAllById(ids);
         if (found.size() != ids.size()) {
             Set<UUID> foundIds = found.stream().map(SeriesEntity::getId).collect(Collectors.toSet());
-            List<UUID> missing = ids.stream().filter(id -> !foundIds.contains(id)).collect(Collectors.toList());
+            List<UUID> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();
             throw new IllegalArgumentException("Unknown series id(s) in seriesIds: " + missing);
         }
         return found;
@@ -408,7 +445,7 @@ public class RecommendationService {
     private UUID parseUuid(String raw) {
         try {
             return UUID.fromString(raw.trim());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             throw new IllegalArgumentException("Invalid seriesIds entry (not a UUID): " + raw);
         }
     }
@@ -452,7 +489,7 @@ public class RecommendationService {
             .map(genreTable::idFor)
             .filter(Objects::nonNull)
             .distinct()
-            .collect(Collectors.toList());
+            .toList();
 
         if (genreIds.isEmpty()) {
             return List.of();
@@ -464,7 +501,7 @@ public class RecommendationService {
         // is used directly rather than resolving discoverSortBy.
         return tmdbClient.discover(genreIds, List.of(), DEFAULT_GENRE_SORT_BY).stream()
             .map(c -> new RawCandidate(c, null))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     private static List<String> splitGenres(String genres) {
@@ -474,7 +511,7 @@ public class RecommendationService {
         return Arrays.stream(genres.split(","))
             .map(String::trim)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.toList());
+            .toList();
     }
 
     // -- Requirement 6 (Spec 006): filtering & deduplication --
@@ -484,36 +521,47 @@ public class RecommendationService {
         Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
 
         for (RawCandidate rc : raw) {
-            Optional<String> imdbIdOpt = tmdbClient.externalIds(rc.candidate().tmdbId());
-            if (imdbIdOpt.isEmpty()) {
-                continue;
-            }
-            String imdbId = imdbIdOpt.get();
-
-            if (candidateByImdbId.containsKey(imdbId)) {
-                // SERIES-015-AC-02: a duplicate's source series is accumulated, not discarded.
-                if (rc.sourceSeries() != null) {
-                    sourcesByImdbId.get(imdbId).add(rc.sourceSeries());
-                }
-                continue;
-            }
-
-            if (seriesRepository.existsByImdbId(imdbId) || ignoredSeriesRepository.existsByImdbId(imdbId)) {
-                continue;
-            }
-
-            candidateByImdbId.put(imdbId, rc.candidate());
-            List<SeriesEntity> sources = new ArrayList<>();
-            if (rc.sourceSeries() != null) {
-                // SERIES-015-AC-04: the first-seen source seeds the accumulated list.
-                sources.add(rc.sourceSeries());
-            }
-            sourcesByImdbId.put(imdbId, sources);
+            accumulateCandidate(rc, candidateByImdbId, sourcesByImdbId);
         }
 
         return candidateByImdbId.entrySet().stream()
             .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey())), e.getKey()))
-            .collect(Collectors.toList());
+            .toList();
+    }
+
+    /**
+     * Resolves {@code rc}'s imdb_id and folds it into {@code candidateByImdbId}/{@code
+     * sourcesByImdbId} -- extracted from {@link #dedupeAndExclude}'s loop so each early-exit
+     * case below is a {@code return} rather than a {@code continue} (java:S135).
+     */
+    private void accumulateCandidate(RawCandidate rc,
+                                      Map<String, TmdbCandidate> candidateByImdbId,
+                                      Map<String, List<SeriesEntity>> sourcesByImdbId) {
+        Optional<String> imdbIdOpt = tmdbClient.externalIds(rc.candidate().tmdbId());
+        if (imdbIdOpt.isEmpty()) {
+            return;
+        }
+        String imdbId = imdbIdOpt.get();
+
+        if (candidateByImdbId.containsKey(imdbId)) {
+            // SERIES-015-AC-02: a duplicate's source series is accumulated, not discarded.
+            if (rc.sourceSeries() != null) {
+                sourcesByImdbId.get(imdbId).add(rc.sourceSeries());
+            }
+            return;
+        }
+
+        if (seriesRepository.existsByImdbId(imdbId) || ignoredSeriesRepository.existsByImdbId(imdbId)) {
+            return;
+        }
+
+        candidateByImdbId.put(imdbId, rc.candidate());
+        List<SeriesEntity> sources = new ArrayList<>();
+        if (rc.sourceSeries() != null) {
+            // SERIES-015-AC-04: the first-seen source seeds the accumulated list.
+            sources.add(rc.sourceSeries());
+        }
+        sourcesByImdbId.put(imdbId, sources);
     }
 
     /**
@@ -523,14 +571,14 @@ public class RecommendationService {
      * (SERIES-015-AC-03) sorts to another empty list.
      */
     private List<SeriesEntity> orderSources(List<SeriesEntity> sources) {
-        return sources.stream().sorted(SOURCE_ORDER_COMPARATOR).collect(Collectors.toList());
+        return sources.stream().sorted(SOURCE_ORDER_COMPARATOR).toList();
     }
 
     // -- Requirement 8: output filters (SERIES-007-AC-23..29) --
 
     private List<DedupedCandidate> applyOutputFilters(List<DedupedCandidate> candidates, RecommendationCriteria c) {
         // SERIES-024-AC-11/12: the post-hoc default is likewise 200 for topRated, 20 otherwise.
-        int defaultMinVoteCount = "topRated".equals(c.getSourceMode())
+        int defaultMinVoteCount = SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())
             ? DEFAULT_MIN_VOTE_COUNT_TOP_RATED : DEFAULT_MIN_VOTE_COUNT;
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
         return candidates.stream()
@@ -542,7 +590,7 @@ public class RecommendationService {
             // SERIES-024-AC-05: run last -- the only filter with a per-candidate extra call,
             // so it only ever runs against the smallest possible remaining pool.
             .filter(dc -> matchesExcludeKeywords(dc.candidate(), c.getExcludeKeywords()))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     private boolean matchesMinTmdbRating(TmdbCandidate c, BigDecimal minTmdbRating) {
@@ -629,7 +677,7 @@ public class RecommendationService {
             // SERIES-015-AC-07: the max personalRating across all contributing sources --
             // equivalently the first entry's personalRating under the canonical ordering
             // (SERIES-015-AC-05), since that ordering is personalRating-descending.
-            Integer maxPersonalRating = dc.sourceSeries().get(0).getPersonalRating();
+            Integer maxPersonalRating = dc.sourceSeries().getFirst().getPersonalRating();
             double personalRatingTerm = maxPersonalRating != null ? maxPersonalRating * 2 : 0;
             rankScore = (tmdbRating * 0.5) + (personalRatingTerm * 0.5);
         } else {
@@ -638,7 +686,7 @@ public class RecommendationService {
 
         List<String> allSourceTitles = dc.sourceSeries().stream()
             .map(SeriesEntity::getTitle)
-            .collect(Collectors.toList());
+            .toList();
         return new ScoredCandidate(dto, rankScore, allSourceTitles);
     }
 
@@ -671,31 +719,50 @@ public class RecommendationService {
         Map<String, Integer> perSourceCount = new HashMap<>();
         List<ScoredCandidate> result = new ArrayList<>();
         for (ScoredCandidate sc : ranked) {
-            List<String> sourceTitles = sc.allSourceTitles();
-            if (sourceTitles.isEmpty()) {
+            if (admitsCandidate(sc, allSourcesMode, perSourceCount, maxPerSource)) {
                 result.add(sc);
-                continue;
-            }
-
-            if (allSourcesMode) {
-                boolean anySourceAtCap = sourceTitles.stream()
-                    .anyMatch(title -> perSourceCount.getOrDefault(title, 0) >= maxPerSource);
-                if (!anySourceAtCap) {
-                    result.add(sc);
-                    for (String title : sourceTitles) {
-                        perSourceCount.merge(title, 1, Integer::sum);
-                    }
-                }
-            } else {
-                String bestSourceTitle = sourceTitles.get(0);
-                int count = perSourceCount.getOrDefault(bestSourceTitle, 0);
-                if (count < maxPerSource) {
-                    result.add(sc);
-                    perSourceCount.put(bestSourceTitle, count + 1);
-                }
             }
         }
         return result;
+    }
+
+    /**
+     * Decides whether {@code sc} stays under the diversity cap, incrementing {@code
+     * perSourceCount} as a side effect when it does -- extracted from {@link
+     * #applyDiversityCap}'s loop to keep the two mode branches (java:S3776) out of the loop
+     * body itself.
+     */
+    private boolean admitsCandidate(ScoredCandidate sc, boolean allSourcesMode,
+                                     Map<String, Integer> perSourceCount, int maxPerSource) {
+        List<String> sourceTitles = sc.allSourceTitles();
+        if (sourceTitles.isEmpty()) {
+            return true;
+        }
+        return allSourcesMode
+            ? admitAllSources(sourceTitles, perSourceCount, maxPerSource)
+            : admitBestSource(sourceTitles, perSourceCount, maxPerSource);
+    }
+
+    private boolean admitAllSources(List<String> sourceTitles, Map<String, Integer> perSourceCount, int maxPerSource) {
+        boolean anySourceAtCap = sourceTitles.stream()
+            .anyMatch(title -> perSourceCount.getOrDefault(title, 0) >= maxPerSource);
+        if (anySourceAtCap) {
+            return false;
+        }
+        for (String title : sourceTitles) {
+            perSourceCount.merge(title, 1, Integer::sum);
+        }
+        return true;
+    }
+
+    private boolean admitBestSource(List<String> sourceTitles, Map<String, Integer> perSourceCount, int maxPerSource) {
+        String bestSourceTitle = sourceTitles.getFirst();
+        int count = perSourceCount.getOrDefault(bestSourceTitle, 0);
+        if (count >= maxPerSource) {
+            return false;
+        }
+        perSourceCount.put(bestSourceTitle, count + 1);
+        return true;
     }
 
     private RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown) {
@@ -703,7 +770,7 @@ public class RecommendationService {
         List<String> sourceTitles = dc.sourceSeries().stream()
             .map(SeriesEntity::getTitle)
             .limit(effectiveMaxSourcesShown)
-            .collect(Collectors.toList());
+            .toList();
         return new RecommendationDto(
             c.title(),
             c.year(),
@@ -746,7 +813,7 @@ public class RecommendationService {
             .map(p -> new RecommendationDto.StreamingProvider(
                 p.providerName(),
                 p.logoPath() != null ? TmdbClient.PROVIDER_LOGO_BASE_URL + p.logoPath() : null))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**
@@ -764,7 +831,7 @@ public class RecommendationService {
         try {
             return tmdbClient.showKeywords(tmdbId).stream()
                 .map(TmdbKeyword::name)
-                .collect(Collectors.toList());
+                .toList();
         } catch (ExternalServiceException e) {
             log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
             return List.of();

@@ -49,7 +49,9 @@ public class SeriesLookupDto {
     // precedent as originCountry/productionStatus above.
     private String overview;
 
-    public SeriesLookupDto() {}
+    public SeriesLookupDto() {
+        // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
+    }
 
     public Integer getTmdbId() { return tmdbId; }
     public void setTmdbId(Integer tmdbId) { this.tmdbId = tmdbId; }

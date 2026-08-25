@@ -38,7 +38,7 @@ public enum ProductionStatus {
         String normalized = tmdbStatus.trim().toUpperCase(Locale.ROOT).replace(' ', '_').replace('-', '_');
         try {
             return Optional.of(ProductionStatus.valueOf(normalized));
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             return Optional.empty();
         }
     }

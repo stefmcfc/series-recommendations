@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -57,7 +58,14 @@ public class SeriesController {
     private final SeriesRefreshService refreshService;
     private final BulkRefreshService bulkRefreshService;
     private final KeywordStatsService keywordStatsService;
+    private final Clock clock;
 
+    // One controller backs this app's entire /api/v1/series resource surface (~20 endpoints
+    // across CRUD, search, export, lookup, recommendations, ignore-list, refresh, keywords) --
+    // per this project's "thin controller, delegate to service/" convention there's no single
+    // cohesive sub-grouping among these dependencies that wouldn't be an artificial wrapper
+    // invented purely to satisfy a parameter count. java:S107 suppressed deliberately.
+    @SuppressWarnings("java:S107")
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
@@ -67,7 +75,8 @@ public class SeriesController {
                             TmdbGenreTable genreTable,
                             SeriesRefreshService refreshService,
                             BulkRefreshService bulkRefreshService,
-                            KeywordStatsService keywordStatsService) {
+                            KeywordStatsService keywordStatsService,
+                            Clock clock) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
@@ -78,6 +87,7 @@ public class SeriesController {
         this.refreshService = refreshService;
         this.bulkRefreshService = bulkRefreshService;
         this.keywordStatsService = keywordStatsService;
+        this.clock = clock;
     }
 
     @PostMapping
@@ -285,13 +295,13 @@ public class SeriesController {
         c.setStartedNotFinished(startedNotFinished);
 
         List<SeriesDto> series = searchService.search(c);
-        String ts = LocalDateTime.now().format(FILENAME_FMT);
+        String ts = LocalDateTime.now(clock).format(FILENAME_FMT);
         String content;
         String filename;
         String contentType;
 
         if (format.equalsIgnoreCase("json")) {
-            content = exportService.exportAsJson(series, LocalDateTime.now());
+            content = exportService.exportAsJson(series, LocalDateTime.now(clock));
             filename = "series-export-" + ts + ".json";
             contentType = "application/json";
         } else {

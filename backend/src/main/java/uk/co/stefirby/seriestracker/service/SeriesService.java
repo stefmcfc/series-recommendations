@@ -13,23 +13,27 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class SeriesService {
 
     private static final Logger log = LoggerFactory.getLogger(SeriesService.class);
 
+    private static final String SERIES_NOT_FOUND = "Series not found with id: ";
+
     private final SeriesRepository repository;
     private final KeywordSyncService keywordSyncService;
+    private final Clock clock;
 
-    public SeriesService(SeriesRepository repository, KeywordSyncService keywordSyncService) {
+    public SeriesService(SeriesRepository repository, KeywordSyncService keywordSyncService, Clock clock) {
         this.repository = repository;
         this.keywordSyncService = keywordSyncService;
+        this.clock = clock;
     }
 
     @Transactional
@@ -86,12 +90,12 @@ public class SeriesService {
         }
 
         // Set dateAdded explicitly so it's available immediately after save
-        entity.setDateAdded(LocalDateTime.now());
+        entity.setDateAdded(LocalDateTime.now(clock));
 
         // SERIES-018-AC-12: a freshly added series' data is, by definition, as fresh as it'll
         // ever be without an explicit refresh -- leaving lastRefreshedAt null until the first
         // refresh would misrepresent a just-added series as stale.
-        entity.setLastRefreshedAt(LocalDateTime.now());
+        entity.setLastRefreshedAt(LocalDateTime.now(clock));
 
         SeriesStatus status = SeriesStatus.BACKLOG;
         if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
@@ -100,7 +104,7 @@ public class SeriesService {
         entity.setStatus(status);
 
         if (status == SeriesStatus.COMPLETED) {
-            entity.setDateCompleted(LocalDateTime.now());
+            entity.setDateCompleted(LocalDateTime.now(clock));
         }
 
         // SERIES-019-AC-24: when the incoming dto carries a tmdbId (round-tripped from
@@ -120,13 +124,13 @@ public class SeriesService {
     public SeriesDto getById(UUID id) {
         log.debug("Fetching series by id: {}", id);
         SeriesEntity entity = repository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
+            .orElseThrow(() -> new EntityNotFoundException(SERIES_NOT_FOUND + id));
         return entityToDto(entity);
     }
 
     @Transactional(readOnly = true)
     public List<SeriesDto> getAll() {
-        return getAll(null, null);
+        return doGetAll(null, null);
     }
 
     // SERIES-009-AC-06: getAll() gains an explicit default order (dateAdded descending, via
@@ -135,20 +139,46 @@ public class SeriesService {
     // was worth replacing even though nothing else asked for it.
     @Transactional(readOnly = true)
     public List<SeriesDto> getAll(String sortBy, String sortDirection) {
+        return doGetAll(sortBy, sortDirection);
+    }
+
+    /**
+     * Shared implementation for both {@link #getAll()} and {@link #getAll(String, String)} --
+     * kept private (not itself {@code @Transactional}) so neither public overload calls the
+     * other via {@code this}, which would bypass Spring's transactional proxy (java:S6809).
+     */
+    private List<SeriesDto> doGetAll(String sortBy, String sortDirection) {
         log.debug("Fetching all series");
         Comparator<SeriesEntity> comparator = SeriesSortResolver.resolve(sortBy, sortDirection);
         return repository.findAll().stream()
             .sorted(comparator)
             .map(this::entityToDto)
-            .collect(Collectors.toList());
+            .toList();
     }
 
+    /**
+     * Each independent group of field patches is its own method (java:S3776) -- this method's
+     * own job is just to run them all in order. The one real order dependency,
+     * {@code applyMetadataUpdates} (which may patch {@code totalSeasons}) running before {@code
+     * applyCurrentSeason} (which reads {@code entity.getTotalSeasons()} for its validation), is
+     * preserved.
+     */
     @Transactional
     public SeriesDto update(UUID id, SeriesDto dto) {
         log.info("Updating series: {}", id);
         SeriesEntity entity = repository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
+            .orElseThrow(() -> new EntityNotFoundException(SERIES_NOT_FOUND + id));
 
+        applyMetadataUpdates(entity, dto);
+        applyRatingAndPersonalUpdates(entity, dto);
+        applyCurrentSeason(entity, dto);
+        applyStatusUpdate(entity, dto);
+
+        entity = repository.save(entity);
+        return entityToDto(entity);
+    }
+
+    private void applyMetadataUpdates(SeriesEntity entity, SeriesDto dto) {
         if (dto.getTitle() != null) {
             entity.setTitle(dto.getTitle());
         }
@@ -164,18 +194,21 @@ public class SeriesService {
         if (dto.getTotalEpisodes() != null) {
             entity.setTotalEpisodes(dto.getTotalEpisodes());
         }
-        if (dto.getCurrentSeason() != null) {
-            Integer newCurrentSeason = dto.getCurrentSeason();
-            Integer totalSeasons = entity.getTotalSeasons();
-            if (totalSeasons != null && newCurrentSeason > totalSeasons) {
-                throw new IllegalArgumentException(
-                    "currentSeason (" + newCurrentSeason + ") cannot exceed totalSeasons (" + totalSeasons + ")");
-            }
-            entity.setCurrentSeason(newCurrentSeason);
-        }
         if (dto.getCurrentEpisode() != null) {
             entity.setCurrentEpisode(dto.getCurrentEpisode());
         }
+        if (dto.getPosterUrl() != null) {
+            entity.setPosterUrl(dto.getPosterUrl());
+        }
+        if (dto.getTags() != null) {
+            entity.setTags(dto.getTags());
+        }
+        if (dto.getImdbId() != null) {
+            entity.setImdbId(dto.getImdbId());
+        }
+    }
+
+    private void applyRatingAndPersonalUpdates(SeriesEntity entity, SeriesDto dto) {
         if (dto.getImdbRating() != null) {
             entity.setImdbRating(dto.getImdbRating());
         }
@@ -191,43 +224,47 @@ public class SeriesService {
         if (dto.getPersonalNotes() != null) {
             entity.setPersonalNotes(dto.getPersonalNotes());
         }
-        if (dto.getPosterUrl() != null) {
-            entity.setPosterUrl(dto.getPosterUrl());
-        }
-        if (dto.getTags() != null) {
-            entity.setTags(dto.getTags());
-        }
-        if (dto.getImdbId() != null) {
-            entity.setImdbId(dto.getImdbId());
-        }
         if (dto.getExcludeFromRecommendations() != null) {
             entity.setExcludeFromRecommendations(dto.getExcludeFromRecommendations());
         }
         if (dto.getFlaggedForRewatch() != null) {
             entity.setFlaggedForRewatch(dto.getFlaggedForRewatch());
         }
+    }
 
-        if (dto.getStatus() != null) {
-            SeriesStatus newStatus = SeriesStatus.valueOf(dto.getStatus());
-            SeriesStatus oldStatus = entity.getStatus();
-            entity.setStatus(newStatus);
-
-            if (newStatus == SeriesStatus.COMPLETED && oldStatus != SeriesStatus.COMPLETED) {
-                entity.setDateCompleted(LocalDateTime.now());
-            } else if (newStatus != SeriesStatus.COMPLETED) {
-                entity.setDateCompleted(null);
-            }
+    private void applyCurrentSeason(SeriesEntity entity, SeriesDto dto) {
+        if (dto.getCurrentSeason() == null) {
+            return;
         }
+        Integer newCurrentSeason = dto.getCurrentSeason();
+        Integer totalSeasons = entity.getTotalSeasons();
+        if (totalSeasons != null && newCurrentSeason > totalSeasons) {
+            throw new IllegalArgumentException(
+                "currentSeason (" + newCurrentSeason + ") cannot exceed totalSeasons (" + totalSeasons + ")");
+        }
+        entity.setCurrentSeason(newCurrentSeason);
+    }
 
-        entity = repository.save(entity);
-        return entityToDto(entity);
+    private void applyStatusUpdate(SeriesEntity entity, SeriesDto dto) {
+        if (dto.getStatus() == null) {
+            return;
+        }
+        SeriesStatus newStatus = SeriesStatus.valueOf(dto.getStatus());
+        SeriesStatus oldStatus = entity.getStatus();
+        entity.setStatus(newStatus);
+
+        if (newStatus == SeriesStatus.COMPLETED && oldStatus != SeriesStatus.COMPLETED) {
+            entity.setDateCompleted(LocalDateTime.now(clock));
+        } else if (newStatus != SeriesStatus.COMPLETED) {
+            entity.setDateCompleted(null);
+        }
     }
 
     @Transactional
     public void delete(UUID id) {
         log.info("Deleting series: {}", id);
         SeriesEntity entity = repository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
+            .orElseThrow(() -> new EntityNotFoundException(SERIES_NOT_FOUND + id));
         repository.delete(entity);
     }
 
@@ -264,7 +301,7 @@ public class SeriesService {
         dto.setKeywords(entity.getKeywords().stream()
             .map(KeywordEntity::getName)
             .sorted(Comparator.naturalOrder())
-            .collect(Collectors.toList()));
+            .toList());
         return dto;
     }
 }

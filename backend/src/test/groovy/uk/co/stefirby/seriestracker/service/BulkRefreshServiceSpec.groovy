@@ -6,6 +6,7 @@ import uk.co.stefirby.seriestracker.exception.ConflictException
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
+import java.time.Clock
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -19,7 +20,7 @@ class BulkRefreshServiceSpec extends Specification {
     // (app.tmdb.refresh-delay-ms, 250) -- see series_spec_018's Design Decisions. Threshold
     // defaults to the production default (60 minutes); tests exercising the skip behavior
     // (SERIES-018-AC-30/34) build their own instance with an explicit threshold.
-    BulkRefreshService bulkRefreshService = new BulkRefreshService(repository, refreshService, 5L, 60)
+    BulkRefreshService bulkRefreshService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 60)
 
     private static SeriesEntity series(UUID id, LocalDateTime lastRefreshedAt = null) {
         new SeriesEntity(id: id, title: "Show ${id}", lastRefreshedAt: lastRefreshedAt)
@@ -170,7 +171,7 @@ class BulkRefreshServiceSpec extends Specification {
             repository.findAll() >> entities
             def refreshedIds = Collections.synchronizedList([])
             refreshService.refresh(_) >> { UUID id -> refreshedIds << id; null }
-            def thresholdService = new BulkRefreshService(repository, refreshService, 5L, 60)
+            def thresholdService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 60)
 
         when: "the bulk job runs to completion"
             thresholdService.start()
@@ -193,7 +194,7 @@ class BulkRefreshServiceSpec extends Specification {
             repository.count() >> 1L
             repository.findAll() >> [series(id, null)]
             refreshService.refresh(_) >> { UUID i -> refreshedIds << i; null }
-            def thresholdService = new BulkRefreshService(repository, refreshService, 5L, 60)
+            def thresholdService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 60)
 
         when: "the bulk job runs to completion"
             thresholdService.start()
@@ -215,7 +216,7 @@ class BulkRefreshServiceSpec extends Specification {
             repository.count() >> 1L
             repository.findAll() >> [series(id, LocalDateTime.now().minusSeconds(1))]
             refreshService.refresh(_) >> { UUID i -> refreshedIds << i; null }
-            def zeroThresholdService = new BulkRefreshService(repository, refreshService, 5L, 0)
+            def zeroThresholdService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 0)
 
         when: "the bulk job runs to completion"
             zeroThresholdService.start()

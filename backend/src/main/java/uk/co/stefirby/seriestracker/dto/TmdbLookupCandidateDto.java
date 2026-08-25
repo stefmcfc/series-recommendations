@@ -20,7 +20,9 @@ public class TmdbLookupCandidateDto {
     // origin_country entry, letting a user disambiguate same-title remakes before picking one.
     private String originCountry;
 
-    public TmdbLookupCandidateDto() {}
+    public TmdbLookupCandidateDto() {
+        // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
+    }
 
     public int getTmdbId() { return tmdbId; }
     public void setTmdbId(int tmdbId) { this.tmdbId = tmdbId; }

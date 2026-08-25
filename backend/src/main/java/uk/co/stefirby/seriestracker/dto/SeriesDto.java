@@ -83,7 +83,9 @@ public class SeriesDto {
     // KeywordSyncService.syncKeywords). Never null, empty list when a series has none.
     private List<String> keywords = List.of();
 
-    public SeriesDto() {}
+    public SeriesDto() {
+        // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
+    }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

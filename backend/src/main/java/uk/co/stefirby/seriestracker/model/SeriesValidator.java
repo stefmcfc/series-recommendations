@@ -7,10 +7,7 @@ public class SeriesValidator implements ConstraintValidator<ValidSeries, SeriesE
     @Override
     public boolean isValid(SeriesEntity series, ConstraintValidatorContext context) {
         if (series == null) return true;
-        if (series.getTotalSeasons() != null && series.getCurrentSeason() != null
-                && series.getCurrentSeason() > series.getTotalSeasons()) {
-            return false;
-        }
-        return true;
+        return series.getTotalSeasons() == null || series.getCurrentSeason() == null
+                || series.getCurrentSeason() <= series.getTotalSeasons();
     }
 }
