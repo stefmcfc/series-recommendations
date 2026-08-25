@@ -81,6 +81,12 @@ app:
     # (SERIES-007-AC-25). Overridable via APP_TMDB_REFRESH_SKIP_THRESHOLD_MINUTES without a
     # code change.
     refresh-skip-threshold-minutes: 60
+    # series_spec_020_watch_providers.md (SERIES-020-AC-05): region consulted by
+    # RecommendationService when resolving each recommendation candidate's currently-available
+    # flatrate (subscription-streaming) watch providers via GET /tv/{tmdbId}/watch/providers --
+    # a single configured value, not a per-request parameter (single-user personal app, one
+    # household's viewing region). Overridable via APP_TMDB_WATCH_REGION without a code change.
+    watch-region: GB
   recommendations:
     # SERIES-015-AC-14: selects RecommendationService's per-source diversity-cap strategy --
     # "best-source" (default) caps on each candidate's single best contributing source only;
