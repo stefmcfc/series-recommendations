@@ -142,13 +142,31 @@ public class SeriesRefreshService {
                 return false;
             }
             TmdbSeriesDetail detail = tmdbClient.details(tmdbId);
-            entity.setTotalSeasons(detail.numberOfSeasons());
-            entity.setTotalEpisodes(detail.numberOfEpisodes());
-            entity.setTmdbRating(detail.voteAverage());
-            entity.setTmdbVoteCount(detail.voteCount());
-            entity.setProductionStatus(detail.productionStatus());
-            entity.setOriginCountry(detail.originCountry());
-            entity.setOverview(detail.overview());
+            // SERIES-027-AC-07: a null value from TMDB for any of these fields leaves the
+            // entity's existing value unchanged rather than wiping it -- a refresh should never
+            // be able to blank out data that's already been recorded, just because today's
+            // response happens not to include it.
+            if (detail.numberOfSeasons() != null) {
+                entity.setTotalSeasons(detail.numberOfSeasons());
+            }
+            if (detail.numberOfEpisodes() != null) {
+                entity.setTotalEpisodes(detail.numberOfEpisodes());
+            }
+            if (detail.voteAverage() != null) {
+                entity.setTmdbRating(detail.voteAverage());
+            }
+            if (detail.voteCount() != null) {
+                entity.setTmdbVoteCount(detail.voteCount());
+            }
+            if (detail.productionStatus() != null) {
+                entity.setProductionStatus(detail.productionStatus());
+            }
+            if (detail.originCountry() != null) {
+                entity.setOriginCountry(detail.originCountry());
+            }
+            if (detail.overview() != null) {
+                entity.setOverview(detail.overview());
+            }
             // series_spec_019_keyword_tracking.md (SERIES-019-AC-08): reconciles this series'
             // keyword set against TMDB's current data using the same tmdbId just resolved
             // above -- non-fatal on its own (KeywordSyncService never throws).
@@ -173,8 +191,15 @@ public class SeriesRefreshService {
         }
         try {
             OmdbRatings ratings = omdbClient.ratingsForImdbId(imdbId);
-            entity.setImdbRating(ratings.imdbRating());
-            entity.setRottenTomatoesRating(ratings.rottenTomatoesRating());
+            // SERIES-027-AC-06: OMDb's "Rotten Tomatoes" rating is absent from most of its TV
+            // records (see OmdbRatings) -- a null value for either field here must leave the
+            // entity's existing value unchanged rather than wiping it.
+            if (ratings.imdbRating() != null) {
+                entity.setImdbRating(ratings.imdbRating());
+            }
+            if (ratings.rottenTomatoesRating() != null) {
+                entity.setRottenTomatoesRating(ratings.rottenTomatoesRating());
+            }
             return true;
         } catch (EntityNotFoundException | ExternalServiceException e) {
             log.info("OMDb refresh unavailable for series {} (imdbId={}): {}", entity.getId(), imdbId, e.getMessage());

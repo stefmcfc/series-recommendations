@@ -398,4 +398,55 @@ class SeriesEntitySpec extends Specification {
         expect: "the value is held"
             entity.flaggedForRewatch
     }
+
+    def "SERIES-027-AC-01: rottenTomatoesPopcornmeter defaults to null and accepts a valid value"() {
+        given: "a new SeriesEntity"
+            def entity = new SeriesEntity(title: "Some Show")
+
+        expect: "it defaults to null"
+            entity.rottenTomatoesPopcornmeter == null
+
+        when: "a valid Popcornmeter value is set"
+            entity.rottenTomatoesPopcornmeter = 88
+
+        then: "it's retained"
+            entity.rottenTomatoesPopcornmeter == 88
+    }
+
+    def "SERIES-027-AC-01: should reject Rotten Tomatoes Popcornmeter > 100"() {
+        given: "a series with a Popcornmeter above 100"
+            def series = new SeriesEntity(title: "Show", rottenTomatoesPopcornmeter: 101)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised for the rottenTomatoesPopcornmeter field"
+            !violations.isEmpty()
+            violations.any { it.propertyPath.toString() == "rottenTomatoesPopcornmeter" }
+    }
+
+    def "SERIES-027-AC-01: should reject Rotten Tomatoes Popcornmeter < 0"() {
+        given: "a series with a negative Popcornmeter"
+            def series = new SeriesEntity(title: "Show", rottenTomatoesPopcornmeter: -1)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "a validation violation is raised"
+            !violations.isEmpty()
+    }
+
+    def "SERIES-027-AC-01: should accept Rotten Tomatoes Popcornmeter between 0 and 100 inclusive"() {
+        given: "a series with a Popcornmeter within the valid range"
+            def series = new SeriesEntity(title: "Show", rottenTomatoesPopcornmeter: score)
+
+        when: "the series is validated"
+            def violations = validator.validate(series)
+
+        then: "no validation violations are raised"
+            violations.isEmpty()
+
+        where:
+        score << [0, 50, 100]
+    }
 }
