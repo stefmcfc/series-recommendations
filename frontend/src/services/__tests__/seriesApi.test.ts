@@ -726,6 +726,20 @@ describe('FRONTEND-028-AC-09: getRecommendationKeywords', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-036-AC-03: getWatchProviders(id)
+// ---------------------------------------------------------------------------
+describe('FRONTEND-036-AC-03: getWatchProviders', () => {
+  it('GETs /series/{id}/watch-providers and unwraps the provider list', async () => {
+    client.get.mockResolvedValue({
+      data: { data: [{ name: 'Netflix', logoUrl: null }], count: 1 },
+    })
+    const result = await seriesApi.getWatchProviders('abc-123')
+    expect(client.get).toHaveBeenCalledWith('/series/abc-123/watch-providers')
+    expect(result).toEqual([{ name: 'Netflix', logoUrl: null }])
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-024-AC-05: buildSearchParams includes keyword when present
 // ---------------------------------------------------------------------------
 describe('FRONTEND-024-AC-05: search includes keyword param', () => {

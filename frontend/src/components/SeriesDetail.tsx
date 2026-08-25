@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { Series } from '../types/series'
+import type { Series, StreamingProvider } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
+import { StreamingProviders } from './StreamingProviders'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -82,6 +83,13 @@ export function SeriesDetail({
   const [acknowledging, setAcknowledging] = useState(false)
   const [acknowledgeError, setAcknowledgeError] = useState<string | null>(null)
   const [rewatchError, setRewatchError] = useState<string | null>(null)
+  const [streamingCheckLoading, setStreamingCheckLoading] = useState(false)
+  const [streamingCheckError, setStreamingCheckError] = useState<string | null>(
+    null,
+  )
+  const [streamingCheckResult, setStreamingCheckResult] = useState<
+    StreamingProvider[] | null
+  >(null)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -96,6 +104,9 @@ export function SeriesDetail({
     setAcknowledging(false)
     setAcknowledgeError(null)
     setRewatchError(null)
+    setStreamingCheckLoading(false)
+    setStreamingCheckError(null)
+    setStreamingCheckResult(null)
   }
 
   useEffect(() => {
@@ -234,6 +245,29 @@ export function SeriesDetail({
       })
   }
 
+  const handleCheckStreamingClick = () => {
+    setStreamingCheckError(null)
+    setStreamingCheckResult(null)
+    setStreamingCheckLoading(true)
+
+    seriesApi
+      .getWatchProviders(id)
+      .then((providers) => {
+        setStreamingCheckLoading(false)
+        setStreamingCheckResult(providers)
+      })
+      .catch((err: unknown) => {
+        setStreamingCheckLoading(false)
+        if (err instanceof ApiError) {
+          setStreamingCheckError(err.message)
+        } else {
+          setStreamingCheckError(
+            'An unexpected error occurred. Please try again.',
+          )
+        }
+      })
+  }
+
   const backButton = (
     <button
       type="button"
@@ -309,6 +343,27 @@ export function SeriesDetail({
                   </div>
                 </div>
               </dl>
+
+              <div className={styles.streamingCheck}>
+                <button
+                  type="button"
+                  className={styles.streamingCheckButton}
+                  disabled={streamingCheckLoading}
+                  onClick={handleCheckStreamingClick}
+                >
+                  {streamingCheckLoading
+                    ? 'Checking...'
+                    : 'Check Streaming Availability'}
+                </button>
+                {streamingCheckError && (
+                  <span className={styles.streamingCheckError} role="alert">
+                    {streamingCheckError}
+                  </span>
+                )}
+                {streamingCheckResult !== null && (
+                  <StreamingProviders providers={streamingCheckResult} />
+                )}
+              </div>
 
               <dl className={styles.fieldGroup}>
                 <div className={styles.fieldRow}>

@@ -4,13 +4,14 @@ import { SeriesDetail } from './SeriesDetail'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { Series } from '../types/series'
+import type { Series, StreamingProvider } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockGetById = vi.mocked(seriesApi.getById)
 const mockDelete = vi.mocked(seriesApi.delete)
 const mockRefresh = vi.mocked(seriesApi.refresh)
 const mockAcknowledgeNewContent = vi.mocked(seriesApi.acknowledgeNewContent)
+const mockGetWatchProviders = vi.mocked(seriesApi.getWatchProviders)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -792,5 +793,113 @@ describe('FRONTEND-012 amendment (live review): full-width Overview field', () =
     const firstRow = fieldsList?.firstElementChild
     const overviewRow = dt.parentElement?.parentElement
     expect(firstRow).toBe(overviewRow)
+  })
+})
+
+describe('FRONTEND-036-AC-04: streaming check button, busy state', () => {
+  it('renders between Overview and Keywords, shows a busy state while in flight', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ overview: 'A show.' }))
+    let resolveCheck: (v: StreamingProvider[]) => void = () => {}
+    mockGetWatchProviders.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCheck = resolve
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('A show.')
+
+    const button = screen.getByRole('button', {
+      name: /check streaming availability/i,
+    })
+    fireEvent.click(button)
+
+    expect(button).toBeDisabled()
+    expect(screen.getByText(/checking/i)).toBeInTheDocument()
+
+    resolveCheck([])
+    await waitFor(() => expect(button).not.toBeDisabled())
+  })
+})
+
+describe('FRONTEND-036-AC-05: successful check renders the result', () => {
+  it('shows providers via the shared StreamingProviders component', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ overview: 'A show.' }))
+    mockGetWatchProviders.mockResolvedValue([
+      { name: 'Netflix', logoUrl: null },
+    ])
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('A show.')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /check streaming availability/i }),
+    )
+
+    expect(await screen.findByText('Netflix')).toBeInTheDocument()
+  })
+
+  it('shows the not-streaming note when the result is empty', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ overview: 'A show.' }))
+    mockGetWatchProviders.mockResolvedValue([])
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('A show.')
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /check streaming availability/i }),
+    )
+
+    expect(
+      await screen.findByText('Not currently streaming in the UK'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-036-AC-06: check failure', () => {
+  it('shows a scoped alert and clears any previous result', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ overview: 'A show.' }))
+    mockGetWatchProviders
+      .mockResolvedValueOnce([{ name: 'Netflix', logoUrl: null }])
+      .mockRejectedValueOnce(
+        new ApiError(
+          502,
+          'Unable to reach the streaming lookup service. Please try again.',
+        ),
+      )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText('A show.')
+    const button = screen.getByRole('button', {
+      name: /check streaming availability/i,
+    })
+
+    fireEvent.click(button)
+    expect(await screen.findByText('Netflix')).toBeInTheDocument()
+
+    fireEvent.click(button)
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    expect(screen.queryByText('Netflix')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-036-AC-07: resets on navigating to a different series', () => {
+  it('clears a prior result when id changes', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ id: '1', overview: 'A show.' }))
+    mockGetWatchProviders.mockResolvedValue([
+      { name: 'Netflix', logoUrl: null },
+    ])
+    const { rerender } = render(
+      <SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />,
+    )
+    await screen.findByText('A show.')
+    fireEvent.click(
+      screen.getByRole('button', { name: /check streaming availability/i }),
+    )
+    expect(await screen.findByText('Netflix')).toBeInTheDocument()
+
+    mockGetById.mockResolvedValue(
+      makeSeries({ id: '2', overview: 'Another show.' }),
+    )
+    rerender(<SeriesDetail id="2" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('Another show.')
+    expect(screen.queryByText('Netflix')).not.toBeInTheDocument()
   })
 })
