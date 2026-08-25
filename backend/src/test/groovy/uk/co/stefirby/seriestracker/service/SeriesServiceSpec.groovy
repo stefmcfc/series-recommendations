@@ -414,6 +414,46 @@ class SeriesServiceSpec extends Specification {
         seriesService.getById(existing.id).flaggedForRewatch == false
   }
 
+  def "SERIES-027-AC-03: create sets rottenTomatoesPopcornmeter when provided"() {
+    given: "a SeriesDto with a rottenTomatoesPopcornmeter value"
+        def dto = new SeriesDto(title: "Show", rottenTomatoesPopcornmeter: 88)
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "the value is persisted"
+        result.rottenTomatoesPopcornmeter == 88
+        seriesService.getById(result.id).rottenTomatoesPopcornmeter == 88
+  }
+
+  def "SERIES-027-AC-03: create leaves rottenTomatoesPopcornmeter null when unset"() {
+    given: "a SeriesDto with no rottenTomatoesPopcornmeter value"
+        def dto = new SeriesDto(title: "Show")
+
+    when: "the series is created"
+        def result = seriesService.create(dto)
+
+    then: "the value is null"
+        result.rottenTomatoesPopcornmeter == null
+  }
+
+  def "SERIES-027-AC-03: update only overwrites rottenTomatoesPopcornmeter when explicitly provided"() {
+    given: "an existing series with rottenTomatoesPopcornmeter = 88"
+        def existing = seriesService.create(new SeriesDto(title: "Show", rottenTomatoesPopcornmeter: 88))
+
+    when: "update is called with a DTO that omits rottenTomatoesPopcornmeter (null)"
+        seriesService.update(existing.id, new SeriesDto(title: "Show (renamed)"))
+
+    then: "the value is unchanged"
+        seriesService.getById(existing.id).rottenTomatoesPopcornmeter == 88
+
+    when: "update is called with rottenTomatoesPopcornmeter explicitly set to 92"
+        seriesService.update(existing.id, new SeriesDto(rottenTomatoesPopcornmeter: 92))
+
+    then: "the value is updated"
+        seriesService.getById(existing.id).rottenTomatoesPopcornmeter == 92
+  }
+
   def "should reject series creation with invalid IMDb rating"() {
     given: "a series DTO with an out-of-range IMDb rating"
         def dto = new SeriesDto(title: "Show", imdbRating: 15.0)

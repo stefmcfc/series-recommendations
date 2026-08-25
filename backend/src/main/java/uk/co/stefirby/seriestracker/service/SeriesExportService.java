@@ -19,11 +19,14 @@ public class SeriesExportService {
     // SERIES-014-AC-12 / SERIES-017-AC-13 / SERIES-021-AC-10: tags, tmdbRating, tmdbVoteCount,
     // and originCountry appended alongside the other newer optional fields, before the date
     // columns. metacriticRating and alternateTitle are gone entirely (SERIES-017-AC-14/15).
+    // SERIES-027-AC-05: rottenTomatoesPopcornmeter appended immediately after
+    // rottenTomatoesRating.
     private static final String[] CSV_HEADERS = {
         "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
-        "rottenTomatoesRating", "tmdbRating", "tmdbVoteCount", "personalRating",
-        "personalNotes", "posterUrl", "tags", "originCountry", "dateAdded", "dateCompleted"
+        "rottenTomatoesRating", "rottenTomatoesPopcornmeter", "tmdbRating", "tmdbVoteCount",
+        "personalRating", "personalNotes", "posterUrl", "tags", "originCountry", "dateAdded",
+        "dateCompleted"
     };
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -67,6 +70,7 @@ public class SeriesExportService {
             csv(s.getStatus()),
             csv(s.getImdbRating() != null ? s.getImdbRating().toPlainString() : null),
             csv(s.getRottenTomatoesRating() != null ? s.getRottenTomatoesRating().toString() : null),
+            csv(s.getRottenTomatoesPopcornmeter() != null ? s.getRottenTomatoesPopcornmeter().toString() : null),
             csv(s.getTmdbRating() != null ? s.getTmdbRating().toPlainString() : null),
             csv(s.getTmdbVoteCount() != null ? s.getTmdbVoteCount().toString() : null),
             csv(s.getPersonalRating() != null ? s.getPersonalRating().toString() : null),

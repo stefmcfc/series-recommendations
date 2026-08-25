@@ -57,6 +57,7 @@ public class SeriesService {
         entity.setCurrentEpisode(dto.getCurrentEpisode());
         entity.setImdbRating(dto.getImdbRating());
         entity.setRottenTomatoesRating(dto.getRottenTomatoesRating());
+        entity.setRottenTomatoesPopcornmeter(dto.getRottenTomatoesPopcornmeter());
         entity.setTmdbRating(dto.getTmdbRating());
         entity.setTmdbVoteCount(dto.getTmdbVoteCount());
         entity.setPersonalRating(dto.getPersonalRating());
@@ -181,6 +182,9 @@ public class SeriesService {
         if (dto.getRottenTomatoesRating() != null) {
             entity.setRottenTomatoesRating(dto.getRottenTomatoesRating());
         }
+        if (dto.getRottenTomatoesPopcornmeter() != null) {
+            entity.setRottenTomatoesPopcornmeter(dto.getRottenTomatoesPopcornmeter());
+        }
         if (dto.getPersonalRating() != null) {
             entity.setPersonalRating(dto.getPersonalRating());
         }
@@ -240,6 +244,7 @@ public class SeriesService {
         dto.setStatus(entity.getStatus() != null ? entity.getStatus().name() : null);
         dto.setImdbRating(entity.getImdbRating());
         dto.setRottenTomatoesRating(entity.getRottenTomatoesRating());
+        dto.setRottenTomatoesPopcornmeter(entity.getRottenTomatoesPopcornmeter());
         dto.setTmdbRating(entity.getTmdbRating());
         dto.setTmdbVoteCount(entity.getTmdbVoteCount());
         dto.setPersonalRating(entity.getPersonalRating());
