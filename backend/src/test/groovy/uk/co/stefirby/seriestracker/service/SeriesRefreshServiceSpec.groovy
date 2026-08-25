@@ -198,6 +198,111 @@ class SeriesRefreshServiceSpec extends Specification {
             result.series().lastRefreshedAt == priorRefresh
     }
 
+    def "SERIES-027-AC-04: a refresh never touches rottenTomatoesPopcornmeter"() {
+        given: "an existing series with a manually-entered Popcornmeter score"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.rottenTomatoesPopcornmeter = 91
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US", null)
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "rottenTomatoesPopcornmeter is untouched"
+            result.series().rottenTomatoesPopcornmeter == 91
+    }
+
+    def "SERIES-027-AC-06: OMDb returning a null rottenTomatoesRating does not overwrite an existing value"() {
+        given: "an existing series with a manually-entered Rotten Tomatoes rating"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.rottenTomatoesRating = 85
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId(_) >> { throw new ExternalServiceException("TMDB down") }
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("7.2"), null)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "imdbRating updates, but rottenTomatoesRating is untouched"
+            result.series().imdbRating == new BigDecimal("7.2")
+            result.series().rottenTomatoesRating == 85
+
+        and: "omdbRefreshed is still reported true -- OMDb did respond successfully"
+            result.omdbRefreshed()
+    }
+
+    def "SERIES-027-AC-06: OMDb returning a null imdbRating does not overwrite an existing value"() {
+        given: "an existing series with a manually-entered IMDb rating"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId(_) >> { throw new ExternalServiceException("TMDB down") }
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(null, 98)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "rottenTomatoesRating updates, but imdbRating is untouched"
+            result.series().rottenTomatoesRating == 98
+            result.series().imdbRating == new BigDecimal("9.4")
+    }
+
+    def "SERIES-027-AC-07: TMDB returning a null overview does not overwrite an existing value"() {
+        given: "an existing series with a persisted overview"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.overview = "A drug-money-laundering saga."
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US", null)
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "overview is untouched, other fields still update"
+            result.series().overview == "A drug-money-laundering saga."
+            result.series().totalSeasons == 6
+    }
+
+    def "SERIES-027-AC-07: TMDB returning null totalSeasons/totalEpisodes/tmdbRating/tmdbVoteCount/productionStatus/originCountry does not overwrite existing values"() {
+        given: "an existing series with all TMDB-sourced fields already populated"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.productionStatus = ProductionStatus.RETURNING_SERIES
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2008, [18], "/poster.jpg", null, null,
+                null, null, null, null, null)
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "every TMDB-sourced field remains unchanged, yet tmdbRefreshed is still true"
+            result.tmdbRefreshed()
+            result.series().totalSeasons == 5
+            result.series().totalEpisodes == 62
+            result.series().tmdbRating == new BigDecimal("8.5")
+            result.series().tmdbVoteCount == 900
+            result.series().productionStatus == "RETURNING_SERIES"
+            result.series().originCountry == null
+    }
+
     def "SERIES-018-AC-06: OMDb EntityNotFoundException leaves imdbRating/rottenTomatoesRating unchanged, doesn't fail the request"() {
         given: "an existing series, OMDb no longer has a record for this imdbId"
             def id = UUID.randomUUID()

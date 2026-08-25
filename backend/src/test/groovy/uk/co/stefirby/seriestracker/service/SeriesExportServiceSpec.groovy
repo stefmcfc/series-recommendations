@@ -164,8 +164,8 @@ class SeriesExportServiceSpec extends Specification {
         then: "the header row has one column per series field"
             // 17 original fields (minus metacriticRating, which was removed by SERIES-017)
             // + tags (SERIES-014) + tmdbRating/tmdbVoteCount (SERIES-017) + originCountry
-            // (SERIES-021)
-            headerCols == 20
+            // (SERIES-021) + rottenTomatoesPopcornmeter (SERIES-027)
+            headerCols == 21
     }
 
     def "SERIES-005-AC-04: exportAsCsv includes posterUrl values"() {
@@ -300,6 +300,34 @@ class SeriesExportServiceSpec extends Specification {
         then: "the header includes originCountry and a row contains its value"
             lines[0].contains("originCountry")
             csv.contains("GB")
+    }
+
+    def "SERIES-027-AC-05: exportAsCsv includes a rottenTomatoesPopcornmeter header and value"() {
+        given: "a series with a rottenTomatoesPopcornmeter value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "Ozark", rottenTomatoesPopcornmeter: 91))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+
+        then: "the header includes rottenTomatoesPopcornmeter and a row contains its value"
+            lines[0].contains("rottenTomatoesPopcornmeter")
+            csv.contains("91")
+    }
+
+    def "SERIES-027-AC-05: exportAsJson includes rottenTomatoesPopcornmeter"() {
+        given: "a series with a rottenTomatoesPopcornmeter value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "Ozark 2", rottenTomatoesPopcornmeter: 91))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
+            def ozark = parsed.get('series').find { it.get('title').textValue() == 'Ozark 2' }
+
+        then: "the exported JSON includes the rottenTomatoesPopcornmeter field"
+            ozark.get('rottenTomatoesPopcornmeter').intValue() == 91
     }
 
     def "SERIES-021-AC-10: exportAsJson includes originCountry"() {

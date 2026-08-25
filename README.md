@@ -132,13 +132,15 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Backend 019 | Keyword tracking (normalized `keyword`/`series_keyword` tables from TMDB, `GET /series/keywords` stats endpoint, keyword search filter) | ✅ Done |
 | Frontend 024 | Keyword tracking UI (`SeriesDetail` keyword chips, sortable keyword stats view, `SearchFilter` keyword filter) | ✅ Done |
 | Backend 020 | Watch providers (TMDB/JustWatch streaming availability, UK-region default, attached to recommendation candidates) | ✅ Done |
-| Frontend 025 | Watch providers UI (`RecommendationsList` streaming badges, JustWatch attribution) | ⬜ Not started |
+| Frontend 025 | Watch providers UI (`RecommendationsList` streaming badges, JustWatch attribution) | ✅ Done |
 | Backend 021 | TMDB origin country (`originCountry` on lookup candidates/lookup result/persisted series, kept fresh on refresh, included in export; closes a `productionStatus` create-time gap from Backend 008/018) | ✅ Done |
 | Frontend 026 | Origin country & TMDB metadata display (candidate-picker country badge, series-list "(Year) \| Country", `productionStatus`/`tmdbRating`/`tmdbVoteCount` surfaced) | ⬜ Not started |
 | Backend 023 | Recommendation metadata & persisted overview (`originCountry`/`tmdbId` on recommendation candidates, lazy per-candidate keyword lookup `GET /series/recommendations/{tmdbId}/keywords`, persisted series `overview` sourced from TMDB, kept fresh on refresh) | ✅ Done |
 | Frontend 028 | Recommendation metadata & overview display (recommendation-card origin country badge, lazy per-card keyword expand, `SeriesDetail` overview display, `AddSeriesForm` overview carry-through) | ✅ Done |
 | Backend 026 | On-demand streaming availability for a tracked series (`GET /series/{id}/watch-providers`, reuses Backend 020's `TmdbClient.watchProviders`/region config, never persisted, graceful degradation to an empty list) | ✅ Done |
 | Frontend 036 | "Check Streaming Availability" button on `SeriesDetail` | ⬜ Not started |
+| Backend 027 | Rotten Tomatoes Popcornmeter field (user-entered audience score, distinct from the existing Tomatometer-sourced `rottenTomatoesRating`) + refresh null-safety fix (`SeriesRefreshService` no longer wipes an existing field when the fresh external value is `null`) | ✅ Done |
+| Frontend 037 | Rotten Tomatoes Popcornmeter UI (`AddSeriesForm`/`EditSeriesForm` field, `SeriesDetail`/`SeriesList` display, "% (Tomatometer)"/"% (Popcornmeter)" labeling) | ⬜ Not started |
 
 ## Future Ideas
 
