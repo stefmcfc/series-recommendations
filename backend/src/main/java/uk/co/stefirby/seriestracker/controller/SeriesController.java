@@ -116,6 +116,12 @@ public class SeriesController {
         return ResponseEntity.ok(new ApiResponse<>(result));
     }
 
+    @GetMapping("/" + UUID_PATH_PATTERN + "/watch-providers")
+    public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(@PathVariable UUID id) {
+        List<RecommendationDto.StreamingProvider> results = recommendationService.getStreamingProvidersForSeries(id);
+        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
+    }
+
     @PostMapping("/" + UUID_PATH_PATTERN + "/acknowledge-new-content")
     public ResponseEntity<ApiResponse<SeriesDto>> acknowledgeNewContent(@PathVariable UUID id) {
         SeriesDto dto = refreshService.acknowledgeNewContent(id);

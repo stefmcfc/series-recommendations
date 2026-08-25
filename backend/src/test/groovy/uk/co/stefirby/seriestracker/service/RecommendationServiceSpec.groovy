@@ -188,6 +188,86 @@ class RecommendationServiceSpec extends Specification {
             result == []
     }
 
+    def "SERIES-026-AC-01/05: getStreamingProvidersForSeries resolves a tmdbId and reuses the streamingProviders helper"() {
+        given: "a tracked series with a resolvable imdbId"
+            def id = UUID.randomUUID()
+            def series = completedSeries("Ozark", "tt5071412", null)
+            seriesRepository.findById(id) >> Optional.of(series)
+            tmdbClient.findTvIdByImdbId("tt5071412") >> Optional.of(69740)
+            tmdbClient.watchProviders(69740, "GB") >> [
+                new uk.co.stefirby.seriestracker.client.TmdbWatchProvider("Netflix", "/abc.jpg")
+            ]
+
+        when: "getStreamingProvidersForSeries(id) is called"
+            def result = recommendationService.getStreamingProvidersForSeries(id)
+
+        then: "the mapped provider (built via the shared helper) is returned"
+            result == [
+                new uk.co.stefirby.seriestracker.dto.RecommendationDto.StreamingProvider(
+                    "Netflix", TmdbClient.PROVIDER_LOGO_BASE_URL + "/abc.jpg")
+            ]
+    }
+
+    def "SERIES-026-AC-02: getStreamingProvidersForSeries throws EntityNotFoundException for an unknown id"() {
+        given: "no series exists for the requested id"
+            def id = UUID.randomUUID()
+            seriesRepository.findById(id) >> Optional.empty()
+
+        when: "getStreamingProvidersForSeries(id) is called"
+            recommendationService.getStreamingProvidersForSeries(id)
+
+        then: "an EntityNotFoundException is thrown"
+            thrown(uk.co.stefirby.seriestracker.exception.EntityNotFoundException)
+    }
+
+    def "SERIES-026-AC-03: getStreamingProvidersForSeries returns an empty list when imdbId is null/blank"() {
+        given: "a tracked series with a blank imdbId"
+            def id = UUID.randomUUID()
+            def series = completedSeries("No IMDb Link", imdbId, null)
+            seriesRepository.findById(id) >> Optional.of(series)
+
+        when: "getStreamingProvidersForSeries(id) is called"
+            def result = recommendationService.getStreamingProvidersForSeries(id)
+
+        then: "an empty list is returned, no TMDB call is made"
+            result == []
+            0 * tmdbClient.findTvIdByImdbId(_)
+
+        where:
+            imdbId << [null, ""]
+    }
+
+    def "SERIES-026-AC-04: getStreamingProvidersForSeries returns an empty list when the imdbId can't be resolved to a tmdbId"() {
+        given: "a tracked series whose imdbId TMDB can't resolve"
+            def id = UUID.randomUUID()
+            def series = completedSeries("Obscure Show", "tt9999999", null)
+            seriesRepository.findById(id) >> Optional.of(series)
+            tmdbClient.findTvIdByImdbId("tt9999999") >> Optional.empty()
+
+        when: "getStreamingProvidersForSeries(id) is called"
+            def result = recommendationService.getStreamingProvidersForSeries(id)
+
+        then: "an empty list is returned"
+            result == []
+    }
+
+    def "SERIES-026-AC-05: a watchProviders failure yields an empty list, not an exception"() {
+        given: "a tracked series with a resolvable tmdbId, but TMDB's watch-providers call fails"
+            def id = UUID.randomUUID()
+            def series = completedSeries("Ozark", "tt5071412", null)
+            seriesRepository.findById(id) >> Optional.of(series)
+            tmdbClient.findTvIdByImdbId("tt5071412") >> Optional.of(69740)
+            tmdbClient.watchProviders(69740, "GB") >> {
+                throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("TMDB down")
+            }
+
+        when: "getStreamingProvidersForSeries(id) is called"
+            def result = recommendationService.getStreamingProvidersForSeries(id)
+
+        then: "an empty list is returned, no exception propagates"
+            result == []
+    }
+
     def "SERIES-006-AC-20: empty watched pool returns an empty list without calling TMDB"() {
         given: "no COMPLETED series with imdbId exist"
             seriesRepository.findAll() >> []
