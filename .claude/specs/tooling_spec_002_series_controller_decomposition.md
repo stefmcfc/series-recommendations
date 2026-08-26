@@ -1,6 +1,6 @@
 # Tooling Spec 002: Series Controller Decomposition
 
-**Status**: Not started
+**Status**: ✅ Done (AC-01–AC-17)
 **Priority**: P2 (repo hygiene — doesn't block product feature work)
 **Depends on**: none
 **Area**: Tooling (backend-only, cross-cutting within `controller/`)
@@ -256,20 +256,20 @@ def "POST /api/v1/series should create a series"() {
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-002-AC-01: `UuidPathPattern` defines the shared `{id}` regex
-- [ ] TOOLING-002-AC-02: Non-UUID path segments still 404, not 400, across all consumers
-- [ ] TOOLING-002-AC-03: `SeriesRefreshController` serves refresh/bulk-refresh endpoints identically
-- [ ] TOOLING-002-AC-04: `SeriesRefreshController` injects only `SeriesRefreshService`/`BulkRefreshService`
-- [ ] TOOLING-002-AC-05: `SeriesLookupController` serves lookup endpoints identically
-- [ ] TOOLING-002-AC-06: `SeriesLookupController` injects only `SeriesLookupService`
-- [ ] TOOLING-002-AC-07: `SeriesRecommendationController` serves recommendation endpoints identically
-- [ ] TOOLING-002-AC-08: `SeriesRecommendationController` injects only `RecommendationService`
-- [ ] TOOLING-002-AC-09: `SeriesWatchProviderController` serves the watch-providers endpoint identically
-- [ ] TOOLING-002-AC-10: `SeriesWatchProviderController` injects only `RecommendationService`
-- [ ] TOOLING-002-AC-11: `SeriesGenreController` serves the genres endpoint identically
-- [ ] TOOLING-002-AC-12: `SeriesGenreController` injects only `TmdbGenreTable`
-- [ ] TOOLING-002-AC-13: `SeriesKeywordController` serves the keywords endpoint identically
-- [ ] TOOLING-002-AC-14: `SeriesKeywordController` injects only `KeywordStatsService`
-- [ ] TOOLING-002-AC-15: Trimmed `SeriesController` retains exactly the CRUD/search/export/ignored endpoints and 5 dependencies
-- [ ] TOOLING-002-AC-16: `@SuppressWarnings("java:S107")` removed from `SeriesController`
-- [ ] TOOLING-002-AC-17: All seven existing `SeriesController*Spec.groovy` files pass unmodified
+- [x] TOOLING-002-AC-01: `UuidPathPattern` defines the shared `{id}` regex
+- [x] TOOLING-002-AC-02: Non-UUID path segments still 404, not 400, across all consumers
+- [x] TOOLING-002-AC-03: `SeriesRefreshController` serves refresh/bulk-refresh endpoints identically
+- [x] TOOLING-002-AC-04: `SeriesRefreshController` injects only `SeriesRefreshService`/`BulkRefreshService`
+- [x] TOOLING-002-AC-05: `SeriesLookupController` serves lookup endpoints identically
+- [x] TOOLING-002-AC-06: `SeriesLookupController` injects only `SeriesLookupService`
+- [x] TOOLING-002-AC-07: `SeriesRecommendationController` serves recommendation endpoints identically
+- [x] TOOLING-002-AC-08: `SeriesRecommendationController` injects only `RecommendationService`
+- [x] TOOLING-002-AC-09: `SeriesWatchProviderController` serves the watch-providers endpoint identically
+- [x] TOOLING-002-AC-10: `SeriesWatchProviderController` injects only `RecommendationService`
+- [x] TOOLING-002-AC-11: `SeriesGenreController` serves the genres endpoint identically
+- [x] TOOLING-002-AC-12: `SeriesGenreController` injects only `TmdbGenreTable`
+- [x] TOOLING-002-AC-13: `SeriesKeywordController` serves the keywords endpoint identically
+- [x] TOOLING-002-AC-14: `SeriesKeywordController` injects only `KeywordStatsService`
+- [x] TOOLING-002-AC-15: Trimmed `SeriesController` retains exactly the CRUD/search/export/ignored endpoints and 5 dependencies
+- [x] TOOLING-002-AC-16: `@SuppressWarnings("java:S107")` removed from `SeriesController`
+- [x] TOOLING-002-AC-17: All seven existing `SeriesController*Spec.groovy` files pass unmodified
