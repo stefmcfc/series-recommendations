@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.15.6] - 2026-08-26
+
 ### Changed
 
 - Frontend: extracted `AddSeriesForm`/`EditSeriesForm`'s seven byte-identical field validators into `src/utils/seriesFormValidation.ts`.
