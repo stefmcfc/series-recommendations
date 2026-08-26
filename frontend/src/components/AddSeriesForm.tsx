@@ -9,6 +9,15 @@ import type {
   Series,
 } from '../types/series'
 import { formatCountryName } from '../utils/countryName'
+import {
+  validateYear,
+  validateTotalSeasons,
+  validateTotalEpisodes,
+  validateImdbRating,
+  validateRottenTomatoesRating,
+  validateRottenTomatoesPopcornmeter,
+  validatePersonalRating,
+} from '../utils/seriesFormValidation'
 import styles from './AddSeriesForm.module.css'
 
 interface AddSeriesFormProps {
@@ -66,82 +75,6 @@ const initialFormState: FormState = {
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
-
-function validateYear(form: FormState, errors: FieldErrors): void {
-  if (form.year.trim() === '') return
-  const year = Number(form.year)
-  if (Number.isNaN(year) || year < 1 || year > 2026) {
-    errors.year = 'Year must be between 1 and 2026'
-  }
-}
-
-function validateTotalSeasons(form: FormState, errors: FieldErrors): void {
-  if (form.totalSeasons.trim() === '') return
-  const totalSeasons = Number(form.totalSeasons)
-  if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
-    errors.totalSeasons = 'Total seasons must be at least 1'
-  }
-}
-
-function validateTotalEpisodes(form: FormState, errors: FieldErrors): void {
-  if (form.totalEpisodes.trim() === '') return
-  const totalEpisodes = Number(form.totalEpisodes)
-  if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
-    errors.totalEpisodes = 'Total episodes must be at least 1'
-  }
-}
-
-function validateImdbRating(form: FormState, errors: FieldErrors): void {
-  if (form.imdbRating.trim() === '') return
-  const imdbRating = Number(form.imdbRating)
-  if (Number.isNaN(imdbRating) || imdbRating < 0 || imdbRating > 10) {
-    errors.imdbRating = 'IMDb rating must be between 0 and 10'
-  }
-}
-
-function validateRottenTomatoesRating(
-  form: FormState,
-  errors: FieldErrors,
-): void {
-  if (form.rottenTomatoesRating.trim() === '') return
-  const rottenTomatoesRating = Number(form.rottenTomatoesRating)
-  if (
-    Number.isNaN(rottenTomatoesRating) ||
-    rottenTomatoesRating < 0 ||
-    rottenTomatoesRating > 100
-  ) {
-    errors.rottenTomatoesRating =
-      'Rotten Tomatoes rating must be between 0 and 100'
-  }
-}
-
-function validateRottenTomatoesPopcornmeter(
-  form: FormState,
-  errors: FieldErrors,
-): void {
-  if (form.rottenTomatoesPopcornmeter.trim() === '') return
-  const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
-  if (
-    Number.isNaN(rottenTomatoesPopcornmeter) ||
-    rottenTomatoesPopcornmeter < 0 ||
-    rottenTomatoesPopcornmeter > 100
-  ) {
-    errors.rottenTomatoesPopcornmeter =
-      'Rotten Tomatoes rating must be between 0 and 100'
-  }
-}
-
-function validatePersonalRating(form: FormState, errors: FieldErrors): void {
-  if (form.personalRating.trim() === '') return
-  const personalRating = Number(form.personalRating)
-  if (
-    Number.isNaN(personalRating) ||
-    personalRating < 1 ||
-    personalRating > 5
-  ) {
-    errors.personalRating = 'Personal rating must be between 1 and 5'
-  }
-}
 
 function validate(form: FormState): FieldErrors {
   const errors: FieldErrors = {}
