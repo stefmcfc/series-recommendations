@@ -382,6 +382,27 @@ describe('FRONTEND-003-AC-24/25/26: server-side error handling', () => {
   })
 })
 
+describe('FRONTEND-038-AC-01: duplicate series submission error', () => {
+  it('shows the backend message and does not call onSuccess', async () => {
+    mockCreate.mockRejectedValue(
+      new ApiError(
+        409,
+        'A series with this IMDb ID is already tracked: Breaking Bad',
+      ),
+    )
+    const { onSuccess } = renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Breaking Bad' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'A series with this IMDb ID is already tracked: Breaking Bad',
+    )
+    expect(onSuccess).not.toHaveBeenCalled()
+  })
+})
+
 describe('FRONTEND-022-AC-01/02: Look Up searches TMDB directly', () => {
   it('disables Look Up until a title is entered, then calls searchTmdb, not any OMDb method', async () => {
     mockSearchTmdb.mockResolvedValue([{ tmdbId: 4046, title: 'Spooks' }])
