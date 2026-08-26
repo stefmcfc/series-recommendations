@@ -92,6 +92,46 @@ describe('FRONTEND-011-AC-04: Specific Series multi-select via getAll()', () => 
       expect.objectContaining({ seriesIds: ['2'] }),
     )
   })
+
+  it('includes year and origin country in the label to disambiguate same-titled series', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'Ozark',
+        year: 2017,
+        originCountry: 'US',
+        status: 'COMPLETED',
+      }),
+      makeSeries({
+        id: '2',
+        title: 'Ozark',
+        year: 2022,
+        originCountry: 'GB',
+        status: 'BACKLOG',
+      }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    expect(
+      await screen.findByLabelText('Ozark (2017) — United States (COMPLETED)'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('Ozark (2022) — United Kingdom (BACKLOG)'),
+    ).toBeInTheDocument()
+  })
+
+  it('omits the year/country segment when either field is null', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', year: null, originCountry: null }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    expect(
+      await screen.findByLabelText('Ozark (COMPLETED)'),
+    ).toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-014-AC-02: fetches genre options on mount', () => {
@@ -468,7 +508,7 @@ describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch'
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
-    fireEvent.click(await screen.findByLabelText('Ozark (COMPLETED)'))
+    fireEvent.click(await screen.findByLabelText(/ozark/i))
     fireEvent.click(screen.getByLabelText(/popular right now/i))
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
