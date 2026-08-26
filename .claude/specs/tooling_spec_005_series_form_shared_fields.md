@@ -5,7 +5,15 @@ validators extracted to `src/utils/seriesFormValidation.ts`; `SeriesFormFields` 
 to `src/components/SeriesFormFields.tsx` (+ `.module.css`); both `AddSeriesForm.tsx` and
 `EditSeriesForm.tsx` wired to it, `EditSeriesForm.tsx` passing Current Season/Current Episode as
 children. All existing `AddSeriesForm.test.tsx`/`EditSeriesForm.test.tsx` tests pass unmodified;
-full frontend suite (468 tests), typecheck, and lint all green.
+full frontend suite (468 tests), typecheck, and lint all green. **Follow-up fix (same PR,
+2026-08-26)**: relocating the poster-preview `<img src={form.posterUrl}>` markup verbatim into the
+new `SeriesFormFields.tsx` surfaced it as a "new" CodeQL `js/xss-through-dom` alert — the same
+pattern already had two open alerts on `main` (`AddSeriesForm.tsx`/`EditSeriesForm.tsx`), just not
+previously flagged in this file. Fixed by gating the preview on a new `isSafeImageUrl` helper
+(`src/utils/safeImageUrl.ts`, http/https only) rather than leaving it unaddressed — out of this
+spec's original acceptance criteria, but resolves a real (if pre-existing, low-severity) finding
+CI surfaced during this PR rather than deferring it. Consolidates what were 2 open alert locations
+into 1.
 **Priority**: Medium — flagged as the strongest candidate in a 2026-08-26 codebase survey, and
 touches the same code two other outstanding specs (`frontend_spec_013`, `frontend_spec_034`) will
 also modify. **Build-order recommendation**: do this one first — see Design Decisions.

@@ -13,6 +13,10 @@ versioned together as one app.
 - Frontend: extracted `AddSeriesForm`/`EditSeriesForm`'s seven byte-identical field validators into `src/utils/seriesFormValidation.ts`.
 - Frontend: extracted `AddSeriesForm`/`EditSeriesForm`'s thirteen near-identical field blocks (Year through Exclude from recommendations) into a new shared `SeriesFormFields` component; both forms now render it, `EditSeriesForm` passing Current Season/Current Episode as children. No behavior change — every existing test passes unmodified (`tooling_spec_005`).
 
+### Security
+
+- Frontend: the poster URL preview (`AddSeriesForm`/`EditSeriesForm`, now `SeriesFormFields`) only renders an `<img>` for `http(s)://` URLs, via a new `isSafeImageUrl` helper — resolves a CodeQL `js/xss-through-dom` finding on the unvalidated `<img src>`.
+
 ## [2.15.5] - 2026-08-26
 
 ### Changed
