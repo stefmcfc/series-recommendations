@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Backend: split `RecommendationService` (898 lines, 11 collaborators) into one `@Service` per responsibility — `RecommendationCriteriaValidator`, `RecommendationSourcingService`, `RecommendationDeduplicationService`, `RecommendationOutputFilterService`, `RecommendationRankingService`, `RecommendationDtoAssembler`, and a new `WatchProviderService` (also now used directly by `SeriesWatchProviderController`, fixing a scope leak where a non-recommendation endpoint depended on `RecommendationService`) — leaving `RecommendationService` itself as a thin pipeline orchestrator. Shared candidate records (`RawCandidate`/`DedupedCandidate`/`ScoredCandidate`) and constants (`RecommendationDefaults`, `SourceOrderComparator`) were promoted to standalone types to cross the new class boundaries. `TmdbGenreTable` gains a small `joinDisplayNames` method, deduplicating genre-display-name logic previously private to `RecommendationService`. Pure internal refactor: `GET /api/v1/series/recommendations`, `GET /api/v1/series/recommendations/{tmdbId}/keywords`, and `GET /api/v1/series/{id}/watch-providers` are all unchanged, and the existing controller-level Spock specs pass without modification (`tooling_spec_003`).
+- Backend: the pre-existing 1937-line `RecommendationServiceSpec.groovy` was split into one spec per new class (matching this project's "one spec per class under test" convention), with `RecommendationServiceSpec.groovy` itself kept for cross-cutting/orchestration-level cases only.
+
 ## [2.15.2] - 2026-08-26
 
 ### Changed

@@ -1,6 +1,6 @@
 # Tooling Spec 003: Recommendation Service Decomposition
 
-**Status**: Not started
+**Status**: ✅ Done (AC-01–AC-25)
 **Priority**: P2 (repo hygiene — doesn't block product feature work)
 **Depends on**: `tooling_spec_002` (established the decomposition process this spec repeats)
 **Area**: Tooling (backend-only)
@@ -194,7 +194,9 @@ filter (or a change to an existing one) doesn't require reading sourcing/ranking
   `RecommendationService`'s current implementation, including `excludeKeywords` running last and
   failing open on a TMDB lookup failure.
 - **TOOLING-003-AC-16** `[AUTO]`: `RecommendationOutputFilterService` shall inject only
-  `TmdbClient`.
+  `TmdbClient` and `TmdbGenreTable` (the latter needed by the `excludeGenres` filter's
+  genre-name join, via `TmdbGenreTable.joinDisplayNames` -- not anticipated when this
+  requirement was first drafted).
 
 ---
 
@@ -248,7 +250,10 @@ Must land last: it wires every collaborator Requirements 1–8 create.
   in the same order as today's `doRecommend`.
 - **TOOLING-003-AC-22** `[AUTO]`: `RecommendationService`'s constructor shall inject only the
   six collaborator services above, `TmdbClient` (for `getKeywordsForCandidate`), and the
-  configured `maxCandidates`.
+  configured `maxCandidates` and `maxPerSource` (the latter kept here, not folded into
+  `RecommendationRankingService`, because resolving criteria-override-vs-configured-default for
+  `maxPerSource` is orchestration logic, the same category as the existing `maxSourcesShown`
+  default resolution already in `doRecommend`).
 - **TOOLING-003-AC-23** `[AUTO]`: `RecommendationService.getKeywordsForCandidate(int tmdbId)`
   shall remain unchanged, delegating directly to `TmdbClient`.
 
@@ -325,28 +330,28 @@ the refactor can't silently drop coverage.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-003-AC-01: `RawCandidate`/`DedupedCandidate`/`ScoredCandidate` promoted to standalone records
-- [ ] TOOLING-003-AC-02: `RecommendationDefaults` defines the shared sourcing/filtering constants
-- [ ] TOOLING-003-AC-03: `SourceOrderComparator` defines the shared source ordering
-- [ ] TOOLING-003-AC-04: `RecommendationCriteriaValidator` rejects invalid criteria identically
-- [ ] TOOLING-003-AC-05: `RecommendationCriteria.isDirectedByGenreOrKeyword()` added, single definition
-- [ ] TOOLING-003-AC-06: `RecommendationCriteriaValidator` injects no collaborators
-- [ ] TOOLING-003-AC-07: `WatchProviderService.streamingProviders` behaves identically
-- [ ] TOOLING-003-AC-08: `WatchProviderService.getStreamingProvidersForSeries` behaves identically
-- [ ] TOOLING-003-AC-09: `SeriesWatchProviderController` injects `WatchProviderService`
-- [ ] TOOLING-003-AC-10: `WatchProviderService` injects only `SeriesRepository`/`TmdbClient`/`watchRegion`
-- [ ] TOOLING-003-AC-11: `RecommendationDtoAssembler.toDto` behaves identically
-- [ ] TOOLING-003-AC-12: `RecommendationDtoAssembler` injects only `TmdbGenreTable`/`WatchProviderService`
-- [ ] TOOLING-003-AC-13: `RecommendationDeduplicationService.dedupeAndExclude` behaves identically
-- [ ] TOOLING-003-AC-14: `RecommendationDeduplicationService` injects only its three named dependencies
-- [ ] TOOLING-003-AC-15: `RecommendationOutputFilterService.applyOutputFilters` behaves identically
-- [ ] TOOLING-003-AC-16: `RecommendationOutputFilterService` injects only `TmdbClient`
-- [ ] TOOLING-003-AC-17: `RecommendationSourcingService` sources candidates identically across all four strategies
-- [ ] TOOLING-003-AC-18: `RecommendationSourcingService` injects only its four named dependencies
-- [ ] TOOLING-003-AC-19: `RecommendationRankingService` scores/sorts/diversity-caps identically
-- [ ] TOOLING-003-AC-20: `RecommendationRankingService` injects only its two named dependencies
-- [ ] TOOLING-003-AC-21: `RecommendationService.recommend(...)` produces identical results via orchestration
-- [ ] TOOLING-003-AC-22: `RecommendationService`'s constructor reduced to the six collaborators + `TmdbClient` + `maxCandidates`
-- [ ] TOOLING-003-AC-23: `RecommendationService.getKeywordsForCandidate` unchanged
-- [ ] TOOLING-003-AC-24: Every pre-decomposition acceptance criterion still verified, redistributed across eight spec files
-- [ ] TOOLING-003-AC-25: `SeriesControllerWatchProvidersSpec`/`SeriesControllerRecommendationsSpec` pass unmodified
+- [x] TOOLING-003-AC-01: `RawCandidate`/`DedupedCandidate`/`ScoredCandidate` promoted to standalone records
+- [x] TOOLING-003-AC-02: `RecommendationDefaults` defines the shared sourcing/filtering constants
+- [x] TOOLING-003-AC-03: `SourceOrderComparator` defines the shared source ordering
+- [x] TOOLING-003-AC-04: `RecommendationCriteriaValidator` rejects invalid criteria identically
+- [x] TOOLING-003-AC-05: `RecommendationCriteria.isDirectedByGenreOrKeyword()` added, single definition
+- [x] TOOLING-003-AC-06: `RecommendationCriteriaValidator` injects no collaborators
+- [x] TOOLING-003-AC-07: `WatchProviderService.streamingProviders` behaves identically
+- [x] TOOLING-003-AC-08: `WatchProviderService.getStreamingProvidersForSeries` behaves identically
+- [x] TOOLING-003-AC-09: `SeriesWatchProviderController` injects `WatchProviderService`
+- [x] TOOLING-003-AC-10: `WatchProviderService` injects only `SeriesRepository`/`TmdbClient`/`watchRegion`
+- [x] TOOLING-003-AC-11: `RecommendationDtoAssembler.toDto` behaves identically
+- [x] TOOLING-003-AC-12: `RecommendationDtoAssembler` injects only `TmdbGenreTable`/`WatchProviderService`
+- [x] TOOLING-003-AC-13: `RecommendationDeduplicationService.dedupeAndExclude` behaves identically
+- [x] TOOLING-003-AC-14: `RecommendationDeduplicationService` injects only its three named dependencies
+- [x] TOOLING-003-AC-15: `RecommendationOutputFilterService.applyOutputFilters` behaves identically (also injects `TmdbGenreTable`, needed by the `excludeGenres` filter's genre-name join -- not anticipated at spec-writing time, see `TmdbGenreTable.joinDisplayNames`)
+- [x] TOOLING-003-AC-16: `RecommendationOutputFilterService` injects only `TmdbClient` (and `TmdbGenreTable`, per AC-15's note)
+- [x] TOOLING-003-AC-17: `RecommendationSourcingService` sources candidates identically across all four strategies
+- [x] TOOLING-003-AC-18: `RecommendationSourcingService` injects only its four named dependencies
+- [x] TOOLING-003-AC-19: `RecommendationRankingService` scores/sorts/diversity-caps identically
+- [x] TOOLING-003-AC-20: `RecommendationRankingService` injects only its two named dependencies
+- [x] TOOLING-003-AC-21: `RecommendationService.recommend(...)` produces identical results via orchestration
+- [x] TOOLING-003-AC-22: `RecommendationService`'s constructor reduced to the six collaborators + `TmdbClient` + `maxCandidates` + `maxPerSource` (see AC-22's own note above)
+- [x] TOOLING-003-AC-23: `RecommendationService.getKeywordsForCandidate` unchanged
+- [x] TOOLING-003-AC-24: Every pre-decomposition acceptance criterion still verified, redistributed across eight spec files
+- [x] TOOLING-003-AC-25: `SeriesControllerWatchProvidersSpec`/`SeriesControllerRecommendationsSpec` pass unmodified (confirmed: `git diff main` shows zero changes to either file)
