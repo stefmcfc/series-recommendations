@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.15.4] - 2026-08-26
+
 ### Fixed
 
 - `POST /api/v1/series` now rejects a create with an `imdbId` that already matches a tracked series (`409 Conflict`, naming the conflicting title), instead of silently creating a duplicate row. A blank/absent `imdbId` (manual entry with no TMDB/OMDb lookup) is unaffected. `AddSeriesForm`'s existing generic submit-error banner already surfaces the new `409` message with no frontend code changes (`series_spec_028`, `frontend_spec_038`).
