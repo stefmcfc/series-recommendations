@@ -117,4 +117,14 @@ public class RecommendationCriteria {
      */
     public String getDiscoverSortBy() { return discoverSortBy; }
     public void setDiscoverSortBy(String discoverSortBy) { this.discoverSortBy = discoverSortBy; }
+
+    /**
+     * {@code true} iff this request is directed by genre and/or keyword (TOOLING-003-AC-05) --
+     * the single definition read by both {@code RecommendationCriteriaValidator} (mutual-
+     * exclusivity checks) and {@code RecommendationService}'s own orchestration, so the two
+     * can't drift apart.
+     */
+    public boolean isDirectedByGenreOrKeyword() {
+        return (genres != null && !genres.isEmpty()) || (keywords != null && !keywords.isEmpty());
+    }
 }

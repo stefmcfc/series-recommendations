@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Single source-of-truth TMDB TV genre name/id table (SERIES-007-AC-03), replacing the two
@@ -99,5 +101,24 @@ public final class TmdbGenreTable {
      */
     public List<String> allAliasNames() {
         return allAliasNames;
+    }
+
+    /**
+     * Maps a candidate's TMDB {@code genre_ids} to their canonical display names and joins
+     * them with {@code ", "}, or {@code null} if {@code genreIds} is null/empty or none
+     * resolve. Shared by {@code RecommendationDtoAssembler} (a candidate's displayed genres)
+     * and {@code RecommendationOutputFilterService} (comparing against {@code excludeGenres})
+     * so the two can't drift apart on how a candidate's genres are rendered.
+     */
+    public String joinDisplayNames(List<Integer> genreIds) {
+        if (genreIds == null || genreIds.isEmpty()) {
+            return null;
+        }
+        String joined = genreIds.stream()
+            .map(this::displayNameFor)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.joining(", "));
+        return joined.isEmpty() ? null : joined;
     }
 }
