@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.config
 
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -30,7 +31,7 @@ class CorsConfigSpec extends Specification {
 
     then: "the response is successful and echoes back the allowed origin"
         result.andExpect(status().isOk())
-        result.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+        result.andExpect(MockMvcResultMatchers
           .header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin))
   }
 
@@ -44,7 +45,7 @@ class CorsConfigSpec extends Specification {
         )
 
     then: "no Access-Control-Allow-Origin header is present, proving the config is not permissive/wildcard"
-        result.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+        result.andExpect(MockMvcResultMatchers
           .header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN))
   }
 
@@ -58,7 +59,7 @@ class CorsConfigSpec extends Specification {
         )
 
     then: "the response declares Content-Disposition as exposed to cross-origin JavaScript"
-        result.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+        result.andExpect(MockMvcResultMatchers
           .header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Content-Disposition"))
   }
 }

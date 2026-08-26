@@ -4,6 +4,7 @@ import uk.co.stefirby.seriestracker.client.TmdbCandidate
 import uk.co.stefirby.seriestracker.client.TmdbClient
 import uk.co.stefirby.seriestracker.client.TmdbKeyword
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
+import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
@@ -47,8 +48,8 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-023-AC-05: getKeywordsForCandidate maps TmdbKeyword names to plain strings"() {
         given: "TMDB returns two keywords for tmdbId 4046"
             tmdbClient.showKeywords(4046) >> [
-                new uk.co.stefirby.seriestracker.client.TmdbKeyword(470, "spy"),
-                new uk.co.stefirby.seriestracker.client.TmdbKeyword(190904, "mi5")
+                new TmdbKeyword(470, "spy"),
+                new TmdbKeyword(190904, "mi5")
             ]
 
         when: "getKeywordsForCandidate(4046) is called"
@@ -61,7 +62,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-023-AC-06: a TMDB failure returns an empty list, not an exception"() {
         given: "TMDB fails for tmdbId 999"
             tmdbClient.showKeywords(999) >> {
-                throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("TMDB down")
+                throw new ExternalServiceException("TMDB down")
             }
 
         when: "getKeywordsForCandidate(999) is called"
@@ -209,16 +210,6 @@ class RecommendationServiceSpec extends Specification {
             results.size() == 2
             results*.title().sort() == ["A", "B"]
     }
-
-    // -- Spec 015, Requirement 1 (SERIES-015-AC-01..04): accumulate every contributing source --
-
-    // -- Spec 015, Requirement 3 (SERIES-015-AC-07/08): scoring uses the best-rated contributing source --
-
-    // -- Spec 015, Requirement 4 (SERIES-015-AC-09..13): sourceTitles/totalSourceCount/maxSourcesShown --
-
-    // -- Spec 015, Requirement 5 (SERIES-015-AC-14..18): two diversity-cap modes --
-
-    // -- Spec 015, Requirement 6 (SERIES-015-AC-19..22): sortBy --
 
     // -- Spec 022, Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending --
 

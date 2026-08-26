@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.15.5] - 2026-08-26
+
+### Changed
+
+- Backend: resolved IDE-flagged Groovy spec warnings across 8 spec files — replaced inline fully-qualified type references (`org.hamcrest.Matchers`, `MockMvcResultMatchers`, `SeriesStatus`, `SeriesEntity`, `KeywordEntity`, `LocalDateTime`) with proper imports, and updated `SeriesExportServiceSpec`/`SeriesControllerSpec` to use Jackson 3.x's `JsonNode` accessors (`stringValue()`, `asString()`) instead of the deprecated Jackson 2.x-era names (`textValue()`, `asText()`). No behavior change.
+- Docs: added a "Groovy spec conventions" section to `.claude/steering/structure.md` covering both patterns above, to prevent recurrence.
+
 ## [2.15.4] - 2026-08-26
 
 ### Fixed

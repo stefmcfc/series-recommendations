@@ -225,7 +225,7 @@ class SeriesControllerSpec extends Specification {
 
     and: "the created series's ID is extracted from the response"
         def responseBody = objectMapper.readTree(createResult.response.contentAsString)
-        def id = responseBody.get("data").get("id").asText()
+        def id = responseBody.get("data").get("id").asString()
 
     when: "a GET request is made for that series ID"
         def result = mockMvc.perform(get("/api/v1/series/" + id))
@@ -257,7 +257,7 @@ class SeriesControllerSpec extends Specification {
 
     and: "the created series's ID is extracted from the response"
         def responseBody = objectMapper.readTree(createResult.response.contentAsString)
-        def id = responseBody.get("data").get("id").asText()
+        def id = responseBody.get("data").get("id").asString()
 
     and: "an update DTO with a new current season"
         def updateDto = new SeriesDto(currentSeason: 3)
@@ -305,7 +305,7 @@ class SeriesControllerSpec extends Specification {
 
     and: "the created series's ID is extracted from the response"
         def responseBody = objectMapper.readTree(createResult.response.contentAsString)
-        def id = responseBody.get("data").get("id").asText()
+        def id = responseBody.get("data").get("id").asString()
 
     when: "a DELETE request is made for that series"
         def result = mockMvc.perform(delete("/api/v1/series/" + id))

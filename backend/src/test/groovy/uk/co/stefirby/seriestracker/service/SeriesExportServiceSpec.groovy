@@ -1,13 +1,14 @@
 package uk.co.stefirby.seriestracker.service
 
-import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
+import spock.lang.Specification
+import tools.jackson.databind.ObjectMapper
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
-import tools.jackson.databind.ObjectMapper
-import tools.jackson.databind.node.ObjectNode
+
+import java.time.LocalDateTime
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -57,7 +58,7 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
 
         then: "the JSON contains the export date, series list, and count"
@@ -72,18 +73,18 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
-            def office = parsed.get('series').find { it.get('title').textValue() == 'The Office' }
+            def office = parsed.get('series').find { it.get('title').stringValue() == 'The Office' }
 
         then: "the exported JSON includes all fields for a series"
             office != null
             office.get('year').intValue() == 2005
-            office.get('genres').textValue() == 'Comedy'
+            office.get('genres').stringValue() == 'Comedy'
             office.get('totalSeasons').intValue() == 9
             office.get('imdbRating').doubleValue() == 9.0
-            office.get('personalNotes').textValue() == 'Absolutely love this show'
-            office.get('posterUrl').textValue() == 'https://example.com/the-office-poster.jpg'
+            office.get('personalNotes').stringValue() == 'Absolutely love this show'
+            office.get('posterUrl').stringValue() == 'https://example.com/the-office-poster.jpg'
     }
 
     def "exportAsJson handles null fields without error"() {
@@ -92,12 +93,12 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
 
         then: "the export succeeds and includes the minimal series"
             json != null
-            parsed.get('series').find { it.get('title').textValue() == 'Minimal Show' } != null
+            parsed.get('series').find { it.get('title').stringValue() == 'Minimal Show' } != null
     }
 
     def "exportAsCsv returns CSV with header row"() {
@@ -185,9 +186,9 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
-            def spooks = parsed.get('series').find { it.get('title').textValue() == 'Spooks' }
+            def spooks = parsed.get('series').find { it.get('title').stringValue() == 'Spooks' }
 
         then: "tmdbRating/tmdbVoteCount are present, and the removed fields are absent"
             spooks != null
@@ -233,12 +234,12 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
-            def office = parsed.get('series').find { it.get('title').textValue() == 'The Office 2' }
+            def office = parsed.get('series').find { it.get('title').stringValue() == 'The Office 2' }
 
         then: "the exported JSON includes the tags field"
-            office.get('tags').textValue() == 'background watching'
+            office.get('tags').stringValue() == 'background watching'
     }
 
     def "SERIES-014-AC-12: exportAsCsv includes a tags column"() {
@@ -322,9 +323,9 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
-            def ozark = parsed.get('series').find { it.get('title').textValue() == 'Ozark 2' }
+            def ozark = parsed.get('series').find { it.get('title').stringValue() == 'Ozark 2' }
 
         then: "the exported JSON includes the rottenTomatoesPopcornmeter field"
             ozark.get('rottenTomatoesPopcornmeter').intValue() == 91
@@ -336,11 +337,11 @@ class SeriesExportServiceSpec extends Specification {
             def series = seriesService.getAll()
 
         when: "the series are exported as JSON"
-            def json = exportService.exportAsJson(series, java.time.LocalDateTime.now())
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
             def parsed = new ObjectMapper().readTree(json)
-            def office = parsed.get('series').find { it.get('title').textValue() == 'The Office (UK) 2' }
+            def office = parsed.get('series').find { it.get('title').stringValue() == 'The Office (UK) 2' }
 
         then: "the exported JSON includes the originCountry field"
-            office.get('originCountry').textValue() == 'GB'
+            office.get('originCountry').stringValue() == 'GB'
     }
 }

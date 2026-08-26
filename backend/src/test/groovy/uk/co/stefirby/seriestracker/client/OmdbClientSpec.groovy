@@ -1,18 +1,15 @@
 package uk.co.stefirby.seriestracker.client
 
-import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
-import uk.co.stefirby.seriestracker.exception.ExternalServiceException
+import org.hamcrest.Matchers
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.web.client.RestClient
 import spock.lang.Specification
+import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
+import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 
-import java.io.IOException
-
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.queryParam
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 
@@ -54,7 +51,7 @@ class OmdbClientSpec extends Specification {
                   "imdbID": "tt0160904"
                 }
             '''
-            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+            mockServer.expect(requestTo(Matchers.containsString(BASE_URL)))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(queryParam("apikey", API_KEY))
                 .andExpect(queryParam("type", "series"))
@@ -84,7 +81,7 @@ class OmdbClientSpec extends Specification {
                   ]
                 }
             '''
-            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+            mockServer.expect(requestTo(Matchers.containsString(BASE_URL)))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "ratingsForImdbId(...) is called"
@@ -97,7 +94,7 @@ class OmdbClientSpec extends Specification {
     def "SERIES-017-AC-09: treats N/A imdbRating as null"() {
         given: "an OMDb response with imdbRating: N/A"
             def body = '{"Response":"True","Title":"Obscure Show","imdbRating":"N/A"}'
-            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+            mockServer.expect(requestTo(Matchers.containsString(BASE_URL)))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "ratingsForImdbId(...) is called"
@@ -110,7 +107,7 @@ class OmdbClientSpec extends Specification {
     def "SERIES-017-AC-09: Response=False raises a not-found outcome identifying the imdbId"() {
         given: "an OMDb response of Response=False"
             def body = '{"Response":"False","Error":"Incorrect IMDb ID."}'
-            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+            mockServer.expect(requestTo(Matchers.containsString(BASE_URL)))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "ratingsForImdbId('tt9999999') is called"
@@ -123,7 +120,7 @@ class OmdbClientSpec extends Specification {
 
     def "SERIES-017-AC-09: a non-2xx response from OMDb raises ExternalServiceException"() {
         given: "OMDb responds with a server error"
-            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+            mockServer.expect(requestTo(Matchers.containsString(BASE_URL)))
                 .andRespond(withServerError())
 
         when: "ratingsForImdbId(...) is called"
@@ -135,7 +132,7 @@ class OmdbClientSpec extends Specification {
 
     def "SERIES-017-AC-09: a network failure reaching OMDb raises ExternalServiceException"() {
         given: "the underlying request fails with an IOException, simulating a network error"
-            mockServer.expect(requestTo(org.hamcrest.Matchers.containsString(BASE_URL)))
+            mockServer.expect(requestTo(Matchers.containsString(BASE_URL)))
                 .andRespond({ request -> throw new IOException("Connection refused") })
 
         when: "ratingsForImdbId(...) is called"
