@@ -19,7 +19,8 @@ class RecommendationServiceSpec extends Specification {
     TmdbClient tmdbClient = Mock()
 
     RecommendationService recommendationService =
-        new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 20, 50, "best-source", 8, "GB")
+        new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(),
+            new RecommendationCriteriaValidator(), 20, 50, "best-source", 8, "GB")
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -548,7 +549,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-01: max-source-series cap is configurable via constructor"() {
         given: "a service configured with maxSourceSeries=2, and 3 eligible COMPLETED series"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 2, 50, "best-source", 8, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 2, 50, "best-source", 8, "GB")
             def now = LocalDateTime.now()
             def sources = (1..3).collect {
                 completedSeries("Show ${it}", "tt${it.toString().padLeft(7, '0')}", now.minusDays(it))
@@ -565,7 +566,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 20, 3, "best-source", 8, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 3, "best-source", 8, "GB")
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -644,7 +645,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-11: an explicit seriesIds pool larger than max-source-series is ordered and truncated"() {
         given: "a service configured with maxSourceSeries=1, and two selected series with different personalRatings"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 1, 50, "best-source", 8, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 1, 50, "best-source", 8, "GB")
             def low = completedSeries("Low", "tt0000001", LocalDateTime.now(), null, 2)
             low.id = UUID.randomUUID()
             def high = completedSeries("High", "tt0000002", LocalDateTime.now(), null, 5)
@@ -714,28 +715,6 @@ class RecommendationServiceSpec extends Specification {
             results.isEmpty()
     }
 
-    def "SERIES-007-AC-17: seriesIds combined with genres is rejected"() {
-        given: "criteria sets both seriesIds and genres"
-            def criteria = new RecommendationCriteria(seriesIds: [UUID.randomUUID().toString()], genres: ["Drama"])
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
-    def "SERIES-007-AC-17: seriesIds combined with keywords is rejected"() {
-        given: "criteria sets both seriesIds and keywords"
-            def criteria = new RecommendationCriteria(seriesIds: [UUID.randomUUID().toString()], keywords: ["Spy"])
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
     // -- Requirement 6 (SERIES-007-AC-19/20): rating-weighted source prioritization --
 
     def "SERIES-007-AC-19: source pool is ordered by personalRating descending, dateCompleted as tiebreaker"() {
@@ -776,17 +755,6 @@ class RecommendationServiceSpec extends Specification {
             1 * tmdbClient.findTvIdByImdbId("tt0000002") >> Optional.empty()
             0 * tmdbClient.findTvIdByImdbId("tt0000001")
             0 * tmdbClient.findTvIdByImdbId("tt0000003")
-    }
-
-    def "SERIES-007-AC-20: minSourceRating out of range (1-5) is rejected"() {
-        given: "an out-of-range minSourceRating"
-            def criteria = new RecommendationCriteria(minSourceRating: 9)
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
     }
 
     def "SERIES-007-AC-20: minSourceRating is a no-op in genre/keyword direct-sourcing mode"() {
@@ -865,7 +833,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), 20, 50, "best-source", 2, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "best-source", 2, "GB")
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -1345,7 +1313,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-15: best-source mode caps on each candidate's best contributing source only (default behavior unchanged)"() {
         given: "diversityCapMode defaults to best-source; one well-represented best source, maxPerSource 1"
             def service = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient,
-                new TmdbGenreTable(), 20, 50, "best-source", 8, "GB")
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "best-source", 8, "GB")
             def sourceA = completedSeries("Source A", "tt6000001", LocalDateTime.now(), null, 5)
             def sourceB = completedSeries("Source B", "tt6000002", LocalDateTime.now(), null, 2)
             seriesRepository.findAll() >> [sourceA, sourceB]
@@ -1369,7 +1337,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-16: all-sources mode excludes a candidate if any contributing source is already at the cap"() {
         given: "diversityCapMode is all-sources; maxPerSource 1"
             def service = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient,
-                new TmdbGenreTable(), 20, 50, "all-sources", 8, "GB")
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "all-sources", 8, "GB")
             def sourceS = completedSeries("Source S", "tt7000001", LocalDateTime.now(), null, 5)
             def sourceT = completedSeries("Source T", "tt7000002", LocalDateTime.now(), null, 3)
             seriesRepository.findAll() >> [sourceS, sourceT]
@@ -1413,7 +1381,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-18: an unrecognized diversityCapMode value falls back to best-source"() {
         given: "diversityCapMode is configured as 'bogus-mode'"
             def service = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient,
-                new TmdbGenreTable(), 20, 50, "bogus-mode", 8, "GB")
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "bogus-mode", 8, "GB")
             def sourceA = completedSeries("Source A", "tt6000001", LocalDateTime.now(), null, 5)
             def sourceB = completedSeries("Source B", "tt6000002", LocalDateTime.now(), null, 2)
             seriesRepository.findAll() >> [sourceA, sourceB]
@@ -1692,61 +1660,6 @@ class RecommendationServiceSpec extends Specification {
 
     // -- Spec 022, Requirement 4 (SERIES-022-AC-16..19): mutual exclusivity & validation --
 
-    def "SERIES-022-AC-16: sourceMode combined with seriesIds is rejected"() {
-        given: "criteria sets both sourceMode and seriesIds"
-            def criteria = new RecommendationCriteria(sourceMode: "trending", seriesIds: [UUID.randomUUID().toString()])
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
-    def "SERIES-022-AC-16: sourceMode combined with genres is rejected"() {
-        given: "criteria sets both sourceMode and genres"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated", genres: ["Drama"])
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
-    def "SERIES-022-AC-16: sourceMode combined with keywords is rejected"() {
-        given: "criteria sets both sourceMode and keywords"
-            def criteria = new RecommendationCriteria(sourceMode: "trending", keywords: ["Spy"])
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
-    def "SERIES-022-AC-17: an unrecognized sourceMode value is rejected"() {
-        given: "criteria sets an unrecognized sourceMode"
-            def criteria = new RecommendationCriteria(sourceMode: "bogus")
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
-    def "SERIES-022-AC-18: an unrecognized trendingWindow value is rejected"() {
-        given: "criteria sets an unrecognized trendingWindow"
-            def criteria = new RecommendationCriteria(sourceMode: "trending", trendingWindow: "month")
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
     def "SERIES-022-AC-18: trendingWindow is ignored (no-op) when sourceMode is not trending"() {
         given: "criteria sets a valid trendingWindow but sourceMode is topRated"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", trendingWindow: "day")
@@ -1797,40 +1710,6 @@ class RecommendationServiceSpec extends Specification {
     }
 
     // -- Spec 025: TMDB-native sort_by for topRated/genre modes --
-
-    def "SERIES-025-AC-04: rejects an unrecognized discoverSortBy"() {
-        given: "criteria with an invalid discoverSortBy"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated", discoverSortBy: "not-a-real-value")
-
-        when: "recommend is called"
-            recommendationService.recommend(10, criteria)
-
-        then: "IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
-    def "SERIES-025-AC-04: accepts every documented TMDB sort_by value"() {
-        given: "discoverTopRated resolves to an empty list for any sortBy"
-            tmdbClient.discoverTopRated(200, _) >> []
-
-        expect: "no exception for any of the 12 documented values"
-            ["first_air_date.asc", "first_air_date.desc", "name.asc", "name.desc",
-             "original_name.asc", "original_name.desc", "popularity.asc", "popularity.desc",
-             "vote_average.asc", "vote_average.desc", "vote_count.asc", "vote_count.desc"].each { value ->
-                recommendationService.recommend(10, new RecommendationCriteria(sourceMode: "topRated", discoverSortBy: value))
-            }
-    }
-
-    def "SERIES-025-AC-04: discoverSortBy is validated even under automatic sourcing, matching trendingWindow's existing mode-independent validation convention"() {
-        given: "no sourceMode/genres/keywords set (automatic sourcing), but a bogus discoverSortBy"
-            def criteria = new RecommendationCriteria(discoverSortBy: "not-a-real-value")
-
-        when: "recommend(10, criteria) is called"
-            recommendationService.recommend(10, criteria)
-
-        then: "IllegalArgumentException is thrown regardless of mode"
-            thrown(IllegalArgumentException)
-    }
 
     def "SERIES-025-AC-05: topRated defaults discoverSortBy to vote_average.desc"() {
         given: "criteria with sourceMode=topRated and no discoverSortBy"

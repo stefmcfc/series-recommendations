@@ -58,6 +58,7 @@ public class RecommendationService {
     private final IgnoredSeriesRepository ignoredSeriesRepository;
     private final TmdbClient tmdbClient;
     private final TmdbGenreTable genreTable;
+    private final RecommendationCriteriaValidator criteriaValidator;
 
     /**
      * Upper bound on how many source series (the automatic {@code COMPLETED} pool, or an
@@ -102,6 +103,7 @@ public class RecommendationService {
                                   IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
                                   TmdbGenreTable genreTable,
+                                  RecommendationCriteriaValidator criteriaValidator,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
                                   @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode,
@@ -111,6 +113,7 @@ public class RecommendationService {
         this.ignoredSeriesRepository = ignoredSeriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
+        this.criteriaValidator = criteriaValidator;
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
         this.diversityCapMode = diversityCapMode;
@@ -136,11 +139,11 @@ public class RecommendationService {
      * transactional proxy (java:S6809).
      */
     private List<RecommendationDto> doRecommend(int limit, RecommendationCriteria criteria) {
-        validate(criteria);
+        criteriaValidator.validate(criteria);
 
         boolean trendingMode = "trending".equals(criteria.getSourceMode());
         boolean topRatedMode = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
-        boolean genreOrKeywordDirected = isDirectedByGenreOrKeyword(criteria);
+        boolean genreOrKeywordDirected = criteria.isDirectedByGenreOrKeyword();
 
         List<RawCandidate> raw;
         if (trendingMode) {
@@ -191,65 +194,6 @@ public class RecommendationService {
             .map(ScoredCandidate::dto)
             .limit(limit)
             .toList();
-    }
-
-    /**
-     * Each independent check is its own method (java:S3776) -- this method's own job is just to
-     * run them all in order; none of them depend on another's outcome.
-     */
-    private void validate(RecommendationCriteria c) {
-        boolean hasSeriesIds = c.getSeriesIds() != null && !c.getSeriesIds().isEmpty();
-        boolean hasGenreOrKeyword = isDirectedByGenreOrKeyword(c);
-        boolean hasSourceMode = c.getSourceMode() != null && !c.getSourceMode().isBlank();
-
-        validateSourceMode(c, hasSourceMode);
-        validateMutuallyExclusiveModes(hasSeriesIds, hasGenreOrKeyword, hasSourceMode);
-        validateMinSourceRating(c);
-        validateTrendingWindow(c);
-        validateDiscoverSortBy(c);
-    }
-
-    private void validateSourceMode(RecommendationCriteria c, boolean hasSourceMode) {
-        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())) {
-            throw new IllegalArgumentException("sourceMode must be one of: trending, topRated");
-        }
-    }
-
-    private void validateMutuallyExclusiveModes(boolean hasSeriesIds, boolean hasGenreOrKeyword, boolean hasSourceMode) {
-        if (hasSeriesIds && hasGenreOrKeyword) {
-            throw new IllegalArgumentException(
-                "seriesIds cannot be combined with genres/keywords -- these are mutually exclusive request modes");
-        }
-        if (hasSourceMode && (hasSeriesIds || hasGenreOrKeyword)) {
-            throw new IllegalArgumentException(
-                "sourceMode cannot be combined with seriesIds/genres/keywords -- these are mutually exclusive request modes");
-        }
-    }
-
-    private void validateMinSourceRating(RecommendationCriteria c) {
-        if (c.getMinSourceRating() != null && (c.getMinSourceRating() < 1 || c.getMinSourceRating() > 5)) {
-            throw new IllegalArgumentException("minSourceRating must be between 1 and 5");
-        }
-    }
-
-    private void validateTrendingWindow(RecommendationCriteria c) {
-        String trendingWindow = c.getTrendingWindow();
-        if (trendingWindow != null && !trendingWindow.isBlank()
-            && !"day".equals(trendingWindow) && !"week".equals(trendingWindow)) {
-            throw new IllegalArgumentException("trendingWindow must be one of: day, week");
-        }
-    }
-
-    private void validateDiscoverSortBy(RecommendationCriteria c) {
-        String discoverSortBy = c.getDiscoverSortBy();
-        if (discoverSortBy != null && !discoverSortBy.isBlank() && !RecommendationDefaults.VALID_DISCOVER_SORT_BY.contains(discoverSortBy)) {
-            throw new IllegalArgumentException("discoverSortBy must be one of: " + RecommendationDefaults.VALID_DISCOVER_SORT_BY);
-        }
-    }
-
-    private boolean isDirectedByGenreOrKeyword(RecommendationCriteria c) {
-        return (c.getGenres() != null && !c.getGenres().isEmpty())
-            || (c.getKeywords() != null && !c.getKeywords().isEmpty());
     }
 
     // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
