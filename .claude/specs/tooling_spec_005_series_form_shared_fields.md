@@ -9,11 +9,16 @@ full frontend suite (468 tests), typecheck, and lint all green. **Follow-up fix 
 2026-08-26)**: relocating the poster-preview `<img src={form.posterUrl}>` markup verbatim into the
 new `SeriesFormFields.tsx` surfaced it as a "new" CodeQL `js/xss-through-dom` alert — the same
 pattern already had two open alerts on `main` (`AddSeriesForm.tsx`/`EditSeriesForm.tsx`), just not
-previously flagged in this file. Fixed by gating the preview on a new `isSafeImageUrl` helper
+previously flagged in this file. Fixed via a new `sanitizeImageUrl` helper
 (`src/utils/safeImageUrl.ts`, http/https only) rather than leaving it unaddressed — out of this
 spec's original acceptance criteria, but resolves a real (if pre-existing, low-severity) finding
 CI surfaced during this PR rather than deferring it. Consolidates what were 2 open alert locations
-into 1.
+into 1. **First-attempt correction**: an initial `isSafeImageUrl(url): boolean` gate (rendering
+`<img src={form.posterUrl}>` behind a boolean condition) did not clear CodeQL's finding on the
+next push — its dataflow analysis follows the original tainted variable straight through a
+boolean predicate. Switched to `sanitizeImageUrl(url): string | null`, which returns
+`new URL(url).href` (a value re-derived from the parsed `URL` object, not the raw input string)
+so the value actually assigned to `src` is no longer the directly-tainted variable.
 **Priority**: Medium — flagged as the strongest candidate in a 2026-08-26 codebase survey, and
 touches the same code two other outstanding specs (`frontend_spec_013`, `frontend_spec_034`) will
 also modify. **Build-order recommendation**: do this one first — see Design Decisions.

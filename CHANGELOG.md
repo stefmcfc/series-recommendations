@@ -15,7 +15,7 @@ versioned together as one app.
 
 ### Security
 
-- Frontend: the poster URL preview (`AddSeriesForm`/`EditSeriesForm`, now `SeriesFormFields`) only renders an `<img>` for `http(s)://` URLs, via a new `isSafeImageUrl` helper — resolves a CodeQL `js/xss-through-dom` finding on the unvalidated `<img src>`.
+- Frontend: the poster URL preview (`AddSeriesForm`/`EditSeriesForm`, now `SeriesFormFields`) only renders an `<img>` for `http(s)://` URLs, via a new `sanitizeImageUrl` helper — resolves a CodeQL `js/xss-through-dom` finding on the unvalidated `<img src>`.
 
 ## [2.15.5] - 2026-08-26
 

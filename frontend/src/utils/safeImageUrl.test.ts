@@ -1,21 +1,25 @@
 import { describe, it, expect } from 'vitest'
-import { isSafeImageUrl } from './safeImageUrl'
+import { sanitizeImageUrl } from './safeImageUrl'
 
-describe('isSafeImageUrl', () => {
-  it('allows http and https URLs', () => {
-    expect(isSafeImageUrl('https://example.com/poster.jpg')).toBe(true)
-    expect(isSafeImageUrl('http://example.com/poster.jpg')).toBe(true)
-  })
-
-  it('rejects javascript: and data: schemes', () => {
-    expect(isSafeImageUrl('javascript:alert(1)')).toBe(false)
-    expect(isSafeImageUrl('data:text/html,<script>alert(1)</script>')).toBe(
-      false,
+describe('sanitizeImageUrl', () => {
+  it('returns the re-parsed href for http and https URLs', () => {
+    expect(sanitizeImageUrl('https://example.com/poster.jpg')).toBe(
+      'https://example.com/poster.jpg',
+    )
+    expect(sanitizeImageUrl('http://example.com/poster.jpg')).toBe(
+      'http://example.com/poster.jpg',
     )
   })
 
+  it('rejects javascript: and data: schemes', () => {
+    expect(sanitizeImageUrl('javascript:alert(1)')).toBeNull()
+    expect(
+      sanitizeImageUrl('data:text/html,<script>alert(1)</script>'),
+    ).toBeNull()
+  })
+
   it('rejects unparseable input', () => {
-    expect(isSafeImageUrl('not a url')).toBe(false)
-    expect(isSafeImageUrl('')).toBe(false)
+    expect(sanitizeImageUrl('not a url')).toBeNull()
+    expect(sanitizeImageUrl('')).toBeNull()
   })
 })

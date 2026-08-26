@@ -1,6 +1,6 @@
 import type { ChangeEvent, ReactNode } from 'react'
 import { SeriesStatus } from '../types/series'
-import { isSafeImageUrl } from '../utils/safeImageUrl'
+import { sanitizeImageUrl } from '../utils/safeImageUrl'
 import styles from './SeriesFormFields.module.css'
 
 export interface SeriesFormFieldsValues {
@@ -56,6 +56,9 @@ export function SeriesFormFields({
   posterPreviewError,
   children,
 }: SeriesFormFieldsProps) {
+  const safePosterUrl =
+    form.posterUrl.trim() !== '' ? sanitizeImageUrl(form.posterUrl) : null
+
   return (
     <>
       <div className={styles.field}>
@@ -247,16 +250,14 @@ export function SeriesFormFields({
           value={form.posterUrl}
           onChange={onPosterUrlChange}
         />
-        {form.posterUrl.trim() !== '' &&
-          !posterPreviewError &&
-          isSafeImageUrl(form.posterUrl) && (
-            <img
-              src={form.posterUrl}
-              alt=""
-              className={styles.posterPreview}
-              onError={onPosterLoadError}
-            />
-          )}
+        {safePosterUrl && !posterPreviewError && (
+          <img
+            src={safePosterUrl}
+            alt=""
+            className={styles.posterPreview}
+            onError={onPosterLoadError}
+          />
+        )}
       </div>
 
       <div className={styles.checkboxField}>
