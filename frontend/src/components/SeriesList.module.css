@@ -282,6 +282,12 @@
   color: var(--text);
 }
 
+.ratingSource {
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
 .newContentBadge {
   flex-shrink: 0;
   background: var(--accent);

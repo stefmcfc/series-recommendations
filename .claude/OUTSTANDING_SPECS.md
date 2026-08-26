@@ -26,20 +26,16 @@ Last full audit: 2026-08-26.
 |---|------|-------------|----------------|----------|----------------------------------------|
 | 1 | [`frontend_spec_034_recommendation_add_form_fields.md`](specs/frontend_spec_034_recommendation_add_form_fields.md) | Entire spec | AC-01–AC-06 (6) | Low | No |
 | 2 | [`frontend_spec_035_specific_series_picker.md`](specs/frontend_spec_035_specific_series_picker.md) | Entire spec | AC-01–AC-16 (16) | P3 | No |
-| 3 | [`frontend_spec_039_sort_aware_rating_display.md`](specs/frontend_spec_039_sort_aware_rating_display.md) | Entire spec | AC-01 (1) | P3 | No |
-| 4 | [`tooling_spec_004_external_api_client_shared_helpers.md`](specs/tooling_spec_004_external_api_client_shared_helpers.md) | Entire spec | AC-01–AC-07 (7) | Low | No |
-| 5 | [`tooling_spec_006_series_view_shared_action_helpers.md`](specs/tooling_spec_006_series_view_shared_action_helpers.md) | Entire spec | AC-01–AC-06 (6) | Low | No |
+| 3 | [`tooling_spec_004_external_api_client_shared_helpers.md`](specs/tooling_spec_004_external_api_client_shared_helpers.md) | Entire spec | AC-01–AC-07 (7) | Low | No |
+| 4 | [`tooling_spec_006_series_view_shared_action_helpers.md`](specs/tooling_spec_006_series_view_shared_action_helpers.md) | Entire spec | AC-01–AC-06 (6) | Low | No |
 
-`frontend_spec_013_star_ratings.md` shipped on `feature/star-ratings` (2026-08-26) — all 16 ACs
-checked (Requirements 1–3: `StarRating` component + display/input integration; Requirements 4–5
-were already done), removed from this index. Its `StarRating` component now handles Personal
-Rating everywhere; `frontend_spec_034`'s remaining field-visibility work targets
-`SeriesFormFields.tsx` (see its amendment note below), not the now-obsolete raw numeric input.
+`frontend_spec_039_sort_aware_rating_display.md` shipped on `feature/sort-aware-rating-display`
+(2026-08-26) — its single AC checked, removed from this index.
 
 No outstanding spec is blocked by another's *unimplemented* work. `tooling_spec_006` modifies
-`SeriesDetail.tsx`/`SeriesList.tsx` — both files were also touched by `frontend_spec_013`'s
-already-shipped display integration, but in different, non-overlapping functions, so no ongoing
-conflict risk.
+`SeriesDetail.tsx`/`SeriesList.tsx` — both files were also touched by `frontend_spec_013`'s and
+`frontend_spec_039`'s already-shipped work, but in different, non-overlapping functions, so no
+ongoing conflict risk.
 
 ---
 
@@ -49,9 +45,8 @@ conflict risk.
    conditionally hide four fields; now stable since `frontend_spec_013` already landed the
    Personal Rating `StarRating` swap in that same file. Low priority otherwise.
 2. **`tooling_spec_006`** (shared rewatch-toggle/delete-submission helpers) — touches
-   `SeriesDetail.tsx`/`SeriesList.tsx`, in functions unrelated to `frontend_spec_013`'s
-   already-shipped rating work. Low priority, weakest case of the three maintenance items per the
-   original survey.
+   `SeriesDetail.tsx`/`SeriesList.tsx`, in functions unrelated to the already-shipped rating work.
+   Low priority, weakest case of the three maintenance items per the original survey.
 3. **`frontend_spec_035`** — the largest remaining product spec (16 ACs) and the only one with
    zero file overlap with anything else outstanding (`KeywordPicker.tsx`,
    `RecommendationControls.tsx`). P3 (quality-of-life, not urgent) and fully self-contained —
@@ -87,14 +82,7 @@ checkbox-per-series list with search, genre/status filtering, sort, and a "show 
 - **Depends on**: Frontend Specs 011/029/032 ✅, Series Spec 002 ✅, `frontend_spec_013` (now
   fully shipped) — all implemented.
 
-### 3. `frontend_spec_039_sort_aware_rating_display.md`
-`SeriesList`'s rating column always shows `imdbRating` regardless of active sort field. This makes
-it show `tmdbRating` (with a source label) when the list is sorted by TMDB rating, `imdbRating`
-otherwise — unchanged from today.
-- **Depends on**: `frontend_spec_013` (now fully shipped), Series Spec 002 ✅, Series Spec 017 ✅
-  — all implemented.
-
-### 4. `tooling_spec_004_external_api_client_shared_helpers.md`
+### 3. `tooling_spec_004_external_api_client_shared_helpers.md`
 `TmdbClient`/`OmdbClient` duplicate JSON-scalar-coercion helpers (`toInteger`/`toBigDecimal`/`str`)
 and the "guard blank api key, wrap transport failures" pattern. Extracts the genuinely-shared
 logic into a new `ExternalApiSupport` class while preserving each client's distinct behavior
@@ -102,7 +90,7 @@ logic into a new `ExternalApiSupport` class while preserving each client's disti
 survey — real but small (~20-30 lines), previously called "deliberate mirroring."
 - **Depends on**: none — pure internal refactor.
 
-### 5. `tooling_spec_006_series_view_shared_action_helpers.md`
+### 4. `tooling_spec_006_series_view_shared_action_helpers.md`
 `SeriesDetail.tsx`/`SeriesList.tsx` duplicate their rewatch-toggle optimistic-update logic and
 their delete-submission logic near-identically (differing only in singular-vs-per-id state
 shape). Extracts both into small callback-based utility functions

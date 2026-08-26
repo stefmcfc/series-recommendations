@@ -51,6 +51,18 @@ function buildSortParam(
   return { sortBy, sortDirection }
 }
 
+// FRONTEND-039-AC-01: the rating column shows whichever rating the list is
+// currently sorted by, when that's a rating field -- otherwise it falls back
+// to IMDb rating (the pre-existing default display).
+function activeRating(
+  series: Series,
+  sortBy: SortByOption,
+): { value: number | null; source: 'IMDb' | 'TMDB' } {
+  return sortBy === 'tmdbRating'
+    ? { value: series.tmdbRating, source: 'TMDB' }
+    : { value: series.imdbRating, source: 'IMDb' }
+}
+
 // Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
 // enough that a short bulk job's progress feels live, infrequent enough not
 // to hammer the status endpoint.
@@ -503,7 +515,13 @@ export function SeriesList({
                     </span>
                   )}
                 </div>
-                <span className={styles.rating}>{s.imdbRating ?? '—'}</span>
+                <span className={styles.rating}>
+                  {activeRating(s, sortBy).value ?? '—'}
+                  <span className={styles.ratingSource}>
+                    {' '}
+                    {activeRating(s, sortBy).source}
+                  </span>
+                </span>
                 <StarRating value={s.personalRating} />
 
                 {confirmingDeleteId === s.id ? (
