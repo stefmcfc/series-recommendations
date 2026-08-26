@@ -4,6 +4,11 @@
 **Priority**: Low
 **Depends on**: `frontend_spec_003_add_series_form.md`, `frontend_spec_010_recommendations.md`
 **Area**: Frontend (`AddSeriesForm.tsx`, `RecommendationsList.tsx`)
+**Amendment note (2026-08-26, `tooling_spec_005`)**: the four fields Requirement 2 hides (`Total
+Seasons`/`Total Episodes`/`IMDb Rating`/`Rotten Tomatoes Rating`) and the `Status` field it locks
+to read-only text now render via the shared `SeriesFormFields.tsx` component, not directly in
+`AddSeriesForm.tsx`. Implementing this spec now means threading a `source` (or equivalent) prop
+through to `SeriesFormFields` itself, not just adding it to `AddSeriesForm`.
 
 ## Overview
 
