@@ -9,16 +9,12 @@ import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
 import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
-import uk.co.stefirby.seriestracker.service.BulkRefreshService;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
 import uk.co.stefirby.seriestracker.service.KeywordStatsService;
 import uk.co.stefirby.seriestracker.service.RecommendationService;
-import uk.co.stefirby.seriestracker.service.RefreshJobStatus;
-import uk.co.stefirby.seriestracker.service.RefreshResult;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesLookupService;
-import uk.co.stefirby.seriestracker.service.SeriesRefreshService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
 import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
@@ -47,8 +43,6 @@ public class SeriesController {
     private final RecommendationService recommendationService;
     private final IgnoredSeriesService ignoredSeriesService;
     private final TmdbGenreTable genreTable;
-    private final SeriesRefreshService refreshService;
-    private final BulkRefreshService bulkRefreshService;
     private final KeywordStatsService keywordStatsService;
     private final Clock clock;
 
@@ -65,8 +59,6 @@ public class SeriesController {
                             RecommendationService recommendationService,
                             IgnoredSeriesService ignoredSeriesService,
                             TmdbGenreTable genreTable,
-                            SeriesRefreshService refreshService,
-                            BulkRefreshService bulkRefreshService,
                             KeywordStatsService keywordStatsService,
                             Clock clock) {
         this.seriesService = seriesService;
@@ -76,8 +68,6 @@ public class SeriesController {
         this.recommendationService = recommendationService;
         this.ignoredSeriesService = ignoredSeriesService;
         this.genreTable = genreTable;
-        this.refreshService = refreshService;
-        this.bulkRefreshService = bulkRefreshService;
         this.keywordStatsService = keywordStatsService;
         this.clock = clock;
     }
@@ -112,33 +102,10 @@ public class SeriesController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/" + UuidPathPattern.PATTERN + "/refresh")
-    public ResponseEntity<ApiResponse<RefreshResult>> refresh(@PathVariable UUID id) {
-        RefreshResult result = refreshService.refresh(id);
-        return ResponseEntity.ok(new ApiResponse<>(result));
-    }
-
     @GetMapping("/" + UuidPathPattern.PATTERN + "/watch-providers")
     public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(@PathVariable UUID id) {
         List<RecommendationDto.StreamingProvider> results = recommendationService.getStreamingProvidersForSeries(id);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
-    }
-
-    @PostMapping("/" + UuidPathPattern.PATTERN + "/acknowledge-new-content")
-    public ResponseEntity<ApiResponse<SeriesDto>> acknowledgeNewContent(@PathVariable UUID id) {
-        SeriesDto dto = refreshService.acknowledgeNewContent(id);
-        return ResponseEntity.ok(new ApiResponse<>(dto));
-    }
-
-    @PostMapping("/refresh-all")
-    public ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll() {
-        RefreshJobStatus status = bulkRefreshService.start();
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(status));
-    }
-
-    @GetMapping("/refresh-all/status")
-    public ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAllStatus() {
-        return ResponseEntity.ok(new ApiResponse<>(bulkRefreshService.status()));
     }
 
     @GetMapping("/lookup/search-tmdb")
