@@ -45,7 +45,7 @@ by default, capped only by scrolling, not by count.
 - **The cap is configurable via a Vite env var**, `VITE_KEYWORD_SUGGESTIONS_LIMIT` (default `10` if unset),
   following this project's existing pattern of env-var-configurable tunables (`app.tmdb.refresh-delay-ms`, etc.)
   — this satisfies "parametrized amount, no redeploy" without building a settings UI, which is a separate,
-  bigger idea now tracked in `FUTURE_IDEAS.md` under "Configuration" rather than being built here.
+  bigger idea now tracked in `.claude/ideas/future_ideas.md` under "Configuration" rather than being built here.
   Undefined/unparseable values fall back to the default rather than erroring.
 - **The cap applies only to the empty-query default view**, not to filtered results while typing — once you've
   typed something, every matching option is shown (already effectively bounded by how specific your query is).
@@ -310,7 +310,7 @@ controls.
 | `frontend_spec_029_searchable_keyword_picker.md` | Establishes `KeywordPicker`'s existing dual-mode shape this spec extends into a true hybrid |
 | `series_spec_019_keyword_tracking.md` | `GET /series/keywords`'s default `seriesCount`-descending order, relied on by Requirement 2 |
 | `frontend_spec_024_keyword_tracking.md` | `SearchFilter`'s existing stricter error-handling precedent, contrasted with this spec's Recommendations-page silent-degrade choice |
-| `FUTURE_IDEAS.md` "Configuration" | The deferred settings-menu idea this spec deliberately does *not* build, in favor of an env var |
+| `.claude/ideas/future_ideas.md` "Configuration" | The deferred settings-menu idea this spec deliberately does *not* build, in favor of an env var |
 
 ## Acceptance Criteria Summary
 
