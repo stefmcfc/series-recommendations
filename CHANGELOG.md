@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.15.2] - 2026-08-26
+
+### Changed
+
+- Backend: split `SeriesController` (~20 endpoints, 11 injected services) into one resource-scoped `@RestController` per area — `SeriesRefreshController`, `SeriesLookupController`, `SeriesRecommendationController`, `SeriesWatchProviderController`, `SeriesGenreController`, `SeriesKeywordController` — leaving `SeriesController` itself with just CRUD/search/export/ignore-list and 5 dependencies (`java:S107` suppression no longer needed). A shared `UuidPathPattern` constant replaces the `{id}` regex previously duplicated across controllers. Pure internal refactor: every endpoint's path, request/response shape, and status codes are unchanged, and the existing controller-level Spock specs pass without modification (`tooling_spec_002`).
+
 ## [2.15.1] - 2026-08-25
 
 ### Changed
