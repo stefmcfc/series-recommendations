@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.service;
 
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
+import uk.co.stefirby.seriestracker.exception.ConflictException;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.model.KeywordEntity;
 import uk.co.stefirby.seriestracker.model.ProductionStatus;
@@ -42,6 +43,15 @@ public class SeriesService {
 
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
             throw new IllegalArgumentException("Title is required");
+        }
+
+        // SERIES-028-AC-01/02: a non-blank imdbId already tracked by another series is
+        // rejected outright; a blank/absent imdbId is never subject to duplicate checking (no
+        // stable identifier to key it on -- mirrors refreshFromTmdb/refreshFromOmdb's existing
+        // no-op-on-missing-imdbId posture).
+        if (dto.getImdbId() != null && !dto.getImdbId().isBlank()
+                && repository.existsByImdbId(dto.getImdbId())) {
+            throw new ConflictException("A series with this IMDb ID is already tracked: " + dto.getTitle());
         }
 
         if (dto.getImdbRating() != null) {
