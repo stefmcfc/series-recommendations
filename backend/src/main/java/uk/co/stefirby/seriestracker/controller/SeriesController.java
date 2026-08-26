@@ -2,12 +2,10 @@ package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
-import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
-import uk.co.stefirby.seriestracker.service.KeywordStatsService;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
@@ -33,26 +31,17 @@ public class SeriesController {
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
     private final IgnoredSeriesService ignoredSeriesService;
-    private final KeywordStatsService keywordStatsService;
     private final Clock clock;
 
-    // One controller backs this app's entire /api/v1/series resource surface (~20 endpoints
-    // across CRUD, search, export, lookup, recommendations, ignore-list, refresh, keywords) --
-    // per this project's "thin controller, delegate to service/" convention there's no single
-    // cohesive sub-grouping among these dependencies that wouldn't be an artificial wrapper
-    // invented purely to satisfy a parameter count. java:S107 suppressed deliberately.
-    @SuppressWarnings("java:S107")
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
                             IgnoredSeriesService ignoredSeriesService,
-                            KeywordStatsService keywordStatsService,
                             Clock clock) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
         this.ignoredSeriesService = ignoredSeriesService;
-        this.keywordStatsService = keywordStatsService;
         this.clock = clock;
     }
 
@@ -84,13 +73,6 @@ public class SeriesController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/keywords")
-    public ResponseEntity<ApiResponse<List<KeywordStatDto>>> keywords(
-            @RequestParam(required = false) String sortBy) {
-        List<KeywordStatDto> stats = keywordStatsService.getStats(sortBy);
-        return ResponseEntity.ok(new ApiResponse<>(stats, stats.size()));
     }
 
     @PostMapping("/ignored")
