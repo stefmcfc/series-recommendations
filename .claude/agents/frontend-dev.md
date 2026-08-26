@@ -22,6 +22,7 @@ Only `src/types/` and `src/services/seriesApi.ts` exist (Frontend Spec 001, done
 - Follow red/green TDD: write the failing Vitest test first (mock `seriesApi` with `vi.mock('../services/seriesApi')`, not axios directly), then implement.
 - Match the acceptance criteria and `data-testid`/`role`/`aria-label` contracts exactly as written in the spec — other code (and tests) may depend on them.
 - Write or update the relevant `.claude/specs/frontend_spec_*.md` first if you're adding a new requirement (see `.claude/steering/ears_format.md` and the `ears-spec` skill).
+- After checking off ACs in a `frontend_spec_*.md` file, update its entry in `.claude/OUTSTANDING_SPECS.md` to match (or remove the entry entirely if every AC in the spec is now checked).
 
 ## Static-analysis / Sonar cleanup patterns
 
