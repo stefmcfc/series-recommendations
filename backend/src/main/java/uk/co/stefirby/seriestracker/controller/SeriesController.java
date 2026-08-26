@@ -11,7 +11,6 @@ import uk.co.stefirby.seriestracker.service.KeywordStatsService;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +33,6 @@ public class SeriesController {
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
     private final IgnoredSeriesService ignoredSeriesService;
-    private final TmdbGenreTable genreTable;
     private final KeywordStatsService keywordStatsService;
     private final Clock clock;
 
@@ -48,14 +46,12 @@ public class SeriesController {
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
                             IgnoredSeriesService ignoredSeriesService,
-                            TmdbGenreTable genreTable,
                             KeywordStatsService keywordStatsService,
                             Clock clock) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
         this.ignoredSeriesService = ignoredSeriesService;
-        this.genreTable = genreTable;
         this.keywordStatsService = keywordStatsService;
         this.clock = clock;
     }
@@ -88,12 +84,6 @@ public class SeriesController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/genres")
-    public ResponseEntity<ApiResponse<List<String>>> genres() {
-        List<String> aliases = genreTable.allAliasNames();
-        return ResponseEntity.ok(new ApiResponse<>(aliases, aliases.size()));
     }
 
     @GetMapping("/keywords")
