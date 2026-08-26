@@ -20,7 +20,7 @@ class RecommendationServiceSpec extends Specification {
 
     RecommendationService recommendationService =
         new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(),
-            new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "best-source", 8)
+            new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "best-source", 8)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -310,7 +310,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-01: max-source-series cap is configurable via constructor"() {
         given: "a service configured with maxSourceSeries=2, and 3 eligible COMPLETED series"
-            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 2, 50, "best-source", 8)
+            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 2, 50, "best-source", 8)
             def now = LocalDateTime.now()
             def sources = (1..3).collect {
                 completedSeries("Show ${it}", "tt${it.toString().padLeft(7, '0')}", now.minusDays(it))
@@ -327,7 +327,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 3, "best-source", 8)
+            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 3, "best-source", 8)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -406,7 +406,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-11: an explicit seriesIds pool larger than max-source-series is ordered and truncated"() {
         given: "a service configured with maxSourceSeries=1, and two selected series with different personalRatings"
-            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 1, 50, "best-source", 8)
+            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 1, 50, "best-source", 8)
             def low = completedSeries("Low", "tt0000001", LocalDateTime.now(), null, 2)
             low.id = UUID.randomUUID()
             def high = completedSeries("High", "tt0000002", LocalDateTime.now(), null, 5)
@@ -594,7 +594,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "best-source", 2)
+            def svc = new RecommendationService(seriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "best-source", 2)
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -647,249 +647,6 @@ class RecommendationServiceSpec extends Specification {
     }
 
     // -- Requirement 8 (SERIES-007-AC-23..29): output filters --
-
-    def "SERIES-007-AC-24: minTmdbRating excludes candidates below the threshold"() {
-        given: "one source with two candidates: tmdbRating 5.0 and 8.0"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [
-                candidate(10, "Low", 2020, new BigDecimal("5.0")),
-                candidate(20, "High", 2020, new BigDecimal("8.0"))
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(minTmdbRating: new BigDecimal("6.0"))
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "only the high-rated candidate remains"
-            results.size() == 1
-            results[0].title() == "High"
-    }
-
-    def "SERIES-007-AC-25: minVoteCount defaults to 20 when not supplied"() {
-        given: "candidate with voteCount 5, candidate with voteCount 25"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [
-                candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5),
-                candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 25)
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-
-        when: "recommend(20) is called with no minVoteCount param"
-            def results = recommendationService.recommend(20)
-
-        then: "only the voteCount-25 candidate is present"
-            results.size() == 1
-            results[0].title() == "High Votes"
-    }
-
-    def "SERIES-007-AC-25: minVoteCount=0 explicitly disables the filter"() {
-        given: "a candidate with voteCount 5, below the default of 20"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5)]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(minVoteCount: 0)
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the low-vote-count candidate is not excluded"
-            results.size() == 1
-    }
-
-    def "SERIES-007-AC-26: a null year is excluded once yearMin/yearMax is set"() {
-        given: "candidate with year null, candidate with year 2020"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [
-                candidate(10, "No Year", null),
-                candidate(20, "Has Year", 2020)
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(yearMin: 2015)
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "only the year-2020 candidate is present"
-            results.size() == 1
-            results[0].title() == "Has Year"
-    }
-
-    def "SERIES-007-AC-26: yearMin/yearMax exclude candidates outside the inclusive range"() {
-        given: "candidates with year 2010, 2015, 2020"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [
-                candidate(10, "Old", 2010),
-                candidate(20, "Mid", 2015),
-                candidate(30, "New", 2020)
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            tmdbClient.externalIds(30) >> Optional.of("tt1000030")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(yearMin: 2012, yearMax: 2018)
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "only Mid (2015) is within the inclusive range"
-            results.size() == 1
-            results[0].title() == "Mid"
-    }
-
-    def "SERIES-007-AC-27: excludeGenres excludes candidates matching any resolved display genre"() {
-        given: "candidates with Drama (18) and Comedy (35) genres"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [
-                candidate(10, "Drama Show", 2020, new BigDecimal("8.0"), [18]),
-                candidate(20, "Comedy Show", 2020, new BigDecimal("8.0"), [35])
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(excludeGenres: ["Drama"])
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the Drama-genre candidate is excluded"
-            results.size() == 1
-            results[0].title() == "Comedy Show"
-    }
-
-    def "SERIES-007-AC-28: language excludes candidates whose originalLanguage doesn't case-insensitively match"() {
-        given: "candidates with originalLanguage en and fr"
-            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
-            seriesRepository.findAll() >> [source]
-            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
-            tmdbClient.recommendations(1) >> [
-                candidate(10, "English Show", 2020, new BigDecimal("8.0"), [18], 100, "en"),
-                candidate(20, "French Show", 2020, new BigDecimal("8.0"), [18], 100, "fr")
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(language: "EN")
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "only the English-language candidate is present"
-            results.size() == 1
-            results[0].title() == "English Show"
-    }
-
-    // -- Spec 024, Requirement 1 (SERIES-024-AC-03..08): excludeKeywords output filter --
-
-    def "SERIES-024-AC-03/04: matchesExcludeKeywords excludes a candidate whose TMDB keywords match, case-insensitively"() {
-        given: "a topRated-sourced candidate and excludeKeywords=['Zombie']"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated", excludeKeywords: ["Zombie"])
-            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Undead Show", 2020, new BigDecimal("8.0"), [18], 300)]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            tmdbClient.showKeywords(10) >> [new TmdbKeyword(1, "zombie")]
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the candidate is excluded"
-            results.isEmpty()
-    }
-
-    def "SERIES-024-AC-05: matchesExcludeKeywords only runs its extra call against candidates surviving cheaper filters"() {
-        given: "two candidates, one already excluded by minTmdbRating"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated", minTmdbRating: new BigDecimal("8.0"), excludeKeywords: ["Zombie"])
-            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [
-                candidate(10, "Low Rated", 2020, new BigDecimal("2.0"), [18], 300),
-                candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
-            ]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "showKeywords is only ever called for the surviving candidate"
-            0 * tmdbClient.showKeywords(10)
-            1 * tmdbClient.showKeywords(20) >> []
-    }
-
-    def "SERIES-024-AC-06: a showKeywords failure fails that candidate open, not the whole request"() {
-        given: "TmdbClient.showKeywords throws ExternalServiceException for the candidate"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated", excludeKeywords: ["Zombie"])
-            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Some Show", 2020, new BigDecimal("8.0"), [18], 300)]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            tmdbClient.showKeywords(10) >> { throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("boom") }
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "no exception propagates and the candidate is still present"
-            noExceptionThrown()
-            results*.title() == ["Some Show"]
-    }
-
-    def "SERIES-024-AC-07: showKeywords is never called when excludeKeywords is unset"() {
-        given: "no excludeKeywords in the request"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Some Show")]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-
-        when: "recommend(20, criteria) is called"
-            recommendationService.recommend(20, criteria)
-
-        then: "no TmdbClient.showKeywords call is made"
-            0 * tmdbClient.showKeywords(_)
-    }
-
-    def "SERIES-024-AC-08: excludeKeywords applies to trending candidates too"() {
-        given: "a trending candidate matching excludeKeywords"
-            def criteria = new RecommendationCriteria(sourceMode: "trending", excludeKeywords: ["Heist"])
-            tmdbClient.trending("week") >> [candidate(10, "Heist Show")]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-            tmdbClient.showKeywords(10) >> [new TmdbKeyword(1, "heist")]
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the candidate is excluded despite trending's ranking-bypass"
-            results.isEmpty()
-    }
 
     def "SERIES-007-AC-29: Requirement 8 filters are applied before the diversity cap"() {
         given: "one source producing 4 candidates, 2 of which fail minTmdbRating; maxPerSource default is 8"
@@ -950,7 +707,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-15: best-source mode caps on each candidate's best contributing source only (default behavior unchanged)"() {
         given: "diversityCapMode defaults to best-source; one well-represented best source, maxPerSource 1"
             def service = new RecommendationService(seriesRepository, tmdbClient,
-                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "best-source", 8)
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "best-source", 8)
             def sourceA = completedSeries("Source A", "tt6000001", LocalDateTime.now(), null, 5)
             def sourceB = completedSeries("Source B", "tt6000002", LocalDateTime.now(), null, 2)
             seriesRepository.findAll() >> [sourceA, sourceB]
@@ -974,7 +731,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-16: all-sources mode excludes a candidate if any contributing source is already at the cap"() {
         given: "diversityCapMode is all-sources; maxPerSource 1"
             def service = new RecommendationService(seriesRepository, tmdbClient,
-                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "all-sources", 8)
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "all-sources", 8)
             def sourceS = completedSeries("Source S", "tt7000001", LocalDateTime.now(), null, 5)
             def sourceT = completedSeries("Source T", "tt7000002", LocalDateTime.now(), null, 3)
             seriesRepository.findAll() >> [sourceS, sourceT]
@@ -1018,7 +775,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-18: an unrecognized diversityCapMode value falls back to best-source"() {
         given: "diversityCapMode is configured as 'bogus-mode'"
             def service = new RecommendationService(seriesRepository, tmdbClient,
-                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "bogus-mode", 8)
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 20, 50, "bogus-mode", 8)
             def sourceA = completedSeries("Source A", "tt6000001", LocalDateTime.now(), null, 5)
             def sourceB = completedSeries("Source B", "tt6000002", LocalDateTime.now(), null, 2)
             seriesRepository.findAll() >> [sourceA, sourceB]
@@ -1196,21 +953,6 @@ class RecommendationServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> []
     }
 
-    def "SERIES-024-AC-11: applyOutputFilters' post-hoc minVoteCount default is also 200 for topRated when unset"() {
-        given: "a topRated candidate whose voteCount (150) is below the mode-aware 200 default"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated")
-            tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Below New Floor", 2020, new BigDecimal("9.0"), [18], 150)]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the candidate is filtered out by the post-hoc filter"
-            results.isEmpty()
-    }
-
     def "SERIES-022-AC-11/SERIES-024-AC-13: an explicit minVoteCount overrides the topRated 200 default"() {
         given: "criteria sets minVoteCount to 100"
             def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
@@ -1220,21 +962,6 @@ class RecommendationServiceSpec extends Specification {
 
         then: "discoverTopRated is called with the explicit 100, not the 200 default"
             1 * tmdbClient.discoverTopRated(100, "vote_average.desc") >> []
-    }
-
-    def "SERIES-022-AC-12: the post-hoc minVoteCount output filter still applies to topRated candidates"() {
-        given: "discoverTopRated returns a candidate whose voteCount is below the requested floor"
-            def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
-            tmdbClient.discoverTopRated(100, "vote_average.desc") >> [candidate(10, "Below Floor", 2020, new BigDecimal("9.0"), [18], 50)]
-            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the candidate is filtered out"
-            results.isEmpty()
     }
 
     def "SERIES-022-AC-13: topRated candidates have a null sourceTitle"() {
