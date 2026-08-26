@@ -3,13 +3,11 @@ package uk.co.stefirby.seriestracker.controller;
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
 import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
-import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
 import uk.co.stefirby.seriestracker.service.KeywordStatsService;
-import uk.co.stefirby.seriestracker.service.RecommendationService;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
@@ -35,7 +33,6 @@ public class SeriesController {
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
-    private final RecommendationService recommendationService;
     private final IgnoredSeriesService ignoredSeriesService;
     private final TmdbGenreTable genreTable;
     private final KeywordStatsService keywordStatsService;
@@ -50,7 +47,6 @@ public class SeriesController {
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
-                            RecommendationService recommendationService,
                             IgnoredSeriesService ignoredSeriesService,
                             TmdbGenreTable genreTable,
                             KeywordStatsService keywordStatsService,
@@ -58,7 +54,6 @@ public class SeriesController {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
-        this.recommendationService = recommendationService;
         this.ignoredSeriesService = ignoredSeriesService;
         this.genreTable = genreTable;
         this.keywordStatsService = keywordStatsService;
@@ -93,12 +88,6 @@ public class SeriesController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/" + UuidPathPattern.PATTERN + "/watch-providers")
-    public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(@PathVariable UUID id) {
-        List<RecommendationDto.StreamingProvider> results = recommendationService.getStreamingProvidersForSeries(id);
-        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }
 
     @GetMapping("/genres")
