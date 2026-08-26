@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
 import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
+import { formatCountryName } from '../utils/countryName'
 import styles from './RecommendationControls.module.css'
 
 type SourceMode = 'automatic' | 'specific' | 'genre' | 'trending' | 'topRated'
@@ -485,7 +486,12 @@ export function RecommendationControls({
                   onChange={handleSeriesToggle(s.id)}
                 />
                 <label htmlFor={`series-checkbox-${s.id}`}>
-                  {s.title} ({s.status})
+                  {s.title}
+                  {s.year != null ? ` (${s.year})` : ''}
+                  {s.originCountry != null
+                    ? ` — ${formatCountryName(s.originCountry)}`
+                    : ''}{' '}
+                  ({s.status})
                 </label>
               </div>
             ))

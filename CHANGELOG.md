@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.1] - 2026-08-26
+
+### Fixed
+
+- Frontend: `RecommendationControls`' "Specific Series" picker now shows each series' year and origin country alongside title/status, so two tracked series sharing a title can be told apart.
+
 ## [2.17.0] - 2026-08-26
 
 ### Added
