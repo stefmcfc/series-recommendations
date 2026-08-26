@@ -47,6 +47,8 @@ Read these when working in the relevant area — don't duplicate their content h
 - `.claude/steering/ears_format.md` — the EARS requirement format all specs use
 - `.claude/specs/` — feature specs (backend 001–004, frontend 001–008), each with acceptance criteria and TDD test cases
 - `.claude/OUTSTANDING_SPECS.md` — a live index of every spec that's not started or has unchecked acceptance criteria, plus a suggested build order. Check this before asking "what's left to build?" instead of re-reading all specs.
+- `.claude/SPEC_CANDIDATES.md` — ideas confirmed worth a real spec eventually, not yet written. Move an entry into `.claude/OUTSTANDING_SPECS.md` when it's actually spec'd, don't leave it duplicated.
+- `.claude/ideas/` — genuinely speculative/deferred ideas, one level earlier than a spec candidate.
 
 ## Working conventions
 
