@@ -40,14 +40,6 @@ public class SeriesController {
 
     private static final DateTimeFormatter FILENAME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
-    // SERIES-017-AC-01/05: constrains {id} to an actual UUID shape so a non-UUID literal
-    // path segment (e.g. the now-removed "lookup") doesn't ambiguously match this pattern
-    // ahead of falling through to "no mapping found" -- without this, GET /lookup would be
-    // routed here and fail UUID conversion with a 400, instead of correctly 404ing as an
-    // unmapped path.
-    private static final String UUID_PATH_PATTERN =
-        "{id:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}";
-
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
@@ -104,35 +96,35 @@ public class SeriesController {
         return ResponseEntity.ok(new ApiResponse<>(list, list.size()));
     }
 
-    @GetMapping("/" + UUID_PATH_PATTERN)
+    @GetMapping("/" + UuidPathPattern.PATTERN)
     public ResponseEntity<ApiResponse<SeriesDto>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(new ApiResponse<>(seriesService.getById(id)));
     }
 
-    @PatchMapping("/" + UUID_PATH_PATTERN)
+    @PatchMapping("/" + UuidPathPattern.PATTERN)
     public ResponseEntity<ApiResponse<SeriesDto>> update(@PathVariable UUID id, @RequestBody SeriesDto dto) {
         return ResponseEntity.ok(new ApiResponse<>(seriesService.update(id, dto)));
     }
 
-    @DeleteMapping("/" + UUID_PATH_PATTERN)
+    @DeleteMapping("/" + UuidPathPattern.PATTERN)
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         seriesService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/" + UUID_PATH_PATTERN + "/refresh")
+    @PostMapping("/" + UuidPathPattern.PATTERN + "/refresh")
     public ResponseEntity<ApiResponse<RefreshResult>> refresh(@PathVariable UUID id) {
         RefreshResult result = refreshService.refresh(id);
         return ResponseEntity.ok(new ApiResponse<>(result));
     }
 
-    @GetMapping("/" + UUID_PATH_PATTERN + "/watch-providers")
+    @GetMapping("/" + UuidPathPattern.PATTERN + "/watch-providers")
     public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(@PathVariable UUID id) {
         List<RecommendationDto.StreamingProvider> results = recommendationService.getStreamingProvidersForSeries(id);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }
 
-    @PostMapping("/" + UUID_PATH_PATTERN + "/acknowledge-new-content")
+    @PostMapping("/" + UuidPathPattern.PATTERN + "/acknowledge-new-content")
     public ResponseEntity<ApiResponse<SeriesDto>> acknowledgeNewContent(@PathVariable UUID id) {
         SeriesDto dto = refreshService.acknowledgeNewContent(id);
         return ResponseEntity.ok(new ApiResponse<>(dto));
