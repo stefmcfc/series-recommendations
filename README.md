@@ -146,7 +146,7 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 
 ## Future Ideas
 
-Deferred features and known gaps, not yet scheduled against a spec, are tracked in [FUTURE_IDEAS.md](./FUTURE_IDEAS.md).
+Deferred features and known gaps, not yet scheduled against a spec, are tracked in [future_ideas.md](./.claude/ideas/future_ideas.md).
 
 ## Changelog
 
