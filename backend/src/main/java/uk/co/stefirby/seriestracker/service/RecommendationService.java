@@ -1,15 +1,11 @@
 package uk.co.stefirby.seriestracker.service;
 
-import uk.co.stefirby.seriestracker.client.TmdbCandidate;
 import uk.co.stefirby.seriestracker.client.TmdbClient;
 import uk.co.stefirby.seriestracker.client.TmdbKeyword;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
-import uk.co.stefirby.seriestracker.model.SeriesStatus;
-import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository;
-import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,18 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Backs {@code GET /api/v1/series/recommendations}. Sources candidates from TMDB using
@@ -51,19 +39,11 @@ public class RecommendationService {
      */
     private static final int DEFAULT_MAX_SOURCES_SHOWN = 3;
 
-    private final SeriesRepository seriesRepository;
     private final TmdbClient tmdbClient;
-    private final TmdbGenreTable genreTable;
     private final RecommendationCriteriaValidator criteriaValidator;
+    private final RecommendationSourcingService sourcingService;
     private final RecommendationDeduplicationService deduplicationService;
     private final RecommendationOutputFilterService outputFilterService;
-
-    /**
-     * Upper bound on how many source series (the automatic {@code COMPLETED} pool, or an
-     * explicit {@code seriesIds} selection) feed title-based sourcing (SERIES-007-AC-01,
-     * superseding the previously hardcoded {@code TMDB_MAX_SOURCE_SERIES = 20}).
-     */
-    private final int maxSourceSeries;
 
     /**
      * Upper bound on the combined raw candidate pool before {@code external_ids} is resolved
@@ -91,25 +71,21 @@ public class RecommendationService {
 
     private final RecommendationDtoAssembler dtoAssembler;
 
-    public RecommendationService(SeriesRepository seriesRepository,
-                                  TmdbClient tmdbClient,
-                                  TmdbGenreTable genreTable,
+    public RecommendationService(TmdbClient tmdbClient,
                                   RecommendationCriteriaValidator criteriaValidator,
+                                  RecommendationSourcingService sourcingService,
                                   RecommendationDeduplicationService deduplicationService,
                                   RecommendationOutputFilterService outputFilterService,
                                   RecommendationDtoAssembler dtoAssembler,
-                                  @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
                                   @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode,
                                   @Value("${app.tmdb.max-per-source:8}") int maxPerSource) {
-        this.seriesRepository = seriesRepository;
         this.tmdbClient = tmdbClient;
-        this.genreTable = genreTable;
         this.criteriaValidator = criteriaValidator;
+        this.sourcingService = sourcingService;
         this.deduplicationService = deduplicationService;
         this.outputFilterService = outputFilterService;
         this.dtoAssembler = dtoAssembler;
-        this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
         this.diversityCapMode = diversityCapMode;
         this.maxPerSource = maxPerSource;
@@ -141,13 +117,13 @@ public class RecommendationService {
 
         List<RawCandidate> raw;
         if (trendingMode) {
-            raw = sourceTrending(criteria);
+            raw = sourcingService.sourceTrending(criteria);
         } else if (topRatedMode) {
-            raw = sourceTopRated(criteria);
+            raw = sourcingService.sourceTopRated(criteria);
         } else if (genreOrKeywordDirected) {
-            raw = sourceByGenreOrKeyword(criteria);
+            raw = sourcingService.sourceByGenreOrKeyword(criteria);
         } else {
-            raw = sourceFromPool(criteria, limit);
+            raw = sourcingService.sourceFromPool(criteria, limit);
         }
 
         List<RawCandidate> capped = raw.size() > maxCandidates
@@ -189,209 +165,6 @@ public class RecommendationService {
             .limit(limit)
             .toList();
     }
-
-    // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
-
-    private List<RawCandidate> sourceTrending(RecommendationCriteria c) {
-        String window = c.getTrendingWindow() != null && !c.getTrendingWindow().isBlank()
-            ? c.getTrendingWindow() : "week";
-        return tmdbClient.trending(window).stream()
-            .map(candidate -> new RawCandidate(candidate, null))
-            .toList();
-    }
-
-    // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
-
-    private List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
-        // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
-        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
-        // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
-        String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_TOP_RATED_SORT_BY);
-        return tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy).stream()
-            .map(candidate -> new RawCandidate(candidate, null))
-            .toList();
-    }
-
-    // -- Requirement 5: directed sourcing by genre/keyword, bypassing the watched pool entirely --
-
-    private List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c) {
-        List<Integer> genreIds = resolveGenreIds(c.getGenres());
-        List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
-        // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
-        String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_GENRE_SORT_BY);
-        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy).stream()
-            .map(candidate -> new RawCandidate(candidate, null))
-            .toList();
-    }
-
-    /** Shared by {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword}: an explicit, non-blank {@code discoverSortBy} wins; otherwise the mode's own default. */
-    private String resolveDiscoverSortBy(RecommendationCriteria c, String modeDefault) {
-        String discoverSortBy = c.getDiscoverSortBy();
-        return discoverSortBy != null && !discoverSortBy.isBlank() ? discoverSortBy : modeDefault;
-    }
-
-    private List<Integer> resolveGenreIds(List<String> genres) {
-        if (genres == null) {
-            return List.of();
-        }
-        return genres.stream()
-            .map(genreTable::idFor)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-    }
-
-    private List<Integer> resolveKeywordIds(List<String> keywords) {
-        if (keywords == null) {
-            return List.of();
-        }
-        return keywords.stream()
-            .map(tmdbClient::searchKeyword)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .distinct()
-            .toList();
-    }
-
-    // -- Requirement 4 (Spec 006) / Requirement 4+6 (Spec 007): pool-based (title + genre supplement) sourcing --
-
-    private List<RawCandidate> sourceFromPool(RecommendationCriteria c, int limit) {
-        List<SeriesEntity> pool = resolveSourcePool(c);
-        if (pool.isEmpty()) {
-            log.debug("Source pool is empty; skipping recommendation sourcing entirely");
-            return List.of();
-        }
-
-        List<RawCandidate> raw = new ArrayList<>();
-        for (SeriesEntity source : pool) {
-            sourceTitleBased(source, raw);
-        }
-
-        long distinctTitleBased = raw.stream().map(r -> r.candidate().tmdbId()).distinct().count();
-        if (distinctTitleBased < limit) {
-            raw.addAll(genreBasedSupplement(pool));
-        }
-        return raw;
-    }
-
-    private List<SeriesEntity> resolveSourcePool(RecommendationCriteria c) {
-        List<SeriesEntity> pool = (c.getSeriesIds() != null && !c.getSeriesIds().isEmpty())
-            ? explicitPool(c.getSeriesIds())
-            : automaticPool();
-
-        return pool.stream()
-            .filter(e -> c.getMinSourceRating() == null
-                || (e.getPersonalRating() != null && e.getPersonalRating() >= c.getMinSourceRating()))
-            .sorted(SourceOrderComparator.INSTANCE)
-            .limit(maxSourceSeries)
-            .toList();
-    }
-
-    /**
-     * Automatic "watched" pool (SERIES-006-AC-14): every {@code COMPLETED} series with a
-     * resolvable {@code imdbId}, excluding any series with {@code excludeFromRecommendations
-     * == true} (SERIES-008-AC-04) -- this filter applies here, not in {@link #explicitPool},
-     * so an explicit {@code seriesIds} selection is deliberately unaffected by it
-     * (SERIES-008-AC-05). Because {@link #genreBasedSupplement} is derived from this same
-     * pool, excluding a series here also removes it from the genre frequency count.
-     */
-    private List<SeriesEntity> automaticPool() {
-        return seriesRepository.findAll().stream()
-            .filter(e -> e.getStatus() == SeriesStatus.COMPLETED
-                && e.getImdbId() != null
-                && !e.getImdbId().isBlank()
-                && !e.isExcludeFromRecommendations())
-            .toList();
-    }
-
-    /**
-     * Explicit selection pool (SERIES-007-AC-08): every requested series regardless of
-     * status. Rejects the request (SERIES-007-AC-09) if any requested id is malformed or
-     * doesn't match an existing {@link SeriesEntity}.
-     */
-    private List<SeriesEntity> explicitPool(List<String> rawSeriesIds) {
-        List<UUID> ids = rawSeriesIds.stream().map(this::parseUuid).distinct().toList();
-        List<SeriesEntity> found = seriesRepository.findAllById(ids);
-        if (found.size() != ids.size()) {
-            Set<UUID> foundIds = found.stream().map(SeriesEntity::getId).collect(Collectors.toSet());
-            List<UUID> missing = ids.stream().filter(id -> !foundIds.contains(id)).toList();
-            throw new IllegalArgumentException("Unknown series id(s) in seriesIds: " + missing);
-        }
-        return found;
-    }
-
-    private UUID parseUuid(String raw) {
-        try {
-            return UUID.fromString(raw.trim());
-        } catch (IllegalArgumentException _) {
-            throw new IllegalArgumentException("Invalid seriesIds entry (not a UUID): " + raw);
-        }
-    }
-
-    private void sourceTitleBased(SeriesEntity source, List<RawCandidate> raw) {
-        if (source.getImdbId() == null || source.getImdbId().isBlank()) {
-            log.debug("'{}' has no imdbId; skipping for title-based sourcing", source.getTitle());
-            return;
-        }
-
-        Optional<Integer> tmdbIdOpt = tmdbClient.findTvIdByImdbId(source.getImdbId());
-        if (tmdbIdOpt.isEmpty()) {
-            log.debug("Could not resolve a TMDB id for '{}' (imdbId={}); skipping for title-based sourcing",
-                source.getTitle(), source.getImdbId());
-            return;
-        }
-
-        int tmdbId = tmdbIdOpt.get();
-        List<TmdbCandidate> candidates = tmdbClient.recommendations(tmdbId);
-        if (candidates.isEmpty()) {
-            candidates = tmdbClient.similar(tmdbId);
-        }
-        for (TmdbCandidate c : candidates) {
-            raw.add(new RawCandidate(c, source));
-        }
-    }
-
-    private List<RawCandidate> genreBasedSupplement(List<SeriesEntity> pool) {
-        Map<String, Long> genreCounts = pool.stream()
-            .flatMap(e -> splitGenres(e.getGenres()).stream())
-            .collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));
-
-        if (genreCounts.isEmpty()) {
-            return List.of();
-        }
-
-        long max = genreCounts.values().stream().mapToLong(Long::longValue).max().orElse(0);
-        List<Integer> genreIds = genreCounts.entrySet().stream()
-            .filter(e -> e.getValue() == max)
-            .map(Map.Entry::getKey)
-            .map(genreTable::idFor)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-
-        if (genreIds.isEmpty()) {
-            return List.of();
-        }
-
-        // Not a directed-sourcing call (RecommendationCriteria.discoverSortBy doesn't apply
-        // here -- this candidate pool still flows through Requirement 7's ranking/diversity
-        // cap normally, unlike sourceByGenreOrKeyword's bypassed path), so TMDB's own default
-        // is used directly rather than resolving discoverSortBy.
-        return tmdbClient.discover(genreIds, List.of(), RecommendationDefaults.DEFAULT_GENRE_SORT_BY).stream()
-            .map(c -> new RawCandidate(c, null))
-            .toList();
-    }
-
-    private static List<String> splitGenres(String genres) {
-        if (genres == null || genres.isBlank()) {
-            return List.of();
-        }
-        return Arrays.stream(genres.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .toList();
-    }
-
 
     // -- Requirement 7: output ranking & diversity cap (SERIES-007-AC-21/22) --
 
