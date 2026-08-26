@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: new `StarRating` component — a shared, accessible star-rating widget (read-only when no `onChange` is passed, interactive 5-button group when one is) replacing every raw numeric `personalRating` display/input across the app (`frontend_spec_013`).
+
+### Changed
+
+- Frontend: `SeriesDetail`'s Personal Rating field and `SeriesList`'s new `personalRating` column both render a read-only `StarRating` instead of the raw number.
+- Frontend: `AddSeriesForm`/`EditSeriesForm`'s Personal Rating input (via the shared `SeriesFormFields`) is now an interactive `StarRating`; the now-unreachable 1–5 range validation was deleted rather than left as dead code.
+
 ## [2.15.6] - 2026-08-26
 
 ### Changed
