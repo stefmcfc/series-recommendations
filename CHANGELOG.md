@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.0] - 2026-08-26
+
+### Added
+
+- Frontend: `SeriesList`'s rating column now shows TMDB rating (with a "TMDB" label) when the list is sorted by TMDB rating, IMDb rating (with an "IMDb" label) otherwise — previously always showed IMDb rating regardless of active sort field (`frontend_spec_039`).
+
 ## [2.16.0] - 2026-08-26
 
 ### Added

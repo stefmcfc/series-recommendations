@@ -1,6 +1,8 @@
 # Frontend Spec 039: Sort-Aware Rating Column on Series List
 
-**Status**: Not started
+**Status**: ✅ Done (AC-01) — implemented as written, no deviations. New `activeRating()` pure
+helper in `SeriesList.tsx`; no change to the sort control, `buildSortParam`, or fetch logic. Full
+frontend suite (485 tests), typecheck, and lint all green.
 **Priority**: P3 (visibility/UX gap — TMDB rating exists in the data but is never shown on this view)
 **Depends on**: Frontend Spec 013 Requirement 4/5 only (`frontend_spec_013_star_ratings.md`, `SeriesList`'s existing sort control/`SortOptions`, already implemented) ✅
 **Frontend Stage**: 39 of N
@@ -84,4 +86,4 @@ describe('FRONTEND-039-AC-01: sort-aware rating column', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-039-AC-01: rating column shows TMDB rating (+ label) when sorted by TMDB rating, IMDb rating (+ label) otherwise
+- [x] FRONTEND-039-AC-01: rating column shows TMDB rating (+ label) when sorted by TMDB rating, IMDb rating (+ label) otherwise
