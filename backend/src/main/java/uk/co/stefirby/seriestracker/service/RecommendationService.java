@@ -50,9 +50,9 @@ public class RecommendationService {
 
     /**
      * Default upper bound on how many recommendations can come from any single source series
-     * in "Specific Series" mode's diversity cap ({@link #applyDiversityCap}), used when {@link
-     * RecommendationCriteria#getMaxPerSource()} is unset (SERIES-007-AC-22, superseding the
-     * previously hardcoded {@code DEFAULT_MAX_PER_SOURCE = 3}).
+     * in "Specific Series" mode's diversity cap ({@link RecommendationRankingService#applyDiversityCap}),
+     * used when {@link RecommendationCriteria#getMaxPerSource()} is unset (SERIES-007-AC-22,
+     * superseding the previously hardcoded {@code DEFAULT_MAX_PER_SOURCE = 3}).
      */
     private final int maxPerSource;
 
