@@ -53,10 +53,10 @@ public class RecommendationService {
     private static final int DEFAULT_MAX_SOURCES_SHOWN = 3;
 
     private final SeriesRepository seriesRepository;
-    private final IgnoredSeriesRepository ignoredSeriesRepository;
     private final TmdbClient tmdbClient;
     private final TmdbGenreTable genreTable;
     private final RecommendationCriteriaValidator criteriaValidator;
+    private final RecommendationDeduplicationService deduplicationService;
 
     /**
      * Upper bound on how many source series (the automatic {@code COMPLETED} pool, or an
@@ -92,20 +92,20 @@ public class RecommendationService {
     private final RecommendationDtoAssembler dtoAssembler;
 
     public RecommendationService(SeriesRepository seriesRepository,
-                                  IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
                                   TmdbGenreTable genreTable,
                                   RecommendationCriteriaValidator criteriaValidator,
+                                  RecommendationDeduplicationService deduplicationService,
                                   RecommendationDtoAssembler dtoAssembler,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
                                   @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode,
                                   @Value("${app.tmdb.max-per-source:8}") int maxPerSource) {
         this.seriesRepository = seriesRepository;
-        this.ignoredSeriesRepository = ignoredSeriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.criteriaValidator = criteriaValidator;
+        this.deduplicationService = deduplicationService;
         this.dtoAssembler = dtoAssembler;
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
@@ -152,7 +152,7 @@ public class RecommendationService {
             ? raw.subList(0, maxCandidates)
             : raw;
 
-        List<DedupedCandidate> deduped = dedupeAndExclude(capped);
+        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
         List<DedupedCandidate> filtered = applyOutputFilters(deduped, criteria);
 
         if (trendingMode || topRatedMode || genreOrKeywordDirected) {
@@ -390,65 +390,6 @@ public class RecommendationService {
             .toList();
     }
 
-    // -- Requirement 6 (Spec 006): filtering & deduplication --
-
-    private List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw) {
-        Map<String, TmdbCandidate> candidateByImdbId = new LinkedHashMap<>();
-        Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
-
-        for (RawCandidate rc : raw) {
-            accumulateCandidate(rc, candidateByImdbId, sourcesByImdbId);
-        }
-
-        return candidateByImdbId.entrySet().stream()
-            .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey())), e.getKey()))
-            .toList();
-    }
-
-    /**
-     * Resolves {@code rc}'s imdb_id and folds it into {@code candidateByImdbId}/{@code
-     * sourcesByImdbId} -- extracted from {@link #dedupeAndExclude}'s loop so each early-exit
-     * case below is a {@code return} rather than a {@code continue} (java:S135).
-     */
-    private void accumulateCandidate(RawCandidate rc,
-                                      Map<String, TmdbCandidate> candidateByImdbId,
-                                      Map<String, List<SeriesEntity>> sourcesByImdbId) {
-        Optional<String> imdbIdOpt = tmdbClient.externalIds(rc.candidate().tmdbId());
-        if (imdbIdOpt.isEmpty()) {
-            return;
-        }
-        String imdbId = imdbIdOpt.get();
-
-        if (candidateByImdbId.containsKey(imdbId)) {
-            // SERIES-015-AC-02: a duplicate's source series is accumulated, not discarded.
-            if (rc.sourceSeries() != null) {
-                sourcesByImdbId.get(imdbId).add(rc.sourceSeries());
-            }
-            return;
-        }
-
-        if (seriesRepository.existsByImdbId(imdbId) || ignoredSeriesRepository.existsByImdbId(imdbId)) {
-            return;
-        }
-
-        candidateByImdbId.put(imdbId, rc.candidate());
-        List<SeriesEntity> sources = new ArrayList<>();
-        if (rc.sourceSeries() != null) {
-            // SERIES-015-AC-04: the first-seen source seeds the accumulated list.
-            sources.add(rc.sourceSeries());
-        }
-        sourcesByImdbId.put(imdbId, sources);
-    }
-
-    /**
-     * Applies the canonical per-candidate source ordering (SERIES-015-AC-05) once, so scoring,
-     * {@code best-source} diversity-cap mode, and {@code RecommendationDto.sourceTitles} all
-     * read the same order (SERIES-015-AC-06). A genre/keyword-only candidate's empty list
-     * (SERIES-015-AC-03) sorts to another empty list.
-     */
-    private List<SeriesEntity> orderSources(List<SeriesEntity> sources) {
-        return sources.stream().sorted(SourceOrderComparator.INSTANCE).toList();
-    }
 
     // -- Requirement 8: output filters (SERIES-007-AC-23..29) --
 
