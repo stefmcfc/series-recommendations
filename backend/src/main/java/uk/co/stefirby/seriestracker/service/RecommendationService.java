@@ -89,14 +89,14 @@ public class RecommendationService {
      */
     private final int maxPerSource;
 
-    private final WatchProviderService watchProviderService;
+    private final RecommendationDtoAssembler dtoAssembler;
 
     public RecommendationService(SeriesRepository seriesRepository,
                                   IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
                                   TmdbGenreTable genreTable,
                                   RecommendationCriteriaValidator criteriaValidator,
-                                  WatchProviderService watchProviderService,
+                                  RecommendationDtoAssembler dtoAssembler,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
                                   @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode,
@@ -106,7 +106,7 @@ public class RecommendationService {
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.criteriaValidator = criteriaValidator;
-        this.watchProviderService = watchProviderService;
+        this.dtoAssembler = dtoAssembler;
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
         this.diversityCapMode = diversityCapMode;
@@ -166,7 +166,7 @@ public class RecommendationService {
             int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
                 ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
             return filtered.stream()
-                .map(dc -> toDto(dc, effectiveMaxSourcesShown))
+                .map(dc -> dtoAssembler.toDto(dc, effectiveMaxSourcesShown))
                 .limit(limit)
                 .toList();
         }
@@ -499,7 +499,7 @@ public class RecommendationService {
         if (excludeGenres == null || excludeGenres.isEmpty()) {
             return true;
         }
-        String genresDisplay = joinGenres(c.genreIds());
+        String genresDisplay = genreTable.joinDisplayNames(c.genreIds());
         if (genresDisplay == null) {
             return true;
         }
@@ -546,7 +546,7 @@ public class RecommendationService {
 
     private ScoredCandidate score(DedupedCandidate dc, int effectiveMaxSourcesShown) {
         double tmdbRating = dc.candidate().voteAverage() != null ? dc.candidate().voteAverage().doubleValue() : 0.0;
-        RecommendationDto dto = toDto(dc, effectiveMaxSourcesShown);
+        RecommendationDto dto = dtoAssembler.toDto(dc, effectiveMaxSourcesShown);
 
         double rankScore;
         if (!dc.sourceSeries().isEmpty()) {
@@ -641,29 +641,6 @@ public class RecommendationService {
         return true;
     }
 
-    private RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown) {
-        TmdbCandidate c = dc.candidate();
-        List<String> sourceTitles = dc.sourceSeries().stream()
-            .map(SeriesEntity::getTitle)
-            .limit(effectiveMaxSourcesShown)
-            .toList();
-        return new RecommendationDto(
-            c.title(),
-            c.year(),
-            joinGenres(c.genreIds()),
-            c.overview(),
-            c.posterPath() != null ? TmdbClient.POSTER_BASE_URL + c.posterPath() : null,
-            c.voteAverage(),
-            c.voteCount(),
-            watchProviderService.streamingProviders(c.tmdbId()),
-            dc.imdbId(),
-            sourceTitles,
-            dc.sourceSeries().size(),
-            c.originCountry(),
-            c.tmdbId()
-        );
-    }
-
     /**
      * Backs {@code GET /api/v1/series/recommendations/{tmdbId}/keywords} (SERIES-023-AC-04/05):
      * an on-demand, single-candidate keyword lookup, deliberately not folded into {@link
@@ -684,17 +661,5 @@ public class RecommendationService {
             log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
             return List.of();
         }
-    }
-
-    private String joinGenres(List<Integer> genreIds) {
-        if (genreIds == null || genreIds.isEmpty()) {
-            return null;
-        }
-        String joined = genreIds.stream()
-            .map(genreTable::displayNameFor)
-            .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.joining(", "));
-        return joined.isEmpty() ? null : joined;
     }
 }
