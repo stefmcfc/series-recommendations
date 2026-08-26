@@ -54,66 +54,6 @@ public class RecommendationService {
      */
     private static final int DEFAULT_MAX_SOURCES_SHOWN = 3;
 
-    /**
-     * Canonical per-candidate ordering of contributing source series (SERIES-015-AC-05):
-     * {@code personalRating} descending (nulls last), then {@code dateCompleted} descending
-     * (nulls last). Shared, unmodified, by {@link #resolveSourcePool}'s pool ordering, {@link
-     * #dedupeAndExclude}'s per-candidate ordering (which feeds scoring, {@code best-source}
-     * diversity-cap mode, and {@code RecommendationDto.sourceTitles}), so all three can never
-     * disagree about which source is "best" for a given candidate (SERIES-015-AC-06).
-     */
-    private static final Comparator<SeriesEntity> SOURCE_ORDER_COMPARATOR = Comparator
-        .comparing(SeriesEntity::getPersonalRating, Comparator.nullsLast(Comparator.reverseOrder()))
-        .thenComparing(SeriesEntity::getDateCompleted, Comparator.nullsLast(Comparator.reverseOrder()));
-
-    /**
-     * Default for the {@code minVoteCount} output filter when unset -- the one filter in
-     * this spec that isn't a no-op by default (SERIES-007-AC-25). A high {@code voteAverage}
-     * from a handful of votes is closer to noise than signal.
-     */
-    private static final int DEFAULT_MIN_VOTE_COUNT = 20;
-
-    /**
-     * Mode-aware override of {@link #DEFAULT_MIN_VOTE_COUNT} applied only when {@code
-     * sourceMode == "topRated"} (SERIES-024-AC-09), at both the sourcing-time call site ({@link
-     * #sourceTopRated}, SERIES-024-AC-10) and the post-hoc output-filter call site ({@link
-     * #applyOutputFilters}, SERIES-024-AC-11). Every other mode keeps {@link
-     * #DEFAULT_MIN_VOTE_COUNT} (SERIES-024-AC-12) -- a global bump would over-filter
-     * Automatic/Specific/Genre recommendations, which don't need as high a confidence bar as
-     * "show me TMDB's objectively highest-rated shows" does.
-     */
-    private static final int DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200;
-
-    /** {@link RecommendationCriteria#getSourceMode()} value selecting directed top-rated sourcing (SERIES-022-AC-11..15). */
-    private static final String SOURCE_MODE_TOP_RATED = "topRated";
-
-    /** {@link #sourceTopRated}'s default {@code discoverSortBy} when unset (SERIES-025-AC-05) -- preserves pre-spec-025 behavior exactly. */
-    private static final String DEFAULT_TOP_RATED_SORT_BY = "vote_average.desc";
-
-    /**
-     * {@link #sourceByGenreOrKeyword}'s default {@code discoverSortBy} when unset
-     * (SERIES-025-AC-06) -- TMDB's own {@code discover/tv} default, so an unset {@code
-     * discoverSortBy} is functionally identical to the pre-spec-025 behavior of sending no
-     * {@code sort_by} at all.
-     */
-    private static final String DEFAULT_GENRE_SORT_BY = "popularity.desc";
-
-    /**
-     * TMDB's full confirmed {@code discover/tv} {@code sort_by} enum (SERIES-025-AC-04),
-     * validated in {@link #validate} whenever {@link RecommendationCriteria#getDiscoverSortBy()}
-     * is non-blank. Deliberately the complete 12-value enum, not just the subset a given
-     * frontend release exposes -- see {@code series_spec_025_discover_native_sort.md}'s Design
-     * Decisions.
-     */
-    private static final Set<String> VALID_DISCOVER_SORT_BY = Set.of(
-        "first_air_date.asc", "first_air_date.desc",
-        "name.asc", "name.desc",
-        "original_name.asc", "original_name.desc",
-        "popularity.asc", DEFAULT_GENRE_SORT_BY,
-        "vote_average.asc", DEFAULT_TOP_RATED_SORT_BY,
-        "vote_count.asc", "vote_count.desc"
-    );
-
     private final SeriesRepository seriesRepository;
     private final IgnoredSeriesRepository ignoredSeriesRepository;
     private final TmdbClient tmdbClient;
@@ -199,7 +139,7 @@ public class RecommendationService {
         validate(criteria);
 
         boolean trendingMode = "trending".equals(criteria.getSourceMode());
-        boolean topRatedMode = SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
+        boolean topRatedMode = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
         boolean genreOrKeywordDirected = isDirectedByGenreOrKeyword(criteria);
 
         List<RawCandidate> raw;
@@ -270,7 +210,7 @@ public class RecommendationService {
     }
 
     private void validateSourceMode(RecommendationCriteria c, boolean hasSourceMode) {
-        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())) {
+        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())) {
             throw new IllegalArgumentException("sourceMode must be one of: trending, topRated");
         }
     }
@@ -302,8 +242,8 @@ public class RecommendationService {
 
     private void validateDiscoverSortBy(RecommendationCriteria c) {
         String discoverSortBy = c.getDiscoverSortBy();
-        if (discoverSortBy != null && !discoverSortBy.isBlank() && !VALID_DISCOVER_SORT_BY.contains(discoverSortBy)) {
-            throw new IllegalArgumentException("discoverSortBy must be one of: " + VALID_DISCOVER_SORT_BY);
+        if (discoverSortBy != null && !discoverSortBy.isBlank() && !RecommendationDefaults.VALID_DISCOVER_SORT_BY.contains(discoverSortBy)) {
+            throw new IllegalArgumentException("discoverSortBy must be one of: " + RecommendationDefaults.VALID_DISCOVER_SORT_BY);
         }
     }
 
@@ -326,9 +266,9 @@ public class RecommendationService {
 
     private List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
         // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
-        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
+        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
         // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
-        String effectiveSortBy = resolveDiscoverSortBy(c, DEFAULT_TOP_RATED_SORT_BY);
+        String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_TOP_RATED_SORT_BY);
         return tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .toList();
@@ -340,7 +280,7 @@ public class RecommendationService {
         List<Integer> genreIds = resolveGenreIds(c.getGenres());
         List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
         // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
-        String effectiveSortBy = resolveDiscoverSortBy(c, DEFAULT_GENRE_SORT_BY);
+        String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_GENRE_SORT_BY);
         return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .toList();
@@ -404,7 +344,7 @@ public class RecommendationService {
         return pool.stream()
             .filter(e -> c.getMinSourceRating() == null
                 || (e.getPersonalRating() != null && e.getPersonalRating() >= c.getMinSourceRating()))
-            .sorted(SOURCE_ORDER_COMPARATOR)
+            .sorted(SourceOrderComparator.INSTANCE)
             .limit(maxSourceSeries)
             .toList();
     }
@@ -499,7 +439,7 @@ public class RecommendationService {
         // here -- this candidate pool still flows through Requirement 7's ranking/diversity
         // cap normally, unlike sourceByGenreOrKeyword's bypassed path), so TMDB's own default
         // is used directly rather than resolving discoverSortBy.
-        return tmdbClient.discover(genreIds, List.of(), DEFAULT_GENRE_SORT_BY).stream()
+        return tmdbClient.discover(genreIds, List.of(), RecommendationDefaults.DEFAULT_GENRE_SORT_BY).stream()
             .map(c -> new RawCandidate(c, null))
             .toList();
     }
@@ -571,15 +511,15 @@ public class RecommendationService {
      * (SERIES-015-AC-03) sorts to another empty list.
      */
     private List<SeriesEntity> orderSources(List<SeriesEntity> sources) {
-        return sources.stream().sorted(SOURCE_ORDER_COMPARATOR).toList();
+        return sources.stream().sorted(SourceOrderComparator.INSTANCE).toList();
     }
 
     // -- Requirement 8: output filters (SERIES-007-AC-23..29) --
 
     private List<DedupedCandidate> applyOutputFilters(List<DedupedCandidate> candidates, RecommendationCriteria c) {
         // SERIES-024-AC-11/12: the post-hoc default is likewise 200 for topRated, 20 otherwise.
-        int defaultMinVoteCount = SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())
-            ? DEFAULT_MIN_VOTE_COUNT_TOP_RATED : DEFAULT_MIN_VOTE_COUNT;
+        int defaultMinVoteCount = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())
+            ? RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT;
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
         return candidates.stream()
             .filter(dc -> matchesMinTmdbRating(dc.candidate(), c.getMinTmdbRating()))
@@ -874,25 +814,4 @@ public class RecommendationService {
             .collect(Collectors.joining(", "));
         return joined.isEmpty() ? null : joined;
     }
-
-    /** A raw TMDB candidate paired with the pool series it was sourced from, if any (null for genre/keyword-sourced). */
-    private record RawCandidate(TmdbCandidate candidate, SeriesEntity sourceSeries) {}
-
-    /**
-     * A raw candidate that survived dedupe/already-added/already-ignored filtering, with its
-     * resolved imdb_id. {@code sourceSeries} accumulates every distinct watched series that
-     * recommended this candidate (SERIES-015-AC-01/02/04), ordered by the canonical
-     * per-candidate ordering (SERIES-015-AC-05) -- an empty list, never {@code null}, for a
-     * candidate sourced only via genre/keyword discovery (SERIES-015-AC-03).
-     */
-    private record DedupedCandidate(TmdbCandidate candidate, List<SeriesEntity> sourceSeries, String imdbId) {}
-
-    /**
-     * A final candidate paired with its computed {@code rankScore} (SERIES-007-AC-21),
-     * pre-diversity-cap, and the full (uncapped, canonically-ordered) list of contributing
-     * source titles -- needed by {@code all-sources} diversity-cap mode (SERIES-015-AC-16),
-     * which must see every contributing source even beyond {@code dto.sourceTitles()}'s
-     * {@code maxSourcesShown} cap.
-     */
-    private record ScoredCandidate(RecommendationDto dto, double rankScore, List<String> allSourceTitles) {}
 }
