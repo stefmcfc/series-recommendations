@@ -1,6 +1,6 @@
 # Spec 028: Prevent Duplicate Series on Create
 
-**Status**: Not started
+**Status**: ✅ Done (AC-01–AC-03)
 **Priority**: P2 (data-integrity bug — a live-review report confirmed the same title can be added multiple times with no warning, observed twice in practice with "Breaking Bad")
 **Depends on**: Series Spec 002 (`series_spec_002_crud.md`, `POST /api/v1/series`, `SeriesService.create`) ✅, Series Spec 006 (`series_spec_006_recommendations.md`, `SeriesRepository.existsByImdbId`, already used elsewhere) ✅
 **Backend Task**
@@ -102,6 +102,6 @@ def "SERIES-028-AC-02: two series with the same title but no imdbId are both all
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-028-AC-01: duplicate `imdbId` on create → `409 Conflict`, nothing persisted
-- [ ] SERIES-028-AC-02: blank/absent `imdbId` is never subject to duplicate checking
-- [ ] SERIES-028-AC-03: update is unaffected (explicit non-goal)
+- [x] SERIES-028-AC-01: duplicate `imdbId` on create → `409 Conflict`, nothing persisted
+- [x] SERIES-028-AC-02: blank/absent `imdbId` is never subject to duplicate checking
+- [x] SERIES-028-AC-03: update is unaffected (explicit non-goal)

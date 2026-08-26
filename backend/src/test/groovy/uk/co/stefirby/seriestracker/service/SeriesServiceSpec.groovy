@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import uk.co.stefirby.seriestracker.dto.SeriesDto
+import uk.co.stefirby.seriestracker.exception.ConflictException
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
@@ -464,6 +465,31 @@ class SeriesServiceSpec extends Specification {
 
     then: "an IllegalArgumentException is thrown"
         thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-028-AC-01: creating a series with an already-tracked imdbId is rejected"() {
+    given: "an existing tracked series"
+        seriesService.create(new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747"))
+
+    when: "the same imdbId is submitted again"
+        seriesService.create(new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747"))
+
+    then: "a ConflictException is thrown naming the conflicting title, and no second row was created"
+        def ex = thrown(ConflictException)
+        ex.message.contains("Breaking Bad")
+        seriesRepository.findAll().count { it.imdbId == "tt0903747" } == 1
+  }
+
+  def "SERIES-028-AC-02: two series with the same title but no imdbId are both allowed"() {
+    given: "an existing series with no imdbId"
+        seriesService.create(new SeriesDto(title: "Some Show"))
+
+    when: "another series with the same title and no imdbId is created"
+        def result = seriesService.create(new SeriesDto(title: "Some Show"))
+
+    then: "creation succeeds"
+        result.id != null
+        seriesRepository.findAll().count { it.title == "Some Show" } == 2
   }
 
   def "should retrieve all series"() {

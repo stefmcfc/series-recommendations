@@ -141,6 +141,8 @@ See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instruct
 | Frontend 036 | "Check Streaming Availability" button on `SeriesDetail` (on-demand only, own scoped `role="alert"` error, resets on navigating to a different series); also factors the provider-list/empty-state display out of `RecommendationsList` into a shared `StreamingProviders` component reused by both | ✅ Done |
 | Backend 027 | Rotten Tomatoes Popcornmeter field (user-entered audience score, distinct from the existing Tomatometer-sourced `rottenTomatoesRating`) + refresh null-safety fix (`SeriesRefreshService` no longer wipes an existing field when the fresh external value is `null`) | ✅ Done |
 | Frontend 037 | Rotten Tomatoes Popcornmeter UI (`AddSeriesForm`/`EditSeriesForm` field, `SeriesDetail` percentage display, "(Tomatometer)"/"(Popcornmeter)" labeling) | ✅ Done |
+| Backend 028 | Prevent duplicate series on create (`POST /series` rejects a non-blank `imdbId` already matching a tracked series with `409 Conflict`; a blank/absent `imdbId` is unaffected) | ✅ Done |
+| Frontend 038 | Duplicate-series error display — confirmed `AddSeriesForm`'s existing generic submit-error banner already surfaces the new `409` message with zero new UI code | ✅ Done |
 
 ## Future Ideas
 

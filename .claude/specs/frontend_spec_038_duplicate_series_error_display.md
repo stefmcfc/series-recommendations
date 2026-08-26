@@ -1,6 +1,6 @@
 # Frontend Spec 038: Duplicate Series Error Display
 
-**Status**: Not started
+**Status**: ✅ Done (AC-01) — confirmed the existing `submitError` path already covers this cleanly, exactly as predicted; zero new component code
 **Priority**: P2 (mirrors Series Spec 028's priority)
 **Depends on**: Series Spec 028 (`series_spec_028_prevent_duplicate_series.md`, `POST /api/v1/series` → `409 Conflict` on a duplicate `imdbId`) — **not yet implemented at the time this spec was authored; implement the backend first**, Frontend Spec 003 (`frontend_spec_003_add_series_form.md`, `AddSeriesForm`'s existing `submitError` handling)
 **Frontend Stage**: 38 of N
@@ -66,4 +66,4 @@ describe('FRONTEND-038-AC-01: duplicate series submission error', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-038-AC-01: a `409` duplicate-series error renders via the existing `submitError` banner
+- [x] FRONTEND-038-AC-01: a `409` duplicate-series error renders via the existing `submitError` banner

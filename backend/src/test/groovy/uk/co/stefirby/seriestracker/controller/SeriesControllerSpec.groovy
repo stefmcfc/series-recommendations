@@ -182,6 +182,26 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(status().isBadRequest())
   }
 
+  def "SERIES-028-AC-01: POST /api/v1/series with an already-tracked imdbId returns 409"() {
+    given: "an existing tracked series"
+        seriesService.create(new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747"))
+
+    and: "a second request for the same imdbId"
+        def dto = new SeriesDto(title: "Breaking Bad", imdbId: "tt0903747")
+        def json = objectMapper.writeValueAsString(dto)
+
+    when: "a POST request is made to create the series again"
+        def result = mockMvc.perform(
+          post("/api/v1/series")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the response is 409, and no second row was created"
+        result.andExpect(status().isConflict())
+        seriesRepository.findAll().count { it.imdbId == "tt0903747" } == 1
+  }
+
   def "GET /api/v1/series should return all series"() {
     when: "a GET request is made for all series"
         def result = mockMvc.perform(get("/api/v1/series"))
