@@ -46,10 +46,12 @@ Read these when working in the relevant area — don't duplicate their content h
 - `.claude/steering/frontend_conventions.md` — frontend coding conventions (typing, API layer, styling, testing)
 - `.claude/steering/ears_format.md` — the EARS requirement format all specs use
 - `.claude/specs/` — feature specs (backend 001–004, frontend 001–008), each with acceptance criteria and TDD test cases
+- `.claude/OUTSTANDING_SPECS.md` — a live index of every spec that's not started or has unchecked acceptance criteria, plus a suggested build order. Check this before asking "what's left to build?" instead of re-reading all specs.
 
 ## Working conventions
 
 - Specs are written in EARS format (`.claude/steering/ears_format.md`) with acceptance criteria and red/green TDD test cases. When adding a feature, write or update a spec in `.claude/specs/` first.
+- **Keep `.claude/OUTSTANDING_SPECS.md` current.** Writing a new spec adds an entry; checking off an AC or changing a spec's status updates its entry; a spec whose every AC is checked (fully complete) gets its entry removed entirely — the spec file itself stays as the permanent record, this index only tracks what's still outstanding. Do this as part of the same change that created/altered/completed the spec, not as a separate pass.
 - Backend: business logic in `service/`, controllers stay thin, repositories are plain `JpaRepository` extensions. Tests are Spock specs colocated under `src/test/groovy/`, one `*Spec.groovy` per class under test.
 - Frontend: all backend calls go through `frontend/src/services/seriesApi.ts` — no raw `axios`/`fetch` calls in components. Types live in `frontend/src/types/`. Components are typed function components; tests are colocated `*.test.tsx`/`*.test.ts` files run with Vitest.
 - Use the `backend-dev` and `frontend-dev` subagents (`.claude/agents/`) for implementation work in their respective areas, and the `ears-spec` skill when drafting a new spec.
