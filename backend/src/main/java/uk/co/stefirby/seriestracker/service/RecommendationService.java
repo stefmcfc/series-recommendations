@@ -3,10 +3,8 @@ package uk.co.stefirby.seriestracker.service;
 import uk.co.stefirby.seriestracker.client.TmdbCandidate;
 import uk.co.stefirby.seriestracker.client.TmdbClient;
 import uk.co.stefirby.seriestracker.client.TmdbKeyword;
-import uk.co.stefirby.seriestracker.client.TmdbWatchProvider;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
-import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
@@ -91,34 +89,28 @@ public class RecommendationService {
      */
     private final int maxPerSource;
 
-    /**
-     * Region passed to {@link TmdbClient#watchProviders(int, String)} for every candidate
-     * (SERIES-020-AC-05) -- a single configured value, not a per-request parameter, per {@code
-     * series_spec_020_watch_providers.md}'s Design Decisions (this is a single-user personal
-     * app with one household's viewing region).
-     */
-    private final String watchRegion;
+    private final WatchProviderService watchProviderService;
 
     public RecommendationService(SeriesRepository seriesRepository,
                                   IgnoredSeriesRepository ignoredSeriesRepository,
                                   TmdbClient tmdbClient,
                                   TmdbGenreTable genreTable,
                                   RecommendationCriteriaValidator criteriaValidator,
+                                  WatchProviderService watchProviderService,
                                   @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
                                   @Value("${app.recommendations.diversity-cap-mode:best-source}") String diversityCapMode,
-                                  @Value("${app.tmdb.max-per-source:8}") int maxPerSource,
-                                  @Value("${app.tmdb.watch-region:GB}") String watchRegion) {
+                                  @Value("${app.tmdb.max-per-source:8}") int maxPerSource) {
         this.seriesRepository = seriesRepository;
         this.ignoredSeriesRepository = ignoredSeriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.criteriaValidator = criteriaValidator;
+        this.watchProviderService = watchProviderService;
         this.maxSourceSeries = maxSourceSeries;
         this.maxCandidates = maxCandidates;
         this.diversityCapMode = diversityCapMode;
         this.maxPerSource = maxPerSource;
-        this.watchRegion = watchRegion;
     }
 
     /** Convenience overload -- equivalent to {@code recommend(limit, new RecommendationCriteria())}. */
@@ -663,41 +655,13 @@ public class RecommendationService {
             c.posterPath() != null ? TmdbClient.POSTER_BASE_URL + c.posterPath() : null,
             c.voteAverage(),
             c.voteCount(),
-            streamingProviders(c.tmdbId()),
+            watchProviderService.streamingProviders(c.tmdbId()),
             dc.imdbId(),
             sourceTitles,
             dc.sourceSeries().size(),
             c.originCountry(),
             c.tmdbId()
         );
-    }
-
-    /**
-     * SERIES-020-AC-05/06: resolves a candidate's currently-available flatrate streaming
-     * providers in {@link #watchRegion}, mapping each {@link TmdbWatchProvider} to a {@link
-     * RecommendationDto.StreamingProvider} with a fully-built {@code logoUrl}. A lookup
-     * failure (any reason) is caught, logged, and yields an empty list for that one candidate
-     * -- it never fails or omits the candidate from the overall response, matching every other
-     * upstream-call posture in this service. {@code watchProviders} itself never returns
-     * {@code null} (SERIES-020-AC-02); the extra null-guard here is defense-in-depth only.
-     */
-    private List<RecommendationDto.StreamingProvider> streamingProviders(int tmdbId) {
-        List<TmdbWatchProvider> providers;
-        try {
-            providers = tmdbClient.watchProviders(tmdbId, watchRegion);
-        } catch (ExternalServiceException e) {
-            log.info("TMDB watch-provider lookup unavailable for candidate tmdbId={}, streamingProviders left empty: {}",
-                tmdbId, e.getMessage());
-            return List.of();
-        }
-        if (providers == null) {
-            return List.of();
-        }
-        return providers.stream()
-            .map(p -> new RecommendationDto.StreamingProvider(
-                p.providerName(),
-                p.logoPath() != null ? TmdbClient.PROVIDER_LOGO_BASE_URL + p.logoPath() : null))
-            .toList();
     }
 
     /**
@@ -720,31 +684,6 @@ public class RecommendationService {
             log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
             return List.of();
         }
-    }
-
-    /**
-     * Backs {@code GET /api/v1/series/{id}/watch-providers} (SERIES-026-AC-01..05): an
-     * on-demand streaming-availability check for a <em>tracked</em> series, never persisted.
-     * A genuinely unknown {@code id} is the only error case (404, matching {@code
-     * getById}/{@code update}/{@code delete}/{@code refresh}); a missing/unresolvable {@code
-     * imdbId} both yield an empty list rather than an error (SERIES-026-AC-03/04), and once a
-     * {@code tmdbId} is resolved this delegates straight to the existing {@link
-     * #streamingProviders(int)} helper (Series Spec 020), reusing its own graceful degradation
-     * on a {@code watchProviders} failure verbatim (SERIES-026-AC-05).
-     */
-    @Transactional(readOnly = true)
-    public List<RecommendationDto.StreamingProvider> getStreamingProvidersForSeries(UUID id) {
-        SeriesEntity series = seriesRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
-
-        String imdbId = series.getImdbId();
-        if (imdbId == null || imdbId.isBlank()) {
-            return List.of();
-        }
-
-        return tmdbClient.findTvIdByImdbId(imdbId)
-            .map(this::streamingProviders)
-            .orElse(List.of());
     }
 
     private String joinGenres(List<Integer> genreIds) {

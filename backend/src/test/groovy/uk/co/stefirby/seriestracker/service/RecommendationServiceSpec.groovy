@@ -20,7 +20,7 @@ class RecommendationServiceSpec extends Specification {
 
     RecommendationService recommendationService =
         new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(),
-            new RecommendationCriteriaValidator(), 20, 50, "best-source", 8, "GB")
+            new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 20, 50, "best-source", 8)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -57,80 +57,6 @@ class RecommendationServiceSpec extends Specification {
 
         then: "voteCount is passed through unchanged"
             results[0].voteCount() == 1500
-    }
-
-    def "SERIES-020-AC-05: toDto populates streamingProviders from TmdbClient.watchProviders, region app.tmdb.watch-region-configured"() {
-        given: "a genre-directed candidate resolving to one GB flatrate provider"
-            def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _, _) >> [candidate(500, "Genre Candidate")]
-            tmdbClient.externalIds(500) >> Optional.of("tt5005005")
-            seriesRepository.existsByImdbId("tt5005005") >> false
-            ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
-            tmdbClient.watchProviders(500, "GB") >> [
-                new uk.co.stefirby.seriestracker.client.TmdbWatchProvider("Netflix", "/abc.jpg")
-            ]
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the DTO carries the mapped provider with a built logo URL"
-            results[0].streamingProviders() == [
-                new uk.co.stefirby.seriestracker.dto.RecommendationDto.StreamingProvider(
-                    "Netflix", TmdbClient.PROVIDER_LOGO_BASE_URL + "/abc.jpg")
-            ]
-    }
-
-    def "SERIES-020-AC-05: a null logoPath maps to a null logoUrl, not a concatenated string"() {
-        given: "a genre-directed candidate resolving to one provider with no logo path"
-            def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _, _) >> [candidate(500, "Genre Candidate")]
-            tmdbClient.externalIds(500) >> Optional.of("tt5005005")
-            seriesRepository.existsByImdbId("tt5005005") >> false
-            ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
-            tmdbClient.watchProviders(500, "GB") >> [
-                new uk.co.stefirby.seriestracker.client.TmdbWatchProvider("Netflix", null)
-            ]
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "logoUrl is null"
-            results[0].streamingProviders()[0].logoUrl() == null
-    }
-
-    def "SERIES-020-AC-06/AC-07: a watchProviders failure yields an empty streamingProviders list, not a failed request"() {
-        given: "a genre-directed candidate whose watchProviders lookup throws"
-            def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _, _) >> [candidate(500, "Genre Candidate")]
-            tmdbClient.externalIds(500) >> Optional.of("tt5005005")
-            seriesRepository.existsByImdbId("tt5005005") >> false
-            ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
-            tmdbClient.watchProviders(500, "GB") >> {
-                throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("TMDB down")
-            }
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "the candidate is still returned, with an empty streamingProviders list"
-            results.size() == 1
-            results[0].streamingProviders() == []
-    }
-
-    def "SERIES-020-AC-07: no flatrate providers found yields an empty streamingProviders list, never null"() {
-        given: "a genre-directed candidate with no configured watchProviders stub (defaults to empty)"
-            def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover(_, _, _) >> [candidate(500, "Genre Candidate")]
-            tmdbClient.externalIds(500) >> Optional.of("tt5005005")
-            seriesRepository.existsByImdbId("tt5005005") >> false
-            ignoredSeriesRepository.existsByImdbId("tt5005005") >> false
-
-        when: "recommend(20, criteria) is called"
-            def results = recommendationService.recommend(20, criteria)
-
-        then: "streamingProviders is an empty list, never null"
-            results[0].streamingProviders() != null
-            results[0].streamingProviders() == []
     }
 
     def "SERIES-023-AC-02/03: toDto carries originCountry and tmdbId from the candidate"() {
@@ -186,86 +112,6 @@ class RecommendationServiceSpec extends Specification {
             def result = recommendationService.getKeywordsForCandidate(1)
 
         then: "an empty list is returned"
-            result == []
-    }
-
-    def "SERIES-026-AC-01/05: getStreamingProvidersForSeries resolves a tmdbId and reuses the streamingProviders helper"() {
-        given: "a tracked series with a resolvable imdbId"
-            def id = UUID.randomUUID()
-            def series = completedSeries("Ozark", "tt5071412", null)
-            seriesRepository.findById(id) >> Optional.of(series)
-            tmdbClient.findTvIdByImdbId("tt5071412") >> Optional.of(69740)
-            tmdbClient.watchProviders(69740, "GB") >> [
-                new uk.co.stefirby.seriestracker.client.TmdbWatchProvider("Netflix", "/abc.jpg")
-            ]
-
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = recommendationService.getStreamingProvidersForSeries(id)
-
-        then: "the mapped provider (built via the shared helper) is returned"
-            result == [
-                new uk.co.stefirby.seriestracker.dto.RecommendationDto.StreamingProvider(
-                    "Netflix", TmdbClient.PROVIDER_LOGO_BASE_URL + "/abc.jpg")
-            ]
-    }
-
-    def "SERIES-026-AC-02: getStreamingProvidersForSeries throws EntityNotFoundException for an unknown id"() {
-        given: "no series exists for the requested id"
-            def id = UUID.randomUUID()
-            seriesRepository.findById(id) >> Optional.empty()
-
-        when: "getStreamingProvidersForSeries(id) is called"
-            recommendationService.getStreamingProvidersForSeries(id)
-
-        then: "an EntityNotFoundException is thrown"
-            thrown(uk.co.stefirby.seriestracker.exception.EntityNotFoundException)
-    }
-
-    def "SERIES-026-AC-03: getStreamingProvidersForSeries returns an empty list when imdbId is null/blank"() {
-        given: "a tracked series with a blank imdbId"
-            def id = UUID.randomUUID()
-            def series = completedSeries("No IMDb Link", imdbId, null)
-            seriesRepository.findById(id) >> Optional.of(series)
-
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = recommendationService.getStreamingProvidersForSeries(id)
-
-        then: "an empty list is returned, no TMDB call is made"
-            result == []
-            0 * tmdbClient.findTvIdByImdbId(_)
-
-        where:
-            imdbId << [null, ""]
-    }
-
-    def "SERIES-026-AC-04: getStreamingProvidersForSeries returns an empty list when the imdbId can't be resolved to a tmdbId"() {
-        given: "a tracked series whose imdbId TMDB can't resolve"
-            def id = UUID.randomUUID()
-            def series = completedSeries("Obscure Show", "tt9999999", null)
-            seriesRepository.findById(id) >> Optional.of(series)
-            tmdbClient.findTvIdByImdbId("tt9999999") >> Optional.empty()
-
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = recommendationService.getStreamingProvidersForSeries(id)
-
-        then: "an empty list is returned"
-            result == []
-    }
-
-    def "SERIES-026-AC-05: a watchProviders failure yields an empty list, not an exception"() {
-        given: "a tracked series with a resolvable tmdbId, but TMDB's watch-providers call fails"
-            def id = UUID.randomUUID()
-            def series = completedSeries("Ozark", "tt5071412", null)
-            seriesRepository.findById(id) >> Optional.of(series)
-            tmdbClient.findTvIdByImdbId("tt5071412") >> Optional.of(69740)
-            tmdbClient.watchProviders(69740, "GB") >> {
-                throw new uk.co.stefirby.seriestracker.exception.ExternalServiceException("TMDB down")
-            }
-
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = recommendationService.getStreamingProvidersForSeries(id)
-
-        then: "an empty list is returned, no exception propagates"
             result == []
     }
 
@@ -549,7 +395,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-01: max-source-series cap is configurable via constructor"() {
         given: "a service configured with maxSourceSeries=2, and 3 eligible COMPLETED series"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 2, 50, "best-source", 8, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 2, 50, "best-source", 8)
             def now = LocalDateTime.now()
             def sources = (1..3).collect {
                 completedSeries("Show ${it}", "tt${it.toString().padLeft(7, '0')}", now.minusDays(it))
@@ -566,7 +412,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 3, "best-source", 8, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 20, 3, "best-source", 8)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -645,7 +491,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-11: an explicit seriesIds pool larger than max-source-series is ordered and truncated"() {
         given: "a service configured with maxSourceSeries=1, and two selected series with different personalRatings"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 1, 50, "best-source", 8, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 1, 50, "best-source", 8)
             def low = completedSeries("Low", "tt0000001", LocalDateTime.now(), null, 2)
             low.id = UUID.randomUUID()
             def high = completedSeries("High", "tt0000002", LocalDateTime.now(), null, 5)
@@ -833,7 +679,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "best-source", 2, "GB")
+            def svc = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient, new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 20, 50, "best-source", 2)
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -1313,7 +1159,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-15: best-source mode caps on each candidate's best contributing source only (default behavior unchanged)"() {
         given: "diversityCapMode defaults to best-source; one well-represented best source, maxPerSource 1"
             def service = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient,
-                new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "best-source", 8, "GB")
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 20, 50, "best-source", 8)
             def sourceA = completedSeries("Source A", "tt6000001", LocalDateTime.now(), null, 5)
             def sourceB = completedSeries("Source B", "tt6000002", LocalDateTime.now(), null, 2)
             seriesRepository.findAll() >> [sourceA, sourceB]
@@ -1337,7 +1183,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-16: all-sources mode excludes a candidate if any contributing source is already at the cap"() {
         given: "diversityCapMode is all-sources; maxPerSource 1"
             def service = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient,
-                new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "all-sources", 8, "GB")
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 20, 50, "all-sources", 8)
             def sourceS = completedSeries("Source S", "tt7000001", LocalDateTime.now(), null, 5)
             def sourceT = completedSeries("Source T", "tt7000002", LocalDateTime.now(), null, 3)
             seriesRepository.findAll() >> [sourceS, sourceT]
@@ -1381,7 +1227,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-015-AC-18: an unrecognized diversityCapMode value falls back to best-source"() {
         given: "diversityCapMode is configured as 'bogus-mode'"
             def service = new RecommendationService(seriesRepository, ignoredSeriesRepository, tmdbClient,
-                new TmdbGenreTable(), new RecommendationCriteriaValidator(), 20, 50, "bogus-mode", 8, "GB")
+                new TmdbGenreTable(), new RecommendationCriteriaValidator(), new WatchProviderService(seriesRepository, tmdbClient, "GB"), 20, 50, "bogus-mode", 8)
             def sourceA = completedSeries("Source A", "tt6000001", LocalDateTime.now(), null, 5)
             def sourceB = completedSeries("Source B", "tt6000002", LocalDateTime.now(), null, 2)
             seriesRepository.findAll() >> [sourceA, sourceB]
