@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.16.0] - 2026-08-26
+
 ### Added
 
 - Frontend: new `StarRating` component — a shared, accessible star-rating widget (read-only when no `onChange` is passed, interactive 5-button group when one is) replacing every raw numeric `personalRating` display/input across the app (`frontend_spec_013`).
