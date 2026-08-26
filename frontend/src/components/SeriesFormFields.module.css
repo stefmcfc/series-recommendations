@@ -1,0 +1,64 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.field input,
+.field select,
+.field textarea {
+  font: inherit;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.field textarea {
+  min-height: 4rem;
+  resize: vertical;
+}
+
+.fieldError {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fieldError {
+    color: #fca5a5;
+  }
+}
+
+.posterPreview {
+  align-self: flex-start;
+  width: auto;
+  margin-top: 0.5rem;
+  max-width: 100%;
+  max-height: 12rem;
+  object-fit: contain;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkboxField label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+}

@@ -9,6 +9,16 @@ import type {
   Series,
 } from '../types/series'
 import { formatCountryName } from '../utils/countryName'
+import { SeriesFormFields } from './SeriesFormFields'
+import {
+  validateYear,
+  validateTotalSeasons,
+  validateTotalEpisodes,
+  validateImdbRating,
+  validateRottenTomatoesRating,
+  validateRottenTomatoesPopcornmeter,
+  validatePersonalRating,
+} from '../utils/seriesFormValidation'
 import styles from './AddSeriesForm.module.css'
 
 interface AddSeriesFormProps {
@@ -66,82 +76,6 @@ const initialFormState: FormState = {
 }
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
-
-function validateYear(form: FormState, errors: FieldErrors): void {
-  if (form.year.trim() === '') return
-  const year = Number(form.year)
-  if (Number.isNaN(year) || year < 1 || year > 2026) {
-    errors.year = 'Year must be between 1 and 2026'
-  }
-}
-
-function validateTotalSeasons(form: FormState, errors: FieldErrors): void {
-  if (form.totalSeasons.trim() === '') return
-  const totalSeasons = Number(form.totalSeasons)
-  if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
-    errors.totalSeasons = 'Total seasons must be at least 1'
-  }
-}
-
-function validateTotalEpisodes(form: FormState, errors: FieldErrors): void {
-  if (form.totalEpisodes.trim() === '') return
-  const totalEpisodes = Number(form.totalEpisodes)
-  if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
-    errors.totalEpisodes = 'Total episodes must be at least 1'
-  }
-}
-
-function validateImdbRating(form: FormState, errors: FieldErrors): void {
-  if (form.imdbRating.trim() === '') return
-  const imdbRating = Number(form.imdbRating)
-  if (Number.isNaN(imdbRating) || imdbRating < 0 || imdbRating > 10) {
-    errors.imdbRating = 'IMDb rating must be between 0 and 10'
-  }
-}
-
-function validateRottenTomatoesRating(
-  form: FormState,
-  errors: FieldErrors,
-): void {
-  if (form.rottenTomatoesRating.trim() === '') return
-  const rottenTomatoesRating = Number(form.rottenTomatoesRating)
-  if (
-    Number.isNaN(rottenTomatoesRating) ||
-    rottenTomatoesRating < 0 ||
-    rottenTomatoesRating > 100
-  ) {
-    errors.rottenTomatoesRating =
-      'Rotten Tomatoes rating must be between 0 and 100'
-  }
-}
-
-function validateRottenTomatoesPopcornmeter(
-  form: FormState,
-  errors: FieldErrors,
-): void {
-  if (form.rottenTomatoesPopcornmeter.trim() === '') return
-  const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
-  if (
-    Number.isNaN(rottenTomatoesPopcornmeter) ||
-    rottenTomatoesPopcornmeter < 0 ||
-    rottenTomatoesPopcornmeter > 100
-  ) {
-    errors.rottenTomatoesPopcornmeter =
-      'Rotten Tomatoes rating must be between 0 and 100'
-  }
-}
-
-function validatePersonalRating(form: FormState, errors: FieldErrors): void {
-  if (form.personalRating.trim() === '') return
-  const personalRating = Number(form.personalRating)
-  if (
-    Number.isNaN(personalRating) ||
-    personalRating < 1 ||
-    personalRating > 5
-  ) {
-    errors.personalRating = 'Personal rating must be between 1 and 5'
-  }
-}
 
 function validate(form: FormState): FieldErrors {
   const errors: FieldErrors = {}
@@ -554,217 +488,17 @@ export function AddSeriesForm({
             )}
           </div>
 
-          <div className={styles.field}>
-            <label htmlFor="year">Year</label>
-            <input
-              id="year"
-              type="number"
-              value={form.year}
-              onChange={updateField('year')}
-              aria-describedby={fieldErrors.year ? 'year-error' : undefined}
-            />
-            {fieldErrors.year && (
-              <span id="year-error" className={styles.fieldError}>
-                {fieldErrors.year}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="genres">Genres</label>
-            <input
-              id="genres"
-              type="text"
-              value={form.genres}
-              onChange={updateField('genres')}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="tags">Tags</label>
-            <input
-              id="tags"
-              type="text"
-              value={form.tags}
-              onChange={updateField('tags')}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="totalSeasons">Total Seasons</label>
-            <input
-              id="totalSeasons"
-              type="number"
-              value={form.totalSeasons}
-              onChange={updateField('totalSeasons')}
-              aria-describedby={
-                fieldErrors.totalSeasons ? 'totalSeasons-error' : undefined
-              }
-            />
-            {fieldErrors.totalSeasons && (
-              <span id="totalSeasons-error" className={styles.fieldError}>
-                {fieldErrors.totalSeasons}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="totalEpisodes">Total Episodes</label>
-            <input
-              id="totalEpisodes"
-              type="number"
-              value={form.totalEpisodes}
-              onChange={updateField('totalEpisodes')}
-              aria-describedby={
-                fieldErrors.totalEpisodes ? 'totalEpisodes-error' : undefined
-              }
-            />
-            {fieldErrors.totalEpisodes && (
-              <span id="totalEpisodes-error" className={styles.fieldError}>
-                {fieldErrors.totalEpisodes}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="status">Status</label>
-            <select
-              id="status"
-              value={form.status}
-              onChange={updateField('status')}
-            >
-              <option value={SeriesStatus.BACKLOG}>Backlog</option>
-              <option value={SeriesStatus.WATCHING}>Watching</option>
-              <option value={SeriesStatus.COMPLETED}>Completed</option>
-              <option value={SeriesStatus.DROPPED}>Dropped</option>
-            </select>
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="imdbRating">IMDb Rating</label>
-            <input
-              id="imdbRating"
-              type="number"
-              step="0.1"
-              value={form.imdbRating}
-              onChange={updateField('imdbRating')}
-              aria-describedby={
-                fieldErrors.imdbRating ? 'imdbRating-error' : undefined
-              }
-            />
-            {fieldErrors.imdbRating && (
-              <span id="imdbRating-error" className={styles.fieldError}>
-                {fieldErrors.imdbRating}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="rottenTomatoesRating">
-              Rotten Tomatoes Rating (Tomatometer)
-            </label>
-            <input
-              id="rottenTomatoesRating"
-              type="number"
-              value={form.rottenTomatoesRating}
-              onChange={updateField('rottenTomatoesRating')}
-              aria-describedby={
-                fieldErrors.rottenTomatoesRating
-                  ? 'rottenTomatoesRating-error'
-                  : undefined
-              }
-            />
-            {fieldErrors.rottenTomatoesRating && (
-              <span
-                id="rottenTomatoesRating-error"
-                className={styles.fieldError}
-              >
-                {fieldErrors.rottenTomatoesRating}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="rottenTomatoesPopcornmeter">
-              Rotten Tomatoes Rating (Popcornmeter)
-            </label>
-            <input
-              id="rottenTomatoesPopcornmeter"
-              type="number"
-              value={form.rottenTomatoesPopcornmeter}
-              onChange={updateField('rottenTomatoesPopcornmeter')}
-              aria-describedby={
-                fieldErrors.rottenTomatoesPopcornmeter
-                  ? 'rottenTomatoesPopcornmeter-error'
-                  : undefined
-              }
-            />
-            {fieldErrors.rottenTomatoesPopcornmeter && (
-              <span
-                id="rottenTomatoesPopcornmeter-error"
-                className={styles.fieldError}
-              >
-                {fieldErrors.rottenTomatoesPopcornmeter}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="personalRating">Personal Rating</label>
-            <input
-              id="personalRating"
-              type="number"
-              value={form.personalRating}
-              onChange={updateField('personalRating')}
-              aria-describedby={
-                fieldErrors.personalRating ? 'personalRating-error' : undefined
-              }
-            />
-            {fieldErrors.personalRating && (
-              <span id="personalRating-error" className={styles.fieldError}>
-                {fieldErrors.personalRating}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="personalNotes">Personal Notes</label>
-            <textarea
-              id="personalNotes"
-              value={form.personalNotes}
-              onChange={updateField('personalNotes')}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="posterUrl">Poster URL</label>
-            <input
-              id="posterUrl"
-              type="text"
-              value={form.posterUrl}
-              onChange={handlePosterUrlChange}
-            />
-            {form.posterUrl.trim() !== '' && !posterPreviewError && (
-              <img
-                src={form.posterUrl}
-                alt=""
-                className={styles.posterPreview}
-                onError={() => setPosterPreviewError(true)}
-              />
-            )}
-          </div>
-
-          <div className={styles.checkboxField}>
-            <label htmlFor="excludeFromRecommendations">
-              Exclude from recommendations
-            </label>
-            <input
-              id="excludeFromRecommendations"
-              type="checkbox"
-              checked={form.excludeFromRecommendations}
-              onChange={handleExcludeFromRecommendationsChange}
-            />
-          </div>
+          <SeriesFormFields
+            form={form}
+            fieldErrors={fieldErrors}
+            updateField={updateField}
+            onPosterUrlChange={handlePosterUrlChange}
+            onPosterLoadError={() => setPosterPreviewError(true)}
+            onExcludeFromRecommendationsChange={
+              handleExcludeFromRecommendationsChange
+            }
+            posterPreviewError={posterPreviewError}
+          />
 
           <div className={styles.actions}>
             <button

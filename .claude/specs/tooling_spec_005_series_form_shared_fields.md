@@ -1,6 +1,24 @@
 # Tooling Spec 005: Shared Field Validation & Rendering for `AddSeriesForm`/`EditSeriesForm`
 
-**Status**: Not started
+**Status**: ✅ Done (AC-01–AC-07) — implemented as written, no deviations. Seven shared
+validators extracted to `src/utils/seriesFormValidation.ts`; `SeriesFormFields` component extracted
+to `src/components/SeriesFormFields.tsx` (+ `.module.css`); both `AddSeriesForm.tsx` and
+`EditSeriesForm.tsx` wired to it, `EditSeriesForm.tsx` passing Current Season/Current Episode as
+children. All existing `AddSeriesForm.test.tsx`/`EditSeriesForm.test.tsx` tests pass unmodified;
+full frontend suite (468 tests), typecheck, and lint all green. **Follow-up fix (same PR,
+2026-08-26)**: relocating the poster-preview `<img src={form.posterUrl}>` markup verbatim into the
+new `SeriesFormFields.tsx` surfaced it as a "new" CodeQL `js/xss-through-dom` alert — the same
+pattern already had two open alerts on `main` (`AddSeriesForm.tsx`/`EditSeriesForm.tsx`), just not
+previously flagged in this file. Fixed via a new `sanitizeImageUrl` helper
+(`src/utils/safeImageUrl.ts`, http/https only) rather than leaving it unaddressed — out of this
+spec's original acceptance criteria, but resolves a real (if pre-existing, low-severity) finding
+CI surfaced during this PR rather than deferring it. Consolidates what were 2 open alert locations
+into 1. **First-attempt correction**: an initial `isSafeImageUrl(url): boolean` gate (rendering
+`<img src={form.posterUrl}>` behind a boolean condition) did not clear CodeQL's finding on the
+next push — its dataflow analysis follows the original tainted variable straight through a
+boolean predicate. Switched to `sanitizeImageUrl(url): string | null`, which returns
+`new URL(url).href` (a value re-derived from the parsed `URL` object, not the raw input string)
+so the value actually assigned to `src` is no longer the directly-tainted variable.
 **Priority**: Medium — flagged as the strongest candidate in a 2026-08-26 codebase survey, and
 touches the same code two other outstanding specs (`frontend_spec_013`, `frontend_spec_034`) will
 also modify. **Build-order recommendation**: do this one first — see Design Decisions.
@@ -254,10 +272,10 @@ renders the shared `<input>`/`<select>`/`<textarea>` elements changes, not the s
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-005-AC-01: seven shared validators extracted to `seriesFormValidation.ts`
-- [ ] TOOLING-005-AC-02: both forms call the shared validators, existing tests unmodified
-- [ ] TOOLING-005-AC-03: `SeriesFormFields` component renders the 13 shared field blocks + children slot
-- [ ] TOOLING-005-AC-04: `AddSeriesForm` renders `SeriesFormFields`, Title/chrome/actions unchanged
-- [ ] TOOLING-005-AC-05: `EditSeriesForm` renders `SeriesFormFields` with Current Season/Episode as children
-- [ ] TOOLING-005-AC-06: every migrated field's id/label/testid/aria wiring is byte-identical, existing tests unmodified
-- [ ] TOOLING-005-AC-07: payload-building behavior is unchanged in both forms
+- [x] TOOLING-005-AC-01: seven shared validators extracted to `seriesFormValidation.ts`
+- [x] TOOLING-005-AC-02: both forms call the shared validators, existing tests unmodified
+- [x] TOOLING-005-AC-03: `SeriesFormFields` component renders the 13 shared field blocks + children slot
+- [x] TOOLING-005-AC-04: `AddSeriesForm` renders `SeriesFormFields`, Title/chrome/actions unchanged
+- [x] TOOLING-005-AC-05: `EditSeriesForm` renders `SeriesFormFields` with Current Season/Episode as children
+- [x] TOOLING-005-AC-06: every migrated field's id/label/testid/aria wiring is byte-identical, existing tests unmodified
+- [x] TOOLING-005-AC-07: payload-building behavior is unchanged in both forms
