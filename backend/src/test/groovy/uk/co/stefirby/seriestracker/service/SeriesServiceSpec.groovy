@@ -1,16 +1,18 @@
 package uk.co.stefirby.seriestracker.service
 
-import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
+import spock.lang.Specification
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.ConflictException
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
+import uk.co.stefirby.seriestracker.model.KeywordEntity
+import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
+
 import java.time.Clock
-import java.util.UUID
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -284,7 +286,7 @@ class SeriesServiceSpec extends Specification {
         seriesService.create(dto)
 
     then: "syncKeywords is called with the resolved entity and tmdbId"
-        1 * keywordSyncService.syncKeywords(_ as uk.co.stefirby.seriestracker.model.SeriesEntity, 4046)
+        1 * keywordSyncService.syncKeywords(_ as SeriesEntity, 4046)
   }
 
   def "SERIES-019-AC-24: create does not attempt a sync when tmdbId is absent"() {
@@ -324,8 +326,8 @@ class SeriesServiceSpec extends Specification {
     given: "a persisted series with two keywords attached directly to the entity"
         def created = seriesService.create(new SeriesDto(title: "Spooks"))
         def entity = seriesRepository.findById(created.id).get()
-        def spy = keywordRepository.save(new uk.co.stefirby.seriestracker.model.KeywordEntity(tmdbKeywordId: 1, name: "spy"))
-        def mi5 = keywordRepository.save(new uk.co.stefirby.seriestracker.model.KeywordEntity(tmdbKeywordId: 2, name: "mi5"))
+        def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 1, name: "spy"))
+        def mi5 = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 2, name: "mi5"))
         entity.setKeywords([spy, mi5] as Set)
         seriesRepository.save(entity)
 

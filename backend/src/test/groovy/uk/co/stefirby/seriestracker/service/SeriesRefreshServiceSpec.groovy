@@ -9,11 +9,11 @@ import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.model.ProductionStatus
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
 import java.time.Clock
 import java.time.LocalDateTime
-import java.util.UUID
 
 class SeriesRefreshServiceSpec extends Specification {
 
@@ -538,7 +538,7 @@ class SeriesRefreshServiceSpec extends Specification {
         given: "a COMPLETED series with totalSeasons 5, dateCompleted set, TMDB now reports 6"
             def id = UUID.randomUUID()
             def entity = existing(id)
-            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.COMPLETED
+            entity.status = SeriesStatus.COMPLETED
             def dateCompleted = LocalDateTime.now().minusDays(1)
             entity.dateCompleted = dateCompleted
             repository.findById(id) >> Optional.of(entity)
@@ -562,7 +562,7 @@ class SeriesRefreshServiceSpec extends Specification {
         given: "a WATCHING series with totalSeasons 5, TMDB now reports 6"
             def id = UUID.randomUUID()
             def entity = existing(id)
-            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.WATCHING
+            entity.status = SeriesStatus.WATCHING
             repository.findById(id) >> Optional.of(entity)
             repository.save(_) >> { SeriesEntity e -> e }
             tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
@@ -582,7 +582,7 @@ class SeriesRefreshServiceSpec extends Specification {
         given: "a DROPPED series with totalSeasons 5, TMDB now reports 6"
             def id = UUID.randomUUID()
             def entity = existing(id)
-            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.DROPPED
+            entity.status = SeriesStatus.DROPPED
             repository.findById(id) >> Optional.of(entity)
             repository.save(_) >> { SeriesEntity e -> e }
             tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
@@ -602,7 +602,7 @@ class SeriesRefreshServiceSpec extends Specification {
         given: "a COMPLETED series whose refresh just flipped it to BACKLOG with content detected"
             def id = UUID.randomUUID()
             def entity = existing(id)
-            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.COMPLETED
+            entity.status = SeriesStatus.COMPLETED
             entity.dateCompleted = LocalDateTime.now().minusDays(1)
             repository.findById(id) >> Optional.of(entity)
             repository.save(_) >> { SeriesEntity e -> e }
@@ -625,7 +625,7 @@ class SeriesRefreshServiceSpec extends Specification {
         given: "a COMPLETED series with totalSeasons null, TMDB now reports a value"
             def id = UUID.randomUUID()
             def entity = existing(id)
-            entity.status = uk.co.stefirby.seriestracker.model.SeriesStatus.COMPLETED
+            entity.status = SeriesStatus.COMPLETED
             def dateCompleted = LocalDateTime.now().minusDays(1)
             entity.dateCompleted = dateCompleted
             entity.totalSeasons = null

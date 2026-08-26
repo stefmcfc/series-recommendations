@@ -112,6 +112,11 @@ frontend/
 - Colocated with source: `src/services/__tests__/seriesApi.test.ts`, and (once built) `src/components/ComponentName.test.tsx`
 - Run with: `npm test`
 
+## Groovy spec conventions
+
+- **Import types rather than using inline fully-qualified references.** Write `import org.hamcrest.Matchers` + `Matchers.containsString(x)`, not `org.hamcrest.Matchers.containsString(x)` inline — same for any other type (e.g. `SeriesStatus.COMPLETED`, not the fully-qualified form). An inline fully-qualified reference bypasses the import, which IntelliJ's Groovy inspector then flags as an unused-import warning even though the class is genuinely used elsewhere in the file. This had crept into most of the backend spec suite (`Matchers`, `MockMvcResultMatchers`, `SeriesStatus`, `SeriesEntity`, `KeywordEntity`, `LocalDateTime`) before a 2026-08-26 cleanup pass (`chore/spec-warnings-cleanup`) — keep new specs import-clean from the start.
+- **Jackson is `tools.jackson.*` (Jackson 3.x), not `com.fasterxml.jackson.*` (2.x) — some `JsonNode` accessor names changed.** `textValue()` → `stringValue()`, `asText()` → `asString()`. The old names still exist as deprecated aliases (so old code compiles and passes, just with an IDE deprecation warning) — don't reach for them from habit/training data in new specs. `get()`, `has()`, `size()`, `intValue()`, `doubleValue()` are unaffected. If IntelliJ reports "unresolved reference"/"no candidates found" on a `JsonNode` method call that isn't one of the renamed ones above, it's very likely a stale Groovy-plugin index left over from the `com.fasterxml.jackson` → `tools.jackson.core` groupId migration, not a real problem — verify with `gradlew.bat compileTestGroovy` before changing code, and try `File → Invalidate Caches / Restart` to clear the index.
+
 ## Key directories
 
 | Directory | Purpose |

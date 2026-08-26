@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.controller
 
+import org.hamcrest.Matchers
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.dto.RecommendationDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
@@ -388,7 +389,7 @@ class SeriesControllerRecommendationsSpec extends Specification {
 
         then: "the response is 200 with both keywords in data, count 2"
             result.andExpect(status().isOk())
-            result.andExpect(jsonPath('$.data', org.hamcrest.Matchers.hasSize(2)))
+            result.andExpect(jsonPath('$.data', Matchers.hasSize(2)))
             result.andExpect(jsonPath('$.data[0]').value("spy"))
             result.andExpect(jsonPath('$.data[1]').value("mi5"))
             result.andExpect(jsonPath('$.count').value(2))
