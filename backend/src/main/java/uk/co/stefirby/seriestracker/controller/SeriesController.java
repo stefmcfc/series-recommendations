@@ -6,15 +6,12 @@ import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
-import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
-import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
 import uk.co.stefirby.seriestracker.service.KeywordStatsService;
 import uk.co.stefirby.seriestracker.service.RecommendationService;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
-import uk.co.stefirby.seriestracker.service.SeriesLookupService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
 import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
@@ -39,7 +36,6 @@ public class SeriesController {
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
-    private final SeriesLookupService lookupService;
     private final RecommendationService recommendationService;
     private final IgnoredSeriesService ignoredSeriesService;
     private final TmdbGenreTable genreTable;
@@ -55,7 +51,6 @@ public class SeriesController {
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
-                            SeriesLookupService lookupService,
                             RecommendationService recommendationService,
                             IgnoredSeriesService ignoredSeriesService,
                             TmdbGenreTable genreTable,
@@ -64,7 +59,6 @@ public class SeriesController {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
-        this.lookupService = lookupService;
         this.recommendationService = recommendationService;
         this.ignoredSeriesService = ignoredSeriesService;
         this.genreTable = genreTable;
@@ -106,21 +100,6 @@ public class SeriesController {
     public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(@PathVariable UUID id) {
         List<RecommendationDto.StreamingProvider> results = recommendationService.getStreamingProvidersForSeries(id);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
-    }
-
-    @GetMapping("/lookup/search-tmdb")
-    public ResponseEntity<ApiResponse<List<TmdbLookupCandidateDto>>> lookupSearchTmdb(@RequestParam String title) {
-        if (title.isBlank()) {
-            throw new IllegalArgumentException("title is required");
-        }
-        List<TmdbLookupCandidateDto> results = lookupService.searchTmdb(title);
-        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
-    }
-
-    @GetMapping("/lookup/resolve-tmdb")
-    public ResponseEntity<ApiResponse<SeriesLookupDto>> lookupResolveTmdb(@RequestParam int tmdbId) {
-        SeriesLookupDto dto = lookupService.resolveTmdbCandidate(tmdbId);
-        return ResponseEntity.ok(new ApiResponse<>(dto));
     }
 
     @GetMapping("/genres")
