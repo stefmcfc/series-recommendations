@@ -34,6 +34,7 @@ function renderFields(
       form={makeFormValues(overrides)}
       fieldErrors={{}}
       updateField={() => vi.fn()}
+      onPersonalRatingChange={vi.fn()}
       onPosterUrlChange={vi.fn()}
       onPosterLoadError={vi.fn()}
       onExcludeFromRecommendationsChange={vi.fn()}
@@ -72,6 +73,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
         form={makeFormValues()}
         fieldErrors={{}}
         updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
         onPosterUrlChange={vi.fn()}
         onPosterLoadError={vi.fn()}
         onExcludeFromRecommendationsChange={vi.fn()}
@@ -89,6 +91,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
         form={makeFormValues()}
         fieldErrors={{ year: 'Year must be between 1 and 2026' }}
         updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
         onPosterUrlChange={vi.fn()}
         onPosterLoadError={vi.fn()}
         onExcludeFromRecommendationsChange={vi.fn()}
@@ -109,6 +112,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
         form={makeFormValues()}
         fieldErrors={{}}
         updateField={updateFieldSpy}
+        onPersonalRatingChange={vi.fn()}
         onPosterUrlChange={vi.fn()}
         onPosterLoadError={vi.fn()}
         onExcludeFromRecommendationsChange={vi.fn()}
@@ -122,6 +126,24 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
     expect(handler).toHaveBeenCalled()
   })
 
+  it('FRONTEND-013-AC-07/AC-08: renders an interactive StarRating wired to onPersonalRatingChange', () => {
+    const onPersonalRatingChange = vi.fn()
+    render(
+      <SeriesFormFields
+        form={makeFormValues({ personalRating: '2' })}
+        fieldErrors={{}}
+        updateField={() => vi.fn()}
+        onPersonalRatingChange={onPersonalRatingChange}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText('Rate 4 star(s)'))
+    expect(onPersonalRatingChange).toHaveBeenCalledWith(4)
+  })
+
   it('renders the poster preview and calls onPosterLoadError when it fails to load', () => {
     const onPosterLoadError = vi.fn()
     const { container } = render(
@@ -129,6 +151,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
         form={makeFormValues({ posterUrl: 'https://example.com/poster.jpg' })}
         fieldErrors={{}}
         updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
         onPosterUrlChange={vi.fn()}
         onPosterLoadError={onPosterLoadError}
         onExcludeFromRecommendationsChange={vi.fn()}
@@ -147,6 +170,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
         form={makeFormValues({ posterUrl: 'https://example.com/poster.jpg' })}
         fieldErrors={{}}
         updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
         onPosterUrlChange={vi.fn()}
         onPosterLoadError={vi.fn()}
         onExcludeFromRecommendationsChange={vi.fn()}

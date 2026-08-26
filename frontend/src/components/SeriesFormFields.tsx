@@ -1,6 +1,7 @@
 import type { ChangeEvent, ReactNode } from 'react'
 import { SeriesStatus } from '../types/series'
 import { sanitizeImageUrl } from '../utils/safeImageUrl'
+import { StarRating } from './StarRating'
 import styles from './SeriesFormFields.module.css'
 
 export interface SeriesFormFieldsValues {
@@ -31,6 +32,7 @@ interface SeriesFormFieldsProps {
   readonly updateField: (
     field: SeriesFormFieldName,
   ) => (event: FieldChangeEvent) => void
+  readonly onPersonalRatingChange: (value: number | null) => void
   readonly onPosterUrlChange: (event: ChangeEvent<HTMLInputElement>) => void
   readonly onPosterLoadError: () => void
   readonly onExcludeFromRecommendationsChange: (
@@ -50,6 +52,7 @@ export function SeriesFormFields({
   form,
   fieldErrors,
   updateField,
+  onPersonalRatingChange,
   onPosterUrlChange,
   onPosterLoadError,
   onExcludeFromRecommendationsChange,
@@ -216,15 +219,12 @@ export function SeriesFormFields({
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="personalRating">Personal Rating</label>
-        <input
-          id="personalRating"
-          type="number"
-          value={form.personalRating}
-          onChange={updateField('personalRating')}
-          aria-describedby={
-            fieldErrors.personalRating ? 'personalRating-error' : undefined
+        <span className={styles.fieldLabelText}>Personal Rating</span>
+        <StarRating
+          value={
+            form.personalRating === '' ? null : Number(form.personalRating)
           }
+          onChange={onPersonalRatingChange}
         />
         {fieldErrors.personalRating && (
           <span id="personalRating-error" className={styles.fieldError}>

@@ -11,7 +11,6 @@ import {
   validateImdbRating,
   validateRottenTomatoesRating,
   validateRottenTomatoesPopcornmeter,
-  validatePersonalRating,
 } from '../utils/seriesFormValidation'
 import styles from './EditSeriesForm.module.css'
 
@@ -105,7 +104,6 @@ function validate(form: FormState): FieldErrors {
   validateImdbRating(form, errors)
   validateRottenTomatoesRating(form, errors)
   validateRottenTomatoesPopcornmeter(form, errors)
-  validatePersonalRating(form, errors)
 
   return errors
 }
@@ -168,6 +166,13 @@ export function EditSeriesForm({
     ) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }))
     }
+
+  const handlePersonalRatingChange = (value: number | null) => {
+    setForm((prev) => ({
+      ...prev,
+      personalRating: value === null ? '' : String(value),
+    }))
+  }
 
   const handlePosterUrlChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -265,6 +270,7 @@ export function EditSeriesForm({
             form={form}
             fieldErrors={fieldErrors}
             updateField={updateField}
+            onPersonalRatingChange={handlePersonalRatingChange}
             onPosterUrlChange={handlePosterUrlChange}
             onPosterLoadError={() => setPosterPreviewError(true)}
             onExcludeFromRecommendationsChange={

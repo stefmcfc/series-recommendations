@@ -6,7 +6,8 @@
   text-align: left;
 }
 
-.field label {
+.field label,
+.field .fieldLabelText {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-h);

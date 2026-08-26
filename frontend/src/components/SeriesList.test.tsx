@@ -142,6 +142,16 @@ describe('SH-003: Render series data', () => {
   })
 })
 
+describe('FRONTEND-013-AC-06: personalRating column', () => {
+  it('renders a read-only StarRating per row', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Show', personalRating: 4 }),
+    ])
+    render(<SeriesList />)
+    expect(await screen.findByLabelText('Personal rating')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
   it('renders a placeholder slot when posterUrl is null, an image when present', async () => {
     mockGetAll.mockResolvedValue([

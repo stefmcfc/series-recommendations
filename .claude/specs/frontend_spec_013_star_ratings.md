@@ -1,6 +1,13 @@
 # Frontend Spec 013: Star Ratings & Sort
 
-**Status**: Requirements 1-3 (`StarRating` component, display/input integration) not started. **Requirements 4 and 5 implemented together (2026-08-23)**: when Requirement 5 work began, Requirement 4's sort control (`SortOptions` type, `seriesApi.getAll`/`search` sort params, `SeriesList`'s field selector + direction toggle) turned out not to actually exist yet in the codebase despite this file's structure implying it was a separate prior step — so, following the same reasoning `series_spec_009_rating_sort.md` used for its own Requirements 1+2 (Requirement 2 can't stand on its own), both were built in one pass directly to the full six-field enum (`dateAdded`/`personalRating`/`title`/`year`/`imdbRating`/`tmdbRating`). **Design decision**: the sort control passes `sort: undefined` to `getAll()`/`search()` whenever the control is at its default (`dateAdded`/`desc`, matching the backend's own default), and only a populated `{ sortBy, sortDirection }` object once the user changes it away from default — this keeps a no-sort caller's request wire-identical to before the control existed. Files touched: `src/types/series.ts` (`SortOptions`), `src/services/seriesApi.ts` (`getAll(sort?)`, `search(criteria, sort?)`, `buildSortParams`), `src/components/SeriesList.tsx` (sort field `<select>` + direction toggle `<button>`, local `sortBy`/`sortDirection` state), plus test updates in `SeriesList.test.tsx`, `App.test.tsx`, and `seriesApi.test.ts` (three pre-existing `search(...)`-argument assertions needed a second `sort` argument added to stay accurate to the new two-argument signature).
+**Status**: ✅ Done (AC-01–AC-16), all 5 requirements implemented. **Requirements 1-3
+(2026-08-26)**: a new `StarRating` component (`src/components/StarRating.tsx`, read-only or
+interactive depending on whether `onChange` is passed) replaces the raw numeric `personalRating`
+display/input everywhere it appeared — `SeriesDetail`, `SeriesList` (new column), and (via
+`SeriesFormFields.tsx`, post-`tooling_spec_005`) both `AddSeriesForm`/`EditSeriesForm`. The now-
+unreachable `validatePersonalRating` (1–5 range check) was deleted per AC-09 rather than left as
+dead code. Full test suite (482 tests), typecheck, and lint all green; no deviations from the
+spec as written. **Requirements 4 and 5 implemented together (2026-08-23)**: when Requirement 5 work began, Requirement 4's sort control (`SortOptions` type, `seriesApi.getAll`/`search` sort params, `SeriesList`'s field selector + direction toggle) turned out not to actually exist yet in the codebase despite this file's structure implying it was a separate prior step — so, following the same reasoning `series_spec_009_rating_sort.md` used for its own Requirements 1+2 (Requirement 2 can't stand on its own), both were built in one pass directly to the full six-field enum (`dateAdded`/`personalRating`/`title`/`year`/`imdbRating`/`tmdbRating`). **Design decision**: the sort control passes `sort: undefined` to `getAll()`/`search()` whenever the control is at its default (`dateAdded`/`desc`, matching the backend's own default), and only a populated `{ sortBy, sortDirection }` object once the user changes it away from default — this keeps a no-sort caller's request wire-identical to before the control existed. Files touched: `src/types/series.ts` (`SortOptions`), `src/services/seriesApi.ts` (`getAll(sort?)`, `search(criteria, sort?)`, `buildSortParams`), `src/components/SeriesList.tsx` (sort field `<select>` + direction toggle `<button>`, local `sortBy`/`sortDirection` state), plus test updates in `SeriesList.test.tsx`, `App.test.tsx`, and `seriesApi.test.ts` (three pre-existing `search(...)`-argument assertions needed a second `sort` argument added to stay accurate to the new two-argument signature).
 **Depends on**: Frontend Spec 002 (`SeriesList`) ✅, Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 004 (`EditSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Series Spec 009 (`sortBy`/`sortDirection` on `GET /series`/`GET /series/search`, including its Requirement 2 amendment)
 **Frontend Stage**: 13 of N
 **Amendment note (2026-08-26, `tooling_spec_005`)**: `AddSeriesForm`/`EditSeriesForm`'s Personal
@@ -195,15 +202,15 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-013-AC-01: `StarRating` component, read-only vs. interactive modes
-- [ ] FRONTEND-013-AC-02: click-to-set, click-selected-to-clear
-- [ ] FRONTEND-013-AC-03: accessible labels/`aria-pressed`
-- [ ] FRONTEND-013-AC-04: null value renders all-unfilled
-- [ ] FRONTEND-013-AC-05: `SeriesDetail` uses `StarRating`
-- [ ] FRONTEND-013-AC-06: `SeriesList` gains a `personalRating` column
-- [ ] FRONTEND-013-AC-07: `AddSeriesForm` star input
-- [ ] FRONTEND-013-AC-08: `EditSeriesForm` star input
-- [ ] FRONTEND-013-AC-09: dead numeric-range validation removed
+- [x] FRONTEND-013-AC-01: `StarRating` component, read-only vs. interactive modes
+- [x] FRONTEND-013-AC-02: click-to-set, click-selected-to-clear
+- [x] FRONTEND-013-AC-03: accessible labels/`aria-pressed`
+- [x] FRONTEND-013-AC-04: null value renders all-unfilled
+- [x] FRONTEND-013-AC-05: `SeriesDetail` uses `StarRating`
+- [x] FRONTEND-013-AC-06: `SeriesList` gains a `personalRating` column
+- [x] FRONTEND-013-AC-07: `AddSeriesForm` star input
+- [x] FRONTEND-013-AC-08: `EditSeriesForm` star input
+- [x] FRONTEND-013-AC-09: dead numeric-range validation removed
 - [x] FRONTEND-013-AC-10: `SortOptions` type
 - [x] FRONTEND-013-AC-11: `getAll`/`search` accept `sort`
 - [x] FRONTEND-013-AC-12: `SeriesList` sort control + local state

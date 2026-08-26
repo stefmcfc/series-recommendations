@@ -328,6 +328,23 @@ describe('FRONTEND-009-AC-16/17: Poster URL field', () => {
     const payload = mockUpdate.mock.calls[0][1]
     expect(payload.posterUrl).toBe('https://example.com/new-poster.jpg')
   })
+
+  it('FRONTEND-013-AC-08: sets personalRating via star click, initialized from series.personalRating', async () => {
+    const series = makeSeries({ id: 'abc-123', personalRating: 3 })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+
+    expect(screen.getByLabelText('Rate 3 star(s)')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    fireEvent.click(screen.getByLabelText('Rate 5 star(s)'))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    expect(mockUpdate.mock.calls[0][1].personalRating).toBe(5)
+  })
 })
 
 describe('FRONTEND-004-AC-28/29: loading & success', () => {
