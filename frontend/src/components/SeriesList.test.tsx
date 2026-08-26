@@ -119,7 +119,7 @@ describe('SH-003: Render series data', () => {
       makeSeries({ title: 'Show', imdbRating: 8.4 }),
     ])
     render(<SeriesList />)
-    expect(await screen.findByText('8.4')).toBeInTheDocument()
+    expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
   })
 
   it('should display "—" when imdbRating is null', async () => {
@@ -127,7 +127,7 @@ describe('SH-003: Render series data', () => {
       makeSeries({ title: 'Show', imdbRating: null }),
     ])
     render(<SeriesList />)
-    expect(await screen.findByText('—')).toBeInTheDocument()
+    expect(await screen.findByText(/—/)).toBeInTheDocument()
   })
 
   it('should render one series-row per series', async () => {
@@ -149,6 +149,44 @@ describe('FRONTEND-013-AC-06: personalRating column', () => {
     ])
     render(<SeriesList />)
     expect(await screen.findByLabelText('Personal rating')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-039-AC-01: sort-aware rating column', () => {
+  it('shows IMDb rating by default', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
+    ])
+    render(<SeriesList />)
+
+    expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
+    expect(screen.getByText('IMDb')).toBeInTheDocument()
+    expect(screen.queryByText(/8\.1/)).not.toBeInTheDocument()
+  })
+
+  it('shows TMDB rating when sorted by tmdbRating', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
+    ])
+    render(<SeriesList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'tmdbRating' },
+    })
+
+    expect(await screen.findByText(/8\.1/)).toBeInTheDocument()
+    expect(screen.getByText('TMDB')).toBeInTheDocument()
+    expect(screen.queryByText(/8\.4/)).not.toBeInTheDocument()
+  })
+
+  it('renders a dash when the currently-displayed source is null', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Ozark', imdbRating: null, tmdbRating: 8.1 }),
+    ])
+    render(<SeriesList />)
+
+    expect(await screen.findByText(/—/)).toBeInTheDocument()
   })
 })
 
