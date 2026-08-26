@@ -6,6 +6,7 @@ import type { Series, StreamingProvider } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
 import { StreamingProviders } from './StreamingProviders'
+import { StarRating } from './StarRating'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -463,7 +464,9 @@ export function SeriesDetail({
                     </div>
                     <div className={styles.field}>
                       <dt>Personal Rating</dt>
-                      <dd>{formatValue(series.personalRating)}</dd>
+                      <dd>
+                        <StarRating value={series.personalRating} />
+                      </dd>
                     </div>
                   </div>
                 </dl>

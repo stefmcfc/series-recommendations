@@ -10,6 +10,7 @@ import type {
 } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
+import { StarRating } from './StarRating'
 import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
@@ -503,6 +504,7 @@ export function SeriesList({
                   )}
                 </div>
                 <span className={styles.rating}>{s.imdbRating ?? '—'}</span>
+                <StarRating value={s.personalRating} />
 
                 {confirmingDeleteId === s.id ? (
                   <div className={styles.rowActions}>

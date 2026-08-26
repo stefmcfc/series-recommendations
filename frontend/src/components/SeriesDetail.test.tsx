@@ -63,7 +63,20 @@ describe('FRONTEND-005-AC-04/06/07: fetch, loading, render', () => {
     await screen.findByText(/^The Office/)
     expect(mockGetById).toHaveBeenCalledWith('abc-123')
     expect(screen.getByText('Rewatch of the year')).toBeInTheDocument()
-    expect(screen.getByText('5')).toBeInTheDocument()
+    expect(screen.getByLabelText('Personal rating')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-013-AC-05: Personal Rating uses StarRating', () => {
+  it('renders a read-only StarRating for the personal rating field, not raw numeric text', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ personalRating: 4, currentSeason: 2 }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText(/^The Office/)
+    expect(screen.getByLabelText('Personal rating')).toBeInTheDocument()
+    expect(screen.queryByText('4')).not.toBeInTheDocument()
   })
 })
 
