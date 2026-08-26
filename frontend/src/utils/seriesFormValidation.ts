@@ -79,18 +79,3 @@ export function validateRottenTomatoesPopcornmeter(
       'Rotten Tomatoes rating must be between 0 and 100'
   }
 }
-
-export function validatePersonalRating(
-  form: { personalRating: string },
-  errors: { personalRating?: string },
-): void {
-  if (form.personalRating.trim() === '') return
-  const personalRating = Number(form.personalRating)
-  if (
-    Number.isNaN(personalRating) ||
-    personalRating < 1 ||
-    personalRating > 5
-  ) {
-    errors.personalRating = 'Personal rating must be between 1 and 5'
-  }
-}

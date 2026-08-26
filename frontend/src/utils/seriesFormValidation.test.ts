@@ -6,7 +6,6 @@ import {
   validateImdbRating,
   validateRottenTomatoesRating,
   validateRottenTomatoesPopcornmeter,
-  validatePersonalRating,
 } from './seriesFormValidation'
 
 describe('TOOLING-005-AC-01: shared series form validators', () => {
@@ -54,14 +53,6 @@ describe('TOOLING-005-AC-01: shared series form validators', () => {
     )
     expect(errors.rottenTomatoesPopcornmeter).toBe(
       'Rotten Tomatoes rating must be between 0 and 100',
-    )
-  })
-
-  it('validatePersonalRating rejects out-of-range ratings', () => {
-    const errors: { personalRating?: string } = {}
-    validatePersonalRating({ personalRating: '9' }, errors)
-    expect(errors.personalRating).toBe(
-      'Personal rating must be between 1 and 5',
     )
   })
 })

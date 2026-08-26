@@ -234,21 +234,6 @@ describe('FRONTEND-013..18: client-side validation', () => {
       screen.getByText(/rotten tomatoes rating must be between 0 and 100/i),
     ).toBeInTheDocument()
   })
-
-  it('blocks submit when personalRating is out of range', () => {
-    renderForm()
-    fireEvent.change(screen.getByLabelText(/^title/i), {
-      target: { value: 'Show' },
-    })
-    fireEvent.change(screen.getByLabelText(/personal rating/i), {
-      target: { value: '9' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
-    expect(mockCreate).not.toHaveBeenCalled()
-    expect(
-      screen.getByText(/personal rating must be between 1 and 5/i),
-    ).toBeInTheDocument()
-  })
 })
 
 describe('FRONTEND-003-AC-19: valid submission payload', () => {
@@ -276,6 +261,19 @@ describe('FRONTEND-003-AC-19: valid submission payload', () => {
     expect(payload).not.toHaveProperty('currentEpisode')
     expect(payload).not.toHaveProperty('alternateTitle')
     expect(payload).not.toHaveProperty('metacriticRating')
+  })
+
+  it('FRONTEND-013-AC-07: sets personalRating via star click', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(screen.getByLabelText('Rate 4 star(s)'))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    expect(mockCreate.mock.calls[0][0].personalRating).toBe(4)
   })
 
   it('includes populated optional fields with the correct types', async () => {
@@ -530,9 +528,7 @@ describe('FRONTEND-022-AC-02: single-result auto-resolve autofill overwrite rule
     fireEvent.change(screen.getByLabelText(/^title/i), {
       target: { value: 'Show' },
     })
-    fireEvent.change(screen.getByLabelText(/personal rating/i), {
-      target: { value: '4' },
-    })
+    fireEvent.click(screen.getByLabelText('Rate 4 star(s)'))
     fireEvent.change(screen.getByLabelText(/notes/i), {
       target: { value: 'my notes' },
     })
@@ -542,7 +538,10 @@ describe('FRONTEND-022-AC-02: single-result auto-resolve autofill overwrite rule
       expect(screen.getByLabelText(/imdb rating/i)).toHaveValue(7.5),
     )
     expect(screen.getByLabelText(/^status/i)).toHaveValue(SeriesStatus.BACKLOG)
-    expect(screen.getByLabelText(/personal rating/i)).toHaveValue(4)
+    expect(screen.getByLabelText('Rate 4 star(s)')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     expect(screen.getByLabelText(/notes/i)).toHaveValue('my notes')
   })
 
