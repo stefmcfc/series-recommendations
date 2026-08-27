@@ -569,6 +569,8 @@ describe('FRONTEND-012-AC-13/14: rewatch toggle', () => {
       expect(mockUpdate).toHaveBeenCalledWith('1', { flaggedForRewatch: true }),
     )
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(toggle).toHaveTextContent('Flagged for rewatch')
+    expect(toggle).toHaveAttribute('aria-label', 'Flagged for rewatch')
   })
 
   it('reverts and shows a scoped alert on failure', async () => {
@@ -587,6 +589,8 @@ describe('FRONTEND-012-AC-13/14: rewatch toggle', () => {
       ),
     )
     expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(toggle).toHaveTextContent('Flag for rewatch')
+    expect(toggle).toHaveAttribute('aria-label', 'Flag for rewatch')
   })
 })
 

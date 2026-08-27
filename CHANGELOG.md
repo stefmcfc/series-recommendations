@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.5] - 2026-08-27
+
+### Changed
+
+- Frontend: extracted `SeriesDetail.tsx`/`SeriesList.tsx`'s duplicated rewatch-toggle and delete-submission control flow into shared `utils/rewatchToggle.ts` (`toggleRewatchFlag`) and `utils/deleteSeries.ts` (`submitDelete`) helpers, with no behavior change (`tooling_spec_006`).
+- Frontend: the rewatch toggle's label text and `aria-label` now reflect the current flagged/unflagged state instead of staying static, so the toggle no longer relies on color alone to signal state (`frontend_spec_012` amendment).
+
 ## [2.17.4] - 2026-08-27
 
 ### Changed
