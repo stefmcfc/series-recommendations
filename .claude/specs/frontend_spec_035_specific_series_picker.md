@@ -1,6 +1,6 @@
 # Frontend Spec 035: Specific Series Picker — Search, Sort, Filter & Shared Picker Component
 
-**Status**: Not started
+**Status**: Implemented (2026-08-27) — `frontend/src/components/KeywordPicker.tsx` (Requirement 1, generalized `options: string[] | PickerOption[]`), `frontend/src/components/RecommendationControls.tsx`/`.module.css` (Requirements 2–4, KeywordPicker-based "Specific Series" mode, genre/status filters, client-side sort, "Show all series" modal), `frontend/src/utils/keywordSuggestions.ts` (`resolveSpecificSeriesPickerLimit`/`SPECIFIC_SERIES_PICKER_LIMIT`), plus corresponding `*.test.tsx`/`*.test.ts` updates
 **Priority**: P3 (quality-of-life — the current picker is fully functional, this addresses it becoming unwieldy as the tracked collection grows)
 **Depends on**: Frontend Spec 011 (`frontend_spec_011_recommendation_controls.md`, owns `RecommendationControls.tsx` and today's "Specific Series" mode) ✅, Frontend Spec 029 (`frontend_spec_029_searchable_keyword_picker.md`, `KeywordPicker`'s current contract, `SearchFilter`'s "Browse all keywords" modal pattern being mirrored) ✅, Frontend Spec 032 (`frontend_spec_032_hybrid_keyword_suggestions.md`, the `VITE_*_LIMIT`/`resolveKeywordSuggestionsLimit` config pattern being mirrored) ✅, Frontend Spec 013 Requirement 4/5 only (`frontend_spec_013_star_ratings.md`, `SortOptions`'/`SeriesList`'s sort field list and labels being mirrored — **Requirements 1–3 of that spec are themselves still not started**, only its already-implemented sort-control portion is a safe precedent here), Series Spec 002 (`series_spec_002_crud.md`, `GET /api/v1/series` — confirms no backend change is needed)
 **Frontend Stage**: 35 of N
@@ -144,6 +144,8 @@ it('FRONTEND-035-AC-03: Enter with no match adds nothing for PickerOption[] opti
 
 ### FRONTEND-035-AC-05 [AUTO]
 **Statement**: `RecommendationControls`' "Specific Series" mode shall render a `KeywordPicker` instance in place of today's checkbox-per-series list, with `options` built as `PickerOption[]` — one entry per series in the (genre/status-filtered, sorted — Requirements 3/4) candidate pool, `{ id: s.id, label: "${s.title} (${s.status})" }` (the exact display text already used today, unchanged).
+
+**Correction (2026-08-27, implementation)**: this AC's own `label` shorthand is an inaccurate paraphrase of "today's" actual format — verified against the pre-existing checkbox label JSX (`RecommendationControls.tsx`, prior to this spec), which was `"{title}{year ? ' (' + year + ')' : ''}{country ? ' — ' + formattedCountry : ''} ({status})"`, not the simpler `"{title} ({status})"` written above. Implemented to match the real prior format (title, optional year, optional country, status) rather than the AC statement's simplified text, per the AC's own instruction to keep "the exact display text already used today, unchanged."
 
 **References**: `RecommendationControls.tsx`, the `state.mode === 'specific'` render branch.
 
@@ -481,19 +483,19 @@ it('FRONTEND-035-AC-16: null personalRating sorts last regardless of direction',
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-035-AC-01: `KeywordPicker.options` accepts `string[] | PickerOption[]`, string behavior unchanged
-- [ ] FRONTEND-035-AC-02: `PickerOption[]` selects/dedups by `id`, displays by `label`
-- [ ] FRONTEND-035-AC-03: `allowFreeText` is a no-op for `PickerOption[]`
-- [ ] FRONTEND-035-AC-04: every existing keyword call site unaffected
-- [ ] FRONTEND-035-AC-05: "Specific Series" mode renders a `KeywordPicker`, one `PickerOption` per candidate series
-- [ ] FRONTEND-035-AC-06: picking a suggestion populates `selectedSeriesIds`/`seriesIds`
-- [ ] FRONTEND-035-AC-07: selected series render as chips, unaffected by filter/sort changes
-- [ ] FRONTEND-035-AC-08: default view capped at configurable `SPECIFIC_SERIES_PICKER_LIMIT` (default 15)
-- [ ] FRONTEND-035-AC-09: "Show all series" modal, uncapped, shared selection state, no re-fetch
-- [ ] FRONTEND-035-AC-10: genre + status filters render, scoped to the picker only (not in `RecommendationQuery`)
-- [ ] FRONTEND-035-AC-11: genre filter matches case-insensitively within the comma-separated field
-- [ ] FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed or Watching
-- [ ] FRONTEND-035-AC-13: fixed pipeline order — filter → sort → cap/search
-- [ ] FRONTEND-035-AC-14: sort control reusing `SortOptions` field set/labels, client-side only
-- [ ] FRONTEND-035-AC-15: sort defaults to `title`/`asc`
-- [ ] FRONTEND-035-AC-16: `null` sort values sort last
+- [x] FRONTEND-035-AC-01: `KeywordPicker.options` accepts `string[] | PickerOption[]`, string behavior unchanged
+- [x] FRONTEND-035-AC-02: `PickerOption[]` selects/dedups by `id`, displays by `label`
+- [x] FRONTEND-035-AC-03: `allowFreeText` is a no-op for `PickerOption[]`
+- [x] FRONTEND-035-AC-04: every existing keyword call site unaffected
+- [x] FRONTEND-035-AC-05: "Specific Series" mode renders a `KeywordPicker`, one `PickerOption` per candidate series
+- [x] FRONTEND-035-AC-06: picking a suggestion populates `selectedSeriesIds`/`seriesIds`
+- [x] FRONTEND-035-AC-07: selected series render as chips, unaffected by filter/sort changes
+- [x] FRONTEND-035-AC-08: default view capped at configurable `SPECIFIC_SERIES_PICKER_LIMIT` (default 15)
+- [x] FRONTEND-035-AC-09: "Show all series" modal, uncapped, shared selection state, no re-fetch
+- [x] FRONTEND-035-AC-10: genre + status filters render, scoped to the picker only (not in `RecommendationQuery`)
+- [x] FRONTEND-035-AC-11: genre filter matches case-insensitively within the comma-separated field
+- [x] FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed or Watching
+- [x] FRONTEND-035-AC-13: fixed pipeline order — filter → sort → cap/search
+- [x] FRONTEND-035-AC-14: sort control reusing `SortOptions` field set/labels, client-side only
+- [x] FRONTEND-035-AC-15: sort defaults to `title`/`asc`
+- [x] FRONTEND-035-AC-16: `null` sort values sort last

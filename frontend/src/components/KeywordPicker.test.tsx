@@ -386,6 +386,80 @@ describe('FRONTEND-032-AC-05: omitting maxSuggestionsWhenEmpty shows all options
   })
 })
 
+describe('FRONTEND-035-AC-01: PickerOption[] generalization does not affect string[] behavior', () => {
+  it('existing string[] options behavior is unaffected', () => {
+    render(
+      <KeywordPicker
+        id="k"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['spy', 'grim']}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Keywords'), {
+      target: { value: 'sp' },
+    })
+    expect(screen.getByRole('button', { name: 'spy' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-035-AC-02: PickerOption[] selects by id, displays by label', () => {
+  it('selects by id, displays by label', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="s"
+        label="Series"
+        selected={[]}
+        onChange={onChange}
+        options={[{ id: 'abc-123', label: 'Ozark (COMPLETED)' }]}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Series'), {
+      target: { value: 'ozark' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Ozark (COMPLETED)' }))
+    expect(onChange).toHaveBeenCalledWith(['abc-123'])
+  })
+
+  it('an already-selected id is not offered again, matched by id not label', () => {
+    render(
+      <KeywordPicker
+        id="s"
+        label="Series"
+        selected={['abc-123']}
+        onChange={vi.fn()}
+        options={[{ id: 'abc-123', label: 'Ozark (COMPLETED)' }]}
+      />,
+    )
+    expect(screen.getByText('Ozark (COMPLETED)')).toBeInTheDocument() // renders as a chip
+    expect(
+      screen.queryByRole('button', { name: 'Ozark (COMPLETED)' }),
+    ).not.toBeInTheDocument() // not also a suggestion
+  })
+})
+
+describe('FRONTEND-035-AC-03: allowFreeText is a no-op for PickerOption[] options', () => {
+  it('Enter with no match adds nothing for PickerOption[] options', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="s"
+        label="Series"
+        selected={[]}
+        onChange={onChange}
+        options={[{ id: 'abc-123', label: 'Ozark (COMPLETED)' }]}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Series'), {
+      target: { value: 'no such show' },
+    })
+    fireEvent.keyDown(screen.getByLabelText('Series'), { key: 'Enter' })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+})
+
 describe('placeholder prop', () => {
   it('passes the placeholder through to the input', () => {
     render(

@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.19.0] - 2026-08-27
+
+### Changed
+
+- Frontend: `RecommendationControls`' "Specific Series" mode replaces its checkbox-per-series list with a searchable `KeywordPicker` (type-to-filter, removable chips, capped default suggestion list via a new `SPECIFIC_SERIES_PICKER_LIMIT`/`VITE_SPECIFIC_SERIES_PICKER_LIMIT`, default 15) plus a "Show all series" browse-all modal mirroring `SearchFilter`'s "Browse all keywords" dialog (`frontend_spec_035`).
+- Frontend: the "Specific Series" picker gains client-side-only genre and status ("Any"/"Completed Only"/"Completed or Watching") filters and a sort control (reusing `SeriesList`'s sort field set/labels, defaulting to Title/ascending) that narrow and order its candidate pool; none of this is sent to the backend or affects the emitted `RecommendationQuery` (`frontend_spec_035`).
+- Frontend: `KeywordPicker`'s `options` prop now also accepts `PickerOption[]` (`{ id, label }`) alongside its existing `string[]` support, selecting/deduping by `id` and displaying by `label`, enabling reuse by the "Specific Series" picker without a fork (`frontend_spec_035`).
+- Frontend: `KeywordPicker` gains an optional `PickerOption.display` (rich `ReactNode` override for the suggestion button/chip, defaulting to plain `label`) — used by the "Specific Series" picker to render **bold title** | country - *italic status*, replacing the previous plain-text `title (year) — country (status)` format (cosmetic, no spec).
+- Frontend: the "Specific Series" picker's Filter by Genre now shares a row with Filter by Status and Sort by (two-column layout) instead of stacking full-width, since the genre checkbox list left a lot of empty width beside it — temporary until this section gets a proper sheet/modal-based filter redesign (layout-only, no spec).
+- Frontend: fixed `KeywordPicker`'s suggestion buttons and `RecommendationControls`' "Show all series" button rendering in the browser's default button font (Arial) instead of the app's system font — neither had ever set `font-family: inherit`, a pre-existing gap that only became visually obvious once bold/italic styling was added.
+
 ## [2.18.0] - 2026-08-27
 
 ### Changed
