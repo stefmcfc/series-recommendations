@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.6] - 2026-08-27
+
+### Changed
+
+- Backend: reduced `SeriesService.create`'s cognitive complexity (SonarQube) by extracting its validation, entity-field-copy, create-time-defaults, and keyword-sync logic into their own methods, mirroring `update`'s existing split in the same file. No behavior change.
+- Frontend: reduced `SeriesDetail`'s cognitive complexity (SonarQube) by extracting its field-display grid and actions bar into new `SeriesDetailFields`/`SeriesDetailActionsPanel` components, also bringing the file under this project's ~200-line component guideline. No behavior change — DOM output, `data-testid`s, and `aria-label`s are unchanged.
+
 ## [2.17.5] - 2026-08-27
 
 ### Changed

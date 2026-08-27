@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
-import { SeriesStatus } from '../types/series'
 import type { Series, StreamingProvider } from '../types/series'
-import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
-import { StreamingProviders } from './StreamingProviders'
-import { StarRating } from './StarRating'
+import { SeriesDetailFields } from './SeriesDetailFields'
+import { SeriesDetailActionsPanel } from './SeriesDetailActionsPanel'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -16,36 +14,6 @@ interface SeriesDetailProps {
   readonly onBack: () => void
   readonly onDeleted: () => void
   readonly onEditClick?: (series: Series) => void
-}
-
-function formatValue(value: string | number | null): string {
-  return value === null ? '—' : String(value)
-}
-
-function formatPercent(value: number | null, emoji: string): string {
-  return value === null ? '—' : `${value}% ${emoji}`
-}
-
-function formatDate(value: string | null): string {
-  if (value === null) return '—'
-  return new Date(value).toLocaleDateString()
-}
-
-// Temporary toggle while deciding whether section headers ("Details",
-// "Ratings", "Personal", "Timeline") read better than the plain grouped rows
-// -- flip via VITE_SERIES_DETAIL_SECTION_HEADERS=false in .env.local (no
-// rebuild needed for `npm run dev`, just a page reload). Defaults on.
-const SHOW_SECTION_HEADERS =
-  (import.meta.env.VITE_SERIES_DETAIL_SECTION_HEADERS as string | undefined) !==
-  'false'
-
-function formatProductionStatus(value: string | null): string {
-  if (value == null) return '—'
-  return value
-    .toLowerCase()
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
 }
 
 function buildRefreshSummary(
@@ -329,296 +297,30 @@ export function SeriesDetail({
               />
             )}
 
-            <div className={styles.fields}>
-              <dl className={styles.fieldGroup}>
-                <div className={styles.fieldRow}>
-                  <div className={styles.field}>
-                    <dt>Overview</dt>
-                    <dd>{formatValue(series.overview)}</dd>
-                  </div>
-                </div>
-              </dl>
-
-              <div className={styles.streamingCheck}>
-                <button
-                  type="button"
-                  className={styles.streamingCheckButton}
-                  disabled={streamingCheckLoading}
-                  onClick={handleCheckStreamingClick}
-                >
-                  {streamingCheckLoading
-                    ? 'Checking...'
-                    : 'Check Streaming Availability'}
-                </button>
-                {streamingCheckError && (
-                  <span className={styles.streamingCheckError} role="alert">
-                    {streamingCheckError}
-                  </span>
-                )}
-                {streamingCheckResult !== null && (
-                  <StreamingProviders providers={streamingCheckResult} />
-                )}
-              </div>
-
-              <dl className={styles.fieldGroup}>
-                <div className={styles.fieldRow}>
-                  <div className={styles.field}>
-                    <dt>Keywords</dt>
-                    <dd>
-                      {(series.keywords ?? []).length === 0
-                        ? '—'
-                        : series.keywords.map((keyword) => (
-                            <span key={keyword} className={styles.keywordChip}>
-                              {keyword}
-                            </span>
-                          ))}
-                    </dd>
-                  </div>
-                </div>
-              </dl>
-
-              <div className={styles.fieldSection}>
-                {SHOW_SECTION_HEADERS && (
-                  <h3 className={styles.sectionHeader}>Details</h3>
-                )}
-                <dl className={styles.fieldGroup}>
-                  <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                    <div className={styles.field}>
-                      <dt>Genres</dt>
-                      <dd>{formatValue(series.genres)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Production Status</dt>
-                      <dd>{formatProductionStatus(series.productionStatus)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Status</dt>
-                      <dd>{series.status}</dd>
-                    </div>
-                  </div>
-
-                  <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                    <div className={styles.field}>
-                      <dt>Total Seasons</dt>
-                      <dd>{formatValue(series.totalSeasons)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Total Episodes</dt>
-                      <dd>{formatValue(series.totalEpisodes)}</dd>
-                    </div>
-                  </div>
-
-                  {series.status !== SeriesStatus.COMPLETED && (
-                    <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                      <div className={styles.field}>
-                        <dt>Current Season</dt>
-                        <dd>{formatValue(series.currentSeason)}</dd>
-                      </div>
-                      <div className={styles.field}>
-                        <dt>Current Episode</dt>
-                        <dd>{formatValue(series.currentEpisode)}</dd>
-                      </div>
-                    </div>
-                  )}
-                </dl>
-              </div>
-
-              <div className={styles.fieldSection}>
-                {SHOW_SECTION_HEADERS && (
-                  <h3 className={styles.sectionHeader}>Ratings</h3>
-                )}
-                <dl className={styles.fieldGroup}>
-                  <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                    <div className={styles.field}>
-                      <dt>IMDb Rating</dt>
-                      <dd>{formatValue(series.imdbRating)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>TMDB Rating</dt>
-                      <dd>{formatValue(series.tmdbRating)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>TMDB Vote Count</dt>
-                      <dd>{formatValue(series.tmdbVoteCount)}</dd>
-                    </div>
-                  </div>
-
-                  <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                    <div className={styles.field}>
-                      <dt>Rotten Tomatoes Rating (Tomatometer)</dt>
-                      <dd>
-                        {formatPercent(series.rottenTomatoesRating, '🍅')}
-                      </dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Rotten Tomatoes Rating (Popcornmeter)</dt>
-                      <dd>
-                        {formatPercent(series.rottenTomatoesPopcornmeter, '🍿')}
-                      </dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Personal Rating</dt>
-                      <dd>
-                        <StarRating value={series.personalRating} />
-                      </dd>
-                    </div>
-                  </div>
-                </dl>
-              </div>
-
-              <div className={styles.fieldSection}>
-                {SHOW_SECTION_HEADERS && (
-                  <h3 className={styles.sectionHeader}>Personal</h3>
-                )}
-                <dl className={styles.fieldGroup}>
-                  <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                    <div className={styles.field}>
-                      <dt>Tags</dt>
-                      <dd>{formatValue(series.tags)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Personal Notes</dt>
-                      <dd>{formatValue(series.personalNotes)}</dd>
-                    </div>
-                  </div>
-                </dl>
-              </div>
-
-              <div className={styles.fieldSection}>
-                {SHOW_SECTION_HEADERS && (
-                  <h3 className={styles.sectionHeader}>Timeline</h3>
-                )}
-                <dl className={styles.fieldGroup}>
-                  <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
-                    <div className={styles.field}>
-                      <dt>Date Added</dt>
-                      <dd>{formatDate(series.dateAdded)}</dd>
-                    </div>
-                    <div className={styles.field}>
-                      <dt>Date Completed</dt>
-                      <dd>{formatDate(series.dateCompleted)}</dd>
-                    </div>
-                  </div>
-                </dl>
-              </div>
-            </div>
+            <SeriesDetailFields
+              series={series}
+              streamingCheckLoading={streamingCheckLoading}
+              streamingCheckError={streamingCheckError}
+              streamingCheckResult={streamingCheckResult}
+              onCheckStreamingClick={handleCheckStreamingClick}
+            />
           </div>
 
-          {confirmingDelete ? (
-            <div className={styles.actions}>
-              {deleteError && (
-                <span className={styles.deleteError} role="alert">
-                  {deleteError}
-                </span>
-              )}
-              <button
-                type="button"
-                className={styles.confirmDeleteButton}
-                data-testid="confirm-delete-btn"
-                disabled={deleting}
-                onClick={handleConfirmDelete}
-              >
-                {deleting ? 'Deleting...' : 'Confirm'}
-              </button>
-              <button
-                type="button"
-                className={styles.cancelDeleteButton}
-                data-testid="cancel-delete-btn"
-                disabled={deleting}
-                onClick={handleCancelDelete}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <div className={styles.actions}>
-              <div className={styles.actionsGroup}>
-                <div className={styles.actionsRow}>
-                  <div className={styles.actionsLeft}>
-                    <button
-                      type="button"
-                      className={styles.editButton}
-                      data-testid="edit-series-btn"
-                      onClick={handleEditClick}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.deleteButton}
-                      data-testid="delete-series-btn"
-                      onClick={handleDeleteClick}
-                    >
-                      Delete
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.refreshButton}
-                      data-testid="refresh-series-btn"
-                      disabled={refreshing}
-                      onClick={handleRefreshClick}
-                    >
-                      {refreshing ? 'Refreshing...' : 'Refresh'}
-                    </button>
-                  </div>
-                  <div className={styles.actionsRight}>
-                    {series.status === SeriesStatus.COMPLETED && (
-                      <button
-                        type="button"
-                        className={`${styles.rewatchToggle} ${
-                          series.flaggedForRewatch
-                            ? styles.rewatchToggleActive
-                            : ''
-                        }`}
-                        aria-label={
-                          series.flaggedForRewatch
-                            ? 'Flagged for rewatch'
-                            : 'Flag for rewatch'
-                        }
-                        aria-pressed={series.flaggedForRewatch}
-                        onClick={handleRewatchToggle}
-                      >
-                        {series.flaggedForRewatch
-                          ? 'Flagged for rewatch'
-                          : 'Flag for rewatch'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {(series.lastRefreshedAt !== null ||
-                  series.newContentDetectedAt !== null) && (
-                  <div className={styles.actionsInfo}>
-                    {series.lastRefreshedAt !== null && (
-                      <span className={styles.lastRefreshed}>
-                        Last refreshed{' '}
-                        {formatRelativeTime(series.lastRefreshedAt)}
-                      </span>
-                    )}
-                    {series.newContentDetectedAt !== null && (
-                      <>
-                        <span
-                          className={styles.newContentBadge}
-                          data-testid="new-content-badge"
-                        >
-                          New content
-                        </span>
-                        <button
-                          type="button"
-                          className={styles.dismissNewContentButton}
-                          data-testid="dismiss-new-content-btn"
-                          disabled={acknowledging}
-                          onClick={handleDismissNewContentClick}
-                        >
-                          {acknowledging ? 'Dismissing...' : 'Dismiss'}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <SeriesDetailActionsPanel
+            confirmingDelete={confirmingDelete}
+            deleteError={deleteError}
+            deleting={deleting}
+            onConfirmDelete={handleConfirmDelete}
+            onCancelDelete={handleCancelDelete}
+            onEditClick={handleEditClick}
+            onDeleteClick={handleDeleteClick}
+            refreshing={refreshing}
+            onRefreshClick={handleRefreshClick}
+            series={series}
+            onRewatchToggle={handleRewatchToggle}
+            acknowledging={acknowledging}
+            onDismissNewContentClick={handleDismissNewContentClick}
+          />
 
           {rewatchError && (
             <div className={styles.error} role="alert">

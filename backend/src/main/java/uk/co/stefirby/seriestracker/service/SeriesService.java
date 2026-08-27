@@ -37,10 +37,28 @@ public class SeriesService {
         this.clock = clock;
     }
 
+    /**
+     * Each independent group (validation, field copy, create-time defaults, keyword sync) is
+     * its own method (java:S3776) -- this method's own job is just to run them all in order.
+     * The one real order dependency, {@code validateCreate} (which must throw before any entity
+     * state exists) running before everything else, is preserved.
+     */
     @Transactional
     public SeriesDto create(SeriesDto dto) {
         log.info("Creating series: {}", dto.getTitle());
 
+        validateCreate(dto);
+
+        SeriesEntity entity = buildEntityFromDto(dto);
+        applyCreateFlags(entity, dto);
+        applyCreateTimestampsAndStatus(entity, dto);
+        syncKeywordsIfPresent(entity, dto);
+
+        entity = repository.save(entity);
+        return entityToDto(entity);
+    }
+
+    private void validateCreate(SeriesDto dto) {
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
             throw new IllegalArgumentException("Title is required");
         }
@@ -60,7 +78,9 @@ public class SeriesService {
                 throw new IllegalArgumentException("IMDb rating must be between 0.0 and 10.0");
             }
         }
+    }
 
+    private SeriesEntity buildEntityFromDto(SeriesDto dto) {
         SeriesEntity entity = new SeriesEntity();
         entity.setTitle(dto.getTitle());
         entity.setYear(dto.getYear());
@@ -81,7 +101,10 @@ public class SeriesService {
         entity.setImdbId(dto.getImdbId());
         entity.setOriginCountry(dto.getOriginCountry());
         entity.setOverview(dto.getOverview());
+        return entity;
+    }
 
+    private void applyCreateFlags(SeriesEntity entity, SeriesDto dto) {
         // SERIES-008-AC-03: defaults to false when the dto value is null, same as the
         // entity's own field default.
         entity.setExcludeFromRecommendations(
@@ -98,7 +121,9 @@ public class SeriesService {
         if (dto.getProductionStatus() != null && !dto.getProductionStatus().isBlank()) {
             entity.setProductionStatus(ProductionStatus.valueOf(dto.getProductionStatus()));
         }
+    }
 
+    private void applyCreateTimestampsAndStatus(SeriesEntity entity, SeriesDto dto) {
         // Set dateAdded explicitly so it's available immediately after save
         entity.setDateAdded(LocalDateTime.now(clock));
 
@@ -116,7 +141,9 @@ public class SeriesService {
         if (status == SeriesStatus.COMPLETED) {
             entity.setDateCompleted(LocalDateTime.now(clock));
         }
+    }
 
+    private void syncKeywordsIfPresent(SeriesEntity entity, SeriesDto dto) {
         // SERIES-019-AC-24: when the incoming dto carries a tmdbId (round-tripped from
         // resolveTmdbCandidate, SERIES-019-AC-22), populate this series' keyword set at
         // creation time via the same reconciliation logic refresh already uses -- non-fatal on
@@ -125,9 +152,6 @@ public class SeriesService {
         if (dto.getTmdbId() != null) {
             keywordSyncService.syncKeywords(entity, dto.getTmdbId());
         }
-
-        entity = repository.save(entity);
-        return entityToDto(entity);
     }
 
     @Transactional(readOnly = true)
