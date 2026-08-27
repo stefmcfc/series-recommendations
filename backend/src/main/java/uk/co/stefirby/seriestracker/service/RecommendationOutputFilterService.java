@@ -7,6 +7,7 @@ import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,16 +28,28 @@ public class RecommendationOutputFilterService {
     private final TmdbClient tmdbClient;
     private final TmdbGenreTable genreTable;
 
-    public RecommendationOutputFilterService(TmdbClient tmdbClient, TmdbGenreTable genreTable) {
+    /**
+     * Default {@code minVoteCount} output-filter floor for every {@code sourceMode} other than
+     * {@code "topRated"} (SERIES-029-AC-01/05), replacing the former hardcoded {@code
+     * RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT = 20}. Overridable via
+     * {@code APP_TMDB_DEFAULT_MIN_VOTE_COUNT} without a code change.
+     */
+    private final int defaultMinVoteCount;
+
+    public RecommendationOutputFilterService(TmdbClient tmdbClient, TmdbGenreTable genreTable,
+                                              @Value("${app.tmdb.default-min-vote-count:200}") int defaultMinVoteCount) {
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
+        this.defaultMinVoteCount = defaultMinVoteCount;
     }
 
     public List<DedupedCandidate> applyOutputFilters(List<DedupedCandidate> candidates, RecommendationCriteria c) {
-        // SERIES-024-AC-11/12: the post-hoc default is likewise 200 for topRated, 20 otherwise.
-        int defaultMinVoteCount = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())
-            ? RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT;
-        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
+        // SERIES-024-AC-11/SERIES-029-AC-05: the post-hoc default is 200 for topRated
+        // (RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED), and the injected
+        // defaultMinVoteCount (also 200 by default, but independently configurable) otherwise.
+        int modeDefaultMinVoteCount = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())
+            ? RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED : defaultMinVoteCount;
+        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : modeDefaultMinVoteCount;
         return candidates.stream()
             .filter(dc -> matchesMinTmdbRating(dc.candidate(), c.getMinTmdbRating()))
             .filter(dc -> matchesMinVoteCount(dc.candidate(), effectiveMinVoteCount))

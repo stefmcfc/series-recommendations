@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.19.1] - 2026-08-27
+
+### Fixed
+
+- Backend: "Genre & Keyword" mode's `discover` sourcing call (`RecommendationSourcingService.sourceByGenreOrKeyword`) now sends a `vote_count.gte` floor to TMDB, so sorting by "Vote Average" or "Newest" no longer surfaces obscure/brand-new shows that the app's own post-fetch `minVoteCount` filter then wiped out — this had been returning zero results for narrow single-genre queries. The floor's default is now a configurable `app.tmdb.default-min-vote-count` property (`APP_TMDB_DEFAULT_MIN_VOTE_COUNT`, default 200) rather than a hardcoded `20` constant, and — as a deliberate, explicit side effect — the same 200 default now also applies to the post-hoc output filter for Automatic/Specific Series/Genre modes, not just Genre & Keyword (`series_spec_029`).
+
 ## [2.19.0] - 2026-08-27
 
 ### Changed

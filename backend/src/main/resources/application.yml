@@ -59,6 +59,14 @@ app:
     # / APP_TMDB_MAX_CANDIDATES without a code change.
     max-source-series: 20
     max-candidates: 50
+    # series_spec_029_configurable_min_vote_count_and_genre_floor.md (SERIES-029-AC-01/02/04):
+    # default minimum-vote-count floor used both by RecommendationOutputFilterService's
+    # post-hoc minVoteCount filter (for every sourceMode other than "topRated", which has its
+    # own independent 200 constant) and by RecommendationSourcingService.sourceByGenreOrKeyword's
+    # sourcing-time vote_count.gte floor sent to TMDB -- replacing the previously hardcoded
+    # RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT = 20. Overridable via
+    # APP_TMDB_DEFAULT_MIN_VOTE_COUNT without a code change.
+    default-min-vote-count: 200
     # SERIES-007-AC-22: RecommendationService's per-source diversity cap -- how many
     # recommendations can come from any single source series in "Specific Series" mode,
     # replacing what was previously a hardcoded constant. Overridable via
