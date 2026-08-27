@@ -5,6 +5,8 @@ import { SeriesStatus } from '../types/series'
 import type { Series, StreamingProvider } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
+import { toggleRewatchFlag } from '../utils/rewatchToggle'
+import { submitDelete } from '../utils/deleteSeries'
 import { StreamingProviders } from './StreamingProviders'
 import { StarRating } from './StarRating'
 import styles from './SeriesDetail.module.css'
@@ -158,24 +160,21 @@ export function SeriesDetail({
   }
 
   const handleConfirmDelete = () => {
-    setDeleteError(null)
-    setDeleting(true)
-
-    seriesApi
-      .delete(id)
-      .then(() => {
+    submitDelete(id, {
+      onStart: () => {
+        setDeleteError(null)
+        setDeleting(true)
+      },
+      onSuccess: () => {
         setDeleting(false)
         setConfirmingDelete(false)
         onDeleted()
-      })
-      .catch((err: unknown) => {
+      },
+      onError: (message) => {
         setDeleting(false)
-        if (err instanceof ApiError) {
-          setDeleteError(err.message)
-        } else {
-          setDeleteError('An unexpected error occurred. Please try again.')
-        }
-      })
+        setDeleteError(message)
+      },
+    })
   }
 
   const handleRefreshClick = () => {
@@ -227,23 +226,18 @@ export function SeriesDetail({
     const previousValue = series.flaggedForRewatch
     const nextValue = !previousValue
 
-    setRewatchError(null)
-    setSeries((prev) =>
-      prev ? { ...prev, flaggedForRewatch: nextValue } : prev,
-    )
-
-    seriesApi
-      .update(id, { flaggedForRewatch: nextValue })
-      .catch((err: unknown) => {
+    toggleRewatchFlag(id, nextValue, {
+      clearError: () => setRewatchError(null),
+      applyOptimistic: () =>
+        setSeries((prev) =>
+          prev ? { ...prev, flaggedForRewatch: nextValue } : prev,
+        ),
+      revert: () =>
         setSeries((prev) =>
           prev ? { ...prev, flaggedForRewatch: previousValue } : prev,
-        )
-        if (err instanceof ApiError) {
-          setRewatchError(err.message)
-        } else {
-          setRewatchError('An unexpected error occurred. Please try again.')
-        }
-      })
+        ),
+      setError: setRewatchError,
+    })
   }
 
   const handleCheckStreamingClick = () => {
@@ -576,11 +570,17 @@ export function SeriesDetail({
                             ? styles.rewatchToggleActive
                             : ''
                         }`}
-                        aria-label="Flag for rewatch"
+                        aria-label={
+                          series.flaggedForRewatch
+                            ? 'Flagged for rewatch'
+                            : 'Flag for rewatch'
+                        }
                         aria-pressed={series.flaggedForRewatch}
                         onClick={handleRewatchToggle}
                       >
-                        Flag for rewatch
+                        {series.flaggedForRewatch
+                          ? 'Flagged for rewatch'
+                          : 'Flag for rewatch'}
                       </button>
                     )}
                   </div>

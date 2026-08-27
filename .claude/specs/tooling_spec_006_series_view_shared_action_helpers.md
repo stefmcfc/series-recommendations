@@ -1,6 +1,10 @@
 # Tooling Spec 006: Shared Rewatch-Toggle & Delete-Submission Helpers for `SeriesDetail`/`SeriesList`
 
-**Status**: Not started
+**Status**: Implemented (2026-08-27) — new `utils/rewatchToggle.ts` (`toggleRewatchFlag`) and
+`utils/deleteSeries.ts` (`submitDelete`); `SeriesDetail.tsx`/`SeriesList.tsx`'s
+`handleRewatchToggle`/`handleConfirmDelete` wired to them, closing over each component's own
+state shape. New `rewatchToggle.test.ts`/`deleteSeries.test.ts` added; `SeriesDetail.test.tsx`/
+`SeriesList.test.tsx` pass unmodified (full suite: 496 tests, 0 failures).
 **Priority**: Low — a 2026-08-26 codebase survey rated this the weakest of the three flagged
 maintenance items ("a lot of concerns in one file" rather than clear duplication); grounded
 review below confirms two genuinely-shared control-flow patterns exist, narrower in scope than
@@ -230,9 +234,9 @@ green.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-006-AC-01: `toggleRewatchFlag` helper extracted to `rewatchToggle.ts`
-- [ ] TOOLING-006-AC-02: `SeriesDetail` uses `toggleRewatchFlag`, existing tests unmodified
-- [ ] TOOLING-006-AC-03: `SeriesList` uses `toggleRewatchFlag`, existing tests unmodified
-- [ ] TOOLING-006-AC-04: `submitDelete` helper extracted to `deleteSeries.ts`
-- [ ] TOOLING-006-AC-05: `SeriesDetail` uses `submitDelete`, existing tests unmodified
-- [ ] TOOLING-006-AC-06: `SeriesList` uses `submitDelete`, existing tests unmodified
+- [x] TOOLING-006-AC-01: `toggleRewatchFlag` helper extracted to `rewatchToggle.ts`
+- [x] TOOLING-006-AC-02: `SeriesDetail` uses `toggleRewatchFlag`, existing tests unmodified
+- [x] TOOLING-006-AC-03: `SeriesList` uses `toggleRewatchFlag`, existing tests unmodified
+- [x] TOOLING-006-AC-04: `submitDelete` helper extracted to `deleteSeries.ts`
+- [x] TOOLING-006-AC-05: `SeriesDetail` uses `submitDelete`, existing tests unmodified
+- [x] TOOLING-006-AC-06: `SeriesList` uses `submitDelete`, existing tests unmodified

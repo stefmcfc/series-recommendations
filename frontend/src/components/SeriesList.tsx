@@ -10,6 +10,8 @@ import type {
 } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
+import { toggleRewatchFlag } from '../utils/rewatchToggle'
+import { submitDelete } from '../utils/deleteSeries'
 import { StarRating } from './StarRating'
 import styles from './SeriesList.module.css'
 
@@ -285,31 +287,29 @@ export function SeriesList({
 
   const handleRewatchToggle = (id: string, previousValue: boolean) => {
     const nextValue = !previousValue
-    setRewatchErrors((prev) => {
-      const next = { ...prev }
-      delete next[id]
-      return next
-    })
-    setSeries((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, flaggedForRewatch: nextValue } : s,
-      ),
-    )
 
-    seriesApi
-      .update(id, { flaggedForRewatch: nextValue })
-      .catch((err: unknown) => {
+    toggleRewatchFlag(id, nextValue, {
+      clearError: () =>
+        setRewatchErrors((prev) => {
+          const next = { ...prev }
+          delete next[id]
+          return next
+        }),
+      applyOptimistic: () =>
+        setSeries((prev) =>
+          prev.map((s) =>
+            s.id === id ? { ...s, flaggedForRewatch: nextValue } : s,
+          ),
+        ),
+      revert: () =>
         setSeries((prev) =>
           prev.map((s) =>
             s.id === id ? { ...s, flaggedForRewatch: previousValue } : s,
           ),
-        )
-        const message =
-          err instanceof ApiError
-            ? err.message
-            : 'An unexpected error occurred. Please try again.'
-        setRewatchErrors((prev) => ({ ...prev, [id]: message }))
-      })
+        ),
+      setError: (message) =>
+        setRewatchErrors((prev) => ({ ...prev, [id]: message })),
+    })
   }
 
   const handleCancelDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -323,24 +323,22 @@ export function SeriesList({
     id: string,
   ) => {
     event.stopPropagation()
-    setDeleteError(null)
-    setDeleting(true)
 
-    seriesApi
-      .delete(id)
-      .then(() => {
+    submitDelete(id, {
+      onStart: () => {
+        setDeleteError(null)
+        setDeleting(true)
+      },
+      onSuccess: () => {
         setDeleting(false)
         setConfirmingDeleteId(null)
         setSeries((prev) => prev.filter((item) => item.id !== id))
-      })
-      .catch((err: unknown) => {
+      },
+      onError: (message) => {
         setDeleting(false)
-        if (err instanceof ApiError) {
-          setDeleteError(err.message)
-        } else {
-          setDeleteError('An unexpected error occurred. Please try again.')
-        }
-      })
+        setDeleteError(message)
+      },
+    })
   }
 
   return (
@@ -594,13 +592,17 @@ export function SeriesList({
                       className={`${styles.rewatchToggle} ${
                         s.flaggedForRewatch ? styles.rewatchToggleActive : ''
                       }`}
-                      aria-label="Flag for rewatch"
+                      aria-label={
+                        s.flaggedForRewatch
+                          ? 'Flagged for rewatch'
+                          : 'Flag for rewatch'
+                      }
                       aria-pressed={s.flaggedForRewatch}
                       onClick={() =>
                         handleRewatchToggle(s.id, s.flaggedForRewatch)
                       }
                     >
-                      Rewatch
+                      {s.flaggedForRewatch ? 'Flagged' : 'Rewatch'}
                     </button>
                   )}
                   {rewatchErrors[s.id] && (
