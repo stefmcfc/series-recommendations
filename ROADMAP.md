@@ -61,12 +61,12 @@ corrected below.
 | Rotten Tomatoes Popcornmeter field + refresh null-safety fix | `series_spec_027` | `frontend_spec_037` | ✅ Done |
 | Prevent duplicate series on create | `series_spec_028` | `frontend_spec_038` | ✅ Done |
 | Sort-aware rating column display | — | `frontend_spec_039` | ✅ Done |
+| Recommendation add-form field trimming (hide fields populated by post-add refresh, lock Status) | — | `frontend_spec_034` | ✅ Done |
 
 ## Specced, coming soon
 
 | Feature | Backend Spec | Frontend Spec | Status |
 |---------|--------------|----------------|--------|
-| Recommendation add-form field trimming (hide fields populated by post-add refresh, lock Status) | — | `frontend_spec_034` | ⬜ Not started |
 | Specific Series picker (searchable/filterable, replaces checkbox-per-series list) | — | `frontend_spec_035` | ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)

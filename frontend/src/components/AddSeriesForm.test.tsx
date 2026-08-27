@@ -1172,3 +1172,96 @@ describe('FRONTEND-012-AC-04: exclude checkbox omitted from payload unless check
     )
   })
 })
+
+describe('FRONTEND-034-AC-01: source prop defaults to manual', () => {
+  it('defaults to manual (full field set) when source is omitted', () => {
+    renderForm()
+    expect(screen.getByLabelText(/total seasons/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^status/i)).not.toHaveAttribute('disabled')
+  })
+})
+
+describe('FRONTEND-034-AC-03: recommendation source hides refresh-populated fields', () => {
+  it('hides Total Seasons, Total Episodes, IMDb Rating, and Rotten Tomatoes Rating fields', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        source="recommendation"
+      />,
+    )
+    for (const label of [
+      /total seasons/i,
+      /total episodes/i,
+      /^imdb rating/i,
+      /rotten tomatoes rating \(tomatometer\)/i,
+      /rotten tomatoes rating \(popcornmeter\)/i,
+    ]) {
+      expect(screen.queryByLabelText(label)).not.toBeInTheDocument()
+    }
+  })
+})
+
+describe('FRONTEND-034-AC-04: recommendation source locks Status to read-only text', () => {
+  it('renders Status as read-only text instead of a select', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        source="recommendation"
+        initialValues={{ title: 'X', status: SeriesStatus.COMPLETED }}
+      />,
+    )
+    expect(
+      screen.queryByRole('combobox', { name: /^status/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/^completed$/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-034-AC-05: user-owned and pre-filled-but-editable fields are unaffected', () => {
+  it('leaves Personal Rating, Personal Notes, Tags, Title, Year, and Genres visible and editable', () => {
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        source="recommendation"
+      />,
+    )
+    for (const label of [
+      /personal rating/i,
+      /notes/i,
+      /^tags/i,
+      /^title/i,
+      /^year/i,
+      /^genres/i,
+    ]) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument()
+      expect(screen.getByLabelText(label)).not.toHaveAttribute('disabled')
+    }
+  })
+})
+
+describe('FRONTEND-034-AC-06: submitted payload is unaffected under source=recommendation', () => {
+  it('omits hidden fields and still includes status from initialValues', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'X' } as Series)
+    render(
+      <AddSeriesForm
+        onCancel={vi.fn()}
+        onSuccess={vi.fn()}
+        source="recommendation"
+        initialValues={{ title: 'X', status: SeriesStatus.BACKLOG }}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1))
+    const payload = mockCreate.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('totalSeasons')
+    expect(payload).not.toHaveProperty('totalEpisodes')
+    expect(payload).not.toHaveProperty('imdbRating')
+    expect(payload).not.toHaveProperty('rottenTomatoesRating')
+    expect(payload).not.toHaveProperty('rottenTomatoesPopcornmeter')
+    expect(payload.status).toBe(SeriesStatus.BACKLOG)
+  })
+})

@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "uk.co.stefirby"
-version = "2.17.6"
+version = "2.18.0"
 
 // Centralized here (kotlin:S6624) rather than inline in the dependencies block below --
 // single place to bump each, and easier for dependabot's version-bump PRs to reason about.

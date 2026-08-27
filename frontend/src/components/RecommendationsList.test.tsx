@@ -165,9 +165,10 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByLabelText(/^title/i)).toHaveValue('Ozark')
-    expect(within(dialog).getByLabelText(/^status/i)).toHaveValue(
-      SeriesStatus.COMPLETED,
-    )
+    expect(
+      within(dialog).queryByRole('combobox', { name: /^status/i }),
+    ).not.toBeInTheDocument()
+    expect(within(dialog).getByText(/^completed$/i)).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByRole('button', { name: /^save$/i }))
 
@@ -191,9 +192,32 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByLabelText(/^title/i)).toHaveValue('Ozark')
-    expect(within(dialog).getByLabelText(/^status/i)).toHaveValue(
-      SeriesStatus.BACKLOG,
-    )
+    expect(
+      within(dialog).queryByRole('combobox', { name: /^status/i }),
+    ).not.toBeInTheDocument()
+    expect(within(dialog).getByText(/^backlog$/i)).toBeInTheDocument()
+  })
+
+  it('FRONTEND-034-AC-02: opens AddSeriesForm with source=recommendation, hiding refresh-populated fields', async () => {
+    mockGetRecommendations.mockResolvedValue([makeRecommendation()])
+    render(<RecommendationsList />)
+    await screen.findByText('Ozark')
+
+    fireEvent.click(screen.getByRole('button', { name: /add to list/i }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).queryByLabelText(/total seasons/i),
+    ).not.toBeInTheDocument()
+    expect(
+      within(dialog).queryByLabelText(/total episodes/i),
+    ).not.toBeInTheDocument()
+    expect(
+      within(dialog).queryByLabelText(/^imdb rating/i),
+    ).not.toBeInTheDocument()
+    expect(
+      within(dialog).queryByLabelText(/rotten tomatoes rating/i),
+    ).not.toBeInTheDocument()
   })
 
   it('closes the form without removing the card on cancel', async () => {

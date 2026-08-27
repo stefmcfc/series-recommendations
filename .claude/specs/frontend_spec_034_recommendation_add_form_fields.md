@@ -1,6 +1,12 @@
 # Frontend Spec 034: Trim AddSeriesForm Fields for Recommendation-Triggered Add
 
-**Status**: Not started
+**Status**: Implemented (2026-08-27) — `frontend/src/components/AddSeriesForm.tsx` (added `source` prop,
+threaded through to `SeriesFormFields`), `frontend/src/components/SeriesFormFields.tsx` (added `source` prop,
+conditionally hides Total Seasons/Episodes/IMDb Rating/both Rotten Tomatoes rating fields and swaps the Status
+`<select>` for read-only text under `source="recommendation"`), `frontend/src/components/RecommendationsList.tsx`
+(passes `source="recommendation"`), plus new/updated coverage in `AddSeriesForm.test.tsx`,
+`SeriesFormFields.test.tsx`, and `RecommendationsList.test.tsx`. `EditSeriesForm.tsx` is unchanged — it relies on
+`SeriesFormFields`'s `source` default of `'manual'` and was not touched.
 **Priority**: Low
 **Depends on**: `frontend_spec_003_add_series_form.md`, `frontend_spec_010_recommendations.md`
 **Area**: Frontend (`AddSeriesForm.tsx`, `RecommendationsList.tsx`)
@@ -56,6 +62,13 @@ A live review on 2026-08-24 found this misleading specifically for the recommend
 - **The read-only `Status` display reuses this project's existing status-label formatting convention** — check
   how `SeriesList.tsx`/`SeriesDetail.tsx` already render a `SeriesStatus` value as human-readable text (e.g.
   Title Case, not the raw enum constant) and match that, rather than inventing a new formatting function.
+  **Correction (2026-08-27)**: this assumption was re-checked during implementation and found inaccurate —
+  neither `SeriesList.tsx` (`<span className={styles.status}>{s.status}</span>`) nor
+  `SeriesDetailFields.tsx` (`<dd>{series.status}</dd>`) format the enum at all; both render the raw constant
+  (e.g. literally `COMPLETED`, not `Completed`). There is no Title Case convention anywhere in this codebase for
+  `SeriesStatus`. Implemented to match the real existing precedent instead: the read-only text under
+  `source="recommendation"` renders `form.status` unformatted (`<span id="status">{form.status}</span>` in
+  `SeriesFormFields.tsx`).
 
 ## Requirement 1: `AddSeriesForm` gains a `source` prop
 
@@ -209,9 +222,10 @@ it('FRONTEND-034-AC-06: submitted payload omits hidden fields, still includes st
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-034-AC-01: `source` prop added, defaults to `'manual'`
-- [ ] FRONTEND-034-AC-02: `RecommendationsList` passes `source="recommendation"`
-- [ ] FRONTEND-034-AC-03: Total Seasons/Episodes/IMDb Rating/Rotten Tomatoes Rating hidden under `recommendation`
-- [ ] FRONTEND-034-AC-04: Status renders as read-only text under `recommendation`
-- [ ] FRONTEND-034-AC-05: Personal Rating/Notes/Tags/Title/Year/Genres unaffected
-- [ ] FRONTEND-034-AC-06: submitted payload shape unaffected (regression check)
+- [x] FRONTEND-034-AC-01: `source` prop added, defaults to `'manual'`
+- [x] FRONTEND-034-AC-02: `RecommendationsList` passes `source="recommendation"`
+- [x] FRONTEND-034-AC-03: Total Seasons/Episodes/IMDb Rating/Rotten Tomatoes Rating hidden under `recommendation`
+- [x] FRONTEND-034-AC-04: Status renders as read-only text under `recommendation` (raw value, not Title Case —
+  see Design Decisions correction note above)
+- [x] FRONTEND-034-AC-05: Personal Rating/Notes/Tags/Title/Year/Genres unaffected
+- [x] FRONTEND-034-AC-06: submitted payload shape unaffected (regression check)

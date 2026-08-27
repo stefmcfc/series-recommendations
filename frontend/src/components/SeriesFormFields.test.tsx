@@ -180,3 +180,58 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
     expect(container.querySelector('img')).not.toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-034-AC-03/04: source=recommendation trims fields and locks Status', () => {
+  it('hides Total Seasons, Total Episodes, IMDb Rating, and Rotten Tomatoes Rating fields', () => {
+    render(
+      <SeriesFormFields
+        form={makeFormValues()}
+        fieldErrors={{}}
+        updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        source="recommendation"
+      />,
+    )
+    for (const label of [
+      /total seasons/i,
+      /total episodes/i,
+      /^imdb rating/i,
+      /tomatometer/i,
+      /popcornmeter/i,
+    ]) {
+      expect(screen.queryByLabelText(label)).not.toBeInTheDocument()
+    }
+  })
+
+  it('renders Status as read-only text instead of a select', () => {
+    render(
+      <SeriesFormFields
+        form={makeFormValues({ status: SeriesStatus.COMPLETED })}
+        fieldErrors={{}}
+        updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        source="recommendation"
+      />,
+    )
+    expect(
+      screen.queryByRole('combobox', { name: /^status/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(SeriesStatus.COMPLETED)).toBeInTheDocument()
+  })
+
+  it('renders the full field set with an editable Status select when source is omitted', () => {
+    renderFields()
+    expect(screen.getByLabelText(/total seasons/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('combobox', { name: /^status/i }),
+    ).toBeInTheDocument()
+  })
+})
