@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.18.0] - 2026-08-27
+
+### Changed
+
+- Frontend: `AddSeriesForm` gains a `source?: 'manual' | 'recommendation'` prop; when opened from `RecommendationsList`'s "Mark as Watched"/"Add to List" CTAs it now hides Total Seasons, Total Episodes, IMDb Rating, and both Rotten Tomatoes rating fields (already destined to be overwritten by the post-add `seriesApi.refresh` call) and renders Status as read-only text instead of an editable dropdown (`frontend_spec_034`).
+
 ## [2.17.6] - 2026-08-27
 
 ### Changed

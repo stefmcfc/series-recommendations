@@ -24,6 +24,7 @@ interface AddSeriesFormProps {
   readonly onCancel: () => void
   readonly onSuccess: (series: Series) => void
   readonly initialValues?: Partial<CreateSeriesRequest>
+  readonly source?: 'manual' | 'recommendation'
 }
 
 interface FormState {
@@ -235,6 +236,7 @@ export function AddSeriesForm({
   onCancel,
   onSuccess,
   initialValues,
+  source = 'manual',
 }: AddSeriesFormProps) {
   const [form, setForm] = useState<FormState>(() =>
     buildInitialFormState(initialValues),
@@ -504,6 +506,7 @@ export function AddSeriesForm({
               handleExcludeFromRecommendationsChange
             }
             posterPreviewError={posterPreviewError}
+            source={source}
           />
 
           <div className={styles.actions}>

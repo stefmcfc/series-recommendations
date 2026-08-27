@@ -40,6 +40,7 @@ interface SeriesFormFieldsProps {
   ) => void
   readonly posterPreviewError: boolean
   readonly children?: ReactNode
+  readonly source?: 'manual' | 'recommendation'
 }
 
 // TOOLING-005-AC-03: the field blocks AddSeriesForm and EditSeriesForm both
@@ -58,6 +59,7 @@ export function SeriesFormFields({
   onExcludeFromRecommendationsChange,
   posterPreviewError,
   children,
+  source = 'manual',
 }: SeriesFormFieldsProps) {
   const safePosterUrl =
     form.posterUrl.trim() !== '' ? sanitizeImageUrl(form.posterUrl) : null
@@ -100,123 +102,137 @@ export function SeriesFormFields({
         />
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="totalSeasons">Total Seasons</label>
-        <input
-          id="totalSeasons"
-          type="number"
-          value={form.totalSeasons}
-          onChange={updateField('totalSeasons')}
-          aria-describedby={
-            fieldErrors.totalSeasons ? 'totalSeasons-error' : undefined
-          }
-        />
-        {fieldErrors.totalSeasons && (
-          <span id="totalSeasons-error" className={styles.fieldError}>
-            {fieldErrors.totalSeasons}
-          </span>
-        )}
-      </div>
+      {source !== 'recommendation' && (
+        <div className={styles.field}>
+          <label htmlFor="totalSeasons">Total Seasons</label>
+          <input
+            id="totalSeasons"
+            type="number"
+            value={form.totalSeasons}
+            onChange={updateField('totalSeasons')}
+            aria-describedby={
+              fieldErrors.totalSeasons ? 'totalSeasons-error' : undefined
+            }
+          />
+          {fieldErrors.totalSeasons && (
+            <span id="totalSeasons-error" className={styles.fieldError}>
+              {fieldErrors.totalSeasons}
+            </span>
+          )}
+        </div>
+      )}
 
-      <div className={styles.field}>
-        <label htmlFor="totalEpisodes">Total Episodes</label>
-        <input
-          id="totalEpisodes"
-          type="number"
-          value={form.totalEpisodes}
-          onChange={updateField('totalEpisodes')}
-          aria-describedby={
-            fieldErrors.totalEpisodes ? 'totalEpisodes-error' : undefined
-          }
-        />
-        {fieldErrors.totalEpisodes && (
-          <span id="totalEpisodes-error" className={styles.fieldError}>
-            {fieldErrors.totalEpisodes}
-          </span>
-        )}
-      </div>
+      {source !== 'recommendation' && (
+        <div className={styles.field}>
+          <label htmlFor="totalEpisodes">Total Episodes</label>
+          <input
+            id="totalEpisodes"
+            type="number"
+            value={form.totalEpisodes}
+            onChange={updateField('totalEpisodes')}
+            aria-describedby={
+              fieldErrors.totalEpisodes ? 'totalEpisodes-error' : undefined
+            }
+          />
+          {fieldErrors.totalEpisodes && (
+            <span id="totalEpisodes-error" className={styles.fieldError}>
+              {fieldErrors.totalEpisodes}
+            </span>
+          )}
+        </div>
+      )}
 
       {children}
 
       <div className={styles.field}>
         <label htmlFor="status">Status</label>
-        <select
-          id="status"
-          value={form.status}
-          onChange={updateField('status')}
-        >
-          <option value={SeriesStatus.BACKLOG}>Backlog</option>
-          <option value={SeriesStatus.WATCHING}>Watching</option>
-          <option value={SeriesStatus.COMPLETED}>Completed</option>
-          <option value={SeriesStatus.DROPPED}>Dropped</option>
-        </select>
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="imdbRating">IMDb Rating</label>
-        <input
-          id="imdbRating"
-          type="number"
-          step="0.1"
-          value={form.imdbRating}
-          onChange={updateField('imdbRating')}
-          aria-describedby={
-            fieldErrors.imdbRating ? 'imdbRating-error' : undefined
-          }
-        />
-        {fieldErrors.imdbRating && (
-          <span id="imdbRating-error" className={styles.fieldError}>
-            {fieldErrors.imdbRating}
-          </span>
-        )}
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="rottenTomatoesRating">
-          Rotten Tomatoes Rating (Tomatometer)
-        </label>
-        <input
-          id="rottenTomatoesRating"
-          type="number"
-          value={form.rottenTomatoesRating}
-          onChange={updateField('rottenTomatoesRating')}
-          aria-describedby={
-            fieldErrors.rottenTomatoesRating
-              ? 'rottenTomatoesRating-error'
-              : undefined
-          }
-        />
-        {fieldErrors.rottenTomatoesRating && (
-          <span id="rottenTomatoesRating-error" className={styles.fieldError}>
-            {fieldErrors.rottenTomatoesRating}
-          </span>
-        )}
-      </div>
-
-      <div className={styles.field}>
-        <label htmlFor="rottenTomatoesPopcornmeter">
-          Rotten Tomatoes Rating (Popcornmeter)
-        </label>
-        <input
-          id="rottenTomatoesPopcornmeter"
-          type="number"
-          value={form.rottenTomatoesPopcornmeter}
-          onChange={updateField('rottenTomatoesPopcornmeter')}
-          aria-describedby={
-            fieldErrors.rottenTomatoesPopcornmeter
-              ? 'rottenTomatoesPopcornmeter-error'
-              : undefined
-          }
-        />
-        {fieldErrors.rottenTomatoesPopcornmeter && (
-          <span
-            id="rottenTomatoesPopcornmeter-error"
-            className={styles.fieldError}
+        {source === 'recommendation' ? (
+          <span id="status">{form.status}</span>
+        ) : (
+          <select
+            id="status"
+            value={form.status}
+            onChange={updateField('status')}
           >
-            {fieldErrors.rottenTomatoesPopcornmeter}
-          </span>
+            <option value={SeriesStatus.BACKLOG}>Backlog</option>
+            <option value={SeriesStatus.WATCHING}>Watching</option>
+            <option value={SeriesStatus.COMPLETED}>Completed</option>
+            <option value={SeriesStatus.DROPPED}>Dropped</option>
+          </select>
         )}
       </div>
+
+      {source !== 'recommendation' && (
+        <div className={styles.field}>
+          <label htmlFor="imdbRating">IMDb Rating</label>
+          <input
+            id="imdbRating"
+            type="number"
+            step="0.1"
+            value={form.imdbRating}
+            onChange={updateField('imdbRating')}
+            aria-describedby={
+              fieldErrors.imdbRating ? 'imdbRating-error' : undefined
+            }
+          />
+          {fieldErrors.imdbRating && (
+            <span id="imdbRating-error" className={styles.fieldError}>
+              {fieldErrors.imdbRating}
+            </span>
+          )}
+        </div>
+      )}
+
+      {source !== 'recommendation' && (
+        <div className={styles.field}>
+          <label htmlFor="rottenTomatoesRating">
+            Rotten Tomatoes Rating (Tomatometer)
+          </label>
+          <input
+            id="rottenTomatoesRating"
+            type="number"
+            value={form.rottenTomatoesRating}
+            onChange={updateField('rottenTomatoesRating')}
+            aria-describedby={
+              fieldErrors.rottenTomatoesRating
+                ? 'rottenTomatoesRating-error'
+                : undefined
+            }
+          />
+          {fieldErrors.rottenTomatoesRating && (
+            <span id="rottenTomatoesRating-error" className={styles.fieldError}>
+              {fieldErrors.rottenTomatoesRating}
+            </span>
+          )}
+        </div>
+      )}
+
+      {source !== 'recommendation' && (
+        <div className={styles.field}>
+          <label htmlFor="rottenTomatoesPopcornmeter">
+            Rotten Tomatoes Rating (Popcornmeter)
+          </label>
+          <input
+            id="rottenTomatoesPopcornmeter"
+            type="number"
+            value={form.rottenTomatoesPopcornmeter}
+            onChange={updateField('rottenTomatoesPopcornmeter')}
+            aria-describedby={
+              fieldErrors.rottenTomatoesPopcornmeter
+                ? 'rottenTomatoesPopcornmeter-error'
+                : undefined
+            }
+          />
+          {fieldErrors.rottenTomatoesPopcornmeter && (
+            <span
+              id="rottenTomatoesPopcornmeter-error"
+              className={styles.fieldError}
+            >
+              {fieldErrors.rottenTomatoesPopcornmeter}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className={styles.field}>
         <span className={styles.fieldLabelText}>Personal Rating</span>

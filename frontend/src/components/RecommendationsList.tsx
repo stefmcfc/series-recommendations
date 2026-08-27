@@ -344,6 +344,7 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
         <AddSeriesForm
           onCancel={handleAddCancel}
           onSuccess={handleAddSuccess}
+          source="recommendation"
           initialValues={{
             title: pendingAdd.recommendation.title,
             status: pendingAdd.status,
