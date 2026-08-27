@@ -27,7 +27,7 @@ Before making changes, read what's relevant:
 - Keep controllers thin — business logic belongs in the service layer, not the controller.
 - Use `@Transactional` on service methods that mutate data.
 - Known gaps worth being aware of: no controller-level (`MockMvc`) tests exist yet for `/search` or `/export` (see `series_spec_003_search.md` / `series_spec_004_export.md`); only the Windows Gradle wrapper (`gradlew.bat`) is checked in.
-- After checking off ACs in a `series_spec_*.md`/`tooling_spec_*.md` file, update its entry in `.claude/OUTSTANDING_SPECS.md` to match (or remove the entry entirely if every AC in the spec is now checked).
+- After checking off ACs in a `series_spec_*.md` file, update its row in `ROADMAP.md` (move it into "Delivered" once every AC in the spec is checked). For a `tooling_spec_*.md` file, update its row in `ROADMAP.md`'s "Internal / maintenance specs" table instead.
 
 ## Static-analysis / Sonar cleanup patterns
 

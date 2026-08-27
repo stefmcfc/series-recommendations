@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.2] - 2026-08-27
+
+### Changed
+
+- Docs: split `README.md`'s API Overview and Features Roadmap sections into dedicated `API.md` and `ROADMAP.md` files. `ROADMAP.md` pairs each feature with its backend/frontend spec(s), and an audit against `.claude/specs/` while building it corrected three stale "Not started" statuses and added nine shipped specs that were missing from the old table entirely.
+
+### Removed
+
+- Docs: retired `.claude/OUTSTANDING_SPECS.md` — its tracking role (specs written, not yet built) now lives in `ROADMAP.md`'s "Specced, coming soon" section.
+
 ## [2.17.1] - 2026-08-26
 
 ### Fixed

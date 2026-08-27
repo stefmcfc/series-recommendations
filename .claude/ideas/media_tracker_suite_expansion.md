@@ -3,7 +3,7 @@
 **Status**: Speculative — a conversation on 2026-08-26, not a commitment, not scheduled, no
 timeline. This is **not** an EARS spec and has no acceptance criteria — see
 `.claude/steering/ears_format.md` for what a real spec looks like when/if this moves forward. Not
-tracked in `.claude/OUTSTANDING_SPECS.md` for the same reason.
+tracked in `ROADMAP.md` for the same reason.
 
 ## The question
 

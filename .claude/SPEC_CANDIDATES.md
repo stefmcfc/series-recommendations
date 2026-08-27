@@ -1,22 +1,24 @@
 # Spec Candidates
 
 **Pipeline**: `.claude/ideas/future_ideas.md` (raw, unconfirmed ideas) → **this file** (confirmed
-worth a real spec eventually, not yet written) → a real spec exists → `.claude/OUTSTANDING_SPECS.md`
-(spec written, not yet built) → implemented, entry removed → `CHANGELOG.md` (shipped).
+worth a real spec eventually, not yet written) → a real spec exists and is tracked in
+`ROADMAP.md` (delivered, or specced-and-coming-soon) → implemented → `CHANGELOG.md` (shipped
+version entry).
 
 A running backlog of ideas confirmed worth a real EARS spec eventually, but not yet written or
-scheduled. Distinct from `.claude/OUTSTANDING_SPECS.md`, which only tracks specs that already
-exist (written, with real acceptance criteria) — this file is the layer *before* that: things
-worth specifying, once prioritized.
+scheduled. Distinct from `ROADMAP.md`, which only tracks specs that already exist (written, with
+real acceptance criteria) — this file is the layer *before* that: things worth specifying, once
+prioritized.
 
 **Maintenance rule**: when a candidate here actually gets spec'd (via the `ears-spec` skill), move
-it out of this file and into `.claude/OUTSTANDING_SPECS.md` as part of that same change — don't
-leave it duplicated in both places. Before adding a new candidate or touching this file, re-check
-existing entries against the current codebase — referenced classes/components may have moved
-since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance rule for why
-this matters in practice).
+it out of this file and add a row to `ROADMAP.md`'s "Specced, coming soon" table as part of that
+same change — don't leave it duplicated in both places. Before adding a new candidate or touching
+this file, re-check existing entries against the current codebase — referenced classes/components
+may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
+rule for why this matters in practice).
 
-Last updated: 2026-08-26.
+Last updated: 2026-08-27. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+already-written specs, was retired on this date — its tracking role now lives in `ROADMAP.md`.)
 
 ---
 
