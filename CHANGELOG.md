@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.4] - 2026-08-27
+
+### Changed
+
+- Backend: extracted `TmdbClient`/`OmdbClient`'s duplicated JSON-scalar-coercion, api-key-guard, and transport-failure-wrapping logic into a new shared `client/ExternalApiSupport` helper class, with no behavior change (`tooling_spec_004`).
+
 ## [2.17.3] - 2026-08-27
 
 ### Changed

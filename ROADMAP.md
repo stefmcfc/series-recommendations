@@ -76,5 +76,5 @@ user-facing feature name.
 
 | Spec | What it does | Status |
 |------|---------------|--------|
-| `tooling_spec_004_external_api_client_shared_helpers.md` | Extract shared JSON-coercion/api-key-guard helpers out of `TmdbClient`/`OmdbClient` | ⬜ Not started |
+| `tooling_spec_004_external_api_client_shared_helpers.md` | Extract shared JSON-coercion/api-key-guard helpers out of `TmdbClient`/`OmdbClient` | ✅ Done |
 | `tooling_spec_006_series_view_shared_action_helpers.md` | Extract shared rewatch-toggle/delete-submission logic out of `SeriesDetail.tsx`/`SeriesList.tsx` | ⬜ Not started |

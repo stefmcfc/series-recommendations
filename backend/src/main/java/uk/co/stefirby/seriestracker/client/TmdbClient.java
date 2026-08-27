@@ -2,15 +2,12 @@ package uk.co.stefirby.seriestracker.client;
 
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.ProductionStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriBuilder;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +39,6 @@ import java.util.stream.Collectors;
  */
 @Component
 public class TmdbClient {
-
-    private static final Logger log = LoggerFactory.getLogger(TmdbClient.class);
 
     /**
      * TMDB's poster-image base URL, prepended to a {@code poster_path} to build a displayable
@@ -96,7 +91,7 @@ public class TmdbClient {
         if (tvResults.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(toInteger(tvResults.getFirst().get("id")));
+        return Optional.ofNullable(ExternalApiSupport.toInteger(tvResults.getFirst().get("id")));
     }
 
     /**
@@ -134,7 +129,7 @@ public class TmdbClient {
         if (results.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(toInteger(results.getFirst().get("id")));
+        return Optional.ofNullable(ExternalApiSupport.toInteger(results.getFirst().get("id")));
     }
 
     /**
@@ -253,7 +248,9 @@ public class TmdbClient {
         List<Map<String, Object>> flatrate = listOfMaps((Map<String, Object>) regionEntry, "flatrate");
         List<TmdbWatchProvider> providers = new ArrayList<>();
         for (Map<String, Object> item : flatrate) {
-            providers.add(new TmdbWatchProvider(str(item.get("provider_name")), str(item.get("logo_path"))));
+            providers.add(new TmdbWatchProvider(
+                ExternalApiSupport.str(item.get("provider_name")),
+                ExternalApiSupport.str(item.get("logo_path"))));
         }
         return providers;
     }
@@ -271,7 +268,7 @@ public class TmdbClient {
      */
     public Optional<ProductionStatus> showStatus(int tmdbId) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId));
-        return ProductionStatus.fromTmdbStatus(str(body.get("status")));
+        return ProductionStatus.fromTmdbStatus(ExternalApiSupport.str(body.get("status")));
     }
 
     /**
@@ -280,7 +277,7 @@ public class TmdbClient {
      */
     public Optional<String> externalIds(int tmdbId) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId + "/external_ids"));
-        return Optional.ofNullable(str(body.get("imdb_id")));
+        return Optional.ofNullable(ExternalApiSupport.str(body.get("imdb_id")));
     }
 
     /**
@@ -310,17 +307,17 @@ public class TmdbClient {
     public TmdbSeriesDetail details(int tmdbId) {
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("tv/" + tmdbId));
         return new TmdbSeriesDetail(
-            str(body.get("name")),
-            extractYear(str(body.get(FIELD_FIRST_AIR_DATE))),
+            ExternalApiSupport.str(body.get("name")),
+            extractYear(ExternalApiSupport.str(body.get(FIELD_FIRST_AIR_DATE))),
             genreIdsFromObjects(body.get("genres")),
-            str(body.get(FIELD_POSTER_PATH)),
-            toInteger(body.get("number_of_seasons")),
-            toInteger(body.get("number_of_episodes")),
-            toBigDecimal(body.get("vote_average")),
-            toInteger(body.get("vote_count")),
-            ProductionStatus.fromTmdbStatus(str(body.get("status"))).orElse(null),
+            ExternalApiSupport.str(body.get(FIELD_POSTER_PATH)),
+            ExternalApiSupport.toInteger(body.get("number_of_seasons")),
+            ExternalApiSupport.toInteger(body.get("number_of_episodes")),
+            ExternalApiSupport.toBigDecimal(body.get("vote_average")),
+            ExternalApiSupport.toInteger(body.get("vote_count")),
+            ProductionStatus.fromTmdbStatus(ExternalApiSupport.str(body.get("status"))).orElse(null),
             firstOriginCountry(body.get(FIELD_ORIGIN_COUNTRY)),
-            str(body.get("overview"))
+            ExternalApiSupport.str(body.get("overview"))
         );
     }
 
@@ -332,16 +329,13 @@ public class TmdbClient {
      * here.
      */
     private Map<String, Object> fetch(UnaryOperator<UriBuilder> customizer) {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.error("TMDB call requested but app.tmdb.api-key is not configured");
-            throw new ExternalServiceException("TMDB API key is not configured");
-        }
+        ExternalApiSupport.requireApiKey(apiKey, "TMDB", "app.tmdb.api-key");
         try {
             Map<String, Object> body =
                 doFetch(uriBuilder -> customizer.apply(uriBuilder).queryParam("api_key", apiKey).build());
             return body != null ? body : Map.of();
         } catch (RestClientException e) {
-            throw new ExternalServiceException("TMDB request failed", e);
+            throw ExternalApiSupport.wrapFailure(e, "TMDB request failed");
         }
     }
 
@@ -375,20 +369,20 @@ public class TmdbClient {
         List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         List<TmdbCandidate> candidates = new ArrayList<>();
         for (Map<String, Object> item : results) {
-            Integer id = toInteger(item.get("id"));
+            Integer id = ExternalApiSupport.toInteger(item.get("id"));
             if (id == null) {
                 continue;
             }
             candidates.add(new TmdbCandidate(
                 id,
-                str(item.get("name")),
-                extractYear(str(item.get(FIELD_FIRST_AIR_DATE))),
-                str(item.get("overview")),
-                str(item.get(FIELD_POSTER_PATH)),
-                toBigDecimal(item.get("vote_average")),
+                ExternalApiSupport.str(item.get("name")),
+                extractYear(ExternalApiSupport.str(item.get(FIELD_FIRST_AIR_DATE))),
+                ExternalApiSupport.str(item.get("overview")),
+                ExternalApiSupport.str(item.get(FIELD_POSTER_PATH)),
+                ExternalApiSupport.toBigDecimal(item.get("vote_average")),
                 toIntegerList(item.get("genre_ids")),
-                toInteger(item.get("vote_count")),
-                str(item.get("original_language")),
+                ExternalApiSupport.toInteger(item.get("vote_count")),
+                ExternalApiSupport.str(item.get("original_language")),
                 firstOriginCountry(item.get(FIELD_ORIGIN_COUNTRY))
             ));
         }
@@ -399,11 +393,11 @@ public class TmdbClient {
         List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         List<TmdbKeyword> keywords = new ArrayList<>();
         for (Map<String, Object> item : results) {
-            Integer id = toInteger(item.get("id"));
+            Integer id = ExternalApiSupport.toInteger(item.get("id"));
             if (id == null) {
                 continue;
             }
-            keywords.add(new TmdbKeyword(id, str(item.get("name"))));
+            keywords.add(new TmdbKeyword(id, ExternalApiSupport.str(item.get("name"))));
         }
         return keywords;
     }
@@ -412,12 +406,12 @@ public class TmdbClient {
         List<Map<String, Object>> results = listOfMaps(body, FIELD_RESULTS);
         List<TmdbSearchCandidate> candidates = new ArrayList<>();
         for (Map<String, Object> item : results) {
-            Integer id = toInteger(item.get("id"));
+            Integer id = ExternalApiSupport.toInteger(item.get("id"));
             if (id == null) {
                 continue;
             }
-            String title = str(item.get("name"));
-            String originalTitle = str(item.get("original_name"));
+            String title = ExternalApiSupport.str(item.get("name"));
+            String originalTitle = ExternalApiSupport.str(item.get("original_name"));
             if (originalTitle != null && originalTitle.equals(title)) {
                 originalTitle = null;
             }
@@ -425,8 +419,8 @@ public class TmdbClient {
                 id,
                 title,
                 originalTitle,
-                extractYear(str(item.get(FIELD_FIRST_AIR_DATE))),
-                str(item.get(FIELD_POSTER_PATH)),
+                extractYear(ExternalApiSupport.str(item.get(FIELD_FIRST_AIR_DATE))),
+                ExternalApiSupport.str(item.get(FIELD_POSTER_PATH)),
                 toIntegerList(item.get("genre_ids")),
                 firstOriginCountry(item.get(FIELD_ORIGIN_COUNTRY))
             ));
@@ -448,7 +442,7 @@ public class TmdbClient {
         List<Integer> ids = new ArrayList<>();
         for (Object o : list) {
             if (o instanceof Map<?, ?> m) {
-                Integer id = toInteger(((Map<String, Object>) m).get("id"));
+                Integer id = ExternalApiSupport.toInteger(((Map<String, Object>) m).get("id"));
                 if (id != null) {
                     ids.add(id);
                 }
@@ -468,7 +462,7 @@ public class TmdbClient {
         if (!(value instanceof List<?> list) || list.isEmpty()) {
             return null;
         }
-        return str(((List<Object>) list).getFirst());
+        return ExternalApiSupport.str(((List<Object>) list).getFirst());
     }
 
     private static List<Integer> toIntegerList(Object value) {
@@ -477,40 +471,12 @@ public class TmdbClient {
         }
         List<Integer> ids = new ArrayList<>();
         for (Object o : list) {
-            Integer i = toInteger(o);
+            Integer i = ExternalApiSupport.toInteger(o);
             if (i != null) {
                 ids.add(i);
             }
         }
         return ids;
-    }
-
-    private static Integer toInteger(Object value) {
-        if (value instanceof Number n) {
-            return n.intValue();
-        }
-        if (value instanceof String s) {
-            try {
-                return Integer.valueOf(s.trim());
-            } catch (NumberFormatException _) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private static BigDecimal toBigDecimal(Object value) {
-        if (value instanceof Number n) {
-            return BigDecimal.valueOf(n.doubleValue());
-        }
-        if (value instanceof String s) {
-            try {
-                return new BigDecimal(s.trim());
-            } catch (NumberFormatException _) {
-                return null;
-            }
-        }
-        return null;
     }
 
     private static Integer extractYear(String dateRaw) {
@@ -519,13 +485,5 @@ public class TmdbClient {
         }
         Matcher matcher = YEAR_PATTERN.matcher(dateRaw);
         return matcher.find() ? Integer.valueOf(matcher.group()) : null;
-    }
-
-    private static String str(Object value) {
-        if (value == null) {
-            return null;
-        }
-        String s = String.valueOf(value).trim();
-        return s.isEmpty() ? null : s;
     }
 }
