@@ -2,8 +2,6 @@ package uk.co.stefirby.seriestracker.client;
 
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -41,8 +39,6 @@ import java.util.function.Function;
 @Component
 public class OmdbClient {
 
-    private static final Logger log = LoggerFactory.getLogger(OmdbClient.class);
-
     private static final String NOT_AVAILABLE = "N/A";
 
     private final String apiKey;
@@ -65,10 +61,7 @@ public class OmdbClient {
      *                                  non-200, unparseable response)
      */
     public OmdbRatings ratingsForImdbId(String imdbId) {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.error("OMDb ratings lookup requested but app.omdb.api-key is not configured");
-            throw new ExternalServiceException("OMDb API key is not configured");
-        }
+        ExternalApiSupport.requireApiKey(apiKey, "OMDb", "app.omdb.api-key");
 
         Map<String, Object> body = fetch(uriBuilder -> uriBuilder
             .queryParam("apikey", apiKey)
@@ -97,7 +90,7 @@ public class OmdbClient {
                 .retrieve()
                 .body(Map.class);
         } catch (RestClientException e) {
-            throw new ExternalServiceException("OMDb request failed", e);
+            throw ExternalApiSupport.wrapFailure(e, "OMDb request failed");
         }
     }
 
@@ -106,15 +99,7 @@ public class OmdbClient {
     }
 
     private static BigDecimal parseBigDecimal(Object value) {
-        String s = str(value);
-        if (s == null) {
-            return null;
-        }
-        try {
-            return new BigDecimal(s.trim());
-        } catch (NumberFormatException _) {
-            return null;
-        }
+        return ExternalApiSupport.toBigDecimal(str(value));
     }
 
     private static Integer parseRatingFromSource(List<Map<String, Object>> ratings, String sourceName) {
@@ -139,17 +124,13 @@ public class OmdbClient {
     }
 
     /**
-     * Converts an OMDb JSON field value to a normalized string, treating the literal
-     * {@code "N/A"} (and blank values) as absent per SERIES-005-AC-10.
+     * Converts an OMDb JSON field value to a normalized string via {@link
+     * ExternalApiSupport#str(Object)}, additionally treating the literal {@code "N/A"} as
+     * absent per SERIES-005-AC-10 -- an OMDb-specific business rule layered on top of the
+     * shared blank-handling, not part of it.
      */
     private static String str(Object value) {
-        if (value == null) {
-            return null;
-        }
-        String s = String.valueOf(value).trim();
-        if (s.isEmpty() || NOT_AVAILABLE.equalsIgnoreCase(s)) {
-            return null;
-        }
-        return s;
+        String s = ExternalApiSupport.str(value);
+        return NOT_AVAILABLE.equalsIgnoreCase(s) ? null : s;
     }
 }

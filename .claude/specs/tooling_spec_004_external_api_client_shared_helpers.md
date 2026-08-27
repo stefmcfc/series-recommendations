@@ -1,6 +1,10 @@
 # Tooling Spec 004: Shared Helpers for `TmdbClient`/`OmdbClient`
 
-**Status**: Not started
+**Status**: Implemented (2026-08-27) — new `client/ExternalApiSupport.java` (static
+`toInteger`/`toBigDecimal`/`str`, `requireApiKey`, `wrapFailure`); `TmdbClient.java` and
+`OmdbClient.java` wired to it (`OmdbClient.str` kept as a thin wrapper layering its `"N/A"` rule
+on top). New `ExternalApiSupportSpec.groovy` added; `OmdbClientSpec.groovy`/`TmdbClientSpec.groovy`
+pass unmodified (full suite: 513 tests, 0 failures).
 **Priority**: Low
 **Depends on**: none — pure internal refactor of already-implemented classes
 **Area**: Backend (`client/`)
@@ -236,10 +240,10 @@ for `OmdbClientSpec.groovy`/`TmdbClientSpec.groovy`.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-004-AC-01: `ExternalApiSupport.toInteger`/`toBigDecimal`/`str` extracted from `TmdbClient`
-- [ ] TOOLING-004-AC-02: `TmdbClient` uses the shared helpers, existing tests unmodified
-- [ ] TOOLING-004-AC-03: `OmdbClient.str` delegates to the shared helper, keeps its own `"N/A"` rule
-- [ ] TOOLING-004-AC-04: `OmdbClient.parseBigDecimal` uses the shared `toBigDecimal`, existing tests unmodified
-- [ ] TOOLING-004-AC-05: shared `requireApiKey` guard, used by both clients
-- [ ] TOOLING-004-AC-06: shared `wrapFailure` transport-error wrapper, used by both clients
-- [ ] TOOLING-004-AC-07: full regression guard — both existing Spock spec files pass unmodified
+- [x] TOOLING-004-AC-01: `ExternalApiSupport.toInteger`/`toBigDecimal`/`str` extracted from `TmdbClient`
+- [x] TOOLING-004-AC-02: `TmdbClient` uses the shared helpers, existing tests unmodified
+- [x] TOOLING-004-AC-03: `OmdbClient.str` delegates to the shared helper, keeps its own `"N/A"` rule
+- [x] TOOLING-004-AC-04: `OmdbClient.parseBigDecimal` uses the shared `toBigDecimal`, existing tests unmodified
+- [x] TOOLING-004-AC-05: shared `requireApiKey` guard, used by both clients
+- [x] TOOLING-004-AC-06: shared `wrapFailure` transport-error wrapper, used by both clients
+- [x] TOOLING-004-AC-07: full regression guard — both existing Spock spec files pass unmodified
