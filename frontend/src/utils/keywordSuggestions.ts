@@ -15,3 +15,18 @@ export function resolveKeywordSuggestionsLimit(
 export const KEYWORD_SUGGESTIONS_LIMIT = resolveKeywordSuggestionsLimit(
   import.meta.env.VITE_KEYWORD_SUGGESTIONS_LIMIT as string | undefined,
 )
+
+// FRONTEND-035-AC-08: same pattern as resolveKeywordSuggestionsLimit above,
+// but for the "Specific Series" picker's default (empty-input) suggestion
+// cap -- a separate tunable since the two pickers' pools/use-cases differ,
+// defaulting to 15 rather than 10.
+export function resolveSpecificSeriesPickerLimit(
+  raw: string | undefined,
+): number {
+  const parsed = raw !== undefined ? Number(raw) : Number.NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 15
+}
+
+export const SPECIFIC_SERIES_PICKER_LIMIT = resolveSpecificSeriesPickerLimit(
+  import.meta.env.VITE_SPECIFIC_SERIES_PICKER_LIMIT as string | undefined,
+)

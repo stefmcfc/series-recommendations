@@ -62,12 +62,12 @@ corrected below.
 | Prevent duplicate series on create | `series_spec_028` | `frontend_spec_038` | ✅ Done |
 | Sort-aware rating column display | — | `frontend_spec_039` | ✅ Done |
 | Recommendation add-form field trimming (hide fields populated by post-add refresh, lock Status) | — | `frontend_spec_034` | ✅ Done |
+| Specific Series picker (searchable/filterable, genre/status filters, client-side sort, shared `KeywordPicker` component) | — | `frontend_spec_035` | ✅ Done |
 
 ## Specced, coming soon
 
 | Feature | Backend Spec | Frontend Spec | Status |
 |---------|--------------|----------------|--------|
-| Specific Series picker (searchable/filterable, replaces checkbox-per-series list) | — | `frontend_spec_035` | ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 

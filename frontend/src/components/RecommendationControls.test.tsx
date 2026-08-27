@@ -1,8 +1,15 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationControls } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
 import type { Series } from '../types/series'
+import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
@@ -61,33 +68,47 @@ describe('FRONTEND-011-AC-03: three-way sourcing mode selector', () => {
   })
 })
 
-describe('FRONTEND-011-AC-04: Specific Series multi-select via getAll()', () => {
-  it('fetches series and renders a checkbox per series, populating seriesIds when checked', async () => {
+// FRONTEND-035: the checkbox-per-series list is replaced by a KeywordPicker
+// (frontend_spec_035_specific_series_picker.md) -- these tests' query/
+// interaction shape is updated accordingly (type-to-search, click a
+// suggestion button), but the behavioral assertion each pins (picking a
+// series populates seriesIds) is unchanged.
+describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
+  it('fetches series and offers each as a pickable suggestion, populating seriesIds when picked', async () => {
     mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED' }),
-      makeSeries({ id: '2', title: 'The Wire', status: 'WATCHING' }),
+      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
+      makeSeries({
+        id: '2',
+        title: 'The Wire',
+        status: 'WATCHING',
+        year: null,
+      }),
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
 
-    const ozarkCheckbox = await screen.findByLabelText(/ozark/i)
-    expect(ozarkCheckbox).toBeInTheDocument()
-    expect(screen.getByLabelText(/the wire/i)).toBeInTheDocument()
+    const input = await screen.findByRole('textbox', { name: 'Series' })
+    expect(
+      screen.getByRole('button', { name: 'Ozark - COMPLETED' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'The Wire - WATCHING' }),
+    ).toBeInTheDocument()
 
-    fireEvent.click(ozarkCheckbox)
-
+    fireEvent.click(screen.getByRole('button', { name: 'Ozark - COMPLETED' }))
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
     )
 
-    fireEvent.click(screen.getByLabelText(/the wire/i))
+    fireEvent.change(input, { target: { value: 'wire' } })
+    fireEvent.click(screen.getByRole('button', { name: 'The Wire - WATCHING' }))
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1', '2'] }),
     )
 
-    fireEvent.click(ozarkCheckbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove 1' }))
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['2'] }),
     )
@@ -114,10 +135,14 @@ describe('FRONTEND-011-AC-04: Specific Series multi-select via getAll()', () => 
     fireEvent.click(screen.getByLabelText(/specific series/i))
 
     expect(
-      await screen.findByLabelText('Ozark (2017) — United States (COMPLETED)'),
+      await screen.findByRole('button', {
+        name: 'Ozark (2017) | United States - COMPLETED',
+      }),
     ).toBeInTheDocument()
     expect(
-      screen.getByLabelText('Ozark (2022) — United Kingdom (BACKLOG)'),
+      screen.getByRole('button', {
+        name: 'Ozark (2022) | United Kingdom - BACKLOG',
+      }),
     ).toBeInTheDocument()
   })
 
@@ -129,7 +154,7 @@ describe('FRONTEND-011-AC-04: Specific Series multi-select via getAll()', () => 
     fireEvent.click(screen.getByLabelText(/specific series/i))
 
     expect(
-      await screen.findByLabelText('Ozark (COMPLETED)'),
+      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     ).toBeInTheDocument()
   })
 })
@@ -257,13 +282,16 @@ describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
 
 describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
   it('clears seriesIds when switching from Specific Series to Genre & Keyword', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Ozark' })])
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', year: null }),
+    ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
-    const checkbox = await screen.findByLabelText(/ozark/i)
-    fireEvent.click(checkbox)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
+    )
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
     )
@@ -350,13 +378,16 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
 
 describe('FRONTEND-011-AC-09: Reset Filters', () => {
   it('clears every filter field but leaves sourcing mode/selection untouched, and re-fetches', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Ozark' })])
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', year: null }),
+    ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
-    const checkbox = await screen.findByLabelText(/ozark/i)
-    fireEvent.click(checkbox)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
+    )
 
     fireEvent.click(screen.getByRole('button', { name: /filters/i }))
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
@@ -502,13 +533,15 @@ describe('FRONTEND-027-AC-03: mode selector gains Popular Right Now / Highest Ra
 describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch', () => {
   it('selects Popular Right Now and clears a prior Specific Series selection', async () => {
     mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED' }),
+      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/specific series/i))
-    fireEvent.click(await screen.findByLabelText(/ozark/i))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
+    )
     fireEvent.click(screen.getByLabelText(/popular right now/i))
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -983,5 +1016,321 @@ describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ discoverSortBy: expect.anything() }),
     )
+  })
+})
+
+describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () => {
+  it('builds one PickerOption per candidate series, offered as suggestions', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
+      makeSeries({
+        id: '2',
+        title: 'The Wire',
+        status: 'WATCHING',
+        year: null,
+      }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    const input = await screen.findByRole('textbox', { name: 'Series' })
+    fireEvent.change(input, { target: { value: 'ozark' } })
+    expect(
+      screen.getByRole('button', { name: 'Ozark - COMPLETED' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'The Wire - WATCHING' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-035-AC-06: picking a suggestion populates seriesIds', () => {
+  it('emits seriesIds in the built query after picking a series', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
+    )
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ seriesIds: ['1'] }),
+    )
+  })
+})
+
+describe('FRONTEND-035-AC-07: selected series stay visible as chips through filter changes', () => {
+  it('keeps the Ozark chip (with its correct label) after narrowing the genre filter away from it', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Crime', 'Comedy'])
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'Ozark',
+        status: 'COMPLETED',
+        genres: 'Crime, Drama',
+        year: null,
+      }),
+      makeSeries({
+        id: '2',
+        title: 'Ted Lasso',
+        status: 'COMPLETED',
+        genres: 'Comedy',
+        year: null,
+      }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
+    )
+
+    fireEvent.click(screen.getByLabelText('Comedy'))
+
+    // Narrowed away from the genre-filtered candidate pool, but the chip
+    // must still resolve its real label, not fall back to a raw UUID. A
+    // custom matcher is needed since the chip's text is now split across
+    // <strong>/<em> elements (bold title, italic status), not one flat
+    // text node.
+    expect(
+      screen.getByText(
+        (_, element) => element?.textContent === 'Ozark - COMPLETED',
+      ),
+    ).toBeInTheDocument()
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ seriesIds: ['1'] }),
+    )
+  })
+})
+
+describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_PICKER_LIMIT', () => {
+  it('shows at most SPECIFIC_SERIES_PICKER_LIMIT suggestions with an empty input', async () => {
+    mockGetAll.mockResolvedValue(
+      Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
+        makeSeries({
+          id: String(i),
+          title: `Show ${String(i).padStart(2, '0')}`,
+        }),
+      ),
+    )
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    await screen.findByRole('textbox', { name: 'Series' })
+
+    // Matches suggestion buttons ("Show 00 - COMPLETED"...) but not the
+    // "Show all series" button, which also contains the substring "Show".
+    const suggestions = screen
+      .getAllByRole('button')
+      .filter((b) => /^Show \d/.test(b.textContent ?? ''))
+    expect(suggestions).toHaveLength(SPECIFIC_SERIES_PICKER_LIMIT)
+  })
+})
+
+describe('FRONTEND-035-AC-09: Show all series modal is uncapped and shares selection state', () => {
+  it('opens a dialog with every series, without re-fetching', async () => {
+    mockGetAll.mockResolvedValue(
+      Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
+        makeSeries({
+          id: String(i),
+          title: `Show ${String(i).padStart(2, '0')}`,
+        }),
+      ),
+    )
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    await screen.findByRole('textbox', { name: 'Series' })
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog)
+        .getAllByRole('button')
+        .filter((b) => b.textContent?.includes('Show')),
+    ).toHaveLength(SPECIFIC_SERIES_PICKER_LIMIT + 5)
+    expect(mockGetAll).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-035-AC-10: genre/status filters render but never appear in the emitted query', () => {
+  it('renders filter controls without affecting the emitted RecommendationQuery', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Drama'])
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', genres: 'Drama' }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+
+    fireEvent.click(await screen.findByLabelText('Drama'))
+    fireEvent.click(screen.getByLabelText(/completed only/i))
+
+    const lastCall = onQueryChange.mock.calls.at(-1)![0]
+    expect(lastCall).not.toHaveProperty('genres')
+    expect(lastCall).not.toHaveProperty('status')
+  })
+})
+
+describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the comma-separated field', () => {
+  it('narrows the candidate pool to series with a matching genre', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Comedy'])
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ted Lasso', genres: 'comedy, Sport' }),
+      makeSeries({ id: '2', title: 'Ozark', genres: 'Crime, Drama' }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    fireEvent.click(await screen.findByLabelText('Comedy'))
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByRole('button', { name: /Ted Lasso/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).queryByRole('button', { name: /Ozark/ }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed or Watching', () => {
+  it('"Completed or Watching" includes both statuses, excludes others', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED' }),
+      makeSeries({ id: '2', title: 'The Wire', status: 'WATCHING' }),
+      makeSeries({ id: '3', title: 'Firefly', status: 'DROPPED' }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    fireEvent.click(await screen.findByLabelText(/completed or watching/i))
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByRole('button', { name: /Ozark/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('button', { name: /The Wire/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).queryByRole('button', { name: /Firefly/ }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => {
+  it('sorts within the genre-filtered pool, excluding the filtered-out series entirely', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Drama'])
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'B Show',
+        genres: 'Drama',
+        status: 'COMPLETED',
+        year: null,
+      }),
+      makeSeries({
+        id: '2',
+        title: 'A Show',
+        genres: 'Drama',
+        status: 'COMPLETED',
+        year: null,
+      }),
+      makeSeries({
+        id: '3',
+        title: 'Z Show',
+        genres: 'Comedy',
+        status: 'COMPLETED',
+        year: null,
+      }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    fireEvent.click(await screen.findByLabelText('Drama'))
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    const suggestionTexts = within(dialog)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((t) => t?.includes('Show'))
+    expect(suggestionTexts).toEqual([
+      'A Show - COMPLETED',
+      'B Show - COMPLETED',
+    ])
+  })
+})
+
+describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, defaults to title/asc', () => {
+  it('orders the picker by title ascending by default, without re-fetching', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'B Show', year: null }),
+      makeSeries({ id: '2', title: 'A Show', year: null }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    await screen.findByRole('textbox', { name: 'Series' })
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    const order = within(dialog)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((t) => t?.includes('Show'))
+    expect(order).toEqual(['A Show - COMPLETED', 'B Show - COMPLETED'])
+    expect(mockGetAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('reverses order when the direction toggle is clicked', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'B Show', year: null }),
+      makeSeries({ id: '2', title: 'A Show', year: null }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    await screen.findByRole('textbox', { name: 'Series' })
+
+    fireEvent.click(screen.getByLabelText(/sort ascending/i))
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    const order = within(dialog)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((t) => t?.includes('Show'))
+    expect(order).toEqual(['B Show - COMPLETED', 'A Show - COMPLETED'])
+  })
+})
+
+describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction', () => {
+  it('places a null personalRating after a rated series', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: '1',
+        title: 'No Rating',
+        personalRating: null,
+        year: null,
+      }),
+      makeSeries({ id: '2', title: 'Rated', personalRating: 4, year: null }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(screen.getByLabelText(/specific series/i))
+    await screen.findByRole('textbox', { name: 'Series' })
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'personalRating' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    const order = within(dialog)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((t) => t?.includes('Rating') || t?.includes('Rated'))
+    expect(order).toEqual(['Rated - COMPLETED', 'No Rating - COMPLETED'])
   })
 })
