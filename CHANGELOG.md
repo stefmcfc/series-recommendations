@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.17.3] - 2026-08-27
+
+### Changed
+
+- Chore: dependency updates (Spring Boot 4.1.0→4.1.1, spotbugs plugin 6.5.10→6.5.11, Gradle wrapper 9.7.0→9.7.1, `@testing-library/jest-dom` 6.9.1→7.0.1, `@types/react` 19.2.17→19.2.18, `eslint` 10.6.0→10.8.1, `typescript-eslint` 8.62.0→8.67.0, `vite` 8.2.1→8.2.2), applied as one sweep from the open dependabot PRs rather than merging each individually. Backend build, full frontend test suite, lint, and production build all verified green after the bump.
+
 ## [2.17.2] - 2026-08-27
 
 ### Changed
