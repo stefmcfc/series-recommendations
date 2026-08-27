@@ -63,6 +63,7 @@ corrected below.
 | Sort-aware rating column display | — | `frontend_spec_039` | ✅ Done |
 | Recommendation add-form field trimming (hide fields populated by post-add refresh, lock Status) | — | `frontend_spec_034` | ✅ Done |
 | Specific Series picker (searchable/filterable, genre/status filters, client-side sort, shared `KeywordPicker` component) | — | `frontend_spec_035` | ✅ Done |
+| Configurable default min vote count + genre-directed sourcing vote-count floor (fixes "Genre & Keyword" Vote Average/Newest sorts returning empty/identical results) | `series_spec_029` | — | ✅ Done |
 
 ## Specced, coming soon
 

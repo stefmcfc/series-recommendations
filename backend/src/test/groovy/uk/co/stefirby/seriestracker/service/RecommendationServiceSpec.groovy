@@ -21,7 +21,7 @@ class RecommendationServiceSpec extends Specification {
 
     RecommendationService recommendationService =
         new RecommendationService(tmdbClient,
-            new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
+            new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -36,12 +36,13 @@ class RecommendationServiceSpec extends Specification {
         return entity
     }
 
-    // Default voteCount (100) is deliberately >= the SERIES-007-AC-25 default minVoteCount
-    // (20), and originalLanguage defaults to "en", so pre-existing (Spec 006) tests that
-    // don't care about the new output filters aren't inadvertently affected by them.
+    // Default voteCount (300) is deliberately >= the SERIES-029-AC-05 default minVoteCount
+    // (200, superseding the old SERIES-007-AC-25 default of 20), and originalLanguage defaults
+    // to "en", so pre-existing (Spec 006) tests that don't care about the new output filters
+    // aren't inadvertently affected by them.
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
-                                            Integer voteCount = 100, String originalLanguage = "en") {
+                                            Integer voteCount = 300, String originalLanguage = "en") {
         new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
     }
 
@@ -130,7 +131,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
+            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -149,7 +150,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable()), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
+            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -236,7 +237,7 @@ class RecommendationServiceSpec extends Specification {
         then: "no title-based or genre-based sourcing occurs"
             0 * tmdbClient.findTvIdByImdbId(_)
             0 * tmdbClient.recommendations(_)
-            0 * tmdbClient.discover(_, _, _)
+            0 * tmdbClient.discover(_, _, _, _)
 
         and: "results preserve TMDB's returned order (not re-ranked by rating) and have a null sourceTitle"
             results*.title() == ["Second Place", "First Place"]
@@ -248,14 +249,14 @@ class RecommendationServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "trending")
             tmdbClient.trending("week") >> [
                 candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5),
-                candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 25)
+                candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 250)
             ]
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
-        when: "recommend(20, criteria) is called (default minVoteCount 20)"
+        when: "recommend(20, criteria) is called (default minVoteCount 200)"
             def results = recommendationService.recommend(20, criteria)
 
         then: "only the high-vote-count candidate survives the existing output filter"
@@ -400,7 +401,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-025-AC-07: genre-directed candidates keep TMDB's own returned order"() {
         given: "discover returns candidates in a specific, non-tmdbRating-sorted order"
             def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover([18], [], "popularity.desc") >> [
+            tmdbClient.discover([18], [], "popularity.desc", 200) >> [
                 candidate(10, "Low Rated", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
             ]
@@ -440,7 +441,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-025-AC-08: legacy sortBy has no effect under genre-directed sourcing"() {
         given: "criteria with genres set and sortBy=recommendationCount"
             def criteria = new RecommendationCriteria(genres: ["Drama"], sortBy: "recommendationCount")
-            tmdbClient.discover([18], [], "popularity.desc") >> [
+            tmdbClient.discover([18], [], "popularity.desc", 200) >> [
                 candidate(10, "A", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "B", 2020, new BigDecimal("9.0"), [18], 300)
             ]

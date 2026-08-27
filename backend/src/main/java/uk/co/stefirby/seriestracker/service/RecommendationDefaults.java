@@ -14,19 +14,14 @@ final class RecommendationDefaults {
     static final String SOURCE_MODE_TOP_RATED = "topRated";
 
     /**
-     * Default for the {@code minVoteCount} output filter when unset -- the one filter that
-     * isn't a no-op by default (SERIES-007-AC-25). A high {@code voteAverage} from a handful
-     * of votes is closer to noise than signal.
-     */
-    static final int DEFAULT_MIN_VOTE_COUNT = 20;
-
-    /**
-     * Mode-aware override of {@link #DEFAULT_MIN_VOTE_COUNT} applied only when {@code
-     * sourceMode == "topRated"} (SERIES-024-AC-09), at both the sourcing-time call site and
-     * the post-hoc output-filter call site (SERIES-024-AC-10/11). Every other mode keeps
-     * {@link #DEFAULT_MIN_VOTE_COUNT} (SERIES-024-AC-12) -- a global bump would over-filter
-     * Automatic/Specific/Genre recommendations, which don't need as high a confidence bar as
-     * "show me TMDB's objectively highest-rated shows" does.
+     * Mode-aware override applied only when {@code sourceMode == "topRated"}
+     * (SERIES-024-AC-09), at both the sourcing-time call site and the post-hoc output-filter
+     * call site (SERIES-024-AC-10/11). Every other mode now defaults to the same value via a
+     * constructor-injected {@code @Value("${app.tmdb.default-min-vote-count:200}")} on
+     * {@code RecommendationOutputFilterService}/{@code RecommendationSourcingService}
+     * (SERIES-029-AC-01/02/05, superseding this class's former {@code DEFAULT_MIN_VOTE_COUNT
+     * = 20} constant, removed by that same spec) rather than a second hardcoded constant here
+     * -- the two knobs happen to share a value today but remain independently configurable.
      */
     static final int DEFAULT_MIN_VOTE_COUNT_TOP_RATED = 200;
 

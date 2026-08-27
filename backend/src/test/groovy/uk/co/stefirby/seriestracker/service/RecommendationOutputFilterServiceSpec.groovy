@@ -11,11 +11,14 @@ class RecommendationOutputFilterServiceSpec extends Specification {
 
     TmdbClient tmdbClient = Mock()
 
-    RecommendationOutputFilterService outputFilterService = new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable())
+    RecommendationOutputFilterService outputFilterService = new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200)
 
+    // Default voteCount (300) is deliberately >= the SERIES-029-AC-05 default minVoteCount
+    // (200, superseding the old SERIES-007-AC-25 default of 20), so tests exercising other
+    // output filters aren't inadvertently affected by the minVoteCount filter.
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
-                                            Integer voteCount = 100, String originalLanguage = "en") {
+                                            Integer voteCount = 300, String originalLanguage = "en") {
         new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
     }
 
@@ -36,20 +39,32 @@ class RecommendationOutputFilterServiceSpec extends Specification {
             result[0].candidate().title() == "High"
     }
 
-    def "SERIES-007-AC-25: minVoteCount defaults to 20 when not supplied"() {
-        given: "candidate with voteCount 5, candidate with voteCount 25"
-            def candidates = [dc(candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5)), dc(candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 25))]
+    def "SERIES-029-AC-05: minVoteCount defaults to 200 (superseding SERIES-007-AC-25's old default of 20) when not supplied"() {
+        given: "candidate with voteCount 150 (below the new 200 default), candidate with voteCount 250 (above it)"
+            def candidates = [dc(candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 150)), dc(candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 250))]
 
         when: "applyOutputFilters is called with no minVoteCount param"
             def result = outputFilterService.applyOutputFilters(candidates, new RecommendationCriteria())
 
-        then: "only the voteCount-25 candidate is present"
+        then: "only the voteCount-250 candidate is present"
             result.size() == 1
             result[0].candidate().title() == "High Votes"
     }
 
+    def "SERIES-029-AC-05: a candidate with voteCount 50 passes the old default (20) but not the new one (200)"() {
+        given: "a fresh output filter service configured with the spec's own explicit 200 default"
+            def freshOutputFilterService = new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200)
+            def candidateWithFiftyVotes = dc(candidate(1, "Show", 2020, new BigDecimal("8.0"), [18], 50))
+
+        when: "applyOutputFilters runs with no sourceMode/minVoteCount supplied"
+            def results = freshOutputFilterService.applyOutputFilters([candidateWithFiftyVotes], new RecommendationCriteria())
+
+        then: "the candidate is filtered out under the new 200 default"
+            results.isEmpty()
+    }
+
     def "SERIES-007-AC-25: minVoteCount=0 explicitly disables the filter"() {
-        given: "a candidate with voteCount 5, below the default of 20"
+        given: "a candidate with voteCount 5, below the default of 200"
             def candidates = [dc(candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5))]
             def criteria = new RecommendationCriteria(minVoteCount: 0)
 
@@ -102,8 +117,8 @@ class RecommendationOutputFilterServiceSpec extends Specification {
     def "SERIES-007-AC-28: language excludes candidates whose originalLanguage doesn't case-insensitively match"() {
         given: "candidates with originalLanguage en and fr"
             def candidates = [
-                dc(candidate(10, "English Show", 2020, new BigDecimal("8.0"), [18], 100, "en")),
-                dc(candidate(20, "French Show", 2020, new BigDecimal("8.0"), [18], 100, "fr")),
+                dc(candidate(10, "English Show", 2020, new BigDecimal("8.0"), [18], 300, "en")),
+                dc(candidate(20, "French Show", 2020, new BigDecimal("8.0"), [18], 300, "fr")),
             ]
             def criteria = new RecommendationCriteria(language: "EN")
 

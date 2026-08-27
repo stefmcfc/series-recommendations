@@ -212,8 +212,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_genres", "18,80"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([18, 80], [], 'popularity.desc') is called"
-            def result = client().discover([18, 80], [], "popularity.desc")
+        when: "TmdbClient.discover([18, 80], [], 'popularity.desc', 0) is called"
+            def result = client().discover([18, 80], [], "popularity.desc", 0)
 
         then: "with_genres is sent and with_keywords is omitted; the result is mapped to a TmdbCandidate"
             result.size() == 1
@@ -229,8 +229,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_keywords", "9720"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([18], [9720], 'popularity.desc') is called"
-            def result = client().discover([18], [9720], "popularity.desc")
+        when: "TmdbClient.discover([18], [9720], 'popularity.desc', 0) is called"
+            def result = client().discover([18], [9720], "popularity.desc", 0)
 
         then: "the expected request was made and the result is mapped"
             result.size() == 1
@@ -245,12 +245,43 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_keywords", "9720"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([], [9720], 'popularity.desc') is called"
-            def result = client().discover([], [9720], "popularity.desc")
+        when: "TmdbClient.discover([], [9720], 'popularity.desc', 0) is called"
+            def result = client().discover([], [9720], "popularity.desc", 0)
 
         then: "the result is mapped"
             result.size() == 1
             result[0].tmdbId() == 101
+    }
+
+    def "SERIES-029-AC-06: discover sends vote_count.gte only when minVoteCount is positive"() {
+        given: "TMDB /discover/tv returns one result"
+            def body = '{"results":[{"id":18,"name":"Crime Show"}]}'
+            mockServer.expect(requestTo(Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("vote_count.gte", "200"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "discover is called with minVoteCount=200"
+            def result = client().discover([18], [], "vote_average.desc", 200)
+
+        then: "the request included vote_count.gte=200, and the result is mapped"
+            result.size() == 1
+    }
+
+    def "SERIES-029-AC-06: discover omits vote_count.gte entirely when minVoteCount is 0"() {
+        given: "TMDB /discover/tv returns one result, and the mocked request asserts vote_count.gte is absent"
+            def body = '{"results":[{"id":28,"name":"Action Show"}]}'
+            mockServer.expect(requestTo(Matchers.allOf(
+                Matchers.containsString("discover/tv"),
+                Matchers.not(Matchers.containsString("vote_count.gte")))))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "discover is called with minVoteCount=0"
+            def result = client().discover([28], [], "popularity.desc", 0)
+
+        then: "no vote_count.gte param was sent, and the result is mapped"
+            result.size() == 1
     }
 
     def "SERIES-007-AC-05: resolves a keyword name to a TMDB keyword id"() {
@@ -811,7 +842,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "discover is called with a sortBy value"
-            def result = client().discover([28], [], "popularity.desc")
+            def result = client().discover([28], [], "popularity.desc", 0)
 
         then: "the request includes sort_by=popularity.desc, and the result is mapped"
             result.size() == 1

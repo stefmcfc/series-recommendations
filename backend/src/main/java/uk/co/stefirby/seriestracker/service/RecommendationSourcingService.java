@@ -44,14 +44,24 @@ public class RecommendationSourcingService {
      */
     private final int maxSourceSeries;
 
+    /**
+     * Default {@code minVoteCount} sourcing-time floor for {@link #sourceByGenreOrKeyword}
+     * (SERIES-029-AC-02/07), replacing the former hardcoded {@code
+     * RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT = 20}. Overridable via
+     * {@code APP_TMDB_DEFAULT_MIN_VOTE_COUNT} without a code change.
+     */
+    private final int defaultMinVoteCount;
+
     public RecommendationSourcingService(SeriesRepository seriesRepository,
                                           TmdbClient tmdbClient,
                                           TmdbGenreTable genreTable,
-                                          @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries) {
+                                          @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
+                                          @Value("${app.tmdb.default-min-vote-count:200}") int defaultMinVoteCount) {
         this.seriesRepository = seriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.maxSourceSeries = maxSourceSeries;
+        this.defaultMinVoteCount = defaultMinVoteCount;
     }
 
     // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
@@ -83,7 +93,11 @@ public class RecommendationSourcingService {
         List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
         // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
         String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_GENRE_SORT_BY);
-        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy).stream()
+        // SERIES-029-AC-07/09: resolve a sourcing-time minVoteCount floor (mirroring
+        // sourceTopRated's own effective-minVoteCount resolution) so TMDB itself only returns
+        // candidates worth considering, instead of relying solely on the post-hoc output filter.
+        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
+        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, effectiveMinVoteCount).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .toList();
     }
@@ -240,8 +254,11 @@ public class RecommendationSourcingService {
         // Not a directed-sourcing call (RecommendationCriteria.discoverSortBy doesn't apply
         // here -- this candidate pool still flows through Requirement 7's ranking/diversity
         // cap normally, unlike sourceByGenreOrKeyword's bypassed path), so TMDB's own default
-        // is used directly rather than resolving discoverSortBy.
-        return tmdbClient.discover(genreIds, List.of(), RecommendationDefaults.DEFAULT_GENRE_SORT_BY).stream()
+        // is used directly rather than resolving discoverSortBy. SERIES-029-AC-08: minVoteCount
+        // is passed as 0 (no floor) deliberately -- this supplementary pool doesn't have the
+        // obscure/brand-new-show problem sourceByGenreOrKeyword's user-selectable sort does, so
+        // its request stays byte-identical to before spec 029.
+        return tmdbClient.discover(genreIds, List.of(), RecommendationDefaults.DEFAULT_GENRE_SORT_BY, 0).stream()
             .map(c -> new RawCandidate(c, null))
             .toList();
     }
