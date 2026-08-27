@@ -44,7 +44,7 @@ Expected response:
 
 ### 3. API docs
 
-There is no Swagger/OpenAPI UI wired up yet -- `springdoc-openapi` is not currently a dependency in `build.gradle.kts`. Use the [API Overview table in README.md](./README.md#api-overview) as the source of truth, or add `springdoc-openapi-starter-webmvc-ui` if you want interactive docs.
+There is no Swagger/OpenAPI UI wired up yet -- `springdoc-openapi` is not currently a dependency in `build.gradle.kts`. Use [API.md](./API.md) as the source of truth, or add `springdoc-openapi-starter-webmvc-ui` if you want interactive docs.
 
 ---
 

@@ -1,0 +1,80 @@
+# Roadmap
+
+Every feature this app has shipped or has a written spec for, one row per feature — pairing its
+backend and frontend specs where a feature spans both. Complements `CHANGELOG.md`: this file
+tracks feature/spec status, `CHANGELOG.md` tracks version-dated technical changes.
+
+**Maintenance rule**: update this file in the same change that writes a new spec or ships one that
+was already written — a new spec adds a row here under "Specced, coming soon"; completing a spec
+(every AC checked) moves its row into "Delivered". This absorbs `.claude/OUTSTANDING_SPECS.md`'s
+old tracking role, which is now retired (its content — `frontend_spec_034`/`035`,
+`tooling_spec_004`/`006` — lives on in the tables below).
+
+Last full audit against `.claude/specs/`: 2026-08-27. That audit found three stale statuses
+(Frontend 013, 022, 026 were marked "Not started" despite every acceptance criterion being
+checked off in their spec files) and nine shipped specs missing from this list entirely
+(`series_spec_022/024/025`, `frontend_spec_027/029/030/031/032/033` — all recommendation-discovery
+work from 2026-08-24 that was implemented but never added to README's old roadmap table). Both are
+corrected below.
+
+---
+
+## Delivered
+
+| Feature | Backend Spec | Frontend Spec | Status |
+|---------|--------------|----------------|--------|
+| Series entity and schema | `series_spec_001` | — | ✅ Done |
+| CRUD REST endpoints | `series_spec_002` | — | ✅ Done |
+| Types & API service layer | — | `frontend_spec_001` | ✅ Done |
+| `SeriesList` component | — | `frontend_spec_002` | ✅ Done |
+| `AddSeriesForm` (add-series modal) | — | `frontend_spec_003` | ✅ Done |
+| Edit/delete series (`EditSeriesForm`, inline delete confirmation) | — | `frontend_spec_004` | ✅ Done |
+| `SeriesDetail` (full-record view, navigation, edit/delete from detail) | — | `frontend_spec_005` | ✅ Done |
+| Search and filter | `series_spec_003` | `frontend_spec_006` | ✅ Done |
+| Export (JSON/CSV) | `series_spec_004` | `frontend_spec_007` | ✅ Done |
+| Accessible row interactions (`SeriesList` nested-interactive fix) | — | `frontend_spec_008` | ✅ Done |
+| OMDb lookup & poster field / autofill UI | `series_spec_005` | `frontend_spec_009` | ✅ Done — superseded, see "TMDB-primary lookup" below |
+| Series recommendations (TMDB-sourced, ignore list) | `series_spec_006` | `frontend_spec_010` | ✅ Done |
+| Directed recommendation sourcing, rating-weighted ranking, diversity cap, output filters | `series_spec_007` | `frontend_spec_011` (`RecommendationControls`) | ✅ Done |
+| Genre vocabulary endpoint & checkbox picker | `series_spec_010` | `frontend_spec_014` | ✅ Done |
+| OMDb search candidates & disambiguated lookup / picker UI | `series_spec_011` | `frontend_spec_015` | ✅ Done — superseded, see "TMDB-primary lookup" below |
+| TMDB search fallback & resolve / fallback UI | `series_spec_012` | `frontend_spec_016` | ✅ Done — superseded, see "TMDB-primary lookup" below |
+| `alternateTitle` field / UI | `series_spec_013` | `frontend_spec_017` | ✅ Done — removed, see "TMDB-primary lookup" below |
+| `tags` field / UI | `series_spec_014` | `frontend_spec_018` | ✅ Done |
+| Multi-source recommendation attribution / display | `series_spec_015` | `frontend_spec_019` | ✅ Done |
+| Recommendation TMDB rating & vote count / display | `series_spec_016` | `frontend_spec_020` | ✅ Done |
+| TMDB-primary title fix (kept searched title as primary) | — | `frontend_spec_021` | ✅ Done — folded into "TMDB-primary lookup" below |
+| Series lifecycle data & controls (`excludeFromRecommendations`, `productionStatus`, `flaggedForRewatch`) | `series_spec_008` | `frontend_spec_012` | ✅ Done — each spec's own Refresh requirement superseded, see "Series refresh" below |
+| Sort by rating fields; star ratings & sort UI | `series_spec_009` | `frontend_spec_013` | ✅ Done *(corrected — README previously showed "Not started"; all 16 frontend ACs are checked)* |
+| TMDB-primary lookup & rating sourcing (sole lookup path, drops OMDb search/`alternateTitle`/`metacriticRating`, adds `tmdbRating`/`tmdbVoteCount`) | `series_spec_017` | `frontend_spec_022` | ✅ Done *(corrected — README previously showed "Not started"; all 14 frontend ACs are checked)* |
+| Series refresh — single + bulk async job, new-content detection/acknowledgment | `series_spec_018` | `frontend_spec_023` | ✅ Done |
+| Keyword tracking (normalized keywords, stats endpoint, filter/UI) | `series_spec_019` | `frontend_spec_024` | ✅ Done |
+| Searchable keyword picker (shared `KeywordPicker` component) | — | `frontend_spec_029` | ✅ Done |
+| Watch providers (streaming availability — recommendation cards + on-demand per series) | `series_spec_020`, `series_spec_026` | `frontend_spec_025`, `frontend_spec_036` | ✅ Done |
+| Origin country & TMDB metadata display | `series_spec_021` | `frontend_spec_026` | ✅ Done *(corrected — README previously showed "Not started"; all 13 frontend ACs are checked)* |
+| Trending & top-rated recommendation sourcing + mode controls | `series_spec_022` | `frontend_spec_027` | ✅ Done *(added — missing from README's old table)* |
+| Recommendation metadata & persisted overview | `series_spec_023` | `frontend_spec_028` | ✅ Done |
+| Discover filters (exclude keywords) & mode-aware vote-count threshold | `series_spec_024` | `frontend_spec_030` | ✅ Done *(added — missing from README's old table)* |
+| Genre & Keyword mode Sort By relabel fix | — | `frontend_spec_031` | ✅ Done *(added — missing from README's old table)* |
+| Hybrid keyword suggestions (type-ahead + free text + most-common defaults) | — | `frontend_spec_032` | ✅ Done *(added — missing from README's old table)* |
+| TMDB-native sort for Highest Rated / Genre & Keyword modes | `series_spec_025` | `frontend_spec_033` | ✅ Done *(added — missing from README's old table)* |
+| Rotten Tomatoes Popcornmeter field + refresh null-safety fix | `series_spec_027` | `frontend_spec_037` | ✅ Done |
+| Prevent duplicate series on create | `series_spec_028` | `frontend_spec_038` | ✅ Done |
+| Sort-aware rating column display | — | `frontend_spec_039` | ✅ Done |
+
+## Specced, coming soon
+
+| Feature | Backend Spec | Frontend Spec | Status |
+|---------|--------------|----------------|--------|
+| Recommendation add-form field trimming (hide fields populated by post-add refresh, lock Status) | — | `frontend_spec_034` | ⬜ Not started |
+| Specific Series picker (searchable/filterable, replaces checkbox-per-series list) | — | `frontend_spec_035` | ⬜ Not started |
+
+## Internal / maintenance specs (not user-facing features)
+
+Pure internal refactors — tracked here rather than in the tables above since they have no
+user-facing feature name.
+
+| Spec | What it does | Status |
+|------|---------------|--------|
+| `tooling_spec_004_external_api_client_shared_helpers.md` | Extract shared JSON-coercion/api-key-guard helpers out of `TmdbClient`/`OmdbClient` | ⬜ Not started |
+| `tooling_spec_006_series_view_shared_action_helpers.md` | Extract shared rewatch-toggle/delete-submission logic out of `SeriesDetail.tsx`/`SeriesList.tsx` | ⬜ Not started |

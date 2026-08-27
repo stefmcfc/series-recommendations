@@ -12,6 +12,8 @@ series-recommendation/
 ├── frontend/                   # React + Vite application
 ├── CLAUDE.md                   # Root steering entrypoint
 ├── README.md
+├── API.md                      # API endpoint reference
+├── ROADMAP.md                  # Feature delivery status (backend + frontend spec pairs)
 └── RUNBOOK.md
 ```
 

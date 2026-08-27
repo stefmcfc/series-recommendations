@@ -6,9 +6,10 @@ forgotten — collected here so they're discoverable in one place instead of sca
 individual spec files.
 
 **Pipeline**: `future_ideas.md` (raw, unconfirmed) → `.claude/SPEC_CANDIDATES.md` (confirmed worth
-building, not yet spec'd) → a real spec exists → `.claude/OUTSTANDING_SPECS.md` (spec written, not
-yet built) → implemented, entry removed → `CHANGELOG.md` (shipped). An idea moves out of this file
-into `SPEC_CANDIDATES.md` once it's confirmed worth specifying — don't leave it duplicated in both.
+building, not yet spec'd) → a real spec exists, tracked in `ROADMAP.md`'s "Specced, coming soon"
+table → implemented, row moves to "Delivered" → `CHANGELOG.md` (shipped version entry). An idea
+moves out of this file into `SPEC_CANDIDATES.md` once it's confirmed worth specifying — don't leave
+it duplicated in both.
 
 **Maintenance rule**: every item here carries a `**Status**` line. Before adding a new item or
 touching this file, re-check existing items against the current codebase — code this file
@@ -20,8 +21,8 @@ being updated, and two others whose referenced classes had been renamed/split by
   truth.
 - **Specced, not yet built** — a real spec already exists for this idea. Reference the spec name
   only; no further commentary belongs here, since the detail should already live in that spec.
-  (Move the entry to `.claude/OUTSTANDING_SPECS.md` instead, at that point — this case is
-  documented for completeness but shouldn't actually occur in this file.)
+  (Move the entry to `ROADMAP.md`'s "Specced, coming soon" table instead, at that point — this
+  case is documented for completeness but shouldn't actually occur in this file.)
 - **Not specced** — retain full detail: what's actually required, why, and any relevant
   constraints or prior discussion. This is the only case where this file carries real content.
 

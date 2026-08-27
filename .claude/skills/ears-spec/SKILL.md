@@ -26,7 +26,7 @@ This project's specs (`.claude/specs/`) all follow EARS (Easy Approach to Requir
 
 7. **Save** to `.claude/specs/{name}.md` and tell the user what to hand off next — usually the `backend-dev` or `frontend-dev` agent to implement it via red/green TDD.
 
-8. **Add an entry to `.claude/OUTSTANDING_SPECS.md`** for the new spec (every AC starts unchecked, so it's outstanding by definition) — its status, unchecked AC count/IDs, dependencies, and where it fits in the suggested build order relative to what's already listed there. Note explicitly whether it's blocked by another spec already in that file.
+8. **Add a row to `ROADMAP.md`'s "Specced, coming soon" table** for the new spec (every AC starts unchecked, so it's not yet built by definition) — feature name, backend/frontend spec link(s) as they exist so far, and status `⬜ Not started`.
 
 ## What NOT to do
 
