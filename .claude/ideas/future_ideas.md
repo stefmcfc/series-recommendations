@@ -75,17 +75,6 @@ anything.
 **Status**: Not specced. Worth revisiting once there's real usage data to tune the weighting
 against, not before.
 
-### Weight recommendation scoring and/or output filters by keyword popularity/average personal rating
-`series_spec_019_keyword_tracking.md`'s aggregate stats endpoint (how many tracked series carry a
-keyword, and their average `personalRating`) already exists and is delivered — but nothing feeds
-that data into `RecommendationRankingService`'s scoring or `RecommendationOutputFilterService`'s
-filters yet. E.g. a keyword with a consistently high average personal rating across tracked
-series could boost candidates carrying it.
-
-**Status**: Not specced. Needs its own design for how much weight and how it interacts with the
-existing TMDB-rating/personal-rating blend (see above) — revisit once there's real usage data
-from the stats view itself.
-
 ### Recommendation cards have no fuller detail/expand view beyond keywords
 Confirmed still accurate (2026-08-26 re-check of `frontend/src/types/series.ts`'s `Recommendation`
 interface): it carries `tmdbRating` but not `imdbRating` (a candidate has no confirmed IMDb match
