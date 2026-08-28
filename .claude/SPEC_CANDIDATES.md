@@ -17,8 +17,8 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-08-27. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
-already-written specs, was retired on this date — its tracking role now lives in `ROADMAP.md`.)
+Last updated: 2026-08-28. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 ---
 
@@ -110,6 +110,74 @@ not a design doc):
 
 A plain-language walkthrough of the current scoring code (no design proposal yet) lives in
 `.claude/analysis/scoring_weight_recommendations.md`, written 2026-08-27 ahead of picking this up.
+
+### Customizable recommendation "algorithm" — source ratings, adjustable weights, source selection/ordering/filters, saved profiles
+From a 2026-08-28 discussion, after the Genre & Keyword sourcing/filtering walkthrough
+(`.claude/analysis/scoring_weight_recommendations.md`) prompted a look at what else in the
+recommendation pipeline could be made user-tunable. **Deliberately queued behind other,
+already-planned recommendation-area work** — not next up, just confirmed worth a spec eventually.
+A broad, multi-part candidate touching `RecommendationRankingService`,
+`RecommendationSourcingService`, `SourceOrderComparator`, and (new) some form of persisted user
+preference — will very likely need to be split into several specs once actually scoped, not
+implemented as one.
+
+**Confirmed current behavior** (from reading the code — see
+`.claude/analysis/scoring_weight_recommendations.md` Sections 1-2 for the full walkthrough):
+- `RecommendationRankingService.score` blends exactly two terms, hardcoded 50/50: the candidate's
+  own `tmdbRating`, and the *single best* contributing source series' `personalRating` (rescaled
+  ×2). The source's own `imdbRating`/`tmdbRating` never enter the formula at all.
+- Only the highest-personal-rated source counts toward the score when a candidate has multiple
+  sources; the others currently only affect the separate "Most Recommended" sort (by
+  contributing-source count), never the score itself.
+- `SourceOrderComparator` (personal rating desc, then date completed desc) is hardcoded and does
+  double duty: it decides both which of your shows get queried at all (before the
+  `maxSourceSeries` cap) and, for multi-source candidates, whose rating wins for scoring.
+- The only existing source-pool filter is `minSourceRating`; there's no genre/year/status filter
+  on the source pool itself today, only on the resulting candidates (the output filters).
+- Each source show's TMDB call (`/recommendations`, falling back to `/similar`) returns TMDB's
+  first page only — up to TMDB's own page size (~20) per source, uncapped by this app, no
+  pagination ever requested. **This is a separate number from `maxSourceSeries`** (default 20, how
+  many of *your* shows get queried) — coincidentally the same value today, but not to be conflated
+  when this gets designed; raising one doesn't affect the other.
+
+**Ideas to design against** (not resolved here — open questions for the actual spec):
+1. Add the source show's own `imdbRating`/`tmdbRating` as additional scoring terms, not just its
+   `personalRating`.
+2. Make blend weights user-adjustable rather than hardcoded (becomes a 3+-term weighted blend once
+   #1 lands).
+3. Confidence-weight a source's own rating by its vote count (Bayesian/IMDb-style), so a source
+   with a handful of votes doesn't count as equally "objectively good" as one with thousands.
+4. Use *all* contributing sources in the score (e.g. a weighted average), not just the single best
+   one — an alternative mode to today's best-source-only behavior.
+5. Normalize personal ratings against the user's own rating distribution (z-score) rather than the
+   raw 1–5 value, so a "generous rater" and a "stingy rater" aren't scored identically for the same
+   raw star count.
+6. Genre-affinity as a first-class scoring input (aggregate "how much do I like this genre
+   overall," not just today's genre-based top-up *fallback* mechanism), separate from any single
+   source show.
+7. Let the user include/exclude specific sources more granularly than today's persistent
+   per-series `excludeFromRecommendations` flag — e.g. ad-hoc per-request selection.
+8. Configurable source-query order (today hardcoded via `SourceOrderComparator`) — and whether
+   reordering should also decouple "query order" from "which source wins the score tiebreak,"
+   since one comparator currently does both jobs.
+9. Additional filters on the *source* pool itself (genre, year, status), distinct from the
+   existing output filters applied to candidates.
+10. Restrict/expand how many raw candidates a single source can contribute — either an explicit
+    app-side cap, or requesting additional TMDB pages (pagination) for heavily-weighted sources,
+    rather than being silently bound by TMDB's own first-page size.
+11. **Saved filter/algorithm profiles.** Confirmed during this discussion: the user wants some way
+    to save a chosen combination of weights/filters/source settings rather than re-entering it
+    every session. Once there are this many tunable knobs, that stops being optional. This app has
+    no user-preference persistence precedent today at all — no settings entity, no "save this
+    configuration" pattern anywhere in the codebase — so the save/load half of this is likely its
+    own foundational piece of work (e.g. a new `recommendation_profile` entity/endpoint) that
+    needs designing before or alongside the scoring changes themselves, not as an afterthought
+    bolted onto them.
+
+**Cross-reference**: overlaps significantly with the existing "Weight recommendation scoring...by
+keyword popularity/average personal rating" candidate above — both touch
+`RecommendationRankingService`'s scoring formula directly and should likely be designed together
+rather than layered on separately, per that candidate's own note about the same risk.
 
 ### Info/disclosure boxes explaining Max Per Source, Max Sources Shown, and Sort By options
 Confirmed via search: no tooltip/info/help component exists anywhere in this codebase today —

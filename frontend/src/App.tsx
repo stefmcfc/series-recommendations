@@ -1,4 +1,12 @@
 import { useState } from 'react'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  NavLink,
+  type NavLinkRenderProps,
+} from 'react-router-dom'
 import { SeriesList } from './components/SeriesList'
 import { SeriesDetail } from './components/SeriesDetail'
 import { AddSeriesForm } from './components/AddSeriesForm'
@@ -13,11 +21,12 @@ import type {
   SearchCriteria,
   RecommendationQuery,
 } from './types/series'
+import styles from './App.module.css'
 
-type MainView = 'list' | 'recommendations' | 'keywords'
+const navLinkClassName = ({ isActive }: NavLinkRenderProps) =>
+  isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
 
 function App() {
-  const [mainView, setMainView] = useState<MainView>('list')
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [editingSeries, setEditingSeries] = useState<Series | null>(null)
@@ -48,88 +57,95 @@ function App() {
   }
 
   return (
-    <main>
-      {selectedSeriesId ? (
-        <SeriesDetail
-          key={seriesDetailKey}
-          id={selectedSeriesId}
-          onBack={handleBackToList}
-          onDeleted={handleBackToList}
-          onEditClick={setEditingSeries}
-        />
-      ) : (
-        <>
-          <nav>
-            <button
-              type="button"
-              aria-pressed={mainView === 'list'}
-              onClick={() => setMainView('list')}
-            >
-              My Series
-            </button>
-            <button
-              type="button"
-              aria-pressed={mainView === 'recommendations'}
-              onClick={() => setMainView('recommendations')}
-            >
-              Recommendations
-            </button>
-            <button
-              type="button"
-              aria-pressed={mainView === 'keywords'}
-              onClick={() => setMainView('keywords')}
-            >
-              Keywords
-            </button>
-          </nav>
+    <BrowserRouter>
+      <main>
+        {selectedSeriesId ? (
+          <SeriesDetail
+            key={seriesDetailKey}
+            id={selectedSeriesId}
+            onBack={handleBackToList}
+            onDeleted={handleBackToList}
+            onEditClick={setEditingSeries}
+          />
+        ) : (
+          <>
+            <nav className={styles.nav}>
+              <NavLink
+                to="/my-series"
+                data-testid="app-logo"
+                className={styles.logo}
+              >
+                TV Series Tracker
+              </NavLink>
+              <div className={styles.navLinks}>
+                <NavLink to="/my-series" end className={navLinkClassName}>
+                  My Series
+                </NavLink>
+                <NavLink to="/recommendations" className={navLinkClassName}>
+                  Recommendations
+                </NavLink>
+                <NavLink to="/keywords" className={navLinkClassName}>
+                  Keywords
+                </NavLink>
+              </div>
+            </nav>
 
-          {mainView === 'recommendations' && (
-            <>
-              <RecommendationControls
-                onQueryChange={setRecommendationQuery}
-                loading={recommendationsLoading}
+            <Routes>
+              <Route path="/" element={<Navigate to="/my-series" replace />} />
+              <Route
+                path="/my-series"
+                element={
+                  <>
+                    <SearchFilter
+                      onSearch={setCriteria}
+                      onClear={() => setCriteria(null)}
+                    />
+                    <ExportControls criteria={criteria ?? undefined} />
+                    <SeriesList
+                      key={seriesListKey}
+                      onSeriesClick={setSelectedSeriesId}
+                      onAddClick={() => setIsAddFormOpen(true)}
+                      onEditClick={setEditingSeries}
+                      criteria={criteria ?? undefined}
+                    />
+                  </>
+                }
               />
-              <RecommendationsList
-                query={recommendationQuery}
-                onLoadingChange={setRecommendationsLoading}
+              <Route
+                path="/recommendations"
+                element={
+                  <>
+                    <RecommendationControls
+                      onQueryChange={setRecommendationQuery}
+                      loading={recommendationsLoading}
+                    />
+                    <RecommendationsList
+                      query={recommendationQuery}
+                      onLoadingChange={setRecommendationsLoading}
+                    />
+                  </>
+                }
               />
-            </>
-          )}
-
-          {mainView === 'keywords' && <KeywordsView />}
-
-          {mainView === 'list' && (
-            <>
-              <SearchFilter
-                onSearch={setCriteria}
-                onClear={() => setCriteria(null)}
-              />
-              <ExportControls criteria={criteria ?? undefined} />
-              <SeriesList
-                key={seriesListKey}
-                onSeriesClick={setSelectedSeriesId}
-                onAddClick={() => setIsAddFormOpen(true)}
-                onEditClick={setEditingSeries}
-                criteria={criteria ?? undefined}
-              />
-            </>
-          )}
-        </>
-      )}
-      {isAddFormOpen && (
-        <AddSeriesForm
-          onCancel={() => setIsAddFormOpen(false)}
-          onSuccess={handleAddSuccess}
-        />
-      )}
-      {editingSeries && (
-        <EditSeriesForm
-          series={editingSeries}
-          onCancel={() => setEditingSeries(null)}
-          onSuccess={handleEditSuccess}
-        />
-      )}
-    </main>
+              <Route path="/keywords" element={<KeywordsView />} />
+              <Route path="*" element={<Navigate to="/my-series" replace />} />
+            </Routes>
+          </>
+        )}
+        {isAddFormOpen && (
+          <AddSeriesForm
+            onCancel={() => setIsAddFormOpen(false)}
+            onSuccess={handleAddSuccess}
+          />
+        )}
+        {editingSeries && (
+          <EditSeriesForm
+            series={editingSeries}
+            onCancel={() => setEditingSeries(null)}
+            onSuccess={handleEditSuccess}
+          />
+        )}
+      </main>
+    </BrowserRouter>
   )
 }
 

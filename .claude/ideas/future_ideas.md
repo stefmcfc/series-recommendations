@@ -26,7 +26,7 @@ being updated, and two others whose referenced classes had been renamed/split by
 - **Not specced** — retain full detail: what's actually required, why, and any relevant
   constraints or prior discussion. This is the only case where this file carries real content.
 
-Last full review against the codebase: 2026-08-26.
+Last full review against the codebase: 2026-08-28.
 
 ---
 
@@ -63,17 +63,6 @@ turning "Exclude Genres" into a checkbox picker (mirroring "Genres") — if that
 resolving this vocabulary question either way, since a checkbox list needs one canonical option
 set. Worth doing together rather than fixing the matching logic first and re-doing it once the
 picker lands.
-
-### Recommendation ranking's personal-rating/TMDB-rating blend weight is hardcoded
-Confirmed still live (2026-08-26 re-check; this logic's home moved to
-`RecommendationRankingService.java` during this session's `RecommendationService` split —
-`personalRatingTerm * 0.5 + tmdbRating * 0.5`, `service/RecommendationRankingService.java`
-around line 50). `personalRating` (1–5) is normalized onto TMDB's 0–10 scale via a simple `× 2`
-and blended 50/50 with `tmdbRating` — chosen for being easy to reason about, not tuned against
-anything.
-
-**Status**: Not specced. Worth revisiting once there's real usage data to tune the weighting
-against, not before.
 
 ### Recommendation cards have no fuller detail/expand view beyond keywords
 Confirmed still accurate (2026-08-26 re-check of `frontend/src/types/series.ts`'s `Recommendation`
@@ -133,43 +122,29 @@ mechanism) — worth its own dedicated thinking whenever it's prioritized.
 
 ---
 
-## Add/Edit Series Forms
-
-### No "are you sure" confirmation on Cancel with unsaved input
-Confirmed still absent on both `AddSeriesForm` and `EditSeriesForm` (2026-08-26 re-check — neither
-file has any cancel-confirmation logic; `AddSeriesForm`'s only "cancel"-adjacent handler dismisses
-the TMDB candidate list, unrelated). Originally flagged explicitly in both forms' specs so it
-isn't mistaken for an oversight.
-
-**Status**: Not specced.
-
-### No way to explicitly clear an optional field to `null` via `EditSeriesForm`
-Confirmed still true (2026-08-26 re-check of `EditSeriesForm.tsx`'s `buildPayload` — every
-optional field is still omitted from the `PATCH` payload when blank, meaning "leave unchanged,"
-unaffected by this session's `SeriesFormFields`/`StarRating` extraction work). There's no way to
-explicitly remove a previously-set value (e.g. clear a rating) short of editing the database
-directly.
-
-**Status**: Not specced. Revisit if the need comes up.
-
-### `EditSeriesForm` has no "Look Up" button (unlike `AddSeriesForm`)
-Confirmed still true (2026-08-26 re-check — no `Look Up`/lookup-btn/`handleLookup` anywhere in
-`EditSeriesForm.tsx`). Editing is treated as a correction/update flow rather than a "start from
-scratch with a title" flow, so it only got a plain editable `posterUrl` text field.
-
-**Status**: Not specced. Revisit if that turns out to be a real gap in practice.
-
----
-
 ## Navigation
 
-### No router / no shareable URL for a specific series
-Confirmed still true (2026-08-26 re-check — no `react-router` dependency in
-`frontend/package.json`). `SeriesDetail` is reachable only by clicking a row from `SeriesList`,
-with "Back" as the only way out — no deep-linking, no browser history entry.
+### Real logo / visual branding design
+Raised 2026-08-28 alongside a planned global nav redesign (menu-bar style top nav, logo top-left
+linking home) — the nav spec itself will only use a plain/placeholder logo mark; actual visual
+identity design (wordmark, icon, color) is deliberately out of scope for that spec and deferred
+here.
 
-**Status**: Not specced. Adding a router is a real architectural decision (history,
-code-splitting) deliberately deferred until something actually needs a shareable link.
+**Status**: Not specced. No design direction chosen yet — purely a placeholder-now,
+design-properly-later split.
+
+### No shareable URL for a specific series (`SeriesDetail`)
+Updated 2026-08-28: `frontend_spec_041` added `react-router-dom` app-wide and gave the three
+top-level views (`/my-series`, `/recommendations`, `/keywords`) real URLs, so the old "no router
+dependency at all" framing of this note is now stale. `SeriesDetail` itself, though, was explicitly
+kept out of that spec's scope (Requirement 4) — it's still reachable only by clicking a row from
+`SeriesList`, with "Back" as the only way out, no deep-linking, no browser history entry, and no
+URL change while it's shown. The remaining gap is narrower now: routing exists, `SeriesDetail`
+just isn't wired into it yet.
+
+**Status**: Not specced. Would be a small addition on top of an already-installed router (e.g.
+`/my-series/:id`) rather than a from-scratch architectural decision — deferred until something
+actually needs a shareable link to a specific series.
 
 ---
 
@@ -208,6 +183,12 @@ country, English for language) that would ideally be user-configurable once a se
 exists — e.g. "Favourite country of origin = {United Kingdom, United States}", "Favourite
 languages = {English}" — surfaced via a dropdown backed by the same ISO 3166-1/639-1 data the
 filter chips themselves would use.
+
+A second concrete case (2026-08-28): `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
+'algorithm'..." candidate wants **saved filter/algorithm profiles** (its item #11) — its own note
+is explicit that "this app has no user-preference persistence precedent today at all... likely its
+own foundational piece of work... before the scoring changes themselves." Two independent features
+now want the same missing foundation.
 
 **Status**: Not specced. A real settings screen is its own feature with real design questions
 first — where would it persist (this is a single-user personal app, so per-user settings may be

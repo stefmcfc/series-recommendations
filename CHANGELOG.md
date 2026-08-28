@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `App` gains real client-side routing via `react-router-dom` (`^7`, declarative mode) — the first router dependency this project has ever had — for the three top-level views: `/my-series`, `/recommendations`, `/keywords`. `/` and any unmatched path redirect to `/my-series` (`frontend_spec_041`).
+- Frontend: a placeholder logo/wordmark now sits at the start of the top nav, linking to `/my-series` from anywhere in the app (`frontend_spec_041`).
+
+### Changed
+
+- Frontend: the top nav is restyled from three unstyled `<button aria-pressed>` elements into a proper menu bar (new `App.module.css`) using real `<NavLink>`s with `aria-current="page"` for the active item, replacing the old `mainView` `useState` toggle (`frontend_spec_041`).
+
 ## [2.19.2] - 2026-08-27
 
 ### Fixed
