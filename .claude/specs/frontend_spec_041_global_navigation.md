@@ -1,6 +1,9 @@
 # Frontend Spec 041: Global Navigation — Menu Bar, Logo/Home Link, Top-Level Routing
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) — changed files: `frontend/src/App.tsx`, `frontend/src/App.module.css`
+(new), `frontend/src/App.test.tsx`, `frontend/package.json`, `frontend/package-lock.json`
+(`react-router-dom` `^7`). AC-02 verified 2026-08-28 via a real Chrome browser pass (light + dark,
+all three views, active-tab state, logo navigation) — no console errors, no axe violations.
 **Priority**: P3 (cosmetic/IA improvement — no functional bug being fixed)
 **Depends on**: Frontend Spec 005 (`frontend_spec_005_series_detail.md`, the "No router" design decision this
 spec supersedes at the top level only) ✅, Frontend Spec 010 (`frontend_spec_010_recommendations.md`, the
@@ -414,15 +417,15 @@ describe('FRONTEND-041-AC-12: selecting a series does not change the URL', () =>
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-041-AC-01: nav items render as links, not buttons
-- [ ] FRONTEND-041-AC-02: menu bar reads as a cohesive styled bar in both themes (manual visual check)
-- [ ] FRONTEND-041-AC-03: placeholder logo renders, links to `/my-series`
-- [ ] FRONTEND-041-AC-04: clicking the logo navigates home from any view
-- [ ] FRONTEND-041-AC-05: `/` redirects to `/my-series`
-- [ ] FRONTEND-041-AC-06: `/my-series` renders the list view
-- [ ] FRONTEND-041-AC-07: `/recommendations` renders the recommendations view
-- [ ] FRONTEND-041-AC-08: `/keywords` renders the keywords view
-- [ ] FRONTEND-041-AC-09: nav updates the URL; browser Back works
-- [ ] FRONTEND-041-AC-10: an unmatched path redirects to `/my-series`
-- [ ] FRONTEND-041-AC-11: menu bar hides while `SeriesDetail` is shown, unaffected
-- [ ] FRONTEND-041-AC-12: selecting/deselecting a series never changes the URL
+- [x] FRONTEND-041-AC-01: nav items render as links, not buttons
+- [x] FRONTEND-041-AC-02: menu bar reads as a cohesive styled bar in both themes (manual visual check)
+- [x] FRONTEND-041-AC-03: placeholder logo renders, links to `/my-series`
+- [x] FRONTEND-041-AC-04: clicking the logo navigates home from any view
+- [x] FRONTEND-041-AC-05: `/` redirects to `/my-series`
+- [x] FRONTEND-041-AC-06: `/my-series` renders the list view
+- [x] FRONTEND-041-AC-07: `/recommendations` renders the recommendations view
+- [x] FRONTEND-041-AC-08: `/keywords` renders the keywords view
+- [x] FRONTEND-041-AC-09: nav updates the URL; browser Back works
+- [x] FRONTEND-041-AC-10: an unmatched path redirects to `/my-series`
+- [x] FRONTEND-041-AC-11: menu bar hides while `SeriesDetail` is shown, unaffected
+- [x] FRONTEND-041-AC-12: selecting/deselecting a series never changes the URL

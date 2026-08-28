@@ -133,13 +133,18 @@ here.
 **Status**: Not specced. No design direction chosen yet — purely a placeholder-now,
 design-properly-later split.
 
-### No router / no shareable URL for a specific series
-Confirmed still true (2026-08-26 re-check — no `react-router` dependency in
-`frontend/package.json`). `SeriesDetail` is reachable only by clicking a row from `SeriesList`,
-with "Back" as the only way out — no deep-linking, no browser history entry.
+### No shareable URL for a specific series (`SeriesDetail`)
+Updated 2026-08-28: `frontend_spec_041` added `react-router-dom` app-wide and gave the three
+top-level views (`/my-series`, `/recommendations`, `/keywords`) real URLs, so the old "no router
+dependency at all" framing of this note is now stale. `SeriesDetail` itself, though, was explicitly
+kept out of that spec's scope (Requirement 4) — it's still reachable only by clicking a row from
+`SeriesList`, with "Back" as the only way out, no deep-linking, no browser history entry, and no
+URL change while it's shown. The remaining gap is narrower now: routing exists, `SeriesDetail`
+just isn't wired into it yet.
 
-**Status**: Not specced. Adding a router is a real architectural decision (history,
-code-splitting) deliberately deferred until something actually needs a shareable link.
+**Status**: Not specced. Would be a small addition on top of an already-installed router (e.g.
+`/my-series/:id`) rather than a from-scratch architectural decision — deferred until something
+actually needs a shareable link to a specific series.
 
 ---
 

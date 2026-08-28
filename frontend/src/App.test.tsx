@@ -23,6 +23,12 @@ const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // FRONTEND-041: <BrowserRouter> lives inside App itself, so tests seed the
+  // starting route via window.history.pushState. Default to /my-series here
+  // so tests that don't care about routing (most of the pre-existing suite)
+  // aren't affected by whatever path a previous test in this file left the
+  // shared jsdom window on; tests that do care override it in their own body.
+  window.history.pushState({}, '', '/my-series')
   mockGetRefreshStatus.mockResolvedValue({
     status: 'IDLE',
     totalCount: 0,
@@ -217,6 +223,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
     mockGetRecommendations.mockResolvedValue([])
     mockGetGenreOptions.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series')
 
     render(<App />)
     await screen.findByText('The Office')
@@ -232,7 +239,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
       ),
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /recommendations/i }))
+    fireEvent.click(screen.getByRole('link', { name: /recommendations/i }))
     expect(
       await screen.findByTestId('recommendations-list'),
     ).toBeInTheDocument()
@@ -244,7 +251,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     const searchCallsBeforeReturning = mockSearch.mock.calls.length
 
     fireEvent.click(
-      screen.getByRole('button', { name: /series list|my series/i }),
+      screen.getByRole('link', { name: /series list|my series/i }),
     )
     expect(await screen.findByTestId('series-list')).toBeInTheDocument()
 
@@ -269,6 +276,7 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
     mockGetAll.mockResolvedValue([])
     mockGetRecommendations.mockResolvedValue([])
     mockGetGenreOptions.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series')
 
     render(<App />)
     await screen.findByTestId('add-series-btn')
@@ -276,11 +284,11 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
       screen.queryByRole('button', { name: /^automatic$/i }),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /recommendations/i }))
+    fireEvent.click(screen.getByRole('link', { name: /recommendations/i }))
     expect(await screen.findByLabelText(/^automatic/i)).toBeInTheDocument()
 
     fireEvent.click(
-      screen.getByRole('button', { name: /series list|my series/i }),
+      screen.getByRole('link', { name: /series list|my series/i }),
     )
     await screen.findByTestId('series-list')
     expect(screen.queryByLabelText(/^automatic/i)).not.toBeInTheDocument()
@@ -290,18 +298,17 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
 describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
   it('renders KeywordsView when the Keywords toggle is clicked', async () => {
     mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series')
 
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /^keywords$/i, pressed: false }),
-    )
+    fireEvent.click(screen.getByRole('link', { name: /^keywords$/i }))
     expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
     expect(screen.queryByTestId('series-list')).not.toBeInTheDocument()
 
     fireEvent.click(
-      screen.getByRole('button', { name: /series list|my series/i }),
+      screen.getByRole('link', { name: /series list|my series/i }),
     )
     await screen.findByTestId('series-list')
     expect(screen.queryByTestId('keywords-view')).not.toBeInTheDocument()
@@ -337,5 +344,165 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
     )
     expect(await screen.findByText('Updated Show')).toBeInTheDocument()
     expect(screen.getByTestId('back-btn')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-01: nav items are links, not buttons', () => {
+  it('renders My Series/Recommendations/Keywords as links', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('add-series-btn')
+
+    expect(screen.getByRole('link', { name: /my series/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /recommendations/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /^keywords$/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-03: logo links home', () => {
+  it('renders a logo link pointing at /my-series', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('add-series-btn')
+
+    const logo = screen.getByTestId('app-logo')
+    expect(logo.closest('a')).toHaveAttribute('href', '/my-series')
+  })
+})
+
+describe('FRONTEND-041-AC-04: logo click navigates home from any view', () => {
+  it('navigates to My Series from Recommendations', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRecommendations.mockResolvedValue([])
+    mockGetGenreOptions.mockResolvedValue([])
+    window.history.pushState({}, '', '/recommendations')
+
+    render(<App />)
+    await screen.findByTestId('recommendations-list')
+
+    fireEvent.click(screen.getByTestId('app-logo'))
+
+    await screen.findByTestId('series-list')
+    expect(window.location.pathname).toBe('/my-series')
+  })
+})
+
+describe('FRONTEND-041-AC-05: root redirects to /my-series', () => {
+  it('shows the series list when loaded at /', async () => {
+    mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/')
+
+    render(<App />)
+
+    await screen.findByTestId('series-list')
+    expect(window.location.pathname).toBe('/my-series')
+  })
+})
+
+describe('FRONTEND-041-AC-06: /my-series renders the list view', () => {
+  it('renders SeriesList content at /my-series', async () => {
+    mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series')
+
+    render(<App />)
+
+    expect(await screen.findByTestId('series-list')).toBeInTheDocument()
+    expect(screen.getByTestId('export-json-btn')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-07: /recommendations renders the recommendations view', () => {
+  it('renders RecommendationsList content at /recommendations', async () => {
+    mockGetRecommendations.mockResolvedValue([])
+    mockGetGenreOptions.mockResolvedValue([])
+    window.history.pushState({}, '', '/recommendations')
+
+    render(<App />)
+
+    expect(
+      await screen.findByTestId('recommendations-list'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-08: /keywords renders the keywords view', () => {
+  it('renders KeywordsView content at /keywords', async () => {
+    mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/keywords')
+
+    render(<App />)
+
+    expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-09: nav updates the URL and supports Back', () => {
+  it('navigates and supports browser Back', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockGetRecommendations.mockResolvedValue([])
+    mockGetGenreOptions.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series')
+
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByRole('link', { name: /recommendations/i }))
+    await screen.findByTestId('recommendations-list')
+    expect(window.location.pathname).toBe('/recommendations')
+
+    window.history.back()
+    await waitFor(() => expect(window.location.pathname).toBe('/my-series'))
+    expect(await screen.findByTestId('series-list')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-10: unmatched path redirects to /my-series', () => {
+  it('redirects an unknown path to /my-series', async () => {
+    mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/does-not-exist')
+
+    render(<App />)
+
+    await screen.findByTestId('series-list')
+    expect(window.location.pathname).toBe('/my-series')
+  })
+})
+
+describe('FRONTEND-041-AC-11: menu bar hides behind SeriesDetail', () => {
+  it('hides the nav when a series is selected', async () => {
+    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    window.history.pushState({}, '', '/my-series')
+
+    render(<App />)
+    await screen.findByTestId('series-row')
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
+
+    await screen.findByTestId('back-btn')
+    expect(
+      screen.queryByRole('link', { name: /my series/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-041-AC-12: selecting a series does not change the URL', () => {
+  it('keeps the URL at /my-series through select and back', async () => {
+    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    window.history.pushState({}, '', '/my-series')
+
+    render(<App />)
+    await screen.findByTestId('series-row')
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
+    await screen.findByTestId('back-btn')
+    expect(window.location.pathname).toBe('/my-series')
+
+    fireEvent.click(screen.getByTestId('back-btn'))
+    await screen.findByTestId('series-row')
+    expect(window.location.pathname).toBe('/my-series')
   })
 })
