@@ -63,8 +63,6 @@ interface ControlsState {
   excludeGenresText: string
   excludeKeywordsText: string
   language: string
-  maxPerSource: string
-  maxSourcesShown: string
   sortBy: SortByOption
   discoverSortBy: DiscoverSortByOption
 }
@@ -114,8 +112,6 @@ const initialState: ControlsState = {
   excludeGenresText: '',
   excludeKeywordsText: '',
   language: '',
-  maxPerSource: '',
-  maxSourcesShown: '',
   sortBy: 'score',
   discoverSortBy: DISCOVER_SORT_BY_DEFAULTS.topRated,
 }
@@ -236,10 +232,6 @@ function applyExcludeAndMiscFilters(
   if (excludeKeywords.length > 0) query.excludeKeywords = excludeKeywords
 
   if (state.language.trim() !== '') query.language = state.language.trim()
-  if (state.maxPerSource.trim() !== '')
-    query.maxPerSource = Number(state.maxPerSource)
-  if (state.maxSourcesShown.trim() !== '')
-    query.maxSourcesShown = Number(state.maxSourcesShown)
 }
 
 // Cosmetic pass (2026-08-27, no spec): title | (year) | country - status,
@@ -577,8 +569,6 @@ export function RecommendationControls({
       excludeGenresText: '',
       excludeKeywordsText: '',
       language: '',
-      maxPerSource: '',
-      maxSourcesShown: '',
     })
   }
 
@@ -1181,30 +1171,6 @@ export function RecommendationControls({
                   type="text"
                   value={state.language}
                   onChange={updateField('language')}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="recommendation-max-per-source">
-                  Max Per Source
-                </label>
-                <input
-                  id="recommendation-max-per-source"
-                  type="number"
-                  value={state.maxPerSource}
-                  onChange={updateField('maxPerSource')}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="recommendation-max-sources-shown">
-                  Max Sources Shown
-                </label>
-                <input
-                  id="recommendation-max-sources-shown"
-                  type="number"
-                  value={state.maxSourcesShown}
-                  onChange={updateField('maxSourcesShown')}
                 />
               </div>
 

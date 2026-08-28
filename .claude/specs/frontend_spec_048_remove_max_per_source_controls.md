@@ -1,6 +1,7 @@
 # Frontend Spec 048: Remove "Max Per Source" / "Max Sources Shown" Controls
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) — changed files: `frontend/src/components/RecommendationControls.tsx`,
+`frontend/src/components/RecommendationControls.test.tsx`
 **Priority**: P3 (removes non-functional-under-Discover controls the user confirmed should go entirely, not
 just be mode-gated, pending a later "Use My Series" revamp)
 **Depends on**: none — frontend-only, no backend change.
@@ -150,7 +151,7 @@ consequence of AC-03's `ControlsState` field removal (the fields no longer exist
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-048-AC-01: Max Per Source is never rendered
-- [ ] FRONTEND-048-AC-02: Max Sources Shown is never rendered
-- [ ] FRONTEND-048-AC-03: emitted query never includes either field
-- [ ] FRONTEND-048-AC-04: `handleResetFilters` no longer references either field
+- [x] FRONTEND-048-AC-01: Max Per Source is never rendered
+- [x] FRONTEND-048-AC-02: Max Sources Shown is never rendered
+- [x] FRONTEND-048-AC-03: emitted query never includes either field
+- [x] FRONTEND-048-AC-04: `handleResetFilters` no longer references either field
