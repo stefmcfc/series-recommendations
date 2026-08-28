@@ -363,7 +363,6 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
     expect(screen.getByLabelText(/year max/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/exclude genres/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^language/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/max per source/i)).toBeInTheDocument()
   })
 
   it('shows minSourceRating for Use My Series but not Custom Search', () => {
@@ -483,53 +482,41 @@ describe('FRONTEND-011-AC-12: mounting does not trigger onQueryChange', () => {
   })
 })
 
-describe('FRONTEND-019-AC-08/09: Max Sources Shown filter field', () => {
-  it('renders inside Filters and updates the query when populated', () => {
-    const onQueryChange = vi.fn()
-    render(<RecommendationControls onQueryChange={onQueryChange} />)
+describe('FRONTEND-048-AC-01: Max Per Source is never rendered', () => {
+  it('does not render under any mode', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    expect(screen.queryByLabelText(/max per source/i)).not.toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText(/max sources shown/i), {
-      target: { value: '2' },
-    })
-    clickApplyFilters()
-
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ maxSourcesShown: 2 }),
-    )
-  })
-
-  it('omits maxSourcesShown from the query when left blank', () => {
-    const onQueryChange = vi.fn()
-    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(screen.getByRole('tab', { name: /^discover$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-
-    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
-      target: { value: '7' },
-    })
-    clickApplyFilters()
-
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.not.objectContaining({ maxSourcesShown: expect.anything() }),
-    )
+    expect(screen.queryByLabelText(/max per source/i)).not.toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-019-AC-10: Reset Filters clears Max Sources Shown', () => {
-  it('clears a populated Max Sources Shown field on Reset Filters', () => {
-    const onQueryChange = vi.fn()
-    render(<RecommendationControls onQueryChange={onQueryChange} />)
+describe('FRONTEND-048-AC-02: Max Sources Shown is never rendered', () => {
+  it('does not render under any mode', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    expect(
+      screen.queryByLabelText(/max sources shown/i),
+    ).not.toBeInTheDocument()
+  })
+})
 
-    fireEvent.change(screen.getByLabelText(/max sources shown/i), {
-      target: { value: '2' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
-    clickApplyFilters()
+describe('FRONTEND-048-AC-03: query never includes maxPerSource/maxSourcesShown', () => {
+  it('omits both fields from the emitted query', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
-    expect(screen.getByLabelText(/max sources shown/i)).toHaveValue(null)
-    expect(onQueryChange).toHaveBeenLastCalledWith(
-      expect.not.objectContaining({ maxSourcesShown: expect.anything() }),
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        maxPerSource: expect.anything(),
+        maxSourcesShown: expect.anything(),
+      }),
     )
   })
 })

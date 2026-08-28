@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Frontend: `RecommendationControls` no longer renders "Max Per Source"/"Max Sources Shown" inputs — both were dead controls under every Discover mode (never applied to Discover sourcing/output), so removed entirely rather than mode-gated, pending a later "Use My Series" revamp that will redesign this concept; backend fields/behavior are unchanged, they simply fall back to existing config defaults now that the frontend never sends them (`frontend_spec_048`).
+
 ### Added
 
 - Frontend: `App` gains real client-side routing via `react-router-dom` (`^7`, declarative mode) — the first router dependency this project has ever had — for the three top-level views: `/my-series`, `/recommendations`, `/keywords`. `/` and any unmatched path redirect to `/my-series` (`frontend_spec_041`).
