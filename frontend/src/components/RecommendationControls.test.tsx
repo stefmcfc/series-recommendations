@@ -463,9 +463,24 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
 
 // FRONTEND-040 supersedes this AC's "no Apply button" premise -- an explicit
 // "Apply Filters" button now gates every control except Recommendation
-// Source (see the FRONTEND-040-AC-01/02/03 describe blocks below). The
-// mount-time assertion is unaffected and stays as a regression guard.
-describe('FRONTEND-011-AC-12: mounting does not trigger onQueryChange', () => {
+// Source (see the FRONTEND-040-AC-01/02/03 describe blocks below).
+//
+// Fix 3 (2026-08-28, live testing -- pre-existing bug, not part of any open
+// spec): this AC's second assertion ("mounting does not trigger
+// onQueryChange") is now superseded. A fresh mount was found to send zero
+// query params at all (no sourceMode, nothing), which the backend was
+// resolving to Custom Search's unfiltered-discover fallback instead of "Use
+// My Series" pool sourcing -- not a legitimate "no request on mount" case,
+// just a state initialization gap (App.tsx's recommendationQuery started
+// undefined with nothing to establish a real default). The fix adds a
+// mount-only effect that calls onQueryChange once with the default query
+// (see the "eslint-disable-next-line react-hooks/exhaustive-deps --
+// mount-only" effect in RecommendationControls.tsx); every other Apply-gated
+// control this AC was really guarding against is unaffected (see the
+// FRONTEND-040-AC-01/03/04/09 and FRONTEND-042-AC-15 describe blocks below,
+// which already clear the mount call via `onQueryChange.mockClear()` before
+// asserting).
+describe('FRONTEND-011-AC-12: mounting does not trigger an Apply-gated control', () => {
   it('renders "Apply Filters", not a bare "Apply"/"Submit" button', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     expect(
@@ -479,10 +494,11 @@ describe('FRONTEND-011-AC-12: mounting does not trigger onQueryChange', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not call onQueryChange just from mounting', () => {
+  it('calls onQueryChange once on mount with the default (Use My Series) query', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    expect(onQueryChange).not.toHaveBeenCalled()
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+    expect(onQueryChange).toHaveBeenCalledWith({ sourceMode: 'useMySeries' })
   })
 })
 
@@ -2008,17 +2024,31 @@ describe('FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-de
       target: { value: 'japan' },
     })
 
-    expect(screen.getByRole('button', { name: /japan/i })).toBeInTheDocument()
+    // Exact match ("^japan$"), not a loose /japan/i substring match --
+    // Language's pinned "Japanese" quick-select (LANGUAGE_PINNED_CODES
+    // includes 'ja') is always visible in the same Filters box regardless
+    // of what's typed into Countries, and "japan" is a substring of
+    // "Japanese" too, so a loose match here would find both buttons.
+    expect(screen.getByRole('button', { name: /^japan$/i })).toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-047-AC-08: Language picker has a pinned English option', () => {
-  it('renders an English quick-select', () => {
+// Revised 2026-08-28 (frontend_spec_047, Requirement 3's revision note):
+// Language now renders through KeywordPicker itself (single-select enforced
+// by an adapter in RecommendationControls.tsx), the same proven
+// chip-with-"x" UX Country already uses -- replacing the original bespoke
+// LanguagePicker's permanently-visible pinned button + plain text input,
+// which live testing found had no way to clear a selection back to empty.
+describe('FRONTEND-047-AC-08: Language picker has pinned quick-select options', () => {
+  it('renders English and Spanish quick-selects', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     expect(
       screen.getByRole('button', { name: /^english$/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^spanish$/i }),
     ).toBeInTheDocument()
   })
 })
@@ -2029,13 +2059,40 @@ describe('FRONTEND-047-AC-09: selecting replaces, does not accumulate', () => {
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
-    fireEvent.change(screen.getByLabelText(/language/i), {
-      target: { value: 'french' },
-    })
     fireEvent.click(screen.getByRole('button', { name: /^french$/i }))
 
-    expect(screen.getByDisplayValue(/french/i)).toBeInTheDocument()
-    expect(screen.queryByDisplayValue(/english/i)).not.toBeInTheDocument()
+    // Deviates from this AC's original test sketch (a bare
+    // getByText/queryByText on the plain label): once English is
+    // deselected it reappears as a *pinned suggestion* button
+    // (LANGUAGE_PINNED_CODES includes 'en'), so a bare text query for
+    // "English" is ambiguous -- it's genuinely still on the page, just as a
+    // suggestion rather than a chip. Querying each side's "Remove x"
+    // control is unambiguous, since that only ever renders for a selected
+    // chip.
+    expect(
+      screen.getByRole('button', { name: 'Remove fr' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Remove en' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-12: language selection can be cleared', () => {
+  it("clears language back to empty via the chip's remove control", () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /remove en$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ language: expect.anything() }),
+    )
   })
 })
 

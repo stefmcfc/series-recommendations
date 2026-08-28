@@ -1,6 +1,9 @@
 # Frontend Spec 047: Custom Search — Country-of-Origin Picker & Upgraded Language Picker
 
-**Status**: Implemented (frontend half; paired with `series_spec_032`, both on branch `feature/custom-search-language-country-filters`, not yet merged)
+**Status**: Implemented (2026-08-28 revision: language picker rebuilt as a `KeywordPicker` instance with a
+single-select adapter, replacing the original bespoke picker that had no way to clear a selection — AC-08/09
+revised, AC-12 added; see Design Decisions and Requirement 3's revision note); paired with `series_spec_032`,
+both on branch `feature/custom-search-language-country-filters`, not yet merged
 **Priority**: P3 (paired UI half of `series_spec_032`)
 **Depends on**: Series Spec 032 (`series_spec_032_custom_search_language_country_filters.md`, the backend
 `countries` field and pre-fetch wiring this spec's UI produces) ✅. Frontend Spec 046
@@ -39,14 +42,29 @@ genuinely new addition to the Filters box, since the filter didn't exist anywher
   series' origin countries (unlike genres/keywords' vocabulary endpoints), since Discover modes deliberately
   don't touch tracked data at all (confirmed in `.claude/analysis/scoring_weight_recommendations.md` Section 3)
   — deriving Discover's own filter suggestions from personal data would cut against that.
-- **Language gets a new, locally-scoped single-select picker — not a `KeywordPicker` variant.** Single-select
-  ("choosing an option replaces the current value") is a genuinely different interaction from `KeywordPicker`'s
-  core multi-select/chip design; forcing it in would be worse than a small purpose-built alternative. Kept local
-  to `RecommendationControls.tsx` (not extracted as a new shared component) since there is exactly one consumer
-  today — matches this project's existing "extract when a second component needs the same logic, not before"
-  hooks/components convention. Shape: a pinned "English" quick-select button plus a small searchable
-  dropdown/combobox for anything else; selecting any option (pinned or searched) sets the single `language`
-  value.
+- **Revised after live testing (2026-08-28): Language reuses `KeywordPicker` directly, single-select enforced by
+  a thin adapter — not a bespoke picker.** The original design (a locally-scoped picker with a permanently-visible
+  pinned "English" button and a plain text input showing the current selection) shipped, but live testing surfaced
+  a real UX defect: once a language was selected there was no way to clear it back to "no filter" — the pinned
+  "English" button never toggled off (it's unconditionally rendered, not selection-state-aware) and typing/
+  clearing the input text didn't touch the underlying `language` value, only clicking a suggestion did. Users
+  correctly read the always-visible pinned button as a persistent chip, when it was actually just a shortcut.
+  Fix: render Language through the *same* `KeywordPicker` chip UI Country already uses (proven UX — a removable
+  chip with an "×", already familiar from Country), with single-select enforced entirely in
+  `RecommendationControls.tsx` via a thin adapter — no `KeywordPicker` prop changes needed:
+  `selected={state.language ? [state.language] : []}` and `onChange={(next) => updateState({ language: next.at(-1) ?? '' })}`.
+  Because `KeywordPicker.addOption` always appends (`[...selected, option.id]`) and `selected` is clamped to
+  length ≤ 1 by this adapter, `next` is always length ≤ 2 and `.at(-1)` is always the newly-clicked option —
+  picking a new language correctly replaces the old one, and clicking the resulting chip's "×" (removing the only
+  entry) yields `next = []`, so `.at(-1) ?? ''` correctly clears `language` back to `''`. This is why the fix
+  needed no `KeywordPicker` changes at all, just a different usage pattern already proven by Country.
+- **Pinned language set expanded beyond English alone**, per the same live-testing feedback ("I feel there should
+  be some other persistent languages"). Pinned: English, Spanish, French, German, Japanese, Korean (`en`/`es`/
+  `fr`/`de`/`ja`/`ko`) — a reasonable judgment call on "most commonly wanted TV languages," not user-confirmed
+  individually; open to adjustment. Unlike Country's pinned US/GB (deliberately excluded from `options` so they
+  display as bare codes, see above), Language's pinned codes **are** included in `options` so `resolvePinnedOptions`
+  resolves them to full names ("English", not "en") — there's no bare-code test contract for Language the way
+  Country's AC-02/AC-06 have for `/^us$/i`.
 - **No wire-format change for `language`** — still the same single `string` field, still sent the same way;
   only how the value gets set (picker vs. raw typing) changes.
 
@@ -231,33 +249,42 @@ describe('FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-de
 
 ---
 
-## Requirement 3: Language filter — single-select picker replaces the plain text input
+## Requirement 3: Language filter — single-select chip picker replaces the plain text input
 
-**User story**: As a user, I want to pick a language without knowing its ISO 639-1 code by heart, with English
-one click away — but still only ever choosing one value, since that's genuinely all TMDB can act on.
+**User story**: As a user, I want to pick a language without knowing its ISO 639-1 code by heart, with common
+options one click away, a visible chip showing what's selected, and a clear way to remove it — but still only
+ever choosing one value, since that's genuinely all TMDB can act on.
+
+**Revision note (2026-08-28)**: AC-08/AC-09 below were revised after live testing found the originally-shipped
+bespoke picker had no way to clear a selection (see Design Decisions). The current implementation renders
+Language through `KeywordPicker` itself (single-select enforced by an adapter in `RecommendationControls.tsx`,
+not a `KeywordPicker` change) — the same proven chip-with-"×" UX Country already uses.
 
 ### FRONTEND-047-AC-08 [AUTO]
-**Statement**: The Language field shall render a pinned "English" quick-select option.
+**Statement**: The Language field shall render pinned quick-select options for English, Spanish, French, German,
+Japanese, and Korean.
 
 **Test Case (Red)**:
 ```typescript
-describe('FRONTEND-047-AC-08: Language picker has a pinned English option', () => {
-  it('renders an English quick-select', () => {
+describe('FRONTEND-047-AC-08: Language picker has pinned quick-select options', () => {
+  it('renders English and Spanish quick-selects', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     expect(screen.getByRole('button', { name: /^english$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^spanish$/i })).toBeInTheDocument()
   })
 })
 ```
-**Test Case (Green)**: new local picker component/markup replacing the plain `<input id="recommendation-
-language">`, with a pinned "English" button rendered unconditionally.
+**Test Case (Green)**: `KeywordPicker` instance for Language with `pinnedOptions={LANGUAGE_PINNED_CODES}`
+(`['en','es','fr','de','ja','ko']`), resolved to full names via `LANGUAGE_OPTIONS` (which includes the pinned
+codes, unlike Country's exclusion pattern — see Design Decisions).
 
 ---
 
 ### FRONTEND-047-AC-09 [AUTO]
-**Statement**: Selecting a language option (pinned or searched) shall set the single `language` value,
-replacing any previously selected value.
+**Statement**: Selecting a language option (pinned or searched) shall set the single `language` value, replacing
+any previously selected value, rendered as a single removable chip.
 
 **Test Case (Red)**:
 ```typescript
@@ -267,16 +294,43 @@ describe('FRONTEND-047-AC-09: selecting replaces, does not accumulate', () => {
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
-    fireEvent.change(screen.getByLabelText(/language/i), { target: { value: 'french' } })
     fireEvent.click(screen.getByRole('button', { name: /^french$/i }))
 
-    expect(screen.getByDisplayValue(/french/i)).toBeInTheDocument()
-    expect(screen.queryByDisplayValue(/english/i)).not.toBeInTheDocument()
+    expect(screen.getByText('French')).toBeInTheDocument()
+    expect(screen.queryByText('English')).not.toBeInTheDocument()
   })
 })
 ```
-**Test Case (Green)**: the picker's selection handler calls `updateState({ language: code })` directly (no
-chip-list accumulation) — single value in, single value out.
+**Test Case (Green)**: the adapter's `onChange={(next) => updateState({ language: next.at(-1) ?? '' })}` always
+takes the most-recently-clicked option as the new (sole) value.
+
+---
+
+### FRONTEND-047-AC-12 [AUTO]
+**Statement**: The selected language's chip shall include a control to clear the selection back to no language
+filter.
+
+**Test Case (Red)**:
+```typescript
+describe('FRONTEND-047-AC-12: language selection can be cleared', () => {
+  it('clears language back to empty via the chip\'s remove control', () => {
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /remove english/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.not.objectContaining({ language: expect.anything() }),
+    )
+  })
+})
+```
+**Test Case (Green)**: removing the chip calls `onChange([])`, and the adapter's `next.at(-1) ?? ''` yields `''`
+for `language`; `applyExcludeAndMiscFilters` already omits `language` from the query when it's the empty string
+(pre-existing `state.language.trim() !== ''` guard, unchanged).
 
 ---
 
@@ -343,7 +397,8 @@ proves the picker swap didn't change the wire contract, not new logic.
 - [x] FRONTEND-047-AC-05: Country picker relocates to Filters for other modes
 - [x] FRONTEND-047-AC-06: `countries` sent in the query
 - [x] FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-derived
-- [x] FRONTEND-047-AC-08: Language picker has a pinned English option
-- [x] FRONTEND-047-AC-09: selecting a language replaces, doesn't accumulate
+- [x] FRONTEND-047-AC-08: Language picker has pinned quick-select options (revised 2026-08-28 — was English-only)
+- [x] FRONTEND-047-AC-09: selecting a language replaces, doesn't accumulate (revised 2026-08-28 — now via `KeywordPicker` chip)
 - [x] FRONTEND-047-AC-10: Language picker relocates the same way as Country
 - [x] FRONTEND-047-AC-11: emitted `language` value unaffected by the picker upgrade
+- [x] FRONTEND-047-AC-12: language selection can be cleared via the chip's remove control (new, 2026-08-28)

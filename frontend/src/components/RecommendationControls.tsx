@@ -11,7 +11,6 @@ import {
 import { formatCountryName } from '../utils/countryName'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import styles from './RecommendationControls.module.css'
-import keywordPickerStyles from './KeywordPicker.module.css'
 
 // FRONTEND-047: Country reuses KeywordPicker's own pinned-option support
 // (US/GB one click away) with its searchable "rest" coming from the static
@@ -20,11 +19,17 @@ import keywordPickerStyles from './KeywordPicker.module.css'
 // Design Decisions).
 const COUNTRY_PINNED_OPTIONS = ['US', 'GB']
 
-// FRONTEND-047-AC-08: Language keeps a hardcoded, locally-scoped option list
-// (not extracted to utils/ -- exactly one consumer today, see this spec's
-// Design Decisions) resolved to human-readable names via Intl.DisplayNames,
-// mirroring utils/countryName.ts's formatCountryName pattern but for
-// language codes specifically.
+// FRONTEND-047-AC-08/09/12 (revised 2026-08-28): Language keeps a hardcoded,
+// locally-scoped option list (not extracted to utils/ -- exactly one
+// consumer today, see this spec's Design Decisions) resolved to
+// human-readable names via Intl.DisplayNames, mirroring
+// utils/countryName.ts's formatCountryName pattern but for language codes
+// specifically. Language now renders through KeywordPicker itself (the same
+// chip-with-"x" UX Country already uses) instead of a bespoke picker --
+// single-select is enforced by a thin adapter where it's used below, not
+// here. Unlike Country's pinned codes (deliberately excluded from `options`
+// so they display as bare codes), Language's pinned codes ARE included in
+// `options` so resolvePinnedOptions resolves them to full names.
 let languageDisplayNames: Intl.DisplayNames | null = null
 function getLanguageDisplayNames(): Intl.DisplayNames | null {
   if (languageDisplayNames !== null) return languageDisplayNames
@@ -43,14 +48,13 @@ function formatLanguageName(code: string): string {
   }
 }
 
-const ENGLISH_LANGUAGE_OPTION: PickerOption = { id: 'en', label: 'English' }
+// FRONTEND-047-AC-08: pinned quick-select codes -- English, Spanish, French,
+// German, Japanese, Korean, a judgment call on "most commonly wanted TV
+// languages" (see this spec's Design Decisions).
+const LANGUAGE_PINNED_CODES = ['en', 'es', 'fr', 'de', 'ja', 'ko']
 const LANGUAGE_OPTION_CODES = [
-  'fr',
-  'es',
-  'de',
+  ...LANGUAGE_PINNED_CODES,
   'it',
-  'ja',
-  'ko',
   'zh',
   'pt',
   'hi',
@@ -63,84 +67,6 @@ const LANGUAGE_OPTIONS: PickerOption[] = LANGUAGE_OPTION_CODES.map((code) => ({
   id: code,
   label: formatLanguageName(code),
 }))
-
-interface LanguagePickerProps {
-  readonly id: string
-  readonly value: string
-  readonly onChange: (code: string) => void
-}
-
-// FRONTEND-047-AC-08/09: single-select ("choosing an option replaces the
-// current value") -- a genuinely different interaction from KeywordPicker's
-// multi-select/chip design, so this is a small purpose-built local
-// component rather than forcing single-select into KeywordPicker. The input
-// shows the *selected option's display label* after a selection (e.g.
-// "French"), not the raw code sent on the wire -- distinct from
-// KeywordPicker's addOption, which clears the input on every add.
-function LanguagePicker({ id, value, onChange }: LanguagePickerProps) {
-  const [inputValue, setInputValue] = useState(() =>
-    value === '' ? '' : formatLanguageName(value),
-  )
-  // Keeps the displayed text in sync when `value` changes from outside this
-  // component (e.g. Reset Filters clearing it back to '') without a
-  // setState-in-effect cascade -- the React-recommended "adjusting state
-  // when a prop changes" render-time pattern instead (react.dev/learn/
-  // you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes).
-  // Selecting an option itself also drives `value` via onChange, so this
-  // doesn't fight with that path, it just mirrors it.
-  const [prevValue, setPrevValue] = useState(value)
-  if (value !== prevValue) {
-    setPrevValue(value)
-    setInputValue(value === '' ? '' : formatLanguageName(value))
-  }
-
-  const trimmedInput = inputValue.trim()
-  const searchMatches =
-    trimmedInput === ''
-      ? []
-      : LANGUAGE_OPTIONS.filter((option) =>
-          option.label.toLowerCase().includes(trimmedInput.toLowerCase()),
-        )
-
-  const selectOption = (option: PickerOption) => {
-    onChange(option.id)
-    setInputValue(option.label)
-  }
-
-  return (
-    <div className={styles.field}>
-      <label htmlFor={id}>Language</label>
-      <input
-        id={id}
-        type="text"
-        value={inputValue}
-        onChange={(event) => setInputValue(event.target.value)}
-      />
-      <ul className={keywordPickerStyles.suggestions}>
-        <li>
-          <button
-            type="button"
-            className={keywordPickerStyles.suggestionButton}
-            onClick={() => selectOption(ENGLISH_LANGUAGE_OPTION)}
-          >
-            English
-          </button>
-        </li>
-        {searchMatches.map((option) => (
-          <li key={option.id}>
-            <button
-              type="button"
-              className={keywordPickerStyles.suggestionButton}
-              onClick={() => selectOption(option)}
-            >
-              {option.label}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
 
 // FRONTEND-042: two-tier source selector -- 'mode' picks the top-level tab
 // ("Use My Series" merges the former "Automatic"/"Specific Series" -- see
@@ -596,6 +522,20 @@ export function RecommendationControls({
       .getKeywordStats()
       .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
       .catch(() => undefined)
+  }, [])
+
+  // Fix 3 (2026-08-28, live testing): establishes the real default query on
+  // first mount -- without this, App.tsx's recommendationQuery starts
+  // undefined and nothing ever calls onQueryChange until a user action
+  // (mode change, Apply Filters), so the very first request fires with zero
+  // query params at all and hits the backend's Custom Search
+  // unfiltered-discover fallback instead of "Use My Series" pool sourcing
+  // (initialState.mode). buildQuery/initialState already own what the
+  // default query should be, so this reuses them rather than duplicating a
+  // default in App.tsx.
+  useEffect(() => {
+    onQueryChange(buildQuery(state))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: establishes the initial default query once; subsequent changes are deliberately gated behind Apply Filters (FRONTEND-040), not this effect
   }, [])
 
   // FRONTEND-040-AC-01: state-only update, no longer a choke point that
@@ -1217,11 +1157,18 @@ export function RecommendationControls({
                       />
                     </div>
 
-                    <LanguagePicker
-                      id="recommendation-language"
-                      value={state.language}
-                      onChange={(code) => updateState({ language: code })}
-                    />
+                    <div className={styles.field}>
+                      <KeywordPicker
+                        id="recommendation-language"
+                        label="Language"
+                        selected={state.language ? [state.language] : []}
+                        onChange={(next) =>
+                          updateState({ language: next.at(-1) ?? '' })
+                        }
+                        options={LANGUAGE_OPTIONS}
+                        pinnedOptions={LANGUAGE_PINNED_CODES}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1450,11 +1397,18 @@ export function RecommendationControls({
                     />
                   </div>
 
-                  <LanguagePicker
-                    id="recommendation-language"
-                    value={state.language}
-                    onChange={(code) => updateState({ language: code })}
-                  />
+                  <div className={styles.field}>
+                    <KeywordPicker
+                      id="recommendation-language"
+                      label="Language"
+                      selected={state.language ? [state.language] : []}
+                      onChange={(next) =>
+                        updateState({ language: next.at(-1) ?? '' })
+                      }
+                      options={LANGUAGE_OPTIONS}
+                      pinnedOptions={LANGUAGE_PINNED_CODES}
+                    />
+                  </div>
                 </>
               )}
 

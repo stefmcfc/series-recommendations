@@ -81,12 +81,38 @@ describe('FRONTEND-010-AC-08/09/10: display, empty state', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows an empty-state message when there are no results', async () => {
+  it('shows the Use My Series empty-state message when sourceMode is useMySeries', async () => {
+    mockGetRecommendations.mockResolvedValue([])
+    render(<RecommendationsList query={{ sourceMode: 'useMySeries' }} />)
+
+    expect(
+      await screen.findByText(/no recommendations yet/i),
+    ).toBeInTheDocument()
+  })
+
+  // Fix 2 (2026-08-28, live testing -- pre-existing bug, not part of any
+  // open spec): the "mark a series as Completed" message only makes sense
+  // for "Use My Series" pool-based sourcing -- every other case (Trending,
+  // Highest Rated, Custom Search, or no query/undefined at all) now shows a
+  // generic "no results" message instead.
+  it('shows a generic empty-state message when sourceMode is not useMySeries', async () => {
+    mockGetRecommendations.mockResolvedValue([])
+    render(<RecommendationsList query={{ sourceMode: 'trending' }} />)
+
+    expect(
+      await screen.findByText(/no shows match these filters/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/no recommendations yet/i),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the generic empty-state message when no query is provided at all', async () => {
     mockGetRecommendations.mockResolvedValue([])
     render(<RecommendationsList />)
 
     expect(
-      await screen.findByText(/no recommendations yet/i),
+      await screen.findByText(/no shows match these filters/i),
     ).toBeInTheDocument()
   })
 })
@@ -375,7 +401,7 @@ describe('FRONTEND-010-AC-20: TMDB attribution', () => {
       ),
     ).toBeInTheDocument()
 
-    await screen.findByText(/no recommendations yet/i)
+    await screen.findByText(/no shows match these filters/i)
     expect(
       screen.getByText(
         /this product uses the tmdb api but is not endorsed or certified by tmdb/i,

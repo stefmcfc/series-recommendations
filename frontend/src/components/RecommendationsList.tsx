@@ -242,10 +242,24 @@ export function RecommendationsList({
 
       {!loading && !error && recommendations.length === 0 && (
         <div className={styles.empty}>
-          <p>
-            No recommendations yet — mark a series as Completed to get
-            suggestions.
-          </p>
+          {/* Fix 2 (2026-08-28, live testing -- pre-existing bug, not part
+              of any open spec): this message only makes sense for "Use My
+              Series" pool-based sourcing (query.sourceMode === 'useMySeries'
+              -- series_spec_033/frontend_spec_049 made "Use My Series"
+              always send sourceMode explicitly, so undefined can no longer
+              mean anything else post-series_spec_033). It was previously
+              shown unconditionally, including under Trending/Highest
+              Rated/Custom Search, where "mark a series as Completed" is
+              nonsensical advice since those modes don't source from tracked
+              series at all. */}
+          {query?.sourceMode === 'useMySeries' ? (
+            <p>
+              No recommendations yet — mark a series as Completed to get
+              suggestions.
+            </p>
+          ) : (
+            <p>No shows match these filters — try widening your search.</p>
+          )}
         </div>
       )}
 
