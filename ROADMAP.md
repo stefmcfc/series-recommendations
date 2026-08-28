@@ -92,7 +92,9 @@ the table above.)
 Pure internal refactors — tracked here rather than in the tables above since they have no
 user-facing feature name.
 
-| Spec                                                     | What it does                                                                                     | Status  |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------- |
-| `tooling_spec_004_external_api_client_shared_helpers.md` | Extract shared JSON-coercion/api-key-guard helpers out of `TmdbClient`/`OmdbClient`              | ✅ Done |
-| `tooling_spec_006_series_view_shared_action_helpers.md`  | Extract shared rewatch-toggle/delete-submission logic out of `SeriesDetail.tsx`/`SeriesList.tsx` | ✅ Done |
+| Spec                                                          | What it does                                                                                                                                                              | Status         |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `tooling_spec_004_external_api_client_shared_helpers.md`      | Extract shared JSON-coercion/api-key-guard helpers out of `TmdbClient`/`OmdbClient`                                                                                       | ✅ Done        |
+| `tooling_spec_006_series_view_shared_action_helpers.md`       | Extract shared rewatch-toggle/delete-submission logic out of `SeriesDetail.tsx`/`SeriesList.tsx`                                                                          | ✅ Done        |
+| `tooling_spec_007_tmdb_client_discover_filters_extraction.md` | Extract `TmdbClient.discover()`'s `DiscoverFilters`-param-building into its own method (Cognitive Complexity 20→≤15)                                                      | ⬜ Not started |
+| `tooling_spec_008_recommendation_controls_decomposition.md`   | Split `RecommendationControls.tsx` into per-mode panel components (`UseMySeriesPanel`/`CustomSearchPanel`/`TrendingPanel`/`HighestRatedPanel`/`RecommendationFiltersBox`) | ⬜ Not started |

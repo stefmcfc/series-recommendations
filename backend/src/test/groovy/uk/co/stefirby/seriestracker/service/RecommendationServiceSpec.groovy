@@ -12,6 +12,7 @@ import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 import spock.lang.Specification
 
+import java.time.Clock
 import java.time.LocalDateTime
 
 class RecommendationServiceSpec extends Specification {
@@ -22,7 +23,7 @@ class RecommendationServiceSpec extends Specification {
 
     RecommendationService recommendationService =
         new RecommendationService(tmdbClient,
-            new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
+            new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -55,7 +56,7 @@ class RecommendationServiceSpec extends Specification {
      * interaction cardinality directly, matching the spec's own test sketches.
      */
     private RecommendationService serviceWithMockSourcing(RecommendationSourcingService sourcingService) {
-        new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), sourcingService,
+        new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), sourcingService,
             new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient),
             new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200),
             new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"),
@@ -147,7 +148,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
+            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -166,7 +167,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
+            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)

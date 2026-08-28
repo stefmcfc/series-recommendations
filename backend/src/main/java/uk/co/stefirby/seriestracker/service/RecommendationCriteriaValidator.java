@@ -4,6 +4,7 @@ import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Year;
 
 /**
@@ -16,6 +17,12 @@ public class RecommendationCriteriaValidator {
 
     /** Floor for {@code yearMin}/{@code yearMax} (SERIES-031-AC-12) -- safely before any TV series existed. */
     private static final int MIN_VALID_YEAR = 1900;
+
+    private final Clock clock;
+
+    public RecommendationCriteriaValidator(Clock clock) {
+        this.clock = clock;
+    }
 
     /**
      * Each independent check is its own method (java:S3776) -- this method's own job is just to
@@ -97,11 +104,15 @@ public class RecommendationCriteriaValidator {
      * unvalidated, so a negative or far-future year passed straight through to the post-fetch
      * comparison or, since {@code series_spec_031}, produced a malformed {@code air_date.gte}/
      * {@code .lte} date string sent directly to TMDB (e.g. {@code air_date.gte=-5-01-01}). The
-     * upper bound is resolved at request time ({@code Year.now()}, not hardcoded) so it stays
-     * correct as years pass, rather than needing a periodic manual bump.
+     * upper bound is resolved at request time ({@code Year.now(clock)}, not hardcoded) so it
+     * stays correct as years pass, rather than needing a periodic manual bump. Takes the
+     * injected {@link Clock} bean (java:S8688) rather than the JVM's implicit default zone,
+     * matching this codebase's existing {@code ClockConfig}/{@code Clock.systemDefaultZone()}
+     * convention (see {@code SeriesService}/{@code BulkRefreshService} et al.) instead of
+     * introducing a second, one-off approach (e.g. hardcoding UTC).
      */
     private void validateYearRange(RecommendationCriteria c) {
-        int maxValidYear = Year.now().getValue() + 1;
+        int maxValidYear = Year.now(clock).getValue() + 1;
         Integer yearMin = c.getYearMin();
         Integer yearMax = c.getYearMax();
 

@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Backend: `RecommendationCriteriaValidator`'s year-range validation now takes the app's injected `Clock` bean (`Year.now(clock)`) instead of the JVM's implicit default time zone (SonarQube `java:S8688`), matching this codebase's existing `ClockConfig` convention used elsewhere.
+- Frontend: `KeywordPicker`'s repeated `string[] | PickerOption[]` union type is replaced by a single exported `PickerOptions` type alias (SonarQube `typescript:S4323`), no behavior change.
+
 ## [2.23.0] - 2026-08-28
 
 ### Fixed
