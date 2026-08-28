@@ -11,7 +11,13 @@ import {
 import { formatCountryName } from '../utils/countryName'
 import styles from './RecommendationControls.module.css'
 
-type SourceMode = 'automatic' | 'specific' | 'genre' | 'trending' | 'topRated'
+// FRONTEND-042: two-tier source selector -- 'mode' picks the top-level tab
+// ("Use My Series" merges the former "Automatic"/"Specific Series" -- see
+// frontend_spec_042's Design Decisions for why those were always the same
+// thing), 'discoverMode' (below) picks which of the three Discover sub-tabs
+// is active, relevant only while mode === 'discover'.
+type SourceMode = 'useMySeries' | 'discover'
+type DiscoverMode = 'customSearch' | 'trending' | 'topRated'
 type SortByOption = 'score' | 'recommendationCount'
 type TrendingWindow = 'day' | 'week'
 // FRONTEND-035: picker-scoped filter/sort state for "Specific Series" mode --
@@ -43,6 +49,7 @@ interface RecommendationControlsProps {
 
 interface ControlsState {
   mode: SourceMode
+  discoverMode: DiscoverMode
   selectedSeriesIds: string[]
   genresSelected: string[]
   keywordsSelected: string[]
@@ -64,13 +71,15 @@ interface ControlsState {
 
 // FRONTEND-033-AC-03: each mode's default matches its current implicit
 // behavior exactly, so a user who never touches the control sees no
-// behavior change from before this spec.
+// behavior change from before this spec. FRONTEND-042: keys rekeyed from the
+// old flat 'genre' mode name to the new 'customSearch' Discover sub-mode
+// name -- same two defaults, same behavior, cosmetic rename only.
 const DISCOVER_SORT_BY_DEFAULTS: Record<
-  'topRated' | 'genre',
+  'topRated' | 'customSearch',
   DiscoverSortByOption
 > = {
   topRated: 'vote_average.desc',
-  genre: 'popularity.desc',
+  customSearch: 'popularity.desc',
 }
 
 // FRONTEND-035-AC-14: field list/labels mirror SeriesList.tsx's own
@@ -90,7 +99,8 @@ const SPECIFIC_SERIES_SORT_BY_OPTIONS: {
 ]
 
 const initialState: ControlsState = {
-  mode: 'automatic',
+  mode: 'useMySeries',
+  discoverMode: 'customSearch',
   selectedSeriesIds: [],
   genresSelected: [],
   keywordsSelected: [],
@@ -117,26 +127,69 @@ function parseCommaList(value: string): string[] {
     .filter((v) => v !== '')
 }
 
+// FRONTEND-042: shared by both tab tiers' change handlers (top-level
+// useMySeries/discover, and the nested Discover sub-tabs) -- computes the
+// minVoteCount auto-fill (FRONTEND-030-AC-07/08/09) and discoverSortBy reset
+// (FRONTEND-033-AC-05) side effects that used to live in one flat
+// handleModeChange, now keyed off the two-tier mode/discoverMode pair
+// instead of the old five-value SourceMode. Mutates `patch` in place, mirrors
+// the applySourceModeQuery/applyRatingAndRangeFilters mutate-a-draft-query
+// convention already used elsewhere in this file.
+function applyModeChangeSideEffects(
+  prevState: ControlsState,
+  nextMode: SourceMode,
+  nextDiscoverMode: DiscoverMode,
+  patch: Partial<ControlsState>,
+): void {
+  const enteringTopRated =
+    nextMode === 'discover' && nextDiscoverMode === 'topRated'
+  const leavingTopRated =
+    prevState.mode === 'discover' && prevState.discoverMode === 'topRated'
+
+  if (!prevState.minVoteCountTouched) {
+    if (enteringTopRated) {
+      patch.minVoteCount = '200'
+    } else if (leavingTopRated) {
+      patch.minVoteCount = ''
+    }
+  }
+
+  // FRONTEND-033-AC-05: entering topRated/customSearch resets the sort
+  // selection to that sub-mode's own default -- never leaks a discoverSortBy
+  // value chosen under one into the other, or into an unrelated mode's
+  // request (buildQuery only ever reads it for topRated/customSearch).
+  if (
+    nextMode === 'discover' &&
+    (nextDiscoverMode === 'topRated' || nextDiscoverMode === 'customSearch')
+  ) {
+    patch.discoverSortBy = DISCOVER_SORT_BY_DEFAULTS[nextDiscoverMode]
+  }
+}
+
+// FRONTEND-042: rekeyed for the two-tier state -- the wire values this
+// produces (query.seriesIds/genres/keywords/sourceMode/discoverSortBy) are
+// byte-identical to before this spec, only the UI-state conditions guarding
+// them changed.
 function applySourceModeQuery(
   state: ControlsState,
   query: RecommendationQuery,
 ): void {
-  if (state.mode === 'specific' && state.selectedSeriesIds.length > 0) {
+  if (state.mode === 'useMySeries' && state.selectedSeriesIds.length > 0) {
     query.seriesIds = state.selectedSeriesIds
   }
 
-  if (state.mode === 'genre') {
+  if (state.mode === 'discover' && state.discoverMode === 'customSearch') {
     if (state.genresSelected.length > 0) query.genres = state.genresSelected
     if (state.keywordsSelected.length > 0)
       query.keywords = state.keywordsSelected
   }
 
-  if (state.mode === 'trending') {
+  if (state.mode === 'discover' && state.discoverMode === 'trending') {
     query.sourceMode = 'trending'
     query.trendingWindow = state.trendingWindow
   }
 
-  if (state.mode === 'topRated') {
+  if (state.mode === 'discover' && state.discoverMode === 'topRated') {
     query.sourceMode = 'topRated'
   }
 
@@ -144,8 +197,13 @@ function applySourceModeQuery(
   // own default -- mirrors SeriesList.tsx's buildSortParam wire-minimization
   // convention (series_spec_009) so a client at the default behaves
   // identically to a pre-FRONTEND-033 client.
-  if (state.mode === 'topRated' || state.mode === 'genre') {
-    if (state.discoverSortBy !== DISCOVER_SORT_BY_DEFAULTS[state.mode]) {
+  if (
+    state.mode === 'discover' &&
+    (state.discoverMode === 'topRated' || state.discoverMode === 'customSearch')
+  ) {
+    if (
+      state.discoverSortBy !== DISCOVER_SORT_BY_DEFAULTS[state.discoverMode]
+    ) {
       query.discoverSortBy = state.discoverSortBy
     }
   }
@@ -155,7 +213,7 @@ function applyRatingAndRangeFilters(
   state: ControlsState,
   query: RecommendationQuery,
 ): void {
-  const hasSourcePool = state.mode === 'automatic' || state.mode === 'specific'
+  const hasSourcePool = state.mode === 'useMySeries'
   if (hasSourcePool && state.minSourceRating.trim() !== '') {
     query.minSourceRating = Number(state.minSourceRating)
   }
@@ -401,31 +459,46 @@ export function RecommendationControls({
 
   // FRONTEND-040-AC-02: the one control that keeps today's auto-fetch-on-
   // change behavior -- deliberately does not go through updateState, so it
-  // keeps calling onQueryChange immediately, unchanged from before this spec.
-  const handleModeChange = (mode: SourceMode) => {
+  // keeps calling onQueryChange immediately, unchanged from before this
+  // spec. FRONTEND-042 splits this into two call sites (top-level tab,
+  // Discover sub-tab) since the selector is now a two-tier tab widget
+  // instead of one flat radio group; FRONTEND-042-AC-15 requires each to
+  // no-op on a re-click of the already-active tab, since tab <button>s
+  // don't get that behavior for free the way native radio inputs do.
+  const handleTopLevelModeChange = (mode: SourceMode) => {
+    if (mode === state.mode) return
+
+    // Entering Discover always lands on its default sub-tab (Custom
+    // Search); leaving it (or staying on Use My Series) doesn't touch
+    // discoverMode -- it's simply irrelevant while mode !== 'discover'.
+    const nextDiscoverMode: DiscoverMode =
+      mode === 'discover' ? 'customSearch' : state.discoverMode
+
     const patch: Partial<ControlsState> = {
       mode,
+      discoverMode: nextDiscoverMode,
       selectedSeriesIds: [],
       genresSelected: [],
       keywordsSelected: [],
     }
+    applyModeChangeSideEffects(state, mode, nextDiscoverMode, patch)
 
-    if (!state.minVoteCountTouched) {
-      if (mode === 'topRated') {
-        patch.minVoteCount = '200'
-      } else if (state.mode === 'topRated') {
-        patch.minVoteCount = ''
-      }
-    }
+    const next = { ...state, ...patch }
+    setState(next)
+    onQueryChange(buildQuery(next))
+  }
 
-    // FRONTEND-033-AC-05: entering topRated/genre resets the sort selection
-    // to that mode's own default, mirroring the minVoteCount mode-switch
-    // reset pattern above -- never leaks a discoverSortBy value chosen under
-    // one of these modes into the other, or into an unrelated mode's request
-    // (buildQuery only ever reads it for topRated/genre in the first place).
-    if (mode === 'topRated' || mode === 'genre') {
-      patch.discoverSortBy = DISCOVER_SORT_BY_DEFAULTS[mode]
+  const handleDiscoverSubModeChange = (discoverMode: DiscoverMode) => {
+    if (state.mode === 'discover' && discoverMode === state.discoverMode) return
+
+    const patch: Partial<ControlsState> = {
+      mode: 'discover',
+      discoverMode,
+      selectedSeriesIds: [],
+      genresSelected: [],
+      keywordsSelected: [],
     }
+    applyModeChangeSideEffects(state, 'discover', discoverMode, patch)
 
     const next = { ...state, ...patch }
     setState(next)
@@ -518,17 +591,23 @@ export function RecommendationControls({
   }
 
   const showGenreKeywordHint =
-    state.mode === 'genre' &&
+    state.mode === 'discover' &&
+    state.discoverMode === 'customSearch' &&
     state.genresSelected.length === 0 &&
     state.keywordsSelected.length === 0
 
-  const showMinSourceRating =
-    state.mode === 'automatic' || state.mode === 'specific'
+  const showMinSourceRating = state.mode === 'useMySeries'
 
-  // FRONTEND-033-AC-01: topRated/genre get four real, TMDB-native options in
-  // place of the legacy Best Match/Vote Average(-relabeled) pair.
+  // FRONTEND-033-AC-01: topRated/customSearch get four real, TMDB-native
+  // options in place of the legacy Best Match/Vote Average(-relabeled) pair.
   const showDiscoverSortByOptions =
-    state.mode === 'topRated' || state.mode === 'genre'
+    state.mode === 'discover' &&
+    (state.discoverMode === 'topRated' || state.discoverMode === 'customSearch')
+
+  // FRONTEND-042: Sort By is hidden only under Discover > Popular Right Now,
+  // unchanged behavior from the old flat 'trending' mode, rekeyed.
+  const hideSortBy =
+    state.mode === 'discover' && state.discoverMode === 'trending'
 
   // FRONTEND-035-AC-05/13: computed once, shared by both the inline picker
   // and the "Show all series" modal.
@@ -551,99 +630,362 @@ export function RecommendationControls({
   return (
     <>
       <div className={styles.container}>
-        <fieldset className={styles.modeFieldset}>
-          <legend>Recommendation Source</legend>
-
-          <div className={styles.modeOption}>
-            <input
-              id="source-mode-automatic"
-              type="radio"
-              name="source-mode"
-              checked={state.mode === 'automatic'}
-              onChange={() => handleModeChange('automatic')}
+        {/* FRONTEND-042: real two-tier WAI-ARIA Tabs pattern (role="tablist"/
+            "tab"/"tabpanel", aria-selected/aria-controls) replaces the old
+            flat radio <fieldset> -- this switches which panel of the page is
+            shown, which is what Tabs is for, not a radio-group form field.
+            Deliberately not <NavLink>s (that's frontend_spec_041's separate,
+            actually-navigates-somewhere top-level app nav). */}
+        <div className={styles.sourceSelector}>
+          <div
+            role="tablist"
+            aria-label="Recommendation Source"
+            className={styles.tablist}
+          >
+            <button
+              type="button"
+              role="tab"
+              id="source-tab-use-my-series"
+              aria-selected={state.mode === 'useMySeries'}
+              aria-controls="source-panel-use-my-series"
+              className={`${styles.tab} ${
+                state.mode === 'useMySeries' ? styles.tabActive : ''
+              }`}
               disabled={loading}
-            />
-            <label htmlFor="source-mode-automatic">Automatic</label>
+              onClick={() => handleTopLevelModeChange('useMySeries')}
+            >
+              Use My Series
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="source-tab-discover"
+              aria-selected={state.mode === 'discover'}
+              aria-controls="source-panel-discover"
+              className={`${styles.tab} ${
+                state.mode === 'discover' ? styles.tabActive : ''
+              }`}
+              disabled={loading}
+              onClick={() => handleTopLevelModeChange('discover')}
+            >
+              Discover
+            </button>
           </div>
 
-          <div className={styles.modeOption}>
-            <input
-              id="source-mode-specific"
-              type="radio"
-              name="source-mode"
-              checked={state.mode === 'specific'}
-              onChange={() => handleModeChange('specific')}
-              disabled={loading}
-            />
-            <label htmlFor="source-mode-specific">Specific Series</label>
-          </div>
+          {state.mode === 'useMySeries' && (
+            <div
+              role="tabpanel"
+              id="source-panel-use-my-series"
+              aria-labelledby="source-tab-use-my-series"
+              className={styles.tabPanel}
+            >
+              {/* FRONTEND-042-AC-02/03: always rendered now (no separate
+                  "automatic" mode to hide it under) -- this hint replaces the
+                  affordance that used to live in having two visibly distinct
+                  mode names. */}
+              <p className={styles.hint}>
+                Narrow to specific series (optional) — leave empty to use your
+                top-rated completed shows automatically.
+              </p>
 
-          <div className={styles.modeOption}>
-            <input
-              id="source-mode-genre"
-              type="radio"
-              name="source-mode"
-              checked={state.mode === 'genre'}
-              onChange={() => handleModeChange('genre')}
-              disabled={loading}
-            />
-            <label htmlFor="source-mode-genre">Genre &amp; Keyword</label>
-          </div>
+              <div className={styles.specificSeriesSection}>
+                {allSeries.length === 0 ? (
+                  <p className={styles.hint}>No series to choose from yet.</p>
+                ) : (
+                  <>
+                    {/* Layout-only, no spec (2026-08-27): Filter by Genre's scrollable box left a lot of empty width next to it, so Status + Sort now share that row as a second column -- temporary until this section is revisited for a sheet/modal-based filter UI. */}
+                    <div className={styles.specificSeriesFiltersRow}>
+                      {genreOptions.length > 0 && (
+                        <fieldset className={styles.modeFieldset}>
+                          <legend>Filter by Genre</legend>
+                          <div className={styles.seriesPicker}>
+                            {genreOptions.map((genre) => (
+                              <div key={genre} className={styles.seriesOption}>
+                                <input
+                                  id={`specific-series-genre-filter-${genre}`}
+                                  type="checkbox"
+                                  checked={specificSeriesGenreFilter.includes(
+                                    genre,
+                                  )}
+                                  onChange={handleSpecificSeriesGenreFilterToggle(
+                                    genre,
+                                  )}
+                                />
+                                <label
+                                  htmlFor={`specific-series-genre-filter-${genre}`}
+                                >
+                                  {genre}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </fieldset>
+                      )}
 
-          <div className={styles.modeOption}>
-            <input
-              id="source-mode-trending"
-              type="radio"
-              name="source-mode"
-              checked={state.mode === 'trending'}
-              onChange={() => handleModeChange('trending')}
-              disabled={loading}
-            />
-            <label htmlFor="source-mode-trending">Popular Right Now</label>
-          </div>
+                      <div className={styles.specificSeriesRightColumn}>
+                        <fieldset className={styles.modeFieldset}>
+                          <legend>Filter by Status</legend>
 
-          <div className={styles.modeOption}>
-            <input
-              id="source-mode-top-rated"
-              type="radio"
-              name="source-mode"
-              checked={state.mode === 'topRated'}
-              onChange={() => handleModeChange('topRated')}
-              disabled={loading}
-            />
-            <label htmlFor="source-mode-top-rated">Highest Rated</label>
-          </div>
-        </fieldset>
+                          <div className={styles.modeOption}>
+                            <input
+                              id="specific-series-status-any"
+                              type="radio"
+                              name="specific-series-status"
+                              checked={specificSeriesStatusFilter === 'any'}
+                              onChange={() =>
+                                setSpecificSeriesStatusFilter('any')
+                              }
+                            />
+                            <label htmlFor="specific-series-status-any">
+                              Any Status
+                            </label>
+                          </div>
 
-        {state.mode === 'trending' && (
-          <fieldset className={styles.modeFieldset}>
-            <legend>Trending Window</legend>
+                          <div className={styles.modeOption}>
+                            <input
+                              id="specific-series-status-completed-only"
+                              type="radio"
+                              name="specific-series-status"
+                              checked={
+                                specificSeriesStatusFilter === 'completedOnly'
+                              }
+                              onChange={() =>
+                                setSpecificSeriesStatusFilter('completedOnly')
+                              }
+                            />
+                            <label htmlFor="specific-series-status-completed-only">
+                              Completed Only
+                            </label>
+                          </div>
 
-            <div className={styles.modeOption}>
-              <input
-                id="trending-window-day"
-                type="radio"
-                name="trending-window"
-                checked={state.trendingWindow === 'day'}
-                onChange={() => updateState({ trendingWindow: 'day' })}
-              />
-              <label htmlFor="trending-window-day">Day</label>
+                          <div className={styles.modeOption}>
+                            <input
+                              id="specific-series-status-completed-or-watching"
+                              type="radio"
+                              name="specific-series-status"
+                              checked={
+                                specificSeriesStatusFilter ===
+                                'completedOrWatching'
+                              }
+                              onChange={() =>
+                                setSpecificSeriesStatusFilter(
+                                  'completedOrWatching',
+                                )
+                              }
+                            />
+                            <label htmlFor="specific-series-status-completed-or-watching">
+                              Completed or Watching
+                            </label>
+                          </div>
+                        </fieldset>
+
+                        <div className={styles.sortControl}>
+                          <label htmlFor="specific-series-sort-by">
+                            Sort by
+                          </label>
+                          <select
+                            id="specific-series-sort-by"
+                            value={specificSeriesSortBy}
+                            onChange={handleSpecificSeriesSortByChange}
+                          >
+                            {SPECIFIC_SERIES_SORT_BY_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            className={styles.sortDirectionButton}
+                            aria-label={
+                              specificSeriesSortDirection === 'asc'
+                                ? 'Sort ascending'
+                                : 'Sort descending'
+                            }
+                            onClick={handleSpecificSeriesSortDirectionToggle}
+                          >
+                            {specificSeriesSortDirection === 'asc' ? '↑' : '↓'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <KeywordPicker
+                      id="specific-series-picker"
+                      label="Series"
+                      selected={state.selectedSeriesIds}
+                      onChange={handleSpecificSeriesSelectionChange}
+                      options={specificSeriesOptions}
+                      placeholder="Type to search your series"
+                      maxSuggestionsWhenEmpty={SPECIFIC_SERIES_PICKER_LIMIT}
+                    />
+
+                    <button
+                      type="button"
+                      className={styles.browseSeriesButton}
+                      onClick={() => setSpecificSeriesBrowseModalOpen(true)}
+                    >
+                      Show all series
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
+          )}
 
-            <div className={styles.modeOption}>
-              <input
-                id="trending-window-week"
-                type="radio"
-                name="trending-window"
-                checked={state.trendingWindow === 'week'}
-                onChange={() => updateState({ trendingWindow: 'week' })}
-              />
-              <label htmlFor="trending-window-week">Week</label>
+          {state.mode === 'discover' && (
+            <div
+              role="tabpanel"
+              id="source-panel-discover"
+              aria-labelledby="source-tab-discover"
+              className={styles.tabPanel}
+            >
+              <div
+                role="tablist"
+                aria-label="Discover mode"
+                className={styles.tablistNested}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  id="discover-tab-custom-search"
+                  aria-selected={state.discoverMode === 'customSearch'}
+                  aria-controls="discover-panel-custom-search"
+                  className={`${styles.tab} ${
+                    state.discoverMode === 'customSearch'
+                      ? styles.tabActive
+                      : ''
+                  }`}
+                  disabled={loading}
+                  onClick={() => handleDiscoverSubModeChange('customSearch')}
+                >
+                  Custom Search
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="discover-tab-trending"
+                  aria-selected={state.discoverMode === 'trending'}
+                  aria-controls="discover-panel-trending"
+                  className={`${styles.tab} ${
+                    state.discoverMode === 'trending' ? styles.tabActive : ''
+                  }`}
+                  disabled={loading}
+                  onClick={() => handleDiscoverSubModeChange('trending')}
+                >
+                  Popular Right Now
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="discover-tab-top-rated"
+                  aria-selected={state.discoverMode === 'topRated'}
+                  aria-controls="discover-panel-top-rated"
+                  className={`${styles.tab} ${
+                    state.discoverMode === 'topRated' ? styles.tabActive : ''
+                  }`}
+                  disabled={loading}
+                  onClick={() => handleDiscoverSubModeChange('topRated')}
+                >
+                  Highest Rated
+                </button>
+              </div>
+
+              {state.discoverMode === 'trending' && (
+                <div
+                  role="tabpanel"
+                  id="discover-panel-trending"
+                  aria-labelledby="discover-tab-trending"
+                  className={styles.tabPanel}
+                >
+                  <fieldset className={styles.modeFieldset}>
+                    <legend>Trending Window</legend>
+
+                    <div className={styles.modeOption}>
+                      <input
+                        id="trending-window-day"
+                        type="radio"
+                        name="trending-window"
+                        checked={state.trendingWindow === 'day'}
+                        onChange={() => updateState({ trendingWindow: 'day' })}
+                      />
+                      <label htmlFor="trending-window-day">Day</label>
+                    </div>
+
+                    <div className={styles.modeOption}>
+                      <input
+                        id="trending-window-week"
+                        type="radio"
+                        name="trending-window"
+                        checked={state.trendingWindow === 'week'}
+                        onChange={() => updateState({ trendingWindow: 'week' })}
+                      />
+                      <label htmlFor="trending-window-week">Week</label>
+                    </div>
+                  </fieldset>
+                </div>
+              )}
+
+              {state.discoverMode === 'customSearch' && (
+                <div
+                  role="tabpanel"
+                  id="discover-panel-custom-search"
+                  aria-labelledby="discover-tab-custom-search"
+                  className={styles.tabPanel}
+                >
+                  <div className={styles.genreKeywordFields}>
+                    <div className={styles.field}>
+                      <span>Genres</span>
+                      <div className={styles.seriesPicker}>
+                        {genreOptions.length === 0 ? (
+                          <p className={styles.hint}>
+                            No genres to choose from yet.
+                          </p>
+                        ) : (
+                          genreOptions.map((genre) => (
+                            <div key={genre} className={styles.seriesOption}>
+                              <input
+                                id={`genre-checkbox-${genre}`}
+                                type="checkbox"
+                                checked={state.genresSelected.includes(genre)}
+                                onChange={handleGenreToggle(genre)}
+                              />
+                              <label htmlFor={`genre-checkbox-${genre}`}>
+                                {genre}
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.field}>
+                      <KeywordPicker
+                        id="recommendation-keywords"
+                        label="Keywords"
+                        selected={state.keywordsSelected}
+                        onChange={(next) =>
+                          updateState({ keywordsSelected: next })
+                        }
+                        placeholder="Type a keyword and press Enter"
+                        options={keywordOptions}
+                        allowFreeText
+                        maxSuggestionsWhenEmpty={KEYWORD_SUGGESTIONS_LIMIT}
+                      />
+                    </div>
+                    {showGenreKeywordHint && (
+                      <p className={styles.hint}>
+                        Enter at least one genre or keyword; otherwise this
+                        falls back to automatic recommendations.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </fieldset>
-        )}
+          )}
+        </div>
 
-        {state.mode !== 'trending' && (
+        {!hideSortBy && (
           <fieldset className={styles.sortByFieldset}>
             <legend>Sort By</legend>
 
@@ -729,187 +1071,6 @@ export function RecommendationControls({
               </>
             )}
           </fieldset>
-        )}
-
-        {state.mode === 'specific' && (
-          <div className={styles.specificSeriesSection}>
-            {allSeries.length === 0 ? (
-              <p className={styles.hint}>No series to choose from yet.</p>
-            ) : (
-              <>
-                {/* Layout-only, no spec (2026-08-27): Filter by Genre's scrollable box left a lot of empty width next to it, so Status + Sort now share that row as a second column -- temporary until this section is revisited for a sheet/modal-based filter UI. */}
-                <div className={styles.specificSeriesFiltersRow}>
-                  {genreOptions.length > 0 && (
-                    <fieldset className={styles.modeFieldset}>
-                      <legend>Filter by Genre</legend>
-                      <div className={styles.seriesPicker}>
-                        {genreOptions.map((genre) => (
-                          <div key={genre} className={styles.seriesOption}>
-                            <input
-                              id={`specific-series-genre-filter-${genre}`}
-                              type="checkbox"
-                              checked={specificSeriesGenreFilter.includes(
-                                genre,
-                              )}
-                              onChange={handleSpecificSeriesGenreFilterToggle(
-                                genre,
-                              )}
-                            />
-                            <label
-                              htmlFor={`specific-series-genre-filter-${genre}`}
-                            >
-                              {genre}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </fieldset>
-                  )}
-
-                  <div className={styles.specificSeriesRightColumn}>
-                    <fieldset className={styles.modeFieldset}>
-                      <legend>Filter by Status</legend>
-
-                      <div className={styles.modeOption}>
-                        <input
-                          id="specific-series-status-any"
-                          type="radio"
-                          name="specific-series-status"
-                          checked={specificSeriesStatusFilter === 'any'}
-                          onChange={() => setSpecificSeriesStatusFilter('any')}
-                        />
-                        <label htmlFor="specific-series-status-any">
-                          Any Status
-                        </label>
-                      </div>
-
-                      <div className={styles.modeOption}>
-                        <input
-                          id="specific-series-status-completed-only"
-                          type="radio"
-                          name="specific-series-status"
-                          checked={
-                            specificSeriesStatusFilter === 'completedOnly'
-                          }
-                          onChange={() =>
-                            setSpecificSeriesStatusFilter('completedOnly')
-                          }
-                        />
-                        <label htmlFor="specific-series-status-completed-only">
-                          Completed Only
-                        </label>
-                      </div>
-
-                      <div className={styles.modeOption}>
-                        <input
-                          id="specific-series-status-completed-or-watching"
-                          type="radio"
-                          name="specific-series-status"
-                          checked={
-                            specificSeriesStatusFilter === 'completedOrWatching'
-                          }
-                          onChange={() =>
-                            setSpecificSeriesStatusFilter('completedOrWatching')
-                          }
-                        />
-                        <label htmlFor="specific-series-status-completed-or-watching">
-                          Completed or Watching
-                        </label>
-                      </div>
-                    </fieldset>
-
-                    <div className={styles.sortControl}>
-                      <label htmlFor="specific-series-sort-by">Sort by</label>
-                      <select
-                        id="specific-series-sort-by"
-                        value={specificSeriesSortBy}
-                        onChange={handleSpecificSeriesSortByChange}
-                      >
-                        {SPECIFIC_SERIES_SORT_BY_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className={styles.sortDirectionButton}
-                        aria-label={
-                          specificSeriesSortDirection === 'asc'
-                            ? 'Sort ascending'
-                            : 'Sort descending'
-                        }
-                        onClick={handleSpecificSeriesSortDirectionToggle}
-                      >
-                        {specificSeriesSortDirection === 'asc' ? '↑' : '↓'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <KeywordPicker
-                  id="specific-series-picker"
-                  label="Series"
-                  selected={state.selectedSeriesIds}
-                  onChange={handleSpecificSeriesSelectionChange}
-                  options={specificSeriesOptions}
-                  placeholder="Type to search your series"
-                  maxSuggestionsWhenEmpty={SPECIFIC_SERIES_PICKER_LIMIT}
-                />
-
-                <button
-                  type="button"
-                  className={styles.browseSeriesButton}
-                  onClick={() => setSpecificSeriesBrowseModalOpen(true)}
-                >
-                  Show all series
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        {state.mode === 'genre' && (
-          <div className={styles.genreKeywordFields}>
-            <div className={styles.field}>
-              <span>Genres</span>
-              <div className={styles.seriesPicker}>
-                {genreOptions.length === 0 ? (
-                  <p className={styles.hint}>No genres to choose from yet.</p>
-                ) : (
-                  genreOptions.map((genre) => (
-                    <div key={genre} className={styles.seriesOption}>
-                      <input
-                        id={`genre-checkbox-${genre}`}
-                        type="checkbox"
-                        checked={state.genresSelected.includes(genre)}
-                        onChange={handleGenreToggle(genre)}
-                      />
-                      <label htmlFor={`genre-checkbox-${genre}`}>{genre}</label>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            <div className={styles.field}>
-              <KeywordPicker
-                id="recommendation-keywords"
-                label="Keywords"
-                selected={state.keywordsSelected}
-                onChange={(next) => updateState({ keywordsSelected: next })}
-                placeholder="Type a keyword and press Enter"
-                options={keywordOptions}
-                allowFreeText
-                maxSuggestionsWhenEmpty={KEYWORD_SUGGESTIONS_LIMIT}
-              />
-            </div>
-            {showGenreKeywordHint && (
-              <p className={styles.hint}>
-                Enter at least one genre or keyword; otherwise this falls back
-                to automatic recommendations.
-              </p>
-            )}
-          </div>
         )}
 
         <div className={styles.filtersSection}>

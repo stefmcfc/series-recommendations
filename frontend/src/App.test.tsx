@@ -281,17 +281,21 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
     render(<App />)
     await screen.findByTestId('add-series-btn')
     expect(
-      screen.queryByRole('button', { name: /^automatic$/i }),
+      screen.queryByRole('tab', { name: /use my series/i }),
     ).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('link', { name: /recommendations/i }))
-    expect(await screen.findByLabelText(/^automatic/i)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('tab', { name: /use my series/i }),
+    ).toBeInTheDocument()
 
     fireEvent.click(
       screen.getByRole('link', { name: /series list|my series/i }),
     )
     await screen.findByTestId('series-list')
-    expect(screen.queryByLabelText(/^automatic/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('tab', { name: /use my series/i }),
+    ).not.toBeInTheDocument()
   })
 })
 

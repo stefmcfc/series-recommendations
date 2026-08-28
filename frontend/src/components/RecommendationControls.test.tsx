@@ -67,13 +67,49 @@ function clickApplyFilters() {
   fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 }
 
-describe('FRONTEND-011-AC-03: three-way sourcing mode selector', () => {
-  it('renders Automatic, Specific Series, and Genre & Keyword options, defaulting to Automatic', () => {
+// FRONTEND-042: the old five flat radios ("Automatic"/"Specific Series"/
+// "Genre & Keyword"/"Popular Right Now"/"Highest Rated") are replaced by a
+// two-tier tab widget -- "Use My Series" (merging the first two) and
+// "Discover" (a parent tab whose own nested tablist offers "Custom Search"/
+// "Popular Right Now"/"Highest Rated", the former "Genre & Keyword" renamed).
+// These helpers implement frontend_spec_042's Design Decisions' mechanical
+// query migration (getByLabelText(mode) -> getByRole('tab', {name})) used
+// throughout this file. Each is idempotent -- clicking an already-active tab
+// is a no-op (FRONTEND-042-AC-15), so calling e.g. selectDiscover() when
+// Discover is already active is always safe.
+function selectUseMySeries() {
+  fireEvent.click(screen.getByRole('tab', { name: /use my series/i }))
+}
+
+function selectDiscover() {
+  fireEvent.click(screen.getByRole('tab', { name: /^discover$/i }))
+}
+
+function selectCustomSearch() {
+  selectDiscover()
+  fireEvent.click(screen.getByRole('tab', { name: /custom search/i }))
+}
+
+function selectPopularRightNow() {
+  selectDiscover()
+  fireEvent.click(screen.getByRole('tab', { name: /popular right now/i }))
+}
+
+function selectHighestRated() {
+  selectDiscover()
+  fireEvent.click(screen.getByRole('tab', { name: /highest rated/i }))
+}
+
+describe('FRONTEND-011-AC-03: two-tier sourcing mode selector', () => {
+  it('renders Use My Series and Discover tabs, defaulting to Use My Series', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    expect(screen.getByLabelText(/^automatic/i)).toBeChecked()
-    expect(screen.getByLabelText(/specific series/i)).not.toBeChecked()
-    expect(screen.getByLabelText(/genre & keyword/i)).not.toBeChecked()
+    expect(
+      screen.getByRole('tab', { name: /use my series/i, selected: true }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /^discover$/i, selected: false }),
+    ).toBeInTheDocument()
   })
 })
 
@@ -95,8 +131,6 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     const input = await screen.findByRole('textbox', { name: 'Series' })
     expect(
@@ -144,7 +178,6 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
       }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     expect(
       await screen.findByRole('button', {
@@ -163,7 +196,6 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
       makeSeries({ id: '1', title: 'Ozark', year: null, originCountry: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     expect(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
@@ -183,7 +215,7 @@ describe('FRONTEND-014-AC-03: degrades gracefully if getGenreOptions() rejects',
     mockGetGenreOptions.mockRejectedValue(new Error('network error'))
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     await waitFor(() => expect(mockGetGenreOptions).toHaveBeenCalled())
     expect(screen.getByText(/^keywords/i)).toBeInTheDocument()
   })
@@ -195,7 +227,7 @@ describe('FRONTEND-014-AC-04/05: genre checkbox list', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
 
     const dramaCheckbox = await screen.findByLabelText('Drama')
     expect(screen.getByLabelText('Action')).toBeInTheDocument()
@@ -225,7 +257,7 @@ describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
     mockGetGenreOptions.mockResolvedValue(['Action'])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     await screen.findByLabelText('Action')
 
     expect(
@@ -241,7 +273,7 @@ describe('FRONTEND-014-AC-08: empty genresSelected omits genres from the query',
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'heist' } })
     fireEvent.keyDown(input, { key: 'Enter' })
@@ -257,7 +289,7 @@ describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', 
     mockGetGenreOptions.mockResolvedValue(['Drama'])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(
       screen.getByText(/enter at least one genre or keyword/i),
     ).toBeInTheDocument()
@@ -276,12 +308,12 @@ describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', 
 })
 
 describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
-  it('clears checked genres when switching from Genre & Keyword to Specific Series', async () => {
+  it('clears checked genres when switching from Custom Search to Use My Series', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama'])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     const dramaCheckbox = await screen.findByLabelText('Drama')
     fireEvent.click(dramaCheckbox)
     clickApplyFilters()
@@ -289,7 +321,7 @@ describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
       expect.objectContaining({ genres: ['Drama'] }),
     )
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
+    selectUseMySeries()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ genres: expect.anything() }),
     )
@@ -297,14 +329,13 @@ describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
 })
 
 describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
-  it('clears seriesIds when switching from Specific Series to Genre & Keyword', async () => {
+  it('clears seriesIds when switching from Use My Series to Custom Search', async () => {
     mockGetAll.mockResolvedValue([
       makeSeries({ id: '1', title: 'Ozark', year: null }),
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
@@ -313,7 +344,7 @@ describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
       expect.objectContaining({ seriesIds: ['1'] }),
     )
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ seriesIds: expect.anything() }),
     )
@@ -335,17 +366,17 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
     expect(screen.getByLabelText(/max per source/i)).toBeInTheDocument()
   })
 
-  it('shows minSourceRating for Automatic/Specific Series but not Genre & Keyword', () => {
+  it('shows minSourceRating for Use My Series but not Custom Search', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
     expect(screen.getByLabelText(/min source rating/i)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(
       screen.queryByLabelText(/min source rating/i),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
+    selectUseMySeries()
     expect(screen.getByLabelText(/min source rating/i)).toBeInTheDocument()
   })
 })
@@ -406,7 +437,6 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
@@ -557,33 +587,39 @@ describe('specific-series fetch failure', () => {
     mockGetAll.mockRejectedValue(new Error('network error'))
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     await waitFor(() => expect(mockGetAll).toHaveBeenCalled())
   })
 })
 
-describe('FRONTEND-027-AC-03: mode selector gains Popular Right Now / Highest Rated', () => {
-  it('renders the two new options, unchecked by default', () => {
+describe('FRONTEND-027-AC-03: Discover reveals Popular Right Now / Highest Rated sub-tabs, unselected by default', () => {
+  it('renders the two sub-tabs unselected, Custom Search selected by default', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
+    selectDiscover()
 
-    expect(screen.getByLabelText(/popular right now/i)).not.toBeChecked()
-    expect(screen.getByLabelText(/highest rated/i)).not.toBeChecked()
+    expect(
+      screen.getByRole('tab', { name: /popular right now/i, selected: false }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /highest rated/i, selected: false }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /custom search/i, selected: true }),
+    ).toBeInTheDocument()
   })
 })
 
 describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch', () => {
-  it('selects Popular Right Now and clears a prior Specific Series selection', async () => {
+  it('selects Popular Right Now and clears a prior Use My Series selection', async () => {
     mockGetAll.mockResolvedValue([
       makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
-    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    selectPopularRightNow()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ sourceMode: 'trending' }),
@@ -597,7 +633,7 @@ describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch'
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
 
     // FRONTEND-030-AC-07: switching into Highest Rated also pre-fills
     // minVoteCount to 200 when untouched.
@@ -613,7 +649,7 @@ describe('FRONTEND-027-AC-05: Day/Week toggle only under Popular Right Now', () 
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    selectPopularRightNow()
     expect(screen.getByLabelText(/^week$/i)).toBeChecked()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -622,7 +658,7 @@ describe('FRONTEND-027-AC-05: Day/Week toggle only under Popular Right Now', () 
       }),
     )
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     expect(screen.queryByLabelText(/^week$/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^day$/i)).not.toBeInTheDocument()
   })
@@ -631,7 +667,7 @@ describe('FRONTEND-027-AC-05: Day/Week toggle only under Popular Right Now', () 
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    selectPopularRightNow()
     fireEvent.click(screen.getByLabelText(/^day$/i))
     clickApplyFilters()
 
@@ -648,7 +684,7 @@ describe('FRONTEND-027-AC-06: no additional control for Highest Rated beyond min
   it('exposes minVoteCount in Filters, with no mode-specific control outside it', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     expect(screen.queryByLabelText(/^week$/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^day$/i)).not.toBeInTheDocument()
 
@@ -662,7 +698,7 @@ describe('FRONTEND-027-AC-07: minSourceRating hidden for both new modes', () => 
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    selectPopularRightNow()
 
     expect(
       screen.queryByLabelText(/min source rating/i),
@@ -673,7 +709,7 @@ describe('FRONTEND-027-AC-07: minSourceRating hidden for both new modes', () => 
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
 
     expect(
       screen.queryByLabelText(/min source rating/i),
@@ -686,7 +722,7 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'submarine' } })
     fireEvent.keyDown(input, { key: 'Enter' })
@@ -701,7 +737,7 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'submarine' } })
     fireEvent.keyDown(input, { key: 'Enter' })
@@ -725,7 +761,7 @@ describe('FRONTEND-032-AC-07: fetches keyword stats and offers them as suggestio
       { name: 'spy', seriesCount: 3, averagePersonalRating: 4 },
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(mockGetKeywordStats).toHaveBeenCalled()
     await screen.findByText('spy')
   })
@@ -735,7 +771,7 @@ describe('FRONTEND-032-AC-08: degrades silently on keyword stats fetch failure',
   it('renders no alert and free text still works when getKeywordStats rejects', async () => {
     mockGetKeywordStats.mockRejectedValue(new Error('fail'))
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -748,15 +784,15 @@ describe('FRONTEND-032-AC-08: degrades silently on keyword stats fetch failure',
 })
 
 describe('FRONTEND-029-AC-12: mode switch still clears keywordsSelected', () => {
-  it('clears typed keywords when switching away from Genre & Keyword', () => {
+  it('clears typed keywords when switching away from Custom Search', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'submarine' } })
     fireEvent.keyDown(input, { key: 'Enter' })
-    fireEvent.click(screen.getByLabelText(/specific series/i))
+    selectUseMySeries()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ keywords: expect.anything() }),
@@ -768,7 +804,7 @@ describe('FRONTEND-029-AC-13: hint recomputed from keywordsSelected', () => {
   it('hides the hint once a keyword is added, shows it again once removed', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(
       screen.getByText(/enter at least one genre or keyword/i),
     ).toBeInTheDocument()
@@ -790,7 +826,7 @@ describe('FRONTEND-029-AC-13: hint recomputed from keywordsSelected', () => {
 describe('FRONTEND-029-AC-24/25: accessible names for the keyword picker embedding', () => {
   it('keyword field is reachable by label with named buttons', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'spy' } })
@@ -851,10 +887,10 @@ describe('FRONTEND-030-AC-07/08: mode-aware Min Vote Count auto-fill', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
 
-    fireEvent.click(screen.getByLabelText(/^automatic/i))
+    selectUseMySeries()
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
   })
 })
@@ -864,11 +900,11 @@ describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbere
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '500' },
     })
-    fireEvent.click(screen.getByLabelText(/^automatic/i))
+    selectUseMySeries()
 
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(500)
   })
@@ -880,7 +916,7 @@ describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbere
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '50' },
     })
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
 
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(50)
   })
@@ -892,7 +928,7 @@ describe('FRONTEND-030-AC-10: Reset Filters clears minVoteCount and minVoteCount
     render(<RecommendationControls onQueryChange={onQueryChange} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '500' },
     })
@@ -912,10 +948,10 @@ describe('FRONTEND-030-AC-11/12: Sort By hidden under Popular Right Now', () => 
 
     expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText(/popular right now/i))
+    selectPopularRightNow()
     expect(screen.queryByText(/^sort by$/i)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
   })
 })
@@ -928,7 +964,7 @@ describe('FRONTEND-030-AC-11/12: Sort By hidden under Popular Right Now', () => 
 describe('FRONTEND-033-AC-01: four TMDB-native sort options under Highest Rated and Genre & Keyword', () => {
   it('shows the four TMDB-native sort options under Highest Rated', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
 
     for (const label of [
       /vote average/i,
@@ -943,7 +979,7 @@ describe('FRONTEND-033-AC-01: four TMDB-native sort options under Highest Rated 
 
   it('shows the same four options under Genre & Keyword', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
 
     for (const label of [
       /vote average/i,
@@ -958,18 +994,18 @@ describe('FRONTEND-033-AC-01: four TMDB-native sort options under Highest Rated 
 
   it('still renders the Sort By fieldset under Genre & Keyword', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(screen.getByText(/^sort by$/i)).toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-033-AC-02: Automatic and Specific Series are unaffected', () => {
+describe('FRONTEND-033-AC-02: Use My Series is unaffected', () => {
   it('continues to show exactly Best Match/Most Recommended', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     expect(screen.getByLabelText(/^best match$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByLabelText(/specific series/i))
+    selectUseMySeries()
     expect(screen.getByLabelText(/^best match$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/most recommended/i)).toBeInTheDocument()
   })
@@ -978,13 +1014,13 @@ describe('FRONTEND-033-AC-02: Automatic and Specific Series are unaffected', () 
 describe('FRONTEND-033-AC-03: correct per-mode default is selected', () => {
   it('Vote Average is the default under Highest Rated', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     expect(screen.getByLabelText(/vote average/i)).toBeChecked()
   })
 
   it('Most Popular is the default under Genre & Keyword', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(screen.getByLabelText(/most popular/i)).toBeChecked()
   })
 })
@@ -994,7 +1030,7 @@ describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, includ
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ discoverSortBy: expect.anything() }),
     )
@@ -1010,7 +1046,7 @@ describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, includ
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ discoverSortBy: expect.anything() }),
     )
@@ -1026,7 +1062,7 @@ describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, includ
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     fireEvent.click(screen.getByLabelText(/most voted/i))
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -1046,9 +1082,9 @@ describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     fireEvent.click(screen.getByLabelText(/most voted/i))
-    fireEvent.click(screen.getByLabelText(/^automatic$/i))
+    selectUseMySeries()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ discoverSortBy: expect.anything() }),
@@ -1059,9 +1095,9 @@ describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByLabelText(/highest rated/i))
+    selectHighestRated()
     fireEvent.click(screen.getByLabelText(/most voted/i))
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
 
     expect(screen.getByLabelText(/most popular/i)).toBeChecked()
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -1082,7 +1118,6 @@ describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () 
       }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     const input = await screen.findByRole('textbox', { name: 'Series' })
     fireEvent.change(input, { target: { value: 'ozark' } })
@@ -1102,7 +1137,6 @@ describe('FRONTEND-035-AC-06: picking a suggestion populates seriesIds', () => {
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
@@ -1136,7 +1170,6 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
@@ -1172,7 +1205,6 @@ describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_
       ),
     )
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     await screen.findByRole('textbox', { name: 'Series' })
 
     // Matches suggestion buttons ("Show 00 - COMPLETED"...) but not the
@@ -1195,7 +1227,6 @@ describe('FRONTEND-035-AC-09: Show all series modal is uncapped and shares selec
       ),
     )
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     await screen.findByRole('textbox', { name: 'Series' })
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1218,10 +1249,13 @@ describe('FRONTEND-035-AC-10: genre/status filters render but never appear in th
     ])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
 
     fireEvent.click(await screen.findByLabelText('Drama'))
     fireEvent.click(screen.getByLabelText(/completed only/i))
+    // FRONTEND-042: "Use My Series" is now active by default (no separate
+    // mode-change click to trigger the auto-fetch this test relies on), so
+    // Apply Filters is clicked explicitly to produce a query to inspect.
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
     const lastCall = onQueryChange.mock.calls.at(-1)![0]
     expect(lastCall).not.toHaveProperty('genres')
@@ -1237,7 +1271,6 @@ describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the
       makeSeries({ id: '2', title: 'Ozark', genres: 'Crime, Drama' }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     fireEvent.click(await screen.findByLabelText('Comedy'))
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1259,7 +1292,6 @@ describe('FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed
       makeSeries({ id: '3', title: 'Firefly', status: 'DROPPED' }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     fireEvent.click(await screen.findByLabelText(/completed or watching/i))
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1303,7 +1335,6 @@ describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => 
       }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     fireEvent.click(await screen.findByLabelText('Drama'))
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1326,7 +1357,6 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
       makeSeries({ id: '2', title: 'A Show', year: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     await screen.findByRole('textbox', { name: 'Series' })
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1345,7 +1375,6 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
       makeSeries({ id: '2', title: 'A Show', year: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     await screen.findByRole('textbox', { name: 'Series' })
 
     fireEvent.click(screen.getByLabelText(/sort ascending/i))
@@ -1372,7 +1401,6 @@ describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction
       makeSeries({ id: '2', title: 'Rated', personalRating: 4, year: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByLabelText(/specific series/i))
     await screen.findByRole('textbox', { name: 'Series' })
 
     fireEvent.change(screen.getByLabelText(/sort by/i), {
@@ -1412,7 +1440,7 @@ describe('FRONTEND-040-AC-02: changing Recommendation Source still calls onQuery
     )
     onQueryChange.mockClear()
 
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
 
     expect(onQueryChange).toHaveBeenCalled()
   })
@@ -1443,7 +1471,7 @@ describe('FRONTEND-040-AC-04: Reset updates local state without firing a request
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    selectCustomSearch()
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i })) // open the disclosure
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
       target: { value: '5' },
@@ -1474,11 +1502,11 @@ describe('FRONTEND-040-AC-07: the processing overlay tracks the loading prop', (
 })
 
 describe('FRONTEND-040-AC-08: Recommendation Source and Apply Filters are disabled while loading', () => {
-  it('disables the mode radios and the Apply Filters button', () => {
+  it('disables the top-level source tabs and the Apply Filters button', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={true} />)
 
-    expect(screen.getByLabelText(/^automatic/i)).toBeDisabled()
-    expect(screen.getByLabelText(/genre & keyword/i)).toBeDisabled()
+    expect(screen.getByRole('tab', { name: /use my series/i })).toBeDisabled()
+    expect(screen.getByRole('tab', { name: /^discover$/i })).toBeDisabled()
     expect(
       screen.getByRole('button', { name: /apply filters/i }),
     ).toBeDisabled()
@@ -1496,5 +1524,236 @@ describe('FRONTEND-040-AC-09: a disabled control cannot fire onQueryChange', () 
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
     expect(onQueryChange).not.toHaveBeenCalled()
+  })
+})
+
+// frontend_spec_042_recommendation_source_mode_reorganization.md
+describe('FRONTEND-042-AC-02: the series picker is always visible under Use My Series', () => {
+  it('renders the picker with nothing selected', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    expect(await screen.findByLabelText(/^series$/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /show all series/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-042-AC-03: optional-narrowing hint text', () => {
+  it('explains the picker is optional', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    expect(screen.getByText(/optional/i)).toBeInTheDocument()
+  })
+})
+
+// FRONTEND-042-AC-15 (re-clicking the active tab is a no-op) means clicking
+// "Use My Series" from the default render (already active) fires nothing --
+// so unlike the spec's own illustrative sketch, this exercises the omission
+// via a genuine mode change (Discover -> Use My Series), not a same-tab
+// re-click. See this task's final report for why.
+describe("FRONTEND-042-AC-04: empty selection behaves exactly like today's Automatic", () => {
+  it('omits seriesIds when nothing is selected', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectDiscover()
+    onQueryChange.mockClear()
+
+    selectUseMySeries()
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.not.objectContaining({ seriesIds: expect.anything() }),
+    )
+  })
+})
+
+describe("FRONTEND-042-AC-05: a selection behaves exactly like today's Specific Series", () => {
+  it('sends seriesIds once a series is picked', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    await screen.findByLabelText(/^series$/i)
+
+    fireEvent.change(screen.getByLabelText(/^series$/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(await screen.findByText('Show'))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ seriesIds: ['1'] }),
+    )
+  })
+})
+
+describe('FRONTEND-042-AC-06: Discover replaces the three flat options', () => {
+  it('renders a Discover tab, no separate top-level options for the three sub-modes', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    expect(screen.getByRole('tab', { name: /^discover$/i })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('tab', { name: /genre & keyword/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('tab', { name: /^popular right now$/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('tab', { name: /^highest rated$/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-042-AC-07: Discover reveals its three sub-tabs', () => {
+  it('shows the sub-tablist only once Discover is active', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    expect(
+      screen.queryByRole('tab', { name: /custom search/i }),
+    ).not.toBeInTheDocument()
+
+    selectDiscover()
+
+    expect(
+      screen.getByRole('tab', { name: /custom search/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /popular right now/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /highest rated/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-042-AC-08: Custom Search behaves exactly like former Genre & Keyword', () => {
+  it('renders genre checkboxes and a keyword picker, sends genres/keywords', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Comedy'])
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+
+    selectCustomSearch()
+    await screen.findByLabelText(/comedy/i)
+
+    fireEvent.click(screen.getByLabelText(/comedy/i))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ genres: ['Comedy'] }),
+    )
+  })
+})
+
+describe('FRONTEND-042-AC-09: Popular Right Now behavior is unaffected by the re-nesting', () => {
+  it('shows the Trending Window toggle and sends sourceMode=trending', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+
+    selectPopularRightNow()
+
+    expect(screen.getByLabelText(/^day$/i)).toBeInTheDocument()
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        sourceMode: 'trending',
+        trendingWindow: 'week',
+      }),
+    )
+  })
+})
+
+describe("FRONTEND-042-AC-10: Highest Rated's minVoteCount default survives the re-nesting", () => {
+  it('pre-fills 200 entering Highest Rated, clears it leaving', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    selectHighestRated()
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
+
+    selectUseMySeries()
+    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
+  })
+})
+
+describe('FRONTEND-042-AC-11: discoverSortBy defaults survive the re-nesting', () => {
+  it('resets to popularity.desc entering Custom Search from a non-default Highest Rated selection', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectHighestRated()
+    fireEvent.click(screen.getByLabelText(/most voted/i))
+
+    selectCustomSearch()
+
+    expect(screen.getByLabelText(/most popular/i)).toBeChecked()
+  })
+})
+
+describe('FRONTEND-042-AC-12: top-level selector uses the Tabs ARIA pattern', () => {
+  it('marks the active tab via aria-selected', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    expect(
+      screen.getByRole('tab', { name: /use my series/i, selected: true }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /^discover$/i, selected: false }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-042-AC-13: Discover sub-selector uses the Tabs ARIA pattern', () => {
+  it('marks the active sub-tab via aria-selected', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectDiscover()
+
+    expect(
+      screen.getByRole('tab', { name: /custom search/i, selected: true }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tab', { name: /popular right now/i, selected: false }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-042-AC-14: mode changes still auto-fetch (frontend_spec_040 preserved)', () => {
+  it('fires onQueryChange immediately on a top-level tab change', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear()
+
+    selectDiscover()
+
+    expect(onQueryChange).toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-042-AC-15: re-clicking the active tab is a no-op', () => {
+  it('does not re-fire onQueryChange for the already-active tab', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear()
+
+    selectUseMySeries()
+
+    expect(onQueryChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-042-AC-16: all tabs disabled while loading', () => {
+  it('disables both tiers of tabs', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={true} />)
+
+    expect(screen.getByRole('tab', { name: /use my series/i })).toBeDisabled()
+    expect(screen.getByRole('tab', { name: /^discover$/i })).toBeDisabled()
   })
 })
