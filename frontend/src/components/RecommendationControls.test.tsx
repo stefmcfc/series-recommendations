@@ -58,6 +58,15 @@ beforeEach(() => {
   mockGetKeywordStats.mockResolvedValue([])
 })
 
+// FRONTEND-040-AC-01/03: every control except "Recommendation Source" is now
+// Apply-gated -- most existing tests below click this between changing a
+// field and asserting on onQueryChange, mirroring how frontend_spec_035
+// updated this same file's interaction shape (not the behavioral intent)
+// when the Specific Series picker's UI changed.
+function clickApplyFilters() {
+  fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+}
+
 describe('FRONTEND-011-AC-03: three-way sourcing mode selector', () => {
   it('renders Automatic, Specific Series, and Genre & Keyword options, defaulting to Automatic', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
@@ -98,17 +107,20 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     ).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Ozark - COMPLETED' }))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
     )
 
     fireEvent.change(input, { target: { value: 'wire' } })
     fireEvent.click(screen.getByRole('button', { name: 'The Wire - WATCHING' }))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1', '2'] }),
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove 1' }))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['2'] }),
     )
@@ -189,16 +201,19 @@ describe('FRONTEND-014-AC-04/05: genre checkbox list', () => {
     expect(screen.getByLabelText('Action')).toBeInTheDocument()
 
     fireEvent.click(dramaCheckbox)
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Drama'] }),
     )
 
     fireEvent.click(screen.getByLabelText('Action'))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Drama', 'Action'] }),
     )
 
     fireEvent.click(dramaCheckbox)
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Action'] }),
     )
@@ -269,6 +284,7 @@ describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
     const dramaCheckbox = await screen.findByLabelText('Drama')
     fireEvent.click(dramaCheckbox)
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Drama'] }),
     )
@@ -292,6 +308,7 @@ describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
     )
@@ -308,7 +325,7 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
     expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/year min/i)).toBeInTheDocument()
@@ -320,7 +337,7 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
 
   it('shows minSourceRating for Automatic/Specific Series but not Genre & Keyword', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
     expect(screen.getByLabelText(/min source rating/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByLabelText(/genre & keyword/i))
@@ -337,11 +354,12 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
   it('omits minVoteCount from the query when the field is left blank', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
       target: { value: '7' },
     })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ minVoteCount: expect.anything() }),
@@ -354,7 +372,7 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
   it('sends numeric, not string, values for populated number fields', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '50' },
@@ -365,6 +383,7 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
     fireEvent.change(screen.getByLabelText(/^language/i), {
       target: { value: 'en' },
     })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -377,7 +396,10 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
 })
 
 describe('FRONTEND-011-AC-09: Reset Filters', () => {
-  it('clears every filter field but leaves sourcing mode/selection untouched, and re-fetches', async () => {
+  // FRONTEND-040-AC-04: Reset no longer auto-applies -- the user clicks
+  // Apply Filters afterward like any other pending change, so this test now
+  // clicks it both after making the change and after resetting.
+  it('clears every filter field but leaves sourcing mode/selection untouched, applied via Apply Filters', async () => {
     mockGetAll.mockResolvedValue([
       makeSeries({ id: '1', title: 'Ozark', year: null }),
     ])
@@ -389,24 +411,33 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
       target: { value: '7' },
     })
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'], minTmdbRating: 7 }),
     )
 
     fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith({ seriesIds: ['1'] })
     expect(screen.getByLabelText(/min tmdb rating/i)).toHaveValue(null)
   })
 })
 
-describe('FRONTEND-011-AC-12: every control change triggers onQueryChange, no Apply button', () => {
-  it('has no Apply/Submit button in the panel', () => {
+// FRONTEND-040 supersedes this AC's "no Apply button" premise -- an explicit
+// "Apply Filters" button now gates every control except Recommendation
+// Source (see the FRONTEND-040-AC-01/02/03 describe blocks below). The
+// mount-time assertion is unaffected and stays as a regression guard.
+describe('FRONTEND-011-AC-12: mounting does not trigger onQueryChange', () => {
+  it('renders "Apply Filters", not a bare "Apply"/"Submit" button', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
+    expect(
+      screen.getByRole('button', { name: /apply filters/i }),
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /^apply$/i }),
     ).not.toBeInTheDocument()
@@ -426,11 +457,12 @@ describe('FRONTEND-019-AC-08/09: Max Sources Shown filter field', () => {
   it('renders inside Filters and updates the query when populated', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.change(screen.getByLabelText(/max sources shown/i), {
       target: { value: '2' },
     })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ maxSourcesShown: 2 }),
@@ -440,11 +472,12 @@ describe('FRONTEND-019-AC-08/09: Max Sources Shown filter field', () => {
   it('omits maxSourcesShown from the query when left blank', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
       target: { value: '7' },
     })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ maxSourcesShown: expect.anything() }),
@@ -456,12 +489,13 @@ describe('FRONTEND-019-AC-10: Reset Filters clears Max Sources Shown', () => {
   it('clears a populated Max Sources Shown field on Reset Filters', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
     fireEvent.change(screen.getByLabelText(/max sources shown/i), {
       target: { value: '2' },
     })
     fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+    clickApplyFilters()
 
     expect(screen.getByLabelText(/max sources shown/i)).toHaveValue(null)
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -479,17 +513,23 @@ describe('FRONTEND-019-AC-11: Sort By is a top-level control, defaults to Best M
   })
 })
 
-describe('FRONTEND-019-AC-12: selecting Most Recommended sets/unsets sortBy immediately', () => {
+// FRONTEND-040-AC-01: Sort By is now Apply-gated like every other non-mode
+// control -- "immediately" in this AC's title is superseded, but the
+// underlying behavioral intent (selecting toggles sortBy in the built query)
+// is unchanged, just requires an Apply Filters click first.
+describe('FRONTEND-019-AC-12: selecting Most Recommended sets/unsets sortBy', () => {
   it('sets sortBy on selection, omits it again once reverted to Best Match', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/most recommended/i))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ sortBy: 'recommendationCount' }),
     )
 
     fireEvent.click(screen.getByLabelText(/best match/i))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ sortBy: expect.anything() }),
     )
@@ -502,8 +542,9 @@ describe('FRONTEND-019-AC-13: Reset Filters does not affect Sort By', () => {
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/most recommended/i))
-    fireEvent.click(screen.getByRole('button', { name: /filters/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
     fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ sortBy: 'recommendationCount' }),
@@ -592,6 +633,7 @@ describe('FRONTEND-027-AC-05: Day/Week toggle only under Popular Right Now', () 
 
     fireEvent.click(screen.getByLabelText(/popular right now/i))
     fireEvent.click(screen.getByLabelText(/^day$/i))
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -648,6 +690,7 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'submarine' } })
     fireEvent.keyDown(input, { key: 'Enter' })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ keywords: ['submarine'] }),
@@ -664,6 +707,7 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
     fireEvent.keyDown(input, { key: 'Enter' })
     fireEvent.change(input, { target: { value: 'spy' } })
     fireEvent.keyDown(input, { key: 'Enter' })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ keywords: ['submarine', 'spy'] }),
@@ -767,6 +811,7 @@ describe('FRONTEND-030-AC-03/04: Exclude Keywords filter field', () => {
     fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
       target: { value: 'Zombie, Heist' },
     })
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ excludeKeywords: ['Zombie', 'Heist'] }),
@@ -792,6 +837,7 @@ describe('FRONTEND-030-AC-05: Reset Filters clears Exclude Keywords', () => {
       target: { value: 'Zombie' },
     })
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
+    clickApplyFilters()
 
     expect(screen.getByLabelText(/exclude keywords/i)).toHaveValue('')
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -851,6 +897,7 @@ describe('FRONTEND-030-AC-10: Reset Filters clears minVoteCount and minVoteCount
       target: { value: '500' },
     })
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
+    clickApplyFilters()
 
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -953,6 +1000,7 @@ describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, includ
     )
 
     fireEvent.click(screen.getByLabelText(/most popular/i))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ discoverSortBy: 'popularity.desc' }),
     )
@@ -968,6 +1016,7 @@ describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, includ
     )
 
     fireEvent.click(screen.getByLabelText(/^newest$/i))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ discoverSortBy: 'first_air_date.desc' }),
     )
@@ -979,11 +1028,13 @@ describe('FRONTEND-033-AC-04: discoverSortBy omitted at the mode default, includ
 
     fireEvent.click(screen.getByLabelText(/highest rated/i))
     fireEvent.click(screen.getByLabelText(/most voted/i))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ discoverSortBy: 'vote_count.desc' }),
     )
 
     fireEvent.click(screen.getByLabelText(/vote average/i))
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ discoverSortBy: expect.anything() }),
     )
@@ -1056,6 +1107,7 @@ describe('FRONTEND-035-AC-06: picking a suggestion populates seriesIds', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
@@ -1091,6 +1143,7 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
     )
 
     fireEvent.click(screen.getByLabelText('Comedy'))
+    clickApplyFilters()
 
     // Narrowed away from the genre-filtered candidate pool, but the chip
     // must still resolve its real label, not fall back to a raw UUID. A
@@ -1332,5 +1385,116 @@ describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction
       .map((b) => b.textContent)
       .filter((t) => t?.includes('Rating') || t?.includes('Rated'))
     expect(order).toEqual(['Rated - COMPLETED', 'No Rating - COMPLETED'])
+  })
+})
+
+// frontend_spec_040_recommendation_controls_apply_and_lock.md
+describe('FRONTEND-040-AC-01: changing a filter updates local state but does not call onQueryChange', () => {
+  it('does not call onQueryChange from a non-mode control change', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear() // clear the initial mount call, if any
+
+    fireEvent.click(screen.getByLabelText(/^most recommended/i)) // Sort By radio
+
+    expect(onQueryChange).not.toHaveBeenCalled()
+    expect(screen.getByLabelText(/^most recommended/i)).toBeChecked() // local state did update
+  })
+})
+
+describe('FRONTEND-040-AC-02: changing Recommendation Source still calls onQueryChange immediately', () => {
+  it('calls onQueryChange immediately on a mode change', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+
+    expect(onQueryChange).toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-040-AC-03: Apply Filters sends the current pending state', () => {
+  it('sends the pending sortBy change only once Apply Filters is clicked', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByLabelText(/^most recommended/i))
+    expect(onQueryChange).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'recommendationCount' }),
+    )
+  })
+})
+
+describe('FRONTEND-040-AC-04: Reset updates local state without firing a request', () => {
+  it('does not call onQueryChange on its own -- Apply Filters still required afterward', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByLabelText(/genre & keyword/i))
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i })) // open the disclosure
+    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+      target: { value: '5' },
+    })
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByRole('button', { name: /^reset filters$/i }))
+
+    expect(onQueryChange).not.toHaveBeenCalled()
+    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveValue(null)
+  })
+})
+
+describe('FRONTEND-040-AC-07: the processing overlay tracks the loading prop', () => {
+  it('renders the processing overlay while loading', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={true} />)
+
+    expect(screen.getByText(/processing recommendations/i)).toBeInTheDocument()
+  })
+
+  it('renders no overlay while not loading', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    expect(
+      screen.queryByText(/processing recommendations/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-040-AC-08: Recommendation Source and Apply Filters are disabled while loading', () => {
+  it('disables the mode radios and the Apply Filters button', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={true} />)
+
+    expect(screen.getByLabelText(/^automatic/i)).toBeDisabled()
+    expect(screen.getByLabelText(/genre & keyword/i)).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /apply filters/i }),
+    ).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-040-AC-09: a disabled control cannot fire onQueryChange', () => {
+  it('does not call onQueryChange when a disabled Apply Filters button is clicked', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={true} />,
+    )
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).not.toHaveBeenCalled()
   })
 })

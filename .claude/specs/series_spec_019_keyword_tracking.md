@@ -17,7 +17,7 @@ This spec stores each tracked series' TMDB keywords in a **normalized relational
 - **Keyword rows are upserted by `tmdbKeywordId`, never duplicated.** Two series that both carry TMDB's `spy` keyword (id `470`) share the *same* `keyword` row; only their `series_keyword` join rows differ. Population logic looks up-or-creates by `tmdbKeywordId`, not by `name` (names are stable per TMDB id, but id is the actual identity).
 - **A refresh reconciles the full set, including removals.** TMDB's own keyword tagging for a show can change over time (community-edited). `KeywordSyncService.syncKeywords` replaces a series' entire keyword set with whatever TMDB currently returns, rather than only ever adding — a keyword no longer present in the fresh response is unlinked from that series (its `keyword` row itself is untouched, since other series may still reference it).
 - **Population is best-effort and non-fatal, matching every other TMDB-derived field.** Consistent with `TmdbClient.showStatus`'s posture (`series_spec_008` SERIES-008-AC-08) and the general "external call failure never fails the surrounding request" policy (`tooling_spec_001` Requirement 1): a failed or empty keyword fetch leaves the series' existing keyword set unchanged (on refresh) or empty (on create), never throws to the caller.
-- **Recommendation/filter weighting by keyword popularity or average rating is explicitly out of scope.** This spec delivers storage, population, a read-only stats endpoint, and a search filter only. The idea of feeding this data into `RecommendationService`'s scoring (`series_spec_007`) is a natural next step but a materially larger design decision (how much weight, interaction with the existing personal-rating/TMDB-rating blend) that deserves its own spec once there's real usage data — tracked in `.claude/ideas/future_ideas.md`, not here.
+- **Recommendation/filter weighting by keyword popularity or average rating is explicitly out of scope.** This spec delivers storage, population, a read-only stats endpoint, and a search filter only. The idea of feeding this data into `RecommendationService`'s scoring (`series_spec_007`) is a natural next step but a materially larger design decision (how much weight, interaction with the existing personal-rating/TMDB-rating blend) that deserves its own spec once there's real usage data — tracked as a candidate in `.claude/SPEC_CANDIDATES.md` (moved there from `.claude/ideas/future_ideas.md` on 2026-08-27), not here.
 
 ---
 
@@ -121,7 +121,7 @@ Added after this spec's initial implementation, closing the gap Requirement 3's 
 | Never-leak-internals policy for upstream failures | `tooling_spec_001_code_quality_security.md` Requirement 1 |
 | `imdbId`/`originCountry`/`tmdbRating` hidden-field round-trip pattern Requirement 6's `tmdbId` field mirrors | `frontend_spec_022_tmdb_primary_lookup.md`, `frontend_spec_026_origin_country_and_tmdb_metadata_display.md` |
 | Frontend consumer: `tmdbId` carry-through (Requirement 6), keyword chips on `SeriesDetail`, Keywords stats view, `SearchFilter` keyword multi-select | `frontend_spec_024_keyword_tracking.md` (in progress) |
-| Deferred idea: weighting recommendations/filters by keyword popularity/average rating | `.claude/ideas/future_ideas.md` |
+| Deferred idea: weighting recommendations/filters by keyword popularity/average rating | `.claude/SPEC_CANDIDATES.md` |
 
 ---
 

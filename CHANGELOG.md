@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.19.2] - 2026-08-27
+
+### Fixed
+
+- Frontend: `RecommendationControls` no longer fires a new backend request on every single filter change (e.g. one per keystroke) — every control except "Recommendation Source" now only updates local (pending) state, sent only when the new "Apply Filters" button is clicked (`frontend_spec_040`).
+- Frontend: `RecommendationsList`'s `loading` state now correctly resets to `true` on every subsequent fetch (previously only ever set on mount), so a slower request is now visible instead of silently appearing to "stop refreshing" (`frontend_spec_040`).
+- Frontend: while a recommendations request is in flight (mode change or Apply Filters), `RecommendationControls` now shows a "Processing recommendations…" overlay and disables the "Recommendation Source" radios and "Apply Filters" button, preventing overlapping requests (`frontend_spec_040`).
+
 ## [2.19.1] - 2026-08-27
 
 ### Fixed

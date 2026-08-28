@@ -76,6 +76,41 @@ just a second `<KeywordPicker>` instance pointed at a different state slot
 (`excludeKeywordsSelected`) and a different `RecommendationQuery` field (`excludeKeywords`,
 already exists on the backend).
 
+### Weight recommendation scoring and/or output filters by keyword popularity/average personal rating
+Moved from `.claude/ideas/future_ideas.md` on 2026-08-27, per the user's own request ahead of a planned analysis
+pass — not yet designed, just confirmed still relevant and worth a spec eventually.
+
+`series_spec_019_keyword_tracking.md`'s aggregate stats endpoint (`GET /api/v1/series/keywords`) already exists and
+is delivered — for each keyword across your tracked series, it reports `seriesCount` and `averagePersonalRating`.
+Confirmed via reading the current code (2026-08-27) that none of this feeds into recommendation scoring or
+filtering: `RecommendationRankingService.score()` computes `rankScore` purely from `tmdbRating` (TMDB's own
+`voteAverage`) and the best contributing source series' `personalRating`, blended 50/50
+(`(tmdbRating * 0.5) + (personalRatingTerm * 0.5)`, `RecommendationRankingService.java`) — a candidate's own
+keywords never enter that formula. Likewise, `RecommendationOutputFilterService.applyOutputFilters` has no keyword-
+popularity or keyword-average-rating filter; `excludeKeywords` (`series_spec_024`) only *excludes* by keyword name,
+it doesn't weight by one.
+
+**Explicitly flagged as out of scope when `series_spec_019` was written**: "The idea of feeding this data into
+`RecommendationService`'s scoring... is a natural next step but a materially larger design decision (how much
+weight, interaction with the existing personal-rating/TMDB-rating blend) that deserves its own spec once there's
+real usage data" — that's exactly the design work this candidate is waiting on.
+
+**Real open questions for whoever writes this spec** (not resolved here, deliberately — this is a candidate note,
+not a design doc):
+- Does this become a third term in the existing scoring blend (currently 50% TMDB rating / 50% personal rating), or
+  a separate multiplier/boost applied after that blend?
+- A keyword's `averagePersonalRating` is only meaningful once enough tracked series carry it — does a low-
+  `seriesCount` keyword get down-weighted or excluded from influencing the score at all, to avoid one or two
+  high/low ratings skewing things?
+- A candidate can carry many keywords (each with its own stats) — does the score use the single most-influential
+  keyword, an average across all of the candidate's matched keywords, or something else?
+- Interacts with the still-unresolved "recommendation ranking's personal-rating/TMDB-rating blend weight is
+  hardcoded" idea (`.claude/ideas/future_ideas.md`) — both touch the same scoring formula, worth designing together
+  rather than layering one on top of the other twice.
+
+A plain-language walkthrough of the current scoring code (no design proposal yet) lives in
+`.claude/analysis/scoring_weight_recommendations.md`, written 2026-08-27 ahead of picking this up.
+
 ### Info/disclosure boxes explaining Max Per Source, Max Sources Shown, and Sort By options
 Confirmed via search: no tooltip/info/help component exists anywhere in this codebase today —
 this is a first-of-its-kind UI primitive, not a reuse. **Recommended shape** (resolved

@@ -591,3 +591,38 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
+
+// frontend_spec_040_recommendation_controls_apply_and_lock.md
+describe('FRONTEND-040-AC-05: onLoadingChange broadcasts loading transitions', () => {
+  it('is called as loading transitions on mount', async () => {
+    const onLoadingChange = vi.fn()
+    mockGetRecommendations.mockResolvedValue([])
+    render(<RecommendationsList onLoadingChange={onLoadingChange} />)
+
+    expect(onLoadingChange).toHaveBeenCalledWith(true)
+    await waitFor(() => expect(onLoadingChange).toHaveBeenLastCalledWith(false))
+  })
+
+  it('is called again on a subsequent query change', async () => {
+    const onLoadingChange = vi.fn()
+    mockGetRecommendations.mockResolvedValue([])
+    const { rerender } = render(
+      <RecommendationsList
+        query={{ genres: ['Drama'] }}
+        onLoadingChange={onLoadingChange}
+      />,
+    )
+    await waitFor(() => expect(onLoadingChange).toHaveBeenLastCalledWith(false))
+    onLoadingChange.mockClear()
+
+    rerender(
+      <RecommendationsList
+        query={{ genres: ['Comedy'] }}
+        onLoadingChange={onLoadingChange}
+      />,
+    )
+
+    expect(onLoadingChange).toHaveBeenCalledWith(true)
+    await waitFor(() => expect(onLoadingChange).toHaveBeenLastCalledWith(false))
+  })
+})

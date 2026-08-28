@@ -33,6 +33,12 @@ type DiscoverSortByOption =
 
 interface RecommendationControlsProps {
   readonly onQueryChange: (query: RecommendationQuery) => void
+  // FRONTEND-040-AC-06/07/08: broadcasts whether a recommendations request is
+  // currently in flight (mirrored down from App.tsx's recommendationsLoading,
+  // itself fed by RecommendationsList's onLoadingChange) so this panel can
+  // lock itself while one is running. Optional/defaulted to false so every
+  // pre-existing call site that doesn't pass it keeps working unchanged.
+  readonly loading?: boolean
 }
 
 interface ControlsState {
@@ -337,6 +343,7 @@ function buildQuery(state: ControlsState): RecommendationQuery {
 
 export function RecommendationControls({
   onQueryChange,
+  loading = false,
 }: RecommendationControlsProps) {
   const [state, setState] = useState<ControlsState>(initialState)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -384,12 +391,17 @@ export function RecommendationControls({
       .catch(() => undefined)
   }, [])
 
+  // FRONTEND-040-AC-01: state-only update, no longer a choke point that
+  // fires a backend request on every change -- every call site except
+  // handleModeChange now funnels through this. Sending is deferred until
+  // handleApplyFilters (the new "Apply Filters" button) runs.
   const updateState = (patch: Partial<ControlsState>) => {
-    const next = { ...state, ...patch }
-    setState(next)
-    onQueryChange(buildQuery(next))
+    setState((prev) => ({ ...prev, ...patch }))
   }
 
+  // FRONTEND-040-AC-02: the one control that keeps today's auto-fetch-on-
+  // change behavior -- deliberately does not go through updateState, so it
+  // keeps calling onQueryChange immediately, unchanged from before this spec.
   const handleModeChange = (mode: SourceMode) => {
     const patch: Partial<ControlsState> = {
       mode,
@@ -415,7 +427,15 @@ export function RecommendationControls({
       patch.discoverSortBy = DISCOVER_SORT_BY_DEFAULTS[mode]
     }
 
-    updateState(patch)
+    const next = { ...state, ...patch }
+    setState(next)
+    onQueryChange(buildQuery(next))
+  }
+
+  // FRONTEND-040-AC-03: sends whatever the current pending (possibly not-
+  // yet-applied) state is at the moment of the click.
+  const handleApplyFilters = () => {
+    onQueryChange(buildQuery(state))
   }
 
   const handleSpecificSeriesSelectionChange = (next: string[]) => {
@@ -541,6 +561,7 @@ export function RecommendationControls({
               name="source-mode"
               checked={state.mode === 'automatic'}
               onChange={() => handleModeChange('automatic')}
+              disabled={loading}
             />
             <label htmlFor="source-mode-automatic">Automatic</label>
           </div>
@@ -552,6 +573,7 @@ export function RecommendationControls({
               name="source-mode"
               checked={state.mode === 'specific'}
               onChange={() => handleModeChange('specific')}
+              disabled={loading}
             />
             <label htmlFor="source-mode-specific">Specific Series</label>
           </div>
@@ -563,6 +585,7 @@ export function RecommendationControls({
               name="source-mode"
               checked={state.mode === 'genre'}
               onChange={() => handleModeChange('genre')}
+              disabled={loading}
             />
             <label htmlFor="source-mode-genre">Genre &amp; Keyword</label>
           </div>
@@ -574,6 +597,7 @@ export function RecommendationControls({
               name="source-mode"
               checked={state.mode === 'trending'}
               onChange={() => handleModeChange('trending')}
+              disabled={loading}
             />
             <label htmlFor="source-mode-trending">Popular Right Now</label>
           </div>
@@ -585,6 +609,7 @@ export function RecommendationControls({
               name="source-mode"
               checked={state.mode === 'topRated'}
               onChange={() => handleModeChange('topRated')}
+              disabled={loading}
             />
             <label htmlFor="source-mode-top-rated">Highest Rated</label>
           </div>
@@ -1035,6 +1060,55 @@ export function RecommendationControls({
             </div>
           )}
         </div>
+
+        {/* FRONTEND-040-AC-03: the single explicit "Apply Filters" action --
+            every other control above now only updates local (pending) state;
+            nothing reaches the backend until this is clicked. Placed after
+            the Filters disclosure section, mirroring AddSeriesForm/
+            EditSeriesForm's submit-button-at-the-end convention. */}
+        <button
+          type="button"
+          className={styles.applyButton}
+          onClick={handleApplyFilters}
+          disabled={loading}
+        >
+          Apply Filters
+        </button>
+
+        {/* FRONTEND-040-AC-07/08: a second, independent loading indicator
+            from RecommendationsList's own "Loading recommendations..." state
+            -- this one locks the controls panel itself while any request
+            (mode-triggered or Apply-triggered) is in flight. Reuses the same
+            spinner SVG/<output> markup RecommendationsList's loading state
+            already renders (RecommendationsList.tsx), not a new design. */}
+        {loading && (
+          <output className={styles.processingOverlay} aria-label="Loading">
+            <svg
+              className={styles.spinner}
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeOpacity="0.25"
+              />
+              <path
+                d="M22 12a10 10 0 0 0-10-10"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span>Processing recommendations…</span>
+          </output>
+        )}
       </div>
 
       {specificSeriesBrowseModalOpen && (

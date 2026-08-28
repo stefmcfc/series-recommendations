@@ -19,9 +19,18 @@ interface PendingAdd {
 
 interface RecommendationsListProps {
   query?: RecommendationQuery
+  // FRONTEND-040-AC-05: read-only broadcast of this component's own existing
+  // `loading` state upward -- RecommendationsList keeps owning the fetch and
+  // loading/error/recommendations state exactly as before; this is not a new
+  // source of truth, just lets App.tsx mirror it down to RecommendationControls
+  // so that panel can lock itself while a request is in flight.
+  onLoadingChange?: (loading: boolean) => void
 }
 
-export function RecommendationsList({ query }: RecommendationsListProps = {}) {
+export function RecommendationsList({
+  query,
+  onLoadingChange,
+}: RecommendationsListProps = {}) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +50,22 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
   useEffect(() => {
     let cancelled = false
 
+    // FRONTEND-040: fixes the reported symptom directly -- previously this
+    // only started `true` via useState's initializer, so a subsequent fetch
+    // (triggered by a new `query`/refreshIndex) never flipped `loading` back
+    // to true, and neither this component's own "Loading recommendations..."
+    // state nor (once wired up) the new onLoadingChange broadcast ever fired
+    // again after the first load. Setting it here, on every effect run, is
+    // what makes "every subsequent fetch" (AC-05) actually true. This is the
+    // standard React "fetch on dependency change" shape (see
+    // react.dev/learn/synchronizing-with-effects#fetching-data, which itself
+    // sets state synchronously at the top of the effect) -- there's no
+    // dependency-free way to mark "a new fetch has started" without a state
+    // update, so the alternative would be a bigger refactor (e.g. a
+    // reducer/fetch-token pattern) for no behavioral gain here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
+    setLoading(true)
+
     seriesApi
       .getRecommendations(query)
       .then((data) => {
@@ -58,6 +83,14 @@ export function RecommendationsList({ query }: RecommendationsListProps = {}) {
       cancelled = true
     }
   }, [refreshIndex, query])
+
+  // FRONTEND-040-AC-05: fires on mount and every subsequent loading
+  // transition (including the never-reset-before-this-spec transitions on a
+  // `query` change -- see handleRetry below and the fetch effect's own
+  // setLoading(false) calls).
+  useEffect(() => {
+    onLoadingChange?.(loading)
+  }, [loading, onLoadingChange])
 
   const handleRetry = useCallback(() => {
     setLoading(true)

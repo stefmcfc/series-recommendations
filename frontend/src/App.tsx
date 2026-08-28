@@ -27,6 +27,10 @@ function App() {
   const [recommendationQuery, setRecommendationQuery] = useState<
     RecommendationQuery | undefined
   >(undefined)
+  // FRONTEND-040-AC-06: mirrors RecommendationsList's own loading state
+  // upward so RecommendationControls can lock itself while a request it
+  // triggered (directly via mode change, or via Apply Filters) is in flight.
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false)
 
   const handleAddSuccess = () => {
     setIsAddFormOpen(false)
@@ -81,8 +85,14 @@ function App() {
 
           {mainView === 'recommendations' && (
             <>
-              <RecommendationControls onQueryChange={setRecommendationQuery} />
-              <RecommendationsList query={recommendationQuery} />
+              <RecommendationControls
+                onQueryChange={setRecommendationQuery}
+                loading={recommendationsLoading}
+              />
+              <RecommendationsList
+                query={recommendationQuery}
+                onLoadingChange={setRecommendationsLoading}
+              />
             </>
           )}
 
