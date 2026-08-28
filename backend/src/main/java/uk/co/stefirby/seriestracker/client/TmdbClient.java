@@ -180,7 +180,12 @@ public class TmdbClient {
                 b = b.queryParam("with_original_language", filters.language());
             }
             if (filters.countries() != null && !filters.countries().isEmpty()) {
-                b = b.queryParam("with_origin_country", String.join(",", filters.countries()));
+                // SERIES-032-AC-02 correction (2026-08-28): unlike with_genres/
+                // with_keywords (comma=AND, pipe=OR), with_origin_country's comma
+                // join is itself an AND -- confirmed live (countries=JP,SE
+                // returned 0 despite each individually returning results).
+                // Pipe is the actual OR separator for this param.
+                b = b.queryParam("with_origin_country", String.join("|", filters.countries()));
             }
             return b;
         });

@@ -165,13 +165,16 @@ post-fetch output filter **unconditionally, across every sourcing mode**, with n
 (unlike the year fields above): `origin_country` is present on every candidate TMDB already
 returns regardless of endpoint, so there's no post-fetch data gap to guard against. For Custom
 Search sourcing specifically, `countries` is **additionally** sent to TMDB itself as
-`with_origin_country` (comma-joined) for the same pre-fetch reason as `language` above. Unlike
-`language`, `countries` is multi-select/OR-matched. TMDB's own documented `discover/tv` params
-explicitly call out comma-(`AND`)/pipe-(`OR`)-separated support for
+`with_origin_country` (**pipe-joined**, e.g. `with_origin_country=US%7CGB`) for the same pre-fetch
+reason as `language` above. Unlike `language`, `countries` is multi-select/OR-matched. TMDB's own
+documented `discover/tv` params explicitly call out comma-(`AND`)/pipe-(`OR`)-separated support for
 `with_genres`/`with_keywords`/`with_companies`/etc., but carry no such note for
-`with_origin_country`/`with_original_language` specifically — **verified live** against the real
-TMDB API instead (2026-08-28): a `countries=US,GB` query returned a genuine mix of both US- and
-GB-origin candidates, confirming comma-joined `with_origin_country` does OR-match as designed.
+`with_origin_country`/`with_original_language` specifically. **Verified live** against the real
+TMDB API (2026-08-28, corrected): comma is actually an **AND** for `with_origin_country`
+specifically — `countries=JP,SE` returned 0 results despite each individually returning results
+(an initial pass using `countries=US,GB` wrongly read as confirming comma=OR, since enough genuine
+US/GB co-productions exist — e.g. *Sherlock* — that AND-matching looks identical to OR-matching for
+that specific pair). Pipe is the correct OR separator; `TmdbClient.discover()` sends it accordingly.
 
 `excludeKeywords` (comma-separated names) excludes a candidate whose TMDB keywords
 case-insensitively match any entry, applied last (after every other output filter) across every

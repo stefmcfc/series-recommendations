@@ -22,16 +22,22 @@ Frontend half (`frontend_spec_047`) not yet implemented -- see that spec/`ROADMA
 comma (`AND`) or pipe (`OR`) separated query" -- but `with_origin_country` and
 `with_original_language` carry **no such description at all**, just a bare `{"type":"string"}`.
 This is a real discrepancy from this spec's comma-joined-OR assumption, not merely "unverified" --
-implemented as designed (comma-joined) per the spec's explicit decision. **Resolved (2026-08-28):**
-verified live against the real TMDB API via the running backend --
-`GET /recommendations?genres=Drama&countries=US` returned candidates whose `originCountry` was
-exclusively `US` (17/17), and `GET /recommendations?genres=Drama&countries=US,GB` returned a
-genuine mix of both (`GB` and `US` both present across 8 results) -- confirming comma-joined
-`with_origin_country` does OR-match multiple values as this spec assumed, despite the bare-string
-OpenAPI schema. (Belt-and-braces note: even had TMDB's pre-fetch narrowing not honored the
-multi-value join, the post-fetch `matchesCountries` check in `RecommendationOutputFilterService`
-would still have enforced correct results -- so this was never a correctness risk, only a
-pre-fetch-efficiency question, but it's confirmed working as designed either way.)
+implemented as designed (comma-joined) per the spec's explicit decision. **Corrected (2026-08-28):** a first
+live-verification pass (`countries=US,GB` returning a mix of `GB`/`US` candidates) was wrongly read as
+confirming comma=OR -- US/GB happen to have enough genuine dual-produced shows (e.g. *Sherlock*, a BBC/
+Masterpiece co-production) that AND-matching looks identical to OR-matching for that specific pair, since a
+single candidate's `originCountry` only ever surfaces one of its several actual origin countries. A second,
+more rigorous pass (countries with few or no real co-productions) exposed the truth:
+`GET /recommendations?countries=JP` and `?countries=SE` each returned real results individually, but
+`?countries=JP,SE` (comma) returned **0** -- comma is an **AND** for `with_origin_country`, same as
+`with_original_language`'s single-value-only behavior, *not* the OR semantics `with_genres`/`with_keywords` get
+from comma. Pipe (`|`) is the actual OR separator (`?countries=JP,SE` sent as `with_origin_country=JP|SE`
+returns real results, confirmed by removing the popularity-sort bias enough to surface an actual Swedish title
+in the union). `TmdbClient.discover()` now joins `countries` with `|`, URL-encoded as `%7C`. (The post-fetch
+`matchesCountries` check in `RecommendationOutputFilterService` was always a correct OR/`anyMatch` regardless
+of this bug -- so a comma-joined pre-fetch request under-fetched relative to what the post-fetch filter would
+have allowed, rather than ever returning wrong results, but the practical effect was still severely narrowed
+result sets whenever more than one country was selected.)
 **Priority**: P3 (extends `series_spec_031`'s pre-fetch relocation to the two remaining fields from the original
 consolidated discussion)
 **Depends on**: Series Spec 031 (`series_spec_031_custom_search_prefetch_filters.md`, owns the `DiscoverFilters`
@@ -59,11 +65,11 @@ checks can safely keep running unconditionally for every mode, exactly like `min
 specifically because TMDB's response carries no episode-level date data to correctly re-verify against).
 
 **Language stays single-select; Country becomes multi-select — a deliberate, decided asymmetry, not an
-oversight.** TMDB's `with_original_language` `discover/tv` param accepts one value only (per TMDB's documented
-API — not independently re-verified against a live response this session); `with_origin_country` accepts
-multiple, comma-joined, OR-matched (same caveat — verify the exact join character against TMDB's live docs at
-implementation time before assuming comma is correct, the way `with_genres`' comma-vs-pipe distinction already
-required care in this codebase). Making `language` multi-select despite that constraint would mean only the
+oversight.** TMDB's `with_original_language` `discover/tv` param accepts one value only. `with_origin_country`
+accepts multiple, **pipe (`|`) joined, OR-matched** — corrected 2026-08-28 after live testing found comma is an
+**AND** for this specific param (unlike `with_genres`/`with_keywords`, where comma=AND and pipe=OR both exist as
+documented options); see the Status header's Verification note for the full story. Making `language` multi-select
+despite the single-value constraint would mean only the
 first of several selected languages ever reaches TMDB pre-fetch, silently falling back to post-fetch-only for
 the rest — reintroducing the exact sparse-page problem this effort exists to avoid. Decided: keep `language` as
 the single `String` it already is on `RecommendationCriteria`; add `countries` as a new `List<String>`.
@@ -125,24 +131,30 @@ def "SERIES-032-AC-01: sends with_original_language when language is set"() {
 
 ### SERIES-032-AC-02 [AUTO]
 **Statement**: When `DiscoverFilters.countries` is non-empty, `TmdbClient.discover()` shall send
-`with_origin_country` as a comma-joined list of the values; when empty/null, the parameter shall be omitted.
+`with_origin_country` as a **pipe-joined** list of the values (OR semantics); when empty/null, the parameter
+shall be omitted.
+
+**Correction (2026-08-28)**: originally specced/implemented as comma-joined, matching `with_genres`'s AND
+convention by analogy. Live testing found comma is actually an **AND** for `with_origin_country` specifically
+(`countries=JP,SE` returned 0 results despite each individually returning results) — pipe is the real OR
+separator for this param. See the spec's Status header for the full verification story.
 
 **Test Case (Red)**:
 ```groovy
-def "SERIES-032-AC-02: sends with_origin_country as a comma-joined list"() {
+def "SERIES-032-AC-02: sends with_origin_country as a pipe-joined list"() {
     given: "a mocked TMDB response"
-        mockServer.expect(requestTo(containsString("with_origin_country=US,GB")))
+        mockServer.expect(requestTo(containsString("with_origin_country=US%7CGB")))
             .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
     when: "discover is called with countries=[US, GB]"
         client.discover([35], [], "popularity.desc",
             new DiscoverFilters(0, null, null, null, null, ["US", "GB"]))
 
-    then: "the request included with_origin_country=US,GB"
+    then: "the request included with_origin_country=US|GB (pipe-joined, OR semantics)"
         mockServer.verify()
 }
 ```
-**Test Case (Green)**: `discover()` conditionally appends `with_origin_country`, comma-joined, when
+**Test Case (Green)**: `discover()` conditionally appends `with_origin_country`, pipe-joined, when
 `filters.countries()` is non-empty — verify TMDB's actual expected join character against live `discover/tv`
 docs before implementing; this AC assumes comma pending that check.
 
@@ -264,9 +276,10 @@ skip doesn't apply here).
 
 ## Implementation Notes
 
-- **Verify TMDB's `with_origin_country` join character against live `discover/tv` documentation before
-  implementing AC-02** — this spec assumes comma-joined OR semantics based on TMDB's documented API, not an
-  independently re-verified live response.
+- **Resolved (2026-08-28)**: `with_origin_country`'s join character was verified live and found to genuinely
+  differ from `with_genres`/`with_keywords` — comma is AND, pipe is OR, for this param specifically. AC-02
+  implements pipe-joined. See the Status header's Verification note for how the initial (wrong) comma-based
+  verification passed a US/GB test by coincidence.
 - **`API.md` needs updating** (Definition of Done) — document the new `countries` request param, its `null`/
   empty-means-no-filter convention, and the language/countries pre-fetch-vs-post-fetch asymmetry across modes
   (mirrors the note `series_spec_031` already flags for year semantics).
@@ -286,7 +299,7 @@ skip doesn't apply here).
 ## Acceptance Criteria Summary
 
 - [x] SERIES-032-AC-01: `with_original_language` sent when `language` is set
-- [x] SERIES-032-AC-02: `with_origin_country` sent as a comma-joined list when `countries` is set
+- [x] SERIES-032-AC-02: `with_origin_country` sent as a pipe-joined list when `countries` is set (corrected 2026-08-28 — was comma)
 - [x] SERIES-032-AC-03: `series_spec_031`'s existing params unaffected (regression guard)
 - [x] SERIES-032-AC-04: `RecommendationCriteria` gains `countries`
 - [x] SERIES-032-AC-05: Custom Search sourcing passes `language`/`countries`

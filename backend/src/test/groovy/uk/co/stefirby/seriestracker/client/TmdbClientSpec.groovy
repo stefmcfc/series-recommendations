@@ -425,16 +425,21 @@ class TmdbClientSpec extends Specification {
             mockServer.verify()
     }
 
-    def "SERIES-032-AC-02: sends with_origin_country as a comma-joined list"() {
+    def "SERIES-032-AC-02: sends with_origin_country as a pipe-joined list"() {
         given: "a mocked TMDB response"
-            mockServer.expect(requestTo(Matchers.containsString("with_origin_country=US,GB")))
+            // Correction (2026-08-28): unlike with_genres/with_keywords (comma=AND,
+            // pipe=OR), with_origin_country's comma join is itself an AND -- live
+            // verification against the real TMDB API found countries=JP,SE
+            // returned 0 results despite each individually returning results.
+            // Pipe is the actual OR separator for this param.
+            mockServer.expect(requestTo(Matchers.containsString("with_origin_country=US%7CGB")))
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with countries=[US, GB]"
             client().discover([35], [], "popularity.desc",
                 new DiscoverFilters(0, null, null, null, null, ["US", "GB"]))
 
-        then: "the request included with_origin_country=US,GB"
+        then: "the request included with_origin_country=US|GB (pipe-joined, OR semantics)"
             mockServer.verify()
     }
 
