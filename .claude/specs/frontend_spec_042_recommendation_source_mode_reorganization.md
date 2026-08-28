@@ -1,6 +1,11 @@
 # Frontend Spec 042: Recommendation Source Mode Reorganization — "Use My Series" / "Discover", Tab-Style Selector
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) — changed files: `frontend/src/components/RecommendationControls.tsx`,
+`frontend/src/components/RecommendationControls.module.css`, `frontend/src/components/RecommendationControls.test.tsx`,
+`frontend/src/App.test.tsx`, `frontend/package.json`, `frontend/package-lock.json`,
+`backend/build.gradle.kts` (version bump only, no backend behavior change). AC-17 verified 2026-08-28 via
+a real Chrome browser pass (light + dark, both tab tiers, all five sub-modes, live recommendation results) —
+no console errors, no axe violations, visually consistent with `frontend_spec_041`'s menu bar.
 **Priority**: P3 (IA/naming improvement — no functional bug being fixed, no backend contract change)
 **Depends on**: Frontend Spec 041 (`frontend_spec_041_global_navigation.md`, establishes the tab/menu-bar visual
 language this spec's selector matches) — implement after 041 ships, not in parallel, per this project's one-spec-
@@ -558,20 +563,20 @@ established convention, see `frontend_spec_041-AC-02` for the identical preceden
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-042-AC-01: single "Use My Series" tab replaces Automatic/Specific Series
-- [ ] FRONTEND-042-AC-02: the series picker is always visible under Use My Series
-- [ ] FRONTEND-042-AC-03: optional-narrowing hint text renders
-- [ ] FRONTEND-042-AC-04: empty selection behaves exactly like today's Automatic
-- [ ] FRONTEND-042-AC-05: a selection behaves exactly like today's Specific Series
-- [ ] FRONTEND-042-AC-06: "Discover" tab replaces the three flat options
-- [ ] FRONTEND-042-AC-07: Discover reveals its three sub-tabs
-- [ ] FRONTEND-042-AC-08: "Custom Search" behaves exactly like former Genre & Keyword
-- [ ] FRONTEND-042-AC-09: "Popular Right Now" behavior unaffected by re-nesting
-- [ ] FRONTEND-042-AC-10: "Highest Rated" minVoteCount default survives re-nesting
-- [ ] FRONTEND-042-AC-11: discoverSortBy defaults survive re-nesting
-- [ ] FRONTEND-042-AC-12: top-level selector uses the Tabs ARIA pattern
-- [ ] FRONTEND-042-AC-13: Discover sub-selector uses the Tabs ARIA pattern
-- [ ] FRONTEND-042-AC-14: mode changes still auto-fetch immediately
-- [ ] FRONTEND-042-AC-15: re-clicking the active tab is a no-op
-- [ ] FRONTEND-042-AC-16: all tabs disabled while loading
-- [ ] FRONTEND-042-AC-17: visual consistency with the global nav (manual check, both themes)
+- [x] FRONTEND-042-AC-01: single "Use My Series" tab replaces Automatic/Specific Series
+- [x] FRONTEND-042-AC-02: the series picker is always visible under Use My Series
+- [x] FRONTEND-042-AC-03: optional-narrowing hint text renders
+- [x] FRONTEND-042-AC-04: empty selection behaves exactly like today's Automatic
+- [x] FRONTEND-042-AC-05: a selection behaves exactly like today's Specific Series
+- [x] FRONTEND-042-AC-06: "Discover" tab replaces the three flat options
+- [x] FRONTEND-042-AC-07: Discover reveals its three sub-tabs
+- [x] FRONTEND-042-AC-08: "Custom Search" behaves exactly like former Genre & Keyword
+- [x] FRONTEND-042-AC-09: "Popular Right Now" behavior unaffected by re-nesting
+- [x] FRONTEND-042-AC-10: "Highest Rated" minVoteCount default survives re-nesting
+- [x] FRONTEND-042-AC-11: discoverSortBy defaults survive re-nesting
+- [x] FRONTEND-042-AC-12: top-level selector uses the Tabs ARIA pattern
+- [x] FRONTEND-042-AC-13: Discover sub-selector uses the Tabs ARIA pattern
+- [x] FRONTEND-042-AC-14: mode changes still auto-fetch immediately
+- [x] FRONTEND-042-AC-15: re-clicking the active tab is a no-op
+- [x] FRONTEND-042-AC-16: all tabs disabled while loading
+- [x] FRONTEND-042-AC-17: visual consistency with the global nav (manual check, both themes)

@@ -62,6 +62,68 @@
   }
 }
 
+/* FRONTEND-042: two-tier WAI-ARIA Tabs pattern replacing the old flat radio
+   fieldset. Visual language deliberately mirrors App.module.css's .nav/
+   .navLink/.navLinkActive (frontend_spec_041's menu bar) via the same shared
+   --accent-bg/--accent-border/--social-bg/--text/--text-h/--border custom
+   properties, kept as its own local implementation here rather than a
+   shared extracted component (frontend_conventions.md: extract on a third
+   consumer, not speculatively). */
+.sourceSelector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tablist {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.tablistNested {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--text-h);
+  background: var(--social-bg);
+}
+
+.tab:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tabActive {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .modeFieldset {
   display: flex;
   flex-wrap: wrap;

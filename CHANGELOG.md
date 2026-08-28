@@ -16,6 +16,9 @@ versioned together as one app.
 ### Changed
 
 - Frontend: the top nav is restyled from three unstyled `<button aria-pressed>` elements into a proper menu bar (new `App.module.css`) using real `<NavLink>`s with `aria-current="page"` for the active item, replacing the old `mainView` `useState` toggle (`frontend_spec_041`).
+- Frontend: `RecommendationControls`' "Automatic" and "Specific Series" source options merge into a single "Use My Series" tab — the Specific Series picker (search/filter/sort/browse-all) is now always visible underneath it, with a hint that narrowing is optional (`frontend_spec_042`).
+- Frontend: "Genre & Keyword" (renamed "Custom Search"), "Popular Right Now", and "Highest Rated" are grouped under a new "Discover" parent tab, selected via a nested second-level tab row shown only while Discover is active (`frontend_spec_042`).
+- Frontend: the "Recommendation Source" selector is now a real two-tier WAI-ARIA Tabs widget (`role="tablist"`/`"tab"`/`"tabpanel"`, `aria-selected`/`aria-controls`) instead of a flat radio `<fieldset>`, matching `frontend_spec_041`'s menu-bar visual language (`frontend_spec_042`).
 
 ## [2.19.2] - 2026-08-27
 
