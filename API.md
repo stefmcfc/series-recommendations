@@ -93,47 +93,63 @@ never fails the request. Always `200` on success; `502` only for a genuine TMDB 
 
 ### `GET /api/v1/series/recommendations?limit=`
 
-Suggest series to watch next, sourced from TMDB based on your `COMPLETED` series (title-based),
-supplemented by your most-watched genres when there's too little title-based data yet. A series
-with `excludeFromRecommendations: true` is skipped entirely from this automatic sourcing (both the
-title-based pool and the genre-frequency count derived from it) — set it via `POST`/
-`PATCH /api/v1/series` when a show is rated fine but isn't representative of your taste. This
-exclusion does **not** apply to an explicit `seriesIds` selection below, which always wins over
-the standing preference. Excludes anything already added or ignored. `limit` defaults to 20,
-clamped to 1-50. Requires `app.tmdb.api-key` to be configured once there's data to source from —
+Suggest series to watch next. `limit` defaults to 20, clamped to 1-50. Excludes anything already
+added or ignored. Requires `app.tmdb.api-key` to be configured once there's data to source from —
 see `RUNBOOK.md`'s Environment Variables section — otherwise returns `502`.
 
-Also accepts `sourceMode=trending|topRated` for two additional directed-sourcing modes independent
-of your own watch history, mutually exclusive with `seriesIds`/`genres`/`keywords` (`400` if
-combined, or if `sourceMode` isn't one of the two recognized values):
-- `trending` sources TMDB's globally trending shows (`trendingWindow=day|week`, default `week`).
-- `topRated` sources TMDB's highest-rated shows overall using `minVoteCount` (default **200** for
-  this mode specifically — every other mode defaults to 20) as the query's own vote-count floor.
+Sourcing mode is selected via `sourceMode` (`trending`|`topRated`|`useMySeries`) and/or
+`seriesIds`/`genres`/`keywords`:
 
-`trending`, `topRated`, and genre/keyword-directed sourcing (`genres`/`keywords`) all keep TMDB's
-own returned order rather than being re-ranked/diversity-capped by the app, since none of the
-three ever link a candidate back to one of your own series. For `topRated` and
-genre/keyword-directed sourcing specifically, `discoverSortBy` selects the TMDB-native
-`discover/tv` `sort_by` value driving that order — one of TMDB's 12 documented values (e.g.
-`vote_average.desc`, `popularity.desc`, `first_air_date.desc`; `400` if unrecognized), defaulting
-to `vote_average.desc` for `topRated` and `popularity.desc` for genre/keyword-directed sourcing
-when omitted; ignored (not an error) under any other mode. All three directed modes still exclude
-anything already added or ignored.
+- **`sourceMode=useMySeries`** (or an explicit `seriesIds` selection, even without this flag)
+  sources from TMDB based on your `COMPLETED` series (title-based), supplemented by your
+  most-watched genres when there's too little title-based data yet. A series with
+  `excludeFromRecommendations: true` is skipped entirely from the *automatic* (non-`seriesIds`)
+  version of this pool (both the title-based pool and the genre-frequency count derived from it)
+  — set it via `POST`/`PATCH /api/v1/series` when a show is rated fine but isn't representative of
+  your taste; this exclusion does **not** apply once `seriesIds` is set explicitly, which always
+  wins over the standing preference. `sourceMode=useMySeries` is mutually exclusive with
+  `genres`/`keywords` (`400` if combined) but **compatible** with `seriesIds` — narrowing "Use My
+  Series" to a specific selection while keeping the pool-based ranking/diversity-cap behavior
+  below.
+- **`sourceMode=trending`** sources TMDB's globally trending shows (`trendingWindow=day|week`,
+  default `week`).
+- **`sourceMode=topRated`** sources TMDB's highest-rated shows overall using `minVoteCount`
+  (default **200** for this mode specifically — every other mode defaults to 20) as the query's
+  own vote-count floor.
+- **Everything else — including a request with `sourceMode` omitted entirely and no `seriesIds`/
+  `genres`/`keywords` set** — is Custom Search: an unfiltered or genre/keyword-filtered TMDB
+  `discover/tv` call. **Behavior change**: previously, an entirely empty request (or one with only
+  `minTmdbRating`/`yearMin`/`yearMax` set) silently fell back to the same automatic pool as
+  `sourceMode=useMySeries` today; it now always reaches Custom Search's `discover/tv` call
+  instead, so those filters are correctly applied pre-fetch rather than being silently bypassed
+  (`series_spec_033`).
+
+`trending`/`topRated`/`sourceMode=useMySeries` are mutually exclusive with `seriesIds`/`genres`/
+`keywords` (`400` if combined, or if `sourceMode` isn't one of the three recognized values), with
+the one deliberate exception of `sourceMode=useMySeries` + `seriesIds` described above.
+
+`trending`, `topRated`, and Custom Search (`genres`/`keywords`, or neither) all keep TMDB's own
+returned order rather than being re-ranked/diversity-capped by the app, since none of the three
+ever link a candidate back to one of your own series. For `topRated` and Custom Search
+specifically, `discoverSortBy` selects the TMDB-native `discover/tv` `sort_by` value driving that
+order — one of TMDB's 12 documented values (e.g. `vote_average.desc`, `popularity.desc`,
+`first_air_date.desc`; `400` if unrecognized), defaulting to `vote_average.desc` for `topRated` and
+`popularity.desc` for Custom Search when omitted; ignored (not an error) under any other mode. All
+directed modes still exclude anything already added or ignored.
 
 `minTmdbRating`/`yearMin`/`yearMax` are applied as post-fetch output filters across every
-sourcing mode. For genre/keyword-directed sourcing specifically (Custom Search), they're
-**additionally** sent to TMDB itself as real `discover/tv` params (`vote_average.gte`/
-`air_date.gte`/`air_date.lte`) rather than relying solely on the post-fetch check — TMDB only
-ever returns one ~20-result unpaginated page, so a restrictive combination could otherwise
-silently return few/zero results even when TMDB had real matches it was never asked for. **This
-also changes the year field's semantics for Custom Search only**: `yearMin`/`yearMax` there filter
-on a candidate's *episode* air date (TMDB's `air_date.gte`/`.lte`), not its first-air date, so a
-still-running older show (e.g. one airing continuously since 1989) can match a recent year range.
-Every other mode (`trending`, `topRated`, automatic/`seriesIds` sourcing) keeps matching on
-first-air year via the post-fetch filter only — this asymmetry is deliberate, not a bug.
-`minTmdbRating` must be between `0` and `10` (`400` otherwise); `yearMin`/`yearMax` must each be
-between `1900` and the current year + 1, and `yearMin` cannot exceed `yearMax` (`400` otherwise) —
-these bounds are validated regardless of sourcing mode.
+sourcing mode. For Custom Search sourcing specifically, they're **additionally** sent to TMDB
+itself as real `discover/tv` params (`vote_average.gte`/`air_date.gte`/`air_date.lte`) rather than
+relying solely on the post-fetch check — TMDB only ever returns one ~20-result unpaginated page,
+so a restrictive combination could otherwise silently return few/zero results even when TMDB had
+real matches it was never asked for. **This also changes the year field's semantics for Custom
+Search only**: `yearMin`/`yearMax` there filter on a candidate's *episode* air date (TMDB's
+`air_date.gte`/`.lte`), not its first-air date, so a still-running older show (e.g. one airing
+continuously since 1989) can match a recent year range. Every other mode (`trending`, `topRated`,
+`useMySeries`/`seriesIds` sourcing) keeps matching on first-air year via the post-fetch filter only
+— this asymmetry is deliberate, not a bug. `minTmdbRating` must be between `0` and `10` (`400`
+otherwise); `yearMin`/`yearMax` must each be between `1900` and the current year + 1, and `yearMin`
+cannot exceed `yearMax` (`400` otherwise) — these bounds are validated regardless of sourcing mode.
 
 `excludeKeywords` (comma-separated names) excludes a candidate whose TMDB keywords
 case-insensitively match any entry, applied last (after every other output filter) across every

@@ -178,8 +178,16 @@ function applySourceModeQuery(
   state: ControlsState,
   query: RecommendationQuery,
 ): void {
-  if (state.mode === 'useMySeries' && state.selectedSeriesIds.length > 0) {
-    query.seriesIds = state.selectedSeriesIds
+  if (state.mode === 'useMySeries') {
+    // SERIES-033/FRONTEND-049: sent unconditionally so the backend never has
+    // to infer "Use My Series" by elimination -- an empty Custom Search
+    // request is now a legitimate, distinct request (series_spec_033), so
+    // this tab must identify itself explicitly on every request, whether or
+    // not a narrowing series selection has been made.
+    query.sourceMode = 'useMySeries'
+    if (state.selectedSeriesIds.length > 0) {
+      query.seriesIds = state.selectedSeriesIds
+    }
   }
 
   if (state.mode === 'discover' && state.discoverMode === 'customSearch') {
@@ -979,8 +987,7 @@ export function RecommendationControls({
                     </div>
                     {showGenreKeywordHint && (
                       <p className={styles.hint}>
-                        Enter at least one genre or keyword; otherwise this
-                        falls back to automatic recommendations.
+                        Leave empty to browse the most popular shows overall.
                       </p>
                     )}
                   </div>

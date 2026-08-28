@@ -210,4 +210,41 @@ class RecommendationCriteriaValidatorSpec extends Specification {
         then: "IllegalArgumentException is thrown regardless of mode"
             thrown(IllegalArgumentException)
     }
+
+    // -- Spec 033, Requirement 1 (SERIES-033-AC-01..03): sourceMode=useMySeries --
+
+    def "SERIES-033-AC-01: sourceMode=useMySeries is accepted"() {
+        expect: "no exception"
+            validator.validate(new RecommendationCriteria(sourceMode: "useMySeries"))
+    }
+
+    def "SERIES-033-AC-02: sourceMode=useMySeries combined with genres is rejected"() {
+        given: "criteria sets both sourceMode=useMySeries and genres"
+            def criteria = new RecommendationCriteria(sourceMode: "useMySeries", genres: ["Drama"])
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-033-AC-02: sourceMode=useMySeries combined with keywords is rejected"() {
+        given: "criteria sets both sourceMode=useMySeries and keywords"
+            def criteria = new RecommendationCriteria(sourceMode: "useMySeries", keywords: ["Spy"])
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-033-AC-03: sourceMode=useMySeries combined with seriesIds is allowed"() {
+        given: "criteria sets both sourceMode=useMySeries and seriesIds"
+            def criteria = new RecommendationCriteria(sourceMode: "useMySeries", seriesIds: [UUID.randomUUID().toString()])
+
+        expect: "no exception"
+            validator.validate(criteria)
+    }
 }

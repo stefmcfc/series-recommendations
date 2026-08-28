@@ -93,9 +93,16 @@ public class RecommendationCriteria {
     public void setSortBy(String sortBy) { this.sortBy = sortBy; }
 
     /**
-     * {@code "trending"} or {@code "topRated"} (SERIES-022-AC-06) -- a third directed-sourcing
-     * mode alongside {@code seriesIds}/{@code genres}/{@code keywords}, mutually exclusive with
-     * all three (SERIES-022-AC-16).
+     * {@code "trending"}, {@code "topRated"}, or {@code "useMySeries"} (SERIES-022-AC-06,
+     * SERIES-033-AC-01). {@code "trending"}/{@code "topRated"} remain mutually exclusive with
+     * all of {@code seriesIds}/{@code genres}/{@code keywords} (SERIES-022-AC-16). {@code
+     * "useMySeries"} is mutually exclusive with {@code genres}/{@code keywords} but
+     * deliberately *compatible* with {@code seriesIds} (SERIES-033-AC-02/03) -- narrowing
+     * pool-based "Use My Series" sourcing to a specific selection, not switching modes.
+     * Omitting {@code sourceMode} entirely (and {@code seriesIds}/{@code genres}/{@code
+     * keywords}) routes to Custom Search's unfiltered {@code discover/tv} call, not the
+     * automatic pool -- {@code "useMySeries"} (or a non-empty {@code seriesIds}) is now the
+     * only way to reach pool-based sourcing (SERIES-033-AC-04..06).
      */
     public String getSourceMode() { return sourceMode; }
     public void setSourceMode(String sourceMode) { this.sourceMode = sourceMode; }

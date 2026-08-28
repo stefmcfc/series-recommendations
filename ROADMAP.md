@@ -69,14 +69,16 @@ corrected below.
 | Recommendation Source mode reorganization ("Use My Series" merge, "Discover" group with Custom Search/Popular Right Now/Highest Rated, tab-style selector)           | —                                    | `frontend_spec_042`                            | ✅ Done                                                                                         |
 | Remove "Max Per Source"/"Max Sources Shown" controls (confirmed dead under every Discover mode; backend untouched, pending a later "Use My Series" revamp)           | —                                    | `frontend_spec_048`                            | ✅ Done                                                                                         |
 | Custom Search pre-fetch filters (Min TMDB Rating + Year Range sent to TMDB `discover/tv`, episode-air-date year semantics)                                           | `series_spec_031`                    | `frontend_spec_046`                            | ✅ Done                                                                                         |
+| "Use My Series" sourcing requires an explicit signal — no more silent fallback when Custom Search has only rating/year set                                           | `series_spec_033`                    | `frontend_spec_049`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered as a suggested build order, not just spec-number order — grouped into independent
-dependency chains (043→045, 030→044, 032→047); rows within a chain must build in the listed
-order, but the chains themselves have no dependencies on each other and could be reordered freely
-as a block if priorities change. (The former 041→042 chain, the standalone 048, and the full
-031→046 chain — backend and frontend both — are fully delivered; see the table above.)
+dependency chains (043→045, 030→044, 032→047); rows within a chain must build in the
+listed order, but the chains themselves have no dependencies on each other and could be reordered
+freely as a block if priorities change. (The former 041→042 chain, the standalone 048, and the
+full 031→046 and 033→049 chains — backend and frontend both — are fully delivered; see the table
+above.)
 
 | Feature                                                                                                                                              | Backend Spec      | Frontend Spec       | Depends On                                                                                                                   | Status         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------- |

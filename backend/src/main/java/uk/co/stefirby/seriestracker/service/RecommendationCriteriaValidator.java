@@ -25,9 +25,10 @@ public class RecommendationCriteriaValidator {
         boolean hasSeriesIds = c.getSeriesIds() != null && !c.getSeriesIds().isEmpty();
         boolean hasGenreOrKeyword = c.isDirectedByGenreOrKeyword();
         boolean hasSourceMode = c.getSourceMode() != null && !c.getSourceMode().isBlank();
+        boolean isUseMySeriesMode = RecommendationDefaults.SOURCE_MODE_USE_MY_SERIES.equals(c.getSourceMode());
 
         validateSourceMode(c, hasSourceMode);
-        validateMutuallyExclusiveModes(hasSeriesIds, hasGenreOrKeyword, hasSourceMode);
+        validateMutuallyExclusiveModes(hasSeriesIds, hasGenreOrKeyword, hasSourceMode, isUseMySeriesMode);
         validateMinSourceRating(c);
         validateMinTmdbRating(c);
         validateYearRange(c);
@@ -36,15 +37,33 @@ public class RecommendationCriteriaValidator {
     }
 
     private void validateSourceMode(RecommendationCriteria c, boolean hasSourceMode) {
-        if (hasSourceMode && !"trending".equals(c.getSourceMode()) && !RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())) {
-            throw new IllegalArgumentException("sourceMode must be one of: trending, topRated");
+        if (hasSourceMode
+            && !"trending".equals(c.getSourceMode())
+            && !RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(c.getSourceMode())
+            && !RecommendationDefaults.SOURCE_MODE_USE_MY_SERIES.equals(c.getSourceMode())) {
+            throw new IllegalArgumentException("sourceMode must be one of: trending, topRated, useMySeries");
         }
     }
 
-    private void validateMutuallyExclusiveModes(boolean hasSeriesIds, boolean hasGenreOrKeyword, boolean hasSourceMode) {
+    /**
+     * SERIES-033-AC-02/03: {@code sourceMode=useMySeries} gets its own, narrower rule -- rejected
+     * combined with {@code genres}/{@code keywords} (like {@code trending}/{@code topRated}), but
+     * deliberately *not* rejected combined with {@code seriesIds} (unlike {@code trending}/{@code
+     * topRated}), so this check intentionally doesn't fall through to the generic {@code
+     * hasSourceMode} rule below it once {@code isUseMySeriesMode} is true.
+     */
+    private void validateMutuallyExclusiveModes(boolean hasSeriesIds, boolean hasGenreOrKeyword,
+                                                 boolean hasSourceMode, boolean isUseMySeriesMode) {
         if (hasSeriesIds && hasGenreOrKeyword) {
             throw new IllegalArgumentException(
                 "seriesIds cannot be combined with genres/keywords -- these are mutually exclusive request modes");
+        }
+        if (isUseMySeriesMode) {
+            if (hasGenreOrKeyword) {
+                throw new IllegalArgumentException(
+                    "sourceMode=useMySeries cannot be combined with genres/keywords -- these are mutually exclusive request modes");
+            }
+            return;
         }
         if (hasSourceMode && (hasSeriesIds || hasGenreOrKeyword)) {
             throw new IllegalArgumentException(

@@ -291,18 +291,18 @@ describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', 
 
     selectCustomSearch()
     expect(
-      screen.getByText(/enter at least one genre or keyword/i),
+      screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
 
     const dramaCheckbox = await screen.findByLabelText('Drama')
     fireEvent.click(dramaCheckbox)
     expect(
-      screen.queryByText(/enter at least one genre or keyword/i),
+      screen.queryByText(/browse the most popular shows overall/i),
     ).not.toBeInTheDocument()
 
     fireEvent.click(dramaCheckbox)
     expect(
-      screen.getByText(/enter at least one genre or keyword/i),
+      screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
   })
 })
@@ -452,7 +452,10 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
     fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
     clickApplyFilters()
 
-    expect(onQueryChange).toHaveBeenLastCalledWith({ seriesIds: ['1'] })
+    expect(onQueryChange).toHaveBeenLastCalledWith({
+      sourceMode: 'useMySeries',
+      seriesIds: ['1'],
+    })
     expect(screen.getByLabelText(/min tmdb rating/i)).toHaveValue(null)
   })
 })
@@ -793,19 +796,19 @@ describe('FRONTEND-029-AC-13: hint recomputed from keywordsSelected', () => {
 
     selectCustomSearch()
     expect(
-      screen.getByText(/enter at least one genre or keyword/i),
+      screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'spy' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(
-      screen.queryByText(/enter at least one genre or keyword/i),
+      screen.queryByText(/browse the most popular shows overall/i),
     ).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove spy' }))
     expect(
-      screen.getByText(/enter at least one genre or keyword/i),
+      screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
   })
 })
@@ -1863,5 +1866,72 @@ describe('SERIES-031-AC-11/12 (frontend hint): rating/year inputs carry min/max 
     expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('max', maxYear)
     expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('min', '1900')
     expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('max', maxYear)
+  })
+})
+
+describe('FRONTEND-049-AC-01: Use My Series sends sourceMode even with no selection', () => {
+  it('includes sourceMode=useMySeries with nothing selected', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceMode: 'useMySeries' }),
+    )
+  })
+})
+
+describe('FRONTEND-049-AC-02: sourceMode and seriesIds are both sent together', () => {
+  it('includes both when a series is selected', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    await screen.findByLabelText(/^series$/i)
+
+    fireEvent.change(screen.getByLabelText(/^series$/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(await screen.findByText('Show'))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceMode: 'useMySeries', seriesIds: ['1'] }),
+    )
+  })
+})
+
+describe('FRONTEND-049-AC-03: Discover modes never send sourceMode=useMySeries', () => {
+  it('omits sourceMode=useMySeries under Custom Search', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectDiscover()
+    onQueryChange.mockClear()
+
+    expect(onQueryChange).not.toHaveBeenCalledWith(
+      expect.objectContaining({ sourceMode: 'useMySeries' }),
+    )
+  })
+})
+
+describe('FRONTEND-049-AC-04: an empty Custom Search request still fires', () => {
+  it('calls onQueryChange with no blocking', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectCustomSearch()
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalled()
   })
 })

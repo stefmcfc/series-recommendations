@@ -573,4 +573,19 @@ class RecommendationSourcingServiceSpec extends Specification {
         then: "discoverTopRated was called with its existing two-arg signature, unchanged"
             1 * tmdbClient.discoverTopRated(_, _) >> []
     }
+
+    // -- Spec 033, Requirement 3 (SERIES-033-AC-09): Custom Search handles a genuinely empty query correctly --
+
+    def "SERIES-033-AC-09: an empty Custom Search request produces an unfiltered discover/tv call"() {
+        given: "criteria with nothing set"
+            def criteria = new RecommendationCriteria()
+
+        when: "sourceByGenreOrKeyword runs"
+            sourcingService.sourceByGenreOrKeyword(criteria)
+
+        then: "discover was called with empty genre/keyword lists and DiscoverFilters carrying only the sourcing-time minVoteCount default"
+            1 * tmdbClient.discover([], [], "popularity.desc", { DiscoverFilters f ->
+                f.minTmdbRating() == null && f.yearMin() == null && f.yearMax() == null
+            }) >> []
+    }
 }
