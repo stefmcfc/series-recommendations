@@ -1,6 +1,14 @@
 # Series Spec 033: "Use My Series" Sourcing Requires an Explicit Signal — No More Silent Fallback
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) -- `backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationDefaults.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationCriteriaValidator.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationService.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/dto/RecommendationCriteria.java` (javadoc only),
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationCriteriaValidatorSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationServiceSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationSourcingServiceSpec.groovy`.
+Frontend half (`frontend_spec_049`) implemented in the same PR/branch, per this spec's own deployment note --
+see that spec for the paired frontend change.
 **Priority**: P2 (correctness fix — confirmed live: a Custom Search request with only `minTmdbRating` set
 silently returns "Use My Series" pool-based candidates instead of a real TMDB discover query, bypassing
 `series_spec_031`'s pre-fetch filtering entirely)
@@ -301,12 +309,12 @@ AC-06's routing fix is in place.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-033-AC-01: `sourceMode=useMySeries` is accepted
-- [ ] SERIES-033-AC-02: `useMySeries` combined with genres/keywords is rejected
-- [ ] SERIES-033-AC-03: `useMySeries` combined with `seriesIds` is allowed
-- [ ] SERIES-033-AC-04: `sourceMode=useMySeries` routes to pool-based sourcing
-- [ ] SERIES-033-AC-05: `seriesIds` alone routes to pool-based sourcing
-- [ ] SERIES-033-AC-06: a fully empty request routes to Custom Search, not the automatic pool
-- [ ] SERIES-033-AC-07: `minTmdbRating` alone routes to Custom Search with pre-fetch filtering
-- [ ] SERIES-033-AC-08: `trending`/`topRated` routing unaffected
-- [ ] SERIES-033-AC-09: an empty Custom Search request produces an unfiltered `discover/tv` call
+- [x] SERIES-033-AC-01: `sourceMode=useMySeries` is accepted
+- [x] SERIES-033-AC-02: `useMySeries` combined with genres/keywords is rejected
+- [x] SERIES-033-AC-03: `useMySeries` combined with `seriesIds` is allowed
+- [x] SERIES-033-AC-04: `sourceMode=useMySeries` routes to pool-based sourcing
+- [x] SERIES-033-AC-05: `seriesIds` alone routes to pool-based sourcing
+- [x] SERIES-033-AC-06: a fully empty request routes to Custom Search, not the automatic pool
+- [x] SERIES-033-AC-07: `minTmdbRating` alone routes to Custom Search with pre-fetch filtering
+- [x] SERIES-033-AC-08: `trending`/`topRated` routing unaffected
+- [x] SERIES-033-AC-09: an empty Custom Search request produces an unfiltered `discover/tv` call

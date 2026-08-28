@@ -154,7 +154,11 @@ export interface RecommendationQuery {
   maxPerSource?: number
   maxSourcesShown?: number
   sortBy?: 'score' | 'recommendationCount'
-  sourceMode?: 'trending' | 'topRated'
+  // SERIES-033/FRONTEND-049: 'useMySeries' sent explicitly and unconditionally
+  // whenever that tab is active, so the backend never has to infer it by
+  // elimination (an empty Custom Search request is a distinct, legitimate
+  // request in its own right -- see series_spec_033_use_my_series_explicit_mode.md).
+  sourceMode?: 'trending' | 'topRated' | 'useMySeries'
   trendingWindow?: 'day' | 'week'
   // FRONTEND-033-AC-04: TMDB-native discover sort, applicable only when
   // sourceMode is 'topRated' or the query is genre/keyword-directed --

@@ -69,23 +69,19 @@ corrected below.
 | Recommendation Source mode reorganization ("Use My Series" merge, "Discover" group with Custom Search/Popular Right Now/Highest Rated, tab-style selector)           | —                                    | `frontend_spec_042`                            | ✅ Done                                                                                         |
 | Remove "Max Per Source"/"Max Sources Shown" controls (confirmed dead under every Discover mode; backend untouched, pending a later "Use My Series" revamp)           | —                                    | `frontend_spec_048`                            | ✅ Done                                                                                         |
 | Custom Search pre-fetch filters (Min TMDB Rating + Year Range sent to TMDB `discover/tv`, episode-air-date year semantics)                                           | `series_spec_031`                    | `frontend_spec_046`                            | ✅ Done                                                                                         |
+| "Use My Series" sourcing requires an explicit signal — no more silent fallback when Custom Search has only rating/year set                                           | `series_spec_033`                    | `frontend_spec_049`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered as a suggested build order, not just spec-number order — grouped into independent
-dependency chains (033→049, 043→045, 030→044, 032→047); rows within a chain must build in the
+dependency chains (043→045, 030→044, 032→047); rows within a chain must build in the
 listed order, but the chains themselves have no dependencies on each other and could be reordered
 freely as a block if priorities change. (The former 041→042 chain, the standalone 048, and the
-full 031→046 chain — backend and frontend both — are fully delivered; see the table above.)
-**033→049 is a P2 bug fix** (confirmed live: Custom Search silently falls back to "Use My Series"
-sourcing when only rating/year is set, bypassing `series_spec_031`'s pre-fetch filtering entirely)
-— worth prioritizing ahead of the P3 rows below despite the spec-number order. **Backend and
-frontend must ship in the same PR for this one**, not sequentially — see `series_spec_033`'s
-deployment note.
+full 031→046 and 033→049 chains — backend and frontend both — are fully delivered; see the table
+above.)
 
 | Feature                                                                                                                                              | Backend Spec      | Frontend Spec       | Depends On                                                                                                                   | Status         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| "Use My Series" sourcing requires an explicit signal — no more silent fallback when Custom Search has only rating/year set                           | `series_spec_033` | `frontend_spec_049` | — (must ship together in one PR, not sequentially — see `series_spec_033`'s deployment note)                                 | ⬜ Not started |
 | Confirm before discarding unsaved changes on Cancel/Escape (AddSeriesForm/EditSeriesForm)                                                            | —                 | `frontend_spec_043` | —                                                                                                                            | ⬜ Not started |
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                                                                                         | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                                   | ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                                                                                    | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row)                    | ⬜ Not started |

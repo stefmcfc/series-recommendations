@@ -100,17 +100,28 @@ public class RecommendationService {
 
         boolean trendingMode = "trending".equals(criteria.getSourceMode());
         boolean topRatedMode = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
-        boolean genreOrKeywordDirected = criteria.isDirectedByGenreOrKeyword();
+        boolean hasSeriesIds = criteria.getSeriesIds() != null && !criteria.getSeriesIds().isEmpty();
+        // SERIES-033-AC-04/05: "Use My Series" pool sourcing now requires an explicit signal --
+        // either sourceMode=useMySeries itself, or a non-empty seriesIds selection (a robustness
+        // floor independent of sourceMode, since seriesIds has no meaning outside this context).
+        // It's no longer reached by elimination.
+        boolean useMySeriesMode = RecommendationDefaults.SOURCE_MODE_USE_MY_SERIES.equals(criteria.getSourceMode())
+            || hasSeriesIds;
 
         List<RawCandidate> raw;
         if (trendingMode) {
             raw = sourcingService.sourceTrending(criteria);
         } else if (topRatedMode) {
             raw = sourcingService.sourceTopRated(criteria);
-        } else if (genreOrKeywordDirected) {
-            raw = sourcingService.sourceByGenreOrKeyword(criteria);
-        } else {
+        } else if (useMySeriesMode) {
             raw = sourcingService.sourceFromPool(criteria, limit);
+        } else {
+            // SERIES-033-AC-06/07: Custom Search (sourceByGenreOrKeyword) is now the default/
+            // fallback branch, reached whenever the request is neither trending, topRated, nor
+            // "Use My Series" -- including a request with nothing set at all, which TmdbClient
+            // .discover() already turns into an unfiltered discover/tv call (no with_genres/
+            // with_keywords params) rather than silently falling back to pool-based sourcing.
+            raw = sourcingService.sourceByGenreOrKeyword(criteria);
         }
 
         List<RawCandidate> capped = raw.size() > maxCandidates
@@ -120,14 +131,19 @@ public class RecommendationService {
         List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
         List<DedupedCandidate> filtered = outputFilterService.applyOutputFilters(deduped, criteria);
 
-        if (trendingMode || topRatedMode || genreOrKeywordDirected) {
+        if (!useMySeriesMode) {
             // SERIES-022-AC-08 (trending), generalized by SERIES-025-AC-07 to topRated and
-            // genre/keyword-directed sourcing: none of the three ever link a candidate to a
-            // source series, so Requirement 7's ranking/diversity-cap step is a full no-op for
-            // them (rankScore always equals tmdbRating, and the diversity cap never caps a
-            // candidate with no contributing sources -- SERIES-015-AC-15). Rather than run that
-            // no-op and silently discard TMDB's own (now sort_by-driven) order, these three
-            // modes keep TMDB's own returned order. Output filters still run above, unaffected.
+            // Custom Search sourcing (SERIES-033-AC-06 made Custom Search -- sourceByGenreOr
+            // Keyword -- the default/fallback branch reached whenever the request isn't
+            // trending/topRated/"Use My Series", so this condition is now simply "not Use My
+            // Series" rather than the old "genre-or-keyword-directed" check, which no longer
+            // matches every request that reaches sourceByGenreOrKeyword): none of these three
+            // ever link a candidate to a source series, so Requirement 7's ranking/diversity-cap
+            // step is a full no-op for them (rankScore always equals tmdbRating, and the
+            // diversity cap never caps a candidate with no contributing sources --
+            // SERIES-015-AC-15). Rather than run that no-op and silently discard TMDB's own (now
+            // sort_by-driven) order, these modes keep TMDB's own returned order. Output filters
+            // still run above, unaffected.
             int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
                 ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
             return filtered.stream()

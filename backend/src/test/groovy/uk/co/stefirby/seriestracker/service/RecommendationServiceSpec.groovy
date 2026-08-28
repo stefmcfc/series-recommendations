@@ -47,6 +47,21 @@ class RecommendationServiceSpec extends Specification {
         new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
     }
 
+    /**
+     * Spec 033's routing ACs (SERIES-033-AC-04..07/09) care only about which {@code
+     * RecommendationSourcingService} method is invoked, not what it returns, so this wires a
+     * {@code RecommendationService} against a fully mocked {@code sourcingService} rather than
+     * the real one {@code recommendationService} (above) uses -- letting each test assert
+     * interaction cardinality directly, matching the spec's own test sketches.
+     */
+    private RecommendationService serviceWithMockSourcing(RecommendationSourcingService sourcingService) {
+        new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(), sourcingService,
+            new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient),
+            new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200),
+            new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"),
+            new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
+    }
+
     def "SERIES-023-AC-05: getKeywordsForCandidate maps TmdbKeyword names to plain strings"() {
         given: "TMDB returns two keywords for tmdbId 4046"
             tmdbClient.showKeywords(4046) >> [
@@ -98,8 +113,8 @@ class RecommendationServiceSpec extends Specification {
                 tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0'))
             }
 
-        and: "maxPerSource is raised so the SERIES-007-AC-22 diversity cap (default 8) doesn't interfere with this limit-only test"
-            def criteria = new RecommendationCriteria(maxPerSource: 40)
+        and: "maxPerSource is raised so the SERIES-007-AC-22 diversity cap (default 8) doesn't interfere with this limit-only test, and sourceMode=useMySeries makes the intended pool-based sourcing explicit (SERIES-033-AC-04)"
+            def criteria = new RecommendationCriteria(maxPerSource: 40, sourceMode: "useMySeries")
 
         when: "recommend(5, criteria) is called"
             def results = recommendationService.recommend(5, criteria)
@@ -121,8 +136,8 @@ class RecommendationServiceSpec extends Specification {
                 tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0'))
             }
 
-        when: "recommend(50) is called"
-            recommendationService.recommend(50)
+        when: "recommend(50) is called with sourceMode=useMySeries (SERIES-033-AC-04) making the intended pool-based sourcing explicit"
+            recommendationService.recommend(50, new RecommendationCriteria(sourceMode: "useMySeries"))
 
         then: "external_ids is never resolved for a candidate beyond the 50-candidate cap"
             0 * tmdbClient.externalIds(51)
@@ -139,8 +154,8 @@ class RecommendationServiceSpec extends Specification {
             tmdbClient.recommendations(1) >> (1..5).collect { candidate(it) }
             tmdbClient.externalIds(_) >> Optional.empty()
 
-        when: "recommend(20) is called"
-            svc.recommend(20)
+        when: "recommend(20) is called with sourceMode=useMySeries (SERIES-033-AC-04) making the intended pool-based sourcing explicit"
+            svc.recommend(20, new RecommendationCriteria(sourceMode: "useMySeries"))
 
         then: "external_ids is never resolved beyond the 3-candidate cap"
             0 * tmdbClient.externalIds(4)
@@ -161,8 +176,8 @@ class RecommendationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
             (1..5).each { i -> tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0')) }
 
-        when: "recommend(20) is called with no maxPerSource override in criteria"
-            def results = svc.recommend(20)
+        when: "recommend(20) is called with no maxPerSource override in criteria, sourceMode=useMySeries (SERIES-033-AC-04) making the intended pool-based sourcing explicit"
+            def results = svc.recommend(20, new RecommendationCriteria(sourceMode: "useMySeries"))
 
         then: "the constructor-injected default of 2 is applied, not the property default of 8"
             results.size() == 2
@@ -178,7 +193,7 @@ class RecommendationServiceSpec extends Specification {
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
             (1..6).each { i -> tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0')) }
-            def criteria = new RecommendationCriteria(maxPerSource: 6)
+            def criteria = new RecommendationCriteria(maxPerSource: 6, sourceMode: "useMySeries")
 
         when: "recommend(20, criteria) is called"
             def results = recommendationService.recommend(20, criteria)
@@ -203,7 +218,10 @@ class RecommendationServiceSpec extends Specification {
             [10, 20, 30, 40].each { i -> tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0')) }
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
-            def criteria = new RecommendationCriteria(minTmdbRating: new BigDecimal("5.0"))
+            // sourceMode=useMySeries makes the intended pool-based sourcing explicit -- since
+            // SERIES-033-AC-06, minTmdbRating alone (no sourceMode/seriesIds) would otherwise
+            // route to Custom Search instead of this test's pool-based setup.
+            def criteria = new RecommendationCriteria(minTmdbRating: new BigDecimal("5.0"), sourceMode: "useMySeries")
 
         when: "recommend(20, criteria) is called"
             def results = recommendationService.recommend(20, criteria)
@@ -360,8 +378,8 @@ class RecommendationServiceSpec extends Specification {
             0 * tmdbClient.trending(_)
     }
 
-    def "SERIES-022-AC-19: no sourceMode leaves existing behavior unchanged (automatic watched pool sourcing)"() {
-        given: "one completed series, no sourceMode supplied"
+    def "SERIES-033-AC-04 supersedes SERIES-022-AC-19: sourceMode=useMySeries still runs the normal automatic pool sourcing"() {
+        given: "one completed series, sourceMode=useMySeries explicitly supplied"
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -370,8 +388,8 @@ class RecommendationServiceSpec extends Specification {
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
-        when: "recommend(20) is called with the default (no-sourceMode) criteria"
-            def results = recommendationService.recommend(20)
+        when: "recommend(20, criteria) is called with sourceMode=useMySeries"
+            def results = recommendationService.recommend(20, new RecommendationCriteria(sourceMode: "useMySeries"))
 
         then: "the normal automatic pool sourcing runs, unaffected"
             results.size() == 1
@@ -379,7 +397,7 @@ class RecommendationServiceSpec extends Specification {
     }
 
     def "SERIES-015-AC-22: the diversity cap and limit still apply after a recommendationCount sort"() {
-        given: "one source producing 6 raw candidates, sortBy=recommendationCount"
+        given: "one source producing 6 raw candidates, sortBy=recommendationCount, sourceMode=useMySeries (SERIES-033-AC-04) making the intended pool-based sourcing explicit"
             def source = completedSeries("Breaking Bad", "tt1234568", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234568") >> Optional.of(1)
@@ -388,7 +406,7 @@ class RecommendationServiceSpec extends Specification {
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
             (1..6).each { i -> tmdbClient.externalIds(i + 300) >> Optional.of("tt" + (i + 300).toString().padLeft(7, '0')) }
-            def criteria = new RecommendationCriteria(sortBy: "recommendationCount")
+            def criteria = new RecommendationCriteria(sortBy: "recommendationCount", sourceMode: "useMySeries")
 
         when: "recommend(2, criteria) is called"
             def results = recommendationService.recommend(2, criteria)
@@ -456,5 +474,63 @@ class RecommendationServiceSpec extends Specification {
 
         then: "the result is in TMDB's own returned order, unaffected by the legacy sortBy"
             results*.title() == ["A", "B"]
+    }
+
+    // -- Spec 033, Requirement 2 (SERIES-033-AC-04..08): "Use My Series" sourcing requires an explicit signal --
+
+    def "SERIES-033-AC-04: sourceMode=useMySeries routes to pool-based sourcing"() {
+        given: "criteria with sourceMode=useMySeries, no seriesIds"
+            def criteria = new RecommendationCriteria(sourceMode: "useMySeries")
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend is called"
+            service.recommend(20, criteria)
+
+        then: "sourceFromPool sourcing ran (not sourceByGenreOrKeyword)"
+            1 * sourcingService.sourceFromPool(criteria, 20) >> []
+            0 * sourcingService.sourceByGenreOrKeyword(_)
+    }
+
+    def "SERIES-033-AC-05: seriesIds alone routes to pool-based sourcing"() {
+        given: "criteria with seriesIds, no explicit sourceMode"
+            def criteria = new RecommendationCriteria(seriesIds: [UUID.randomUUID().toString()])
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend is called"
+            service.recommend(20, criteria)
+
+        then: "sourceFromPool sourcing ran"
+            1 * sourcingService.sourceFromPool(criteria, 20) >> []
+            0 * sourcingService.sourceByGenreOrKeyword(_)
+    }
+
+    def "SERIES-033-AC-06: a fully empty request routes to Custom Search, not the automatic pool"() {
+        given: "criteria with nothing set at all"
+            def criteria = new RecommendationCriteria()
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend is called"
+            service.recommend(20, criteria)
+
+        then: "sourceByGenreOrKeyword sourcing ran, not sourceFromPool"
+            1 * sourcingService.sourceByGenreOrKeyword(criteria) >> []
+            0 * sourcingService.sourceFromPool(_, _)
+    }
+
+    def "SERIES-033-AC-07: minTmdbRating alone routes to Custom Search with pre-fetch filtering"() {
+        given: "criteria with only minTmdbRating set"
+            def criteria = new RecommendationCriteria(minTmdbRating: new BigDecimal("8.0"))
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend is called"
+            service.recommend(20, criteria)
+
+        then: "sourceByGenreOrKeyword ran (which itself sends vote_average.gte -- series_spec_031-AC-01/05)"
+            1 * sourcingService.sourceByGenreOrKeyword(criteria) >> []
+            0 * sourcingService.sourceFromPool(_, _)
     }
 }

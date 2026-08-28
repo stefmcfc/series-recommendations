@@ -14,6 +14,16 @@ final class RecommendationDefaults {
     static final String SOURCE_MODE_TOP_RATED = "topRated";
 
     /**
+     * {@code RecommendationCriteria#getSourceMode()} value requiring an explicit signal for
+     * pool-based "Use My Series" sourcing (SERIES-033-AC-01), superseding the previous behavior
+     * of reaching {@code sourceFromPool} by elimination whenever a request was neither {@code
+     * trending}/{@code topRated} nor genre/keyword-directed. {@code seriesIds} being non-empty
+     * is independently sufficient too (SERIES-033-AC-05) -- see {@code RecommendationService
+     * #doRecommend}'s {@code useMySeriesMode} check.
+     */
+    static final String SOURCE_MODE_USE_MY_SERIES = "useMySeries";
+
+    /**
      * Mode-aware override applied only when {@code sourceMode == "topRated"}
      * (SERIES-024-AC-09), at both the sourcing-time call site and the post-hoc output-filter
      * call site (SERIES-024-AC-10/11). Every other mode now defaults to the same value via a

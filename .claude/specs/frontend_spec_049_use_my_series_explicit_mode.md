@@ -1,6 +1,7 @@
 # Frontend Spec 049: Always Send `sourceMode: 'useMySeries'` for "Use My Series"
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) -- `frontend/src/components/RecommendationControls.tsx`,
+`frontend/src/components/RecommendationControls.test.tsx`, `frontend/src/types/series.ts`.
 **Priority**: P2 (paired frontend half of `series_spec_033` — **must ship in the same PR**, not sequentially;
 see that spec's deployment note)
 **Depends on**: Series Spec 033 (`series_spec_033_use_my_series_explicit_mode.md`, the backend routing change
@@ -171,7 +172,7 @@ already satisfies this, now that the backend supports an empty Custom Search que
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-049-AC-01: Use My Series sends `sourceMode` even with no selection
-- [ ] FRONTEND-049-AC-02: `sourceMode` and `seriesIds` are both sent together
-- [ ] FRONTEND-049-AC-03: Discover modes never send `sourceMode: 'useMySeries'`
-- [ ] FRONTEND-049-AC-04: an empty Custom Search request still fires
+- [x] FRONTEND-049-AC-01: Use My Series sends `sourceMode` even with no selection
+- [x] FRONTEND-049-AC-02: `sourceMode` and `seriesIds` are both sent together
+- [x] FRONTEND-049-AC-03: Discover modes never send `sourceMode: 'useMySeries'`
+- [x] FRONTEND-049-AC-04: an empty Custom Search request still fires
