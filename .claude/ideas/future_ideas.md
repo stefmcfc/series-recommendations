@@ -125,13 +125,37 @@ mechanism) — worth its own dedicated thinking whenever it's prioritized.
 ## Navigation
 
 ### Real logo / visual branding design
-Raised 2026-08-28 alongside a planned global nav redesign (menu-bar style top nav, logo top-left
-linking home) — the nav spec itself will only use a plain/placeholder logo mark; actual visual
-identity design (wordmark, icon, color) is deliberately out of scope for that spec and deferred
-here.
+Raised 2026-08-28 alongside the global nav redesign (`frontend_spec_041`, shipped 2026-08-28 —
+menu-bar style top nav, logo top-left linking home). That spec deliberately used only a plain
+placeholder logo mark ("TV Series Tracker" as text); actual visual identity design (wordmark, icon,
+color) was explicitly out of scope for it and deferred here.
 
 **Status**: Not specced. No design direction chosen yet — purely a placeholder-now,
 design-properly-later split.
+
+### Light/dark mode toggle — currently OS-only, no manual override
+Raised 2026-08-28, prompted by the new menu bar (`frontend_spec_041`) being a natural home for a
+toggle control. Confirmed via reading `frontend/src/index.css`: theming is entirely
+`prefers-color-scheme`-driven — `:root` sets `color-scheme: light dark` plus a base (light) set of
+custom properties (`--text`/`--bg`/`--border`/`--accent`/etc.), and a `@media (prefers-color-scheme:
+dark)` block overrides them for dark. Confirmed via grep (`theme`/`dark mode`/`light mode`/
+`data-theme`, case-insensitive, across `frontend/src`) that there is no manual override mechanism
+anywhere in the app today — no toggle UI, no `data-theme` attribute, no persisted preference. A user
+whose OS is set to dark always sees dark, and vice versa, with no in-app way to differ from that.
+
+**What's required**: a toggle (in the new menu bar is the obvious placement) that sets a
+`data-theme="light"`/`"dark"` attribute on `<html>` or `:root`, with CSS rules overriding the
+`prefers-color-scheme` media queries when that attribute is present (a plain CSS specificity
+addition, no new dependency) — plus persisting the choice (`localStorage` is sufficient for a
+single-user local app; no backend involvement needed). A third "Match System" option, reverting to
+today's pure OS-driven behavior, is the obvious default state so nobody's forced to pick if they're
+happy with the current behavior.
+
+**Status**: Not specced. Cross-references the "No settings menu" idea (Configuration section)
+loosely, not as a hard dependency — unlike settings that genuinely need persistence/config
+infrastructure, a theme toggle is small enough to ship standalone (`localStorage`, no backend), but
+if a real settings screen gets built later, this would naturally live there too rather than staying
+a one-off menu-bar control.
 
 ### No shareable URL for a specific series (`SeriesDetail`)
 Updated 2026-08-28: `frontend_spec_041` added `react-router-dom` app-wide and gave the three
@@ -194,6 +218,10 @@ now want the same missing foundation.
 first — where would it persist (this is a single-user personal app, so per-user settings may be
 overkill; a new `AppSettings` table? a `.env`-editing convenience?) and which of the growing pile
 of env-var knobs are actually worth surfacing.
+
+Loosely related (2026-08-28): the Navigation section's "Light/dark mode toggle" idea is small
+enough to ship standalone (`localStorage`, no backend) rather than waiting on this, but would
+naturally move into a real settings screen if one gets built.
 
 ---
 
