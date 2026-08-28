@@ -7,7 +7,7 @@ version entry).
 
 A running backlog of ideas confirmed worth a real EARS spec eventually, but not yet written or
 scheduled. Distinct from `ROADMAP.md`, which only tracks specs that already exist (written, with
-real acceptance criteria) — this file is the layer *before* that: things worth specifying, once
+real acceptance criteria) — this file is the layer _before_ that: things worth specifying, once
 prioritized.
 
 **Maintenance rule**: when a candidate here actually gets spec'd (via the `ears-spec` skill), move
@@ -24,48 +24,15 @@ already-written specs, was retired on 2026-08-27 — its tracking role now lives
 
 ## Candidates
 
-### Country-of-origin and language recommendation filters, with chip UI
-From a 2026-08-26 discussion. `RecommendationOutputFilterService` already has a working
-`language` filter (`matchesLanguage`, direct case-insensitive match against TMDB's
-`original_language` — confirmed via reading the code, not assumed) — it works exactly as
-designed, but only accepts ISO 639-1 codes (`en`, `es`) with zero in-UI hint that full words
-(`English`, `Spanish`) won't match. A `countries` filter doesn't exist yet at all, despite the
-underlying data (`TmdbCandidate.originCountry`) already flowing through the pipeline since
-`series_spec_021` — confirmed feasible by mirroring `language`'s exact existing shape
-(`RecommendationCriteria` field → controller param → `RecommendationOutputFilterService` output
-filter).
-
-**Superseded design note (2026-08-28)**: this candidate originally said not to touch
-`TmdbClient.discover()` at all, on the basis that `language`'s existing filter is uniformly
-post-fetch across every mode and a `countries` filter should match that shape. The new "Push
-Discover-mode output filters upward into TMDB `discover/tv` params" candidate below pushes back on
-exactly that, for the Discover-family modes specifically (Custom Search/Popular Right Now/Highest
-Rated) — TMDB does support `with_original_language` and `with_origin_country` as real
-`discover/tv` params. These two candidates need deciding together, not separately: language and
-country filtering should very likely become TMDB-native for Discover modes (same reasoning as
-`minVoteCount`'s `series_spec_029` fix) while staying post-fetch for "Use My Series" mode (which
-has no single discover-style call to attach params to). The chip UI design in this candidate is
-unaffected either way — only which layer actually applies the filter changes.
-
-Frontend: chips for popular values (especially UK/US for country, English for language) with the
-rest searchable — **not** a direct reuse of `KeywordPicker` as it exists today (which does
-"capped suggestions when empty + type-to-search," not "some options permanently pinned
-regardless of what's typed"). The "always-pinned popular chips" behavior is a genuine, small new
-interaction shape to design when this gets spec'd. Once a filter is picked, values are unique
-strings (country/language names), so no `{id, label}` generalization is needed — reuse
-`KeywordPicker`'s existing plain `string[]` mode as the base to extend.
-
-**Note**: for now, the "popular" chip list (UK/US, English) would be hardcoded. Making that list
-user-configurable is tracked separately in `.claude/ideas/future_ideas.md`, since it depends on a
-config system this app doesn't have yet.
-
 ### "Min Source Rating" → "Minimum User Rating", using `StarRating`
+
 Currently a `<select>` dropdown (`Any`/`1`–`5`) at `RecommendationControls.tsx:557-569`. Confirmed
 a clean fit for `StarRating` (`frontend_spec_013`): "click star N sets the minimum to N, click the
 already-selected star again clears back to Any" maps directly onto `StarRating`'s existing
 click-to-clear semantics — no new interaction shape needed, low effort.
 
 ### "Exclude Genres" filter — checkbox list instead of free text
+
 Currently a plain comma-separated text input (`excludeGenresText`, parsed via `parseCommaList`).
 The existing "Genres" (include) field in Genre & Keyword mode already renders `genreOptions` (from
 `seriesApi.getGenreOptions()`) as a checkbox list, a few hundred lines away in the same file —
@@ -79,6 +46,7 @@ this codebase — extract a small shared checkbox-list component first (e.g. a g
 copy-pasting the block a second time.
 
 ### "Exclude Keywords" filter — `KeywordPicker` instead of free text
+
 Currently also a plain comma-separated text input (`excludeKeywordsText`). The include-Keywords
 field already uses `KeywordPicker` (chips + type-to-search). Unlike Exclude Genres above, this
 needs **no extraction work** — `KeywordPicker` is already fully generic and reusable; this is
@@ -87,6 +55,7 @@ just a second `<KeywordPicker>` instance pointed at a different state slot
 already exists on the backend).
 
 ### Weight recommendation scoring and/or output filters by keyword popularity/average personal rating
+
 Moved from `.claude/ideas/future_ideas.md` on 2026-08-27, per the user's own request ahead of a planned analysis
 pass — not yet designed, just confirmed still relevant and worth a spec eventually.
 
@@ -97,7 +66,7 @@ filtering: `RecommendationRankingService.score()` computes `rankScore` purely fr
 `voteAverage`) and the best contributing source series' `personalRating`, blended 50/50
 (`(tmdbRating * 0.5) + (personalRatingTerm * 0.5)`, `RecommendationRankingService.java`) — a candidate's own
 keywords never enter that formula. Likewise, `RecommendationOutputFilterService.applyOutputFilters` has no keyword-
-popularity or keyword-average-rating filter; `excludeKeywords` (`series_spec_024`) only *excludes* by keyword name,
+popularity or keyword-average-rating filter; `excludeKeywords` (`series_spec_024`) only _excludes_ by keyword name,
 it doesn't weight by one.
 
 **Explicitly flagged as out of scope when `series_spec_019` was written**: "The idea of feeding this data into
@@ -107,6 +76,7 @@ real usage data" — that's exactly the design work this candidate is waiting on
 
 **Real open questions for whoever writes this spec** (not resolved here, deliberately — this is a candidate note,
 not a design doc):
+
 - Does this become a third term in the existing scoring blend (currently 50% TMDB rating / 50% personal rating), or
   a separate multiplier/boost applied after that blend?
 - A keyword's `averagePersonalRating` is only meaningful once enough tracked series carry it — does a low-
@@ -122,6 +92,7 @@ A plain-language walkthrough of the current scoring code (no design proposal yet
 `.claude/analysis/scoring_weight_recommendations.md`, written 2026-08-27 ahead of picking this up.
 
 ### Customizable recommendation "algorithm" — source ratings, adjustable weights, source selection/ordering/filters, saved profiles
+
 From a 2026-08-28 discussion, after the Genre & Keyword sourcing/filtering walkthrough
 (`.claude/analysis/scoring_weight_recommendations.md`) prompted a look at what else in the
 recommendation pipeline could be made user-tunable. **Deliberately queued behind other,
@@ -133,8 +104,9 @@ implemented as one.
 
 **Confirmed current behavior** (from reading the code — see
 `.claude/analysis/scoring_weight_recommendations.md` Sections 1-2 for the full walkthrough):
+
 - `RecommendationRankingService.score` blends exactly two terms, hardcoded 50/50: the candidate's
-  own `tmdbRating`, and the *single best* contributing source series' `personalRating` (rescaled
+  own `tmdbRating`, and the _single best_ contributing source series' `personalRating` (rescaled
   ×2). The source's own `imdbRating`/`tmdbRating` never enter the formula at all.
 - Only the highest-personal-rated source counts toward the score when a candidate has multiple
   sources; the others currently only affect the separate "Most Recommended" sort (by
@@ -147,30 +119,31 @@ implemented as one.
 - Each source show's TMDB call (`/recommendations`, falling back to `/similar`) returns TMDB's
   first page only — up to TMDB's own page size (~20) per source, uncapped by this app, no
   pagination ever requested. **This is a separate number from `maxSourceSeries`** (default 20, how
-  many of *your* shows get queried) — coincidentally the same value today, but not to be conflated
+  many of _your_ shows get queried) — coincidentally the same value today, but not to be conflated
   when this gets designed; raising one doesn't affect the other.
 
 **Ideas to design against** (not resolved here — open questions for the actual spec):
+
 1. Add the source show's own `imdbRating`/`tmdbRating` as additional scoring terms, not just its
    `personalRating`.
 2. Make blend weights user-adjustable rather than hardcoded (becomes a 3+-term weighted blend once
    #1 lands).
 3. Confidence-weight a source's own rating by its vote count (Bayesian/IMDb-style), so a source
    with a handful of votes doesn't count as equally "objectively good" as one with thousands.
-4. Use *all* contributing sources in the score (e.g. a weighted average), not just the single best
+4. Use _all_ contributing sources in the score (e.g. a weighted average), not just the single best
    one — an alternative mode to today's best-source-only behavior.
 5. Normalize personal ratings against the user's own rating distribution (z-score) rather than the
    raw 1–5 value, so a "generous rater" and a "stingy rater" aren't scored identically for the same
    raw star count.
 6. Genre-affinity as a first-class scoring input (aggregate "how much do I like this genre
-   overall," not just today's genre-based top-up *fallback* mechanism), separate from any single
+   overall," not just today's genre-based top-up _fallback_ mechanism), separate from any single
    source show.
 7. Let the user include/exclude specific sources more granularly than today's persistent
    per-series `excludeFromRecommendations` flag — e.g. ad-hoc per-request selection.
 8. Configurable source-query order (today hardcoded via `SourceOrderComparator`) — and whether
    reordering should also decouple "query order" from "which source wins the score tiebreak,"
    since one comparator currently does both jobs.
-9. Additional filters on the *source* pool itself (genre, year, status), distinct from the
+9. Additional filters on the _source_ pool itself (genre, year, status), distinct from the
    existing output filters applied to candidates.
 10. Restrict/expand how many raw candidates a single source can contribute — either an explicit
     app-side cap, or requesting additional TMDB pages (pagination) for heavily-weighted sources,
@@ -189,109 +162,8 @@ keyword popularity/average personal rating" candidate above — both touch
 `RecommendationRankingService`'s scoring formula directly and should likely be designed together
 rather than layered on separately, per that candidate's own note about the same risk.
 
-### Push Discover-mode output filters upward into TMDB `discover/tv` params; remove dead Max Per Source/Max Sources Shown controls there
-From a 2026-08-28 discussion of the "Discover > Custom Search" tab (the mode formerly called
-"Genre & Keyword", renamed by `frontend_spec_042`). Two related, code-confirmed findings.
-
-**Finding 1 — most output filters are post-fetch-only today, for every mode, including Discover.**
-Confirmed via `RecommendationOutputFilterService.applyOutputFilters` and `TmdbClient.discover()`:
-`minTmdbRating`, `language`, and `yearMin`/`yearMax` are checked entirely client-side, after TMDB's
-one (unpaginated — no page 2 is ever requested anywhere in this app) response page already came
-back. `TmdbClient.discover()` only ever sends `with_genres`/`with_keywords`/`sort_by`/
-`vote_count.gte` — no `vote_average.gte`, no `with_original_language`, no `with_origin_country`, no
-date-range param of any kind. `minVoteCount` is the one exception: `series_spec_029` already moved
-it server-side (`vote_count.gte`) specifically because a restrictive post-fetch-only filter against
-a single ~20-result page could return zero results even when TMDB had plenty of real matches on
-pages this app never requested. `minTmdbRating`/`language`/year are exposed to that exact same
-failure mode today and aren't fixed.
-
-**What's required**: extend `TmdbClient.discover()` with `vote_average.gte` (`minTmdbRating`),
-`with_original_language` (`language`), `with_origin_country` (country, once that filter exists —
-see the cross-referenced candidate above), and a year-range param (see the open question below) —
-mirroring `vote_count.gte`'s existing "only sent when actually set" pattern.
-
-**Scope decision, confirmed 2026-08-28: "Custom Search" only, not all three Discover sub-modes.**
-Narrower than this candidate's original framing. Only "Custom Search" gets these filters sent
-*before* TMDB (as real `discover/tv` params); "Popular Right Now" and "Highest Rated" keep filtering
-*after* TMDB comes back (today's existing post-fetch behavior, unchanged), same as "Use My Series"
-already does. This isn't purely a preference — "Popular Right Now" sources from `/trending/tv`
-directly, a different TMDB endpoint that accepts no `discover/tv`-style filter params at all, so
-pre-fetch filtering is structurally impossible there regardless of choice; "Highest Rated" *could*
-technically take the same params (it already calls `discover/tv` via `discoverTopRated`) but was
-deliberately scoped out for now to keep the two "curated TMDB list" tabs (Popular Right Now/Highest
-Rated) simple and consistent with each other, leaving heavy filtering as specifically what
-"Custom Search" is for. "Use My Series" mode sources from many small per-show
-`/recommendations`/`/similar` calls that accept no discover-style filter params at all either, so
-those fields stay post-fetch there regardless.
-
-**"Mode-aware" means component state, not new routes.** `RecommendationControls`' single shared
-"Filters" box (currently identical content regardless of mode) needs to branch its rendering by
-`state.mode`/`state.discoverMode` — the exact same client-side conditional shape
-`showMinSourceRating`/`showDiscoverSortByOptions` (`frontend_spec_042`) already use, nothing new.
-This does **not** imply or require deeper URLs per Discover sub-mode (e.g. no
-`/recommendations/discover/custom-search`) — `frontend_spec_041` explicitly scoped routing to the
-three top-level views only and ruled out per-mode sub-routes; that decision stands independently of
-this candidate. Deep-linkable Discover sub-modes would be a distinct, separate idea if ever wanted,
-not something this candidate needs or implies.
-
-**UI/interaction is shared regardless of which layer applies the filter.** The actual field
-widgets (Min TMDB Rating input, Language/Country chip pickers, Year Min/Max) look and behave
-identically whether they end up wired to a `discover/tv` param (Custom Search) or a post-fetch
-check (every other mode) — only which backend field the value gets attached to changes per mode.
-Build one shared field set, branch only the wiring, not the UI.
-
-**Real open question, deliberately not resolved here — year filtering semantics.** Confirmed
-`RecommendationOutputFilterService.matchesYearRange` compares only against `TmdbCandidate.year()`,
-itself sourced from TMDB's `first_air_date` — today's "Year Min/Max" means "first aired in this
-range," full stop, nothing about whether a show was still running. Concrete example: The Simpsons
-(TMDB genre ids 16 Animation + 35 Comedy) has aired continuously since 1989 — under today's filter,
-a search for e.g. 2020–2024 excludes it entirely, despite new episodes airing every one of those
-years. TMDB's `discover/tv` exposes (per TMDB's own documented API — not independently re-verified
-against a live response this session, same caveat `.claude/analysis/scoring_weight_recommendations.md`
-already applies to other TMDB-behavior claims) at least two different date-range param families:
-`first_air_date.gte`/`first_air_date.lte` (matches today's exact semantics, purely relocated —
-still excludes The Simpsons for a 2020–2024 search) vs. `air_date.gte`/`air_date.lte` (documented as
-filtering by *episode* air date, which would correctly include still-running shows for any year
-they had an episode air). Moving this filter server-side is the natural moment to explicitly decide
-which of these two the field is supposed to mean — don't silently keep today's narrower behavior by
-default just because it's the path of least resistance.
-
-**Cross-reference**: the "Country-of-origin and language recommendation filters, with chip UI"
-candidate above needs deciding together with this one, not separately — see the superseded-design
-note added there.
-
-**Finding 2 — "Max Per Source" and "Max Sources Shown" are confirmed dead for all three Discover
-modes, and the UI doesn't hide them.** Confirmed via `RecommendationService.doRecommend`: for
-`trending`/`topRated`/`genreOrKeywordDirected` (i.e. every Discover sub-mode), the method takes an
-early-return branch that never calls `rankingService.applyDiversityCap` at all — "Max Per Source"
-has zero effect. "Max Sources Shown" does get passed to `RecommendationDtoAssembler.toDto`, but
-every Discover-sourced `DedupedCandidate` has an empty `sourceSeries()` (these modes never attach a
-source series to a candidate — confirmed in `.claude/analysis/scoring_weight_recommendations.md`
-Section 3/4), so it's capping an already-empty list; no visible effect either way. Confirmed
-`RecommendationControls.tsx`'s Filters section currently renders both controls **unconditionally
-for every mode**, Discover included — a user can turn either dial under any Discover tab and
-nothing happens, with no indication that's the case.
-
-**What's required, confirmed 2026-08-28 (refined from an earlier "just hide under Discover"
-framing)**: remove "Max Per Source" and "Max Sources Shown" from the frontend entirely for now —
-not just gate them behind `state.mode === 'useMySeries'` — while leaving the backend capability
-(`RecommendationCriteria.maxPerSource`/`maxSourcesShown`, `RecommendationRankingService.
-applyDiversityCap`, `RecommendationDtoAssembler`'s `effectiveMaxSourcesShown` truncation) untouched.
-Reason: "Use My Series" itself is getting revamped by the "Customizable recommendation 'algorithm'"
-candidate below, which will very likely change how source-based capping/ordering works entirely —
-building a mode-gate for controls about to be redesigned anyway is wasted effort. Once the backend
-stops receiving these two params from the frontend, both simply fall back to their existing
-defaults (`app.tmdb.max-per-source`, `DEFAULT_MAX_SOURCES_SHOWN`) — no backend behavior change, pure
-frontend removal. This mirrors "Min Source Rating," which is already correctly `useMySeries`-only
-(`showMinSourceRating`) — all three of these controls are exclusively meaningful to "Use My
-Series"'s personal-rating-blended pipeline, never to Discover's pure-TMDB-passthrough one, and all
-three should be redesigned together as part of that revamp rather than patched individually now.
-
-**Cross-reference**: "Customizable recommendation 'algorithm'..." candidate below — Max Per
-Source/Max Sources Shown's real redesign (not just reinstatement) belongs there, alongside item #9
-(source-pool filters) and #10 (per-source candidate limits), which already touch the same ground.
-
 ### Info/disclosure boxes explaining Max Per Source, Max Sources Shown, and Sort By options
+
 Confirmed via search: no tooltip/info/help component exists anywhere in this codebase today —
 this is a first-of-its-kind UI primitive, not a reuse. **Recommended shape** (resolved
 2026-08-26): a small disclosure button (`?`/`ⓘ` icon) next to the label, `aria-expanded`/
@@ -302,7 +174,34 @@ This is the same click-to-toggle-visibility idiom already used by the "Filters" 
 toggle button and `SearchFilter`'s "Browse all keywords" trigger — not a new pattern for this app,
 just a smaller, field-scoped instance of one already in use.
 
-**Note (2026-08-28)**: the "Push Discover-mode output filters upward..." candidate above confirmed
-Max Per Source/Max Sources Shown are dead controls under every Discover mode and should be hidden
-there, not just explained — if that lands first, this candidate's own scope for those two fields
-narrows to "Use My Series" mode only, where they're still live.
+**Note (2026-08-29)**: Max Per Source/Max Sources Shown were confirmed dead under every Discover
+mode and removed from the frontend entirely (`frontend_spec_048`, delivered) rather than hidden —
+this candidate's own scope for those two fields now narrows to "Use My Series" mode only, where
+they're still live.
+
+### Share filter/sort logic between `SeriesList`/`SearchFilter` (My Series) and `RecommendationControls`' "Use My Series" mode
+
+From a 2026-08-29 discussion. Both features filter/sort over the same underlying series data — My
+Series shows the full tracked-series record, "Use My Series" returns a cut-down projection (title/
+year/rating/etc, no personal notes) sourced _from_ that same tracked pool before TMDB
+recommendations are layered on top. Right now `SearchFilter`'s criteria (title/genre/status/
+rating-range/started-not-finished) and `RecommendationControls`' "Use My Series" filters
+(`minSourceRating`, genre-narrowing via the Specific Series picker) are two separate, independently
+maintained implementations of "filter my tracked series," with their own types, their own state
+shape, and their own UI.
+
+**Deliberately deferred, not spec'd yet** — per discussion, the user expects the two to grow more
+alike (not less) as "Use My Series" filtering itself evolves, particularly once the "Customizable
+recommendation 'algorithm'" candidate above lands and reshapes what "Use My Series"' own source-pool
+filters look like. Spec'ing a shared abstraction _before_ that reshaping happens risks designing
+around the wrong shape — some differences between the two are likely permanent (Recommendations
+layers in TMDB-sourced fields My Series has no concept of; My Series has status transitions and
+personal notes Recommendations never touches), but the genuinely common subset (title/genre/rating
+filtering, sort direction) should become clearer once "Use My Series" itself stabilizes post-revamp.
+
+**What to watch for, once "Use My Series" filtering changes land**: whether the two features'
+filter criteria types could share a common base (e.g. a `SeriesFilterCriteria` both `SearchFilter`
+and `RecommendationControls` extend/compose), and whether `SeriesList`'s existing client-side
+filter/sort logic (or `series_spec_003`'s backend search/filter, if server-side filtering turns out
+to matter more for "Use My Series" too) could be reused directly rather than reimplemented a second
+time.

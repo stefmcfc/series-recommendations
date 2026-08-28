@@ -16,39 +16,31 @@ touching this file, re-check existing items against the current codebase — cod
 references may have moved or changed shape since the note was written (confirmed necessary in
 practice: this file's 2026-08-26 review found one item already fully delivered without the file
 being updated, and two others whose referenced classes had been renamed/split by later refactors).
-- **Delivered** — the idea shipped. Keep only a one-line description + the spec(s) that delivered
-  it, for traceability; drop the original speculative detail, since the spec is now the source of
-  truth.
-- **Specced, not yet built** — a real spec already exists for this idea. Reference the spec name
-  only; no further commentary belongs here, since the detail should already live in that spec.
-  (Move the entry to `ROADMAP.md`'s "Specced, coming soon" table instead, at that point — this
-  case is documented for completeness but shouldn't actually occur in this file.)
+
+- **Delivered** — the idea shipped. Remove the entry entirely — `ROADMAP.md`/`CHANGELOG.md` are
+  the source of truth for what shipped and which spec(s) delivered it; this file is only for ideas
+  still waiting on attention, not a historical record.
+- **Specced, not yet built** — a real spec already exists for this idea. Remove the entry entirely
+  — it's tracked in `ROADMAP.md`'s "Specced, coming soon" table now, and the detail lives in the
+  spec itself; leaving it here would just be a stale duplicate.
 - **Not specced** — retain full detail: what's actually required, why, and any relevant
   constraints or prior discussion. This is the only case where this file carries real content.
 
-Last full review against the codebase: 2026-08-28.
+Last full review against the codebase: 2026-08-29.
 
 ---
 
 ## Recommendations & Lookup
 
-### TMDB-primary lookup for `AddSeriesForm`'s "Look Up" flow
-Always search TMDB first (matches original/translated/"also known as" names, so it can't miss a
-title the way OMDb's own search can) rather than searching OMDb first and falling back to TMDB.
-
-**Status**: Delivered — see `series_spec_017_tmdb_primary_lookup.md`,
-`frontend_spec_022_tmdb_primary_lookup.md`. The shipped version goes further than this note
-proposed: OMDb search is dropped entirely rather than kept as a fallback, since a live data check
-found OMDb's Metacritic/Rotten Tomatoes coverage for TV is effectively 0% anyway.
-
 ### "Exclude Genres" output filter matches TMDB's canonical genre names, not the alias vocabulary the "Genres" sourcing field uses
+
 Confirmed still live (2026-08-26, re-read the actual code — this bug's home moved during this
 session's `RecommendationService` split, so the exact reference below is now accurate again). The
 "Genres" sourcing field is populated from `TmdbGenreTable.allAliasNames()` — 18 alias names like
 `"Action"`, `"Sci-Fi"`, `"Fantasy"`. The "Exclude Genres" filter
 (`RecommendationOutputFilterService.matchesExcludeGenres`, `service/RecommendationOutputFilterService.java`)
 compares against `TmdbGenreTable.joinDisplayNames(candidate.genreIds())`, which returns the 16
-*canonical* TMDB display names instead (`"Action & Adventure"`, `"Sci-Fi & Fantasy"`). A user
+_canonical_ TMDB display names instead (`"Action & Adventure"`, `"Sci-Fi & Fantasy"`). A user
 typing `"Action"` into Exclude Genres (matching what the Genres field itself shows) will silently
 exclude nothing, since no candidate's canonical genre string is ever literally `"Action"`.
 
@@ -65,6 +57,7 @@ set. Worth doing together rather than fixing the matching logic first and re-doi
 picker lands.
 
 ### Recommendation cards have no fuller detail/expand view beyond keywords
+
 Confirmed still accurate (2026-08-26 re-check of `frontend/src/types/series.ts`'s `Recommendation`
 interface): it carries `tmdbRating` but not `imdbRating` (a candidate has no confirmed IMDb match
 until it's actually added and refreshed), and no `totalSeasons`/`totalEpisodes`. The card's "Show
@@ -81,6 +74,7 @@ real detail view.
 ## Search & Filter
 
 ### `SearchFilter`'s Genres field is free-text (comma-separated), not a tag/multi-select
+
 Confirmed still a plain text input as of 2026-08-26 (`SearchFilter.tsx`, `form.genres: string`).
 This is the same class of silent-mismatch risk the Recommendations page's Genres field had before
 it got a checkbox picker (`series_spec_010`/`frontend_spec_014`) — but against
@@ -92,6 +86,7 @@ back to something unrelated") though the free-text UX gap is the same shape.
 out to matter.
 
 ### Pagination
+
 `series_spec_002_crud.md` and `series_spec_003_search.md` both explicitly flagged this "Out of
 Scope" for their initial pass. Every list-returning endpoint (`GET /series`, `/series/search`)
 currently returns the full result set, no page params. Confirmed unchanged as of 2026-08-26.
@@ -101,6 +96,7 @@ single-user personal app, on the basis that the tracked collection could grow la
 matter eventually — not urgent, no immediate trigger.
 
 ### Full-text search over notes/overview
+
 `series_spec_003_search.md`, "Out of Scope." Current search matches on exact/partial field
 values, not a full-text index — searching for a word inside `personalNotes` or `overview` doesn't
 work today. Confirmed unchanged as of 2026-08-26.
@@ -109,6 +105,7 @@ work today. Confirmed unchanged as of 2026-08-26.
 field-based search — no immediate trigger, but a genuine one when it comes up.
 
 ### Redo cluttered filter panels as a collapsible left-hand panel or slide-out sheet — confirmed wanted for both `SearchFilter` and `RecommendationControls`
+
 Originally raised 2026-08-24 for `SearchFilter`'s top-of-page filter panel, noting it was "the
 same shape of layout question as `RecommendationControls`' own `Filters` disclosure, so a
 consistent answer for both is probably better than solving it twice." Confirmed independently for
@@ -125,6 +122,7 @@ mechanism) — worth its own dedicated thinking whenever it's prioritized.
 ## Navigation
 
 ### Real logo / visual branding design
+
 Raised 2026-08-28 alongside the global nav redesign (`frontend_spec_041`, shipped 2026-08-28 —
 menu-bar style top nav, logo top-left linking home). That spec deliberately used only a plain
 placeholder logo mark ("TV Series Tracker" as text); actual visual identity design (wordmark, icon,
@@ -134,6 +132,7 @@ color) was explicitly out of scope for it and deferred here.
 design-properly-later split.
 
 ### Light/dark mode toggle — currently OS-only, no manual override
+
 Raised 2026-08-28, prompted by the new menu bar (`frontend_spec_041`) being a natural home for a
 toggle control. Confirmed via reading `frontend/src/index.css`: theming is entirely
 `prefers-color-scheme`-driven — `:root` sets `color-scheme: light dark` plus a base (light) set of
@@ -158,6 +157,7 @@ if a real settings screen gets built later, this would naturally live there too 
 a one-off menu-bar control.
 
 ### No shareable URL for a specific series (`SeriesDetail`)
+
 Updated 2026-08-28: `frontend_spec_041` added `react-router-dom` app-wide and gave the three
 top-level views (`/my-series`, `/recommendations`, `/keywords`) real URLs, so the old "no router
 dependency at all" framing of this note is now stale. `SeriesDetail` itself, though, was explicitly
@@ -175,18 +175,21 @@ actually needs a shareable link to a specific series.
 ## Export
 
 ### `fields` param to select which columns to export
+
 `series_spec_004_export.md`, "Future Enhancements." Choose a subset of columns rather than always
 exporting every field.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
 
 ### Import — the reverse of export
+
 `series_spec_004_export.md`, "Future Enhancements." Bring previously-exported JSON/CSV data back
 into the app.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
 
 ### Other export formats (Excel, XML)
+
 `series_spec_004_export.md`, "Future Enhancements" — currently JSON/CSV only.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
@@ -196,17 +199,18 @@ into the app.
 ## Configuration
 
 ### No settings menu — every tunable is an `application.yml`/env-var value, not a live in-app setting
+
 Confirmed still true (2026-08-26 re-check — no settings/config UI exists anywhere in the
 frontend). Existing precedent (`app.tmdb.refresh-delay-ms`,
 `app.tmdb.refresh-skip-threshold-minutes`) is edited by a developer and requires a restart, not
 something a user changes from the UI.
 
-A concrete case has since come up (2026-08-26): the country-of-origin/language recommendation
-filter chip UI (`.claude/SPEC_CANDIDATES.md`) wants a hardcoded "popular" chip list (UK/US for
-country, English for language) that would ideally be user-configurable once a settings system
-exists — e.g. "Favourite country of origin = {United Kingdom, United States}", "Favourite
-languages = {English}" — surfaced via a dropdown backed by the same ISO 3166-1/639-1 data the
-filter chips themselves would use.
+A concrete case has since shipped (`frontend_spec_047`, delivered 2026-08-28): the Custom Search
+Country/Language filter pickers pin a hardcoded "popular" chip list (US/GB for country; English/
+Spanish/French/German/Japanese/Korean for language) exactly as this note anticipated — that list
+would ideally be user-configurable once a settings system exists, e.g. "Favourite country of
+origin = {United Kingdom, United States}", surfaced via a dropdown backed by the same ISO
+3166-1/639-1 data the filter chips themselves already use. Still hardcoded today.
 
 A second concrete case (2026-08-28): `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
 'algorithm'..." candidate wants **saved filter/algorithm profiles** (its item #11) — its own note
@@ -231,6 +235,7 @@ These aren't feature ideas, but debt flagged the same way — worth tracking alo
 rather than letting them stay buried in an old spec.
 
 ### No controller-level (`MockMvc`) test for the `/export` HTTP endpoint
+
 Confirmed still true (2026-08-26 re-check — grepped `SeriesControllerSpec.groovy` for
 `export`/`Content-Disposition`, zero matches). `SeriesExportServiceSpec.groovy` covers the service
 layer thoroughly, but the controller test doesn't exercise the `Content-Disposition` header, the

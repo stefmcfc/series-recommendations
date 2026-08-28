@@ -3,11 +3,12 @@ package uk.co.stefirby.seriestracker.service
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import spock.lang.Specification
 
+import java.time.Clock
 import java.time.Year
 
 class RecommendationCriteriaValidatorSpec extends Specification {
 
-    RecommendationCriteriaValidator validator = new RecommendationCriteriaValidator()
+    RecommendationCriteriaValidator validator = new RecommendationCriteriaValidator(Clock.systemDefaultZone())
 
     def "SERIES-007-AC-17: seriesIds combined with genres is rejected"() {
         given: "criteria sets both seriesIds and genres"

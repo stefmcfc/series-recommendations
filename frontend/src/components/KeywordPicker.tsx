@@ -12,19 +12,24 @@ export interface PickerOption {
   readonly display?: ReactNode
 }
 
+// typescript:S4323 -- `string[] | PickerOption[]` repeated across
+// KeywordPickerProps and several helper signatures; a type alias replaces
+// the union.
+export type PickerOptions = string[] | PickerOption[]
+
 interface KeywordPickerProps {
   readonly id: string
   readonly label: string
   readonly selected: string[]
   readonly onChange: (next: string[]) => void
-  readonly options?: string[] | PickerOption[]
+  readonly options?: PickerOptions
   // FRONTEND-047-AC-01/02/03: options that always appear first in the
   // suggestion list, regardless of the currently typed search text --
   // resolved against `options` (by id) so a caller can pin by code/id alone
   // (e.g. ['US', 'GB']) while `options` itself supplies the human-readable
   // label (e.g. PickerOption[] country names). Falls back to the pinned
   // entry's own normalized id/label when no match is found in `options`.
-  readonly pinnedOptions?: string[] | PickerOption[]
+  readonly pinnedOptions?: PickerOptions
   readonly placeholder?: string
   readonly focusOnMount?: boolean
   readonly allowFreeText?: boolean
@@ -43,9 +48,7 @@ function isSameKeyword(a: string, b: string): boolean {
 // PickerOption[] up front so every other code path only ever deals with one
 // shape; for a string[] entry, id === label === the string itself, which
 // reproduces the pre-existing string[] behavior exactly.
-function normalizeOptions(
-  options: string[] | PickerOption[] | undefined,
-): PickerOption[] {
+function normalizeOptions(options: PickerOptions | undefined): PickerOption[] {
   if (!options) return []
   if (options.length === 0) return []
   const first = options[0]
@@ -55,9 +58,7 @@ function normalizeOptions(
   return options as PickerOption[]
 }
 
-function isPickerOptionArray(
-  options: string[] | PickerOption[] | undefined,
-): boolean {
+function isPickerOptionArray(options: PickerOptions | undefined): boolean {
   if (!options || options.length === 0) return false
   return typeof options[0] !== 'string'
 }
@@ -70,7 +71,7 @@ function isPickerOptionArray(
 // Falls back to the pinned entry's own normalized id/label when `options`
 // has no matching entry.
 function resolvePinnedOptions(
-  pinnedOptions: string[] | PickerOption[] | undefined,
+  pinnedOptions: PickerOptions | undefined,
   normalizedOptions: PickerOption[],
 ): PickerOption[] {
   const ownNormalized = normalizeOptions(pinnedOptions)
