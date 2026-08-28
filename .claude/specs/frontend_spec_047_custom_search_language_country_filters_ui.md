@@ -1,6 +1,6 @@
 # Frontend Spec 047: Custom Search — Country-of-Origin Picker & Upgraded Language Picker
 
-**Status**: Not started
+**Status**: Implemented (frontend half; paired with `series_spec_032`, both on branch `feature/custom-search-language-country-filters`, not yet merged)
 **Priority**: P3 (paired UI half of `series_spec_032`)
 **Depends on**: Series Spec 032 (`series_spec_032_custom_search_language_country_filters.md`, the backend
 `countries` field and pre-fetch wiring this spec's UI produces) ✅. Frontend Spec 046
@@ -336,14 +336,14 @@ proves the picker swap didn't change the wire contract, not new logic.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-047-AC-01: pinned options always appear first in suggestions
-- [ ] FRONTEND-047-AC-02: selecting a pinned option adds a chip normally
-- [ ] FRONTEND-047-AC-03: existing `KeywordPicker` consumers unaffected
-- [ ] FRONTEND-047-AC-04: Country picker renders under Custom Search
-- [ ] FRONTEND-047-AC-05: Country picker relocates to Filters for other modes
-- [ ] FRONTEND-047-AC-06: `countries` sent in the query
-- [ ] FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-derived
-- [ ] FRONTEND-047-AC-08: Language picker has a pinned English option
-- [ ] FRONTEND-047-AC-09: selecting a language replaces, doesn't accumulate
-- [ ] FRONTEND-047-AC-10: Language picker relocates the same way as Country
-- [ ] FRONTEND-047-AC-11: emitted `language` value unaffected by the picker upgrade
+- [x] FRONTEND-047-AC-01: pinned options always appear first in suggestions
+- [x] FRONTEND-047-AC-02: selecting a pinned option adds a chip normally
+- [x] FRONTEND-047-AC-03: existing `KeywordPicker` consumers unaffected
+- [x] FRONTEND-047-AC-04: Country picker renders under Custom Search
+- [x] FRONTEND-047-AC-05: Country picker relocates to Filters for other modes
+- [x] FRONTEND-047-AC-06: `countries` sent in the query
+- [x] FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-derived
+- [x] FRONTEND-047-AC-08: Language picker has a pinned English option
+- [x] FRONTEND-047-AC-09: selecting a language replaces, doesn't accumulate
+- [x] FRONTEND-047-AC-10: Language picker relocates the same way as Country
+- [x] FRONTEND-047-AC-11: emitted `language` value unaffected by the picker upgrade

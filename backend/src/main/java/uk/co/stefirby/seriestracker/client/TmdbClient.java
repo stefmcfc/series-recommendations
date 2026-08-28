@@ -148,8 +148,9 @@ public class TmdbClient {
      * here.
      *
      * <p>{@code filters} carries every optional {@code discover/tv} narrowing param as one
-     * object (SERIES-031-AC-01/02/03/04) -- see {@link DiscoverFilters} for exactly which
-     * query param each field maps to and the "omit when unset" convention shared by all four.
+     * object (SERIES-031-AC-01/02/03/04, SERIES-032-AC-01/02) -- see {@link DiscoverFilters}
+     * for exactly which query param each field maps to and the "omit when unset" convention
+     * shared by all six.
      *
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
@@ -174,6 +175,12 @@ public class TmdbClient {
             }
             if (filters.yearMax() != null) {
                 b = b.queryParam("air_date.lte", filters.yearMax() + "-12-31");
+            }
+            if (filters.language() != null && !filters.language().isBlank()) {
+                b = b.queryParam("with_original_language", filters.language());
+            }
+            if (filters.countries() != null && !filters.countries().isEmpty()) {
+                b = b.queryParam("with_origin_country", String.join(",", filters.countries()));
             }
             return b;
         });

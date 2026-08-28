@@ -26,11 +26,16 @@ versioned together as one app.
 - Frontend: "Genre & Keyword" (renamed "Custom Search"), "Popular Right Now", and "Highest Rated" are grouped under a new "Discover" parent tab, selected via a nested second-level tab row shown only while Discover is active (`frontend_spec_042`).
 - Frontend: the "Recommendation Source" selector is now a real two-tier WAI-ARIA Tabs widget (`role="tablist"`/`"tab"`/`"tabpanel"`, `aria-selected`/`aria-controls`) instead of a flat radio `<fieldset>`, matching `frontend_spec_041`'s menu-bar visual language (`frontend_spec_042`).
 - Frontend: Custom Search's empty-genre/keyword hint no longer describes a "falls back to automatic recommendations" behavior that no longer happens — reworded to "Leave empty to browse the most popular shows overall", reflecting `series_spec_033`'s new unfiltered-discover behavior (`frontend_spec_049`).
+- Backend: Custom Search's `discover/tv` sourcing call now additionally sends `language` to TMDB itself as `with_original_language`, not just as a post-fetch filter — the same pre-fetch relocation `series_spec_031` applied to `minTmdbRating`/`yearMin`/`yearMax`. `language`'s existing post-fetch check and single-value shape are unchanged (`series_spec_032`).
 
 ### Added
 
 - Frontend: `App` gains real client-side routing via `react-router-dom` (`^7`, declarative mode) — the first router dependency this project has ever had — for the three top-level views: `/my-series`, `/recommendations`, `/keywords`. `/` and any unmatched path redirect to `/my-series` (`frontend_spec_041`).
 - Frontend: a placeholder logo/wordmark now sits at the start of the top nav, linking to `/my-series` from anywhere in the app (`frontend_spec_041`).
+- Backend: a new `countries` recommendation filter (comma-separated ISO 3166-1 alpha-2 codes) excludes a candidate whose origin country doesn't match any listed value — applied as a post-fetch output filter unconditionally across every sourcing mode, and additionally sent to TMDB itself as `with_origin_country` (comma-joined) for Custom Search sourcing specifically. Unlike `language`, `countries` is multi-select/OR-matched (`series_spec_032`).
+- Frontend: `KeywordPicker` gains an optional `pinnedOptions` prop — options that always appear first in the suggestion list regardless of the currently typed search text, deduped against the normal suggestion list by `id`. Purely additive; every existing consumer that doesn't pass it is unaffected (`frontend_spec_047`).
+- Frontend: Discover > Custom Search (and the Filters box for every other mode) gains a new Country-of-origin filter — a `KeywordPicker` multi-select with United States/United Kingdom pinned as one-click shortcuts and a searchable list of other common TV-production countries (new `utils/countryOptions.ts`, deliberately hardcoded rather than derived from tracked series data), sending `countries` in the emitted `RecommendationQuery` (`frontend_spec_047`).
+- Frontend: the Language filter's plain text input is replaced by a single-select picker (pinned "English" quick-select plus a small searchable dropdown for anything else) in the same two locations (Custom Search's own panel / the generic Filters box) as the Country filter above — no wire-format change, `language` is still sent as the same single string (`frontend_spec_047`).
 
 ## [2.19.2] - 2026-08-27
 

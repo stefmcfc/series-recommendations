@@ -98,10 +98,12 @@ public class RecommendationSourcingService {
         // sourceTopRated's own effective-minVoteCount resolution) so TMDB itself only returns
         // candidates worth considering, instead of relying solely on the post-hoc output filter.
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
-        // SERIES-031-AC-05: minTmdbRating/yearMin/yearMax are read straight from criteria (both
-        // already null-means-unset) and sent to TMDB itself, for the same "don't rely solely on
-        // a post-hoc filter against one ~20-result page" reason as minVoteCount above.
-        DiscoverFilters filters = new DiscoverFilters(effectiveMinVoteCount, c.getMinTmdbRating(), c.getYearMin(), c.getYearMax());
+        // SERIES-031-AC-05/SERIES-032-AC-05: minTmdbRating/yearMin/yearMax/language/countries
+        // are read straight from criteria (all already null-means-unset) and sent to TMDB
+        // itself, for the same "don't rely solely on a post-hoc filter against one ~20-result
+        // page" reason as minVoteCount above.
+        DiscoverFilters filters = new DiscoverFilters(effectiveMinVoteCount, c.getMinTmdbRating(), c.getYearMin(),
+            c.getYearMax(), c.getLanguage(), c.getCountries());
         return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .toList();

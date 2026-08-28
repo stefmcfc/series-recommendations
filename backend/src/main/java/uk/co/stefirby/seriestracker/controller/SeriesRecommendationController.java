@@ -39,6 +39,7 @@ public class SeriesRecommendationController {
             @RequestParam(required = false) List<String> excludeGenres,
             @RequestParam(required = false) List<String> excludeKeywords,
             @RequestParam(required = false) String language,
+            @RequestParam(required = false) List<String> countries,
             @RequestParam(required = false) Integer maxPerSource,
             @RequestParam(required = false) Integer maxSourcesShown,
             @RequestParam(required = false) String sortBy,
@@ -59,6 +60,7 @@ public class SeriesRecommendationController {
         criteria.setExcludeGenres(excludeGenres);
         criteria.setExcludeKeywords(excludeKeywords);
         criteria.setLanguage(language);
+        criteria.setCountries(countries);
         criteria.setMaxPerSource(maxPerSource);
         criteria.setMaxSourcesShown(maxSourcesShown);
         criteria.setSortBy(sortBy);

@@ -410,9 +410,10 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
     fireEvent.change(screen.getByLabelText(/year min/i), {
       target: { value: '2020' },
     })
-    fireEvent.change(screen.getByLabelText(/^language/i), {
-      target: { value: 'en' },
-    })
+    // FRONTEND-047: Language is now a single-select picker -- setting a
+    // value means selecting an option (the pinned "English" quick-select
+    // here), not typing directly into the field.
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
     clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -1933,5 +1934,175 @@ describe('FRONTEND-049-AC-04: an empty Custom Search request still fires', () =>
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
     expect(onQueryChange).toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-047-AC-04: Country picker renders under Custom Search', () => {
+  it('shows the Country field with pinned US/GB', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('tab', { name: /^discover$/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /custom search/i }))
+
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/countries/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-05: Country picker relocates to Filters for other modes', () => {
+  it('shows Country inside Filters under Use My Series', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    expect(screen.getByLabelText(/countries/i)).toBeInTheDocument()
+  })
+
+  it('does not render Country inside Custom Search panel while Custom Search is not active', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    selectCustomSearch()
+
+    const filtersBody = screen.getByTestId('filters-body')
+    expect(
+      within(filtersBody).queryByLabelText(/countries/i),
+    ).not.toBeInTheDocument()
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/countries/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-06: countries sent in the query', () => {
+  it('includes selected countries on Apply Filters', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ countries: ['US'] }),
+    )
+  })
+
+  it('omits countries from the query when nothing is selected', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ countries: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-derived', () => {
+  it('offers a searchable country beyond the pinned two without fetching series data', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.change(screen.getByLabelText(/countries/i), {
+      target: { value: 'japan' },
+    })
+
+    expect(screen.getByRole('button', { name: /japan/i })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-08: Language picker has a pinned English option', () => {
+  it('renders an English quick-select', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    expect(
+      screen.getByRole('button', { name: /^english$/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-09: selecting replaces, does not accumulate', () => {
+  it('replaces the previous language selection', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.change(screen.getByLabelText(/language/i), {
+      target: { value: 'french' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^french$/i }))
+
+    expect(screen.getByDisplayValue(/french/i)).toBeInTheDocument()
+    expect(screen.queryByDisplayValue(/english/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-10: Language picker relocates the same way as Country', () => {
+  it('shows Language under the Custom Search panel', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectCustomSearch()
+
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/language/i)).toBeInTheDocument()
+  })
+
+  it('does not render Language inside Filters while Custom Search is active', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    selectCustomSearch()
+
+    const filtersBody = screen.getByTestId('filters-body')
+    expect(
+      within(filtersBody).queryByLabelText(/language/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-11: query output for language is unaffected', () => {
+  it('sends the same language value regardless of panel location', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'en' }),
+    )
+  })
+
+  it('sends the same language value from the Custom Search panel location', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectCustomSearch()
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'en' }),
+    )
+  })
+})
+
+describe('FRONTEND-047: Reset Filters clears countriesSelected', () => {
+  it('clears the selected countries chip on reset', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
+    expect(
+      screen.getByRole('button', { name: 'Remove US' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+
+    expect(
+      screen.queryByRole('button', { name: 'Remove US' }),
+    ).not.toBeInTheDocument()
   })
 })

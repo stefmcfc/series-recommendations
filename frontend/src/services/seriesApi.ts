@@ -88,6 +88,7 @@ function buildRecommendationParams(
   addJoinedIfNonEmpty(params, 'excludeKeywords', query.excludeKeywords)
   if (query.language != null && query.language !== '')
     params.language = query.language
+  addJoinedIfNonEmpty(params, 'countries', query.countries)
   addIfPresent(params, 'maxPerSource', query.maxPerSource)
   addIfPresent(params, 'maxSourcesShown', query.maxSourcesShown)
   addIfPresent(params, 'sortBy', query.sortBy)

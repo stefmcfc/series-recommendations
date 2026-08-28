@@ -1,6 +1,37 @@
 # Series Spec 032: Custom Search Pre-Fetch Filters — Language & Country of Origin
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) -- `backend/src/main/java/uk/co/stefirby/seriestracker/client/DiscoverFilters.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/client/TmdbClient.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/dto/RecommendationCriteria.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationSourcingService.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationOutputFilterService.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesRecommendationController.java`
+(`countries` query param wiring -- not explicitly called out in this spec's Area line, but needed
+so the new `RecommendationCriteria.countries` field is actually reachable from the API, mirroring
+every other list-shaped criteria field's existing wiring),
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/client/TmdbClientSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationSourcingServiceSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationOutputFilterServiceSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationServiceSpec.groovy`
+(`DiscoverFilters` constructor call sites updated for the two new fields, no behavior change),
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/controller/SeriesControllerRecommendationsSpec.groovy`.
+Frontend half (`frontend_spec_047`) not yet implemented -- see that spec/`ROADMAP.md`.
+**Verification note (AC-02)**: TMDB's official live OpenAPI schema (fetched from
+`developer.themoviedb.org/reference/discover-tv` during implementation) documents `with_genres`/
+`with_keywords`/`with_companies`/`with_people`/`with_status` etc. as each explicitly "can be a
+comma (`AND`) or pipe (`OR`) separated query" -- but `with_origin_country` and
+`with_original_language` carry **no such description at all**, just a bare `{"type":"string"}`.
+This is a real discrepancy from this spec's comma-joined-OR assumption, not merely "unverified" --
+implemented as designed (comma-joined) per the spec's explicit decision. **Resolved (2026-08-28):**
+verified live against the real TMDB API via the running backend --
+`GET /recommendations?genres=Drama&countries=US` returned candidates whose `originCountry` was
+exclusively `US` (17/17), and `GET /recommendations?genres=Drama&countries=US,GB` returned a
+genuine mix of both (`GB` and `US` both present across 8 results) -- confirming comma-joined
+`with_origin_country` does OR-match multiple values as this spec assumed, despite the bare-string
+OpenAPI schema. (Belt-and-braces note: even had TMDB's pre-fetch narrowing not honored the
+multi-value join, the post-fetch `matchesCountries` check in `RecommendationOutputFilterService`
+would still have enforced correct results -- so this was never a correctness risk, only a
+pre-fetch-efficiency question, but it's confirmed working as designed either way.)
 **Priority**: P3 (extends `series_spec_031`'s pre-fetch relocation to the two remaining fields from the original
 consolidated discussion)
 **Depends on**: Series Spec 031 (`series_spec_031_custom_search_prefetch_filters.md`, owns the `DiscoverFilters`
@@ -254,12 +285,12 @@ skip doesn't apply here).
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-032-AC-01: `with_original_language` sent when `language` is set
-- [ ] SERIES-032-AC-02: `with_origin_country` sent as a comma-joined list when `countries` is set
-- [ ] SERIES-032-AC-03: `series_spec_031`'s existing params unaffected (regression guard)
-- [ ] SERIES-032-AC-04: `RecommendationCriteria` gains `countries`
-- [ ] SERIES-032-AC-05: Custom Search sourcing passes `language`/`countries`
-- [ ] SERIES-032-AC-06: genre-based top-up (Use My Series) unaffected
-- [ ] SERIES-032-AC-07: Popular Right Now / Highest Rated unaffected
-- [ ] SERIES-032-AC-08: new `matchesCountries` post-fetch check, unconditional
-- [ ] SERIES-032-AC-09: existing `matchesLanguage` check unaffected
+- [x] SERIES-032-AC-01: `with_original_language` sent when `language` is set
+- [x] SERIES-032-AC-02: `with_origin_country` sent as a comma-joined list when `countries` is set
+- [x] SERIES-032-AC-03: `series_spec_031`'s existing params unaffected (regression guard)
+- [x] SERIES-032-AC-04: `RecommendationCriteria` gains `countries`
+- [x] SERIES-032-AC-05: Custom Search sourcing passes `language`/`countries`
+- [x] SERIES-032-AC-06: genre-based top-up (Use My Series) unaffected
+- [x] SERIES-032-AC-07: Popular Right Now / Highest Rated unaffected
+- [x] SERIES-032-AC-08: new `matchesCountries` post-fetch check, unconditional
+- [x] SERIES-032-AC-09: existing `matchesLanguage` check unaffected

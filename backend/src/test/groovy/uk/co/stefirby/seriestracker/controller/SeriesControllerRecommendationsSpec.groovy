@@ -173,6 +173,23 @@ class SeriesControllerRecommendationsSpec extends Specification {
             }))
     }
 
+    // -- SERIES-032-AC-04/05: countries endpoint wiring --
+
+    def "SERIES-032-AC-04/05: countries query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?countries=US,GB is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("countries", "US", "GB"))
+
+        then: "the response is 200 and RecommendationService received countries=['US','GB']"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.countries == ["US", "GB"]
+            }))
+    }
+
     // -- SERIES-007-AC-09/17/20: service-level IllegalArgumentException maps to 400 --
 
     def "SERIES-007-AC-09: an unknown series id in seriesIds is rejected"() {
