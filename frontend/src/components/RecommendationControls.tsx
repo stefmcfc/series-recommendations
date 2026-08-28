@@ -9,7 +9,64 @@ import {
   SPECIFIC_SERIES_PICKER_LIMIT,
 } from '../utils/keywordSuggestions'
 import { formatCountryName } from '../utils/countryName'
+import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import styles from './RecommendationControls.module.css'
+
+// FRONTEND-047: Country reuses KeywordPicker's own pinned-option support
+// (US/GB one click away) with its searchable "rest" coming from the static
+// COUNTRY_OPTIONS list -- deliberately not derived from the user's own
+// tracked series (Discover modes don't touch tracked data, see this spec's
+// Design Decisions).
+const COUNTRY_PINNED_OPTIONS = ['US', 'GB']
+
+// FRONTEND-047-AC-08/09/12 (revised 2026-08-28): Language keeps a hardcoded,
+// locally-scoped option list (not extracted to utils/ -- exactly one
+// consumer today, see this spec's Design Decisions) resolved to
+// human-readable names via Intl.DisplayNames, mirroring
+// utils/countryName.ts's formatCountryName pattern but for language codes
+// specifically. Language now renders through KeywordPicker itself (the same
+// chip-with-"x" UX Country already uses) instead of a bespoke picker --
+// single-select is enforced by a thin adapter where it's used below, not
+// here. Unlike Country's pinned codes (deliberately excluded from `options`
+// so they display as bare codes), Language's pinned codes ARE included in
+// `options` so resolvePinnedOptions resolves them to full names.
+let languageDisplayNames: Intl.DisplayNames | null = null
+function getLanguageDisplayNames(): Intl.DisplayNames | null {
+  if (languageDisplayNames !== null) return languageDisplayNames
+  try {
+    languageDisplayNames = new Intl.DisplayNames(['en'], { type: 'language' })
+    return languageDisplayNames
+  } catch {
+    return null
+  }
+}
+function formatLanguageName(code: string): string {
+  try {
+    return getLanguageDisplayNames()?.of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
+// FRONTEND-047-AC-08: pinned quick-select codes -- English, Spanish, French,
+// German, Japanese, Korean, a judgment call on "most commonly wanted TV
+// languages" (see this spec's Design Decisions).
+const LANGUAGE_PINNED_CODES = ['en', 'es', 'fr', 'de', 'ja', 'ko']
+const LANGUAGE_OPTION_CODES = [
+  ...LANGUAGE_PINNED_CODES,
+  'it',
+  'zh',
+  'pt',
+  'hi',
+  'sv',
+  'da',
+  'no',
+  'nl',
+]
+const LANGUAGE_OPTIONS: PickerOption[] = LANGUAGE_OPTION_CODES.map((code) => ({
+  id: code,
+  label: formatLanguageName(code),
+}))
 
 // FRONTEND-042: two-tier source selector -- 'mode' picks the top-level tab
 // ("Use My Series" merges the former "Automatic"/"Specific Series" -- see
@@ -71,6 +128,9 @@ interface ControlsState {
   excludeGenresText: string
   excludeKeywordsText: string
   language: string
+  // FRONTEND-047-AC-04/05/06: mirrors genresSelected/keywordsSelected's
+  // existing shape -- multi-select, OR-matched countries of origin.
+  countriesSelected: string[]
   sortBy: SortByOption
   discoverSortBy: DiscoverSortByOption
 }
@@ -120,6 +180,7 @@ const initialState: ControlsState = {
   excludeGenresText: '',
   excludeKeywordsText: '',
   language: '',
+  countriesSelected: [],
   sortBy: 'score',
   discoverSortBy: DISCOVER_SORT_BY_DEFAULTS.topRated,
 }
@@ -248,6 +309,12 @@ function applyExcludeAndMiscFilters(
   if (excludeKeywords.length > 0) query.excludeKeywords = excludeKeywords
 
   if (state.language.trim() !== '') query.language = state.language.trim()
+
+  // FRONTEND-047-AC-06: sent regardless of which panel the Country picker
+  // was rendered in -- both locations write to the same countriesSelected
+  // state slot.
+  if (state.countriesSelected.length > 0)
+    query.countries = state.countriesSelected
 }
 
 // Cosmetic pass (2026-08-27, no spec): title | (year) | country - status,
@@ -457,6 +524,20 @@ export function RecommendationControls({
       .catch(() => undefined)
   }, [])
 
+  // Fix 3 (2026-08-28, live testing): establishes the real default query on
+  // first mount -- without this, App.tsx's recommendationQuery starts
+  // undefined and nothing ever calls onQueryChange until a user action
+  // (mode change, Apply Filters), so the very first request fires with zero
+  // query params at all and hits the backend's Custom Search
+  // unfiltered-discover fallback instead of "Use My Series" pool sourcing
+  // (initialState.mode). buildQuery/initialState already own what the
+  // default query should be, so this reuses them rather than duplicating a
+  // default in App.tsx.
+  useEffect(() => {
+    onQueryChange(buildQuery(state))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: establishes the initial default query once; subsequent changes are deliberately gated behind Apply Filters (FRONTEND-040), not this effect
+  }, [])
+
   // FRONTEND-040-AC-01: state-only update, no longer a choke point that
   // fires a backend request on every change -- every call site except
   // handleModeChange now funnels through this. Sending is deferred until
@@ -585,6 +666,7 @@ export function RecommendationControls({
       excludeGenresText: '',
       excludeKeywordsText: '',
       language: '',
+      countriesSelected: [],
     })
   }
 
@@ -1055,6 +1137,39 @@ export function RecommendationControls({
                     Year range matches any year the show had an episode air —
                     not just its first season.
                   </p>
+
+                  {/* FRONTEND-047-AC-04/AC-10: Country/Language relocated
+                      into Custom Search's own panel, mirroring
+                      frontend_spec_046's Min TMDB Rating/Year Min/Year Max
+                      relocation pattern -- series_spec_032 makes these real
+                      TMDB discover/tv params for this mode specifically. */}
+                  <div className={styles.genreKeywordFields}>
+                    <div className={styles.field}>
+                      <KeywordPicker
+                        id="recommendation-countries"
+                        label="Countries"
+                        selected={state.countriesSelected}
+                        onChange={(next) =>
+                          updateState({ countriesSelected: next })
+                        }
+                        options={COUNTRY_OPTIONS}
+                        pinnedOptions={COUNTRY_PINNED_OPTIONS}
+                      />
+                    </div>
+
+                    <div className={styles.field}>
+                      <KeywordPicker
+                        id="recommendation-language"
+                        label="Language"
+                        selected={state.language ? [state.language] : []}
+                        onChange={(next) =>
+                          updateState({ language: next.at(-1) ?? '' })
+                        }
+                        options={LANGUAGE_OPTIONS}
+                        pinnedOptions={LANGUAGE_PINNED_CODES}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1262,15 +1377,40 @@ export function RecommendationControls({
                 />
               </div>
 
-              <div className={styles.field}>
-                <label htmlFor="recommendation-language">Language</label>
-                <input
-                  id="recommendation-language"
-                  type="text"
-                  value={state.language}
-                  onChange={updateField('language')}
-                />
-              </div>
+              {/* FRONTEND-047-AC-05/AC-10: Country/Language render here only
+                  outside Custom Search -- while Custom Search is active they
+                  relocate into that mode's own panel instead (same
+                  relocation conditional frontend_spec_046 established for
+                  Min TMDB Rating/Year Min/Year Max). */}
+              {!isCustomSearch && (
+                <>
+                  <div className={styles.field}>
+                    <KeywordPicker
+                      id="recommendation-countries"
+                      label="Countries"
+                      selected={state.countriesSelected}
+                      onChange={(next) =>
+                        updateState({ countriesSelected: next })
+                      }
+                      options={COUNTRY_OPTIONS}
+                      pinnedOptions={COUNTRY_PINNED_OPTIONS}
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <KeywordPicker
+                      id="recommendation-language"
+                      label="Language"
+                      selected={state.language ? [state.language] : []}
+                      onChange={(next) =>
+                        updateState({ language: next.at(-1) ?? '' })
+                      }
+                      options={LANGUAGE_OPTIONS}
+                      pinnedOptions={LANGUAGE_PINNED_CODES}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className={styles.filtersActions}>
                 <button

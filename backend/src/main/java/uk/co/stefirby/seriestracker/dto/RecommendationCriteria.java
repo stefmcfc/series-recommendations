@@ -32,6 +32,7 @@ public class RecommendationCriteria {
     private List<String> excludeGenres;
     private List<String> excludeKeywords;
     private String language;
+    private List<String> countries;
     private Integer maxPerSource;
     private Integer maxSourcesShown;
     private String sortBy;
@@ -82,6 +83,16 @@ public class RecommendationCriteria {
 
     public String getLanguage() { return language; }
     public void setLanguage(String language) { this.language = language; }
+
+    /**
+     * {@code List<String>} of ISO 3166-1 alpha-2 country codes (SERIES-032-AC-04), mirroring
+     * {@code excludeGenres}'s exact null/empty-means-no-op convention -- a candidate matches if
+     * its {@code TmdbCandidate.originCountry()} case-insensitively equals any entry. Unlike
+     * {@code language}, which stays single-select (TMDB's {@code with_original_language}
+     * accepts one value only), this is multi-select/OR-matched.
+     */
+    public List<String> getCountries() { return countries; }
+    public void setCountries(List<String> countries) { this.countries = countries; }
 
     public Integer getMaxPerSource() { return maxPerSource; }
     public void setMaxPerSource(Integer maxPerSource) { this.maxPerSource = maxPerSource; }

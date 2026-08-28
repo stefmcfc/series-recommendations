@@ -410,9 +410,10 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
     fireEvent.change(screen.getByLabelText(/year min/i), {
       target: { value: '2020' },
     })
-    fireEvent.change(screen.getByLabelText(/^language/i), {
-      target: { value: 'en' },
-    })
+    // FRONTEND-047: Language is now a single-select picker -- setting a
+    // value means selecting an option (the pinned "English" quick-select
+    // here), not typing directly into the field.
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
     clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -462,9 +463,24 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
 
 // FRONTEND-040 supersedes this AC's "no Apply button" premise -- an explicit
 // "Apply Filters" button now gates every control except Recommendation
-// Source (see the FRONTEND-040-AC-01/02/03 describe blocks below). The
-// mount-time assertion is unaffected and stays as a regression guard.
-describe('FRONTEND-011-AC-12: mounting does not trigger onQueryChange', () => {
+// Source (see the FRONTEND-040-AC-01/02/03 describe blocks below).
+//
+// Fix 3 (2026-08-28, live testing -- pre-existing bug, not part of any open
+// spec): this AC's second assertion ("mounting does not trigger
+// onQueryChange") is now superseded. A fresh mount was found to send zero
+// query params at all (no sourceMode, nothing), which the backend was
+// resolving to Custom Search's unfiltered-discover fallback instead of "Use
+// My Series" pool sourcing -- not a legitimate "no request on mount" case,
+// just a state initialization gap (App.tsx's recommendationQuery started
+// undefined with nothing to establish a real default). The fix adds a
+// mount-only effect that calls onQueryChange once with the default query
+// (see the "eslint-disable-next-line react-hooks/exhaustive-deps --
+// mount-only" effect in RecommendationControls.tsx); every other Apply-gated
+// control this AC was really guarding against is unaffected (see the
+// FRONTEND-040-AC-01/03/04/09 and FRONTEND-042-AC-15 describe blocks below,
+// which already clear the mount call via `onQueryChange.mockClear()` before
+// asserting).
+describe('FRONTEND-011-AC-12: mounting does not trigger an Apply-gated control', () => {
   it('renders "Apply Filters", not a bare "Apply"/"Submit" button', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     expect(
@@ -478,10 +494,11 @@ describe('FRONTEND-011-AC-12: mounting does not trigger onQueryChange', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not call onQueryChange just from mounting', () => {
+  it('calls onQueryChange once on mount with the default (Use My Series) query', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    expect(onQueryChange).not.toHaveBeenCalled()
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+    expect(onQueryChange).toHaveBeenCalledWith({ sourceMode: 'useMySeries' })
   })
 })
 
@@ -1933,5 +1950,216 @@ describe('FRONTEND-049-AC-04: an empty Custom Search request still fires', () =>
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
     expect(onQueryChange).toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-047-AC-04: Country picker renders under Custom Search', () => {
+  it('shows the Country field with pinned US/GB', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('tab', { name: /^discover$/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /custom search/i }))
+
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/countries/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-05: Country picker relocates to Filters for other modes', () => {
+  it('shows Country inside Filters under Use My Series', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    expect(screen.getByLabelText(/countries/i)).toBeInTheDocument()
+  })
+
+  it('does not render Country inside Custom Search panel while Custom Search is not active', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    selectCustomSearch()
+
+    const filtersBody = screen.getByTestId('filters-body')
+    expect(
+      within(filtersBody).queryByLabelText(/countries/i),
+    ).not.toBeInTheDocument()
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/countries/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-06: countries sent in the query', () => {
+  it('includes selected countries on Apply Filters', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ countries: ['US'] }),
+    )
+  })
+
+  it('omits countries from the query when nothing is selected', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ countries: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-derived', () => {
+  it('offers a searchable country beyond the pinned two without fetching series data', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.change(screen.getByLabelText(/countries/i), {
+      target: { value: 'japan' },
+    })
+
+    // Exact match ("^japan$"), not a loose /japan/i substring match --
+    // Language's pinned "Japanese" quick-select (LANGUAGE_PINNED_CODES
+    // includes 'ja') is always visible in the same Filters box regardless
+    // of what's typed into Countries, and "japan" is a substring of
+    // "Japanese" too, so a loose match here would find both buttons.
+    expect(screen.getByRole('button', { name: /^japan$/i })).toBeInTheDocument()
+  })
+})
+
+// Revised 2026-08-28 (frontend_spec_047, Requirement 3's revision note):
+// Language now renders through KeywordPicker itself (single-select enforced
+// by an adapter in RecommendationControls.tsx), the same proven
+// chip-with-"x" UX Country already uses -- replacing the original bespoke
+// LanguagePicker's permanently-visible pinned button + plain text input,
+// which live testing found had no way to clear a selection back to empty.
+describe('FRONTEND-047-AC-08: Language picker has pinned quick-select options', () => {
+  it('renders English and Spanish quick-selects', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    expect(
+      screen.getByRole('button', { name: /^english$/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /^spanish$/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-09: selecting replaces, does not accumulate', () => {
+  it('replaces the previous language selection', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^french$/i }))
+
+    // Deviates from this AC's original test sketch (a bare
+    // getByText/queryByText on the plain label): once English is
+    // deselected it reappears as a *pinned suggestion* button
+    // (LANGUAGE_PINNED_CODES includes 'en'), so a bare text query for
+    // "English" is ambiguous -- it's genuinely still on the page, just as a
+    // suggestion rather than a chip. Querying each side's "Remove x"
+    // control is unambiguous, since that only ever renders for a selected
+    // chip.
+    expect(
+      screen.getByRole('button', { name: 'Remove fr' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Remove en' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-12: language selection can be cleared', () => {
+  it("clears language back to empty via the chip's remove control", () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /remove en$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      expect.not.objectContaining({ language: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-047-AC-10: Language picker relocates the same way as Country', () => {
+  it('shows Language under the Custom Search panel', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectCustomSearch()
+
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/language/i)).toBeInTheDocument()
+  })
+
+  it('does not render Language inside Filters while Custom Search is active', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    selectCustomSearch()
+
+    const filtersBody = screen.getByTestId('filters-body')
+    expect(
+      within(filtersBody).queryByLabelText(/language/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-11: query output for language is unaffected', () => {
+  it('sends the same language value regardless of panel location', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'en' }),
+    )
+  })
+
+  it('sends the same language value from the Custom Search panel location', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectCustomSearch()
+    fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'en' }),
+    )
+  })
+})
+
+describe('FRONTEND-047: Reset Filters clears countriesSelected', () => {
+  it('clears the selected countries chip on reset', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
+    expect(
+      screen.getByRole('button', { name: 'Remove US' }),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
+
+    expect(
+      screen.queryByRole('button', { name: 'Remove US' }),
+    ).not.toBeInTheDocument()
   })
 })

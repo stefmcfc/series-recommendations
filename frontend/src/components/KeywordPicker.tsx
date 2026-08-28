@@ -18,6 +18,13 @@ interface KeywordPickerProps {
   readonly selected: string[]
   readonly onChange: (next: string[]) => void
   readonly options?: string[] | PickerOption[]
+  // FRONTEND-047-AC-01/02/03: options that always appear first in the
+  // suggestion list, regardless of the currently typed search text --
+  // resolved against `options` (by id) so a caller can pin by code/id alone
+  // (e.g. ['US', 'GB']) while `options` itself supplies the human-readable
+  // label (e.g. PickerOption[] country names). Falls back to the pinned
+  // entry's own normalized id/label when no match is found in `options`.
+  readonly pinnedOptions?: string[] | PickerOption[]
   readonly placeholder?: string
   readonly focusOnMount?: boolean
   readonly allowFreeText?: boolean
@@ -55,12 +62,31 @@ function isPickerOptionArray(
   return typeof options[0] !== 'string'
 }
 
+// FRONTEND-047-AC-01: resolves each pinned entry against `normalizedOptions`
+// (by id) so a caller can pin by bare code/id while `options` itself
+// supplies the human-readable label -- e.g. Country's
+// pinnedOptions={['US', 'GB']} resolves through the full country list to
+// "United States"/"United Kingdom" rather than displaying the raw code.
+// Falls back to the pinned entry's own normalized id/label when `options`
+// has no matching entry.
+function resolvePinnedOptions(
+  pinnedOptions: string[] | PickerOption[] | undefined,
+  normalizedOptions: PickerOption[],
+): PickerOption[] {
+  const ownNormalized = normalizeOptions(pinnedOptions)
+  return ownNormalized.map(
+    (pinned) =>
+      normalizedOptions.find((option) => option.id === pinned.id) ?? pinned,
+  )
+}
+
 export function KeywordPicker({
   id,
   label,
   selected,
   onChange,
   options,
+  pinnedOptions,
   placeholder,
   focusOnMount,
   allowFreeText = false,
@@ -107,8 +133,23 @@ export function KeywordPicker({
           .slice(0, maxSuggestionsWhenEmpty ?? normalizedOptions.length)
       : []
 
-  const visibleSuggestions =
+  const rawVisibleSuggestions =
     trimmedInput !== '' ? typedMatches : emptyInputSuggestions
+
+  // FRONTEND-047-AC-01: pinned options always lead the suggestion list,
+  // regardless of typed text, deduped by id against whatever the normal
+  // suggestion logic would already surface so a pinned option never appears
+  // twice. Already-selected pinned options are excluded, same as any other
+  // option (FRONTEND-047-AC-02's design note).
+  const visiblePinned = resolvePinnedOptions(
+    pinnedOptions,
+    normalizedOptions,
+  ).filter((option) => !selected.includes(option.id))
+  const pinnedIds = new Set(visiblePinned.map((option) => option.id))
+  const visibleSuggestions = [
+    ...visiblePinned,
+    ...rawVisibleSuggestions.filter((option) => !pinnedIds.has(option.id)),
+  ]
 
   const addOption = (option: PickerOption) => {
     if (selected.includes(option.id)) return
@@ -164,7 +205,7 @@ export function KeywordPicker({
         onKeyDown={handleKeyDown}
       />
 
-      {options && visibleSuggestions.length > 0 && (
+      {visibleSuggestions.length > 0 && (
         <ul className={styles.suggestions}>
           {visibleSuggestions.map((option) => (
             <li key={option.id}>

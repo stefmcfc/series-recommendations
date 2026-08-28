@@ -540,6 +540,31 @@ describe('FRONTEND-011-AC-02: getRecommendations with a full query', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-047-AC-06: getRecommendations comma-joins countries
+// ---------------------------------------------------------------------------
+describe('FRONTEND-047-AC-06: getRecommendations wires countries', () => {
+  it('comma-joins a multi-country selection', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ countries: ['US', 'GB'] })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { countries: 'US,GB' },
+    })
+  })
+
+  it('omits an empty countries array entirely', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ countries: [] })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-030-AC-02: getRecommendations includes excludeKeywords
 // ---------------------------------------------------------------------------
 describe('FRONTEND-030-AC-02: getRecommendations includes excludeKeywords', () => {

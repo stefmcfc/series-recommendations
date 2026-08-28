@@ -474,3 +474,88 @@ describe('placeholder prop', () => {
     expect(screen.getByPlaceholderText('Type a keyword')).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-047-AC-01: pinned options always appear first', () => {
+  it('shows pinned options even when typed text does not match them', () => {
+    render(
+      <KeywordPicker
+        id="test-picker"
+        label="Countries"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['US', 'GB', 'JP', 'FR']}
+        pinnedOptions={['US', 'GB']}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/countries/i), {
+      target: { value: 'jp' },
+    })
+
+    const suggestions = screen.getAllByRole('button', { name: /^(us|gb|jp)$/i })
+    expect(suggestions[0]).toHaveTextContent(/us/i)
+    expect(suggestions[1]).toHaveTextContent(/gb/i)
+  })
+})
+
+describe('FRONTEND-047-AC-02: selecting a pinned option adds a chip', () => {
+  it('calls onChange with the pinned option selected', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="test-picker"
+        label="Countries"
+        selected={[]}
+        onChange={onChange}
+        options={['US', 'GB']}
+        pinnedOptions={['US', 'GB']}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
+
+    expect(onChange).toHaveBeenCalledWith(['US'])
+  })
+})
+
+describe('FRONTEND-047-AC-03: existing consumers are unaffected', () => {
+  it('behaves exactly as before when pinnedOptions is omitted', () => {
+    render(
+      <KeywordPicker
+        id="test-picker"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['spy', 'thriller']}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /^spy$/i })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-047-AC-01 (PickerOption[] options): pinned codes resolve to full labels', () => {
+  it('shows the pinned option using its label from the options list, not the raw code', () => {
+    render(
+      <KeywordPicker
+        id="countries"
+        label="Countries"
+        selected={[]}
+        onChange={vi.fn()}
+        options={[
+          { id: 'US', label: 'United States' },
+          { id: 'GB', label: 'United Kingdom' },
+          { id: 'JP', label: 'Japan' },
+        ]}
+        pinnedOptions={['US', 'GB']}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'United States' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'United Kingdom' }),
+    ).toBeInTheDocument()
+  })
+})

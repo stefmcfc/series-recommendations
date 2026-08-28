@@ -34,6 +34,12 @@ class RecommendationOutputFilterServiceSpec extends Specification {
         dc(candidate(1, "Show", year))
     }
 
+    private static DedupedCandidate candidateWithOriginCountry(String originCountry) {
+        new DedupedCandidate(
+            new TmdbCandidate(1, "Show", 2020, "overview", "/poster.jpg", new BigDecimal("8.0"), [18], 300, "en", originCountry),
+            [], "tt1")
+    }
+
     def "SERIES-007-AC-24: minTmdbRating excludes candidates below the threshold"() {
         given: "two candidates: tmdbRating 5.0 and 8.0"
             def candidates = [dc(candidate(10, "Low", 2020, new BigDecimal("5.0"))), dc(candidate(20, "High", 2020, new BigDecimal("8.0")))]
@@ -268,5 +274,71 @@ class RecommendationOutputFilterServiceSpec extends Specification {
 
         then: "the candidate is excluded, exactly as before this spec"
             result.isEmpty()
+    }
+
+    // -- Spec 032, Requirement 3 (SERIES-032-AC-08/09): matchesCountries post-fetch check, unconditional --
+
+    def "SERIES-032-AC-08: matchesCountries excludes a non-matching candidate"() {
+        given: "criteria filtering to US/GB, and a candidate originating from Japan"
+            def criteria = new RecommendationCriteria(countries: ["US", "GB"])
+            def candidate = candidateWithOriginCountry("JP")
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate is excluded"
+            result.isEmpty()
+    }
+
+    def "SERIES-032-AC-08: matchesCountries case-insensitively matches any entry"() {
+        given: "criteria filtering to us/gb, and a candidate originating from GB"
+            def criteria = new RecommendationCriteria(countries: ["us", "gb"])
+            def candidate = candidateWithOriginCountry("GB")
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate passes"
+            result.size() == 1
+    }
+
+    def "SERIES-032-AC-08: a null countries list is a no-op"() {
+        given: "criteria with no countries filter"
+            def criteria = new RecommendationCriteria()
+            def candidate = candidateWithOriginCountry("JP")
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate passes"
+            result.size() == 1
+    }
+
+    def "SERIES-032-AC-08: applies unconditionally regardless of source mode"() {
+        given: "a trending-mode candidate whose originCountry doesn't match"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", countries: ["US"])
+            def candidate = candidateWithOriginCountry("JP")
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate is excluded despite trending's ranking-bypass"
+            result.isEmpty()
+    }
+
+    def "SERIES-032-AC-09: post-fetch language check is unaffected, still runs unconditionally"() {
+        given: "candidates with originalLanguage en and fr, and directed-by-genre criteria"
+            def candidates = [
+                dc(candidate(10, "English Show", 2020, new BigDecimal("8.0"), [18], 300, "en")),
+                dc(candidate(20, "French Show", 2020, new BigDecimal("8.0"), [18], 300, "fr")),
+            ]
+            def criteria = new RecommendationCriteria(genres: ["Comedy"], language: "EN")
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters(candidates, criteria)
+
+        then: "only the English-language candidate is present, exactly as before this spec"
+            result.size() == 1
+            result[0].candidate().title() == "English Show"
     }
 }

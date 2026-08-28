@@ -151,6 +151,13 @@ export interface RecommendationQuery {
   excludeGenres?: string[]
   excludeKeywords?: string[]
   language?: string
+  // SERIES-032/FRONTEND-047: multi-select, OR-matched origin countries --
+  // sent comma-joined as `with_origin_country` to TMDB's discover/tv,
+  // scoped to Custom Search sourcing only (series_spec_032). Deliberately a
+  // separate field from `language` (single-select, TMDB only ever accepts
+  // one `with_original_language` value) -- see frontend_spec_047's Design
+  // Decisions for the asymmetry.
+  countries?: string[]
   maxPerSource?: number
   maxSourcesShown?: number
   sortBy?: 'score' | 'recommendationCount'

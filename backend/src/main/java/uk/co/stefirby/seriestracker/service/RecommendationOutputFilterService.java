@@ -56,6 +56,7 @@ public class RecommendationOutputFilterService {
             .filter(dc -> matchesYearRange(dc.candidate(), c))
             .filter(dc -> matchesExcludeGenres(dc.candidate(), c.getExcludeGenres()))
             .filter(dc -> matchesLanguage(dc.candidate(), c.getLanguage()))
+            .filter(dc -> matchesCountries(dc.candidate(), c.getCountries()))
             // SERIES-024-AC-05: run last -- the only filter with a per-candidate extra call,
             // so it only ever runs against the smallest possible remaining pool.
             .filter(dc -> matchesExcludeKeywords(dc.candidate(), c.getExcludeKeywords()))
@@ -126,6 +127,23 @@ public class RecommendationOutputFilterService {
             return true;
         }
         return c.originalLanguage() != null && language.equalsIgnoreCase(c.originalLanguage());
+    }
+
+    /**
+     * SERIES-032-AC-08: excludes a candidate whose {@code originCountry} doesn't case-
+     * insensitively match any entry in {@code countries} -- an include-match, the inverse of
+     * {@link #matchesExcludeGenres}'s exclude-match shape. Runs unconditionally for every
+     * source mode, no {@code isDirectedByGenreOrKeyword()} skip: unlike the year-range check
+     * (SERIES-031-AC-09), {@code origin_country} is present on every candidate TMDB already
+     * returns (discover, trending, and topRated responses alike), so there's no post-fetch
+     * data gap to guard against.
+     */
+    private boolean matchesCountries(TmdbCandidate c, List<String> countries) {
+        if (countries == null || countries.isEmpty()) {
+            return true;
+        }
+        return c.originCountry() != null
+            && countries.stream().anyMatch(country -> country.equalsIgnoreCase(c.originCountry()));
     }
 
     /**

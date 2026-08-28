@@ -262,7 +262,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "discover is called with minVoteCount=200"
-            def result = client().discover([18], [], "vote_average.desc", new DiscoverFilters(200, null, null, null))
+            def result = client().discover([18], [], "vote_average.desc", new DiscoverFilters(200, null, null, null, null, []))
 
         then: "the request included vote_count.gte=200, and the result is mapped"
             result.size() == 1
@@ -292,7 +292,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with minTmdbRating=7.5"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, new BigDecimal("7.5"), null, null))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, new BigDecimal("7.5"), null, null, null, []))
 
         then: "the request included vote_average.gte=7.5"
             mockServer.verify()
@@ -316,7 +316,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with yearMin=2020"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, 2020, null))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, 2020, null, null, []))
 
         then: "the request included air_date.gte=2020-01-01"
             mockServer.verify()
@@ -340,7 +340,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with yearMax=2024"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, 2024))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, 2024, null, []))
 
         then: "the request included air_date.lte=2024-12-31"
             mockServer.verify()
@@ -364,7 +364,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with minVoteCount=200"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(200, null, null, null))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, []))
 
         then: "the request included vote_count.gte=200, unchanged from before this spec"
             mockServer.verify()
@@ -380,9 +380,107 @@ class TmdbClientSpec extends Specification {
 
         when: "discover is called with minTmdbRating, yearMin and yearMax all set"
             client().discover([35], [], "popularity.desc",
-                new DiscoverFilters(0, new BigDecimal("7.5"), 2020, 2024))
+                new DiscoverFilters(0, new BigDecimal("7.5"), 2020, 2024, null, []))
 
         then: "all three params were sent on the same request"
+            mockServer.verify()
+    }
+
+    // -- SERIES-032: DiscoverFilters -- language/countries sent as real discover/tv params --
+
+    def "SERIES-032-AC-01: sends with_original_language when language is set"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.containsString("with_original_language=en")))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with language=en"
+            client().discover([35], [], "popularity.desc",
+                new DiscoverFilters(0, null, null, null, "en", []))
+
+        then: "the request included with_original_language=en"
+            mockServer.verify()
+    }
+
+    def "SERIES-032-AC-01: omits with_original_language when language is null"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("with_original_language"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with no language"
+            client().discover([35], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no with_original_language param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-032-AC-01: omits with_original_language when language is blank"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("with_original_language"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with a blank language"
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, null, "   ", []))
+
+        then: "no with_original_language param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-032-AC-02: sends with_origin_country as a pipe-joined list"() {
+        given: "a mocked TMDB response"
+            // Correction (2026-08-28): unlike with_genres/with_keywords (comma=AND,
+            // pipe=OR), with_origin_country's comma join is itself an AND -- live
+            // verification against the real TMDB API found countries=JP,SE
+            // returned 0 results despite each individually returning results.
+            // Pipe is the actual OR separator for this param.
+            mockServer.expect(requestTo(Matchers.containsString("with_origin_country=US%7CGB")))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with countries=[US, GB]"
+            client().discover([35], [], "popularity.desc",
+                new DiscoverFilters(0, null, null, null, null, ["US", "GB"]))
+
+        then: "the request included with_origin_country=US|GB (pipe-joined, OR semantics)"
+            mockServer.verify()
+    }
+
+    def "SERIES-032-AC-02: omits with_origin_country when countries is null"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("with_origin_country"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with no countries"
+            client().discover([35], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no with_origin_country param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-032-AC-02: omits with_origin_country when countries is empty"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("with_origin_country"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with an empty countries list"
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, null, null, []))
+
+        then: "no with_origin_country param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-032-AC-03: series_spec_031's existing params are unaffected by the two new fields"() {
+        given: "a mocked TMDB response asserting minTmdbRating/year params are still sent correctly"
+            mockServer.expect(requestTo(Matchers.allOf(
+                Matchers.containsString("vote_average.gte=7.5"),
+                Matchers.containsString("air_date.gte=2020-01-01"),
+                Matchers.containsString("air_date.lte=2024-12-31"),
+                Matchers.containsString("vote_count.gte=200"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with every DiscoverFilters field set"
+            client().discover([35], [], "popularity.desc",
+                new DiscoverFilters(200, new BigDecimal("7.5"), 2020, 2024, "en", ["US"]))
+
+        then: "the pre-existing params are unaffected"
             mockServer.verify()
     }
 
