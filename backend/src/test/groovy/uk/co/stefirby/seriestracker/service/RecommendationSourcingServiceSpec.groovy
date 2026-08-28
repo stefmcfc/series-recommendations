@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.service
 
+import uk.co.stefirby.seriestracker.client.DiscoverFilters
 import uk.co.stefirby.seriestracker.client.TmdbCandidate
 import uk.co.stefirby.seriestracker.client.TmdbClient
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
@@ -182,8 +183,8 @@ class RecommendationSourcingServiceSpec extends Specification {
         when: "sourceFromPool(criteria, 20) is called (limit 20, only 1 title-based candidate)"
             def result = sourcingService.sourceFromPool(new RecommendationCriteria(), 20)
 
-        then: "discover is called with the TMDB ids for Drama (18) and Crime (80), no keywords, and minVoteCount=0 (genreBasedSupplement never applies a floor, SERIES-029-AC-08)"
-            1 * tmdbClient.discover([18, 80], [], "popularity.desc", 0) >> [candidate(20)]
+        then: "discover is called with the TMDB ids for Drama (18) and Crime (80), no keywords, and DiscoverFilters.NONE (genreBasedSupplement never applies a floor, SERIES-029-AC-08/SERIES-031-AC-06)"
+            1 * tmdbClient.discover([18, 80], [], "popularity.desc", DiscoverFilters.NONE) >> [candidate(20)]
 
         and: "both the title-based and genre-based candidates are present"
             result.size() == 2
@@ -357,7 +358,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def result = sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover() is called with Drama's id (18) only -- Spy has no genre mapping"
-            1 * tmdbClient.discover([18], [], "popularity.desc", 200) >> [candidate(50, "Drama Show")]
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null)) >> [candidate(50, "Drama Show")]
 
         and: "the candidate has no linked source series"
             result.size() == 1
@@ -373,7 +374,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "searchKeyword resolves Spy, and discover is called with both resolved ids"
             1 * tmdbClient.searchKeyword("Spy") >> Optional.of(9720)
-            1 * tmdbClient.discover([18], [9720], "popularity.desc", 200) >> []
+            1 * tmdbClient.discover([18], [9720], "popularity.desc", new DiscoverFilters(200, null, null, null)) >> []
     }
 
     def "SERIES-007-AC-14: an unresolvable keyword is skipped, not an error"() {
@@ -385,7 +386,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "discover is called with an empty keyword id list, and no exception is thrown"
             1 * tmdbClient.searchKeyword("nonexistent") >> Optional.empty()
-            1 * tmdbClient.discover([], [], "popularity.desc", 200) >> []
+            1 * tmdbClient.discover([], [], "popularity.desc", new DiscoverFilters(200, null, null, null)) >> []
             result.isEmpty()
     }
 
@@ -397,7 +398,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover is still called normally, unaffected by minSourceRating"
-            1 * tmdbClient.discover([18], [], "popularity.desc", 200) >> []
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null)) >> []
     }
 
     // -- Spec 022, Requirement 2 (SERIES-022-AC-07): directed sourcing -- trending --
@@ -480,7 +481,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover is called with popularity.desc"
-            1 * tmdbClient.discover([18], [], "popularity.desc", 200) >> []
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null)) >> []
     }
 
     def "SERIES-025-AC-06: genre-directed sourcing forwards an explicit discoverSortBy"() {
@@ -491,7 +492,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover is called with vote_count.desc"
-            1 * tmdbClient.discover([18], [], "vote_count.desc", 200) >> []
+            1 * tmdbClient.discover([18], [], "vote_count.desc", new DiscoverFilters(200, null, null, null)) >> []
     }
 
     // -- Spec 029, Requirement 2 (SERIES-029-AC-06..09): genre-directed sourcing vote-count floor --
@@ -505,7 +506,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             svc.sourceByGenreOrKeyword(criteria)
 
         then: "discover is called with minVoteCount=200"
-            1 * tmdbClient.discover(_, _, _, 200) >> []
+            1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.minVoteCount() == 200 }) >> []
     }
 
     def "SERIES-029-AC-07/SERIES-029-AC-09: an explicit minVoteCount overrides the 200 default"() {
@@ -517,7 +518,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             svc.sourceByGenreOrKeyword(criteria)
 
         then: "discover is called with the explicit value, not the 200 default"
-            1 * tmdbClient.discover(_, _, _, 5) >> []
+            1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.minVoteCount() == 5 }) >> []
     }
 
     def "SERIES-029-AC-08: genreBasedSupplement still calls discover with minVoteCount=0"() {
@@ -529,6 +530,47 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceFromPool(new RecommendationCriteria(), 20)
 
         then: "discover is called with minVoteCount=0, unchanged from before this spec"
-            1 * tmdbClient.discover(_, [], RecommendationDefaults.DEFAULT_GENRE_SORT_BY, 0) >> []
+            1 * tmdbClient.discover(_, [], RecommendationDefaults.DEFAULT_GENRE_SORT_BY, DiscoverFilters.NONE) >> []
+    }
+
+    // -- Spec 031, Requirement 2 (SERIES-031-AC-05..07): Custom Search pre-fetch minTmdbRating/year filters --
+
+    def "SERIES-031-AC-05: Custom Search sourcing passes minTmdbRating/year to discover"() {
+        given: "criteria directed by genre with minTmdbRating and a year range set"
+            def criteria = new RecommendationCriteria(genres: ["Comedy"], minTmdbRating: new BigDecimal("7.0"),
+                yearMin: 2020, yearMax: 2024)
+
+        when: "sourceByGenreOrKeyword runs"
+            sourcingService.sourceByGenreOrKeyword(criteria)
+
+        then: "TmdbClient.discover was called with a DiscoverFilters carrying the same values"
+            1 * tmdbClient.discover(_, _, _, { DiscoverFilters f ->
+                f.minTmdbRating() == new BigDecimal("7.0") && f.yearMin() == 2020 && f.yearMax() == 2024
+            }) >> []
+    }
+
+    def "SERIES-031-AC-06: the genre-based top-up is unaffected by this spec"() {
+        given: "a Use My Series request with minTmdbRating/year set (should never reach the top-up call)"
+            def criteria = new RecommendationCriteria(minTmdbRating: new BigDecimal("8.0"), yearMin: 2020)
+            seriesRepository.findAll() >> [completedSeries("Show", "tt0000001", LocalDateTime.now(), "Comedy")]
+            tmdbClient.findTvIdByImdbId(_) >> Optional.empty()
+
+        when: "the genre-based top-up fires (title-based sourcing came up short)"
+            sourcingService.sourceFromPool(criteria, 20)
+
+        then: "discover was called with DiscoverFilters.NONE, exactly as before this spec"
+            1 * tmdbClient.discover(_, [], "popularity.desc", DiscoverFilters.NONE) >> []
+    }
+
+    def "SERIES-031-AC-07: Popular Right Now and Highest Rated are unaffected"() {
+        given: "criteria for topRated mode with minTmdbRating/year set"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated",
+                minTmdbRating: new BigDecimal("8.0"), yearMin: 2020)
+
+        when: "sourceTopRated runs"
+            sourcingService.sourceTopRated(criteria)
+
+        then: "discoverTopRated was called with its existing two-arg signature, unchanged"
+            1 * tmdbClient.discoverTopRated(_, _) >> []
     }
 }

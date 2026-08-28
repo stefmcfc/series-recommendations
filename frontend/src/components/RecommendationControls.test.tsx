@@ -1744,3 +1744,124 @@ describe('FRONTEND-042-AC-16: all tabs disabled while loading', () => {
     expect(screen.getByRole('tab', { name: /^discover$/i })).toBeDisabled()
   })
 })
+
+describe('FRONTEND-046-AC-01: rating/year fields render in the Custom Search panel', () => {
+  it('shows Min TMDB Rating and Year Min/Max under Custom Search', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectCustomSearch()
+
+    const panel = screen.getByRole('tabpanel', { name: /custom search/i })
+    expect(within(panel).getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
+    expect(within(panel).getByLabelText(/^year min/i)).toBeInTheDocument()
+    expect(within(panel).getByLabelText(/^year max/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-046-AC-02: Filters box omits these fields under Custom Search', () => {
+  it('does not render the relocated fields inside Filters', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectCustomSearch()
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    const filtersBody = screen.getByTestId('filters-body')
+    expect(
+      within(filtersBody).queryByLabelText(/min tmdb rating/i),
+    ).not.toBeInTheDocument()
+    expect(
+      within(filtersBody).queryByLabelText(/^year min/i),
+    ).not.toBeInTheDocument()
+    expect(
+      within(filtersBody).queryByLabelText(/^year max/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-046-AC-03: other modes are unaffected', () => {
+  it.each([
+    ['Use My Series', () => {}],
+    ['Popular Right Now', () => selectPopularRightNow()],
+    ['Highest Rated', () => selectHighestRated()],
+  ])('renders the fields inside Filters under %s', (_, selectMode) => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectMode()
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+
+    expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year min/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year max/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-046-AC-04: year semantics hint renders under Custom Search', () => {
+  it('explains the episode-air-date year matching', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+    selectCustomSearch()
+
+    expect(screen.getByText(/episode air/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-046-AC-05: query output is unaffected by relocation', () => {
+  it('sends minTmdbRating/yearMin/yearMax from the Custom Search panel location', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectCustomSearch()
+
+    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+      target: { value: '7.5' },
+    })
+    fireEvent.change(screen.getByLabelText(/^year min/i), {
+      target: { value: '2020' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({ minTmdbRating: 7.5, yearMin: 2020 }),
+    )
+  })
+})
+
+describe('SERIES-031-AC-11/12 (frontend hint): rating/year inputs carry min/max bounds', () => {
+  it('constrains Min TMDB Rating to 0-10 in both locations', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+      'min',
+      '0',
+    )
+    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+      'max',
+      '10',
+    )
+
+    selectCustomSearch()
+    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+      'min',
+      '0',
+    )
+    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+      'max',
+      '10',
+    )
+  })
+
+  it('constrains Year Min/Max to 1900-(current year + 1) in both locations', () => {
+    const maxYear = String(new Date().getFullYear() + 1)
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('max', maxYear)
+    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('max', maxYear)
+
+    selectCustomSearch()
+    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('max', maxYear)
+    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('max', maxYear)
+  })
+})

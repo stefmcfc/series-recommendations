@@ -53,7 +53,7 @@ public class RecommendationOutputFilterService {
         return candidates.stream()
             .filter(dc -> matchesMinTmdbRating(dc.candidate(), c.getMinTmdbRating()))
             .filter(dc -> matchesMinVoteCount(dc.candidate(), effectiveMinVoteCount))
-            .filter(dc -> matchesYearRange(dc.candidate(), c.getYearMin(), c.getYearMax()))
+            .filter(dc -> matchesYearRange(dc.candidate(), c))
             .filter(dc -> matchesExcludeGenres(dc.candidate(), c.getExcludeGenres()))
             .filter(dc -> matchesLanguage(dc.candidate(), c.getLanguage()))
             // SERIES-024-AC-05: run last -- the only filter with a per-candidate extra call,
@@ -74,8 +74,26 @@ public class RecommendationOutputFilterService {
         return voteCount >= effectiveMinVoteCount;
     }
 
-    /** A null {@code year} can't be verified to satisfy an active range, so it's excluded rather than assumed to pass. */
-    private boolean matchesYearRange(TmdbCandidate c, Integer yearMin, Integer yearMax) {
+    /**
+     * A null {@code year} can't be verified to satisfy an active range, so it's excluded
+     * rather than assumed to pass.
+     *
+     * <p>SERIES-031-AC-09: skipped entirely for Custom Search ({@code
+     * criteria.isDirectedByGenreOrKeyword()}) -- TMDB's {@code discover/tv} response only ever
+     * carries a candidate's {@code first_air_date} (surfaced here as {@code
+     * TmdbCandidate.year()}), never episode-level air dates, so there's no data available
+     * post-fetch to correctly re-verify the {@code air_date.gte}/{@code .lte} pre-filter
+     * {@code TmdbClient.discover()} already applied. Re-checking with only the first-air year
+     * would wrongly re-exclude a still-running older show that legitimately matched TMDB's own
+     * episode-air-date filter. Every other mode -- where that flag is {@code false} -- keeps
+     * this check exactly as it ran before this spec (SERIES-031-AC-10).
+     */
+    private boolean matchesYearRange(TmdbCandidate c, RecommendationCriteria criteria) {
+        if (criteria.isDirectedByGenreOrKeyword()) {
+            return true;
+        }
+        Integer yearMin = criteria.getYearMin();
+        Integer yearMax = criteria.getYearMax();
         if (yearMin == null && yearMax == null) {
             return true;
         }

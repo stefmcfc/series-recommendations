@@ -193,6 +193,23 @@
   text-align: left;
 }
 
+/* FRONTEND-046: Min TMDB Rating/Year Min/Year Max sit inside a flex-column
+   tabPanel (unlike the Filters box's own grid, .filtersBody below) once
+   relocated into Custom Search's panel -- without this row wrapper each
+   .field stretches to the panel's full width and the three stack one per
+   line. Narrower flex-basis than .genreKeywordFields' fields since these are
+   short numeric inputs, not a scrollable checkbox list/picker. */
+.ratingYearRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.fieldNarrow {
+  flex: 1 1 9rem;
+  min-width: 8rem;
+}
+
 .field label {
   font-size: 0.875rem;
   font-weight: 600;

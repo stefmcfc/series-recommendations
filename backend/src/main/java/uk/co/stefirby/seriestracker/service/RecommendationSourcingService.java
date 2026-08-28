@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.service;
 
+import uk.co.stefirby.seriestracker.client.DiscoverFilters;
 import uk.co.stefirby.seriestracker.client.TmdbCandidate;
 import uk.co.stefirby.seriestracker.client.TmdbClient;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
@@ -97,7 +98,11 @@ public class RecommendationSourcingService {
         // sourceTopRated's own effective-minVoteCount resolution) so TMDB itself only returns
         // candidates worth considering, instead of relying solely on the post-hoc output filter.
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
-        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, effectiveMinVoteCount).stream()
+        // SERIES-031-AC-05: minTmdbRating/yearMin/yearMax are read straight from criteria (both
+        // already null-means-unset) and sent to TMDB itself, for the same "don't rely solely on
+        // a post-hoc filter against one ~20-result page" reason as minVoteCount above.
+        DiscoverFilters filters = new DiscoverFilters(effectiveMinVoteCount, c.getMinTmdbRating(), c.getYearMin(), c.getYearMax());
+        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .toList();
     }
@@ -254,11 +259,11 @@ public class RecommendationSourcingService {
         // Not a directed-sourcing call (RecommendationCriteria.discoverSortBy doesn't apply
         // here -- this candidate pool still flows through Requirement 7's ranking/diversity
         // cap normally, unlike sourceByGenreOrKeyword's bypassed path), so TMDB's own default
-        // is used directly rather than resolving discoverSortBy. SERIES-029-AC-08: minVoteCount
-        // is passed as 0 (no floor) deliberately -- this supplementary pool doesn't have the
-        // obscure/brand-new-show problem sourceByGenreOrKeyword's user-selectable sort does, so
-        // its request stays byte-identical to before spec 029.
-        return tmdbClient.discover(genreIds, List.of(), RecommendationDefaults.DEFAULT_GENRE_SORT_BY, 0).stream()
+        // is used directly rather than resolving discoverSortBy. SERIES-029-AC-08/SERIES-031-
+        // AC-06: DiscoverFilters.NONE is passed deliberately -- this supplementary pool doesn't
+        // have the obscure/brand-new-show problem sourceByGenreOrKeyword's user-selectable sort
+        // does, so its request stays byte-identical to before specs 029/031.
+        return tmdbClient.discover(genreIds, List.of(), RecommendationDefaults.DEFAULT_GENRE_SORT_BY, DiscoverFilters.NONE).stream()
             .map(c -> new RawCandidate(c, null))
             .toList();
     }

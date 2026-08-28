@@ -3,6 +3,8 @@ package uk.co.stefirby.seriestracker.service
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import spock.lang.Specification
 
+import java.time.Year
+
 class RecommendationCriteriaValidatorSpec extends Specification {
 
     RecommendationCriteriaValidator validator = new RecommendationCriteriaValidator()
@@ -38,6 +40,85 @@ class RecommendationCriteriaValidatorSpec extends Specification {
 
         then: "an IllegalArgumentException is thrown"
             thrown(IllegalArgumentException)
+    }
+
+    // -- Spec 031, Requirement 3 (SERIES-031-AC-11/12): minTmdbRating/year bounds validation --
+
+    def "SERIES-031-AC-11: a negative minTmdbRating is rejected"() {
+        given: "a negative minTmdbRating"
+            def criteria = new RecommendationCriteria(minTmdbRating: -0.1)
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-031-AC-11: a minTmdbRating above 10 is rejected"() {
+        given: "a minTmdbRating above TMDB's own 0-10 scale"
+            def criteria = new RecommendationCriteria(minTmdbRating: 10.1)
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-031-AC-11: minTmdbRating at the 0 and 10 boundaries is accepted"() {
+        expect: "no exception at either boundary"
+            validator.validate(new RecommendationCriteria(minTmdbRating: 0))
+            validator.validate(new RecommendationCriteria(minTmdbRating: 10))
+    }
+
+    def "SERIES-031-AC-12: a yearMin below 1900 is rejected"() {
+        given: "a yearMin before any TV series existed"
+            def criteria = new RecommendationCriteria(yearMin: 1899)
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-031-AC-12: a yearMax more than one year in the future is rejected"() {
+        given: "a yearMax past the allowed near-future bound"
+            def criteria = new RecommendationCriteria(yearMax: Year.now().value + 2)
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-031-AC-12: a negative year is rejected"() {
+        given: "a negative yearMin"
+            def criteria = new RecommendationCriteria(yearMin: -5)
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-031-AC-12: yearMin exceeding yearMax is rejected"() {
+        given: "yearMin after yearMax"
+            def criteria = new RecommendationCriteria(yearMin: 2024, yearMax: 2020)
+
+        when: "validate is called"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-031-AC-12: yearMin/yearMax within bounds is accepted"() {
+        expect: "no exception for a valid range, including the current-year+1 boundary"
+            validator.validate(new RecommendationCriteria(yearMin: 1900, yearMax: Year.now().value + 1))
     }
 
     // -- Spec 022, Requirement 4 (SERIES-022-AC-16..19): mutual exclusivity & validation --

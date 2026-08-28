@@ -68,22 +68,21 @@ corrected below.
 | Global navigation redesign (menu-bar nav, logo/home link, top-level routing for My Series/Recommendations/Keywords)                                                  | —                                    | `frontend_spec_041`                            | ✅ Done                                                                                         |
 | Recommendation Source mode reorganization ("Use My Series" merge, "Discover" group with Custom Search/Popular Right Now/Highest Rated, tab-style selector)           | —                                    | `frontend_spec_042`                            | ✅ Done                                                                                         |
 | Remove "Max Per Source"/"Max Sources Shown" controls (confirmed dead under every Discover mode; backend untouched, pending a later "Use My Series" revamp)           | —                                    | `frontend_spec_048`                            | ✅ Done                                                                                         |
+| Custom Search pre-fetch filters (Min TMDB Rating + Year Range sent to TMDB `discover/tv`, episode-air-date year semantics)                                           | `series_spec_031`                    | `frontend_spec_046`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
-Ordered as a suggested build order, not just spec-number order — grouped into four independent
-dependency chains (043→045, 030→044, 031→046, 031→032→047); rows within a chain must build in
-the listed order, but the chains themselves have no dependencies on each other and could be
-reordered freely as a block if priorities change. (The former 041→042 chain and the standalone 048
-are fully delivered —
-see the table above.)
+Ordered as a suggested build order, not just spec-number order — grouped into independent
+dependency chains (043→045, 030→044, 032→047); rows within a chain must build in the listed
+order, but the chains themselves have no dependencies on each other and could be reordered freely
+as a block if priorities change. (The former 041→042 chain, the standalone 048, and the full
+031→046 chain — backend and frontend both — are fully delivered; see the table above.)
 
 | Feature                                                                                                                                              | Backend Spec      | Frontend Spec       | Depends On                                                                                                                   | Status         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | Confirm before discarding unsaved changes on Cancel/Escape (AddSeriesForm/EditSeriesForm)                                                            | —                 | `frontend_spec_043` | —                                                                                                                            | ⬜ Not started |
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                                                                                         | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                                   | ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                                                                                    | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row)                    | ⬜ Not started |
-| Custom Search pre-fetch filters (Min TMDB Rating + Year Range sent to TMDB `discover/tv`, episode-air-date year semantics)                           | `series_spec_031` | `frontend_spec_046` | — (self-contained pair; `frontend_spec_046`'s UI relocation depends on `series_spec_031` shipping first, same row)           | ⬜ Not started |
 | Custom Search pre-fetch filters (Language + Country of Origin sent to TMDB `discover/tv`, pinned-chip country picker, single-select language picker) | `series_spec_032` | `frontend_spec_047` | `series_spec_031`/`frontend_spec_046` (extends the same `DiscoverFilters` record and Custom Search panel relocation pattern) | ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)

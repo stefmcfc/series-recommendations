@@ -120,6 +120,21 @@ to `vote_average.desc` for `topRated` and `popularity.desc` for genre/keyword-di
 when omitted; ignored (not an error) under any other mode. All three directed modes still exclude
 anything already added or ignored.
 
+`minTmdbRating`/`yearMin`/`yearMax` are applied as post-fetch output filters across every
+sourcing mode. For genre/keyword-directed sourcing specifically (Custom Search), they're
+**additionally** sent to TMDB itself as real `discover/tv` params (`vote_average.gte`/
+`air_date.gte`/`air_date.lte`) rather than relying solely on the post-fetch check — TMDB only
+ever returns one ~20-result unpaginated page, so a restrictive combination could otherwise
+silently return few/zero results even when TMDB had real matches it was never asked for. **This
+also changes the year field's semantics for Custom Search only**: `yearMin`/`yearMax` there filter
+on a candidate's *episode* air date (TMDB's `air_date.gte`/`.lte`), not its first-air date, so a
+still-running older show (e.g. one airing continuously since 1989) can match a recent year range.
+Every other mode (`trending`, `topRated`, automatic/`seriesIds` sourcing) keeps matching on
+first-air year via the post-fetch filter only — this asymmetry is deliberate, not a bug.
+`minTmdbRating` must be between `0` and `10` (`400` otherwise); `yearMin`/`yearMax` must each be
+between `1900` and the current year + 1, and `yearMin` cannot exceed `yearMax` (`400` otherwise) —
+these bounds are validated regardless of sourcing mode.
+
 `excludeKeywords` (comma-separated names) excludes a candidate whose TMDB keywords
 case-insensitively match any entry, applied last (after every other output filter) across every
 sourcing mode; a per-candidate keyword lookup failure fails that one candidate open rather than

@@ -1,6 +1,18 @@
 # Series Spec 031: Custom Search Pre-Fetch Filters — Min TMDB Rating & Year Range
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) -- `backend/src/main/java/uk/co/stefirby/seriestracker/client/DiscoverFilters.java` (new),
+`backend/src/main/java/uk/co/stefirby/seriestracker/client/TmdbClient.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationSourcingService.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationOutputFilterService.java`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/client/TmdbClientSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationSourcingServiceSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationServiceSpec.groovy`,
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationOutputFilterServiceSpec.groovy`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/RecommendationCriteriaValidator.java` (Requirement
+4, out-of-range `minTmdbRating`/`yearMin`/`yearMax` rejection, added after the initial implementation),
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/RecommendationCriteriaValidatorSpec.groovy`,
+`frontend/src/components/RecommendationControls.tsx`/`.test.tsx` (`min`/`max`/`step` HTML attributes mirroring
+Requirement 4's bounds)
 **Priority**: P3 (correctness/completeness fix — extends `series_spec_029`'s "filter before TMDB, not just
 after" fix from `minVoteCount` to two more fields, for the same root-cause reason)
 **Depends on**: Series Spec 029 (`series_spec_029_configurable_min_vote_count_and_genre_floor.md`, owns the
@@ -354,15 +366,79 @@ a blanket removal of the check.
 
 ---
 
+## Requirement 4: Reject out-of-range `minTmdbRating`/`yearMin`/`yearMax`
+
+**Added 2026-08-28, found live during implementation review**: neither field had ever been validated —
+`RecommendationCriteriaValidator` already rejected an out-of-range `minSourceRating` (1–5), but `minTmdbRating`/
+`yearMin`/`yearMax` passed straight through, both from the frontend's plain number inputs (whose spin arrows and
+typed input had no bounds either) and from any direct API caller. Before this spec, an out-of-range value just
+meant "the post-fetch check matches nothing" — harmless, if confusing. **After Requirement 1–3 above, it's worse**:
+a negative or nonsensical year now produces a malformed `air_date.gte`/`.lte` date string (e.g.
+`air_date.gte=-5-01-01`) sent directly to TMDB, since nothing validates it first. Fixed in the same spec/PR
+rather than filed separately, since this PR is what raised the stakes on the pre-existing gap.
+
+**User story**: As a user, I want an invalid rating or year value rejected with a clear reason, not silently
+accepted and either matching nothing or sent to TMDB malformed.
+
+### SERIES-031-AC-11 [AUTO]
+**Statement**: When `minTmdbRating` is set outside TMDB's own 0–10 scale, `RecommendationCriteriaValidator`
+shall reject the request with an `IllegalArgumentException` (400).
+
+**References**: `RecommendationCriteriaValidator.validateMinSourceRating`'s existing 1–5 bounds-check pattern,
+mirrored here for 0–10.
+
+**Test Case (Red)**:
+```groovy
+def "SERIES-031-AC-11: a minTmdbRating above 10 is rejected"() {
+    given: "a minTmdbRating above TMDB's own 0-10 scale"
+        def criteria = new RecommendationCriteria(minTmdbRating: 10.1)
+
+    when: "validate is called"
+        validator.validate(criteria)
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+}
+```
+**Test Case (Green)**: add `validateMinTmdbRating`, called from `validate()`.
+
+---
+
+### SERIES-031-AC-12 [AUTO]
+**Statement**: When `yearMin`/`yearMax` is set below 1900 or above the current year + 1, or when `yearMin`
+exceeds `yearMax`, `RecommendationCriteriaValidator` shall reject the request with an `IllegalArgumentException`
+(400). The upper bound is resolved at request time (`Year.now()`), not hardcoded.
+
+**Test Case (Red)**:
+```groovy
+def "SERIES-031-AC-12: a negative year is rejected"() {
+    given: "a negative yearMin"
+        def criteria = new RecommendationCriteria(yearMin: -5)
+
+    when: "validate is called"
+        validator.validate(criteria)
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+}
+```
+**Test Case (Green)**: add `validateYearRange`, called from `validate()`.
+
+---
+
 ## Implementation Notes
 
 - **`API.md` needs updating** (Definition of Done) — document that `GET /api/v1/series/recommendations`'s
   `minTmdbRating`/`yearMin`/`yearMax` params now additionally drive TMDB-side filtering when the request is
   genre/keyword-directed (Custom Search), including the year field's episode-air-date semantics there
   specifically (vs. first-air-date for every other mode) — this asymmetry is worth documenting explicitly so
-  it isn't mistaken for a bug later.
+  it isn't mistaken for a bug later. Also document Requirement 4's new bounds (`minTmdbRating` 0–10, year
+  1900–current+1) and that both now return 400 when violated.
 - `DiscoverFilters` lives alongside `TmdbClient` (same package) as a small package-private or public record —
   not in `dto/`, since it's an internal shape for one client method's parameters, not an API-facing DTO.
+- Frontend mirrors these same bounds as `min`/`max`/`step` HTML attributes on the number inputs (both the
+  Filters-box and Custom Search panel copies) — a UX nicety, not the actual enforcement; the backend is the
+  authoritative check regardless of what the frontend allows through.
 
 ## Cross-References
 
@@ -378,13 +454,15 @@ a blanket removal of the check.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-031-AC-01: `vote_average.gte` sent when `minTmdbRating` set, omitted otherwise
-- [ ] SERIES-031-AC-02: `air_date.gte` sent as `yearMin-01-01` when set
-- [ ] SERIES-031-AC-03: `air_date.lte` sent as `yearMax-12-31` when set
-- [ ] SERIES-031-AC-04: `vote_count.gte` behavior unchanged (regression guard)
-- [ ] SERIES-031-AC-05: Custom Search sourcing passes real filter values
-- [ ] SERIES-031-AC-06: genre-based top-up (Use My Series) unaffected
-- [ ] SERIES-031-AC-07: Popular Right Now / Highest Rated unaffected
-- [ ] SERIES-031-AC-08: post-fetch `minTmdbRating` check unaffected (still runs)
-- [ ] SERIES-031-AC-09: post-fetch year check skipped for Custom Search
-- [ ] SERIES-031-AC-10: post-fetch year check still runs for every other mode
+- [x] SERIES-031-AC-01: `vote_average.gte` sent when `minTmdbRating` set, omitted otherwise
+- [x] SERIES-031-AC-02: `air_date.gte` sent as `yearMin-01-01` when set
+- [x] SERIES-031-AC-03: `air_date.lte` sent as `yearMax-12-31` when set
+- [x] SERIES-031-AC-04: `vote_count.gte` behavior unchanged (regression guard)
+- [x] SERIES-031-AC-05: Custom Search sourcing passes real filter values
+- [x] SERIES-031-AC-06: genre-based top-up (Use My Series) unaffected
+- [x] SERIES-031-AC-07: Popular Right Now / Highest Rated unaffected
+- [x] SERIES-031-AC-08: post-fetch `minTmdbRating` check unaffected (still runs)
+- [x] SERIES-031-AC-09: post-fetch year check skipped for Custom Search
+- [x] SERIES-031-AC-10: post-fetch year check still runs for every other mode
+- [x] SERIES-031-AC-11: out-of-range `minTmdbRating` is rejected (400)
+- [x] SERIES-031-AC-12: out-of-range/inverted `yearMin`/`yearMax` is rejected (400)

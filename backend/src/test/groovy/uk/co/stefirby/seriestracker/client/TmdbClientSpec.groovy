@@ -212,8 +212,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_genres", "18,80"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([18, 80], [], 'popularity.desc', 0) is called"
-            def result = client().discover([18, 80], [], "popularity.desc", 0)
+        when: "TmdbClient.discover([18, 80], [], 'popularity.desc', DiscoverFilters.NONE) is called"
+            def result = client().discover([18, 80], [], "popularity.desc", DiscoverFilters.NONE)
 
         then: "with_genres is sent and with_keywords is omitted; the result is mapped to a TmdbCandidate"
             result.size() == 1
@@ -229,8 +229,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_keywords", "9720"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([18], [9720], 'popularity.desc', 0) is called"
-            def result = client().discover([18], [9720], "popularity.desc", 0)
+        when: "TmdbClient.discover([18], [9720], 'popularity.desc', DiscoverFilters.NONE) is called"
+            def result = client().discover([18], [9720], "popularity.desc", DiscoverFilters.NONE)
 
         then: "the expected request was made and the result is mapped"
             result.size() == 1
@@ -245,8 +245,8 @@ class TmdbClientSpec extends Specification {
                 .andExpect(queryParam("with_keywords", "9720"))
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
-        when: "TmdbClient.discover([], [9720], 'popularity.desc', 0) is called"
-            def result = client().discover([], [9720], "popularity.desc", 0)
+        when: "TmdbClient.discover([], [9720], 'popularity.desc', DiscoverFilters.NONE) is called"
+            def result = client().discover([], [9720], "popularity.desc", DiscoverFilters.NONE)
 
         then: "the result is mapped"
             result.size() == 1
@@ -262,7 +262,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "discover is called with minVoteCount=200"
-            def result = client().discover([18], [], "vote_average.desc", 200)
+            def result = client().discover([18], [], "vote_average.desc", new DiscoverFilters(200, null, null, null))
 
         then: "the request included vote_count.gte=200, and the result is mapped"
             result.size() == 1
@@ -278,10 +278,112 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "discover is called with minVoteCount=0"
-            def result = client().discover([28], [], "popularity.desc", 0)
+            def result = client().discover([28], [], "popularity.desc", DiscoverFilters.NONE)
 
         then: "no vote_count.gte param was sent, and the result is mapped"
             result.size() == 1
+    }
+
+    // -- SERIES-031: DiscoverFilters -- minTmdbRating/yearMin/yearMax sent as real discover/tv params --
+
+    def "SERIES-031-AC-01: sends vote_average.gte when minTmdbRating is set"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.containsString("vote_average.gte=7.5")))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with minTmdbRating=7.5"
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, new BigDecimal("7.5"), null, null))
+
+        then: "the request included vote_average.gte=7.5"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-01: omits vote_average.gte when minTmdbRating is null"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("vote_average.gte"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with no minTmdbRating"
+            client().discover([35], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no vote_average.gte param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-02: sends air_date.gte formatted as yearMin-01-01"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.containsString("air_date.gte=2020-01-01")))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with yearMin=2020"
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, 2020, null))
+
+        then: "the request included air_date.gte=2020-01-01"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-02: omits air_date.gte when yearMin is null"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("air_date.gte"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with no yearMin"
+            client().discover([35], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no air_date.gte param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-03: sends air_date.lte formatted as yearMax-12-31"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.containsString("air_date.lte=2024-12-31")))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with yearMax=2024"
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, 2024))
+
+        then: "the request included air_date.lte=2024-12-31"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-03: omits air_date.lte when yearMax is null"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.not(Matchers.containsString("air_date.lte"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with no yearMax"
+            client().discover([35], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no air_date.lte param was sent"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-04: vote_count.gte behavior is unchanged by the DiscoverFilters refactor"() {
+        given: "a mocked TMDB response"
+            mockServer.expect(requestTo(Matchers.containsString("vote_count.gte=200")))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with minVoteCount=200"
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(200, null, null, null))
+
+        then: "the request included vote_count.gte=200, unchanged from before this spec"
+            mockServer.verify()
+    }
+
+    def "SERIES-031-AC-01/02/03: all three new filters can be sent together on the same call"() {
+        given: "a mocked TMDB response asserting all three params are present at once"
+            mockServer.expect(requestTo(Matchers.allOf(
+                Matchers.containsString("vote_average.gte=7.5"),
+                Matchers.containsString("air_date.gte=2020-01-01"),
+                Matchers.containsString("air_date.lte=2024-12-31"))))
+                .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
+
+        when: "discover is called with minTmdbRating, yearMin and yearMax all set"
+            client().discover([35], [], "popularity.desc",
+                new DiscoverFilters(0, new BigDecimal("7.5"), 2020, 2024))
+
+        then: "all three params were sent on the same request"
+            mockServer.verify()
     }
 
     def "SERIES-007-AC-05: resolves a keyword name to a TMDB keyword id"() {
@@ -842,7 +944,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "discover is called with a sortBy value"
-            def result = client().discover([28], [], "popularity.desc", 0)
+            def result = client().discover([28], [], "popularity.desc", DiscoverFilters.NONE)
 
         then: "the request includes sort_by=popularity.desc, and the result is mapped"
             result.size() == 1
