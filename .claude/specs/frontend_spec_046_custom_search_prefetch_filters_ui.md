@@ -1,6 +1,8 @@
 # Frontend Spec 046: Custom Search — Relocate Min TMDB Rating & Year Range Out of the Filters Box
 
-**Status**: Not started
+**Status**: Implemented (2026-08-28) — changed files: `frontend/src/components/RecommendationControls.tsx`,
+`frontend/src/components/RecommendationControls.test.tsx`, `frontend/src/components/RecommendationControls.module.css`
+(layout fix, no spec, see Implementation Notes)
 **Priority**: P3 (paired UI half of `series_spec_031`)
 **Depends on**: Series Spec 031 (`series_spec_031_custom_search_prefetch_filters.md`, the backend pre-fetch
 behavior this spec's relocation reflects — **backend should ship first**, though this spec's own changes are UI
@@ -184,6 +186,22 @@ change wiring, not to drive new implementation.
 
 ---
 
+### FRONTEND-046-AC-06 [AUTO]
+**Added 2026-08-28, alongside `series_spec_031`'s Requirement 4** (found live during implementation review): the
+Min TMDB Rating/Year Min/Year Max inputs had no `min`/`max`/`step` bounds at all — the browser's native spin
+arrows (and typed/pasted input) could push a rating negative or above 10, or a year negative or arbitrarily far
+into the future.
+
+**Statement**: The Min TMDB Rating input shall carry `min="0"`/`max="10"`/`step="0.1"`; the Year Min/Year Max
+inputs shall each carry `min="1900"`/`max={current year + 1}`, in both their Custom Search panel and Filters box
+locations. These are a UX nicety only — `series_spec_031`'s `RecommendationCriteriaValidator` bounds check is
+the actual, unbypassable enforcement.
+
+**Test Case (Green)**: add the attributes to all three inputs' two JSX locations; verified via
+`toHaveAttribute('min'/'max'/'step', ...)` assertions in both panels.
+
+---
+
 ## Implementation Notes
 
 - Field `id`s (`recommendation-min-tmdb-rating`, `recommendation-year-min`, `recommendation-year-max`) and their
@@ -192,6 +210,8 @@ change wiring, not to drive new implementation.
 - Check whether the Filters body container already has a stable test selector before adding
   `data-testid="filters-body"` in AC-02 — reuse what's there if so, to avoid an unnecessary second selector for
   the same element.
+- AC-06's `MAX_VALID_YEAR` is computed once at module load (`new Date().getFullYear() + 1`), matching the
+  backend's own `Year.now()`-at-request-time bound — both stay correct as years pass without a manual bump.
 
 ## Cross-References
 
@@ -205,8 +225,9 @@ change wiring, not to drive new implementation.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-046-AC-01: rating/year fields render in the Custom Search panel
-- [ ] FRONTEND-046-AC-02: Filters box omits these fields under Custom Search
-- [ ] FRONTEND-046-AC-03: other modes are unaffected (fields stay in Filters)
-- [ ] FRONTEND-046-AC-04: year semantics hint renders under Custom Search
-- [ ] FRONTEND-046-AC-05: emitted query is unaffected by the relocation
+- [x] FRONTEND-046-AC-01: rating/year fields render in the Custom Search panel
+- [x] FRONTEND-046-AC-02: Filters box omits these fields under Custom Search
+- [x] FRONTEND-046-AC-03: other modes are unaffected (fields stay in Filters)
+- [x] FRONTEND-046-AC-04: year semantics hint renders under Custom Search
+- [x] FRONTEND-046-AC-05: emitted query is unaffected by the relocation
+- [x] FRONTEND-046-AC-06: rating/year inputs carry min/max/step bounds

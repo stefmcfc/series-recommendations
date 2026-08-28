@@ -37,6 +37,14 @@ type DiscoverSortByOption =
   | 'first_air_date.desc'
   | 'vote_count.desc'
 
+// SERIES-031-AC-12: mirrors the backend's own RecommendationCriteriaValidator
+// bound exactly (1900 to current year + 1) -- these min/max attributes are a
+// UX nicety (constrains the number input's spin arrows, gives the browser a
+// validation hint), not the actual enforcement; the backend rejects an
+// out-of-range value regardless of what the frontend allows through.
+const MIN_VALID_YEAR = 1900
+const MAX_VALID_YEAR = new Date().getFullYear() + 1
+
 interface RecommendationControlsProps {
   readonly onQueryChange: (query: RecommendationQuery) => void
   // FRONTEND-040-AC-06/07/08: broadcasts whether a recommendations request is
@@ -580,9 +588,16 @@ export function RecommendationControls({
     updateState({ discoverSortBy })
   }
 
+  // FRONTEND-046: Custom Search is the one Discover sub-mode where Min TMDB
+  // Rating/Year Min/Year Max render inside the mode's own panel instead of
+  // the shared Filters disclosure box -- see applyRatingAndRangeFilters
+  // above, unchanged by this spec: these three fields are sent identically
+  // regardless of which JSX block renders their <input>.
+  const isCustomSearch =
+    state.mode === 'discover' && state.discoverMode === 'customSearch'
+
   const showGenreKeywordHint =
-    state.mode === 'discover' &&
-    state.discoverMode === 'customSearch' &&
+    isCustomSearch &&
     state.genresSelected.length === 0 &&
     state.keywordsSelected.length === 0
 
@@ -969,6 +984,70 @@ export function RecommendationControls({
                       </p>
                     )}
                   </div>
+
+                  {/* FRONTEND-046-AC-01: relocated out of the shared Filters
+                      box while Custom Search is active -- series_spec_031
+                      makes these three fields real TMDB discover/tv params
+                      for this mode specifically, so they're first-class here
+                      rather than a generic post-fetch filter. Field ids and
+                      updateField wiring are unchanged from their previous
+                      Filters-box location. .ratingYearRow/.fieldNarrow (no
+                      spec, layout-only) keep the three on one line instead of
+                      stacking full-width, since this panel is a flex column
+                      (.tabPanel) rather than the Filters box's own grid. */}
+                  <div className={styles.ratingYearRow}>
+                    <div className={`${styles.field} ${styles.fieldNarrow}`}>
+                      <label htmlFor="recommendation-min-tmdb-rating">
+                        Min TMDB Rating
+                      </label>
+                      <input
+                        id="recommendation-min-tmdb-rating"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="10"
+                        value={state.minTmdbRating}
+                        onChange={updateField('minTmdbRating')}
+                      />
+                    </div>
+
+                    <div className={`${styles.field} ${styles.fieldNarrow}`}>
+                      <label htmlFor="recommendation-year-min">Year Min</label>
+                      <input
+                        id="recommendation-year-min"
+                        type="number"
+                        min={MIN_VALID_YEAR}
+                        max={MAX_VALID_YEAR}
+                        value={state.yearMin}
+                        onChange={updateField('yearMin')}
+                      />
+                    </div>
+
+                    <div className={`${styles.field} ${styles.fieldNarrow}`}>
+                      <label htmlFor="recommendation-year-max">Year Max</label>
+                      <input
+                        id="recommendation-year-max"
+                        type="number"
+                        min={MIN_VALID_YEAR}
+                        max={MAX_VALID_YEAR}
+                        value={state.yearMax}
+                        onChange={updateField('yearMax')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* FRONTEND-046-AC-04: series_spec_031's year-range
+                      semantics for Custom Search specifically are
+                      episode-air-date based (matches any year the show had
+                      an episode air, not just its first season) -- different
+                      from every other mode, where Year Min/Max still filters
+                      post-fetch on first-air-date only. This hint makes that
+                      asymmetry visible instead of a silent surprise when a
+                      user switches tabs. */}
+                  <p className={styles.hint}>
+                    Year range matches any year the show had an episode air —
+                    not just its first season.
+                  </p>
                 </div>
               )}
             </div>
@@ -1074,7 +1153,7 @@ export function RecommendationControls({
           </button>
 
           {filtersOpen && (
-            <div className={styles.filtersBody}>
+            <div className={styles.filtersBody} data-testid="filters-body">
               {showMinSourceRating && (
                 <div className={styles.field}>
                   <label htmlFor="recommendation-min-source-rating">
@@ -1095,18 +1174,22 @@ export function RecommendationControls({
                 </div>
               )}
 
-              <div className={styles.field}>
-                <label htmlFor="recommendation-min-tmdb-rating">
-                  Min TMDB Rating
-                </label>
-                <input
-                  id="recommendation-min-tmdb-rating"
-                  type="number"
-                  step="0.1"
-                  value={state.minTmdbRating}
-                  onChange={updateField('minTmdbRating')}
-                />
-              </div>
+              {!isCustomSearch && (
+                <div className={styles.field}>
+                  <label htmlFor="recommendation-min-tmdb-rating">
+                    Min TMDB Rating
+                  </label>
+                  <input
+                    id="recommendation-min-tmdb-rating"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    value={state.minTmdbRating}
+                    onChange={updateField('minTmdbRating')}
+                  />
+                </div>
+              )}
 
               <div className={styles.field}>
                 <label htmlFor="recommendation-min-vote-count">
@@ -1120,25 +1203,33 @@ export function RecommendationControls({
                 />
               </div>
 
-              <div className={styles.field}>
-                <label htmlFor="recommendation-year-min">Year Min</label>
-                <input
-                  id="recommendation-year-min"
-                  type="number"
-                  value={state.yearMin}
-                  onChange={updateField('yearMin')}
-                />
-              </div>
+              {!isCustomSearch && (
+                <>
+                  <div className={styles.field}>
+                    <label htmlFor="recommendation-year-min">Year Min</label>
+                    <input
+                      id="recommendation-year-min"
+                      type="number"
+                      min={MIN_VALID_YEAR}
+                      max={MAX_VALID_YEAR}
+                      value={state.yearMin}
+                      onChange={updateField('yearMin')}
+                    />
+                  </div>
 
-              <div className={styles.field}>
-                <label htmlFor="recommendation-year-max">Year Max</label>
-                <input
-                  id="recommendation-year-max"
-                  type="number"
-                  value={state.yearMax}
-                  onChange={updateField('yearMax')}
-                />
-              </div>
+                  <div className={styles.field}>
+                    <label htmlFor="recommendation-year-max">Year Max</label>
+                    <input
+                      id="recommendation-year-max"
+                      type="number"
+                      min={MIN_VALID_YEAR}
+                      max={MAX_VALID_YEAR}
+                      value={state.yearMax}
+                      onChange={updateField('yearMax')}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className={styles.field}>
                 <label htmlFor="recommendation-exclude-genres">

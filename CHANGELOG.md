@@ -10,19 +10,24 @@ versioned together as one app.
 
 ### Fixed
 
+- Backend: Custom Search's `discover/tv` sourcing call (`RecommendationSourcingService.sourceByGenreOrKeyword`) now sends `minTmdbRating`/`yearMin`/`yearMax` to TMDB itself (`vote_average.gte`/`air_date.gte`/`air_date.lte`), not just as a post-fetch filter — a restrictive rating/year combination could previously return few/zero results from TMDB's single ~20-result unpaginated page even when real matches existed on results this app never asked for, the same class of bug `series_spec_029` fixed for `minVoteCount` (`series_spec_031`).
 - Frontend: `RecommendationControls` no longer renders "Max Per Source"/"Max Sources Shown" inputs — both were dead controls under every Discover mode (never applied to Discover sourcing/output), so removed entirely rather than mode-gated, pending a later "Use My Series" revamp that will redesign this concept; backend fields/behavior are unchanged, they simply fall back to existing config defaults now that the frontend never sends them (`frontend_spec_048`).
+- Backend: `minTmdbRating`/`yearMin`/`yearMax` were previously unvalidated — a negative or absurd value silently matched nothing (post-fetch) or, since the Custom Search pre-fetch change above, produced a malformed TMDB request. `RecommendationCriteriaValidator` now rejects `minTmdbRating` outside 0–10, `yearMin`/`yearMax` outside 1900–(current year + 1), and `yearMin` exceeding `yearMax`, all with a 400 (`series_spec_031`).
+- Frontend: the Min TMDB Rating and Year Min/Max inputs now carry `min`/`max`/`step` HTML attributes matching the backend's own bounds, so the spin arrows (and typed input, in browsers that enforce it) can no longer produce an out-of-range value in the first place — the backend validation above remains the actual enforcement (`frontend_spec_046`).
+
+### Changed
+
+- Backend: Custom Search's year filtering now matches on TMDB's _episode_ air date (`air_date.gte`/`.lte`) rather than a show's first-air year — a still-running older show (e.g. one airing continuously since 1989) can now match a recent year range instead of being excluded solely because its first episode predates it. This is scoped to Custom Search only; every other recommendation mode keeps matching on first-air year, unchanged (`series_spec_031`).
+- Frontend: `RecommendationControls` moves Min TMDB Rating, Year Min, and Year Max out of the generic Filters disclosure box and into Discover > Custom Search's own panel (alongside Genres/Keywords) while that sub-mode is active, with a new hint explaining the year range now matches any year the show had an episode air — reflecting `series_spec_031`'s Custom-Search-specific pre-fetch semantics above. Every other mode keeps these fields inside Filters, unchanged. No wire-format change (`frontend_spec_046`).
+- Frontend: the top nav is restyled from three unstyled `<button aria-pressed>` elements into a proper menu bar (new `App.module.css`) using real `<NavLink>`s with `aria-current="page"` for the active item, replacing the old `mainView` `useState` toggle (`frontend_spec_041`).
+- Frontend: `RecommendationControls`' "Automatic" and "Specific Series" source options merge into a single "Use My Series" tab — the Specific Series picker (search/filter/sort/browse-all) is now always visible underneath it, with a hint that narrowing is optional (`frontend_spec_042`).
+- Frontend: "Genre & Keyword" (renamed "Custom Search"), "Popular Right Now", and "Highest Rated" are grouped under a new "Discover" parent tab, selected via a nested second-level tab row shown only while Discover is active (`frontend_spec_042`).
+- Frontend: the "Recommendation Source" selector is now a real two-tier WAI-ARIA Tabs widget (`role="tablist"`/`"tab"`/`"tabpanel"`, `aria-selected`/`aria-controls`) instead of a flat radio `<fieldset>`, matching `frontend_spec_041`'s menu-bar visual language (`frontend_spec_042`).
 
 ### Added
 
 - Frontend: `App` gains real client-side routing via `react-router-dom` (`^7`, declarative mode) — the first router dependency this project has ever had — for the three top-level views: `/my-series`, `/recommendations`, `/keywords`. `/` and any unmatched path redirect to `/my-series` (`frontend_spec_041`).
 - Frontend: a placeholder logo/wordmark now sits at the start of the top nav, linking to `/my-series` from anywhere in the app (`frontend_spec_041`).
-
-### Changed
-
-- Frontend: the top nav is restyled from three unstyled `<button aria-pressed>` elements into a proper menu bar (new `App.module.css`) using real `<NavLink>`s with `aria-current="page"` for the active item, replacing the old `mainView` `useState` toggle (`frontend_spec_041`).
-- Frontend: `RecommendationControls`' "Automatic" and "Specific Series" source options merge into a single "Use My Series" tab — the Specific Series picker (search/filter/sort/browse-all) is now always visible underneath it, with a hint that narrowing is optional (`frontend_spec_042`).
-- Frontend: "Genre & Keyword" (renamed "Custom Search"), "Popular Right Now", and "Highest Rated" are grouped under a new "Discover" parent tab, selected via a nested second-level tab row shown only while Discover is active (`frontend_spec_042`).
-- Frontend: the "Recommendation Source" selector is now a real two-tier WAI-ARIA Tabs widget (`role="tablist"`/`"tab"`/`"tabpanel"`, `aria-selected`/`aria-controls`) instead of a flat radio `<fieldset>`, matching `frontend_spec_041`'s menu-bar visual language (`frontend_spec_042`).
 
 ## [2.19.2] - 2026-08-27
 
@@ -45,7 +50,7 @@ versioned together as one app.
 - Frontend: `RecommendationControls`' "Specific Series" mode replaces its checkbox-per-series list with a searchable `KeywordPicker` (type-to-filter, removable chips, capped default suggestion list via a new `SPECIFIC_SERIES_PICKER_LIMIT`/`VITE_SPECIFIC_SERIES_PICKER_LIMIT`, default 15) plus a "Show all series" browse-all modal mirroring `SearchFilter`'s "Browse all keywords" dialog (`frontend_spec_035`).
 - Frontend: the "Specific Series" picker gains client-side-only genre and status ("Any"/"Completed Only"/"Completed or Watching") filters and a sort control (reusing `SeriesList`'s sort field set/labels, defaulting to Title/ascending) that narrow and order its candidate pool; none of this is sent to the backend or affects the emitted `RecommendationQuery` (`frontend_spec_035`).
 - Frontend: `KeywordPicker`'s `options` prop now also accepts `PickerOption[]` (`{ id, label }`) alongside its existing `string[]` support, selecting/deduping by `id` and displaying by `label`, enabling reuse by the "Specific Series" picker without a fork (`frontend_spec_035`).
-- Frontend: `KeywordPicker` gains an optional `PickerOption.display` (rich `ReactNode` override for the suggestion button/chip, defaulting to plain `label`) — used by the "Specific Series" picker to render **bold title** | country - *italic status*, replacing the previous plain-text `title (year) — country (status)` format (cosmetic, no spec).
+- Frontend: `KeywordPicker` gains an optional `PickerOption.display` (rich `ReactNode` override for the suggestion button/chip, defaulting to plain `label`) — used by the "Specific Series" picker to render **bold title** | country - _italic status_, replacing the previous plain-text `title (year) — country (status)` format (cosmetic, no spec).
 - Frontend: the "Specific Series" picker's Filter by Genre now shares a row with Filter by Status and Sort by (two-column layout) instead of stacking full-width, since the genre checkbox list left a lot of empty width beside it — temporary until this section gets a proper sheet/modal-based filter redesign (layout-only, no spec).
 - Frontend: fixed `KeywordPicker`'s suggestion buttons and `RecommendationControls`' "Show all series" button rendering in the browser's default button font (Arial) instead of the app's system font — neither had ever set `font-family: inherit`, a pre-existing gap that only became visually obvious once bold/italic styling was added.
 

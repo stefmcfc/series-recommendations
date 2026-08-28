@@ -26,6 +26,14 @@ class RecommendationOutputFilterServiceSpec extends Specification {
         new DedupedCandidate(c, [], "tt" + c.tmdbId())
     }
 
+    private static DedupedCandidate candidateWithRating(BigDecimal voteAverage) {
+        dc(candidate(1, "Show", 2020, voteAverage))
+    }
+
+    private static DedupedCandidate candidateWithYear(Integer year) {
+        dc(candidate(1, "Show", year))
+    }
+
     def "SERIES-007-AC-24: minTmdbRating excludes candidates below the threshold"() {
         given: "two candidates: tmdbRating 5.0 and 8.0"
             def candidates = [dc(candidate(10, "Low", 2020, new BigDecimal("5.0"))), dc(candidate(20, "High", 2020, new BigDecimal("8.0")))]
@@ -220,6 +228,45 @@ class RecommendationOutputFilterServiceSpec extends Specification {
             def result = outputFilterService.applyOutputFilters(candidates, criteria)
 
         then: "the candidate is filtered out"
+            result.isEmpty()
+    }
+
+    // -- Spec 031, Requirement 3 (SERIES-031-AC-08..10): post-fetch minTmdbRating/year consistency --
+
+    def "SERIES-031-AC-08: post-fetch minTmdbRating check is unaffected"() {
+        given: "a candidate below the minTmdbRating threshold, and directed-by-genre criteria"
+            def criteria = new RecommendationCriteria(genres: ["Comedy"], minTmdbRating: new BigDecimal("8.0"))
+            def candidate = candidateWithRating(new BigDecimal("6.0"))
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate is still excluded, exactly as before this spec"
+            result.isEmpty()
+    }
+
+    def "SERIES-031-AC-09: post-fetch year check is skipped for Custom Search"() {
+        given: "a candidate whose first air year predates yearMin, but is a genre/keyword-directed request"
+            def criteria = new RecommendationCriteria(genres: ["Comedy"], yearMin: 2020, yearMax: 2024)
+            def candidate = candidateWithYear(1989) // e.g. The Simpsons -- still airing, TMDB's air_date
+                                                      // pre-filter already confirmed a match
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate survives -- the year check trusted TMDB's own pre-filter instead of re-checking"
+            result.size() == 1
+    }
+
+    def "SERIES-031-AC-10: post-fetch year check still runs for every other mode"() {
+        given: "a candidate outside the year range, and criteria NOT directed by genre/keyword"
+            def criteria = new RecommendationCriteria(yearMin: 2020, yearMax: 2024) // "Use My Series"
+            def candidate = candidateWithYear(1989)
+
+        when: "output filters run"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate is excluded, exactly as before this spec"
             result.isEmpty()
     }
 }

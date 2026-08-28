@@ -147,16 +147,14 @@ public class TmdbClient {
      * caller's explicit choice) before calling this method, so no null-handling is needed
      * here.
      *
-     * <p>{@code minVoteCount} is sent as {@code vote_count.gte} only when positive
-     * (SERIES-029-AC-06), mirroring {@link #discoverTopRated(int, String)}'s existing use of
-     * the same TMDB parameter -- a value of {@code 0} omits the parameter entirely rather than
-     * sending {@code vote_count.gte=0}, so a caller that doesn't want the floor produces a
-     * request identical to one with no {@code minVoteCount} concept at all.
+     * <p>{@code filters} carries every optional {@code discover/tv} narrowing param as one
+     * object (SERIES-031-AC-01/02/03/04) -- see {@link DiscoverFilters} for exactly which
+     * query param each field maps to and the "omit when unset" convention shared by all four.
      *
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
      */
-    public List<TmdbCandidate> discover(List<Integer> genreIds, List<Integer> keywordIds, String sortBy, int minVoteCount) {
+    public List<TmdbCandidate> discover(List<Integer> genreIds, List<Integer> keywordIds, String sortBy, DiscoverFilters filters) {
         Map<String, Object> body = fetch(uriBuilder -> {
             UriBuilder b = uriBuilder.path("discover/tv").queryParam("sort_by", sortBy);
             if (genreIds != null && !genreIds.isEmpty()) {
@@ -165,8 +163,17 @@ public class TmdbClient {
             if (keywordIds != null && !keywordIds.isEmpty()) {
                 b = b.queryParam("with_keywords", joinIds(keywordIds));
             }
-            if (minVoteCount > 0) {
-                b = b.queryParam("vote_count.gte", minVoteCount);
+            if (filters.minVoteCount() > 0) {
+                b = b.queryParam("vote_count.gte", filters.minVoteCount());
+            }
+            if (filters.minTmdbRating() != null) {
+                b = b.queryParam("vote_average.gte", filters.minTmdbRating());
+            }
+            if (filters.yearMin() != null) {
+                b = b.queryParam("air_date.gte", filters.yearMin() + "-01-01");
+            }
+            if (filters.yearMax() != null) {
+                b = b.queryParam("air_date.lte", filters.yearMax() + "-12-31");
             }
             return b;
         });
@@ -180,7 +187,7 @@ public class TmdbClient {
     /**
      * Globally trending TV shows via {@code GET /trending/tv/{timeWindow}} (SERIES-022-AC-01),
      * mapped identically to {@link #recommendations(int)}/{@link #similar(int)}/{@link
-     * #discover(List, List, String, int)} -- TMDB's own {@code results[]} ordering (its popularity ranking)
+     * #discover(List, List, String, DiscoverFilters)} -- TMDB's own {@code results[]} ordering (its popularity ranking)
      * is preserved, never re-sorted (SERIES-022-AC-04).
      *
      * @throws IllegalArgumentException if {@code timeWindow} is not {@code "day"} or {@code
@@ -200,12 +207,12 @@ public class TmdbClient {
     /**
      * TMDB's highest-rated TV shows overall, with a minimum vote-count floor, via {@code GET
      * /discover/tv?sort_by={sortBy}&vote_count.gte={minVoteCount}} (SERIES-022-AC-03) --
-     * mapped identically to {@link #discover(List, List, String, int)}, preserving TMDB's own
+     * mapped identically to {@link #discover(List, List, String, DiscoverFilters)}, preserving TMDB's own
      * returned order (SERIES-022-AC-04).
      *
      * <p>{@code sortBy} was a hardcoded {@code "vote_average.desc"} literal prior to
      * SERIES-025-AC-02; it's now a required parameter for the same reason {@link
-     * #discover(List, List, String, int)}'s is -- {@code RecommendationService} always resolves a
+     * #discover(List, List, String, DiscoverFilters)}'s is -- {@code RecommendationService} always resolves a
      * concrete default ({@code "vote_average.desc"} for this method) before calling it.
      *
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
