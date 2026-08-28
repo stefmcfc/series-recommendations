@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-08-28
+
 ### Fixed
 
 - Backend: `RecommendationService` no longer decides "Use My Series" (pool-based) sourcing by elimination — a request with only `minTmdbRating`/`yearMin`/`yearMax` set (no `genres`/`keywords`/`seriesIds`/`sourceMode`) was indistinguishable from a fully empty request and both silently fell back to pool-based sourcing, bypassing Custom Search's `discover/tv` call (and its pre-fetch filtering) entirely. `sourceMode` gains an explicit `useMySeries` value; Custom Search is now the default/fallback path reached whenever a request isn't explicitly `trending`/`topRated`/`useMySeries` (or carries a `seriesIds` selection) (`series_spec_033`).
