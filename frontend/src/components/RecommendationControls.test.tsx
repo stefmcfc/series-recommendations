@@ -21,6 +21,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     id: '1',
     title: 'Ozark',
     year: 2017,
+    lastAirYear: null,
     genres: 'Crime, Drama',
     tags: null,
     totalSeasons: 4,

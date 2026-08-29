@@ -24,6 +24,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     id: 'test-id',
     title: 'Test Show',
     year: null,
+    lastAirYear: null,
     genres: null,
     tags: null,
     totalSeasons: null,
@@ -88,6 +89,34 @@ describe('SH-002: Loading state', () => {
     await waitFor(() =>
       expect(screen.queryByRole('status')).not.toBeInTheDocument(),
     )
+  })
+})
+
+describe('FRONTEND-058-AC-02: year range display', () => {
+  it('shows a closed year range for an ended show', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        title: 'Ozark',
+        year: 2017,
+        lastAirYear: 2022,
+        productionStatus: 'ENDED',
+      }),
+    ])
+    render(<SeriesList />)
+    expect(await screen.findByText('Ozark (2017-2022)')).toBeInTheDocument()
+  })
+
+  it('shows an open-ended year range for a running show', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        title: 'The Simpsons',
+        year: 1989,
+        lastAirYear: 2025,
+        productionStatus: 'RETURNING_SERIES',
+      }),
+    ])
+    render(<SeriesList />)
+    expect(await screen.findByText('The Simpsons (1989-)')).toBeInTheDocument()
   })
 })
 

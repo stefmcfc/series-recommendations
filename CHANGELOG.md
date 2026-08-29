@@ -11,6 +11,7 @@ versioned together as one app.
 ### Added
 
 - Backend: series gain `lastAirYear`, the year of TMDB's `last_air_date` for a series' most recently aired episode — resolved at create time and re-resolved on every refresh, the same way `productionStatus`/`originCountry` already are (`series_spec_039`).
+- Frontend: `SeriesList`'s row title and `SeriesDetail`'s header now display a year range (`"Ozark (2017-2022)"` for an ended/canceled show, `"The Simpsons (1989-)"` for one still running) instead of only the single stored `year`, via a new shared `formatSeriesYear` utility (`frontend_spec_058`).
 
 ### Changed
 

@@ -1,6 +1,10 @@
 # Frontend Spec 058: Series Year Range Display (`2020-2024` / `2025-`)
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/utils/formatSeriesYear.ts` (new),
+`frontend/src/utils/formatSeriesYear.test.ts` (new),
+`frontend/src/components/SeriesList.tsx`, `frontend/src/components/SeriesList.test.tsx`,
+`frontend/src/components/SeriesDetail.tsx`, `frontend/src/components/SeriesDetail.test.tsx`,
+`frontend/src/types/series.ts` (added `lastAirYear: number | null` to `Series`)
 **Priority**: P3 (paired display half of `series_spec_039`)
 **Depends on**: Series Spec 039 (`series_spec_039_last_air_year.md`, owns `Series.lastAirYear`) ✅
 required
@@ -104,5 +108,5 @@ it('FRONTEND-058-AC-02: SeriesDetail shows an open-ended range for a running sho
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-058-AC-01: `formatSeriesYear` covers all branches correctly
-- [ ] FRONTEND-058-AC-02: `SeriesList`/`SeriesDetail` both use the shared helper
+- [x] FRONTEND-058-AC-01: `formatSeriesYear` covers all branches correctly
+- [x] FRONTEND-058-AC-02: `SeriesList`/`SeriesDetail` both use the shared helper

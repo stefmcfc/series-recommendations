@@ -14,6 +14,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     id: 'test-id',
     title: 'Test Show',
     year: 2020,
+    lastAirYear: null,
     genres: 'Drama',
     tags: null,
     totalSeasons: 5,

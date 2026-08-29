@@ -18,6 +18,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     id: 'abc-123',
     title: 'The Office',
     year: 2005,
+    lastAirYear: null,
     genres: 'Comedy',
     tags: null,
     totalSeasons: 9,
@@ -64,6 +65,36 @@ describe('FRONTEND-005-AC-04/06/07: fetch, loading, render', () => {
     expect(mockGetById).toHaveBeenCalledWith('abc-123')
     expect(screen.getByText('Rewatch of the year')).toBeInTheDocument()
     expect(screen.getByLabelText('Personal rating')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-058-AC-02: year range display', () => {
+  it('shows an open-ended year range for a running show', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        title: 'The Simpsons',
+        year: 1989,
+        lastAirYear: 2025,
+        productionStatus: 'RETURNING_SERIES',
+      }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('The Simpsons (1989-)')).toBeInTheDocument()
+  })
+
+  it('shows a closed year range for an ended show', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        title: 'Ozark',
+        year: 2017,
+        lastAirYear: 2022,
+        productionStatus: 'ENDED',
+      }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByText('Ozark (2017-2022)')).toBeInTheDocument()
   })
 })
 

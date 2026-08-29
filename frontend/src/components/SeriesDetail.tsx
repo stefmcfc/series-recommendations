@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { Series, StreamingProvider } from '../types/series'
 import { formatCountryName } from '../utils/countryName'
+import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
 import { SeriesDetailFields } from './SeriesDetailFields'
@@ -242,6 +243,8 @@ export function SeriesDetail({
     </button>
   )
 
+  const yearLabel = series ? formatSeriesYear(series) : ''
+
   return (
     <div className={styles.container}>
       {backButton}
@@ -275,9 +278,9 @@ export function SeriesDetail({
         <div className={styles.detail}>
           <div className={styles.headingRow}>
             <h2 className={styles.heading}>
-              {series.year != null
-                ? `${series.title} (${series.year})`
-                : series.title}
+              {yearLabel === ''
+                ? series.title
+                : `${series.title} (${yearLabel})`}
             </h2>
             {series.originCountry != null && (
               <span className={styles.country}>

@@ -10,6 +10,7 @@ import type {
 } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { formatCountryName } from '../utils/countryName'
+import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
 import { StarRating } from './StarRating'
@@ -476,147 +477,150 @@ export function SeriesList({
 
       {!loading && !error && series.length > 0 && (
         <ul className={styles.list}>
-          {series.map((s) => (
-            // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-cancels-delete-confirmation (frontend_spec_008.md FRONTEND-008-AC-06) relies on the keydown bubbling up from whichever Confirm/Cancel button currently has focus; the <li> itself is intentionally non-interactive (no role/tabIndex — see frontend_spec_008.md) and isn't a keyboard-interaction target on its own.
-            <li
-              key={s.id}
-              className={styles.row}
-              data-testid="series-row"
-              onKeyDown={(e) => handleRowKeyDown(e, s.id)}
-            >
-              <div className={styles.rowPrimary}>
-                <div
-                  className={styles.thumbnail}
-                  data-testid="series-thumbnail"
-                >
-                  {s.posterUrl !== null && !posterErrorIds.has(s.id) && (
-                    <img
-                      src={s.posterUrl}
-                      alt=""
-                      className={styles.thumbnailImage}
-                      onError={() => handlePosterError(s.id)}
-                    />
-                  )}
-                </div>
-                <div className={styles.titleGroup}>
-                  <button
-                    type="button"
-                    className={styles.title}
-                    onClick={() => handleRowClick(s.id)}
+          {series.map((s) => {
+            const yearLabel = formatSeriesYear(s)
+            return (
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-cancels-delete-confirmation (frontend_spec_008.md FRONTEND-008-AC-06) relies on the keydown bubbling up from whichever Confirm/Cancel button currently has focus; the <li> itself is intentionally non-interactive (no role/tabIndex — see frontend_spec_008.md) and isn't a keyboard-interaction target on its own.
+              <li
+                key={s.id}
+                className={styles.row}
+                data-testid="series-row"
+                onKeyDown={(e) => handleRowKeyDown(e, s.id)}
+              >
+                <div className={styles.rowPrimary}>
+                  <div
+                    className={styles.thumbnail}
+                    data-testid="series-thumbnail"
                   >
-                    {s.year != null ? `${s.title} (${s.year})` : s.title}
-                  </button>
-                  {s.originCountry != null && (
-                    <span className={styles.country}>
-                      {' | '}
-                      {formatCountryName(s.originCountry)}
-                    </span>
-                  )}
-                </div>
-                <span className={styles.rating}>
-                  {activeRating(s, sortBy).value ?? '—'}
-                  <span className={styles.ratingSource}>
-                    {' '}
-                    {activeRating(s, sortBy).source}
-                  </span>
-                </span>
-                <StarRating value={s.personalRating} />
-
-                {confirmingDeleteId === s.id ? (
-                  <div className={styles.rowActions}>
-                    {deleteError && (
-                      <span className={styles.deleteError} role="alert">
-                        {deleteError}
+                    {s.posterUrl !== null && !posterErrorIds.has(s.id) && (
+                      <img
+                        src={s.posterUrl}
+                        alt=""
+                        className={styles.thumbnailImage}
+                        onError={() => handlePosterError(s.id)}
+                      />
+                    )}
+                  </div>
+                  <div className={styles.titleGroup}>
+                    <button
+                      type="button"
+                      className={styles.title}
+                      onClick={() => handleRowClick(s.id)}
+                    >
+                      {yearLabel === '' ? s.title : `${s.title} (${yearLabel})`}
+                    </button>
+                    {s.originCountry != null && (
+                      <span className={styles.country}>
+                        {' | '}
+                        {formatCountryName(s.originCountry)}
                       </span>
                     )}
-                    <button
-                      type="button"
-                      className={styles.confirmDeleteButton}
-                      data-testid="confirm-delete-btn"
-                      disabled={deleting}
-                      onClick={(e) => handleConfirmDelete(e, s.id)}
-                    >
-                      {deleting ? 'Deleting...' : 'Confirm'}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.cancelDeleteButton}
-                      data-testid="cancel-delete-btn"
-                      disabled={deleting}
-                      onClick={handleCancelDelete}
-                    >
-                      Cancel
-                    </button>
                   </div>
-                ) : (
-                  <div className={styles.rowActions}>
-                    <button
-                      type="button"
-                      className={styles.editButton}
-                      data-testid="edit-series-btn"
-                      aria-label={`Edit ${s.title}`}
-                      onClick={(e) => handleEditClick(e, s)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.deleteButton}
-                      data-testid="delete-series-btn"
-                      aria-label={`Delete ${s.title}`}
-                      onClick={(e) => handleDeleteClick(e, s.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.rowSecondary}>
-                <div className={styles.rowSecondaryLeft}>
-                  {s.genres != null && s.genres.trim() !== '' && (
-                    <span className={styles.genres}>{s.genres}</span>
-                  )}
-                  <span className={styles.status}>{s.status}</span>
-                  {s.newContentDetectedAt != null && (
-                    <span
-                      className={styles.newContentBadge}
-                      data-testid="new-content-badge"
-                    >
-                      New content
+                  <span className={styles.rating}>
+                    {activeRating(s, sortBy).value ?? '—'}
+                    <span className={styles.ratingSource}>
+                      {' '}
+                      {activeRating(s, sortBy).source}
                     </span>
+                  </span>
+                  <StarRating value={s.personalRating} />
+
+                  {confirmingDeleteId === s.id ? (
+                    <div className={styles.rowActions}>
+                      {deleteError && (
+                        <span className={styles.deleteError} role="alert">
+                          {deleteError}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.confirmDeleteButton}
+                        data-testid="confirm-delete-btn"
+                        disabled={deleting}
+                        onClick={(e) => handleConfirmDelete(e, s.id)}
+                      >
+                        {deleting ? 'Deleting...' : 'Confirm'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.cancelDeleteButton}
+                        data-testid="cancel-delete-btn"
+                        disabled={deleting}
+                        onClick={handleCancelDelete}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.rowActions}>
+                      <button
+                        type="button"
+                        className={styles.editButton}
+                        data-testid="edit-series-btn"
+                        aria-label={`Edit ${s.title}`}
+                        onClick={(e) => handleEditClick(e, s)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        data-testid="delete-series-btn"
+                        aria-label={`Delete ${s.title}`}
+                        onClick={(e) => handleDeleteClick(e, s.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   )}
                 </div>
 
-                <div className={styles.rowSecondaryRight}>
-                  {s.status === SeriesStatus.COMPLETED && (
-                    <button
-                      type="button"
-                      className={`${styles.rewatchToggle} ${
-                        s.flaggedForRewatch ? styles.rewatchToggleActive : ''
-                      }`}
-                      aria-label={
-                        s.flaggedForRewatch
-                          ? 'Flagged for rewatch'
-                          : 'Flag for rewatch'
-                      }
-                      aria-pressed={s.flaggedForRewatch}
-                      onClick={() =>
-                        handleRewatchToggle(s.id, s.flaggedForRewatch)
-                      }
-                    >
-                      {s.flaggedForRewatch ? 'Flagged' : 'Rewatch'}
-                    </button>
-                  )}
-                  {rewatchErrors[s.id] && (
-                    <span className={styles.rewatchError} role="alert">
-                      {rewatchErrors[s.id]}
-                    </span>
-                  )}
+                <div className={styles.rowSecondary}>
+                  <div className={styles.rowSecondaryLeft}>
+                    {s.genres != null && s.genres.trim() !== '' && (
+                      <span className={styles.genres}>{s.genres}</span>
+                    )}
+                    <span className={styles.status}>{s.status}</span>
+                    {s.newContentDetectedAt != null && (
+                      <span
+                        className={styles.newContentBadge}
+                        data-testid="new-content-badge"
+                      >
+                        New content
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={styles.rowSecondaryRight}>
+                    {s.status === SeriesStatus.COMPLETED && (
+                      <button
+                        type="button"
+                        className={`${styles.rewatchToggle} ${
+                          s.flaggedForRewatch ? styles.rewatchToggleActive : ''
+                        }`}
+                        aria-label={
+                          s.flaggedForRewatch
+                            ? 'Flagged for rewatch'
+                            : 'Flag for rewatch'
+                        }
+                        aria-pressed={s.flaggedForRewatch}
+                        onClick={() =>
+                          handleRewatchToggle(s.id, s.flaggedForRewatch)
+                        }
+                      >
+                        {s.flaggedForRewatch ? 'Flagged' : 'Rewatch'}
+                      </button>
+                    )}
+                    {rewatchErrors[s.id] && (
+                      <span className={styles.rewatchError} role="alert">
+                        {rewatchErrors[s.id]}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
       )}
     </div>
