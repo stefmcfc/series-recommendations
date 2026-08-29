@@ -1032,3 +1032,42 @@ describe('FRONTEND-006-AC-14/15: filtered empty state', () => {
     expect(screen.getByTestId('add-series-btn')).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-059-AC-01: genres shown before status', () => {
+  it('renders genres before the status text when present', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ genres: 'Drama, Crime', status: SeriesStatus.WATCHING }),
+    ])
+    render(<SeriesList />)
+
+    const row = await screen.findByTestId('series-row')
+    expect(within(row).getByText('Drama, Crime')).toBeInTheDocument()
+
+    const rowSecondaryLeft = within(row).getByText('Drama, Crime').parentElement
+    const children = Array.from(rowSecondaryLeft!.children).map(
+      (el) => el.textContent,
+    )
+    expect(children.indexOf('Drama, Crime')).toBeLessThan(
+      children.indexOf('WATCHING'),
+    )
+  })
+
+  it('renders nothing extra when genres is null', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ genres: null, status: SeriesStatus.WATCHING }),
+    ])
+    render(<SeriesList />)
+    const row = await screen.findByTestId('series-row')
+    expect(within(row).getByText('WATCHING')).toBeInTheDocument()
+  })
+
+  it('renders nothing extra when genres is blank', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ genres: '   ', status: SeriesStatus.WATCHING }),
+    ])
+    render(<SeriesList />)
+    const row = await screen.findByTestId('series-row')
+    expect(within(row).queryByText('   ')).not.toBeInTheDocument()
+    expect(within(row).getByText('WATCHING')).toBeInTheDocument()
+  })
+})

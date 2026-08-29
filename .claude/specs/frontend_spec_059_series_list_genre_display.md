@@ -1,6 +1,7 @@
 # Frontend Spec 059: Show Genres on `SeriesList`'s Expanded Row View
 
-**Status**: Not started
+**Status**: Implemented (2026-08-29). Files: `frontend/src/components/SeriesList.tsx`,
+`frontend/src/components/SeriesList.module.css`, `frontend/src/components/SeriesList.test.tsx`.
 **Priority**: P3 (small display addition, bundled into the `feature/search-filter-overhaul` branch
 alongside `frontend_spec_055`'s amendments per direct instruction)
 **Depends on**: Frontend Spec 002 (`frontend_spec_002.md`, owns `SeriesList.tsx`) ✅
@@ -79,4 +80,4 @@ this is plain metadata text, not a status indicator).
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-059-AC-01: genres render before status text when present, nothing extra when absent
+- [x] FRONTEND-059-AC-01: genres render before status text when present, nothing extra when absent

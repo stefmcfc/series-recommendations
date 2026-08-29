@@ -574,6 +574,9 @@ export function SeriesList({
 
               <div className={styles.rowSecondary}>
                 <div className={styles.rowSecondaryLeft}>
+                  {s.genres != null && s.genres.trim() !== '' && (
+                    <span className={styles.genres}>{s.genres}</span>
+                  )}
                   <span className={styles.status}>{s.status}</span>
                   {s.newContentDetectedAt != null && (
                     <span

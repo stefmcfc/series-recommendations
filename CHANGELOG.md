@@ -12,13 +12,17 @@ versioned together as one app.
 
 - Backend: `GET /api/v1/series/search` (and `/export`) no longer accept `maxPersonalRating`, `maxImdbRating`, or `startedNotFinished` — confirmed genuinely unused, dropped outright rather than deprecated. **Breaking change** to this endpoint's query contract (`series_spec_037`).
 - Frontend: `SearchFilter` no longer renders Max Personal Rating, Max IMDb Rating, or "Started, not finished" — mirrors the backend removal above (`frontend_spec_055`).
+- Frontend: `SearchFilter` no longer renders a Status dropdown — pulled forward from the upcoming status-tabs work (`frontend_spec_056`); the backend `status` search param still works, only this UI control is gone for now (`frontend_spec_055`).
 
 ### Added
 
 - Backend: `GET /api/v1/series/search` (and `/export`) gain `minTmdbRating` and `yearMin`/`yearMax` query params, mirroring `minImdbRating`'s null-handling shape. `yearMin`/`yearMax` match only the series' single stored first-aired `year` — a documented stopgap ahead of true episode-air-date range semantics (`series_spec_037`).
 - Frontend: `SearchFilter` gains Min TMDB Rating and Min/Max Year number inputs, sending `minTmdbRating`/`yearMin`/`yearMax` to match the backend's new query params above (`frontend_spec_055`).
 - Frontend: `SearchFilter`'s Genres field is now a checkbox list (one checkbox per genre from `seriesApi.getGenreOptions()`, the same pattern `RecommendationControls` already used) instead of a free-text input (`frontend_spec_055`).
-- Frontend: `SearchFilter`'s fields now sit behind a collapsible "Hide Filters"/"Show Filters" panel, reusing `RecommendationControls`' disclosure pattern but defaulting to open since `SearchFilter` is the primary filter surface on the main page (`frontend_spec_055`).
+- Frontend: `SearchFilter`'s fields now sit behind a collapsible "Hide Filters"/"Show Filters" panel, reusing `RecommendationControls`' disclosure pattern, including its `filtersOpen` default of closed so both panels behave consistently (`frontend_spec_055`).
+- Frontend: `SearchFilter`'s Min IMDb Rating, Min TMDB Rating, Min Year, and Max Year inputs now carry the same `min`/`max`/`step` HTML validation bounds `RecommendationControls`' Custom Search fields already use, via a new shared `frontend/src/utils/yearBounds.ts` (also adopted by `RecommendationControls.tsx` in place of its own local constants) (`frontend_spec_055`).
+- Frontend: `SearchFilter`'s Min Personal Rating field is now the interactive `StarRating` component (click-to-set/click-again-to-clear) instead of a plain number input, matching how personal ratings are set everywhere else in the app (`frontend_spec_055`).
+- Frontend: `SeriesList`'s expanded row view now shows a series' genres immediately before its status, when present (`frontend_spec_059`).
 
 ### Fixed
 
