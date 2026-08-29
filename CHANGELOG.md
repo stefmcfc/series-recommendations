@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-08-29
+
 ### Added
 
 - Backend: series gain `lastAirYear`, the year of TMDB's `last_air_date` for a series' most recently aired episode — resolved at create time and re-resolved on every refresh, the same way `productionStatus`/`originCountry` already are (`series_spec_039`).
