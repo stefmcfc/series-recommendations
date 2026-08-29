@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-08-29
+
+### Added
+
+- Frontend: a status tab bar (All/Watching/Completed/Backlog/Dropped) now sits above `SeriesList`, each tab its own bookmarkable URL (`/my-series`, `/my-series/watching`, `/my-series/completed`, `/my-series/backlog`, `/my-series/dropped`) — replaces the removed `SearchFilter` Status dropdown as the only way to filter by status, with a fifth Dropped tab added so no filtering capability was lost (`frontend_spec_056`).
+
 ## [3.0.0] - 2026-08-29
 
 ### Removed
@@ -25,7 +31,6 @@ versioned together as one app.
 - Frontend: `SearchFilter`'s Min IMDb Rating, Min TMDB Rating, Min Year, and Max Year inputs now carry the same `min`/`max`/`step` HTML validation bounds `RecommendationControls`' Custom Search fields already use, via a new shared `frontend/src/utils/yearBounds.ts` (also adopted by `RecommendationControls.tsx` in place of its own local constants) (`frontend_spec_055`).
 - Frontend: `SearchFilter`'s Min Personal Rating field is now the interactive `StarRating` component (click-to-set/click-again-to-clear) instead of a plain number input, matching how personal ratings are set everywhere else in the app (`frontend_spec_055`).
 - Frontend: `SeriesList`'s expanded row view now shows a series' genres immediately before its status, when present (`frontend_spec_059`).
-- Frontend: a status tab bar (All/Watching/Completed/Backlog/Dropped) now sits above `SeriesList`, each tab its own bookmarkable URL (`/my-series`, `/my-series/watching`, `/my-series/completed`, `/my-series/backlog`, `/my-series/dropped`) — replaces the removed `SearchFilter` Status dropdown as the only way to filter by status, with a fifth Dropped tab added so no filtering capability was lost (`frontend_spec_056`).
 
 ### Fixed
 
