@@ -159,6 +159,7 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     render(<App />)
     await screen.findByText('The Office')
 
+    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -178,6 +179,7 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     render(<App />)
     await screen.findByTestId('clear-filters-btn')
 
+    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -229,6 +231,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     render(<App />)
     await screen.findByText('The Office')
 
+    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })

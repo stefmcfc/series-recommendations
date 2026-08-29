@@ -1,13 +1,13 @@
 # Frontend Spec 055: `SearchFilter` Overhaul — Field Changes, Genre Checkboxes, Collapsible Panel
 
-**Status**: Amended (2026-08-29, pre-merge review feedback on the still-open PR) — Requirements 1-3
-implemented and unaffected; Requirement 4's default flipped, and Requirements 5-7 added below.
-Files: `frontend/src/components/SearchFilter.tsx`,
-`frontend/src/components/SearchFilter.module.css`,
+**Status**: Implemented (2026-08-29) — all seven requirements complete, including the pre-merge
+amendments (Requirement 4's default flipped to closed; Requirements 5-7 added). Files:
+`frontend/src/components/SearchFilter.tsx`, `frontend/src/components/SearchFilter.module.css`,
 `frontend/src/components/SearchFilter.test.tsx`, `frontend/src/types/series.ts`,
 `frontend/src/services/seriesApi.ts`,
-`frontend/src/services/__tests__/seriesApi.test.ts`, `frontend/src/App.test.tsx`, new
-`frontend/src/utils/yearBounds.ts`
+`frontend/src/services/__tests__/seriesApi.test.ts`, `frontend/src/App.test.tsx`,
+`frontend/src/components/RecommendationControls.tsx` (import-only change, extracted
+`MIN_VALID_YEAR`/`MAX_VALID_YEAR`), new `frontend/src/utils/yearBounds.ts`
 **Priority**: P3 (paired UI half of `series_spec_037`, plus two independent UI improvements — genre
 as checkboxes, a collapsible panel)
 **Depends on**: Series Spec 037 (`series_spec_037_search_filter_overhaul.md`, owns the
@@ -313,7 +313,7 @@ it('FRONTEND-055-AC-07: no longer renders a Status field', () => {
 - [x] FRONTEND-055-AC-01: Max Personal Rating/Max IMDb Rating/Started-not-finished removed
 - [x] FRONTEND-055-AC-02: Min TMDB Rating and Min/Max Year submit correctly
 - [x] FRONTEND-055-AC-03: Genres render and submit as checkboxes
-- [ ] FRONTEND-055-AC-04: the filter panel is collapsible, **closed** by default (amended)
-- [ ] FRONTEND-055-AC-05: rating/year fields carry the same validation bounds as Custom Search
-- [ ] FRONTEND-055-AC-06: Min Personal Rating is set via `StarRating`
-- [ ] FRONTEND-055-AC-07: the Status dropdown is removed
+- [x] FRONTEND-055-AC-04: the filter panel is collapsible, **closed** by default (amended)
+- [x] FRONTEND-055-AC-05: rating/year fields carry the same validation bounds as Custom Search
+- [x] FRONTEND-055-AC-06: Min Personal Rating is set via `StarRating`
+- [x] FRONTEND-055-AC-07: the Status dropdown is removed

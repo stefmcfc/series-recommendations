@@ -10,6 +10,7 @@ import {
 } from '../utils/keywordSuggestions'
 import { formatCountryName } from '../utils/countryName'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
+import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import styles from './RecommendationControls.module.css'
 
 // FRONTEND-047: Country reuses KeywordPicker's own pinned-option support
@@ -94,13 +95,13 @@ type DiscoverSortByOption =
   | 'first_air_date.desc'
   | 'vote_count.desc'
 
-// SERIES-031-AC-12: mirrors the backend's own RecommendationCriteriaValidator
-// bound exactly (1900 to current year + 1) -- these min/max attributes are a
-// UX nicety (constrains the number input's spin arrows, gives the browser a
-// validation hint), not the actual enforcement; the backend rejects an
-// out-of-range value regardless of what the frontend allows through.
-const MIN_VALID_YEAR = 1900
-const MAX_VALID_YEAR = new Date().getFullYear() + 1
+// SERIES-031-AC-12 / FRONTEND-055-AC-05: mirrors the backend's own
+// RecommendationCriteriaValidator bound exactly (1900 to current year + 1) --
+// these min/max attributes are a UX nicety (constrains the number input's
+// spin arrows, gives the browser a validation hint), not the actual
+// enforcement; the backend rejects an out-of-range value regardless of what
+// the frontend allows through. Relocated to a shared util so SearchFilter.tsx
+// can use the identical bounds without duplicating the constants.
 
 interface RecommendationControlsProps {
   readonly onQueryChange: (query: RecommendationQuery) => void

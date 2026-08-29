@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { seriesApi } from '../services/seriesApi'
-import { SeriesStatus } from '../types/series'
 import type { SearchCriteria } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
+import { StarRating } from './StarRating'
+import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import styles from './SearchFilter.module.css'
 
 interface SearchFilterProps {
@@ -14,8 +15,10 @@ interface FormState {
   title: string
   genresSelected: string[]
   keywordsSelected: string[]
-  status: SeriesStatus | ''
-  minPersonalRating: string
+  // FRONTEND-055-AC-06: number|null (not string) to match StarRating's own
+  // value/onChange shape directly -- no string parsing needed for this
+  // field anymore.
+  minPersonalRating: number | null
   minImdbRating: string
   minTmdbRating: string
   yearMin: string
@@ -27,8 +30,7 @@ const initialFormState: FormState = {
   title: '',
   genresSelected: [],
   keywordsSelected: [],
-  status: '',
-  minPersonalRating: '',
+  minPersonalRating: null,
   minImdbRating: '',
   minTmdbRating: '',
   yearMin: '',
@@ -46,10 +48,8 @@ function buildCriteria(form: FormState): SearchCriteria {
   if (form.keywordsSelected.length > 0)
     criteria.keywords = form.keywordsSelected
 
-  if (form.status !== '') criteria.status = form.status
-
-  if (form.minPersonalRating.trim() !== '')
-    criteria.minPersonalRating = Number(form.minPersonalRating)
+  if (form.minPersonalRating != null)
+    criteria.minPersonalRating = form.minPersonalRating
   if (form.minImdbRating.trim() !== '')
     criteria.minImdbRating = Number(form.minImdbRating)
   if (form.minTmdbRating.trim() !== '')
@@ -70,11 +70,12 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   )
   const [genreOptions, setGenreOptions] = useState<string[]>([])
   const [browseModalOpen, setBrowseModalOpen] = useState(false)
-  // FRONTEND-055-AC-04: defaults to open, unlike RecommendationControls'
-  // own filtersOpen default of false -- SearchFilter is the primary,
-  // most-used filter surface on the main "My Series" page (see this spec's
-  // Design Decisions for why the default deliberately differs).
-  const [filtersOpen, setFiltersOpen] = useState(true)
+  // FRONTEND-055-AC-04 (amended 2026-08-29): defaults to closed, matching
+  // RecommendationControls.tsx's own filtersOpen default exactly, so both
+  // panels behave consistently. (Originally specced to default open,
+  // reasoning SearchFilter was the primary filter surface -- reversed per
+  // direct instruction; see this spec's Design Decisions.)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
     seriesApi
@@ -95,10 +96,22 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   }, [])
 
   const updateField =
-    (field: keyof FormState) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (
+      field: Exclude<
+        keyof FormState,
+        | 'genresSelected'
+        | 'keywordsSelected'
+        | 'minPersonalRating'
+        | 'flaggedForRewatch'
+      >,
+    ) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }))
     }
+
+  const handleMinPersonalRatingChange = (value: number | null) => {
+    setForm((prev) => ({ ...prev, minPersonalRating: value }))
+  }
 
   const updateCheckbox =
     (field: keyof FormState) =>
@@ -215,29 +228,10 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
               </div>
 
               <div className={styles.field}>
-                <label htmlFor="search-status">Status</label>
-                <select
-                  id="search-status"
-                  value={form.status}
-                  onChange={updateField('status')}
-                >
-                  <option value="">Any status</option>
-                  <option value={SeriesStatus.WATCHING}>Watching</option>
-                  <option value={SeriesStatus.COMPLETED}>Completed</option>
-                  <option value={SeriesStatus.DROPPED}>Dropped</option>
-                  <option value={SeriesStatus.BACKLOG}>Backlog</option>
-                </select>
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="search-min-personal-rating">
-                  Min Personal Rating
-                </label>
-                <input
-                  id="search-min-personal-rating"
-                  type="number"
+                <span>Min Personal Rating</span>
+                <StarRating
                   value={form.minPersonalRating}
-                  onChange={updateField('minPersonalRating')}
+                  onChange={handleMinPersonalRatingChange}
                 />
               </div>
 
@@ -246,6 +240,8 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
                 <input
                   id="search-min-imdb-rating"
                   type="number"
+                  min="0"
+                  max="10"
                   step="0.1"
                   value={form.minImdbRating}
                   onChange={updateField('minImdbRating')}
@@ -257,6 +253,8 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
                 <input
                   id="search-min-tmdb-rating"
                   type="number"
+                  min="0"
+                  max="10"
                   step="0.1"
                   value={form.minTmdbRating}
                   onChange={updateField('minTmdbRating')}
@@ -268,6 +266,8 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
                 <input
                   id="search-year-min"
                   type="number"
+                  min={MIN_VALID_YEAR}
+                  max={MAX_VALID_YEAR}
                   value={form.yearMin}
                   onChange={updateField('yearMin')}
                 />
@@ -278,6 +278,8 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
                 <input
                   id="search-year-max"
                   type="number"
+                  min={MIN_VALID_YEAR}
+                  max={MAX_VALID_YEAR}
                   value={form.yearMax}
                   onChange={updateField('yearMax')}
                 />
