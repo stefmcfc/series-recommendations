@@ -49,6 +49,12 @@ public class SeriesLookupDto {
     // precedent as originCountry/productionStatus above.
     private String overview;
 
+    // series_spec_039_last_air_year.md (SERIES-039-AC-03): the resolved candidate's most
+    // recent last_air_date year, sourced from TmdbSeriesDetail.lastAirYear() -- round-tripped
+    // so the add-series form can carry it into the create payload, same precedent as
+    // originCountry/productionStatus/overview above.
+    private Integer lastAirYear;
+
     public SeriesLookupDto() {
         // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
     }
@@ -97,4 +103,7 @@ public class SeriesLookupDto {
 
     public String getOverview() { return overview; }
     public void setOverview(String overview) { this.overview = overview; }
+
+    public Integer getLastAirYear() { return lastAirYear; }
+    public void setLastAirYear(Integer lastAirYear) { this.lastAirYear = lastAirYear; }
 }

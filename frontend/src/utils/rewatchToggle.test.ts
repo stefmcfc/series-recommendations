@@ -11,6 +11,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     id: 'abc-123',
     title: 'The Office',
     year: 2005,
+    lastAirYear: null,
     genres: 'Comedy',
     tags: null,
     totalSeasons: 9,

@@ -11,6 +11,10 @@ export interface Series {
   id: string
   title: string
   year: number | null
+  // SERIES-039/FRONTEND-058: most recent air year, resolved the same way as
+  // productionStatus/originCountry -- null when not yet resolved. Combined
+  // with productionStatus to render a year range (see formatSeriesYear).
+  lastAirYear: number | null
   genres: string | null
   tags: string | null
   totalSeasons: number | null

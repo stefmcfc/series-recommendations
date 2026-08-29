@@ -126,6 +126,7 @@ public class SeriesLookupService {
         dto.setOriginCountry(detail.originCountry());
         dto.setProductionStatus(detail.productionStatus() != null ? detail.productionStatus().name() : null);
         dto.setOverview(detail.overview());
+        dto.setLastAirYear(detail.lastAirYear());
         return dto;
     }
 

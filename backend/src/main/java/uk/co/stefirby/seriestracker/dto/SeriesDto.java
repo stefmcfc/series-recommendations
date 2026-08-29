@@ -54,6 +54,12 @@ public class SeriesDto {
     // same direct flow-through precedent as originCountry above.
     private String overview;
 
+    // series_spec_039_last_air_year.md (SERIES-039-AC-02): the year component of TMDB's
+    // last_air_date for this series' most recently aired episode -- read at create time
+    // (round-tripped from SeriesLookupDto, same as originCountry/productionStatus/overview
+    // above) and re-resolved on every refresh (SeriesRefreshService).
+    private Integer lastAirYear;
+
     // series_spec_018_series_refresh.md: output-only, like lastRefreshedAt -- never read from
     // the incoming DTO in create/update (SERIES-018-AC-23). Non-null means a refresh detected
     // new content not yet acknowledged (POST /series/{id}/acknowledge-new-content).
@@ -161,6 +167,9 @@ public class SeriesDto {
 
     public String getOverview() { return overview; }
     public void setOverview(String overview) { this.overview = overview; }
+
+    public Integer getLastAirYear() { return lastAirYear; }
+    public void setLastAirYear(Integer lastAirYear) { this.lastAirYear = lastAirYear; }
 
     public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
     public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }

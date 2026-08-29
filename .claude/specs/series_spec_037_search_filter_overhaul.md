@@ -134,12 +134,20 @@ def "SERIES-037-AC-02: a series with no tmdbRating never matches a minTmdbRating
 
 ## Requirement 3: `yearMin`/`yearMax` (stopgap — matches the stored `year` field only)
 
-### SERIES-037-AC-03 [AUTO]
-**Statement**: `SeriesSearchCriteria` shall gain `yearMin`/`yearMax` (`Integer`).
+### ~~SERIES-037-AC-03~~ [AUTO] — superseded by `SERIES-039-AC-05`
+**Statement**: ~~`SeriesSearchCriteria` shall gain `yearMin`/`yearMax` (`Integer`).
 `SeriesSearchService` shall gain `matchesYearRange(SeriesEntity, Integer yearMin, Integer yearMax)`,
 mirroring `matchesPersonalRating`'s min/max null-handling shape exactly, matched against
 `SeriesEntity.year` (the series' single stored start year — **not** an episode-air-date range; see
-Design Decisions for why this is a documented stopgap).
+Design Decisions for why this is a documented stopgap).~~
+
+**Superseded (2026-08-29)**: this AC's stated contract — filtering against `SeriesEntity.year`
+alone — is superseded by `series_spec_039_last_air_year.md`'s `SERIES-039-AC-05`, which upgrades
+`matchesYearRange` to true interval-overlap matching against `[year, lastAirYear ?? year]`. Per
+this project's ID-immutability convention, this AC's ID and statement are preserved verbatim above
+(struck through), not rewritten. `yearMin`/`yearMax`'s fields/getters/setters and the controller
+query params this AC also introduced remain unchanged and still current — only the comparison
+`matchesYearRange` performs is superseded.
 
 **Test Case (Red)**:
 ```groovy
@@ -196,4 +204,4 @@ def "SERIES-037-AC-03: a series with no year never matches a yearMin/yearMax fil
 
 - [x] SERIES-037-AC-01: `maxPersonalRating`/`maxImdbRating`/`startedNotFinished` removed entirely
 - [x] SERIES-037-AC-02: `minTmdbRating` filters correctly, including the no-rating case
-- [x] SERIES-037-AC-03: `yearMin`/`yearMax` filter against the stored `year` field, including the no-year case
+- [x] ~~SERIES-037-AC-03~~: `yearMin`/`yearMax` filter against the stored `year` field, including the no-year case — superseded by `SERIES-039-AC-05` (true interval-overlap matching against `[year, lastAirYear ?? year]`)

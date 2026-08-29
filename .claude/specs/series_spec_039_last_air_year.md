@@ -1,6 +1,12 @@
 # Series Spec 039: `lastAirYear` — True Episode-In-Range Year Filtering
 
-**Status**: Not started
+**Status**: Implemented — `client/TmdbSeriesDetail.java`, `client/TmdbClient.java`,
+`model/SeriesEntity.java`, `dto/SeriesDto.java`, `dto/SeriesLookupDto.java`,
+`service/SeriesLookupService.java`, `service/SeriesRefreshService.java`,
+`service/SeriesSearchService.java`, `service/SeriesService.java`,
+`resources/db/migration/V010__add_last_air_year_to_series.sql`, plus their Spock specs
+(`TmdbClientSpec`, `SeriesLookupServiceSpec`, `SeriesRefreshServiceSpec`, `SeriesSearchServiceSpec`,
+`SeriesServiceSpec`). Frontend half (`frontend_spec_058`) not yet built.
 **Priority**: P3 (upgrades `series_spec_037`'s documented stopgap to the semantic it deferred)
 **Depends on**: Series Spec 037 (`series_spec_037_search_filter_overhaul.md`, owns the `yearMin`/
 `yearMax` filter this spec upgrades) ✅ required, Series Spec 031
@@ -203,8 +209,8 @@ computing `effectiveEnd` from `lastAirYear` with a fallback to `year`.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-039-AC-01: `TmdbSeriesDetail.lastAirYear` parses `last_air_date` correctly
-- [ ] SERIES-039-AC-02: `SeriesEntity`/`SeriesDto` gain `lastAirYear`
-- [ ] SERIES-039-AC-03: lookup resolves `lastAirYear` onto the create DTO
-- [ ] SERIES-039-AC-04: refresh re-resolves `lastAirYear`
-- [ ] SERIES-039-AC-05: `yearMin`/`yearMax` use true interval-overlap matching
+- [x] SERIES-039-AC-01: `TmdbSeriesDetail.lastAirYear` parses `last_air_date` correctly
+- [x] SERIES-039-AC-02: `SeriesEntity`/`SeriesDto` gain `lastAirYear`
+- [x] SERIES-039-AC-03: lookup resolves `lastAirYear` onto the create DTO
+- [x] SERIES-039-AC-04: refresh re-resolves `lastAirYear`
+- [x] SERIES-039-AC-05: `yearMin`/`yearMax` use true interval-overlap matching
