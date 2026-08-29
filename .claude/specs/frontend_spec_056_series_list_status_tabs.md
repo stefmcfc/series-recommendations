@@ -1,6 +1,10 @@
 # Frontend Spec 056: `SeriesList` Status-Based Tabs (with Real URLs)
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/App.tsx` (status tab bar, `/my-series/:statusTab` route,
+`statusFromTabParam` mapping, `MySeriesView` merging route-derived status with `SearchFilter`
+criteria, top-level "My Series" `NavLink` loses `end`), `frontend/src/App.test.tsx` (new
+`FRONTEND-056-AC-01/02/03/05/06` test cases). `SearchFilter.tsx` unchanged by this spec (AC-04 was
+already satisfied via `frontend_spec_055`/PR #117).
 **Priority**: P3 (navigation/browse improvement — quicker access to a status subset than the
 existing dropdown filter)
 **Depends on**: Frontend Spec 055 (`frontend_spec_055_search_filter_overhaul.md`) ✅ **build after,
@@ -180,9 +184,9 @@ independent React state/values, merged only at render time — neither setter to
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-056-AC-01: five status tabs render
-- [ ] FRONTEND-056-AC-02: deep-linking to a status tab filters `SeriesList` correctly
-- [ ] FRONTEND-056-AC-03: the top-level "My Series" nav stays active on any status tab
+- [x] FRONTEND-056-AC-01: five status tabs render
+- [x] FRONTEND-056-AC-02: deep-linking to a status tab filters `SeriesList` correctly
+- [x] FRONTEND-056-AC-03: the top-level "My Series" nav stays active on any status tab
 - [x] FRONTEND-056-AC-04: `SearchFilter`'s Status dropdown is removed (already satisfied via `frontend_spec_055`'s `FRONTEND-055-AC-07`, merged in PR #117)
-- [ ] FRONTEND-056-AC-05: `App.tsx` merges `SearchFilter` criteria with the tab-derived status
-- [ ] FRONTEND-056-AC-06: tabs and other filters don't clear/override each other
+- [x] FRONTEND-056-AC-05: `App.tsx` merges `SearchFilter` criteria with the tab-derived status
+- [x] FRONTEND-056-AC-06: tabs and other filters don't clear/override each other

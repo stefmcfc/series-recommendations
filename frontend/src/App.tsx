@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   BrowserRouter,
   Routes,
   Route,
   Navigate,
   NavLink,
+  useParams,
   type NavLinkRenderProps,
 } from 'react-router-dom'
 import { SeriesList } from './components/SeriesList'
@@ -16,15 +17,102 @@ import { SearchFilter } from './components/SearchFilter'
 import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
 import { KeywordsView } from './components/KeywordsView'
-import type {
-  Series,
-  SearchCriteria,
-  RecommendationQuery,
+import {
+  SeriesStatus,
+  type Series,
+  type SearchCriteria,
+  type RecommendationQuery,
 } from './types/series'
 import styles from './App.module.css'
 
 const navLinkClassName = ({ isActive }: NavLinkRenderProps) =>
   isActive ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink
+
+// FRONTEND-056-AC-02: maps the lowercase :statusTab route param to the
+// uppercase SeriesStatus enum value SeriesSearchCriteria.status expects.
+// The bare /my-series route (statusTab undefined) and any unrecognized
+// segment both fall through to "All" (status undefined).
+function statusFromTabParam(statusTab?: string): SeriesStatus | undefined {
+  switch (statusTab) {
+    case 'watching':
+      return SeriesStatus.WATCHING
+    case 'completed':
+      return SeriesStatus.COMPLETED
+    case 'backlog':
+      return SeriesStatus.BACKLOG
+    case 'dropped':
+      return SeriesStatus.DROPPED
+    default:
+      return undefined
+  }
+}
+
+interface MySeriesViewProps {
+  readonly criteria: SearchCriteria | null
+  readonly onSearch: (criteria: SearchCriteria) => void
+  readonly onClear: () => void
+  readonly seriesListKey: number
+  readonly onSeriesClick: (id: string) => void
+  readonly onAddClick: () => void
+  readonly onEditClick: (series: Series) => void
+}
+
+// FRONTEND-056-AC-01/02/05: renders the status tab bar plus the existing
+// SearchFilter/ExportControls/SeriesList block, for both the bare
+// /my-series route and the /my-series/:statusTab route. Status is derived
+// purely from the URL here and merged into whatever SearchFilter itself
+// produces -- SearchFilter no longer owns status at all (see
+// frontend_spec_056's Design Decisions).
+function MySeriesView({
+  criteria,
+  onSearch,
+  onClear,
+  seriesListKey,
+  onSeriesClick,
+  onAddClick,
+  onEditClick,
+}: MySeriesViewProps) {
+  const { statusTab } = useParams<{ statusTab?: string }>()
+  const status = statusFromTabParam(statusTab)
+  // Memoized so SeriesList's own effect (keyed on criteria object identity,
+  // not deep equality) doesn't re-fetch on every unrelated App re-render --
+  // only when criteria or the route-derived status actually change.
+  const effectiveCriteria: SearchCriteria = useMemo(
+    () => ({ ...(criteria ?? {}), status }),
+    [criteria, status],
+  )
+
+  return (
+    <>
+      <nav className={styles.navLinks} aria-label="Status">
+        <NavLink to="/my-series" end className={navLinkClassName}>
+          All
+        </NavLink>
+        <NavLink to="/my-series/watching" className={navLinkClassName}>
+          Watching
+        </NavLink>
+        <NavLink to="/my-series/completed" className={navLinkClassName}>
+          Completed
+        </NavLink>
+        <NavLink to="/my-series/backlog" className={navLinkClassName}>
+          Backlog
+        </NavLink>
+        <NavLink to="/my-series/dropped" className={navLinkClassName}>
+          Dropped
+        </NavLink>
+      </nav>
+      <SearchFilter onSearch={onSearch} onClear={onClear} />
+      <ExportControls criteria={effectiveCriteria} />
+      <SeriesList
+        key={seriesListKey}
+        onSeriesClick={onSeriesClick}
+        onAddClick={onAddClick}
+        onEditClick={onEditClick}
+        criteria={effectiveCriteria}
+      />
+    </>
+  )
+}
 
 function App() {
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null)
@@ -78,7 +166,7 @@ function App() {
                 TV Series Tracker
               </NavLink>
               <div className={styles.navLinks}>
-                <NavLink to="/my-series" end className={navLinkClassName}>
+                <NavLink to="/my-series" className={navLinkClassName}>
                   My Series
                 </NavLink>
                 <NavLink to="/recommendations" className={navLinkClassName}>
@@ -95,20 +183,29 @@ function App() {
               <Route
                 path="/my-series"
                 element={
-                  <>
-                    <SearchFilter
-                      onSearch={setCriteria}
-                      onClear={() => setCriteria(null)}
-                    />
-                    <ExportControls criteria={criteria ?? undefined} />
-                    <SeriesList
-                      key={seriesListKey}
-                      onSeriesClick={setSelectedSeriesId}
-                      onAddClick={() => setIsAddFormOpen(true)}
-                      onEditClick={setEditingSeries}
-                      criteria={criteria ?? undefined}
-                    />
-                  </>
+                  <MySeriesView
+                    criteria={criteria}
+                    onSearch={setCriteria}
+                    onClear={() => setCriteria(null)}
+                    seriesListKey={seriesListKey}
+                    onSeriesClick={setSelectedSeriesId}
+                    onAddClick={() => setIsAddFormOpen(true)}
+                    onEditClick={setEditingSeries}
+                  />
+                }
+              />
+              <Route
+                path="/my-series/:statusTab"
+                element={
+                  <MySeriesView
+                    criteria={criteria}
+                    onSearch={setCriteria}
+                    onClear={() => setCriteria(null)}
+                    seriesListKey={seriesListKey}
+                    onSeriesClick={setSelectedSeriesId}
+                    onAddClick={() => setIsAddFormOpen(true)}
+                    onEditClick={setEditingSeries}
+                  />
                 }
               />
               <Route
