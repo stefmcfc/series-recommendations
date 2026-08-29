@@ -1,6 +1,10 @@
 # Frontend Spec 055: `SearchFilter` Overhaul — Field Changes, Genre Checkboxes, Collapsible Panel
 
-**Status**: Not started
+**Status**: Implemented (`frontend/src/components/SearchFilter.tsx`,
+`frontend/src/components/SearchFilter.module.css`,
+`frontend/src/components/SearchFilter.test.tsx`, `frontend/src/types/series.ts`,
+`frontend/src/services/seriesApi.ts`,
+`frontend/src/services/__tests__/seriesApi.test.ts`, `frontend/src/App.test.tsx`)
 **Priority**: P3 (paired UI half of `series_spec_037`, plus two independent UI improvements — genre
 as checkboxes, a collapsible panel)
 **Depends on**: Series Spec 037 (`series_spec_037_search_filter_overhaul.md`, owns the
@@ -180,7 +184,7 @@ Filters"/"Hide Filters" based on state.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-055-AC-01: Max Personal Rating/Max IMDb Rating/Started-not-finished removed
-- [ ] FRONTEND-055-AC-02: Min TMDB Rating and Min/Max Year submit correctly
-- [ ] FRONTEND-055-AC-03: Genres render and submit as checkboxes
-- [ ] FRONTEND-055-AC-04: the filter panel is collapsible, open by default
+- [x] FRONTEND-055-AC-01: Max Personal Rating/Max IMDb Rating/Started-not-finished removed
+- [x] FRONTEND-055-AC-02: Min TMDB Rating and Min/Max Year submit correctly
+- [x] FRONTEND-055-AC-03: Genres render and submit as checkboxes
+- [x] FRONTEND-055-AC-04: the filter panel is collapsible, open by default

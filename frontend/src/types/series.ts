@@ -183,10 +183,13 @@ export interface SearchCriteria {
   keywords?: string[]
   status?: SeriesStatus
   minPersonalRating?: number
-  maxPersonalRating?: number
   minImdbRating?: number
-  maxImdbRating?: number
-  startedNotFinished?: boolean
+  // FRONTEND-055/SERIES-037: replaces the removed maxPersonalRating/
+  // maxImdbRating/startedNotFinished fields -- minTmdbRating/yearMin/yearMax
+  // map 1:1 to series_spec_037's new GET /series/search query params.
+  minTmdbRating?: number
+  yearMin?: number
+  yearMax?: number
   flaggedForRewatch?: boolean
 }
 

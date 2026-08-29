@@ -300,6 +300,33 @@ describe('SH-006: search', () => {
     }
     expect(args.params.flaggedForRewatch).toBe(true)
   })
+
+  // FRONTEND-055/SERIES-037: buildSearchParams sends minTmdbRating/yearMin/
+  // yearMax (replacing the removed maxPersonalRating/maxImdbRating/
+  // startedNotFinished params) when present, omitting them when absent.
+  it('should include minTmdbRating/yearMin/yearMax when set', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ minTmdbRating: 7.5, yearMin: 2015, yearMax: 2025 })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.minTmdbRating).toBe(7.5)
+    expect(args.params.yearMin).toBe(2015)
+    expect(args.params.yearMax).toBe(2025)
+  })
+
+  it('should omit minTmdbRating/yearMin/yearMax when absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ title: 'office' })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params).not.toHaveProperty('minTmdbRating')
+    expect(args.params).not.toHaveProperty('yearMin')
+    expect(args.params).not.toHaveProperty('yearMax')
+  })
 })
 
 // ---------------------------------------------------------------------------

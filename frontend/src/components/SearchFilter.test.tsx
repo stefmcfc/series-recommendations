@@ -13,10 +13,12 @@ import { ApiError } from '../types/api'
 
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
+const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetKeywordStats.mockResolvedValue([])
+  mockGetGenreOptions.mockResolvedValue([])
 })
 
 function renderFilter() {
@@ -31,13 +33,12 @@ describe('FRONTEND-006-AC-01/02: fields', () => {
     renderFilter()
     for (const label of [
       /title/i,
-      /genres/i,
       /status/i,
       /min personal rating/i,
-      /max personal rating/i,
       /min imdb rating/i,
-      /max imdb rating/i,
-      /started.*not finished/i,
+      /min tmdb rating/i,
+      /min year/i,
+      /max year/i,
     ]) {
       expect(screen.getByLabelText(label)).toBeInTheDocument()
     }
@@ -59,13 +60,10 @@ describe('FRONTEND-006-AC-01/02: fields', () => {
 })
 
 describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
-  it('calls onSearch with only populated fields, genres split and trimmed', () => {
+  it('calls onSearch with only populated fields', () => {
     const { onSearch } = renderFilter()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
-    })
-    fireEvent.change(screen.getByLabelText(/genres/i), {
-      target: { value: 'Drama, Comedy ,' },
     })
     fireEvent.change(screen.getByLabelText(/^status/i), {
       target: { value: SeriesStatus.WATCHING },
@@ -75,7 +73,6 @@ describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'office',
-        genres: ['Drama', 'Comedy'],
         status: SeriesStatus.WATCHING,
       }),
     )
@@ -89,30 +86,96 @@ describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
     expect(onSearch).toHaveBeenCalledWith({})
   })
 
-  it('includes numeric rating fields and the checkbox when populated', () => {
+  it('includes numeric rating fields when populated', () => {
     const { onSearch } = renderFilter()
     fireEvent.change(screen.getByLabelText(/min personal rating/i), {
       target: { value: '3' },
     })
-    fireEvent.change(screen.getByLabelText(/max personal rating/i), {
-      target: { value: '5' },
-    })
     fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
       target: { value: '7.5' },
     })
-    fireEvent.change(screen.getByLabelText(/max imdb rating/i), {
-      target: { value: '9.2' },
-    })
-    fireEvent.click(screen.getByLabelText(/started.*not finished/i))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith({
       minPersonalRating: 3,
-      maxPersonalRating: 5,
       minImdbRating: 7.5,
-      maxImdbRating: 9.2,
-      startedNotFinished: true,
     })
+  })
+})
+
+describe('FRONTEND-055-AC-01: removed fields', () => {
+  it('no longer renders the removed fields', () => {
+    renderFilter()
+    expect(
+      screen.queryByLabelText(/max personal rating/i),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/max imdb rating/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText(/started, not finished/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
+  it('submits minTmdbRating and yearMin/yearMax', () => {
+    const { onSearch } = renderFilter()
+
+    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+      target: { value: '7.5' },
+    })
+    fireEvent.change(screen.getByLabelText(/min year/i), {
+      target: { value: '2015' },
+    })
+    fireEvent.change(screen.getByLabelText(/max year/i), {
+      target: { value: '2025' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        minTmdbRating: 7.5,
+        yearMin: 2015,
+        yearMax: 2025,
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-055-AC-03: genre checkbox list', () => {
+  it('renders genres as checkboxes and submits selected ones', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Drama', 'Comedy', 'Crime'])
+    const { onSearch } = renderFilter()
+
+    fireEvent.click(await screen.findByLabelText('Drama'))
+    fireEvent.click(screen.getByLabelText('Crime'))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ genres: ['Drama', 'Crime'] }),
+    )
+  })
+
+  it('omits genres from criteria when nothing is selected', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.not.objectContaining({ genres: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-055-AC-04: collapsible filter panel', () => {
+  it('filters are visible by default and can be collapsed', () => {
+    renderFilter()
+    expect(screen.getByTestId('filters-body')).toBeInTheDocument()
+    const toggle = screen.getByRole('button', { name: /hide filters/i })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.click(toggle)
+    expect(screen.queryByTestId('filters-body')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /show filters/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
   })
 })
 
@@ -137,14 +200,14 @@ describe('FRONTEND-006-AC-07/08: clearing', () => {
     fireEvent.change(screen.getByLabelText(/^status/i), {
       target: { value: SeriesStatus.WATCHING },
     })
-    fireEvent.click(screen.getByLabelText(/started.*not finished/i))
+    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
 
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
     expect(onClear).toHaveBeenCalledTimes(1)
     expect(onSearch).not.toHaveBeenCalled()
     expect(screen.getByLabelText(/title/i)).toHaveValue('')
     expect(screen.getByLabelText(/^status/i)).toHaveValue('')
-    expect(screen.getByLabelText(/started.*not finished/i)).not.toBeChecked()
+    expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
   })
 })
 

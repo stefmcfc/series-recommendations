@@ -38,6 +38,7 @@ beforeEach(() => {
     finishedAt: null,
   })
   mockGetKeywordStats.mockResolvedValue([])
+  mockGetGenreOptions.mockResolvedValue([])
 })
 
 describe('FRONTEND-003-AC-27/28: opening the form', () => {
