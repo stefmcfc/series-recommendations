@@ -501,4 +501,48 @@ class SeriesSearchServiceSpec extends Specification {
         then: "it's excluded"
             results.isEmpty()
     }
+
+    def "SERIES-039-AC-05: a running show matches a range it started before but is still airing through"() {
+        given: "a show that started in 2018, most recently aired in 2024, still running"
+            seriesRepository.save(new SeriesEntity(title: "Long Runner", year: 2018, lastAirYear: 2024))
+
+        when: "search is called with yearMin=2022, yearMax=2023"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Long Runner", yearMin: 2022, yearMax: 2023))
+
+        then: "it matches -- its aired span (2018-2024) overlaps 2022-2023, even though it started earlier"
+            results*.title == ["Long Runner"]
+    }
+
+    def "SERIES-039-AC-05: a series with no lastAirYear falls back to matching on year alone"() {
+        given: "a series with year but no lastAirYear (not yet resolved)"
+            seriesRepository.save(new SeriesEntity(title: "Unresolved", year: 2020))
+
+        when: "search is called with yearMin=2020, yearMax=2020"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Unresolved", yearMin: 2020, yearMax: 2020))
+
+        then: "it matches via the year-only fallback"
+            results*.title == ["Unresolved"]
+    }
+
+    def "SERIES-039-AC-05: a show whose entire aired span ends before yearMin does not match"() {
+        given: "a show that aired 2010-2012, well before the requested range"
+            seriesRepository.save(new SeriesEntity(title: "Long Gone", year: 2010, lastAirYear: 2012))
+
+        when: "search is called with yearMin=2015"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Long Gone", yearMin: 2015))
+
+        then: "it's excluded -- its aired span never reaches yearMin"
+            results.isEmpty()
+    }
+
+    def "SERIES-039-AC-05: a show whose entire aired span starts after yearMax does not match"() {
+        given: "a show that started in 2026, after the requested range's upper bound"
+            seriesRepository.save(new SeriesEntity(title: "Too New", year: 2026, lastAirYear: 2026))
+
+        when: "search is called with yearMax=2020"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Too New", yearMax: 2020))
+
+        then: "it's excluded -- its aired span never reaches yearMax"
+            results.isEmpty()
+    }
 }

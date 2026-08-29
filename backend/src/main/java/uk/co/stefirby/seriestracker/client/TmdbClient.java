@@ -61,6 +61,7 @@ public class TmdbClient {
     private static final String FIELD_RESULTS = "results";
     private static final String FIELD_ORIGIN_COUNTRY = "origin_country";
     private static final String FIELD_FIRST_AIR_DATE = "first_air_date";
+    private static final String FIELD_LAST_AIR_DATE = "last_air_date";
     private static final String FIELD_POSTER_PATH = "poster_path";
 
     /** Valid {@code timeWindow} values for {@link #trending(String)} (SERIES-022-AC-02). */
@@ -345,7 +346,8 @@ public class TmdbClient {
             ExternalApiSupport.toInteger(body.get("vote_count")),
             ProductionStatus.fromTmdbStatus(ExternalApiSupport.str(body.get("status"))).orElse(null),
             firstOriginCountry(body.get(FIELD_ORIGIN_COUNTRY)),
-            ExternalApiSupport.str(body.get("overview"))
+            ExternalApiSupport.str(body.get("overview")),
+            extractYear(ExternalApiSupport.str(body.get(FIELD_LAST_AIR_DATE)))
         );
     }
 

@@ -101,6 +101,7 @@ public class SeriesService {
         entity.setImdbId(dto.getImdbId());
         entity.setOriginCountry(dto.getOriginCountry());
         entity.setOverview(dto.getOverview());
+        entity.setLastAirYear(dto.getLastAirYear());
         return entity;
     }
 
@@ -329,6 +330,7 @@ public class SeriesService {
         dto.setProductionStatus(entity.getProductionStatus() != null ? entity.getProductionStatus().name() : null);
         dto.setOriginCountry(entity.getOriginCountry());
         dto.setOverview(entity.getOverview());
+        dto.setLastAirYear(entity.getLastAirYear());
         dto.setNewContentDetectedAt(entity.getNewContentDetectedAt());
         dto.setExcludeFromRecommendations(entity.isExcludeFromRecommendations());
         dto.setFlaggedForRewatch(entity.isFlaggedForRewatch());

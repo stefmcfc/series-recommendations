@@ -37,6 +37,12 @@ import java.util.List;
  * field via the same {@code str(...)} helper applied to every other string field here -- zero
  * extra TMDB traffic, since this call is already made for every other field above. See
  * {@code series_spec_023_recommendation_metadata_and_overview.md}.
+ *
+ * <p>{@code lastAirYear} (SERIES-039-AC-01) is the year component of this same endpoint's
+ * {@code last_air_date} field -- for an ended show, its true end year; for a still-running
+ * show, the year of the most recently aired episode so far. {@code null} when the field is
+ * absent or unparseable, same posture as every other best-effort field here. See
+ * {@code series_spec_039_last_air_year.md}.
  */
 public record TmdbSeriesDetail(
     String title,
@@ -49,6 +55,7 @@ public record TmdbSeriesDetail(
     Integer voteCount,
     ProductionStatus productionStatus,
     String originCountry,
-    String overview
+    String overview,
+    Integer lastAirYear
 ) {
 }

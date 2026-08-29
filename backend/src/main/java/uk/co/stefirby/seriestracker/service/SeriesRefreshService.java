@@ -126,9 +126,10 @@ public class SeriesRefreshService {
 
     /**
      * Updates {@code totalSeasons}/{@code totalEpisodes}/{@code tmdbRating}/{@code
-     * tmdbVoteCount}/{@code productionStatus}/{@code originCountry}/{@code overview} from a
-     * fresh TMDB detail lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09,
-     * {@code overview} per SERIES-023-AC-13), and reconciles
+     * tmdbVoteCount}/{@code productionStatus}/{@code originCountry}/{@code overview}/{@code
+     * lastAirYear} from a fresh TMDB detail lookup (SERIES-018-AC-02, {@code originCountry} per
+     * SERIES-021-AC-09, {@code overview} per SERIES-023-AC-13, {@code lastAirYear} per
+     * SERIES-039-AC-04), and reconciles
      * {@code keywords} via {@link KeywordSyncService#syncKeywords} using the same resolved
      * {@code tmdbId} (SERIES-019-AC-08). Returns {@code false} without attempting a lookup
      * when the entity has no {@code imdbId} to resolve a {@code tmdbId} from, or when TMDB is
@@ -169,6 +170,13 @@ public class SeriesRefreshService {
             }
             if (detail.overview() != null) {
                 entity.setOverview(detail.overview());
+            }
+            // series_spec_039_last_air_year.md (SERIES-039-AC-04): unlike productionStatus/
+            // originCountry, a running show's lastAirYear genuinely changes as new episodes
+            // air, so it's re-resolved on every refresh, same null-preserving posture as the
+            // fields above.
+            if (detail.lastAirYear() != null) {
+                entity.setLastAirYear(detail.lastAirYear());
             }
             // series_spec_019_keyword_tracking.md (SERIES-019-AC-08): reconciles this series'
             // keyword set against TMDB's current data using the same tmdbId just resolved

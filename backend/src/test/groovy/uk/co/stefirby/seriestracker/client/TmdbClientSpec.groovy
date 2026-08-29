@@ -790,6 +790,32 @@ class TmdbClientSpec extends Specification {
             result.overview() == null
     }
 
+    def "SERIES-039-AC-01: details() parses last_air_date into lastAirYear"() {
+        given: "a TMDB detail response with a last_air_date field"
+            def body = '{"name": "The Office", "last_air_date": "2024-11-15", "genres": []}'
+            mockServer.expect(requestTo(Matchers.containsString("tv/3010")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details is called"
+            def result = client().details(3010)
+
+        then: "lastAirYear is the year component"
+            result.lastAirYear() == 2024
+    }
+
+    def "SERIES-039-AC-01: an absent last_air_date maps to a null lastAirYear"() {
+        given: "a TMDB detail response with no last_air_date field"
+            def body = '{"name": "Obscure Show", "genres": []}'
+            mockServer.expect(requestTo(Matchers.containsString("tv/3011")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details is called"
+            def result = client().details(3011)
+
+        then: "lastAirYear is null"
+            result.lastAirYear() == null
+    }
+
     def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {
         given: "TMDB responds with a server error"
             mockServer.expect(requestTo(Matchers.containsString("tv/4046")))

@@ -55,9 +55,14 @@ Delete a series.
 
 Search and filter series (`title`, `genre`, `keyword`, `status`, `minPersonalRating`,
 `minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`). Supports
-`sortBy`/`sortDirection` — see Sorting below. `yearMin`/`yearMax` match only the series' single
-stored first-aired `year` — a documented stopgap, not a true episode-air-date range (see
-`series_spec_037_search_filter_overhaul.md`).
+`sortBy`/`sortDirection` — see Sorting below. `yearMin`/`yearMax` use true interval-overlap
+matching: a series' known airing span is `[year, lastAirYear ?? year]` (`lastAirYear` is the year
+of the most recently aired episode TMDB reports, resolved at create/refresh time — `null` when
+unresolved, in which case the span collapses to `year` alone), and it matches when that span
+overlaps `[yearMin, yearMax]` — so a show that started before the requested range but is still
+airing through it still matches. This upgrades `series_spec_037_search_filter_overhaul.md`'s
+original stopgap (which matched only the stored `year` field) — see
+`series_spec_039_last_air_year.md`.
 
 **Breaking change (`series_spec_037`)**: `maxPersonalRating`, `maxImdbRating`, and
 `startedNotFinished` are no longer accepted — a rating floor (`min...`) is the only supported

@@ -223,6 +223,31 @@ class SeriesServiceSpec extends Specification {
         created.overview == null
   }
 
+  def "SERIES-039-AC-02: create persists lastAirYear unchanged from the incoming dto"() {
+    given: "a SeriesDto with lastAirYear set"
+        def dto = new SeriesDto(title: "The Office", lastAirYear: 2013)
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "lastAirYear is persisted unchanged"
+        created.lastAirYear == 2013
+
+    and: "lastAirYear is retrievable after persistence"
+        seriesService.getById(created.id).lastAirYear == 2013
+  }
+
+  def "SERIES-039-AC-02: a manually-added series with no lastAirYear stays null"() {
+    given: "a SeriesDto with no lastAirYear set"
+        def dto = new SeriesDto(title: "Homemade Show")
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "lastAirYear is null"
+        created.lastAirYear == null
+  }
+
   def "SERIES-014-AC-06/07: tags flows through create and is persisted"() {
     given: "a SeriesDto with tags set"
         def dto = new SeriesDto(title: "The Wire", tags: "rewatch candidate,background watching")

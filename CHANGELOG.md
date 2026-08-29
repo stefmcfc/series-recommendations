@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: series gain `lastAirYear`, the year of TMDB's `last_air_date` for a series' most recently aired episode — resolved at create time and re-resolved on every refresh, the same way `productionStatus`/`originCountry` already are (`series_spec_039`).
+
+### Changed
+
+- Backend: `GET /api/v1/series/search`'s `yearMin`/`yearMax` now use true interval-overlap matching against a series' known airing span (`[year, lastAirYear ?? year]`) instead of matching only the stored `year` field — a running show that started before the requested range but is still airing through it now matches. No query-param contract change. Supersedes `series_spec_037`'s `SERIES-037-AC-03` stopgap (`series_spec_039`).
+
 ## [3.1.0] - 2026-08-29
 
 ### Added

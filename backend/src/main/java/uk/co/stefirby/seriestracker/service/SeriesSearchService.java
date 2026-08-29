@@ -105,13 +105,18 @@ public class SeriesSearchService {
         return min == null || s.getTmdbRating().compareTo(min) >= 0;
     }
 
-    // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-03): mirrors the old
-    // matchesPersonalRating's min/max null-handling shape, matched against the series' single
-    // stored SeriesEntity.year -- a documented stopgap, not a true episode-air-date range.
+    // series_spec_039_last_air_year.md (SERIES-039-AC-05): true interval-overlap matching --
+    // supersedes series_spec_037's SERIES-037-AC-03 stopgap (see that spec for the superseded
+    // note), which compared only against the series' single stored SeriesEntity.year. A
+    // series' known airing span is [year, lastAirYear ?? year]; it matches [yearMin, yearMax]
+    // when (yearMax == null || year <= yearMax) && (yearMin == null || effectiveEnd >= yearMin)
+    // -- the standard interval-overlap test. A series with no year at all still never matches
+    // when either bound is set, unchanged from series_spec_037's existing null-handling.
     private boolean matchesYearRange(SeriesEntity s, Integer yearMin, Integer yearMax) {
         if (s.getYear() == null) return yearMin == null && yearMax == null;
-        if (yearMin != null && s.getYear() < yearMin) return false;
-        return yearMax == null || s.getYear() <= yearMax;
+        if (yearMax != null && s.getYear() > yearMax) return false;
+        Integer effectiveEnd = s.getLastAirYear() != null ? s.getLastAirYear() : s.getYear();
+        return yearMin == null || effectiveEnd >= yearMin;
     }
 
     // SERIES-008-AC-20/21: same nullable-boolean-filter shape as matchesStartedNotFinished --

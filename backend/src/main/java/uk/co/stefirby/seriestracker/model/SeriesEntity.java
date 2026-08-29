@@ -148,6 +148,16 @@ public class SeriesEntity {
     @Column(nullable = true, columnDefinition = "TEXT")
     private String overview;
 
+    // series_spec_039_last_air_year.md (SERIES-039-AC-02): the year component of TMDB's
+    // last_air_date for this series' most recently aired episode -- for an ended show, its
+    // true end year; for a still-running show, the year of the most recent episode aired so
+    // far. Nullable (manually-added series, or one whose TMDB lookup/refresh never resolved a
+    // detail, has no value), same posture as productionStatus/originCountry. Re-resolved on
+    // every refresh (SeriesRefreshService), unlike productionStatus/originCountry, since it's
+    // expected to change over a running show's lifetime.
+    @Column(nullable = true)
+    private Integer lastAirYear;
+
     // series_spec_018_series_refresh.md (SERIES-018-AC-23): non-null means a refresh found
     // totalSeasons/totalEpisodes had increased since the prior refresh, not yet acknowledged.
     // Never auto-cleared by a subsequent refresh that finds no further increase
@@ -270,6 +280,9 @@ public class SeriesEntity {
 
     public String getOverview() { return overview; }
     public void setOverview(String overview) { this.overview = overview; }
+
+    public Integer getLastAirYear() { return lastAirYear; }
+    public void setLastAirYear(Integer lastAirYear) { this.lastAirYear = lastAirYear; }
 
     public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
     public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }
