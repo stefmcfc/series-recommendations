@@ -165,29 +165,7 @@ public class TmdbClient {
             if (keywordIds != null && !keywordIds.isEmpty()) {
                 b = b.queryParam("with_keywords", joinIds(keywordIds));
             }
-            if (filters.minVoteCount() > 0) {
-                b = b.queryParam("vote_count.gte", filters.minVoteCount());
-            }
-            if (filters.minTmdbRating() != null) {
-                b = b.queryParam("vote_average.gte", filters.minTmdbRating());
-            }
-            if (filters.yearMin() != null) {
-                b = b.queryParam("air_date.gte", filters.yearMin() + "-01-01");
-            }
-            if (filters.yearMax() != null) {
-                b = b.queryParam("air_date.lte", filters.yearMax() + "-12-31");
-            }
-            if (filters.language() != null && !filters.language().isBlank()) {
-                b = b.queryParam("with_original_language", filters.language());
-            }
-            if (filters.countries() != null && !filters.countries().isEmpty()) {
-                // SERIES-032-AC-02 correction (2026-08-28): unlike with_genres/
-                // with_keywords (comma=AND, pipe=OR), with_origin_country's comma
-                // join is itself an AND -- confirmed live (countries=JP,SE
-                // returned 0 despite each individually returning results).
-                // Pipe is the actual OR separator for this param.
-                b = b.queryParam("with_origin_country", String.join("|", filters.countries()));
-            }
+            b = applyDiscoverFilters(b, filters);
             return b;
         });
         return mapResults(body);
@@ -195,6 +173,40 @@ public class TmdbClient {
 
     private static String joinIds(List<Integer> ids) {
         return ids.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    /**
+     * Applies the six {@link DiscoverFilters}-derived {@code discover/tv} query params
+     * (SERIES-031-AC-01/02/03/04, SERIES-032-AC-01/02) under their existing omit-when-unset
+     * conditions -- extracted out of {@link #discover(List, List, String, DiscoverFilters)} to
+     * keep that method's Cognitive Complexity from growing with every future
+     * {@code DiscoverFilters} field (see {@code tooling_spec_007}).
+     */
+    private static UriBuilder applyDiscoverFilters(UriBuilder b, DiscoverFilters filters) {
+        if (filters.minVoteCount() > 0) {
+            b = b.queryParam("vote_count.gte", filters.minVoteCount());
+        }
+        if (filters.minTmdbRating() != null) {
+            b = b.queryParam("vote_average.gte", filters.minTmdbRating());
+        }
+        if (filters.yearMin() != null) {
+            b = b.queryParam("air_date.gte", filters.yearMin() + "-01-01");
+        }
+        if (filters.yearMax() != null) {
+            b = b.queryParam("air_date.lte", filters.yearMax() + "-12-31");
+        }
+        if (filters.language() != null && !filters.language().isBlank()) {
+            b = b.queryParam("with_original_language", filters.language());
+        }
+        if (filters.countries() != null && !filters.countries().isEmpty()) {
+            // SERIES-032-AC-02 correction (2026-08-28): unlike with_genres/
+            // with_keywords (comma=AND, pipe=OR), with_origin_country's comma
+            // join is itself an AND -- confirmed live (countries=JP,SE
+            // returned 0 despite each individually returning results).
+            // Pipe is the actual OR separator for this param.
+            b = b.queryParam("with_origin_country", String.join("|", filters.countries()));
+        }
+        return b;
     }
 
     /**
