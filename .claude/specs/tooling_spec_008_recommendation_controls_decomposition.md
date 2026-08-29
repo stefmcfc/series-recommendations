@@ -1,6 +1,6 @@
 # Tooling Spec 008: `RecommendationControls` Decomposition
 
-**Status**: Not started
+**Status**: Implemented — pending SonarQube re-scan confirmation
 **Priority**: P2 (repo hygiene — doesn't block product feature work, but flagged twice now: this
 spec exists specifically because SonarQube's 2026-08-28 report notes `RecommendationControls.tsx`
 has racked up repeat Cognitive Complexity flags "across separate sweeps now," and three more
@@ -240,10 +240,10 @@ in the Cognitive Complexity findings.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-008-AC-01: existing `RecommendationControls.test.tsx` suite passes with only mechanical changes
-- [ ] TOOLING-008-AC-02: `UseMySeriesPanel` extracted, Specific-Series-scoped state moved with it
-- [ ] TOOLING-008-AC-03: `CustomSearchPanel` extracted
-- [ ] TOOLING-008-AC-04: `TrendingPanel`/`HighestRatedPanel` extracted
-- [ ] TOOLING-008-AC-05: `RecommendationFiltersBox` extracted
-- [ ] TOOLING-008-AC-06: `applySourceModeQuery` split per-mode, complexity reduced
+- [x] TOOLING-008-AC-01: existing `RecommendationControls.test.tsx` suite passes with only mechanical changes
+- [x] TOOLING-008-AC-02: `UseMySeriesPanel` extracted, Specific-Series-scoped state moved with it
+- [x] TOOLING-008-AC-03: `CustomSearchPanel` extracted
+- [x] TOOLING-008-AC-04: `TrendingPanel`/`HighestRatedPanel` extracted
+- [x] TOOLING-008-AC-05: `RecommendationFiltersBox` extracted
+- [x] TOOLING-008-AC-06: `applySourceModeQuery` split per-mode, complexity reduced
 - [ ] TOOLING-008-AC-07: neither flagged function appears in a SonarQube re-scan
