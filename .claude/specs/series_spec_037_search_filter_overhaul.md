@@ -1,6 +1,11 @@
 # Series Spec 037: `SeriesSearchCriteria` Overhaul — Drop Max Rating/Started-Not-Finished, Add Min TMDB Rating + Year Range
 
-**Status**: Not started
+**Status**: Implemented — `dto/SeriesSearchCriteria.java`, `service/SeriesSearchService.java`,
+`controller/SeriesController.java` (both `/search` and `/export`, the latter sharing the same
+`SeriesSearchCriteria` — its params were updated to match for compilation/contract parity, per
+`series_spec_004_export.md`'s "all Spec 003 search params" rule). Tests:
+`test/groovy/uk/co/stefirby/seriestracker/service/SeriesSearchServiceSpec.groovy`. `API.md`/
+`CHANGELOG.md` updated to document the breaking removal and the two new params.
 **Priority**: P3 (filter-field rework, no new sourcing capability — a cleanup + two genuinely new
 filters)
 **Depends on**: Series Spec 003 (`series_spec_003_search.md`, owns `SeriesSearchCriteria`/
@@ -189,6 +194,6 @@ def "SERIES-037-AC-03: a series with no year never matches a yearMin/yearMax fil
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-037-AC-01: `maxPersonalRating`/`maxImdbRating`/`startedNotFinished` removed entirely
-- [ ] SERIES-037-AC-02: `minTmdbRating` filters correctly, including the no-rating case
-- [ ] SERIES-037-AC-03: `yearMin`/`yearMax` filter against the stored `year` field, including the no-year case
+- [x] SERIES-037-AC-01: `maxPersonalRating`/`maxImdbRating`/`startedNotFinished` removed entirely
+- [x] SERIES-037-AC-02: `minTmdbRating` filters correctly, including the no-rating case
+- [x] SERIES-037-AC-03: `yearMin`/`yearMax` filter against the stored `year` field, including the no-year case

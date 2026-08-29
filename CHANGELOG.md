@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Removed
+
+- Backend: `GET /api/v1/series/search` (and `/export`) no longer accept `maxPersonalRating`, `maxImdbRating`, or `startedNotFinished` — confirmed genuinely unused, dropped outright rather than deprecated. **Breaking change** to this endpoint's query contract (`series_spec_037`).
+
+### Added
+
+- Backend: `GET /api/v1/series/search` (and `/export`) gain `minTmdbRating` and `yearMin`/`yearMax` query params, mirroring `minImdbRating`'s null-handling shape. `yearMin`/`yearMax` match only the series' single stored first-aired `year` — a documented stopgap ahead of true episode-air-date range semantics (`series_spec_037`).
+
 ### Fixed
 
 - Backend: `RecommendationCriteriaValidator`'s year-range validation now takes the app's injected `Clock` bean (`Year.now(clock)`) instead of the JVM's implicit default time zone (SonarQube `java:S8688`), matching this codebase's existing `ClockConfig` convention used elsewhere.

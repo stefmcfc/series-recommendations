@@ -53,8 +53,16 @@ Delete a series.
 
 ### `GET /api/v1/series/search`
 
-Search and filter series (`title`, `genre`, `keyword`, `status`, rating ranges,
-`startedNotFinished`, `flaggedForRewatch`). Supports `sortBy`/`sortDirection` — see Sorting below.
+Search and filter series (`title`, `genre`, `keyword`, `status`, `minPersonalRating`,
+`minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`). Supports
+`sortBy`/`sortDirection` — see Sorting below. `yearMin`/`yearMax` match only the series' single
+stored first-aired `year` — a documented stopgap, not a true episode-air-date range (see
+`series_spec_037_search_filter_overhaul.md`).
+
+**Breaking change (`series_spec_037`)**: `maxPersonalRating`, `maxImdbRating`, and
+`startedNotFinished` are no longer accepted — a rating floor (`min...`) is the only supported
+shape, and the started-not-finished filter has been dropped outright, not deprecated. Unrecognized
+params are silently ignored (as with any other unknown query key on this endpoint), not rejected.
 
 ---
 
