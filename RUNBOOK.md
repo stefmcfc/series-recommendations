@@ -352,6 +352,25 @@ This was a real, currently-blocking CORS gap (confirmed both with and without VP
 
 No `frontend/.env.local` proxy workaround is needed anymore: `seriesApi.ts` can call `http://localhost:8080/api/v1` directly from a browser tab serving the frontend on `http://localhost:5173`, and the response will include a matching `Access-Control-Allow-Origin` header. If you deploy the frontend from a different origin, add it to `app.cors.allowed-origins` (comma-separated) or override via `APP_CORS_ALLOWED_ORIGINS` — don't loosen this to a wildcard.
 
+**Frontend dev server unreachable while on a VPN**
+
+Some VPN clients disable or reroute IPv6 while connected. Vite's default `server.host` (`localhost`)
+resolves to the IPv6 loopback (`[::1]`) on this setup, which becomes unreachable from the browser the
+moment the VPN is active, even though `npm run dev` reports "ready" and the port is genuinely
+listening (confirmed via `netstat`, which showed `[::1]:5173 LISTENING` while the browser still
+failed to connect). `frontend/vite.config.ts`'s `server.host` is pinned to the IPv4 loopback
+(`127.0.0.1`) explicitly for this reason — don't revert it to the Vite default without re-confirming
+this isn't still an issue, since this is a single-user local app with no other developer's setup to
+preserve. Access the dev server via `http://127.0.0.1:5173/`, not `http://localhost:5173/`, in case
+DNS resolution of `localhost` itself is also affected.
+
+If the browser also can't reach the backend directly (`http://localhost:8080`) while on VPN for the
+same IPv6 reason, the most robust local fix is `frontend/.env.local` (gitignored) with
+`VITE_API_BASE=/api/v1` — this routes every API call through Vite's own dev-server proxy
+(`vite.config.ts`'s `server.proxy`), which resolves `localhost:8080` server-side in Node, unaffected
+by the browser/VPN's IPv6 behavior, and sidesteps the CORS origin-matching question entirely since
+the request becomes same-origin from the browser's perspective.
+
 ---
 
 ## CI/CD
