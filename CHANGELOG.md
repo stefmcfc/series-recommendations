@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: split `RecommendationControls.tsx` (1518 lines, flagged twice by SonarQube for Cognitive Complexity) into five sibling panel components — `UseMySeriesPanel`, `CustomSearchPanel`, `TrendingPanel`, `HighestRatedPanel`, `RecommendationFiltersBox` — each with its own colocated tests; `RecommendationControls` itself is now a thin coordinator. No user-visible behavior change; the existing 122-test `RecommendationControls.test.tsx` suite passes unmodified (`tooling_spec_008`).
+- Frontend: split `applySourceModeQuery` into one small function per source mode (`applyUseMySeriesModeQuery`/`applyCustomSearchModeQuery`/`applyTrendingModeQuery`/`applyTopRatedModeQuery`/`applyDiscoverSortByModeQuery`), reducing its own flagged Cognitive Complexity — no change to the built `RecommendationQuery` for any mode (`tooling_spec_008`).
+
 ## [3.2.1] - 2026-08-29
 
 ### Changed
