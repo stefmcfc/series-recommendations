@@ -11,6 +11,7 @@ versioned together as one app.
 ### Changed
 
 - Backend: extracted `TmdbClient.discover()`'s `DiscoverFilters`-derived query-param logic into a private `applyDiscoverFilters` helper, reducing Cognitive Complexity (no behavior change, `tooling_spec_007`).
+- Backend: reworded `SeriesSearchService.matchesYearRange`'s doc comment to clear a SonarQube `S125` ("commented-out code") false positive triggered by an inline boolean expression in the prose — same documentation content, no code change.
 
 ## [3.2.0] - 2026-08-29
 

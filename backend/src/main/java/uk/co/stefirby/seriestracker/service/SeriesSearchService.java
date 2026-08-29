@@ -108,10 +108,11 @@ public class SeriesSearchService {
     // series_spec_039_last_air_year.md (SERIES-039-AC-05): true interval-overlap matching --
     // supersedes series_spec_037's SERIES-037-AC-03 stopgap (see that spec for the superseded
     // note), which compared only against the series' single stored SeriesEntity.year. A
-    // series' known airing span is [year, lastAirYear ?? year]; it matches [yearMin, yearMax]
-    // when (yearMax == null || year <= yearMax) && (yearMin == null || effectiveEnd >= yearMin)
-    // -- the standard interval-overlap test. A series with no year at all still never matches
-    // when either bound is set, unchanged from series_spec_037's existing null-handling.
+    // series' known airing span runs from its year to its lastAirYear, or just its year if
+    // lastAirYear is unset. A match requires the span's start to be at or before yearMax
+    // (when set) and the span's end to be at or after yearMin (when set) -- the standard
+    // interval-overlap test. A series with no year at all still never matches when either
+    // bound is set, unchanged from series_spec_037's existing null-handling.
     private boolean matchesYearRange(SeriesEntity s, Integer yearMin, Integer yearMax) {
         if (s.getYear() == null) return yearMin == null && yearMax == null;
         if (yearMax != null && s.getYear() > yearMax) return false;
