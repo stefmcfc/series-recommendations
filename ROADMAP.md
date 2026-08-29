@@ -73,18 +73,18 @@ corrected below.
 | Custom Search pre-fetch filters (Language + Country of Origin sent to TMDB `discover/tv`, pinned-chip country picker, single-select language picker)                 | `series_spec_032`                    | `frontend_spec_047`                            | ✅ Done                                                                                         |
 | `SearchFilter` overhaul (drop max-rating/started-not-finished, add min TMDB rating + year range, genre checkboxes, collapsible panel closed by default, rating/year validation bounds, `StarRating`-based Min Personal Rating, Status dropdown removed) | `series_spec_037`                    | `frontend_spec_055`                            | ✅ Done                                                                                         |
 | Show genres on `SeriesList`'s expanded row, before status                                                                                                            | —                                    | `frontend_spec_059`                            | ✅ Done                                                                                         |
+| `SeriesList` status-based tabs with real URLs (replaces `SearchFilter`'s Status dropdown)                                                                            | —                                    | `frontend_spec_056`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered as a suggested build order, not just spec-number order — grouped into independent
-dependency chains: `043→045`, `030→044`, `052→053` (fed by standalone `036`), `037→055→056` (the
-frontend leg) branching alongside `037→039→058` (the year-range leg — both branches need
-`series_spec_037` first, but are otherwise independent of each other), and `038→057`. Rows within a
-chain must build in the listed order; the chains themselves (and the fully-standalone rows —
-`034`/`050`, `035`, `051`, `054`) have no dependencies on each other and can be reordered freely as
-a block if priorities change. (The former 041→042 chain, the standalone 048, and the full 031→046,
-033→049, and 032→047 chains — backend and frontend both — are fully delivered; see the table
-above.)
+dependency chains: `043→045`, `030→044`, `052→053` (fed by standalone `036`), and `037→039→058`
+(the year-range leg — needs `series_spec_037` first), and `038→057`. Rows within a chain must build
+in the listed order; the chains themselves (and the fully-standalone rows — `034`/`050`, `035`,
+`051`, `054`) have no dependencies on each other and can be reordered freely as a block if
+priorities change. (The former 041→042 chain, the standalone 048, the full 031→046, 033→049, and
+032→047 chains, and the `037→055→056` frontend leg — backend and frontend both — are fully
+delivered; see the table above.)
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
@@ -97,7 +97,6 @@ above.)
 | `SeriesDetail` "Recommendations" button (modal) + shared `RecommendationCard` extraction | — | `frontend_spec_052` | — (build first — `frontend_spec_053` depends on the `RecommendationCard` this creates) | ⬜ Not started |
 | Recommendation candidate details (season/episode counts, IMDb rating) — new endpoint | `series_spec_036` | — | — (independent of `frontend_spec_052`; both must land before `frontend_spec_053`) | ⬜ Not started |
 | Recommendation candidate detail modal ("View Details," replaces "Show keywords" on the shared card) | — | `frontend_spec_053` | `frontend_spec_052` (modifies its `RecommendationCard`) + `series_spec_036` (calls its endpoint) — build last of the three | ⬜ Not started |
-| `SeriesList` status-based tabs with real URLs (replaces `SearchFilter`'s Status dropdown) | — | `frontend_spec_056` | `frontend_spec_055` (sequenced, not a logical dependency — avoids two specs conflicting on `SearchFilter.tsx`) | ⬜ Not started |
 | `lastAirYear` — true episode-in-range year filtering, upgrades `series_spec_037`'s `yearMin`/`yearMax` stopgap (supersedes `SERIES-037-AC-03`) | `series_spec_039` | — | `series_spec_037` (needs `yearMin`/`yearMax` to exist first) | ⬜ Not started |
 | Series year range display (`2020-2024` / `2025-`), applied to `SeriesList`/`SeriesDetail` | — | `frontend_spec_058` | `series_spec_039` (needs `lastAirYear`) — build last of this branch; **optional soft sequencing note**: if `frontend_spec_054` (compact view, standalone) is built *after* this, its cards can consume the shared `formatSeriesYear` helper from day one instead of needing a follow-up tweak — not a hard dependency either way | ⬜ Not started |
 | `SeriesList` compact/grid view (Expanded/Compact toggle — icon buttons with `aria-label`, `localStorage`-persisted) | — | `frontend_spec_054` | — (standalone; see the soft sequencing note on `frontend_spec_058` above) | ⬜ Not started |

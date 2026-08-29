@@ -514,3 +514,112 @@ describe('FRONTEND-041-AC-12: selecting a series does not change the URL', () =>
     expect(window.location.pathname).toBe('/my-series')
   })
 })
+
+describe('FRONTEND-056-AC-01: status tab bar renders', () => {
+  it('renders five status tabs', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+
+    expect(await screen.findByRole('link', { name: 'All' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Watching' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Completed' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Backlog' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Dropped' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-056-AC-02: deep-linking to a status tab filters SeriesList', () => {
+  it('renders SeriesList filtered to the route-derived status', async () => {
+    mockSearch.mockResolvedValue([
+      { id: '1', title: 'Completed Show', status: 'COMPLETED' } as Series,
+    ])
+    window.history.pushState({}, '', '/my-series/completed')
+
+    render(<App />)
+
+    expect(await screen.findByText('Completed Show')).toBeInTheDocument()
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'COMPLETED' }),
+      undefined,
+    )
+    expect(screen.getByRole('link', { name: 'Completed' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+})
+
+describe('FRONTEND-056-AC-03: top-level My Series nav stays active on a status tab', () => {
+  it('keeps aria-current on the top-level My Series link', async () => {
+    mockSearch.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series/watching')
+
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    const topLevelLink = screen.getAllByRole('link', { name: 'My Series' })[0]
+    expect(topLevelLink).toHaveAttribute('aria-current', 'page')
+  })
+})
+
+describe('FRONTEND-056-AC-05: SearchFilter criteria and tab-derived status combine', () => {
+  it('merges the SearchFilter criteria with the route-derived status', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockSearch.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series/watching')
+
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'test' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'test', status: 'WATCHING' }),
+        undefined,
+      ),
+    )
+  })
+})
+
+describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each other', () => {
+  it('preserves the active tab when other criteria change, and vice versa', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockSearch.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series/watching')
+
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'office' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'office', status: 'WATCHING' }),
+        undefined,
+      ),
+    )
+    // Still on the Watching tab -- submitting the form didn't navigate away.
+    expect(screen.getByRole('link', { name: 'Watching' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+
+    fireEvent.click(screen.getByRole('link', { name: 'Completed' }))
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenLastCalledWith(
+        expect.objectContaining({ title: 'office', status: 'COMPLETED' }),
+        undefined,
+      ),
+    )
+  })
+})
