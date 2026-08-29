@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-08-29
+
 ### Removed
 
 - Backend: `GET /api/v1/series/search` (and `/export`) no longer accept `maxPersonalRating`, `maxImdbRating`, or `startedNotFinished` — confirmed genuinely unused, dropped outright rather than deprecated. **Breaking change** to this endpoint's query contract (`series_spec_037`).
@@ -28,6 +30,7 @@ versioned together as one app.
 
 - Backend: `RecommendationCriteriaValidator`'s year-range validation now takes the app's injected `Clock` bean (`Year.now(clock)`) instead of the JVM's implicit default time zone (SonarQube `java:S8688`), matching this codebase's existing `ClockConfig` convention used elsewhere.
 - Frontend: `KeywordPicker`'s repeated `string[] | PickerOption[]` union type is replaced by a single exported `PickerOptions` type alias (SonarQube `typescript:S4323`), no behavior change.
+- Dev tooling: Vite's dev server now binds to the IPv4 loopback (`127.0.0.1`) explicitly instead of the default `localhost`, which some VPN clients make unreachable (they disable/reroute IPv6 while connected, and Vite's default bind resolves to the IPv6 loopback) — no effect on the built/deployed app, local dev only.
 
 ## [2.23.0] - 2026-08-28
 
