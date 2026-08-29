@@ -20,7 +20,7 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 
 **Design decisions**:
 - **The rewatch flag is deliberately simple: a plain boolean field exposed through the existing search filter, not a new recommendation-sourcing mode.** It reuses `SeriesSearchCriteria`/`SeriesSearchService` (gaining `flaggedForRewatch`, the same nullable-boolean-filter shape as the existing `startedNotFinished`) rather than adding a dedicated endpoint or any `RecommendationService` involvement — combined with the existing `status`/`genres` filters, this already produces a filterable "rewatch list" for free. If a more elaborate rewatch *recommendation* feature (e.g. TMDB-sourced "people who rewatched X also rewatched Y") is wanted later, that's a separate, much larger feature — not this.
-- **`excludeFromRecommendations` only suppresses *automatic* watched-pool sourcing — it does not block an explicit `seriesIds` selection** (`SERIES-007-AC-08`). The flag means "don't use me as an automatic taste signal"; naming a series explicitly in a single request is a much stronger, one-off statement of intent that should win over a standing preference. This mirrors the reasoning in Spec 007's own Design Decisions for why explicit selection isn't restricted to `COMPLETED` status.
+- **`excludeFromRecommendations` only suppresses *automatic* watched-pool sourcing — it does not block an explicit `seriesIds` selection** (`SERIES-007-AC-08`). The flag means "don't use me as an automatic taste signal"; naming a series explicitly in a single request is a much stronger, one-off statement of intent that should win over a standing preference. This mirrors the reasoning in Spec 007's own Design Decisions for why explicit selection isn't restricted to `COMPLETED` status. **Reversed (2026-08-29)** — see `series_spec_034_exclude_from_recommendations_enforcement.md`: this reasoning no longer holds, per explicit product decision. The flag is now an absolute rule enforced for both automatic and explicit sourcing (`SERIES-008-AC-05` below is superseded by `SERIES-034-AC-01`).
 - **`productionStatus` is modeled as a proper enum, not a passthrough string.** Unlike `genres` (deliberately free text, because OMDb's vocabulary is open-ended), TMDB's `status` field is a small, fixed, documented set of literal values — the same reasoning that makes `SeriesStatus` an enum applies here.
 - **TMDB resolution is always best-effort, both at create time and on refresh.** Every other external call in this app degrades gracefully (missing key, network failure, unresolvable id → the field stays null / unchanged, nothing else fails) — `productionStatus` resolution follows the same posture, not a new one.
 - **Refresh is `POST /api/v1/series/{id}/refresh`, not part of `PATCH`.** It doesn't accept a body describing desired changes — it's an action that triggers a server-side re-fetch, the same shape as `POST /api/v1/series/ignored` (Spec 006) rather than a client-supplied partial update.
@@ -40,7 +40,7 @@ Adds two new pieces of data to `SeriesEntity` and one new action, all raised as 
 - **SERIES-008-AC-02** [AUTO]: `SeriesDto` shall gain an `excludeFromRecommendations` field typed as boxed `Boolean` (not primitive `boolean`) — unlike the entity, the DTO must be able to represent "omitted from the request" (`null`) distinctly from "explicitly set to `false`," matching every other partial-update-capable field on this class.
 - **SERIES-008-AC-03** [AUTO]: `SeriesService.create` shall set the entity's `excludeFromRecommendations` from the DTO, defaulting to `false` when the DTO value is `null`. `SeriesService.update` shall set it only when the DTO value is non-`null`, leaving the existing value unchanged otherwise — the same partial-update semantics as every other `PATCH`-able field.
 - **SERIES-008-AC-04** [AUTO]: `RecommendationService`'s automatic watched-pool sourcing (`SERIES-006-AC-14`, as extended by `SERIES-007-AC-19`/`AC-20`) shall additionally exclude any series with `excludeFromRecommendations == true` — this applies to both the title-based pool and the genre frequency count derived from that same pool (`SERIES-006-AC-18`).
-- **SERIES-008-AC-05** [AUTO]: An explicit `seriesIds` source selection (`SERIES-007-AC-08`) shall **not** be filtered by `excludeFromRecommendations` — see Design Decisions.
+- ~~**SERIES-008-AC-05** [AUTO]~~ — superseded by `SERIES-034-AC-01`: An explicit `seriesIds` source selection (`SERIES-007-AC-08`) shall **not** be filtered by `excludeFromRecommendations` — see Design Decisions.
 
 ---
 
@@ -142,6 +142,12 @@ def "SERIES-008-AC-03: update only overwrites excludeFromRecommendations when ex
 ```
 
 ### `RecommendationServiceSpec.groovy` (Requirement 1)
+
+**Note (2026-08-29)**: this sketch's AC-05 half (the second `when`/`then` pair below) is superseded
+by `series_spec_034_exclude_from_recommendations_enforcement.md`'s `SERIES-034-AC-01`, which
+asserts the opposite outcome. The real `RecommendationSourcingServiceSpec.groovy` test this sketch
+maps to was rewritten as part of that spec, not left alongside a passing AC-05 test — see that
+spec's Implementation Notes.
 
 ```groovy
 def "SERIES-008-AC-04/05: excludeFromRecommendations blocks automatic sourcing but not explicit seriesIds"() {
@@ -278,7 +284,7 @@ def "SERIES-008-AC-20: flaggedForRewatch unset returns everything, same as today
 - [x] SERIES-008-AC-02: `SeriesDto.excludeFromRecommendations` (boxed `Boolean`)
 - [x] SERIES-008-AC-03: create/update partial-update semantics for the flag
 - [x] SERIES-008-AC-04: automatic watched-pool sourcing excludes flagged series
-- [x] SERIES-008-AC-05: explicit `seriesIds` selection is not filtered by the flag
+- [x] ~~SERIES-008-AC-05~~: superseded — see SERIES-034-AC-01 (explicit `seriesIds` selection is now filtered by the flag, reversing this AC)
 - [x] SERIES-008-AC-06: `ProductionStatus` enum (pre-existing, see Status line)
 - [x] SERIES-008-AC-07: `productionStatus` column (pre-existing on `V003`, see Status line)
 - [x] SERIES-008-AC-08: `TmdbClient.showStatus`, unrecognized value → empty

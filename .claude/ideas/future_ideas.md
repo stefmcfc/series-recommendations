@@ -56,34 +56,37 @@ resolving this vocabulary question either way, since a checkbox list needs one c
 set. Worth doing together rather than fixing the matching logic first and re-doing it once the
 picker lands.
 
-### Recommendation cards have no fuller detail/expand view beyond keywords
+### Recommendations for a recommendation — sourcing from an arbitrary candidate `tmdbId`, not just a tracked series
 
-Confirmed still accurate (2026-08-26 re-check of `frontend/src/types/series.ts`'s `Recommendation`
-interface): it carries `tmdbRating` but not `imdbRating` (a candidate has no confirmed IMDb match
-until it's actually added and refreshed), and no `totalSeasons`/`totalEpisodes`. The card's "Show
-keywords" button only reveals TMDB keywords — there's no way to see anything beyond what's already
-always visible (title/year/genres/overview/origin country/rating).
+Raised 2026-08-29 alongside the now-specced "SeriesDetail gains a Recommendations button"/
+"candidate detail view" ideas (`frontend_spec_052`/`series_spec_036`/`frontend_spec_053`) — this is
+the third, deliberately deferred piece: letting a user get recommendations *for* a recommendation
+candidate that isn't in their tracked series at all (e.g. from within the new candidate detail
+modal).
 
-**Status**: Not specced. Needs its own design pass: what to show, how to fetch it cheaply
-(season/episode counts would need a `TmdbClient.details()` call per card, the same rate-limit
-tradeoff keywords already had before going lazy-on-demand), and whether it's an inline expand or a
-real detail view.
+Backend feasibility, confirmed by reading `RecommendationSourcingService.sourceTitleBased`: the
+`imdbId` a tracked `SeriesEntity` carries is only ever used to *resolve* a `tmdbId` via
+`tmdbClient.findTvIdByImdbId(...)` — every call after that (`tmdbClient.recommendations(tmdbId)`/
+`similar(tmdbId)`) is already pure tmdbId-in, with no `SeriesEntity` dependency. Since a candidate's
+`tmdbId` is already known (`Recommendation`/`RecommendationDto` both carry it, added originally for
+the keywords endpoint), "recommendations for a recommendation" could skip the imdbId→tmdbId
+resolution step entirely.
+
+**What's required**: not what's hard, what's missing — a new `sourceFromTmdbId(int tmdbId)`-shaped
+method (mirroring `sourceTrending`/`sourceTopRated`, flowing through as `RawCandidate(c, null)` —
+the same untracked-source pattern those two and the genre supplement already use, no new type
+needed), a new `RecommendationCriteria`/`sourceMode` path to request it (nothing today accepts a
+bare `tmdbId` as a *source* — only `seriesIds`, tracked-series UUIDs), and the corresponding API
+surface + frontend entry point (most naturally a "Get recommendations for this" action inside the
+candidate detail modal once that ships).
+
+**Status**: Not specced. Deliberately kept here rather than specced alongside its two siblings —
+worth revisiting once the candidate detail modal (`frontend_spec_053`) actually ships and there's a
+concrete UI home for the resulting action.
 
 ---
 
 ## Search & Filter
-
-### `SearchFilter`'s Genres field is free-text (comma-separated), not a tag/multi-select
-
-Confirmed still a plain text input as of 2026-08-26 (`SearchFilter.tsx`, `form.genres: string`).
-This is the same class of silent-mismatch risk the Recommendations page's Genres field had before
-it got a checkbox picker (`series_spec_010`/`frontend_spec_014`) — but against
-`SeriesSearchCriteria.genres` (matched literally against each series' stored `genres` string, not
-TMDB's vocabulary), so the failure mode differs (a typo just matches nothing, not "silently falls
-back to something unrelated") though the free-text UX gap is the same shape.
-
-**Status**: Not specced. Revisit if genre filtering sees real use and the typo/UX friction turns
-out to matter.
 
 ### Pagination
 
@@ -115,7 +118,95 @@ always-expanded-top-bar / inline-disclosure shapes (2026-08-26 re-check).
 
 **Status**: Not specced. No design decisions made yet (left-hand panel vs. slide-out sheet,
 whether both panels need to look identical or just share the same underlying disclosure
-mechanism) — worth its own dedicated thinking whenever it's prioritized.
+mechanism) — worth its own dedicated thinking whenever it's prioritized. **Note (2026-08-29)**:
+`frontend_spec_055_search_filter_overhaul.md` gives `SearchFilter` a basic show/hide disclosure
+(reusing `RecommendationControls`' existing `filtersOpen` mechanism) — the immediately-actionable
+"collapsible" want is covered there. What remains open here is specifically the bigger layout
+question (a dedicated left-hand panel or slide-out sheet, for both panels), not collapsibility
+itself.
+
+---
+
+## Series List
+
+### Only the first `origin_country` is stored/shown, even when TMDB reports more than one (e.g. "MobLand": GB + US)
+
+Confirmed (2026-08-29) this is a deliberate existing design decision, not an oversight:
+`series_spec_021_origin_country.md` chose to store a single ISO 3166-1 alpha-2 code.
+`TmdbClient.firstOriginCountry()` explicitly takes `list.getFirst()` from TMDB's `origin_country`
+array and discards the rest, and every DTO along the path (`SeriesEntity.originCountry`,
+`SeriesLookupDto`, `SeriesDto`, `TmdbLookupCandidateDto`, `RecommendationDto`) carries a single
+`String`, not a list. TMDB itself does return multiple entries for co-productions.
+
+**What's required**: widening `originCountry` to a list would touch `TmdbClient.firstOriginCountry`
+(and its duplicated logic in `TmdbSearchCandidate`/`TmdbSeriesDetail`/`TmdbCandidate`), the entity
+column (single string → comma-separated or a join table), every DTO listed above, and
+`RecommendationOutputFilterService`'s country-match filter (currently a single-value
+`equalsIgnoreCase` check), which would need to become a set-intersection check. A real schema
+migration, not just a display change.
+
+**Status**: Not specced. Revisit `series_spec_021_origin_country.md`'s original rationale for
+choosing single-value before committing to this — the "first entry only" choice may have been a
+deliberate simplification worth keeping unless multi-country display turns out to matter in
+practice.
+
+---
+
+## Analysis
+
+### Keywords tab becomes a broader "Analysis"/"Trends" section — Genres and Country of Origin get the same treatment, plus filtering, name sort, and a blended-rating column
+
+Raised 2026-08-29. Confirmed current state:
+
+- `GET /api/v1/series/keywords` (`KeywordStatsService`) already sorts server-side
+  (`sortBy=seriesCount|averagePersonalRating`, fixed direction per field — no asc/desc toggle) but
+  has **no server-side filtering at all**: it always returns every distinct keyword across the
+  user's series, unfiltered. `KeywordStatDto` carries exactly three fields — `name`, `seriesCount`,
+  `averagePersonalRating` — no TMDB/IMDb rating aggregate today.
+- `KeywordsView.tsx` (routed at `/keywords`) renders those three columns with click-to-sort
+  headers (a server re-fetch per click, not a client-side array sort) and has no minimum-value
+  filter UI (series count or rating) anywhere.
+- Genres and Country of Origin have **no equivalent aggregation today** — confirmed no
+  `GenreStatsService`/`CountryStatsService` exists anywhere in the backend.
+  `SeriesGenreController`'s `GET /api/v1/series/genres` is unrelated (a static TMDB genre-name
+  taxonomy for a picker, not per-genre stats). `SeriesEntity.genres` is a plain comma-separated
+  `String` (not normalized into a join table like keywords), and `originCountry` is a single raw
+  ISO 3166-1 alpha-2 string. `SeriesEntity`'s own code comment on the `keywords` field explains
+  directly why keywords *were* normalized and genres/tags weren't: keyword stats need COUNT/AVG-
+  style aggregation, which "a delimited string column can't support without parsing every row on
+  every query" — so a genre/country stats feature would need the same in-memory
+  parse-and-aggregate approach `KeywordStatsService` already uses (explicitly "fine at this app's
+  scale" per that service's own precedent), not a new normalized table, unless that stops holding
+  up in practice.
+- No existing field or DTO blends `imdbRating`+`tmdbRating` anywhere in the app. The closest
+  relative — `RecommendationRankingService`'s scoring blend — mixes TMDB rating with *personal*
+  rating as a transient ranking heuristic, not a stored/named "combined rating" concept. This would
+  be a genuine first: needs a name, a weighting decision (simple average vs. something more
+  considered), and null-handling (a series can have one, both, or neither rating set) — this
+  project deliberately keeps `imdbRating`/`tmdbRating` unconflated elsewhere (different scales/
+  methodologies, per `RecommendationDto`'s own javadoc), so a blended column is a new kind of field
+  for this codebase, not an obvious extension of an existing one.
+- Routing is straightforward to extend: `App.tsx`'s existing `react-router-dom` `Routes`/`NavLink`
+  pattern (currently `/my-series`, `/recommendations`, `/keywords`, all declared inline in one
+  block) already supports adding more routes the same way — no new routing mechanism needed for
+  one URL per analyzed field (e.g. `/analysis/keywords`, `/analysis/genres`, `/analysis/country`).
+
+**What's required** (large enough this would likely split into several specs, not one):
+1. Generalize `KeywordStatsService`'s in-memory aggregation pattern into equivalent services for
+   Genres and Country of Origin.
+2. Add minimum-value filtering server-side to all three fields (min series count, min avg personal
+   rating, and the new min avg blended-rating) — none exist today, not even for Keywords.
+3. Decide and implement the blended `imdbRating`/`tmdbRating` column: name, weighting, and
+   null-handling.
+4. Add name-based (alphabetical) sort alongside the existing count/rating sorts, plus asc/desc
+   direction toggling (today's sort has no direction toggle at all — just a fixed direction per
+   field on click).
+5. Restructure the single "Keywords" nav tab into a small tab set (Keywords / Genres / Country of
+   Origin), each with its own URL, per the routing note above.
+
+**Status**: Not specced. Substantial enough to likely need splitting into multiple backend+frontend
+spec pairs (one per analyzed field, plus a shared filtering/sort-direction piece) rather than one
+spec — worth an explicit scoping pass before writing the first one.
 
 ---
 
@@ -154,7 +245,10 @@ happy with the current behavior.
 loosely, not as a hard dependency — unlike settings that genuinely need persistence/config
 infrastructure, a theme toggle is small enough to ship standalone (`localStorage`, no backend), but
 if a real settings screen gets built later, this would naturally live there too rather than staying
-a one-off menu-bar control.
+a one-off menu-bar control. **Note (2026-08-29)**: `frontend_spec_054_series_list_compact_view.md`
+became this app's actual first `localStorage`-persisted UI preference (a `SeriesList` view-mode
+toggle) — whoever specs this theme toggle should follow that spec's read/write/silent-degradation
+pattern rather than re-deriving one.
 
 ### No shareable URL for a specific series (`SeriesDetail`)
 
@@ -181,18 +275,35 @@ exporting every field.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
 
-### Import — the reverse of export
+### CSV import
 
-`series_spec_004_export.md`, "Future Enhancements." Bring previously-exported JSON/CSV data back
-into the app.
+`series_spec_038_import.md` (2026-08-29) specced JSON-only import — CSV was explicitly scoped out:
+correctly parsing quoted/escaped CSV fields on read is materially riskier to hand-roll than writing
+them (no CSV parsing library is a backend dependency today), and a subtly wrong parse could corrupt
+data on import in a way a JSON parse failure can't. Worth picking up as its own follow-up (most
+likely via a real CSV parsing library rather than a hand-rolled reader) if genuinely wanted.
 
-**Status**: Not specced. Kept on the list (2026-08-26 review).
+**Status**: Not specced. Deliberately deferred, not overlooked — see `series_spec_038`'s own Design
+Decisions for the full reasoning.
 
 ### Other export formats (Excel, XML)
 
 `series_spec_004_export.md`, "Future Enhancements" — currently JSON/CSV only.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
+
+### Move Export JSON/CSV into a dropdown menu, once a site/user config UI exists
+
+Raised 2026-08-29. Confirmed (2026-08-29): `ExportControls.tsx` renders "Export JSON" and "Export
+CSV" as two always-visible, separate buttons (`data-testid="export-json-btn"`/`"export-csv-btn"`)
+— idea is to consolidate them into a single "Export" dropdown/menu control, deferred specifically
+until there's a real site/user config UI to place it in or pattern it after (rather than building a
+one-off dropdown component just for this).
+
+**Status**: Not specced. Explicitly deferred, not just unprioritized — depends on the Configuration
+section's "No settings menu" idea existing first (or at least a decision on its shape), since the
+whole point is to place/pattern this consistently with that future UI rather than inventing a
+dropdown idiom in isolation now.
 
 ---
 
