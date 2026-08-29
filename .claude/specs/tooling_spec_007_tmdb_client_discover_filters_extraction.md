@@ -1,6 +1,6 @@
 # Tooling Spec 007: Extract `TmdbClient.discover()`'s Filter-Param Building
 
-**Status**: Not started
+**Status**: Implemented — pending SonarQube re-scan confirmation
 **Priority**: P2 (repo hygiene — doesn't block product feature work, but flagged twice now: this
 spec exists specifically because SonarQube's 2026-08-28 report notes `TmdbClient` has racked up
 repeat Cognitive Complexity flags "across separate sweeps now... TmdbClient specifically has shown
@@ -118,6 +118,6 @@ longer appears in the Cognitive Complexity findings.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-007-AC-01: `applyDiscoverFilters` extracted, identical behavior
-- [ ] TOOLING-007-AC-02: existing `TmdbClientSpec.groovy` tests pass unmodified
+- [x] TOOLING-007-AC-01: `applyDiscoverFilters` extracted, identical behavior
+- [x] TOOLING-007-AC-02: existing `TmdbClientSpec.groovy` tests pass unmodified
 - [ ] TOOLING-007-AC-03: `discover()`'s Cognitive Complexity drops to ≤15

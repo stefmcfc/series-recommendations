@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Backend: extracted `TmdbClient.discover()`'s `DiscoverFilters`-derived query-param logic into a private `applyDiscoverFilters` helper, reducing Cognitive Complexity (no behavior change, `tooling_spec_007`).
+
 ## [3.2.0] - 2026-08-29
 
 ### Added
