@@ -127,15 +127,12 @@ it('FRONTEND-056-AC-03: top-level My Series nav stays active on a status tab', a
 **Statement**: `SearchFilter` shall no longer render the Status `<select>`. `buildCriteria` shall no
 longer set `status` on the resulting `SearchCriteria`.
 
-**Test Case (Red)**:
-```typescript
-it('FRONTEND-056-AC-04: SearchFilter no longer renders a Status field', () => {
-  render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-  expect(screen.queryByLabelText(/^status$/i)).not.toBeInTheDocument()
-})
-```
-**Test Case (Green)**: remove the `status` `FormState` field, its `<select>` JSX, and its
-`buildCriteria` line.
+**Already satisfied (2026-08-29)** — this was pulled forward into
+`frontend_spec_055_search_filter_overhaul.md`'s pre-merge amendments as its own
+`FRONTEND-055-AC-07` (identical statement/test), implemented and merged to `main` in PR #117
+before this spec was picked up. Nothing to do here — don't re-implement it. Kept as its own AC
+(not deleted) per this project's ID-immutability convention; it's simply satisfied by a sibling
+spec's AC rather than its own test.
 
 ---
 
@@ -186,6 +183,6 @@ independent React state/values, merged only at render time — neither setter to
 - [ ] FRONTEND-056-AC-01: five status tabs render
 - [ ] FRONTEND-056-AC-02: deep-linking to a status tab filters `SeriesList` correctly
 - [ ] FRONTEND-056-AC-03: the top-level "My Series" nav stays active on any status tab
-- [ ] FRONTEND-056-AC-04: `SearchFilter`'s Status dropdown is removed
+- [x] FRONTEND-056-AC-04: `SearchFilter`'s Status dropdown is removed (already satisfied via `frontend_spec_055`'s `FRONTEND-055-AC-07`, merged in PR #117)
 - [ ] FRONTEND-056-AC-05: `App.tsx` merges `SearchFilter` criteria with the tab-derived status
 - [ ] FRONTEND-056-AC-06: tabs and other filters don't clear/override each other
