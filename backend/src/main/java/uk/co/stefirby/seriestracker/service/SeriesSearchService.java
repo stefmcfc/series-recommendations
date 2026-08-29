@@ -51,9 +51,10 @@ public class SeriesSearchService {
             .filter(s -> matchesGenres(s, criteria.getGenres()))
             .filter(s -> matchesKeywords(s, criteria.getKeywords()))
             .filter(s -> matchesStatus(s, criteria.getStatus()))
-            .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating(), criteria.getMaxPersonalRating()))
-            .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating(), criteria.getMaxImdbRating()))
-            .filter(s -> matchesStartedNotFinished(s, criteria.getStartedNotFinished()))
+            .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating()))
+            .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating()))
+            .filter(s -> matchesTmdbRating(s, criteria.getMinTmdbRating()))
+            .filter(s -> matchesYearRange(s, criteria.getYearMin(), criteria.getYearMax()))
             .filter(s -> matchesFlaggedForRewatch(s, criteria.getFlaggedForRewatch()))
             .sorted(sortComparator)
             .map(seriesService::entityToDto)
@@ -87,22 +88,30 @@ public class SeriesSearchService {
         return s.getStatus() != null && s.getStatus().name().equals(status);
     }
 
-    private boolean matchesPersonalRating(SeriesEntity s, Integer min, Integer max) {
-        if (s.getPersonalRating() == null) return min == null && max == null;
-        if (min != null && s.getPersonalRating() < min) return false;
-        return max == null || s.getPersonalRating() <= max;
+    private boolean matchesPersonalRating(SeriesEntity s, Integer min) {
+        if (s.getPersonalRating() == null) return min == null;
+        return min == null || s.getPersonalRating() >= min;
     }
 
-    private boolean matchesImdbRating(SeriesEntity s, BigDecimal min, BigDecimal max) {
-        if (s.getImdbRating() == null) return min == null && max == null;
-        if (min != null && s.getImdbRating().compareTo(min) < 0) return false;
-        return max == null || s.getImdbRating().compareTo(max) <= 0;
+    private boolean matchesImdbRating(SeriesEntity s, BigDecimal min) {
+        if (s.getImdbRating() == null) return min == null;
+        return min == null || s.getImdbRating().compareTo(min) >= 0;
     }
 
-    private boolean matchesStartedNotFinished(SeriesEntity s, Boolean startedNotFinished) {
-        if (startedNotFinished == null || !startedNotFinished) return true;
-        return (s.getStatus() == SeriesStatus.WATCHING || s.getStatus() == SeriesStatus.DROPPED)
-            && s.getCurrentSeason() != null;
+    // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-02): mirrors matchesImdbRating's
+    // exact null-handling shape for SeriesEntity.tmdbRating.
+    private boolean matchesTmdbRating(SeriesEntity s, BigDecimal min) {
+        if (s.getTmdbRating() == null) return min == null;
+        return min == null || s.getTmdbRating().compareTo(min) >= 0;
+    }
+
+    // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-03): mirrors the old
+    // matchesPersonalRating's min/max null-handling shape, matched against the series' single
+    // stored SeriesEntity.year -- a documented stopgap, not a true episode-air-date range.
+    private boolean matchesYearRange(SeriesEntity s, Integer yearMin, Integer yearMax) {
+        if (s.getYear() == null) return yearMin == null && yearMax == null;
+        if (yearMin != null && s.getYear() < yearMin) return false;
+        return yearMax == null || s.getYear() <= yearMax;
     }
 
     // SERIES-008-AC-20/21: same nullable-boolean-filter shape as matchesStartedNotFinished --

@@ -118,14 +118,14 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (criteria.status != null) params.status = criteria.status
   if (criteria.minPersonalRating != null)
     params.minPersonalRating = criteria.minPersonalRating
-  if (criteria.maxPersonalRating != null)
-    params.maxPersonalRating = criteria.maxPersonalRating
   if (criteria.minImdbRating != null)
     params.minImdbRating = criteria.minImdbRating
-  if (criteria.maxImdbRating != null)
-    params.maxImdbRating = criteria.maxImdbRating
-  if (criteria.startedNotFinished != null)
-    params.startedNotFinished = criteria.startedNotFinished
+  // FRONTEND-055/SERIES-037: replaces the removed maxPersonalRating/
+  // maxImdbRating/startedNotFinished params.
+  if (criteria.minTmdbRating != null)
+    params.minTmdbRating = criteria.minTmdbRating
+  if (criteria.yearMin != null) params.yearMin = criteria.yearMin
+  if (criteria.yearMax != null) params.yearMax = criteria.yearMax
   if (criteria.flaggedForRewatch != null)
     params.flaggedForRewatch = criteria.flaggedForRewatch
   return params

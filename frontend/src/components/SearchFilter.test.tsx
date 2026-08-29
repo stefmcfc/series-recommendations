@@ -7,16 +7,17 @@ import {
 } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SearchFilter } from './SearchFilter'
-import { SeriesStatus } from '../types/series'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
+const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetKeywordStats.mockResolvedValue([])
+  mockGetGenreOptions.mockResolvedValue([])
 })
 
 function renderFilter() {
@@ -26,58 +27,41 @@ function renderFilter() {
   return { onSearch, onClear }
 }
 
+// FRONTEND-055-AC-04: the filter fields now live inside a panel that's
+// collapsed by default -- any test that interacts with a field other than
+// Clear Filters/Search (which stay outside the panel) needs to open it
+// first.
+function openFilters() {
+  fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+}
+
 describe('FRONTEND-006-AC-01/02: fields', () => {
-  it('renders a labelled control per SearchCriteria field, status defaulting to Any', () => {
+  it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()
+    openFilters()
     for (const label of [
       /title/i,
-      /genres/i,
-      /status/i,
-      /min personal rating/i,
-      /max personal rating/i,
       /min imdb rating/i,
-      /max imdb rating/i,
-      /started.*not finished/i,
+      /min tmdb rating/i,
+      /min year/i,
+      /max year/i,
     ]) {
       expect(screen.getByLabelText(label)).toBeInTheDocument()
     }
-    expect(screen.getByLabelText(/^status/i)).toHaveValue('')
-  })
-
-  it('status select includes Any status plus all SeriesStatus values', () => {
-    renderFilter()
-    const select = screen.getByLabelText(/^status/i) as HTMLSelectElement
-    const optionValues = Array.from(select.options).map((o) => o.value)
-    expect(optionValues).toEqual([
-      '',
-      SeriesStatus.WATCHING,
-      SeriesStatus.COMPLETED,
-      SeriesStatus.DROPPED,
-      SeriesStatus.BACKLOG,
-    ])
   })
 })
 
 describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
-  it('calls onSearch with only populated fields, genres split and trimmed', () => {
+  it('calls onSearch with only populated fields', () => {
     const { onSearch } = renderFilter()
+    openFilters()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
-    })
-    fireEvent.change(screen.getByLabelText(/genres/i), {
-      target: { value: 'Drama, Comedy ,' },
-    })
-    fireEvent.change(screen.getByLabelText(/^status/i), {
-      target: { value: SeriesStatus.WATCHING },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'office',
-        genres: ['Drama', 'Comedy'],
-        status: SeriesStatus.WATCHING,
-      }),
+      expect.objectContaining({ title: 'office' }),
     )
     const payload = onSearch.mock.calls[0][0]
     expect(payload).not.toHaveProperty('minPersonalRating')
@@ -89,30 +73,157 @@ describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
     expect(onSearch).toHaveBeenCalledWith({})
   })
 
-  it('includes numeric rating fields and the checkbox when populated', () => {
+  it('includes numeric rating fields when populated', () => {
     const { onSearch } = renderFilter()
-    fireEvent.change(screen.getByLabelText(/min personal rating/i), {
-      target: { value: '3' },
-    })
-    fireEvent.change(screen.getByLabelText(/max personal rating/i), {
-      target: { value: '5' },
-    })
+    openFilters()
+    fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
     fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
       target: { value: '7.5' },
     })
-    fireEvent.change(screen.getByLabelText(/max imdb rating/i), {
-      target: { value: '9.2' },
-    })
-    fireEvent.click(screen.getByLabelText(/started.*not finished/i))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith({
       minPersonalRating: 3,
-      maxPersonalRating: 5,
       minImdbRating: 7.5,
-      maxImdbRating: 9.2,
-      startedNotFinished: true,
     })
+  })
+})
+
+describe('FRONTEND-055-AC-01: removed fields', () => {
+  it('no longer renders the removed fields', () => {
+    renderFilter()
+    expect(
+      screen.queryByLabelText(/max personal rating/i),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/max imdb rating/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText(/started, not finished/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
+  it('submits minTmdbRating and yearMin/yearMax', () => {
+    const { onSearch } = renderFilter()
+    openFilters()
+
+    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+      target: { value: '7.5' },
+    })
+    fireEvent.change(screen.getByLabelText(/min year/i), {
+      target: { value: '2015' },
+    })
+    fireEvent.change(screen.getByLabelText(/max year/i), {
+      target: { value: '2025' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        minTmdbRating: 7.5,
+        yearMin: 2015,
+        yearMax: 2025,
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-055-AC-03: genre checkbox list', () => {
+  it('renders genres as checkboxes and submits selected ones', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Drama', 'Comedy', 'Crime'])
+    const { onSearch } = renderFilter()
+    openFilters()
+
+    fireEvent.click(await screen.findByLabelText('Drama'))
+    fireEvent.click(screen.getByLabelText('Crime'))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ genres: ['Drama', 'Crime'] }),
+    )
+  })
+
+  it('omits genres from criteria when nothing is selected', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.not.objectContaining({ genres: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-055-AC-04: collapsible filter panel (amended -- closed by default)', () => {
+  it('filters are hidden by default and can be expanded', () => {
+    renderFilter()
+    expect(screen.queryByTestId('filters-body')).not.toBeInTheDocument()
+    const toggle = screen.getByRole('button', { name: /show filters/i })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(toggle)
+    expect(screen.getByTestId('filters-body')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /hide filters/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('FRONTEND-055-AC-05: rating/year fields carry validation bounds', () => {
+  it('rating and year fields carry the same bounds as Custom Search', () => {
+    renderFilter()
+    openFilters()
+
+    const minImdb = screen.getByLabelText(/min imdb rating/i)
+    expect(minImdb).toHaveAttribute('min', '0')
+    expect(minImdb).toHaveAttribute('max', '10')
+    expect(minImdb).toHaveAttribute('step', '0.1')
+
+    const minTmdb = screen.getByLabelText(/min tmdb rating/i)
+    expect(minTmdb).toHaveAttribute('min', '0')
+    expect(minTmdb).toHaveAttribute('max', '10')
+    expect(minTmdb).toHaveAttribute('step', '0.1')
+
+    const yearMin = screen.getByLabelText(/min year/i)
+    expect(yearMin).toHaveAttribute('min', '1900')
+    expect(yearMin).toHaveAttribute('max', String(new Date().getFullYear() + 1))
+
+    const yearMax = screen.getByLabelText(/max year/i)
+    expect(yearMax).toHaveAttribute('min', '1900')
+    expect(yearMax).toHaveAttribute('max', String(new Date().getFullYear() + 1))
+  })
+})
+
+describe('FRONTEND-055-AC-06: Min Personal Rating via StarRating', () => {
+  it('sets minPersonalRating via stars', () => {
+    const { onSearch } = renderFilter()
+    openFilters()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ minPersonalRating: 3 }),
+    )
+  })
+
+  it('clicking an already-selected star clears it', () => {
+    const { onSearch } = renderFilter()
+    openFilters()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.not.objectContaining({ minPersonalRating: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-055-AC-07: Status dropdown removed', () => {
+  it('no longer renders a Status field', () => {
+    renderFilter()
+    openFilters()
+    expect(screen.queryByLabelText(/^status$/i)).not.toBeInTheDocument()
   })
 })
 
@@ -131,20 +242,17 @@ describe('FRONTEND-006-AC-07/08: clearing', () => {
 
   it('resets fields and calls onClear, not onSearch', () => {
     const { onSearch, onClear } = renderFilter()
+    openFilters()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
-    fireEvent.change(screen.getByLabelText(/^status/i), {
-      target: { value: SeriesStatus.WATCHING },
-    })
-    fireEvent.click(screen.getByLabelText(/started.*not finished/i))
+    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
 
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
     expect(onClear).toHaveBeenCalledTimes(1)
     expect(onSearch).not.toHaveBeenCalled()
     expect(screen.getByLabelText(/title/i)).toHaveValue('')
-    expect(screen.getByLabelText(/^status/i)).toHaveValue('')
-    expect(screen.getByLabelText(/started.*not finished/i)).not.toBeChecked()
+    expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
   })
 })
 
@@ -152,6 +260,7 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
   it('never logs entered filter values to the console', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     const { onSearch } = renderFilter()
+    openFilters()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'secret-title' },
     })
@@ -173,6 +282,7 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
 
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
@@ -197,6 +307,7 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    openFilters()
 
     await screen.findByPlaceholderText(/type to filter tracked keywords/i)
     expect(
@@ -234,6 +345,7 @@ describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => 
       new ApiError(500, 'Internal server error'),
     )
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    openFilters()
 
     await screen.findByRole('alert')
     expect(
@@ -250,6 +362,7 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
     ])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.click(
       screen.getByRole('button', { name: /browse all keywords/i }),
@@ -276,6 +389,7 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
     ])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.click(
       screen.getByRole('button', { name: /browse all keywords/i }),
@@ -297,6 +411,7 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
 describe('FRONTEND-032-AC-09: inline field accepts free text', () => {
   it('adds typed text not present in options on Enter', () => {
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    openFilters()
     const input = screen.getByPlaceholderText(
       /type to filter tracked keywords/i,
     )
@@ -316,6 +431,7 @@ describe('FRONTEND-032-AC-10: "Browse all keywords" modal shows the full list wi
       })),
     )
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    openFilters()
     fireEvent.click(await screen.findByText('Browse all keywords'))
     const dialog = screen.getByRole('dialog')
     expect(await within(dialog).findByText('kw-0')).toBeInTheDocument()
@@ -328,6 +444,7 @@ describe('FRONTEND-029-AC-23: opening the modal does not re-fetch keyword option
     mockGetKeywordStats.mockResolvedValue([])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalledTimes(1))
+    openFilters()
 
     fireEvent.click(
       screen.getByRole('button', { name: /browse all keywords/i }),
@@ -343,6 +460,7 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
     ])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
@@ -358,11 +476,13 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
 describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
   it('renders unchecked by default', () => {
     renderFilter()
+    openFilters()
     expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
   })
 
   it('includes flaggedForRewatch in criteria only when checked', () => {
     const { onSearch } = renderFilter()
+    openFilters()
 
     fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
     fireEvent.click(screen.getByRole('button', { name: /search/i }))

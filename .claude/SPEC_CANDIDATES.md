@@ -17,7 +17,7 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-08-28. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-08-29. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 ---
@@ -140,6 +140,13 @@ implemented as one.
    source show.
 7. Let the user include/exclude specific sources more granularly than today's persistent
    per-series `excludeFromRecommendations` flag — e.g. ad-hoc per-request selection.
+   **Note (2026-08-29)**: `series_spec_034_exclude_from_recommendations_enforcement.md` /
+   `frontend_spec_050_exclude_from_recommendations_ui.md` just made the flag an *absolute* rule
+   (an excluded series can no longer be used as a source even by explicit hand-picking, reversing
+   the old `SERIES-008-AC-05` bypass this item's "ad-hoc per-request selection" idea depended on).
+   Whoever scopes this item should treat "ad-hoc override" as a new, deliberate exception to that
+   absolute rule if it's still wanted — not something that falls naturally out of the old, now-gone
+   bypass.
 8. Configurable source-query order (today hardcoded via `SourceOrderComparator`) — and whether
    reordering should also decouple "query order" from "which source wins the score tiebreak,"
    since one comparator currently does both jobs.
@@ -205,3 +212,46 @@ and `RecommendationControls` extend/compose), and whether `SeriesList`'s existin
 filter/sort logic (or `series_spec_003`'s backend search/filter, if server-side filtering turns out
 to matter more for "Use My Series" too) could be reused directly rather than reimplemented a second
 time.
+
+### Full-codebase manual accessibility review
+
+Raised 2026-08-29. Distinct from what's already in place: `eslint-plugin-jsx-a11y` (CI-gated,
+`tooling_spec_001` `TOOLING-001-AC-11/12`) catches static JSX-level violations, and `@axe-core/react`
+(gated on `import.meta.env.DEV`, per `RUNBOOK.md`) runtime-scans whatever's actually rendered during
+manual dev-server testing — but neither is exhaustive. Static lint can't catch runtime-only issues
+(computed contrast in a specific theme, focus order across a multi-step flow); axe's runtime scan
+only covers states/pages someone actually visited while it was running, and neither tool evaluates
+the *experience* of using the app with a screen reader or keyboard-only, only DOM-level correctness.
+Individual specs have addressed specific gaps as found (`frontend_spec_008`'s nested-interactive-
+controls fix; this session's icon-button `aria-label`/contrast/target-size additions to
+`frontend_spec_054`) — this candidate is a deliberate, holistic pass rather than more one-off fixes
+as they're individually noticed.
+
+**Confirmed scope this candidate would need to cover, not yet audited systematically**:
+- Keyboard-only navigation through complete multi-step flows (not just individual components) —
+  e.g. Add Series end-to-end, editing and saving a series, completing a recommendation's Add-to-List
+  flow, all without a mouse.
+- Screen reader testing (NVDA/VoiceOver at minimum) for the actual announced experience — DOM
+  correctness (what `jsx-a11y`/axe check) doesn't guarantee a coherent spoken experience.
+- Color contrast across every component in **both** light and dark themes (`prefers-color-scheme`)
+  — axe's dev-mode scan only ever ran in whichever theme the developer's OS/browser happened to be
+  in at the time, not both, for every page.
+- Focus management around this app's dialogs — confirmed (2026-08-29, while researching `frontend_
+  spec_052`) that every modal in this codebase (`SearchFilter`'s "Browse Keywords",
+  `RecommendationControls`' "Browse Series", etc.) is a deliberately minimal hand-rolled `role=
+  "dialog"` with Escape-to-dismiss only, **no focus trap and no focus-return-on-close** — a
+  documented, deliberate choice in each spec's Design Decisions (avoiding `<dialog>`'s
+  showModal()/close() lifecycle complexity), but never evaluated as a *pattern* across every dialog
+  at once for whether that tradeoff still holds as more dialogs have accumulated.
+- Heading hierarchy and skip-link presence across full pages, not per-component.
+- Touch/click target sizing (WCAG 2.5.8) app-wide, not just the one instance flagged during
+  `frontend_spec_054`'s icon-button design.
+
+**Status**: Spec candidate, not yet a real spec. Open questions before scoping one:
+1. Audit-only (a findings report feeding follow-up fix specs, the way `tooling_spec_001`'s Sonar
+   pass worked) vs. audit-and-fix-inline (one large spec doing both) — this project's own
+   `sonar-cleanup` skill precedent favors the former for a review of this breadth.
+2. Whether to formalize a WCAG conformance target (e.g. "AA") this app commits to going forward, or
+   keep the current ad hoc "fix what's found" posture.
+3. Whether the no-focus-trap dialog pattern above should be revisited as part of this audit or
+   treated as an accepted, already-decided tradeoff each dialog's own spec already signed off on.

@@ -12,10 +12,15 @@ public class SeriesSearchCriteria {
     private List<String> keywords;
     private String status;
     private Integer minPersonalRating;
-    private Integer maxPersonalRating;
     private BigDecimal minImdbRating;
-    private BigDecimal maxImdbRating;
-    private Boolean startedNotFinished;
+    // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-02): mirrors minImdbRating's
+    // shape exactly, matched against SeriesEntity.tmdbRating.
+    private BigDecimal minTmdbRating;
+    // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-03): matched against the series'
+    // single stored SeriesEntity.year -- a documented stopgap, not a true episode-air-date range
+    // (see the spec's Design Decisions).
+    private Integer yearMin;
+    private Integer yearMax;
     // series_spec_008_series_lifecycle_data.md (SERIES-008-AC-20): same nullable-boolean-filter
     // shape as startedNotFinished above -- when non-null and true, restricts results to only
     // series with flaggedForRewatch == true. No server-side status restriction (SERIES-008-AC-21).
@@ -41,14 +46,14 @@ public class SeriesSearchCriteria {
     public void setStatus(String status) { this.status = status; }
     public Integer getMinPersonalRating() { return minPersonalRating; }
     public void setMinPersonalRating(Integer minPersonalRating) { this.minPersonalRating = minPersonalRating; }
-    public Integer getMaxPersonalRating() { return maxPersonalRating; }
-    public void setMaxPersonalRating(Integer maxPersonalRating) { this.maxPersonalRating = maxPersonalRating; }
     public BigDecimal getMinImdbRating() { return minImdbRating; }
     public void setMinImdbRating(BigDecimal minImdbRating) { this.minImdbRating = minImdbRating; }
-    public BigDecimal getMaxImdbRating() { return maxImdbRating; }
-    public void setMaxImdbRating(BigDecimal maxImdbRating) { this.maxImdbRating = maxImdbRating; }
-    public Boolean getStartedNotFinished() { return startedNotFinished; }
-    public void setStartedNotFinished(Boolean startedNotFinished) { this.startedNotFinished = startedNotFinished; }
+    public BigDecimal getMinTmdbRating() { return minTmdbRating; }
+    public void setMinTmdbRating(BigDecimal minTmdbRating) { this.minTmdbRating = minTmdbRating; }
+    public Integer getYearMin() { return yearMin; }
+    public void setYearMin(Integer yearMin) { this.yearMin = yearMin; }
+    public Integer getYearMax() { return yearMax; }
+    public void setYearMax(Integer yearMax) { this.yearMax = yearMax; }
     public Boolean getFlaggedForRewatch() { return flaggedForRewatch; }
     public void setFlaggedForRewatch(Boolean flaggedForRewatch) { this.flaggedForRewatch = flaggedForRewatch; }
     public String getSortBy() { return sortBy; }

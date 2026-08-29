@@ -89,10 +89,10 @@ public class SeriesController {
             @RequestParam(required = false) List<String> keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer minPersonalRating,
-            @RequestParam(required = false) Integer maxPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
-            @RequestParam(required = false) BigDecimal maxImdbRating,
-            @RequestParam(required = false) Boolean startedNotFinished,
+            @RequestParam(required = false) BigDecimal minTmdbRating,
+            @RequestParam(required = false) Integer yearMin,
+            @RequestParam(required = false) Integer yearMax,
             @RequestParam(required = false) Boolean flaggedForRewatch,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
@@ -103,10 +103,10 @@ public class SeriesController {
         c.setKeywords(keyword);
         c.setStatus(status);
         c.setMinPersonalRating(minPersonalRating);
-        c.setMaxPersonalRating(maxPersonalRating);
         c.setMinImdbRating(minImdbRating);
-        c.setMaxImdbRating(maxImdbRating);
-        c.setStartedNotFinished(startedNotFinished);
+        c.setMinTmdbRating(minTmdbRating);
+        c.setYearMin(yearMin);
+        c.setYearMax(yearMax);
         c.setFlaggedForRewatch(flaggedForRewatch);
         c.setSortBy(sortBy);
         c.setSortDirection(sortDirection);
@@ -122,10 +122,10 @@ public class SeriesController {
             @RequestParam(required = false) List<String> genre,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer minPersonalRating,
-            @RequestParam(required = false) Integer maxPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
-            @RequestParam(required = false) BigDecimal maxImdbRating,
-            @RequestParam(required = false) Boolean startedNotFinished) {
+            @RequestParam(required = false) BigDecimal minTmdbRating,
+            @RequestParam(required = false) Integer yearMin,
+            @RequestParam(required = false) Integer yearMax) {
 
         if (!format.equalsIgnoreCase("json") && !format.equalsIgnoreCase("csv")) {
             return ResponseEntity.badRequest().body("Invalid format. Use 'json' or 'csv'.");
@@ -136,10 +136,10 @@ public class SeriesController {
         c.setGenres(genre);
         c.setStatus(status);
         c.setMinPersonalRating(minPersonalRating);
-        c.setMaxPersonalRating(maxPersonalRating);
         c.setMinImdbRating(minImdbRating);
-        c.setMaxImdbRating(maxImdbRating);
-        c.setStartedNotFinished(startedNotFinished);
+        c.setMinTmdbRating(minTmdbRating);
+        c.setYearMin(yearMin);
+        c.setYearMax(yearMax);
 
         List<SeriesDto> series = searchService.search(c);
         String ts = LocalDateTime.now(clock).format(FILENAME_FMT);

@@ -135,40 +135,28 @@ class SeriesSearchServiceSpec extends Specification {
             results.every { it.status == "COMPLETED" }
     }
 
-    def "search by personal rating range"() {
-        given: "search criteria filtering by a personal rating of 5"
-            def criteria = new SeriesSearchCriteria(minPersonalRating: 5, maxPersonalRating: 5)
+    def "search by personal rating floor"() {
+        given: "search criteria filtering by a minimum personal rating of 5"
+            def criteria = new SeriesSearchCriteria(minPersonalRating: 5)
 
         when: "the search is executed"
             def results = searchService.search(criteria)
 
-        then: "only series with a personal rating of 5 are returned"
+        then: "only series with a personal rating of at least 5 are returned"
             results.size() == 2  // The Office, Breaking Bad
             results.every { it.personalRating == 5 }
     }
 
-    def "search by IMDb rating range"() {
-        given: "search criteria filtering by an IMDb rating range"
-            def criteria = new SeriesSearchCriteria(minImdbRating: 9.2, maxImdbRating: 10.0)
+    def "search by IMDb rating floor"() {
+        given: "search criteria filtering by a minimum IMDb rating"
+            def criteria = new SeriesSearchCriteria(minImdbRating: 9.2)
 
         when: "the search is executed"
             def results = searchService.search(criteria)
 
-        then: "only series within the rating range are returned"
+        then: "only series at or above the rating floor are returned"
             results.size() == 2  // GoT (9.2), Breaking Bad (9.5)
             results.every { it.imdbRating >= 9.2 }
-    }
-
-    def "search started but not finished"() {
-        given: "search criteria filtering for series started but not finished"
-            def criteria = new SeriesSearchCriteria(startedNotFinished: true)
-
-        when: "the search is executed"
-            def results = searchService.search(criteria)
-
-        then: "only series with in-progress or dropped status are returned"
-            results.size() == 2  // Breaking Bad (WATCHING + progress), Stranger Things (DROPPED + progress)
-            results.every { it.status in ["WATCHING", "DROPPED"] }
     }
 
     def "SERIES-008-AC-20: flaggedForRewatch=true filters to only flagged series"() {
@@ -244,9 +232,9 @@ class SeriesSearchServiceSpec extends Specification {
     }
 
     def "null personal rating is excluded when rating filter is set"() {
-        given: "search criteria filtering by personal rating range"
+        given: "search criteria filtering by a minimum personal rating"
             // Stranger Things has no personalRating
-            def criteria = new SeriesSearchCriteria(minPersonalRating: 4, maxPersonalRating: 5)
+            def criteria = new SeriesSearchCriteria(minPersonalRating: 4)
 
         when: "the search is executed"
             def results = searchService.search(criteria)
@@ -452,5 +440,65 @@ class SeriesSearchServiceSpec extends Specification {
 
         then: "an IllegalArgumentException is thrown"
             thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-037-AC-01: maxPersonalRating/maxImdbRating/startedNotFinished no longer filter results"() {
+        given: "a series with personalRating=5, imdbRating=9.5, status=WATCHING"
+            seriesRepository.save(new SeriesEntity(title: "Show", personalRating: 5, imdbRating: new BigDecimal("9.5"),
+                status: uk.co.stefirby.seriestracker.model.SeriesStatus.WATCHING, currentSeason: 1))
+
+        when: "search is called with only minPersonalRating set (no max, no startedNotFinished)"
+            def criteria = new SeriesSearchCriteria(minPersonalRating: 3)
+            def results = searchService.search(criteria)
+
+        then: "the series is returned -- min-only filtering still works, removed fields have no getters to even set"
+            results*.title.contains("Show")
+    }
+
+    def "SERIES-037-AC-02: minTmdbRating filters out series below the threshold"() {
+        given: "two series, one above and one below the threshold"
+            seriesRepository.save(new SeriesEntity(title: "High Tmdb", tmdbRating: new BigDecimal("8.5")))
+            seriesRepository.save(new SeriesEntity(title: "Low Tmdb", tmdbRating: new BigDecimal("5.0")))
+
+        when: "search is called with minTmdbRating=7.0, scoped to these two"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Tmdb", minTmdbRating: new BigDecimal("7.0")))
+
+        then: "only the high-rated series is returned"
+            results*.title == ["High Tmdb"]
+    }
+
+    def "SERIES-037-AC-02: a series with no tmdbRating never matches a minTmdbRating filter"() {
+        given: "a series with tmdbRating unset"
+            seriesRepository.save(new SeriesEntity(title: "Unrated Tmdb"))
+
+        when: "search is called with minTmdbRating set, scoped to this series"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Unrated Tmdb", minTmdbRating: new BigDecimal("1.0")))
+
+        then: "it's excluded"
+            results.isEmpty()
+    }
+
+    def "SERIES-037-AC-03: yearMin/yearMax filters against the stored year field"() {
+        given: "three series with different years"
+            seriesRepository.save(new SeriesEntity(title: "Old Year", year: 2005))
+            seriesRepository.save(new SeriesEntity(title: "InRange Year", year: 2020))
+            seriesRepository.save(new SeriesEntity(title: "New Year", year: 2026))
+
+        when: "search is called with yearMin=2015, yearMax=2025, scoped to these three"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Year", yearMin: 2015, yearMax: 2025))
+
+        then: "only the in-range series is returned"
+            results*.title == ["InRange Year"]
+    }
+
+    def "SERIES-037-AC-03: a series with no year never matches a yearMin/yearMax filter"() {
+        given: "a series with year unset"
+            seriesRepository.save(new SeriesEntity(title: "Unyeared Series"))
+
+        when: "search is called with yearMin set, scoped to this series"
+            def results = searchService.search(new SeriesSearchCriteria(title: "Unyeared", yearMin: 2000))
+
+        then: "it's excluded"
+            results.isEmpty()
     }
 }
