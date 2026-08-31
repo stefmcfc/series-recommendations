@@ -1,6 +1,12 @@
 # Frontend Spec 054: `SeriesList` Compact/Grid View (and a Poster-Only View)
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/SeriesList.tsx` (`ViewMode` state,
+`localStorage` persistence via `readStoredViewMode`/`isViewMode`, the three-icon
+`aria-pressed` toggle), new `components/SeriesCompactGrid.tsx`/`.module.css` and
+`components/SeriesPosterGrid.tsx`/`.module.css`, `SeriesList.test.tsx` (new
+`FRONTEND-054-AC-01`–`09` test cases). Manually verified in-browser (Expanded/Compact/
+Poster-only rendering, click-through navigation, and `localStorage` persistence across a
+page reload).
 **Priority**: P3 (quality-of-life — two alternative, denser displays for a growing collection;
 today's expanded row view stays the default, unaffected)
 **Depends on**: Frontend Spec 002 (`frontend_spec_002.md`, owns `SeriesList.tsx`) ✅, Frontend Spec
@@ -346,12 +352,12 @@ already uses (`SeriesList.tsx` line ~495) — the surrounding `<button>` always 
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-054-AC-01: the icon Expanded/Compact/Poster-only toggle renders with correct `aria-pressed` state and accessible names
-- [ ] FRONTEND-054-AC-02: switching view mode doesn't trigger a new fetch
-- [ ] FRONTEND-054-AC-03: view mode persists to `localStorage`, degrading silently on failure
-- [ ] FRONTEND-054-AC-04: compact cards show only poster/title-year/rating, no badges or actions
-- [ ] FRONTEND-054-AC-05: each compact card is an accessible `<button>` navigating to `SeriesDetail`
-- [ ] FRONTEND-054-AC-06: all three views always render the same set of series
-- [ ] FRONTEND-054-AC-07: poster-only cards show only the poster image (added 2026-08-31)
-- [ ] FRONTEND-054-AC-08: each poster card is an accessible `<button>` navigating to `SeriesDetail` (added 2026-08-31)
-- [ ] FRONTEND-054-AC-09: a missing poster renders no `<img>`, not a broken one (added 2026-08-31)
+- [x] FRONTEND-054-AC-01: the icon Expanded/Compact/Poster-only toggle renders with correct `aria-pressed` state and accessible names
+- [x] FRONTEND-054-AC-02: switching view mode doesn't trigger a new fetch
+- [x] FRONTEND-054-AC-03: view mode persists to `localStorage`, degrading silently on failure
+- [x] FRONTEND-054-AC-04: compact cards show only poster/title-year/rating, no badges or actions
+- [x] FRONTEND-054-AC-05: each compact card is an accessible `<button>` navigating to `SeriesDetail`
+- [x] FRONTEND-054-AC-06: all three views always render the same set of series
+- [x] FRONTEND-054-AC-07: poster-only cards show only the poster image (added 2026-08-31)
+- [x] FRONTEND-054-AC-08: each poster card is an accessible `<button>` navigating to `SeriesDetail` (added 2026-08-31)
+- [x] FRONTEND-054-AC-09: a missing poster renders no `<img>`, not a broken one (added 2026-08-31)

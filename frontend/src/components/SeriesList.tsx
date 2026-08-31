@@ -14,6 +14,8 @@ import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
 import { StarRating } from './StarRating'
+import { SeriesCompactGrid } from './SeriesCompactGrid'
+import { SeriesPosterGrid } from './SeriesPosterGrid'
 import styles from './SeriesList.module.css'
 
 interface SeriesListProps {
@@ -86,6 +88,31 @@ function buildLastFullRefreshText(status: RefreshJobStatus): string {
   return `Last full refresh: ${formatRelativeTime(finishedAt)}${skippedSuffix}`
 }
 
+// FRONTEND-054-AC-01/03: three opt-in rendering modes over the same fetched
+// `series` array -- purely a display toggle, no new fetch/filter/sort logic.
+type ViewMode = 'expanded' | 'compact' | 'poster'
+
+const VIEW_MODE_STORAGE_KEY = 'seriesListViewMode'
+const DEFAULT_VIEW_MODE: ViewMode = 'expanded'
+const VIEW_MODES: readonly ViewMode[] = ['expanded', 'compact', 'poster']
+
+function isViewMode(value: string | null): value is ViewMode {
+  return value != null && (VIEW_MODES as readonly string[]).includes(value)
+}
+
+// FRONTEND-054-AC-03: read once on mount, degrading silently to the default
+// on a read failure (private browsing, quota, storage disabled) or an
+// unrecognized stored value -- this app's first localStorage-persisted UI
+// preference.
+function readStoredViewMode(): ViewMode {
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY)
+    return isViewMode(stored) ? stored : DEFAULT_VIEW_MODE
+  } catch {
+    return DEFAULT_VIEW_MODE
+  }
+}
+
 function hasActiveCriteria(criteria?: SearchCriteria): boolean {
   if (!criteria) return false
   return Object.values(criteria).some((value) => {
@@ -125,9 +152,22 @@ export function SeriesList({
   const [sortDirection, setSortDirection] = useState<SortDirection>(
     DEFAULT_SORT_DIRECTION,
   )
+  // FRONTEND-054-AC-01/02/03: view mode is local, purely-rendering state --
+  // switching it never triggers a new seriesApi call.
+  const [viewMode, setViewMode] = useState<ViewMode>(() => readStoredViewMode())
 
   const criteriaActive = hasActiveCriteria(criteria)
   const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
+
+  // FRONTEND-054-AC-03: written on every change; a write failure (private
+  // browsing, quota, storage disabled) degrades silently.
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode)
+    } catch {
+      // Silently ignore -- persistence is a nice-to-have, not a requirement.
+    }
+  }, [viewMode])
 
   useEffect(() => {
     let cancelled = false
@@ -374,6 +414,76 @@ export function SeriesList({
             {sortDirection === 'asc' ? '↑' : '↓'}
           </button>
         </div>
+        <div className={styles.viewModeToggle}>
+          <button
+            type="button"
+            className={styles.viewModeButton}
+            data-testid="view-mode-expanded-btn"
+            aria-label="Expanded view"
+            aria-pressed={viewMode === 'expanded'}
+            onClick={() => setViewMode('expanded')}
+          >
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <line x1="4" y1="18" x2="20" y2="18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={styles.viewModeButton}
+            data-testid="view-mode-compact-btn"
+            aria-label="Compact view"
+            aria-pressed={viewMode === 'compact'}
+            onClick={() => setViewMode('compact')}
+          >
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className={styles.viewModeButton}
+            data-testid="view-mode-poster-btn"
+            aria-label="Poster-only view"
+            aria-pressed={viewMode === 'poster'}
+            onClick={() => setViewMode('poster')}
+          >
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="9.5" r="1.5" />
+              <path d="M21 15l-5-5-9 9" />
+            </svg>
+          </button>
+        </div>
         <div className={styles.headerActions}>
           <button
             type="button"
@@ -475,7 +585,7 @@ export function SeriesList({
         </div>
       )}
 
-      {!loading && !error && series.length > 0 && (
+      {!loading && !error && series.length > 0 && viewMode === 'expanded' && (
         <ul className={styles.list}>
           {series.map((s) => {
             const yearLabel = formatSeriesYear(s)
@@ -624,6 +734,26 @@ export function SeriesList({
             )
           })}
         </ul>
+      )}
+
+      {/* FRONTEND-054-AC-04/05/06: same `series` state as the expanded view
+          above -- switching viewMode never changes which series are shown. */}
+      {!loading && !error && series.length > 0 && viewMode === 'compact' && (
+        <SeriesCompactGrid
+          series={series}
+          posterErrorIds={posterErrorIds}
+          onPosterError={handlePosterError}
+          onCardClick={handleRowClick}
+        />
+      )}
+
+      {!loading && !error && series.length > 0 && viewMode === 'poster' && (
+        <SeriesPosterGrid
+          series={series}
+          posterErrorIds={posterErrorIds}
+          onPosterError={handlePosterError}
+          onCardClick={handleRowClick}
+        />
       )}
     </div>
   )
