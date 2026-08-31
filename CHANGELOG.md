@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.2.4] - 2026-08-31
+
 ### Changed
 
 - Frontend: `SeriesList`'s per-row status badge now only shows on the "All" status tab — every other tab already filters to a single status, making the badge redundant on every row (`frontend_spec_056`, `FRONTEND-056-AC-07`).
