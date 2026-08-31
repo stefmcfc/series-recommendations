@@ -92,7 +92,7 @@ function hasActiveCriteria(criteria?: SearchCriteria): boolean {
     if (value == null) return false
     if (Array.isArray(value)) return value.length > 0
     if (typeof value === 'string') return value !== ''
-    if (typeof value === 'boolean') return value === true
+    if (typeof value === 'boolean') return value
     return true
   })
 }
