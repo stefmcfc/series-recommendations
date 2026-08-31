@@ -23,7 +23,7 @@ import java.util.List;
  * attribution itself (SERIES-015-AC-09/10/11).
  *
  * <p>{@code originCountry} (SERIES-023-AC-02) is the candidate's first {@code origin_country}
- * entry, passed through from {@link uk.co.stefirby.seriestracker.client.TmdbCandidate}
+ * entry, passed through from {@link uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate}
  * verbatim. {@code tmdbId} (SERIES-023-AC-03) is the candidate's own TMDB id, already resolved
  * internally on every candidate -- exposed here so the frontend can request this specific
  * candidate's keywords ({@code GET /api/v1/series/recommendations/{tmdbId}/keywords}) without a
@@ -58,9 +58,9 @@ public record RecommendationDto(
 
     /**
      * A single streaming service a recommended candidate is currently available on
-     * (SERIES-020-AC-05), mapped from {@link uk.co.stefirby.seriestracker.client.TmdbWatchProvider}.
+     * (SERIES-020-AC-05), mapped from {@link uk.co.stefirby.seriestracker.client.tmdb.TmdbWatchProvider}.
      * {@code logoUrl} is already a fully-built URL ({@link
-     * uk.co.stefirby.seriestracker.client.TmdbClient#PROVIDER_LOGO_BASE_URL} + the raw {@code
+     * uk.co.stefirby.seriestracker.client.tmdb.TmdbClient#PROVIDER_LOGO_BASE_URL} + the raw {@code
      * logo_path}), or {@code null} when TMDB didn't supply a logo path -- callers never need to
      * know TMDB's base-URL-plus-path convention themselves.
      */

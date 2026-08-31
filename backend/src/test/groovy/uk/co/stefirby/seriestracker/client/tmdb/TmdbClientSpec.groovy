@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.client
+package uk.co.stefirby.seriestracker.client.tmdb
 
 import org.hamcrest.Matchers
 import org.springframework.http.HttpMethod

@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.client;
+package uk.co.stefirby.seriestracker.client.tmdb;
 
 /**
  * A single flatrate (subscription-streaming) watch provider entry, as returned by

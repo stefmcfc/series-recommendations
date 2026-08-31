@@ -7,8 +7,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
-import uk.co.stefirby.seriestracker.client.TmdbClient
-import uk.co.stefirby.seriestracker.client.TmdbWatchProvider
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbWatchProvider
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.repository.SeriesRepository

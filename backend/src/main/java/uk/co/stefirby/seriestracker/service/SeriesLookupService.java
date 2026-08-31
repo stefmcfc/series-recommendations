@@ -1,10 +1,10 @@
 package uk.co.stefirby.seriestracker.service;
 
-import uk.co.stefirby.seriestracker.client.OmdbClient;
-import uk.co.stefirby.seriestracker.client.OmdbRatings;
-import uk.co.stefirby.seriestracker.client.TmdbClient;
-import uk.co.stefirby.seriestracker.client.TmdbSearchCandidate;
-import uk.co.stefirby.seriestracker.client.TmdbSeriesDetail;
+import uk.co.stefirby.seriestracker.client.omdb.OmdbClient;
+import uk.co.stefirby.seriestracker.client.omdb.OmdbRatings;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbSearchCandidate;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbSeriesDetail;
 import uk.co.stefirby.seriestracker.dto.SeriesLookupDto;
 import uk.co.stefirby.seriestracker.dto.TmdbLookupCandidateDto;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;

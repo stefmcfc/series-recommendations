@@ -1,7 +1,7 @@
 package uk.co.stefirby.seriestracker.service
 
-import uk.co.stefirby.seriestracker.client.TmdbClient
-import uk.co.stefirby.seriestracker.client.TmdbWatchProvider
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbWatchProvider
 import uk.co.stefirby.seriestracker.dto.RecommendationDto
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException

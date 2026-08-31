@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.client
+package uk.co.stefirby.seriestracker.client.omdb
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest

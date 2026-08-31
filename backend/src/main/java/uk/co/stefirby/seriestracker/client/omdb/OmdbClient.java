@@ -1,5 +1,6 @@
-package uk.co.stefirby.seriestracker.client;
+package uk.co.stefirby.seriestracker.client.omdb;
 
+import uk.co.stefirby.seriestracker.client.ExternalApiSupport;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import org.springframework.beans.factory.annotation.Value;

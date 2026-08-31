@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.client;
+package uk.co.stefirby.seriestracker.client.tmdb;
 
 import uk.co.stefirby.seriestracker.model.ProductionStatus;
 

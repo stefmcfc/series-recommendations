@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.client;
+package uk.co.stefirby.seriestracker.client.tmdb;
 
 import java.util.List;
 

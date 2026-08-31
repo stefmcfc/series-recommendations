@@ -1,5 +1,6 @@
-package uk.co.stefirby.seriestracker.client;
+package uk.co.stefirby.seriestracker.client.tmdb;
 
+import uk.co.stefirby.seriestracker.client.ExternalApiSupport;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.ProductionStatus;
 import org.springframework.beans.factory.annotation.Value;

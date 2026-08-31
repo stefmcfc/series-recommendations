@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.client;
+package uk.co.stefirby.seriestracker.client.tmdb;
 
 /**
  * A single TMDB keyword entry, as returned by {@code GET /tv/{tmdbId}/keywords}'s
