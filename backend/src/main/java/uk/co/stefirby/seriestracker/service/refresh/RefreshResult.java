@@ -1,6 +1,7 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.refresh;
 
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
+import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 
 /**
  * Result of {@link SeriesRefreshService#refresh(java.util.UUID)} -- pairs the refreshed (or

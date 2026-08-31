@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.refresh
 
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions

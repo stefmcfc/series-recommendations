@@ -1,15 +1,17 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.refresh;
 
-import uk.co.stefirby.seriestracker.client.OmdbClient;
-import uk.co.stefirby.seriestracker.client.OmdbRatings;
-import uk.co.stefirby.seriestracker.client.TmdbClient;
-import uk.co.stefirby.seriestracker.client.TmdbSeriesDetail;
+import uk.co.stefirby.seriestracker.client.omdb.OmdbClient;
+import uk.co.stefirby.seriestracker.client.omdb.OmdbRatings;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbSeriesDetail;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
+import uk.co.stefirby.seriestracker.service.KeywordSyncService;
+import uk.co.stefirby.seriestracker.service.SeriesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
