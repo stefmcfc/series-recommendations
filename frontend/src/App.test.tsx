@@ -248,8 +248,13 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
       await screen.findByTestId('recommendations-list'),
     ).toBeInTheDocument()
     expect(screen.queryByTestId('series-list')).not.toBeInTheDocument()
+    // FRONTEND-062 (2026-09-01): navigating to Recommendations no longer
+    // fires a request on its own -- this incidental sanity check (confirming
+    // the view actually rendered) now looks for the "not yet searched"
+    // prompt instead of a real empty-results message, since nothing has
+    // been fetched yet.
     expect(
-      await screen.findByText(/no recommendations yet/i),
+      await screen.findByTestId('recommendations-not-searched'),
     ).toBeInTheDocument()
 
     const searchCallsBeforeReturning = mockSearch.mock.calls.length

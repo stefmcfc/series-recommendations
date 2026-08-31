@@ -32,7 +32,10 @@ export function RecommendationsList({
   onLoadingChange,
 }: RecommendationsListProps = {}) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
-  const [loading, setLoading] = useState(true)
+  // FRONTEND-062-AC-07: starts false, not true -- nothing fetches until a
+  // real `query` exists (the fetch effect below early-returns when
+  // `query == null`), so there is nothing loading at mount anymore.
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [refreshIndex, setRefreshIndex] = useState(0)
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null)
@@ -48,6 +51,12 @@ export function RecommendationsList({
   const [keywordErrors, setKeywordErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
+    // FRONTEND-062-AC-06: no fetch (and no loading flip) until a real query
+    // exists -- nothing has been "Applied" yet, so there is nothing to
+    // fetch. The prompt rendered below (data-testid="recommendations-not-
+    // searched") covers this state instead.
+    if (query == null) return
+
     let cancelled = false
 
     // FRONTEND-040: fixes the reported symptom directly -- previously this
@@ -198,7 +207,23 @@ export function RecommendationsList({
     <div className={styles.container} data-testid="recommendations-list">
       <h2 className={styles.heading}>Recommendations</h2>
 
-      {loading && (
+      {/* FRONTEND-062-AC-08: distinct from the empty-results messages below
+          -- those presuppose a search actually ran and found nothing, which
+          isn't true here. Checked ahead of the loading/error/empty-
+          results/results branches, none of which change. */}
+      {query == null && (
+        <div
+          className={styles.empty}
+          data-testid="recommendations-not-searched"
+        >
+          <p>
+            Set your filters above and click "Apply Filters" to see
+            recommendations.
+          </p>
+        </div>
+      )}
+
+      {query != null && loading && (
         <output className={styles.loading} aria-label="Loading">
           <svg
             className={styles.spinner}
@@ -227,7 +252,7 @@ export function RecommendationsList({
         </output>
       )}
 
-      {!loading && error && (
+      {query != null && !loading && error && (
         <div className={styles.error} role="alert">
           <p>{error}</p>
           <button
@@ -240,7 +265,7 @@ export function RecommendationsList({
         </div>
       )}
 
-      {!loading && !error && recommendations.length === 0 && (
+      {query != null && !loading && !error && recommendations.length === 0 && (
         <div className={styles.empty}>
           {/* Fix 2 (2026-08-28, live testing -- pre-existing bug, not part
               of any open spec): this message only makes sense for "Use My
@@ -263,7 +288,7 @@ export function RecommendationsList({
         </div>
       )}
 
-      {!loading && !error && recommendations.length > 0 && (
+      {query != null && !loading && !error && recommendations.length > 0 && (
         <ul className={styles.list}>
           {recommendations.map((r) => (
             <li

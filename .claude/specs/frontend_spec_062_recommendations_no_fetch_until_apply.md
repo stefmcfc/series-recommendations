@@ -1,6 +1,16 @@
 # Frontend Spec 062: Recommendations — No Fetch Until "Apply Filters" (Any Tab)
 
-**Status**: Not started
+**Status**: Implemented — `RecommendationControls.tsx` (mount effect removed, `handleTopLevelModeChange`/
+`handleDiscoverSubModeChange` call `onQueryChange(undefined)` instead of firing a built query,
+`onQueryChange` prop widened to accept `undefined`), `RecommendationsList.tsx` (`loading` initializes
+`false`, fetch effect early-returns when `query == null`, new `data-testid="recommendations-not-searched"`
+prompt gated ahead of — and the four pre-existing loading/error/empty-results/results branches now also
+gated on — `query != null`, closing a gap the original Design Decisions didn't fully spell out: without
+it, stale `recommendations`/`error` state from a previous mode would render simultaneously with the new
+prompt after a tab switch), `RecommendationControls.test.tsx`/`RecommendationsList.test.tsx`/
+`App.test.tsx` (new + rewritten test cases). Manually verified in-browser via the network tab: no
+`/api/v1/series/recommendations` request fires on navigation or on switching tabs; one fires only after
+clicking "Apply Filters"; switching tabs after that correctly clears the results back to the prompt.
 **Priority**: P2 (product decision reversal — every visit to Recommendations fires at least one
 request, including one that reaches TMDB via "Use My Series" pool sourcing, before the user has
 looked at or touched a single control)
@@ -75,7 +85,15 @@ tiers) into the same Apply-gated flow every other control already uses, reversin
   when no request has been made yet would be actively misleading. The new prompt (exact copy is an
   implementer call, not an AC) explains that filters need to be set and applied, and renders
   whenever `query == null` — checked *before* the existing `loading`/`error`/empty-results/results
-  branches, all four of which continue to assume a query exists exactly as before.
+  branches.
+- **(Corrected during implementation, 2026-09-01) The four pre-existing branches also gained a
+  `query != null` guard, not just the new prompt.** Nothing clears `recommendations`/`error` state
+  when `query` goes back to `undefined` on a tab switch — without gating the existing branches too,
+  a previous mode's results (or error) would render *simultaneously* with the new "not yet searched"
+  prompt the moment `loading`/`error` happened to allow it, rather than the prompt fully replacing
+  them as `FRONTEND-062-AC-04`'s "returns to the not-yet-searched state" intends. This is a
+  clarification of the original Design Decision above, not a scope change — the four branches'
+  own internal logic is otherwise untouched.
 - **`onQueryChange`'s prop type widens to accept `undefined`**
   (`(query: RecommendationQuery | undefined) => void`) — `App.tsx`'s own `recommendationQuery`
   state was already typed `RecommendationQuery | undefined` from the start (it begins `undefined`
@@ -328,13 +346,13 @@ mount-always-fetches behavior this spec removes.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-062-AC-01: no default query established on mount
-- [ ] FRONTEND-062-AC-02: switching the top-level tab doesn't call `onQueryChange`
-- [ ] FRONTEND-062-AC-03: switching the Discover sub-tab doesn't call `onQueryChange`
-- [ ] FRONTEND-062-AC-04: switching either tab clears the previous query back to `undefined`
-- [ ] FRONTEND-062-AC-05: "Apply Filters" still fires the pending state (regression guard)
-- [ ] FRONTEND-062-AC-06: no fetch when `query` is `undefined`
-- [ ] FRONTEND-062-AC-07: `loading` initializes `false`, not `true`
-- [ ] FRONTEND-062-AC-08: a distinct "not yet searched" prompt renders when `query` is `undefined`
-- [ ] FRONTEND-062-AC-09: existing loading/error/empty-results/results states unaffected once a query exists (regression guard)
-- [ ] FRONTEND-062-AC-10: `onLoadingChange` doesn't fire `true` on a query-less mount (adjusts `FRONTEND-040-AC-05`'s test)
+- [x] FRONTEND-062-AC-01: no default query established on mount
+- [x] FRONTEND-062-AC-02: switching the top-level tab doesn't call `onQueryChange`
+- [x] FRONTEND-062-AC-03: switching the Discover sub-tab doesn't call `onQueryChange`
+- [x] FRONTEND-062-AC-04: switching either tab clears the previous query back to `undefined`
+- [x] FRONTEND-062-AC-05: "Apply Filters" still fires the pending state (regression guard)
+- [x] FRONTEND-062-AC-06: no fetch when `query` is `undefined`
+- [x] FRONTEND-062-AC-07: `loading` initializes `false`, not `true`
+- [x] FRONTEND-062-AC-08: a distinct "not yet searched" prompt renders when `query` is `undefined`
+- [x] FRONTEND-062-AC-09: existing loading/error/empty-results/results states unaffected once a query exists (regression guard)
+- [x] FRONTEND-062-AC-10: `onLoadingChange` doesn't fire `true` on a query-less mount (adjusts `FRONTEND-040-AC-05`'s test)
