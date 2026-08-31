@@ -1,9 +1,11 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
-import uk.co.stefirby.seriestracker.client.TmdbCandidate;
-import uk.co.stefirby.seriestracker.client.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
+import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
+import uk.co.stefirby.seriestracker.service.WatchProviderService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,7 +26,7 @@ public class RecommendationDtoAssembler {
         this.watchProviderService = watchProviderService;
     }
 
-    public RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown) {
+    RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown) {
         TmdbCandidate c = dc.candidate();
         List<String> sourceTitles = dc.sourceSeries().stream()
             .map(SeriesEntity::getTitle)

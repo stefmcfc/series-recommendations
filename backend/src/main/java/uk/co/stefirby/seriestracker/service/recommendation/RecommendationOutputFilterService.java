@@ -1,10 +1,11 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
-import uk.co.stefirby.seriestracker.client.TmdbCandidate;
-import uk.co.stefirby.seriestracker.client.TmdbClient;
-import uk.co.stefirby.seriestracker.client.TmdbKeyword;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
+import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,7 +44,7 @@ public class RecommendationOutputFilterService {
         this.defaultMinVoteCount = defaultMinVoteCount;
     }
 
-    public List<DedupedCandidate> applyOutputFilters(List<DedupedCandidate> candidates, RecommendationCriteria c) {
+    List<DedupedCandidate> applyOutputFilters(List<DedupedCandidate> candidates, RecommendationCriteria c) {
         // SERIES-024-AC-11/SERIES-029-AC-05: the post-hoc default is 200 for topRated
         // (RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED), and the injected
         // defaultMinVoteCount (also 200 by default, but independently configurable) otherwise.

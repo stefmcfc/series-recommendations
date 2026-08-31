@@ -1,12 +1,13 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
-import uk.co.stefirby.seriestracker.client.DiscoverFilters;
-import uk.co.stefirby.seriestracker.client.TmdbCandidate;
-import uk.co.stefirby.seriestracker.client.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.DiscoverFilters;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
+import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,7 +68,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
 
-    public List<RawCandidate> sourceTrending(RecommendationCriteria c) {
+    List<RawCandidate> sourceTrending(RecommendationCriteria c) {
         String window = c.getTrendingWindow() != null && !c.getTrendingWindow().isBlank()
             ? c.getTrendingWindow() : "week";
         return tmdbClient.trending(window).stream()
@@ -77,7 +78,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
 
-    public List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
+    List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
         // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
         // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
@@ -89,7 +90,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 5: directed sourcing by genre/keyword, bypassing the watched pool entirely --
 
-    public List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c) {
+    List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c) {
         List<Integer> genreIds = resolveGenreIds(c.getGenres());
         List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
         // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
@@ -97,7 +98,7 @@ public class RecommendationSourcingService {
         // SERIES-029-AC-07/09: resolve a sourcing-time minVoteCount floor (mirroring
         // sourceTopRated's own effective-minVoteCount resolution) so TMDB itself only returns
         // candidates worth considering, instead of relying solely on the post-hoc output filter.
-        int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
+        int effectiveMinVoteCount = resolveEffectiveMinVoteCount(c);
         // SERIES-031-AC-05/SERIES-032-AC-05: minTmdbRating/yearMin/yearMax/language/countries
         // are read straight from criteria (all already null-means-unset) and sent to TMDB
         // itself, for the same "don't rely solely on a post-hoc filter against one ~20-result
@@ -113,6 +114,11 @@ public class RecommendationSourcingService {
     private String resolveDiscoverSortBy(RecommendationCriteria c, String modeDefault) {
         String discoverSortBy = c.getDiscoverSortBy();
         return discoverSortBy != null && !discoverSortBy.isBlank() ? discoverSortBy : modeDefault;
+    }
+
+    /** SERIES-029-AC-07/09: an explicit {@code minVoteCount} wins; otherwise the configured default floor. */
+    private int resolveEffectiveMinVoteCount(RecommendationCriteria c) {
+        return c.getMinVoteCount() != null ? c.getMinVoteCount() : defaultMinVoteCount;
     }
 
     private List<Integer> resolveGenreIds(List<String> genres) {
@@ -140,7 +146,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 4 (Spec 006) / Requirement 4+6 (Spec 007): pool-based (title + genre supplement) sourcing --
 
-    public List<RawCandidate> sourceFromPool(RecommendationCriteria c, int limit) {
+    List<RawCandidate> sourceFromPool(RecommendationCriteria c, int limit) {
         List<SeriesEntity> pool = resolveSourcePool(c);
         if (pool.isEmpty()) {
             log.debug("Source pool is empty; skipping recommendation sourcing entirely");

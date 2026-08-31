@@ -3,7 +3,7 @@ package uk.co.stefirby.seriestracker.controller;
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
-import uk.co.stefirby.seriestracker.service.RecommendationService;
+import uk.co.stefirby.seriestracker.service.recommendation.RecommendationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

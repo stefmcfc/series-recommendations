@@ -1,12 +1,13 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.recommendation
 
-import uk.co.stefirby.seriestracker.client.DiscoverFilters
-import uk.co.stefirby.seriestracker.client.TmdbCandidate
-import uk.co.stefirby.seriestracker.client.TmdbClient
+import uk.co.stefirby.seriestracker.client.tmdb.DiscoverFilters
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
+import uk.co.stefirby.seriestracker.service.TmdbGenreTable
 import spock.lang.Specification
 
 import java.time.LocalDateTime

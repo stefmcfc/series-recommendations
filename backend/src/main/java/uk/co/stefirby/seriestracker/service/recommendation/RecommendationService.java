@@ -1,7 +1,7 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
-import uk.co.stefirby.seriestracker.client.TmdbClient;
-import uk.co.stefirby.seriestracker.client.TmdbKeyword;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
@@ -100,13 +100,7 @@ public class RecommendationService {
 
         boolean trendingMode = "trending".equals(criteria.getSourceMode());
         boolean topRatedMode = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
-        boolean hasSeriesIds = criteria.getSeriesIds() != null && !criteria.getSeriesIds().isEmpty();
-        // SERIES-033-AC-04/05: "Use My Series" pool sourcing now requires an explicit signal --
-        // either sourceMode=useMySeries itself, or a non-empty seriesIds selection (a robustness
-        // floor independent of sourceMode, since seriesIds has no meaning outside this context).
-        // It's no longer reached by elimination.
-        boolean useMySeriesMode = RecommendationDefaults.SOURCE_MODE_USE_MY_SERIES.equals(criteria.getSourceMode())
-            || hasSeriesIds;
+        boolean useMySeriesMode = isUseMySeriesMode(criteria);
 
         List<RawCandidate> raw;
         if (trendingMode) {
@@ -167,6 +161,17 @@ public class RecommendationService {
             .map(ScoredCandidate::dto)
             .limit(limit)
             .toList();
+    }
+
+    /**
+     * SERIES-033-AC-04/05: "Use My Series" pool sourcing requires an explicit signal -- either
+     * {@code sourceMode=useMySeries} itself, or a non-empty {@code seriesIds} selection (a
+     * robustness floor independent of {@code sourceMode}, since {@code seriesIds} has no
+     * meaning outside this context). It's no longer reached by elimination.
+     */
+    private boolean isUseMySeriesMode(RecommendationCriteria criteria) {
+        boolean hasSeriesIds = criteria.getSeriesIds() != null && !criteria.getSeriesIds().isEmpty();
+        return RecommendationDefaults.SOURCE_MODE_USE_MY_SERIES.equals(criteria.getSourceMode()) || hasSeriesIds;
     }
 
     /**

@@ -1,6 +1,6 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
-import uk.co.stefirby.seriestracker.client.TmdbCandidate;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 
 import java.util.List;

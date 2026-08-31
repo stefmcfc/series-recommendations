@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
@@ -36,7 +36,7 @@ public class RecommendationRankingService {
         this.diversityCapMode = diversityCapMode;
     }
 
-    public ScoredCandidate score(DedupedCandidate dc, int effectiveMaxSourcesShown) {
+    ScoredCandidate score(DedupedCandidate dc, int effectiveMaxSourcesShown) {
         double tmdbRating = dc.candidate().voteAverage() != null ? dc.candidate().voteAverage().doubleValue() : 0.0;
         RecommendationDto dto = dtoAssembler.toDto(dc, effectiveMaxSourcesShown);
 
@@ -65,7 +65,7 @@ public class RecommendationRankingService {
      * with {@code rankScore} descending as a tiebreaker. Any other value falls back to {@code
      * "score"}.
      */
-    public Comparator<ScoredCandidate> resolveSortComparator(RecommendationCriteria c) {
+    Comparator<ScoredCandidate> resolveSortComparator(RecommendationCriteria c) {
         if ("recommendationCount".equals(c.getSortBy())) {
             return Comparator
                 .comparingInt((ScoredCandidate sc) -> sc.dto().totalSourceCount())
@@ -82,7 +82,7 @@ public class RecommendationRankingService {
      * source (the first entry under the canonical ordering); {@code "all-sources"}
      * checks/increments every contributing source.
      */
-    public List<ScoredCandidate> applyDiversityCap(List<ScoredCandidate> ranked, int maxPerSource) {
+    List<ScoredCandidate> applyDiversityCap(List<ScoredCandidate> ranked, int maxPerSource) {
         boolean allSourcesMode = "all-sources".equals(diversityCapMode);
         Map<String, Integer> perSourceCount = new HashMap<>();
         List<ScoredCandidate> result = new ArrayList<>();

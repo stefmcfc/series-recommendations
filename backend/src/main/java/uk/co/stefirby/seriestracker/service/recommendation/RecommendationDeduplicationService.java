@@ -1,7 +1,7 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.recommendation;
 
-import uk.co.stefirby.seriestracker.client.TmdbCandidate;
-import uk.co.stefirby.seriestracker.client.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
@@ -32,7 +32,7 @@ public class RecommendationDeduplicationService {
         this.tmdbClient = tmdbClient;
     }
 
-    public List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw) {
+    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw) {
         Map<String, TmdbCandidate> candidateByImdbId = new LinkedHashMap<>();
         Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
 

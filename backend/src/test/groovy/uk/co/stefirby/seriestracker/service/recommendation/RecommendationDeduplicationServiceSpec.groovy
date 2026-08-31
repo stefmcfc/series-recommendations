@@ -1,7 +1,7 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.recommendation
 
-import uk.co.stefirby.seriestracker.client.TmdbCandidate
-import uk.co.stefirby.seriestracker.client.TmdbClient
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
