@@ -9,7 +9,7 @@ import java.util.function.Function;
 // series_spec_009_rating_sort.md (SERIES-009-AC-05): the sortBy/sortDirection -> Comparator
 // resolution is written once here and shared by SeriesService.getAll() and
 // SeriesSearchService.search() rather than duplicated -- both listing endpoints need the
-// identical behavior for the same params. Package-private: only those two services use it.
+// identical behaviour for the same params. Package-private: only those two services use it.
 final class SeriesSortResolver {
 
     // SERIES-009-AC-01/07: dateAdded/personalRating (Requirement 1) plus title/year/
@@ -20,9 +20,14 @@ final class SeriesSortResolver {
 
     private SeriesSortResolver() {}
 
+    // SERIES-009-AC-03: a null/blank sortDirection defaults to "desc".
+    private static String resolveEffectiveDirection(String sortDirection) {
+        return (sortDirection == null || sortDirection.isBlank()) ? "desc" : sortDirection;
+    }
+
     static Comparator<SeriesEntity> resolve(String sortBy, String sortDirection) {
         String effectiveSortBy = (sortBy == null || sortBy.isBlank()) ? "dateAdded" : sortBy;
-        String effectiveDirection = (sortDirection == null || sortDirection.isBlank()) ? "desc" : sortDirection;
+        String effectiveDirection = resolveEffectiveDirection(sortDirection);
 
         // SERIES-009-AC-02/11: any value outside the (now six-member) accepted set is rejected.
         if (!VALID_SORT_BY.contains(effectiveSortBy)) {

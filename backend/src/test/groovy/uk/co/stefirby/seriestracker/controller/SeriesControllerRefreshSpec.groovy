@@ -8,10 +8,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-import uk.co.stefirby.seriestracker.client.OmdbClient
-import uk.co.stefirby.seriestracker.client.OmdbRatings
-import uk.co.stefirby.seriestracker.client.TmdbClient
-import uk.co.stefirby.seriestracker.client.TmdbSeriesDetail
+import uk.co.stefirby.seriestracker.client.omdb.OmdbClient
+import uk.co.stefirby.seriestracker.client.omdb.OmdbRatings
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbSeriesDetail
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.model.ProductionStatus

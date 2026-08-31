@@ -2,10 +2,10 @@ package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
-import uk.co.stefirby.seriestracker.service.BulkRefreshService;
-import uk.co.stefirby.seriestracker.service.RefreshJobStatus;
-import uk.co.stefirby.seriestracker.service.RefreshResult;
-import uk.co.stefirby.seriestracker.service.SeriesRefreshService;
+import uk.co.stefirby.seriestracker.service.refresh.BulkRefreshService;
+import uk.co.stefirby.seriestracker.service.refresh.RefreshJobStatus;
+import uk.co.stefirby.seriestracker.service.refresh.RefreshResult;
+import uk.co.stefirby.seriestracker.service.refresh.SeriesRefreshService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

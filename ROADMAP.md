@@ -81,10 +81,11 @@ corrected below.
 Ordered as a suggested build order, not just spec-number order — grouped into independent
 dependency chains: `043→045`, `030→044`, `052→053` (fed by standalone `036`), and `038→057`. Rows
 within a chain must build in the listed order; the chains themselves (and the fully-standalone
-rows — `034`/`050`, `035`, `051`, `054`) have no dependencies on each other and can be reordered
-freely as a block if priorities change. (The former 041→042 chain, the standalone 048, the full
-031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, and the `037→039→058`
-year-range leg — backend and frontend both — are fully delivered; see the table above.)
+rows — `034`/`050`, `035`, `051`, `054`, `056`'s AC-07 addition, `035`'s AC-17 addition, `040`/`060`,
+`041`/`061`) have no dependencies on each other and can be reordered freely as a block if priorities
+change. (The former 041→042 chain, the standalone 048, the full 031→046, 033→049, and 032→047
+chains, the `037→055→056` frontend leg, and the `037→039→058` year-range leg — backend and frontend
+both — are fully delivered; see the table above.)
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
@@ -97,8 +98,12 @@ year-range leg — backend and frontend both — are fully delivered; see the ta
 | `SeriesDetail` "Recommendations" button (modal) + shared `RecommendationCard` extraction | — | `frontend_spec_052` | — (build first — `frontend_spec_053` depends on the `RecommendationCard` this creates) | ⬜ Not started |
 | Recommendation candidate details (season/episode counts, IMDb rating) — new endpoint | `series_spec_036` | — | — (independent of `frontend_spec_052`; both must land before `frontend_spec_053`) | ⬜ Not started |
 | Recommendation candidate detail modal ("View Details," replaces "Show keywords" on the shared card) | — | `frontend_spec_053` | `frontend_spec_052` (modifies its `RecommendationCard`) + `series_spec_036` (calls its endpoint) — build last of the three | ⬜ Not started |
-| `SeriesList` compact/grid view (Expanded/Compact toggle — icon buttons with `aria-label`, `localStorage`-persisted) | — | `frontend_spec_054` | — (standalone; `frontend_spec_058`, now delivered, exports a shared `formatSeriesYear` helper this can consume) | ⬜ Not started |
+| `SeriesList` compact/grid/poster-only view (Expanded/Compact/Poster-only toggle — icon buttons with `aria-label`, `localStorage`-persisted) | — | `frontend_spec_054` | — (standalone; `frontend_spec_058`, now delivered, exports a shared `formatSeriesYear` helper this can consume) | ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | ⬜ Not started |
+| `SeriesList` per-row status badge hidden except on the "All" status tab (`FRONTEND-056-AC-07`) | — | `frontend_spec_056` | — (standalone addition to an already-delivered spec) | ⬜ Not started |
+| "Use My Series"/Specific Series picker status suffix hidden unless "Any Status" (`FRONTEND-035-AC-17`) | — | `frontend_spec_035` | — (standalone addition to an already-delivered spec) | ⬜ Not started |
+| Lock TMDB-managed fields (Title/Year/Genres/Total Seasons/Total Episodes/IMDb Rating) from manual edit once set; refresh extended to also sync Title/Year/Genres and always overwrites all six | `series_spec_040` | `frontend_spec_060` | — (self-contained pair, standalone) | ⬜ Not started |
+| Correct `year` validation to `1900`–current year + 1 (matching `yearBounds.ts`/`RecommendationCriteriaValidator`); fix `ConstraintViolationException` silently returning `500` instead of `400` | `series_spec_041` | `frontend_spec_061` | — (self-contained pair, standalone) | ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 

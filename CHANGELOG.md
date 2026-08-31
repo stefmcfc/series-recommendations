@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.2.3] - 2026-08-31
+
+### Changed
+
+- Backend: extracted the recommendation pipeline (`RecommendationService`, `RecommendationSourcingService`, `RecommendationDeduplicationService`, `RecommendationOutputFilterService`, `RecommendationRankingService`, `RecommendationDtoAssembler`, `RecommendationCriteriaValidator`, `RecommendationDefaults`, plus its internal `RawCandidate`/`DedupedCandidate`/`ScoredCandidate`/`SourceOrderComparator` types) out of the flat `service/` package into `service.recommendation` — 12 of 27 files in `service/` belonged to this one vertical slice and weren't used anywhere else. Narrowed several public methods to package-private in the process, since every real caller was already in the same package. No behavior change.
+- Backend: split `client/` into `client/tmdb` and `client/omdb` — the two external API clients had no dependency on each other beyond a shared `ExternalApiSupport` helper, which stays at `client/`'s top level. No behavior change.
+- Backend: extracted `BulkRefreshService`/`SeriesRefreshService`/`RefreshJobStatus`/`RefreshResult` into `service.refresh`, mirroring the recommendation pipeline's own dedicated-controller boundary. No behavior change.
+- Backend/Frontend: resolved a handful of small IDE-flagged findings — a redundant object-spread fallback in `App.tsx`, a missing CSS generic font-family fallback in `index.css`, a simplified boolean return in `SeriesList.tsx`, unused `ApiResponse`/`LoadingState`/`AsyncState` type exports removed from `types/api.ts`, and IDE-suggested method extractions in `RecommendationService`/`RecommendationSourcingService`/`SeriesSortResolver`. No behavior change.
+
 ## [3.2.2] - 2026-08-29
 
 ### Changed

@@ -4,8 +4,8 @@ import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import uk.co.stefirby.seriestracker.client.TmdbClient
-import uk.co.stefirby.seriestracker.client.TmdbKeyword
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.model.KeywordEntity
 import uk.co.stefirby.seriestracker.model.SeriesEntity

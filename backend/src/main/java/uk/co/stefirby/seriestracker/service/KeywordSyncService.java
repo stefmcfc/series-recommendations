@@ -1,7 +1,7 @@
 package uk.co.stefirby.seriestracker.service;
 
-import uk.co.stefirby.seriestracker.client.TmdbClient;
-import uk.co.stefirby.seriestracker.client.TmdbKeyword;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import uk.co.stefirby.seriestracker.model.KeywordEntity;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uk.co.stefirby.seriestracker.service.refresh.SeriesRefreshService;
 
 import java.util.LinkedHashSet;
 import java.util.List;

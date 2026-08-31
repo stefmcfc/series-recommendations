@@ -4,7 +4,7 @@ import org.hamcrest.Matchers
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.dto.RecommendationDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
-import uk.co.stefirby.seriestracker.service.RecommendationService
+import uk.co.stefirby.seriestracker.service.recommendation.RecommendationService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc

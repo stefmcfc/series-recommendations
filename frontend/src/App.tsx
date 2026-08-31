@@ -78,7 +78,7 @@ function MySeriesView({
   // not deep equality) doesn't re-fetch on every unrelated App re-render --
   // only when criteria or the route-derived status actually change.
   const effectiveCriteria: SearchCriteria = useMemo(
-    () => ({ ...(criteria ?? {}), status }),
+    () => ({ ...criteria, status }),
     [criteria, status],
   )
 
