@@ -1,0 +1,52 @@
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+}
+
+.item {
+  display: flex;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+}
+
+.card:hover,
+.card:focus-visible {
+  background: var(--social-bg);
+}
+
+.thumbnail {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 0.25rem;
+  background: var(--social-bg);
+  overflow: hidden;
+}
+
+.thumbnailImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 0.875rem;
+}

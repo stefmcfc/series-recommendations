@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `SeriesList` gains two new opt-in display modes alongside today's expanded row list — "Compact" (poster, title/year, read-only personal rating, in a responsive card grid) and "Poster-only" (an even denser grid showing just the poster art) — toggled via three icon buttons and persisted to `localStorage` (`frontend_spec_054`).
+
 ## [3.2.4] - 2026-08-31
 
 ### Changed

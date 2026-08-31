@@ -55,8 +55,14 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   }
 }
 
+// FRONTEND-054: spread onto every SeriesList render in this file's new view
+// mode tests -- currently empty since every SeriesList prop is optional, but
+// named/centralized so a future required prop only needs updating here.
+const defaultProps = {}
+
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   mockGetRefreshStatus.mockResolvedValue({
     status: 'IDLE',
     totalCount: 0,
@@ -1120,5 +1126,196 @@ describe('FRONTEND-059-AC-01: genres shown before status', () => {
     const row = await screen.findByTestId('series-row')
     expect(within(row).queryByText('   ')).not.toBeInTheDocument()
     expect(within(row).getByText('WATCHING')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-054-AC-01: view mode toggle', () => {
+  it('renders the icon view mode toggle with correct aria-pressed state and accessible names', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList {...defaultProps} />)
+    const expandedBtn = await screen.findByTestId('view-mode-expanded-btn')
+    const compactBtn = screen.getByTestId('view-mode-compact-btn')
+    const posterBtn = screen.getByTestId('view-mode-poster-btn')
+
+    expect(expandedBtn).toHaveAttribute('aria-pressed', 'true')
+    expect(expandedBtn).toHaveAccessibleName('Expanded view')
+    expect(compactBtn).toHaveAttribute('aria-pressed', 'false')
+    expect(compactBtn).toHaveAccessibleName('Compact view')
+    expect(posterBtn).toHaveAttribute('aria-pressed', 'false')
+    expect(posterBtn).toHaveAccessibleName('Poster-only view')
+  })
+})
+
+describe('FRONTEND-054-AC-02: switching view mode does not refetch', () => {
+  it('switches to the compact grid without calling seriesApi again', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    render(<SeriesList {...defaultProps} />)
+    await screen.findByTestId('series-row')
+    mockGetAll.mockClear()
+
+    fireEvent.click(screen.getByTestId('view-mode-compact-btn'))
+
+    expect(await screen.findByTestId('compact-series-card')).toBeInTheDocument()
+    expect(mockGetAll).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-054-AC-03: view mode persistence', () => {
+  it('persists and restores the view mode via localStorage', async () => {
+    localStorage.setItem('seriesListViewMode', 'compact')
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList {...defaultProps} />)
+    expect(await screen.findByTestId('view-mode-compact-btn')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    fireEvent.click(screen.getByTestId('view-mode-expanded-btn'))
+    expect(localStorage.getItem('seriesListViewMode')).toBe('expanded')
+  })
+
+  it('a localStorage read failure defaults to expanded without throwing', async () => {
+    mockGetAll.mockResolvedValue([])
+    const spy = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new Error('blocked')
+      })
+    expect(() => render(<SeriesList {...defaultProps} />)).not.toThrow()
+    spy.mockRestore()
+  })
+
+  it('falls back to expanded for an unrecognized stored value', async () => {
+    localStorage.setItem('seriesListViewMode', 'not-a-real-mode')
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList {...defaultProps} />)
+    expect(await screen.findByTestId('view-mode-expanded-btn')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+})
+
+describe('FRONTEND-054-AC-04: compact card rendering', () => {
+  it('compact card shows only poster, title/year, and rating', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        title: 'Ozark',
+        year: 2017,
+        personalRating: 4,
+        newContentDetectedAt: new Date().toISOString(),
+      }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    fireEvent.click(await screen.findByTestId('view-mode-compact-btn'))
+
+    const card = await screen.findByTestId('compact-series-card')
+    expect(within(card).getByText('Ozark (2017)')).toBeInTheDocument()
+    expect(within(card).getByLabelText('Personal rating')).toBeInTheDocument()
+    expect(
+      within(card).queryByTestId('new-content-badge'),
+    ).not.toBeInTheDocument()
+    expect(
+      within(card).queryByTestId('edit-series-btn'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-054-AC-05: compact card navigation', () => {
+  it('compact card navigates to SeriesDetail via an accessible button', async () => {
+    const onSeriesClick = vi.fn()
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: 's1', title: 'Ozark', year: 2017 }),
+    ])
+    render(<SeriesList {...defaultProps} onSeriesClick={onSeriesClick} />)
+    fireEvent.click(await screen.findByTestId('view-mode-compact-btn'))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'View details for Ozark (2017)' }),
+    )
+    expect(onSeriesClick).toHaveBeenCalledWith('s1')
+  })
+})
+
+describe('FRONTEND-054-AC-06: all three views show the same series', () => {
+  it('renders the same number of series in every view mode', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'A' }),
+      makeSeries({ id: '2', title: 'B' }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    await screen.findAllByTestId('series-row')
+
+    fireEvent.click(screen.getByTestId('view-mode-compact-btn'))
+    expect(await screen.findAllByTestId('compact-series-card')).toHaveLength(2)
+
+    fireEvent.click(screen.getByTestId('view-mode-poster-btn'))
+    expect(await screen.findAllByTestId('poster-series-card')).toHaveLength(2)
+  })
+})
+
+describe('FRONTEND-054-AC-07: poster-only card rendering', () => {
+  it('poster card shows only the poster image', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        title: 'Ozark',
+        year: 2017,
+        personalRating: 4,
+        posterUrl: 'https://example.com/ozark.jpg',
+      }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    fireEvent.click(await screen.findByTestId('view-mode-poster-btn'))
+
+    const card = await screen.findByTestId('poster-series-card')
+    expect(within(card).queryByText('Ozark (2017)')).not.toBeInTheDocument()
+    expect(
+      within(card).queryByLabelText('Personal rating'),
+    ).not.toBeInTheDocument()
+    // FRONTEND-054-AC-08 mandates alt="" on this <img> (decorative, redundant
+    // with the button's own aria-label) -- which gives it an implicit
+    // "presentation" role, not "img", so it's queried the same way this
+    // codebase's existing decorative poster thumbnails already are
+    // (SeriesList's row thumbnail tests), not via getByRole('img').
+    expect(within(card).getByAltText('')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-054-AC-08: poster card navigation', () => {
+  it('poster card navigates to SeriesDetail via an accessible button', async () => {
+    const onSeriesClick = vi.fn()
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: 's1', title: 'Ozark', year: 2017 }),
+    ])
+    render(<SeriesList {...defaultProps} onSeriesClick={onSeriesClick} />)
+    fireEvent.click(await screen.findByTestId('view-mode-poster-btn'))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'View details for Ozark (2017)' }),
+    )
+    expect(onSeriesClick).toHaveBeenCalledWith('s1')
+  })
+})
+
+describe('FRONTEND-054-AC-09: poster card missing-poster handling', () => {
+  it('a series with no poster renders the card with no img, not a broken one', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({
+        id: 's1',
+        title: 'No Poster Show',
+        year: 2020,
+        posterUrl: null,
+      }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    fireEvent.click(await screen.findByTestId('view-mode-poster-btn'))
+
+    const card = await screen.findByTestId('poster-series-card')
+    expect(within(card).queryByRole('img')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: 'View details for No Poster Show (2020)',
+      }),
+    ).toBeInTheDocument()
   })
 })
