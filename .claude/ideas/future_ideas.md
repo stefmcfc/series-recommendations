@@ -329,6 +329,18 @@ is explicit that "this app has no user-preference persistence precedent today at
 own foundational piece of work... before the scoring changes themselves." Two independent features
 now want the same missing foundation.
 
+A third concrete case (2026-08-29): confirmed live — `SeriesList`'s "Refresh All" button
+(`data-testid="refresh-all-btn"`) is blocked from doing anything useful on a second click within
+`app.tmdb.refresh-skip-threshold-minutes` (default 60) of the last bulk refresh, by design
+(`series_spec_018`) — every series gets skipped, not re-fetched, since each one's `lastRefreshedAt`
+is still within the threshold. Hit directly in practice: a user re-clicked "Refresh All" ~2 minutes
+after the first run and got a no-op. There's no way today to see that threshold, override it for
+one run, or even know *why* the second click did nothing — it just silently skips everything.
+Idea: once a settings/config menu exists, move "Refresh All" itself into it (out of the main
+`SeriesList` page, alongside surfacing the skip-threshold as an actual visible/adjustable setting
+rather than an invisible env var) — it's a maintenance/admin action, not a core browsing action, so
+it doesn't need to live on the primary list view at all.
+
 **Status**: Not specced. A real settings screen is its own feature with real design questions
 first — where would it persist (this is a single-user personal app, so per-user settings may be
 overkill; a new `AppSettings` table? a `.env`-editing convenience?) and which of the growing pile

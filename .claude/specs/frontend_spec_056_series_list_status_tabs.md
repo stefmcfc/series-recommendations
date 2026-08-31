@@ -1,10 +1,12 @@
 # Frontend Spec 056: `SeriesList` Status-Based Tabs (with Real URLs)
 
-**Status**: Implemented — `frontend/src/App.tsx` (status tab bar, `/my-series/:statusTab` route,
-`statusFromTabParam` mapping, `MySeriesView` merging route-derived status with `SearchFilter`
-criteria, top-level "My Series" `NavLink` loses `end`), `frontend/src/App.test.tsx` (new
-`FRONTEND-056-AC-01/02/03/05/06` test cases). `SearchFilter.tsx` unchanged by this spec (AC-04 was
-already satisfied via `frontend_spec_055`/PR #117).
+**Status**: Partially implemented — Requirement 1/2 (`FRONTEND-056-AC-01`–`06`) shipped via
+`frontend/src/App.tsx` (status tab bar, `/my-series/:statusTab` route, `statusFromTabParam`
+mapping, `MySeriesView` merging route-derived status with `SearchFilter` criteria, top-level "My
+Series" `NavLink` loses `end`), `frontend/src/App.test.tsx` (new `FRONTEND-056-AC-01/02/03/05/06`
+test cases). `SearchFilter.tsx` unchanged by this spec (AC-04 was already satisfied via
+`frontend_spec_055`/PR #117). **Requirement 3 (`FRONTEND-056-AC-07`, added 2026-08-31) is not yet
+built** — see `ROADMAP.md`'s "Specced, coming soon" table.
 **Priority**: P3 (navigation/browse improvement — quicker access to a status subset than the
 existing dropdown filter)
 **Depends on**: Frontend Spec 055 (`frontend_spec_055_search_filter_overhaul.md`) ✅ **build after,
@@ -58,6 +60,13 @@ existing filtering capability is lost. This is a deliberate, documented deviatio
   regardless of which tab is active — a Completed-only tab showing a field that's less meaningful
   there (there are none left after `frontend_spec_055`'s "Started, not finished" removal) is not a
   bug this spec needs to solve.
+- **(Added 2026-08-31) Per-row status badge only shows on the "All" tab.** Confirmed: every tab
+  except "All" filters `SeriesList` to a single status, making the per-row status text
+  (`<span className={styles.status}>{s.status}</span>`) redundant on every row at once — a user on
+  the Watching tab already knows every row shown is Watching. `SeriesList` already receives
+  `criteria?: SearchCriteria` (the same merged object `App.tsx`'s `MySeriesView` builds per
+  `FRONTEND-056-AC-05`), so no new prop is needed — the badge's render condition just checks
+  `criteria?.status == null`.
 
 ---
 
@@ -171,6 +180,43 @@ independent React state/values, merged only at render time — neither setter to
 
 ---
 
+## Requirement 3 (added 2026-08-31): Per-row status badge only on the "All" tab
+
+**User story**: As a user browsing a single status tab, I don't need every row to repeat a status I
+already know from the tab I'm on — I only need to see each series' status when I'm looking at a mix
+of statuses at once.
+
+### FRONTEND-056-AC-07 [AUTO]
+**Statement**: `SeriesList` shall render each row's status badge (`<span
+className={styles.status}>{s.status}</span>`) only when `criteria?.status` is `null`/`undefined`
+(the "All" tab). While any specific status tab is active (`criteria?.status` set), the badge shall
+not render for any row.
+
+**References**: `SeriesList.tsx`'s existing row-status `<span>`; `criteria` prop (already merged
+with the route-derived status by `App.tsx`'s `MySeriesView`, `FRONTEND-056-AC-05`).
+
+**Test Case (Red)**:
+```typescript
+it('FRONTEND-056-AC-07: status badge hidden while a specific status tab is active', async () => {
+  mockGetAll.mockResolvedValue([makeSeries({ title: 'Ozark', status: 'WATCHING' })])
+  render(<SeriesList {...defaultProps} criteria={{ status: 'WATCHING' }} />)
+
+  await screen.findByText('Ozark')
+  expect(screen.queryByText('WATCHING')).not.toBeInTheDocument()
+})
+
+it('FRONTEND-056-AC-07: status badge shown on the All tab (no status criteria)', async () => {
+  mockGetAll.mockResolvedValue([makeSeries({ title: 'Ozark', status: 'WATCHING' })])
+  render(<SeriesList {...defaultProps} criteria={{}} />)
+
+  await screen.findByText('Ozark')
+  expect(screen.getByText('WATCHING')).toBeInTheDocument()
+})
+```
+**Test Case (Green)**: wrap the existing status `<span>` in `{criteria?.status == null && (...)}`.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -190,3 +236,4 @@ independent React state/values, merged only at render time — neither setter to
 - [x] FRONTEND-056-AC-04: `SearchFilter`'s Status dropdown is removed (already satisfied via `frontend_spec_055`'s `FRONTEND-055-AC-07`, merged in PR #117)
 - [x] FRONTEND-056-AC-05: `App.tsx` merges `SearchFilter` criteria with the tab-derived status
 - [x] FRONTEND-056-AC-06: tabs and other filters don't clear/override each other
+- [ ] FRONTEND-056-AC-07: per-row status badge only renders on the "All" tab (added 2026-08-31)

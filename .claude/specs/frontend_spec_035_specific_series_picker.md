@@ -1,6 +1,13 @@
 # Frontend Spec 035: Specific Series Picker — Search, Sort, Filter & Shared Picker Component
 
-**Status**: Implemented (2026-08-27) — `frontend/src/components/KeywordPicker.tsx` (Requirement 1, generalized `options: string[] | PickerOption[]`), `frontend/src/components/RecommendationControls.tsx`/`.module.css` (Requirements 2–4, KeywordPicker-based "Specific Series" mode, genre/status filters, client-side sort, "Show all series" modal), `frontend/src/utils/keywordSuggestions.ts` (`resolveSpecificSeriesPickerLimit`/`SPECIFIC_SERIES_PICKER_LIMIT`), plus corresponding `*.test.tsx`/`*.test.ts` updates
+**Status**: Partially implemented — Requirements 1–4 (`FRONTEND-035-AC-01`–`16`) shipped
+2026-08-27 via `frontend/src/components/KeywordPicker.tsx` (Requirement 1, generalized `options:
+string[] | PickerOption[]`), `frontend/src/components/RecommendationControls.tsx`/`.module.css`
+(Requirements 2–4, KeywordPicker-based "Specific Series" mode, genre/status filters, client-side
+sort, "Show all series" modal), `frontend/src/utils/keywordSuggestions.ts`
+(`resolveSpecificSeriesPickerLimit`/`SPECIFIC_SERIES_PICKER_LIMIT`), plus corresponding
+`*.test.tsx`/`*.test.ts` updates. **Requirement 5 (`FRONTEND-035-AC-17`, added 2026-08-31) is not
+yet built** — see `ROADMAP.md`'s "Specced, coming soon" table.
 **Priority**: P3 (quality-of-life — the current picker is fully functional, this addresses it becoming unwieldy as the tracked collection grows)
 **Depends on**: Frontend Spec 011 (`frontend_spec_011_recommendation_controls.md`, owns `RecommendationControls.tsx` and today's "Specific Series" mode) ✅, Frontend Spec 029 (`frontend_spec_029_searchable_keyword_picker.md`, `KeywordPicker`'s current contract, `SearchFilter`'s "Browse all keywords" modal pattern being mirrored) ✅, Frontend Spec 032 (`frontend_spec_032_hybrid_keyword_suggestions.md`, the `VITE_*_LIMIT`/`resolveKeywordSuggestionsLimit` config pattern being mirrored) ✅, Frontend Spec 013 Requirement 4/5 only (`frontend_spec_013_star_ratings.md`, `SortOptions`'/`SeriesList`'s sort field list and labels being mirrored — **Requirements 1–3 of that spec are themselves still not started**, only its already-implemented sort-control portion is a safe precedent here), Series Spec 002 (`series_spec_002_crud.md`, `GET /api/v1/series` — confirms no backend change is needed)
 **Frontend Stage**: 35 of N
@@ -467,6 +474,57 @@ it('FRONTEND-035-AC-16: null personalRating sorts last regardless of direction',
 
 ---
 
+## Requirement 5 (added 2026-08-31): Status suffix only shown at "Any Status"
+
+**User story**: As a user who's narrowed the picker to "Completed Only" or "Completed or Watching",
+I don't need every single suggestion to repeat a status I've already filtered down to — I only need
+to see each series' status when the pool is a genuine mix of statuses.
+
+### FRONTEND-035-AC-17 [AUTO]
+**Statement**: `seriesPickerLabel` and `seriesPickerDisplay` shall omit the trailing `- {status}`
+segment (and its bold/italic rendering in `seriesPickerDisplay`) when `specificSeriesStatusFilter`
+is `'completedOnly'` or `'completedOrWatching'`. When `specificSeriesStatusFilter` is `'any'`
+(the default), both functions shall continue to include the status segment exactly as today.
+
+**References**: `seriesPickerLabel`/`seriesPickerDisplay` (`RecommendationControls.tsx`);
+`SpecificSeriesStatusFilter`, `filterSpecificSeriesByStatus`; `FRONTEND-035-AC-12`'s original status
+filter values, unchanged.
+
+**Test Case (Red)**:
+```typescript
+it('FRONTEND-035-AC-17: status suffix hidden once the status filter narrows to one value', async () => {
+  mockGetAll.mockResolvedValue([
+    makeSeries({ id: '1', title: 'Ozark', year: 2017, status: 'COMPLETED' }),
+  ])
+  render(<RecommendationControls onQueryChange={vi.fn()} />)
+  fireEvent.click(screen.getByLabelText(/specific series/i))
+  fireEvent.click(await screen.findByLabelText(/completed only/i))
+
+  fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByText('Ozark (2017)')).toBeInTheDocument()
+  expect(within(dialog).queryByText(/COMPLETED/)).not.toBeInTheDocument()
+})
+
+it('FRONTEND-035-AC-17: status suffix shown at Any Status (default)', async () => {
+  mockGetAll.mockResolvedValue([
+    makeSeries({ id: '1', title: 'Ozark', year: 2017, status: 'COMPLETED' }),
+  ])
+  render(<RecommendationControls onQueryChange={vi.fn()} />)
+  fireEvent.click(screen.getByLabelText(/specific series/i))
+
+  fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByText(/Ozark.*COMPLETED/)).toBeInTheDocument()
+})
+```
+**Test Case (Green)**: both `seriesPickerLabel`/`seriesPickerDisplay` gain a `statusFilter:
+SpecificSeriesStatusFilter` parameter (threaded through from the same call sites that already pass
+`specificSeriesStatusFilter` to `filterSpecificSeriesByStatus`), appending the status segment only
+when `statusFilter === 'any'`.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -499,3 +557,4 @@ it('FRONTEND-035-AC-16: null personalRating sorts last regardless of direction',
 - [x] FRONTEND-035-AC-14: sort control reusing `SortOptions` field set/labels, client-side only
 - [x] FRONTEND-035-AC-15: sort defaults to `title`/`asc`
 - [x] FRONTEND-035-AC-16: `null` sort values sort last
+- [ ] FRONTEND-035-AC-17: status suffix hidden unless the status filter is "Any Status" (added 2026-08-31)
