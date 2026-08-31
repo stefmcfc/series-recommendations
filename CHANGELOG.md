@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: `SeriesList`'s per-row status badge now only shows on the "All" status tab — every other tab already filters to a single status, making the badge redundant on every row (`frontend_spec_056`, `FRONTEND-056-AC-07`).
+- Frontend: the "Use My Series"/Specific Series picker's trailing status text is now hidden unless its own "Filter by Status" is set to "Any Status" — a filtered pool no longer repeats the same status on every suggestion (`frontend_spec_035`, `FRONTEND-035-AC-17`).
+
 ## [3.2.3] - 2026-08-31
 
 ### Changed

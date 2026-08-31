@@ -1,13 +1,16 @@
 # Frontend Spec 035: Specific Series Picker — Search, Sort, Filter & Shared Picker Component
 
-**Status**: Partially implemented — Requirements 1–4 (`FRONTEND-035-AC-01`–`16`) shipped
+**Status**: Implemented — Requirements 1–4 (`FRONTEND-035-AC-01`–`16`) shipped
 2026-08-27 via `frontend/src/components/KeywordPicker.tsx` (Requirement 1, generalized `options:
 string[] | PickerOption[]`), `frontend/src/components/RecommendationControls.tsx`/`.module.css`
 (Requirements 2–4, KeywordPicker-based "Specific Series" mode, genre/status filters, client-side
 sort, "Show all series" modal), `frontend/src/utils/keywordSuggestions.ts`
 (`resolveSpecificSeriesPickerLimit`/`SPECIFIC_SERIES_PICKER_LIMIT`), plus corresponding
-`*.test.tsx`/`*.test.ts` updates. **Requirement 5 (`FRONTEND-035-AC-17`, added 2026-08-31) is not
-yet built** — see `ROADMAP.md`'s "Specced, coming soon" table.
+`*.test.tsx`/`*.test.ts` updates. Requirement 5 (`FRONTEND-035-AC-17`, added 2026-08-31) shipped
+via `seriesPickerLabel`/`seriesPickerDisplay` gaining a `statusFilter` parameter, threaded through
+from `UseMySeriesPanel.tsx`; `RecommendationControls.test.tsx`'s new `FRONTEND-035-AC-17` test
+cases (and a rewrite of `UseMySeriesPanel.test.tsx`'s pre-existing "narrows the picker suggestions
+when a status filter is applied" test, which had asserted the exact opposite of this AC).
 **Priority**: P3 (quality-of-life — the current picker is fully functional, this addresses it becoming unwieldy as the tracked collection grows)
 **Depends on**: Frontend Spec 011 (`frontend_spec_011_recommendation_controls.md`, owns `RecommendationControls.tsx` and today's "Specific Series" mode) ✅, Frontend Spec 029 (`frontend_spec_029_searchable_keyword_picker.md`, `KeywordPicker`'s current contract, `SearchFilter`'s "Browse all keywords" modal pattern being mirrored) ✅, Frontend Spec 032 (`frontend_spec_032_hybrid_keyword_suggestions.md`, the `VITE_*_LIMIT`/`resolveKeywordSuggestionsLimit` config pattern being mirrored) ✅, Frontend Spec 013 Requirement 4/5 only (`frontend_spec_013_star_ratings.md`, `SortOptions`'/`SeriesList`'s sort field list and labels being mirrored — **Requirements 1–3 of that spec are themselves still not started**, only its already-implemented sort-control portion is a safe precedent here), Series Spec 002 (`series_spec_002_crud.md`, `GET /api/v1/series` — confirms no backend change is needed)
 **Frontend Stage**: 35 of N
@@ -557,4 +560,4 @@ when `statusFilter === 'any'`.
 - [x] FRONTEND-035-AC-14: sort control reusing `SortOptions` field set/labels, client-side only
 - [x] FRONTEND-035-AC-15: sort defaults to `title`/`asc`
 - [x] FRONTEND-035-AC-16: `null` sort values sort last
-- [ ] FRONTEND-035-AC-17: status suffix hidden unless the status filter is "Any Status" (added 2026-08-31)
+- [x] FRONTEND-035-AC-17: status suffix hidden unless the status filter is "Any Status" (added 2026-08-31)

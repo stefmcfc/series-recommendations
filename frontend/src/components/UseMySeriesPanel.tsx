@@ -92,8 +92,8 @@ export function UseMySeriesPanel({
   const specificSeriesOptions: PickerOption[] = specificSeriesCandidatePool.map(
     (s) => ({
       id: s.id,
-      label: seriesPickerLabel(s),
-      display: seriesPickerDisplay(s),
+      label: seriesPickerLabel(s, specificSeriesStatusFilter),
+      display: seriesPickerDisplay(s, specificSeriesStatusFilter),
     }),
   )
 

@@ -1,12 +1,13 @@
 # Frontend Spec 056: `SeriesList` Status-Based Tabs (with Real URLs)
 
-**Status**: Partially implemented — Requirement 1/2 (`FRONTEND-056-AC-01`–`06`) shipped via
+**Status**: Implemented — Requirement 1/2 (`FRONTEND-056-AC-01`–`06`) shipped via
 `frontend/src/App.tsx` (status tab bar, `/my-series/:statusTab` route, `statusFromTabParam`
 mapping, `MySeriesView` merging route-derived status with `SearchFilter` criteria, top-level "My
 Series" `NavLink` loses `end`), `frontend/src/App.test.tsx` (new `FRONTEND-056-AC-01/02/03/05/06`
 test cases). `SearchFilter.tsx` unchanged by this spec (AC-04 was already satisfied via
-`frontend_spec_055`/PR #117). **Requirement 3 (`FRONTEND-056-AC-07`, added 2026-08-31) is not yet
-built** — see `ROADMAP.md`'s "Specced, coming soon" table.
+`frontend_spec_055`/PR #117). Requirement 3 (`FRONTEND-056-AC-07`, added 2026-08-31) shipped via
+`SeriesList.tsx`'s per-row status `<span>` gated on `criteria?.status == null`,
+`SeriesList.test.tsx`'s new `FRONTEND-056-AC-07` test cases.
 **Priority**: P3 (navigation/browse improvement — quicker access to a status subset than the
 existing dropdown filter)
 **Depends on**: Frontend Spec 055 (`frontend_spec_055_search_filter_overhaul.md`) ✅ **build after,
@@ -236,4 +237,4 @@ it('FRONTEND-056-AC-07: status badge shown on the All tab (no status criteria)',
 - [x] FRONTEND-056-AC-04: `SearchFilter`'s Status dropdown is removed (already satisfied via `frontend_spec_055`'s `FRONTEND-055-AC-07`, merged in PR #117)
 - [x] FRONTEND-056-AC-05: `App.tsx` merges `SearchFilter` criteria with the tab-derived status
 - [x] FRONTEND-056-AC-06: tabs and other filters don't clear/override each other
-- [ ] FRONTEND-056-AC-07: per-row status badge only renders on the "All" tab (added 2026-08-31)
+- [x] FRONTEND-056-AC-07: per-row status badge only renders on the "All" tab (added 2026-08-31)
