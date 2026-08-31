@@ -653,6 +653,28 @@ describe('FRONTEND-006-AC-12: re-fetch on criteria change', () => {
   })
 })
 
+describe('FRONTEND-056-AC-07: status badge hidden except on the "All" tab', () => {
+  it('hides the status badge while a specific status tab is active', async () => {
+    mockSearch.mockResolvedValue([
+      makeSeries({ title: 'Ozark', status: SeriesStatus.WATCHING }),
+    ])
+    render(<SeriesList criteria={{ status: SeriesStatus.WATCHING }} />)
+
+    await screen.findByText('Ozark')
+    expect(screen.queryByText('WATCHING')).not.toBeInTheDocument()
+  })
+
+  it('shows the status badge on the "All" tab (no status criteria)', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'Ozark', status: SeriesStatus.WATCHING }),
+    ])
+    render(<SeriesList criteria={{}} />)
+
+    await screen.findByText('Ozark')
+    expect(screen.getByText('WATCHING')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
   it('retries via search, not getAll', async () => {
     mockSearch

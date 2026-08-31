@@ -389,18 +389,29 @@ function applyExcludeAndMiscFilters(
 // TOOLING-008: exported -- UseMySeriesPanel is the only remaining consumer,
 // but this stays here alongside buildSpecificSeriesCandidatePool per this
 // spec's Design Decisions (shared pure helpers stay module-level here).
+// FRONTEND-035-AC-17: the trailing status segment is only meaningful when
+// the pool can contain a mix of statuses -- once specificSeriesStatusFilter
+// narrows it to one value (or two, for "Completed or Watching"), every
+// suggestion would repeat the same text, so it's omitted in that case.
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
-export function seriesPickerLabel(series: Series): string {
+export function seriesPickerLabel(
+  series: Series,
+  statusFilter: SpecificSeriesStatusFilter,
+): string {
   const yearPart = series.year != null ? ` (${series.year})` : ''
   const countryPart =
     series.originCountry != null
       ? ` | ${formatCountryName(series.originCountry)}`
       : ''
-  return `${series.title}${yearPart}${countryPart} - ${series.status}`
+  const statusPart = statusFilter === 'any' ? ` - ${series.status}` : ''
+  return `${series.title}${yearPart}${countryPart}${statusPart}`
 }
 
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
-export function seriesPickerDisplay(series: Series): ReactNode {
+export function seriesPickerDisplay(
+  series: Series,
+  statusFilter: SpecificSeriesStatusFilter,
+): ReactNode {
   const yearPart = series.year != null ? ` (${series.year})` : ''
   const countryPart =
     series.originCountry != null
@@ -411,8 +422,12 @@ export function seriesPickerDisplay(series: Series): ReactNode {
       <strong>{series.title}</strong>
       {yearPart}
       {countryPart}
-      {' - '}
-      <em>{series.status}</em>
+      {statusFilter === 'any' && (
+        <>
+          {' - '}
+          <em>{series.status}</em>
+        </>
+      )}
     </>
   )
 }

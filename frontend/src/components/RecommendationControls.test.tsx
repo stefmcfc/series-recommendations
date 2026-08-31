@@ -1316,6 +1316,38 @@ describe('FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed
   })
 })
 
+describe('FRONTEND-035-AC-17: status suffix hidden unless "Any Status"', () => {
+  it('hides the status suffix once the status filter narrows to one value', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', year: 2017, status: 'COMPLETED' }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(await screen.findByLabelText(/completed only/i))
+
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByRole('button', { name: 'Ozark (2017)' }),
+    ).toBeInTheDocument()
+    expect(within(dialog).queryByText(/COMPLETED/)).not.toBeInTheDocument()
+  })
+
+  it('shows the status suffix at Any Status (default)', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Ozark', year: 2017, status: 'COMPLETED' }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByRole('button', { name: 'Ozark (2017) - COMPLETED' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => {
   it('sorts within the genre-filtered pool, excluding the filtered-out series entirely', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama'])

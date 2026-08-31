@@ -580,7 +580,9 @@ export function SeriesList({
                     {s.genres != null && s.genres.trim() !== '' && (
                       <span className={styles.genres}>{s.genres}</span>
                     )}
-                    <span className={styles.status}>{s.status}</span>
+                    {criteria?.status == null && (
+                      <span className={styles.status}>{s.status}</span>
+                    )}
                     {s.newContentDetectedAt != null && (
                       <span
                         className={styles.newContentBadge}

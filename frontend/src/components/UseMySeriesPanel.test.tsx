@@ -134,9 +134,10 @@ describe('UseMySeriesPanel', () => {
 
     fireEvent.click(screen.getByLabelText(/completed only/i))
 
-    expect(
-      screen.getByRole('button', { name: 'Ozark - COMPLETED' }),
-    ).toBeInTheDocument()
+    // FRONTEND-035-AC-17: the status suffix is hidden once the status
+    // filter narrows to one value -- every remaining suggestion would
+    // otherwise repeat the same status text.
+    expect(screen.getByRole('button', { name: 'Ozark' })).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /The Wire/ }),
     ).not.toBeInTheDocument()
