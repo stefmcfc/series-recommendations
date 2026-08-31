@@ -27,19 +27,6 @@ final class SeriesSortResolver {
 
     static Comparator<SeriesEntity> resolve(String sortBy, String sortDirection) {
         String effectiveSortBy = (sortBy == null || sortBy.isBlank()) ? "dateAdded" : sortBy;
-        boolean descending = isDescending(sortBy, sortDirection, effectiveSortBy);
-
-        return switch (effectiveSortBy) {
-            case "personalRating" -> comparingNullsLast(SeriesEntity::getPersonalRating, descending);
-            case "title" -> titleComparator(descending);
-            case "year" -> comparingNullsLast(SeriesEntity::getYear, descending);
-            case "imdbRating" -> comparingNullsLast(SeriesEntity::getImdbRating, descending);
-            case "tmdbRating" -> tmdbRatingComparator(descending);
-            default -> comparingNullsLast(SeriesEntity::getDateAdded, descending);
-        };
-    }
-
-    private static boolean isDescending(String sortBy, String sortDirection, String effectiveSortBy) {
         String effectiveDirection = resolveEffectiveDirection(sortDirection);
 
         // SERIES-009-AC-02/11: any value outside the (now six-member) accepted set is rejected.
@@ -53,7 +40,16 @@ final class SeriesSortResolver {
                 + ". Must be one of: asc, desc");
         }
 
-        return effectiveDirection.equals("desc");
+        boolean descending = effectiveDirection.equals("desc");
+
+        return switch (effectiveSortBy) {
+            case "personalRating" -> comparingNullsLast(SeriesEntity::getPersonalRating, descending);
+            case "title" -> titleComparator(descending);
+            case "year" -> comparingNullsLast(SeriesEntity::getYear, descending);
+            case "imdbRating" -> comparingNullsLast(SeriesEntity::getImdbRating, descending);
+            case "tmdbRating" -> tmdbRatingComparator(descending);
+            default -> comparingNullsLast(SeriesEntity::getDateAdded, descending);
+        };
     }
 
     // SERIES-009-AC-08: titles compare case-insensitively -- SeriesEntity.title is not-null,
