@@ -84,6 +84,7 @@ corrected below.
 | `SeriesDetail` "Recommendations" button (modal) + shared `RecommendationCard` extraction | —                                    | `frontend_spec_052`                            | ✅ Done                                                                                         |
 | Recommendation candidate details (season/episode counts, IMDb rating) — new endpoint | `series_spec_036`                    | —                                               | ✅ Done                                                                                         |
 | Recommendation candidate detail modal ("View Details," replaces "Show keywords" on the shared `RecommendationCard`) | —                                    | `frontend_spec_053`                            | ✅ Done                                                                                         |
+| `formatSeriesYear` shows an open-ended range for a returning show whose aired span is a single year (previously collapsed to a bare year, reading as already-finished) — supersedes `FRONTEND-058-AC-01` | —                                    | `frontend_spec_066`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 

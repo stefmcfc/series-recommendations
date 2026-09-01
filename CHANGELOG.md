@@ -18,6 +18,12 @@ versioned together as one app.
 
 - Frontend: "Show keywords" is removed from `RecommendationCard`, replaced by "View Details" — keywords are now one section of the fuller detail view instead of a separate standalone expand. Applies everywhere `RecommendationCard` renders (the main Recommendations page and `SeriesDetail`'s Recommendations modal) with no extra wiring needed in either.
 
+## [3.6.1] - 2026-09-01
+
+### Fixed
+
+- Frontend: a renewed/still-airing show whose aired episodes so far all fall within one calendar year (e.g. a freshman season) now displays as an open-ended year range (`"2025-"`) instead of a bare year (`"2025"`) that read as already finished. `formatSeriesYear` now checks `productionStatus` even when `lastAirYear` equals `year` (`frontend_spec_066`, supersedes `FRONTEND-058-AC-01`).
+
 ## [3.6.0] - 2026-09-01
 
 ### Added
