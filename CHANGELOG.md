@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.10.1] - 2026-09-01
+
+### Changed
+
+- Docs: added `frontend_spec_072` through `077` (My Series settings migration, real-time title filter, rewatch tab, filter-sheet sectioning, and shared genre/keyword picker polish) and updated `ROADMAP.md`/`future_ideas.md` accordingly — no code changes.
+
 ## [3.10.0] - 2026-09-01
 
 ### Added

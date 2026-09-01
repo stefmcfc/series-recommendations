@@ -157,6 +157,25 @@ the inline disclosure entirely. `RecommendationControls`' equivalent panel remai
 still uses its original inline disclosure — the same sheet treatment for it is a separate future
 spec if wanted, not bundled into `frontend_spec_071`.
 
+### Filter My Series by Country of Origin / Language
+
+Raised 2026-09-01 while scoping `frontend_spec_073`–`075`'s filter-sheet rework. Distinct from the
+Configuration section's "Favourite country of origin" idea below — that one is about Custom Search's
+*TMDB-discovery* pinned-chip list; this one is about filtering the user's *own tracked series* by
+these fields on My Series. Confirmed via a backend check: `SeriesEntity.originCountry` exists (a
+single ISO 3166-1 alpha-2 code) but isn't wired into `SeriesSearchCriteria`/`SeriesSearchService` at
+all today — adding a Country filter would be a small addition. **There is no language field
+anywhere on `SeriesEntity`** — adding a Language filter would first need a new column, a migration,
+and a change to the TMDB lookup/refresh path to actually capture `original_language`, before any
+filter could be built on top of it. Confirmed no slider UI pattern exists anywhere in this codebase
+either (checked while deciding Min IMDb/TMDB Rating should stay plain number inputs, not sliders, in
+`frontend_spec_075`).
+
+**Status**: Not specced. Deliberately deferred out of the `frontend_spec_072`–`077` batch — Country
+is a small, self-contained addition (`series_spec_0XX` + a frontend field) worth picking up on its
+own; Language is materially bigger (new DB field + TMDB-capture change) and should not be scoped
+together with Country just because they were raised at the same time.
+
 ---
 
 ## Series List
@@ -332,10 +351,12 @@ CSV" as two always-visible, separate buttons (`data-testid="export-json-btn"`/`"
 until there's a real site/user config UI to place it in or pattern it after (rather than building a
 one-off dropdown component just for this).
 
-**Status**: Not specced. Explicitly deferred, not just unprioritized — depends on the Configuration
-section's "No settings menu" idea existing first (or at least a decision on its shape), since the
-whole point is to place/pattern this consistently with that future UI rather than inventing a
-dropdown idiom in isolation now.
+**Status**: Partially specced (2026-09-01). `frontend_spec_072_settings_export_and_refresh.md`
+relocates `ExportControls` wholesale into the now-real Settings page (also making it an unfiltered,
+whole-library export instead of respecting My Series' active filters) — but as the same two
+always-visible buttons, not consolidated into a single dropdown/menu control. The dropdown-
+consolidation idea itself is still open, now layered on top of Settings rather than waiting for it
+to exist.
 
 ---
 
@@ -373,13 +394,16 @@ Idea: once a settings/config menu exists, move "Refresh All" itself into it (out
 rather than an invisible env var) — it's a maintenance/admin action, not a core browsing action, so
 it doesn't need to live on the primary list view at all.
 
-**Status**: Shell implemented (2026-09-01). `frontend_spec_070_settings_menu.md` shipped the entry
-point and page shell only — a "Settings" nav item after "Keywords", routing to an otherwise-empty
-`/settings` page. It deliberately makes no persistence decision (where settings would live — a new
-`AppSettings` table? `localStorage`, given this is a single-user app? — is still open) since it
-ships no real setting. Each concrete case above (the Country/Language favourites list, saved
-filter/algorithm profiles, "Refresh All" relocation + skip-threshold surfacing) still needs its own
-future spec against this shell, including the persistence decision each one actually needs.
+**Status**: Shell implemented (2026-09-01), first real content specced the same day.
+`frontend_spec_070_settings_menu.md` shipped the entry point and page shell — a "Settings" nav item
+after "Keywords", routing to a `/settings` page. `frontend_spec_072_settings_export_and_refresh.md`
+gives it its first real content: Export (now unfiltered/whole-library) and Refresh All, both
+relocated off the My Series page verbatim. The skip-threshold-surfacing half of the third concrete
+case above is **not** part of `frontend_spec_072`'s scope — only the button/progress UI moved, the
+`app.tmdb.refresh-skip-threshold-minutes` value itself is still an invisible env var. The
+Country/Language favourites list and saved filter/algorithm profiles still need their own future
+specs against this shell, including whatever persistence decision each one actually needs (still
+undecided — a new `AppSettings` table? `localStorage`?).
 
 Loosely related (2026-08-28): the Navigation section's "Light/dark mode toggle" idea is small
 enough to ship standalone (`localStorage`, no backend) rather than waiting on this, but would
