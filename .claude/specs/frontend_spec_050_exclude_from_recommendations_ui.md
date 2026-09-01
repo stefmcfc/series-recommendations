@@ -1,6 +1,8 @@
 # Frontend Spec 050: `excludeFromRecommendations` — Picker Enforcement & List Indicator
 
-**Status**: Not started
+**Status**: Implemented — `RecommendationControls.tsx` (`buildSpecificSeriesCandidatePool`),
+`RecommendationControls.test.tsx`, `SeriesList.tsx`, `SeriesList.module.css`,
+`SeriesList.test.tsx`
 **Priority**: P2 (paired with Series Spec 034 — the UI half of making the exclude flag an absolute
 rule, plus closing a separate, related display gap on the same field)
 **Depends on**: Frontend Spec 035 (`frontend_spec_035_specific_series_picker.md`, owns
@@ -224,8 +226,8 @@ attached.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-050-AC-01: excluded series are never offered in the inline Specific Series picker
-- [ ] FRONTEND-050-AC-02: excluded series are never offered in the "Show all series" browse modal
-- [ ] FRONTEND-050-AC-03: an already-selected-then-excluded series still resolves its chip label
-- [ ] FRONTEND-050-AC-04: `SeriesList` renders an "Excluded from recommendations" badge
-- [ ] FRONTEND-050-AC-05: the badge is read-only, not a toggle
+- [x] FRONTEND-050-AC-01: excluded series are never offered in the inline Specific Series picker
+- [x] FRONTEND-050-AC-02: excluded series are never offered in the "Show all series" browse modal
+- [x] FRONTEND-050-AC-03: an already-selected-then-excluded series still resolves its chip label
+- [x] FRONTEND-050-AC-04: `SeriesList` renders an "Excluded from recommendations" badge
+- [x] FRONTEND-050-AC-05: the badge is read-only, not a toggle

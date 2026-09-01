@@ -701,6 +701,14 @@ export function SeriesList({
                         New content
                       </span>
                     )}
+                    {s.excludeFromRecommendations && (
+                      <span
+                        className={styles.excludedBadge}
+                        data-testid="excluded-from-recommendations-badge"
+                      >
+                        Excluded from recommendations
+                      </span>
+                    )}
                   </div>
 
                   <div className={styles.rowSecondaryRight}>

@@ -6,7 +6,10 @@ import {
   within,
 } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { RecommendationControls } from './RecommendationControls'
+import {
+  RecommendationControls,
+  buildSpecificSeriesCandidatePool,
+} from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
 import type { Series } from '../types/series'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
@@ -1199,6 +1202,81 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
     )
+  })
+})
+
+describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific Series picker', () => {
+  it('does not show an excluded series as a selectable suggestion', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Included Show', status: 'COMPLETED' }),
+      makeSeries({
+        id: '2',
+        title: 'Excluded Show',
+        status: 'COMPLETED',
+        excludeFromRecommendations: true,
+      }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    expect(
+      await screen.findByRole('button', { name: /Included Show/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Excluded Show/ }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-050-AC-02: excluded series are never offered in the browse-all modal', () => {
+  it('omits an excluded series from the "Show all series" modal', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'Included Show', status: 'COMPLETED' }),
+      makeSeries({
+        id: '2',
+        title: 'Excluded Show',
+        status: 'COMPLETED',
+        excludeFromRecommendations: true,
+      }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+
+    const dialog = screen.getByRole('dialog')
+    expect(
+      within(dialog).getByRole('button', { name: /Included Show/ }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).queryByRole('button', { name: /Excluded Show/ }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-050-AC-03: an already-selected-then-excluded series still resolves its chip label', () => {
+  it('keeps resolving a correct label for a selected id even once that series is excludeFromRecommendations=true', () => {
+    // Direct unit test of the exported pool builder: RecommendationControls
+    // has no prop to seed selectedSeriesIds pre-render (allSeries is fetched
+    // once on mount, with no re-fetch path to exercise this through the DOM),
+    // so this asserts the missingSelected union-back mechanism itself --
+    // sourced from the unfiltered allSeries, not the new `selectable` list.
+    const nowExcluded = makeSeries({
+      id: '1',
+      title: 'Now Excluded Show',
+      status: 'COMPLETED',
+      excludeFromRecommendations: true,
+    })
+    const pool = buildSpecificSeriesCandidatePool(
+      [nowExcluded],
+      [],
+      'any',
+      'title',
+      'asc',
+      ['1'],
+    )
+
+    expect(pool).toHaveLength(1)
+    expect(pool[0]).toBe(nowExcluded)
   })
 })
 

@@ -517,13 +517,21 @@ function compareSpecificSeries(
 // browse-all modal, so what's offered (subject to KeywordPicker's own cap or
 // typed-text search) is always computed identically.
 //
-// FRONTEND-035-AC-07: any already-selected series the genre/status filter
-// narrows away is unioned back in *after* sorting, purely so KeywordPicker's
+// FRONTEND-050-AC-01/AC-02: a series with excludeFromRecommendations === true
+// is dropped before genre/status filtering runs, so neither the inline
+// picker nor the browse-all modal (both consume this function's output) ever
+// offers it as a selectable option -- the flag means what it says everywhere
+// in the UI, not just automatically at recommendation time.
+//
+// FRONTEND-035-AC-07 / FRONTEND-050-AC-03: any already-selected series the
+// genre/status filter narrows away -- or that has since been marked
+// excluded -- is unioned back in *after* sorting, purely so KeywordPicker's
 // chip-label lookup (which resolves a selected id against whatever `options`
 // it was last given -- see KeywordPicker.tsx) can still find a correct
-// label instead of falling back to rendering the raw id. This never affects
-// what's offered as a *suggestion*: KeywordPicker already excludes anything
-// in `selected` from its suggestion list.
+// label instead of falling back to rendering the raw id. This is
+// deliberately sourced from the unfiltered `allSeries`, not `selectable`,
+// and never affects what's offered as a *suggestion*: KeywordPicker already
+// excludes anything in `selected` from its suggestion list.
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
 export function buildSpecificSeriesCandidatePool(
   allSeries: Series[],
@@ -533,8 +541,9 @@ export function buildSpecificSeriesCandidatePool(
   sortDirection: SpecificSeriesSortDirection,
   selectedSeriesIds: string[],
 ): Series[] {
+  const selectable = allSeries.filter((s) => !s.excludeFromRecommendations)
   const filtered = filterSpecificSeriesByStatus(
-    filterSpecificSeriesByGenre(allSeries, genreFilter),
+    filterSpecificSeriesByGenre(selectable, genreFilter),
     statusFilter,
   )
   const sorted = [...filtered].sort((a, b) =>
