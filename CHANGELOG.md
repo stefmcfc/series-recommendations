@@ -23,7 +23,7 @@ versioned together as one app.
 
 ### Fixed
 
-- Frontend: `GenreIncludeExcludePicker`'s include/exclude toggle colors now meet WCAG AA contrast (4.5:1) against their white label text in both light and dark mode.
+- Frontend: `GenreIncludeExcludePicker`'s include/exclude toggle colours now meet WCAG AA contrast (4.5:1) against their white label text in both light and dark mode.
 
 ## [3.7.1] - 2026-09-01
 
