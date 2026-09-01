@@ -83,17 +83,18 @@ corrected below.
 | Cache "Use My Series" sourced candidate pool (TTL/capacity-bounded, keyed on seriesIds/minSourceRating/limit) — a sortBy-only or output-filter-only change is now a cache hit, not a TMDB re-fetch | `series_spec_035`                    | —                                               | ✅ Done                                                                                         |
 | `SeriesDetail` "Recommendations" button (modal) + shared `RecommendationCard` extraction | —                                    | `frontend_spec_052`                            | ✅ Done                                                                                         |
 | Recommendation candidate details (season/episode counts, IMDb rating) — new endpoint | `series_spec_036`                    | —                                               | ✅ Done                                                                                         |
+| Recommendation candidate detail modal ("View Details," replaces "Show keywords" on the shared `RecommendationCard`) | —                                    | `frontend_spec_053`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains:
 `043→045`, `030→044`, and `038→057`. Rows within a chain must build in the listed order; the
-chains themselves (and the fully-standalone rows — `051`, `053`, `042`/`063`, `064`, `065`) have no
+chains themselves (and the fully-standalone rows — `051`, `042`/`063`, `064`, `065`) have no
 dependencies on each other and can be reordered freely as a block if priorities change — but
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore. (The former 041→042 chain, the standalone 048, 054, and 062, the
-052→053 chain fed by standalone 036 (052/036 now both delivered, leaving 053 standalone), the full
+052→053 chain fed by standalone 036 (all three now delivered), the full
 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the `037→039→058` year-range
 leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and frontend both — are fully
 delivered; see the table above.)
@@ -104,7 +105,6 @@ delivered; see the table above.)
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Specific Series picker "Select all" / "Clear all" bulk actions | — | `frontend_spec_051` | `frontend_spec_035` (already delivered — effectively standalone within this table) | 🟨 P3 · ⬜ Not started |
-| Recommendation candidate detail modal ("View Details," replaces "Show keywords" on the shared card) | — | `frontend_spec_053` | `frontend_spec_052` (modifies its `RecommendationCard`) + `series_spec_036` (calls its endpoint) — both already delivered, effectively standalone within this table now | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
 | Exclude Genre(s) filter on the My Series list (`SearchFilter`), mirroring the existing Recs-side field | `series_spec_042` | `frontend_spec_063` | — (self-contained pair, standalone) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |

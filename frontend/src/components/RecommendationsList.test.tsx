@@ -20,6 +20,9 @@ const mockRefresh = vi.mocked(seriesApi.refresh)
 const mockGetRecommendationKeywords = vi.mocked(
   seriesApi.getRecommendationKeywords,
 )
+const mockGetRecommendationDetails = vi.mocked(
+  seriesApi.getRecommendationDetails,
+)
 
 function makeRecommendation(
   overrides: Partial<Recommendation> = {},
@@ -44,6 +47,15 @@ function makeRecommendation(
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // FRONTEND-053: RecommendationDetailModal fetches this independently of
+  // keywords on open -- default it to a benign resolved value so tests in
+  // this file that only care about the keywords section (opened via the
+  // shared "View Details" button) don't also have to stub it individually.
+  mockGetRecommendationDetails.mockResolvedValue({
+    numberOfSeasons: null,
+    numberOfEpisodes: null,
+    imdbRating: null,
+  })
 })
 
 // FRONTEND-062 (2026-09-01): RecommendationsList no longer fetches when its
@@ -584,7 +596,7 @@ describe('FRONTEND-025-AC-05: JustWatch attribution', () => {
   })
 })
 
-describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expand click", () => {
+describe("FRONTEND-028-AC-09/10/FRONTEND-053: keywords are fetched only on a card's own View Details click", () => {
   it('does not call getRecommendationKeywords on initial render', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     render(<RecommendationsList query={{}} />)
@@ -593,7 +605,7 @@ describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expan
     expect(mockGetRecommendationKeywords).not.toHaveBeenCalled()
   })
 
-  it('calls getRecommendationKeywords with the card\'s tmdbId when "Show keywords" is clicked', async () => {
+  it('calls getRecommendationKeywords with the card\'s tmdbId when "View Details" is clicked', async () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ tmdbId: 4046 }),
     ])
@@ -601,7 +613,7 @@ describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expan
     render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
-    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+    fireEvent.click(screen.getByTestId('view-details-btn'))
 
     await waitFor(() =>
       expect(mockGetRecommendationKeywords).toHaveBeenCalledWith(4046),
@@ -609,14 +621,14 @@ describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expan
   })
 })
 
-describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states', () => {
+describe('FRONTEND-028-AC-11/12/13/FRONTEND-053: per-card loading, error, and result states', () => {
   it('shows a scoped loading state while the fetch is in flight', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     mockGetRecommendationKeywords.mockReturnValue(new Promise(() => undefined))
     render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
-    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+    fireEvent.click(screen.getByTestId('view-details-btn'))
 
     expect(await screen.findByText(/loading keywords/i)).toBeInTheDocument()
   })
@@ -629,11 +641,9 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
-    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+    fireEvent.click(screen.getByTestId('view-details-btn'))
 
-    expect(
-      await screen.findByText('Failed to load keywords'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/keywords unavailable/i)).toBeInTheDocument()
   })
 
   it('renders each keyword and an explicit empty message when none are found', async () => {
@@ -642,7 +652,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
-    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+    fireEvent.click(screen.getByTestId('view-details-btn'))
 
     expect(await screen.findByText(/no keywords found/i)).toBeInTheDocument()
   })
@@ -653,7 +663,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
-    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+    fireEvent.click(screen.getByTestId('view-details-btn'))
 
     expect(await screen.findByText('spy')).toBeInTheDocument()
     expect(screen.getByText('mi5')).toBeInTheDocument()
@@ -667,10 +677,10 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
-    fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
+    fireEvent.click(screen.getByTestId('view-details-btn'))
 
-    await screen.findByText('Failed to load keywords')
-    expect(screen.getByText('Ozark')).toBeInTheDocument()
+    await screen.findByText(/keywords unavailable/i)
+    expect(screen.getAllByText('Ozark').length).toBeGreaterThan(0)
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

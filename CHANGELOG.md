@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-09-01
+
+### Added
+
+- Frontend: recommendation cards gain a "View Details" action (`frontend_spec_053`) opening a full detail view — everything already on the card (poster, overview, genres, streaming providers, rating) plus season/episode counts and IMDb rating (`series_spec_036`, shipped earlier) and keywords, each section fetched independently so one failing (e.g. OMDb down) never blanks the other.
+
+### Changed
+
+- Frontend: "Show keywords" is removed from `RecommendationCard`, replaced by "View Details" — keywords are now one section of the fuller detail view instead of a separate standalone expand. Applies everywhere `RecommendationCard` renders (the main Recommendations page and `SeriesDetail`'s Recommendations modal) with no extra wiring needed in either.
+
 ## [3.6.0] - 2026-09-01
 
 ### Added
