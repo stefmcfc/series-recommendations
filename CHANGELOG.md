@@ -18,6 +18,8 @@ versioned together as one app.
 ### Changed
 
 - Frontend: extracted the per-candidate recommendation card (title/year/genres/overview/rating/streaming providers/actions) out of `RecommendationsList` into a standalone `RecommendationCard` component, now shared by both `RecommendationsList` and the new `SeriesDetail` modal above. No behavior change to the existing Recommendations page (`frontend_spec_052`).
+- Backend: `OmdbClient` now compiles its ratings-suffix regex once as a static `Pattern` instead of per-rating inside a loop; `SeriesRefreshService.refreshFromTmdb`'s flat sequence of TMDB field copies is now a separate `applyTmdbDetail` helper. No behavior change — SonarQube findings (`java:S9142`, `java:S3776`).
+- Frontend: `SeriesFormFields` extracts its repeated "locked hint, else validation error, else none" logic into one `resolveDescribedBy` helper instead of a nested ternary at each locked-capable field. No behavior change — SonarQube findings (`typescript:S3358`, `typescript:S3776`).
 
 ## [3.5.1] - 2026-09-01
 
