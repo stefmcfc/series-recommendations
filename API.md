@@ -217,6 +217,17 @@ specifically — `countries=JP,SE` returned 0 results despite each individually 
 US/GB co-productions exist — e.g. *Sherlock* — that AND-matching looks identical to OR-matching for
 that specific pair). Pipe is the correct OR separator; `TmdbClient.discover()` sends it accordingly.
 
+`excludeGenres` (comma-separated names, e.g. `excludeGenres=Comedy,Horror`) excludes a candidate
+whose genres match any entry — matched by resolving each entry to a TMDB genre id first (the same
+alias vocabulary the `genres` field itself accepts, e.g. `"Action"` for TMDB's canonical `"Action &
+Adventure"`), not a raw string comparison, so an unresolvable entry is silently skipped rather than
+excluding nothing or erroring (`series_spec_043`). Applied as a post-fetch output filter across
+every sourcing mode. For genre/keyword-directed sourcing (Custom Search, and any other request with
+`genres`/`keywords` set) specifically, it's **additionally** sent to TMDB itself as `without_genres`
+(comma-joined, mirroring `with_genres`) for the same pre-fetch reason as `language`/`countries`
+above (`series_spec_044`); `sourceMode=trending`/`topRated`/`useMySeries` sourcing keeps the
+post-fetch check only, unaffected by this pre-fetch addition.
+
 `excludeKeywords` (comma-separated names) excludes a candidate whose TMDB keywords
 case-insensitively match any entry, applied last (after every other output filter) across every
 sourcing mode; a per-candidate keyword lookup failure fails that one candidate open rather than
