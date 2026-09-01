@@ -2492,3 +2492,86 @@ describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
     expect(pool.map((s) => s.title)).toEqual(['Show'])
   })
 })
+
+// frontend_spec_051_specific_series_bulk_select.md
+describe('FRONTEND-051-AC-01: Select all', () => {
+  it('selects every series in the current candidate pool', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
+      makeSeries({ id: '2', title: 'B', status: 'COMPLETED' }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    // FRONTEND-011-AC-03/FRONTEND-042: "Use My Series" (which hosts the
+    // Specific Series picker) is already the default active tab -- no tab
+    // click needed to reach it, unlike Discover sub-modes elsewhere in this
+    // file.
+    fireEvent.click(await screen.findByRole('button', { name: /select all/i }))
+    clickApplyFilters()
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seriesIds: expect.arrayContaining(['1', '2']),
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-051-AC-02: Clear all', () => {
+  it('clears the entire selection', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    fireEvent.click(await screen.findByRole('button', { name: /select all/i }))
+    fireEvent.click(screen.getByRole('button', { name: /clear all/i }))
+    clickApplyFilters()
+
+    expect(onQueryChange).toHaveBeenCalledWith(
+      expect.not.objectContaining({ seriesIds: expect.anything() }),
+    )
+  })
+})
+
+describe('FRONTEND-051-AC-03: disabled states', () => {
+  it('disables Clear all when nothing is selected', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    expect(
+      await screen.findByRole('button', { name: /clear all/i }),
+    ).toBeDisabled()
+  })
+
+  it('disables Select all when the filtered pool is empty', async () => {
+    // FRONTEND-051-AC-03: the spec's own snippet (click "completed or
+    // watching" then "any status") leaves the status filter at "any", which
+    // does NOT empty the pool here -- the tracked series would still match.
+    // Using a genuinely non-matching status ('BACKLOG') plus the "Completed
+    // Only" filter actually empties buildSpecificSeriesCandidatePool's
+    // output, unlike the spec snippet's own combination.
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'A', status: 'BACKLOG' }),
+    ])
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    fireEvent.click(await screen.findByLabelText(/^completed only/i))
+
+    expect(screen.getByRole('button', { name: /select all/i })).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-051-AC-04: gated behind Apply Filters', () => {
+  it('does not call onQueryChange until Apply Filters is clicked', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
+    ])
+    const onQueryChange = vi.fn()
+    render(<RecommendationControls onQueryChange={onQueryChange} />)
+    onQueryChange.mockClear() // clear the mount-time initial call, if any
+
+    fireEvent.click(await screen.findByRole('button', { name: /select all/i }))
+    expect(onQueryChange).not.toHaveBeenCalled()
+  })
+})

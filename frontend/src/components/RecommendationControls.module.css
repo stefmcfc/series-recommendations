@@ -361,6 +361,23 @@
   background: var(--social-bg);
 }
 
+.browseSeriesButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.browseSeriesButton:disabled:hover {
+  background: transparent;
+}
+
+/* FRONTEND-051: "Select all"/"Clear all" sit on their own row, above "Show
+   all series" -- reuses browseSeriesButton's styling rather than introducing
+   a new button variant. */
+.bulkSelectRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .overlay {
   position: fixed;
   inset: 0;

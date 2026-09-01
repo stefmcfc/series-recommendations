@@ -1,6 +1,7 @@
 # Frontend Spec 051: Specific Series Picker — Bulk "Select All" / "Clear All"
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/UseMySeriesPanel.tsx`, tests in
+`frontend/src/components/RecommendationControls.test.tsx`
 **Priority**: P3 (quality-of-life — the picker is fully functional today; this addresses friction
 selecting/clearing many series one at a time as the tracked collection grows)
 **Depends on**: Frontend Spec 035 (`frontend_spec_035_specific_series_picker.md`, owns
@@ -174,7 +175,7 @@ handler.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-051-AC-01: "Select all" selects every series in the current candidate pool
-- [ ] FRONTEND-051-AC-02: "Clear all" clears the entire selection
-- [ ] FRONTEND-051-AC-03: both buttons disable when they'd be a no-op
-- [ ] FRONTEND-051-AC-04: neither button bypasses the "Apply Filters" gate
+- [x] FRONTEND-051-AC-01: "Select all" selects every series in the current candidate pool
+- [x] FRONTEND-051-AC-02: "Clear all" clears the entire selection
+- [x] FRONTEND-051-AC-03: both buttons disable when they'd be a no-op
+- [x] FRONTEND-051-AC-04: neither button bypasses the "Apply Filters" gate
