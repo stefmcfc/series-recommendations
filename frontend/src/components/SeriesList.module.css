@@ -87,6 +87,40 @@
   border-color: var(--accent);
 }
 
+.filtersTrigger {
+  display: flex;
+  align-items: center;
+}
+
+.filtersButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem;
+  cursor: pointer;
+}
+
+.filtersButton:hover {
+  background: var(--social-bg);
+}
+
+.filtersActiveDot {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 .addButton {
   background: var(--accent);
   color: #000;

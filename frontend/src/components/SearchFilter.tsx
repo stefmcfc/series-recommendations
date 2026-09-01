@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { SearchCriteria } from '../types/series'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
@@ -8,6 +8,11 @@ import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import styles from './SearchFilter.module.css'
 
 interface SearchFilterProps {
+  // FRONTEND-071-AC-04/05: the sheet's open/closed state is now owned by
+  // MySeriesView (App.tsx) and passed down, rather than SearchFilter
+  // managing its own filtersOpen -- see frontend_spec_071.
+  readonly isOpen: boolean
+  readonly onClose: () => void
   readonly onSearch: (criteria: SearchCriteria) => void
   readonly onClear: () => void
 }
@@ -71,7 +76,12 @@ function buildCriteria(form: FormState): SearchCriteria {
   return criteria
 }
 
-export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
+export function SearchFilter({
+  isOpen,
+  onClose,
+  onSearch,
+  onClear,
+}: SearchFilterProps) {
   const [form, setForm] = useState<FormState>(initialFormState)
   const [keywordOptions, setKeywordOptions] = useState<string[]>([])
   const [keywordOptionsError, setKeywordOptionsError] = useState<string | null>(
@@ -79,12 +89,19 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   )
   const [genreOptions, setGenreOptions] = useState<string[]>([])
   const [browseModalOpen, setBrowseModalOpen] = useState(false)
-  // FRONTEND-055-AC-04 (amended 2026-08-29): defaults to closed, matching
-  // RecommendationControls.tsx's own filtersOpen default exactly, so both
-  // panels behave consistently. (Originally specced to default open,
-  // reasoning SearchFilter was the primary filter surface -- reversed per
-  // direct instruction; see this spec's Design Decisions.)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+
+  // FRONTEND-071-AC-05: moves focus into the sheet as soon as it opens.
+  // Without this, focus stays on the funnel trigger button in SeriesList --
+  // a DOM sibling, not an ancestor, of this dialog -- so a real Escape
+  // keypress right after opening would never reach handleSheetKeyDown at
+  // all. Programmatic .focus() here (not the JSX autoFocus prop, which
+  // jsx-a11y/no-autofocus disallows) on the isOpen transition.
+  useEffect(() => {
+    if (isOpen) {
+      titleInputRef.current?.focus()
+    }
+  }, [isOpen])
 
   useEffect(() => {
     seriesApi
@@ -146,11 +163,13 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     onSearch(buildCriteria(form))
+    onClose()
   }
 
   const handleClear = () => {
     setForm(initialFormState)
     onClear()
+    onClose()
   }
 
   const handleModalKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -159,158 +178,182 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
     }
   }
 
+  // FRONTEND-071-AC-05: same Escape-to-close pattern as
+  // handleModalKeyDown/the "Browse all keywords" modal, on the sheet's own
+  // dialog root.
+  const handleSheetKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      onClose()
+    }
+  }
+
+  if (!isOpen) {
+    return null
+  }
+
   return (
     <>
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.filtersSection}>
-          <button
-            type="button"
-            className={styles.filtersToggle}
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen((open) => !open)}
-          >
-            {filtersOpen ? 'Hide Filters' : 'Show Filters'}
-          </button>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-close matches AddSeriesForm's convention and the existing "Browse all keywords" modal in this file; the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
+      <div // NOSONAR: typescript:S6819, see comment above
+        className={styles.sheetOverlay}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="my-series-filters-heading"
+        onKeyDown={handleSheetKeyDown}
+      >
+        <form className={styles.sheet} onSubmit={handleSubmit}>
+          <div className={styles.sheetHeader}>
+            <h2 id="my-series-filters-heading" className={styles.sheetHeading}>
+              Filters
+            </h2>
+            <button
+              type="button"
+              className={styles.closeButton}
+              aria-label="Close"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
 
-          {filtersOpen && (
-            <div className={styles.filtersBody} data-testid="filters-body">
-              <div className={styles.field}>
-                <label htmlFor="search-title">Title</label>
-                <input
-                  id="search-title"
-                  type="text"
-                  value={form.title}
-                  onChange={updateField('title')}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <GenreIncludeExcludePicker
-                  idPrefix="search-filter-genre"
-                  label="Genres"
-                  genreOptions={genreOptions}
-                  included={form.genresSelected}
-                  excluded={form.excludeGenresSelected}
-                  onChange={handleGenresChange}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <KeywordPicker
-                  id="search-keywords"
-                  label="Keywords"
-                  selected={form.keywordsSelected}
-                  onChange={handleKeywordsChange}
-                  options={keywordOptionsError ? [] : keywordOptions}
-                  placeholder="Type to filter tracked keywords"
-                  allowFreeText
-                  // A default suggestion list here (rather than only once typing)
-                  // read as cluttered in this field's narrower layout, and the
-                  // "Browse all keywords" modal already covers browsing without
-                  // typing -- so this field only shows matches once you type.
-                  maxSuggestionsWhenEmpty={0}
-                />
-                {keywordOptionsError && (
-                  <p className={styles.keywordError} role="alert">
-                    {keywordOptionsError}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  className={styles.browseKeywordsButton}
-                  onClick={() => setBrowseModalOpen(true)}
-                >
-                  Browse all keywords
-                </button>
-              </div>
-
-              <div className={styles.field}>
-                <span>Min Personal Rating</span>
-                <StarRating
-                  value={form.minPersonalRating}
-                  onChange={handleMinPersonalRatingChange}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
-                <input
-                  id="search-min-imdb-rating"
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={form.minImdbRating}
-                  onChange={updateField('minImdbRating')}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="search-min-tmdb-rating">Min TMDB Rating</label>
-                <input
-                  id="search-min-tmdb-rating"
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={form.minTmdbRating}
-                  onChange={updateField('minTmdbRating')}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="search-year-min">Min Year</label>
-                <input
-                  id="search-year-min"
-                  type="number"
-                  min={MIN_VALID_YEAR}
-                  max={MAX_VALID_YEAR}
-                  value={form.yearMin}
-                  onChange={updateField('yearMin')}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <label htmlFor="search-year-max">Max Year</label>
-                <input
-                  id="search-year-max"
-                  type="number"
-                  min={MIN_VALID_YEAR}
-                  max={MAX_VALID_YEAR}
-                  value={form.yearMax}
-                  onChange={updateField('yearMax')}
-                />
-              </div>
-
-              <div className={styles.checkboxField}>
-                <label htmlFor="search-flagged-for-rewatch">
-                  Flagged for rewatch
-                </label>
-                <input
-                  id="search-flagged-for-rewatch"
-                  type="checkbox"
-                  checked={form.flaggedForRewatch}
-                  onChange={updateCheckbox('flaggedForRewatch')}
-                />
-              </div>
+          <div className={styles.filtersBody} data-testid="filters-body">
+            <div className={styles.field}>
+              <label htmlFor="search-title">Title</label>
+              <input
+                ref={titleInputRef}
+                id="search-title"
+                type="text"
+                value={form.title}
+                onChange={updateField('title')}
+              />
             </div>
-          )}
-        </div>
 
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.clearButton}
-            data-testid="clear-filters-btn"
-            onClick={handleClear}
-          >
-            Clear Filters
-          </button>
-          <button type="submit" className={styles.searchButton}>
-            Search
-          </button>
-        </div>
-      </form>
+            <div className={styles.field}>
+              <GenreIncludeExcludePicker
+                idPrefix="search-filter-genre"
+                label="Genres"
+                genreOptions={genreOptions}
+                included={form.genresSelected}
+                excluded={form.excludeGenresSelected}
+                onChange={handleGenresChange}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <KeywordPicker
+                id="search-keywords"
+                label="Keywords"
+                selected={form.keywordsSelected}
+                onChange={handleKeywordsChange}
+                options={keywordOptionsError ? [] : keywordOptions}
+                placeholder="Type to filter tracked keywords"
+                allowFreeText
+                // A default suggestion list here (rather than only once typing)
+                // read as cluttered in this field's narrower layout, and the
+                // "Browse all keywords" modal already covers browsing without
+                // typing -- so this field only shows matches once you type.
+                maxSuggestionsWhenEmpty={0}
+              />
+              {keywordOptionsError && (
+                <p className={styles.keywordError} role="alert">
+                  {keywordOptionsError}
+                </p>
+              )}
+              <button
+                type="button"
+                className={styles.browseKeywordsButton}
+                onClick={() => setBrowseModalOpen(true)}
+              >
+                Browse all keywords
+              </button>
+            </div>
+
+            <div className={styles.field}>
+              <span>Min Personal Rating</span>
+              <StarRating
+                value={form.minPersonalRating}
+                onChange={handleMinPersonalRatingChange}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
+              <input
+                id="search-min-imdb-rating"
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={form.minImdbRating}
+                onChange={updateField('minImdbRating')}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="search-min-tmdb-rating">Min TMDB Rating</label>
+              <input
+                id="search-min-tmdb-rating"
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={form.minTmdbRating}
+                onChange={updateField('minTmdbRating')}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="search-year-min">Min Year</label>
+              <input
+                id="search-year-min"
+                type="number"
+                min={MIN_VALID_YEAR}
+                max={MAX_VALID_YEAR}
+                value={form.yearMin}
+                onChange={updateField('yearMin')}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label htmlFor="search-year-max">Max Year</label>
+              <input
+                id="search-year-max"
+                type="number"
+                min={MIN_VALID_YEAR}
+                max={MAX_VALID_YEAR}
+                value={form.yearMax}
+                onChange={updateField('yearMax')}
+              />
+            </div>
+
+            <div className={styles.checkboxField}>
+              <label htmlFor="search-flagged-for-rewatch">
+                Flagged for rewatch
+              </label>
+              <input
+                id="search-flagged-for-rewatch"
+                type="checkbox"
+                checked={form.flaggedForRewatch}
+                onChange={updateCheckbox('flaggedForRewatch')}
+              />
+            </div>
+          </div>
+
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.clearButton}
+              data-testid="clear-filters-btn"
+              onClick={handleClear}
+            >
+              Clear Filters
+            </button>
+            <button type="submit" className={styles.searchButton}>
+              Search
+            </button>
+          </div>
+        </form>
+      </div>
 
       {browseModalOpen && (
         <div className={styles.overlay}>

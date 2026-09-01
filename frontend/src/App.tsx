@@ -82,6 +82,11 @@ function MySeriesView({
     () => ({ ...criteria, status }),
     [criteria, status],
   )
+  // FRONTEND-071-AC-09: the filter sheet's open/closed state is lifted here
+  // -- the shared parent of the trigger (SeriesList) and the panel
+  // (SearchFilter), which are otherwise unrelated siblings.
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const hasActiveFilters = criteria != null && Object.keys(criteria).length > 0
 
   return (
     <>
@@ -102,7 +107,12 @@ function MySeriesView({
           Dropped
         </NavLink>
       </nav>
-      <SearchFilter onSearch={onSearch} onClear={onClear} />
+      <SearchFilter
+        isOpen={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        onSearch={onSearch}
+        onClear={onClear}
+      />
       <ExportControls criteria={effectiveCriteria} />
       <SeriesList
         key={seriesListKey}
@@ -110,6 +120,9 @@ function MySeriesView({
         onAddClick={onAddClick}
         onEditClick={onEditClick}
         criteria={effectiveCriteria}
+        isFiltersOpen={isFiltersOpen}
+        onOpenFilters={() => setIsFiltersOpen(true)}
+        hasActiveFilters={hasActiveFilters}
       />
     </>
   )

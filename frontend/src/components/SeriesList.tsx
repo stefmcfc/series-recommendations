@@ -23,6 +23,14 @@ interface SeriesListProps {
   readonly onAddClick?: () => void
   readonly onEditClick?: (series: Series) => void
   readonly criteria?: SearchCriteria
+  // FRONTEND-071-AC-01/02/03: the funnel button's open/closed and
+  // active-filter state are lifted to MySeriesView (App.tsx) -- optional
+  // here (defaulting to "closed, inactive, no-op") so every pre-existing
+  // <SeriesList /> render in this file's other tests keeps working
+  // unchanged.
+  readonly isFiltersOpen?: boolean
+  readonly onOpenFilters?: () => void
+  readonly hasActiveFilters?: boolean
 }
 
 // FRONTEND-013-AC-12: sort field options, in display order. Extended by
@@ -129,6 +137,9 @@ export function SeriesList({
   onAddClick,
   onEditClick,
   criteria,
+  isFiltersOpen = false,
+  onOpenFilters,
+  hasActiveFilters = false,
 }: SeriesListProps) {
   const [series, setSeries] = useState<Series[]>([])
   const [loading, setLoading] = useState(true)
@@ -482,6 +493,36 @@ export function SeriesList({
               <circle cx="8.5" cy="9.5" r="1.5" />
               <path d="M21 15l-5-5-9 9" />
             </svg>
+          </button>
+        </div>
+        <div className={styles.filtersTrigger}>
+          <button
+            type="button"
+            className={styles.filtersButton}
+            data-testid="open-filters-btn"
+            aria-label={hasActiveFilters ? 'Filters (active)' : 'Filters'}
+            aria-expanded={isFiltersOpen}
+            onClick={() => onOpenFilters?.()}
+          >
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="3 4 21 4 14 13 14 20 10 22 10 13 3 4" />
+            </svg>
+            {hasActiveFilters && (
+              <span
+                className={styles.filtersActiveDot}
+                data-testid="filters-active-dot"
+              />
+            )}
           </button>
         </div>
         <div className={styles.headerActions}>

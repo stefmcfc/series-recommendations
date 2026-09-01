@@ -159,7 +159,7 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     render(<App />)
     await screen.findByText('The Office')
 
-    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -177,16 +177,19 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     mockGetAll.mockResolvedValue([])
     mockSearch.mockResolvedValue([])
     render(<App />)
-    await screen.findByTestId('clear-filters-btn')
+    await screen.findByTestId('series-list')
 
-    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
+    fireEvent.change(await screen.findByLabelText(/title/i), {
       target: { value: 'office' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(1))
 
-    fireEvent.click(screen.getByTestId('clear-filters-btn'))
+    // FRONTEND-071-AC-06: Search now closes the sheet after applying --
+    // Clear Filters lives inside it too, so it must be reopened here.
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
+    fireEvent.click(await screen.findByTestId('clear-filters-btn'))
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(2))
   })
 })
@@ -231,7 +234,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     render(<App />)
     await screen.findByText('The Office')
 
-    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -602,7 +605,7 @@ describe('FRONTEND-056-AC-05: SearchFilter criteria and tab-derived status combi
     render(<App />)
     await screen.findByTestId('series-list')
 
-    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'test' },
     })
@@ -626,7 +629,7 @@ describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each 
     render(<App />)
     await screen.findByTestId('series-list')
 
-    fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -652,5 +655,39 @@ describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each 
         undefined,
       ),
     )
+  })
+})
+
+describe('FRONTEND-071-AC-09: opening Filters from SeriesList shows the sheet', () => {
+  it('opens the SearchFilter sheet when the Filters button is clicked', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
+
+    expect(
+      await screen.findByRole('dialog', { name: /filters/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('closes the sheet and reflects an active filter after a search', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockSearch.mockResolvedValue([])
+    mockGetGenreOptions.mockResolvedValue([])
+    mockGetKeywordStats.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
+    fireEvent.change(await screen.findByLabelText(/title/i), {
+      target: { value: 'office' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(
+      screen.queryByRole('dialog', { name: /filters/i }),
+    ).not.toBeInTheDocument()
+    expect(await screen.findByTestId('filters-active-dot')).toBeInTheDocument()
   })
 })

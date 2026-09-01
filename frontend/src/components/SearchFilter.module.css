@@ -1,35 +1,53 @@
-.form {
+/* FRONTEND-071-AC-05: the whole panel is now a slide-out sheet, opened via
+   SeriesList's funnel button and controlled externally (isOpen/onClose) --
+   frontend_spec_055's inline .filtersSection/.filtersToggle disclosure
+   (shown/hidden entirely within the always-rendered .form) is removed. */
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.sheet {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 960px;
-  margin: 0 auto 1.5rem;
-  padding: 1rem 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 26rem;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  text-align: left;
 }
 
-/* FRONTEND-055-AC-04: mirrors RecommendationControls.module.css's own
-   .filtersSection/.filtersToggle/.filtersBody disclosure styles -- see
-   SearchFilter.tsx for why the default open state differs. */
-.filtersSection {
+.sheetHeader {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.filtersToggle {
-  align-self: flex-start;
+.sheetHeading {
+  margin: 0;
+}
+
+.closeButton {
   background: transparent;
   color: var(--text-h);
   border: 1px solid var(--border);
   border-radius: 0.375rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.9375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
-.filtersToggle:hover {
+.closeButton:hover {
   background: var(--social-bg);
 }
 
