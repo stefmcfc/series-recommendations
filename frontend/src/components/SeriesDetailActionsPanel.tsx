@@ -17,6 +17,13 @@ interface SeriesDetailActionsPanelProps {
   readonly onRewatchToggle: () => void
   readonly acknowledging: boolean
   readonly onDismissNewContentClick: () => void
+  // FRONTEND-052-AC-03/07: opens the "Recommendations for {title}" modal
+  // (owned by SeriesDetail.tsx). Disabled (with an explanatory aria-label)
+  // when the series is excluded from recommendations -- inviting the user to
+  // request recs for a series they've deliberately excluded is a confusing
+  // affordance the flag already exists to prevent.
+  readonly onRecommendationsClick: () => void
+  readonly recommendationsDisabled: boolean
 }
 
 // Extracted alongside SeriesDetailFields to pull SeriesDetail's cognitive
@@ -37,6 +44,8 @@ export function SeriesDetailActionsPanel({
   onRewatchToggle,
   acknowledging,
   onDismissNewContentClick,
+  onRecommendationsClick,
+  recommendationsDisabled,
 }: SeriesDetailActionsPanelProps) {
   if (confirmingDelete) {
     return (
@@ -97,6 +106,20 @@ export function SeriesDetailActionsPanel({
               onClick={onRefreshClick}
             >
               {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <button
+              type="button"
+              className={styles.recommendationsButton}
+              data-testid="recommendations-btn"
+              disabled={recommendationsDisabled}
+              aria-label={
+                recommendationsDisabled
+                  ? 'This series is excluded from recommendations'
+                  : undefined
+              }
+              onClick={onRecommendationsClick}
+            >
+              Recommendations
             </button>
           </div>
           <div className={styles.actionsRight}>

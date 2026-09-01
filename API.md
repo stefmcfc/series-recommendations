@@ -223,6 +223,28 @@ lookup just yields an empty list for that one candidate, never a failed request.
 
 ---
 
+### `GET /api/v1/series/recommendations/{tmdbId}/details?imdbId=`
+
+On-demand lookup for a single recommendation candidate's season/episode counts and IMDb rating —
+mirrors `GET /api/v1/series/recommendations/{tmdbId}/keywords`'s on-demand, tmdbId-scoped shape:
+not folded into the bulk `recommendations` response above, since fetching this for every card in a
+10-20 result list would cost a TMDB + OMDb call per card the user never asked to expand.
+
+`imdbId` (optional query param) — a candidate's IMDb id, already present on every
+`RecommendationDto`/frontend `Recommendation` as `imdbId`.
+
+Returns `200` with a single-object envelope (`{ "data": { "numberOfSeasons", "numberOfEpisodes",
+"imdbRating" }, ... }` — matching `GET /api/v1/series/{id}`'s shape, not the list-plus-`count`
+shape `recommendations`/`.../keywords` use). All three fields degrade **independently** to `null`
+on their respective source's failure, never a `4xx`/`5xx` for this endpoint:
+
+- `numberOfSeasons`/`numberOfEpisodes` come from TMDB's `GET /tv/{tmdbId}` (`app.tmdb.api-key`) —
+  both `null` together if that call fails.
+- `imdbRating` comes from OMDb (`app.omdb.api-key`) — `null` if `imdbId` is omitted/blank, or if
+  that call fails (unresolvable id, key unset, network failure).
+
+---
+
 ### `POST /api/v1/series/ignored`
 
 Dismiss a recommendation (`{ imdbId, title, reason? }`) so it never resurfaces. Idempotent —
