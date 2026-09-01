@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: My Series' filter panel is now a slide-out sheet, opened via a new funnel button next to `SeriesList`'s view-mode icons, replacing the inline "Show Filters"/"Hide Filters" disclosure — Search and Clear Filters now close the sheet after acting, and the funnel button shows an active-filter indicator (`frontend_spec_071`).
+
 ## [3.10.0] - 2026-09-01
 
 ### Added

@@ -1,6 +1,8 @@
 # Frontend Spec 071: My Series Filter Sheet
 
-**Status**: Not started
+**Status**: Implemented — `components/SearchFilter.tsx`, `components/SearchFilter.module.css`,
+`components/SeriesList.tsx`, `components/SeriesList.module.css`, `App.tsx` (`MySeriesView`),
+`components/SearchFilter.test.tsx`, `components/SeriesList.test.tsx`, `App.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 055 (`frontend_spec_055_search_filter_overhaul.md`, owns the
 `SearchFilter` fields and inline disclosure this spec relocates and supersedes) ✅ required
@@ -386,12 +388,12 @@ describe('FRONTEND-071-AC-09: opening Filters from SeriesList shows the sheet', 
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-071-AC-01: Filters button renders next to the view-mode icons
-- [ ] FRONTEND-071-AC-02: clicking Filters calls `onOpenFilters`
-- [ ] FRONTEND-071-AC-03: active-filter indicator (dot + accessible name) reflects `hasActiveFilters`
-- [ ] FRONTEND-071-AC-04: closed sheet renders nothing
-- [ ] FRONTEND-071-AC-05: open sheet renders as an accessible dialog, closes on Escape/close control
-- [ ] FRONTEND-071-AC-06: Search applies criteria and closes the sheet
-- [ ] FRONTEND-071-AC-07: Clear Filters resets and closes the sheet
-- [ ] FRONTEND-071-AC-08: all pre-existing fields still render inside the sheet
-- [ ] FRONTEND-071-AC-09: `MySeriesView` lifts and wires filter-sheet state between the two components
+- [x] FRONTEND-071-AC-01: Filters button renders next to the view-mode icons
+- [x] FRONTEND-071-AC-02: clicking Filters calls `onOpenFilters`
+- [x] FRONTEND-071-AC-03: active-filter indicator (dot + accessible name) reflects `hasActiveFilters`
+- [x] FRONTEND-071-AC-04: closed sheet renders nothing
+- [x] FRONTEND-071-AC-05: open sheet renders as an accessible dialog, closes on Escape/close control
+- [x] FRONTEND-071-AC-06: Search applies criteria and closes the sheet
+- [x] FRONTEND-071-AC-07: Clear Filters resets and closes the sheet
+- [x] FRONTEND-071-AC-08: all pre-existing fields still render inside the sheet
+- [x] FRONTEND-071-AC-09: `MySeriesView` lifts and wires filter-sheet state between the two components

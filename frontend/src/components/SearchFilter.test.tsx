@@ -20,25 +20,29 @@ beforeEach(() => {
   mockGetGenreOptions.mockResolvedValue([])
 })
 
-function renderFilter() {
+// FRONTEND-071-AC-04/05: SearchFilter is now an externally-controlled sheet
+// (isOpen/onClose), not a self-toggling panel -- render it already open by
+// default so existing field-level tests in this file don't need a separate
+// "open" step. The now-removed "Show Filters" toggle's own behavior is
+// covered by the FRONTEND-071-AC-04/05 tests further down instead.
+function renderFilter(isOpen = true) {
   const onSearch = vi.fn()
   const onClear = vi.fn()
-  render(<SearchFilter onSearch={onSearch} onClear={onClear} />)
-  return { onSearch, onClear }
-}
-
-// FRONTEND-055-AC-04: the filter fields now live inside a panel that's
-// collapsed by default -- any test that interacts with a field other than
-// Clear Filters/Search (which stay outside the panel) needs to open it
-// first.
-function openFilters() {
-  fireEvent.click(screen.getByRole('button', { name: /show filters/i }))
+  const onClose = vi.fn()
+  render(
+    <SearchFilter
+      isOpen={isOpen}
+      onClose={onClose}
+      onSearch={onSearch}
+      onClear={onClear}
+    />,
+  )
+  return { onSearch, onClear, onClose }
 }
 
 describe('FRONTEND-006-AC-01/02: fields', () => {
   it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()
-    openFilters()
     for (const label of [
       /title/i,
       /min imdb rating/i,
@@ -54,7 +58,6 @@ describe('FRONTEND-006-AC-01/02: fields', () => {
 describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
   it('calls onSearch with only populated fields', () => {
     const { onSearch } = renderFilter()
-    openFilters()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -75,7 +78,6 @@ describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
 
   it('includes numeric rating fields when populated', () => {
     const { onSearch } = renderFilter()
-    openFilters()
     fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
     fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
       target: { value: '7.5' },
@@ -105,7 +107,6 @@ describe('FRONTEND-055-AC-01: removed fields', () => {
 describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
   it('submits minTmdbRating and yearMin/yearMax', () => {
     const { onSearch } = renderFilter()
-    openFilters()
 
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
       target: { value: '7.5' },
@@ -132,7 +133,6 @@ describe('FRONTEND-063-AC-03: GenreIncludeExcludePicker renders', () => {
   it('renders the picker trigger once filters are shown', async () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy', 'Drama'])
     renderFilter()
-    openFilters()
     expect(
       await screen.findByRole('button', { name: 'Genres' }),
     ).toBeInTheDocument()
@@ -143,7 +143,6 @@ describe('FRONTEND-063-AC-04: toggling submits genres/excludeGenres', () => {
   it('includes an included genre in onSearch criteria', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama', 'Comedy', 'Crime'])
     const { onSearch } = renderFilter()
-    openFilters()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
     fireEvent.click(screen.getByRole('button', { name: 'Drama: neutral' }))
@@ -159,8 +158,14 @@ describe('FRONTEND-063-AC-04: toggling submits genres/excludeGenres', () => {
   it('includes an excluded genre in onSearch criteria', async () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy'])
     const onSearch = vi.fn()
-    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
-    openFilters()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={onSearch}
+        onClear={vi.fn()}
+      />,
+    )
     fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
     // neutral -> include -> exclude
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
@@ -188,7 +193,6 @@ describe('FRONTEND-063-AC-05: Clear Filters resets both genre selections', () =>
   it('resets the picker summary after Clear Filters', async () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy'])
     renderFilter()
-    openFilters()
     fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
     fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
@@ -197,25 +201,140 @@ describe('FRONTEND-063-AC-05: Clear Filters resets both genre selections', () =>
   })
 })
 
-describe('FRONTEND-055-AC-04: collapsible filter panel (amended -- closed by default)', () => {
-  it('filters are hidden by default and can be expanded', () => {
-    renderFilter()
-    expect(screen.queryByTestId('filters-body')).not.toBeInTheDocument()
-    const toggle = screen.getByRole('button', { name: /show filters/i })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-
-    fireEvent.click(toggle)
-    expect(screen.getByTestId('filters-body')).toBeInTheDocument()
+// FRONTEND-055-AC-04's inline show/hide disclosure is superseded outright by
+// frontend_spec_071's externally-controlled sheet -- see the
+// FRONTEND-071-AC-04/05/06/07/08 tests below for its replacement coverage.
+describe('FRONTEND-071-AC-04: closed sheet renders nothing', () => {
+  it('renders no dialog and no toggle button when isOpen is false', () => {
+    render(
+      <SearchFilter
+        isOpen={false}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /hide filters/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+      screen.queryByRole('button', { name: /show filters/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-071-AC-05: open sheet is an accessible dialog', () => {
+  it('renders a labelled dialog and closes on Escape', () => {
+    const onClose = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={onClose}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    const dialog = screen.getByRole('dialog', { name: /filters/i })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+
+    // Regression guard: focus must actually be inside the sheet on open, not
+    // left on the funnel trigger button in SeriesList (a DOM sibling, not an
+    // ancestor, of this dialog) -- otherwise a real Escape keypress right
+    // after opening would never bubble to this dialog's own keydown handler.
+    // Firing the event directly on `dialog` (as this test used to) can't
+    // catch that class of bug, since it bypasses real focus/bubbling
+    // entirely -- fire it from wherever focus actually landed instead.
+    expect(document.activeElement).toHaveAccessibleName('Title')
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes when the close control is clicked', () => {
+    const onClose = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={onClose}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-071-AC-06: Search applies and closes', () => {
+  it('calls onSearch then onClose on submit', () => {
+    const onSearch = vi.fn()
+    const onClose = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={onClose}
+        onSearch={onSearch}
+        onClear={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/title/i), {
+      target: { value: 'office' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'office' }),
+    )
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-071-AC-07: Clear Filters resets and closes', () => {
+  it('calls onClear then onClose', () => {
+    const onClear = vi.fn()
+    const onClose = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={onClose}
+        onSearch={vi.fn()}
+        onClear={onClear}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('clear-filters-btn'))
+
+    expect(onClear).toHaveBeenCalledTimes(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-071-AC-08: all fields still present', () => {
+  it('renders every pre-existing field when open', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    for (const label of [
+      /title/i,
+      /min imdb rating/i,
+      /min tmdb rating/i,
+      /min year/i,
+      /max year/i,
+    ]) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument()
+    }
+    expect(screen.getByText('Min Personal Rating')).toBeInTheDocument()
+    expect(screen.getByLabelText(/flagged for rewatch/i)).toBeInTheDocument()
   })
 })
 
 describe('FRONTEND-055-AC-05: rating/year fields carry validation bounds', () => {
   it('rating and year fields carry the same bounds as Custom Search', () => {
     renderFilter()
-    openFilters()
 
     const minImdb = screen.getByLabelText(/min imdb rating/i)
     expect(minImdb).toHaveAttribute('min', '0')
@@ -240,7 +359,6 @@ describe('FRONTEND-055-AC-05: rating/year fields carry validation bounds', () =>
 describe('FRONTEND-055-AC-06: Min Personal Rating via StarRating', () => {
   it('sets minPersonalRating via stars', () => {
     const { onSearch } = renderFilter()
-    openFilters()
 
     fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
@@ -252,7 +370,6 @@ describe('FRONTEND-055-AC-06: Min Personal Rating via StarRating', () => {
 
   it('clicking an already-selected star clears it', () => {
     const { onSearch } = renderFilter()
-    openFilters()
 
     fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
     fireEvent.click(screen.getByRole('button', { name: 'Rate 3 star(s)' }))
@@ -267,7 +384,6 @@ describe('FRONTEND-055-AC-06: Min Personal Rating via StarRating', () => {
 describe('FRONTEND-055-AC-07: Status dropdown removed', () => {
   it('no longer renders a Status field', () => {
     renderFilter()
-    openFilters()
     expect(screen.queryByLabelText(/^status$/i)).not.toBeInTheDocument()
   })
 })
@@ -287,7 +403,6 @@ describe('FRONTEND-006-AC-07/08: clearing', () => {
 
   it('resets fields and calls onClear, not onSearch', () => {
     const { onSearch, onClear } = renderFilter()
-    openFilters()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'office' },
     })
@@ -305,7 +420,6 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
   it('never logs entered filter values to the console', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     const { onSearch } = renderFilter()
-    openFilters()
     fireEvent.change(screen.getByLabelText(/title/i), {
       target: { value: 'secret-title' },
     })
@@ -324,10 +438,16 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
       { name: 'heist', seriesCount: 2, averagePersonalRating: 3.1 },
     ])
     const onSearch = vi.fn()
-    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={onSearch}
+        onClear={vi.fn()}
+      />,
+    )
 
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    openFilters()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
@@ -351,8 +471,14 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-    openFilters()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
 
     await screen.findByPlaceholderText(/type to filter tracked keywords/i)
     expect(
@@ -375,7 +501,14 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
     const onSearch = vi.fn()
-    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={onSearch}
+        onClear={vi.fn()}
+      />,
+    )
 
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
@@ -389,8 +522,14 @@ describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => 
     mockGetKeywordStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-    openFilters()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
 
     await screen.findByRole('alert')
     expect(
@@ -405,9 +544,15 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    openFilters()
 
     fireEvent.click(
       screen.getByRole('button', { name: /browse all keywords/i }),
@@ -422,7 +567,9 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'spy' }))
 
     fireEvent.click(within(dialog).getByRole('button', { name: /^done$/i }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('dialog', { name: /browse keywords/i }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Remove spy' }),
     ).toBeInTheDocument()
@@ -432,21 +579,29 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    openFilters()
 
     fireEvent.click(
       screen.getByRole('button', { name: /browse all keywords/i }),
     )
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
     fireEvent.change(within(dialog).getByLabelText('Keywords'), {
       target: { value: 'sp' },
     })
     fireEvent.click(within(dialog).getByRole('button', { name: 'spy' }))
 
     fireEvent.keyDown(dialog, { key: 'Escape' })
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('dialog', { name: /browse keywords/i }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Remove spy' }),
     ).toBeInTheDocument()
@@ -455,8 +610,14 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
 
 describe('FRONTEND-032-AC-09: inline field accepts free text', () => {
   it('adds typed text not present in options on Enter', () => {
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-    openFilters()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
     const input = screen.getByPlaceholderText(
       /type to filter tracked keywords/i,
     )
@@ -475,10 +636,16 @@ describe('FRONTEND-032-AC-10: "Browse all keywords" modal shows the full list wi
         averagePersonalRating: null,
       })),
     )
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
-    openFilters()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
     fireEvent.click(await screen.findByText('Browse all keywords'))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
     expect(await within(dialog).findByText('kw-0')).toBeInTheDocument()
     expect(within(dialog).getByText('kw-14')).toBeInTheDocument()
   })
@@ -487,9 +654,15 @@ describe('FRONTEND-032-AC-10: "Browse all keywords" modal shows the full list wi
 describe('FRONTEND-029-AC-23: opening the modal does not re-fetch keyword options', () => {
   it('calls getKeywordStats exactly once across mount + modal open', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalledTimes(1))
-    openFilters()
 
     fireEvent.click(
       screen.getByRole('button', { name: /browse all keywords/i }),
@@ -503,9 +676,15 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
-    render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    openFilters()
 
     const input = screen.getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
@@ -521,13 +700,11 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
 describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
   it('renders unchecked by default', () => {
     renderFilter()
-    openFilters()
     expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
   })
 
   it('includes flaggedForRewatch in criteria only when checked', () => {
     const { onSearch } = renderFilter()
-    openFilters()
 
     fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
     fireEvent.click(screen.getByRole('button', { name: /search/i }))

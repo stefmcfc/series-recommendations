@@ -147,15 +147,15 @@ consistent answer for both is probably better than solving it twice." Confirmed 
 both filter panels, not just an anticipated one. Confirmed both panels are still today's original
 always-expanded-top-bar / inline-disclosure shapes (2026-08-26 re-check).
 
-**Status**: Partially specced. **Note (2026-08-29)**:
+**Status**: Partially implemented. **Note (2026-08-29)**:
 `frontend_spec_055_search_filter_overhaul.md` gives `SearchFilter` a basic show/hide disclosure
 (reusing `RecommendationControls`' existing `filtersOpen` mechanism) — the immediately-actionable
 "collapsible" want is covered there. **Note (2026-09-01)**: `frontend_spec_071_my_series_filter_sheet.md`
-now specs the bigger layout question for `SearchFilter` specifically — a slide-out sheet (not a
-left-hand panel), triggered by a new funnel icon next to `SeriesList`'s view-mode icons, superseding
-the inline disclosure entirely. `RecommendationControls`' equivalent panel remains unspecced and
-still uses its original inline disclosure — the same sheet treatment for it is a separate future
-spec if wanted, not bundled into `frontend_spec_071`.
+implements the bigger layout question for `SearchFilter` specifically — its inline disclosure is now
+a slide-out sheet (not a left-hand panel), triggered by a new funnel icon next to `SeriesList`'s
+view-mode icons, superseding the inline disclosure entirely. `RecommendationControls`' equivalent
+panel remains open/unspecced and still uses its original inline disclosure — the same sheet
+treatment for it is a separate future spec if wanted, not bundled into `frontend_spec_071`.
 
 ---
 

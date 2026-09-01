@@ -1356,3 +1356,77 @@ describe('FRONTEND-054-AC-09: poster card missing-poster handling', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-071-AC-01: Filters button renders', () => {
+  it('renders a Filters button next to the view-mode toggle', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        isFiltersOpen={false}
+        onOpenFilters={vi.fn()}
+        hasActiveFilters={false}
+      />,
+    )
+    expect(await screen.findByTestId('open-filters-btn')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-071-AC-02: Filters button opens the sheet', () => {
+  it('calls onOpenFilters when clicked', async () => {
+    mockGetAll.mockResolvedValue([])
+    const onOpenFilters = vi.fn()
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        isFiltersOpen={false}
+        onOpenFilters={onOpenFilters}
+        hasActiveFilters={false}
+      />,
+    )
+    fireEvent.click(await screen.findByTestId('open-filters-btn'))
+    expect(onOpenFilters).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FRONTEND-071-AC-03: active-filter indicator', () => {
+  it('shows a dot and updated label when filters are active', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        isFiltersOpen={false}
+        onOpenFilters={vi.fn()}
+        hasActiveFilters={true}
+      />,
+    )
+    expect(await screen.findByTestId('filters-active-dot')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Filters (active)' }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders no dot and the plain label when filters are inactive', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        isFiltersOpen={false}
+        onOpenFilters={vi.fn()}
+        hasActiveFilters={false}
+      />,
+    )
+    await screen.findByTestId('open-filters-btn')
+    expect(screen.queryByTestId('filters-active-dot')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument()
+  })
+})
