@@ -8,11 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-09-01
+
+### Added
+
+- Frontend: `SeriesList` now shows a read-only "Excluded from recommendations" badge on any row with `excludeFromRecommendations` set, so it's visible without opening that series' Edit form (`frontend_spec_050`).
+
 ### Changed
 
 - Backend: `excludeFromRecommendations` now applies uniformly to every recommendation source pool — a series marked "exclude from recommendations" is silently dropped from an explicit `seriesIds` selection too, not just the automatic pool (`series_spec_034`, reverses `SERIES-008-AC-05`). An unknown `seriesIds` entry (one that doesn't match any series at all) is still rejected with `400`, unaffected by this change.
 - Frontend: the "Use My Series" Specific Series picker (both the inline picker and the "Show all series" browse modal) no longer offers a series marked "exclude from recommendations" as a selectable option, matching the server-side enforcement above (`frontend_spec_050`).
-- Frontend: `SeriesList` now shows a read-only "Excluded from recommendations" badge on any row with `excludeFromRecommendations` set, so it's visible without opening that series' Edit form (`frontend_spec_050`).
 
 ## [3.3.1] - 2026-09-01
 
