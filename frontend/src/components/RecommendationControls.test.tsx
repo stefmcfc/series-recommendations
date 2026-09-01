@@ -466,21 +466,11 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
 // "Apply Filters" button now gates every control except Recommendation
 // Source (see the FRONTEND-040-AC-01/02/03 describe blocks below).
 //
-// Fix 3 (2026-08-28, live testing -- pre-existing bug, not part of any open
-// spec): this AC's second assertion ("mounting does not trigger
-// onQueryChange") is now superseded. A fresh mount was found to send zero
-// query params at all (no sourceMode, nothing), which the backend was
-// resolving to Custom Search's unfiltered-discover fallback instead of "Use
-// My Series" pool sourcing -- not a legitimate "no request on mount" case,
-// just a state initialization gap (App.tsx's recommendationQuery started
-// undefined with nothing to establish a real default). The fix adds a
-// mount-only effect that calls onQueryChange once with the default query
-// (see the "eslint-disable-next-line react-hooks/exhaustive-deps --
-// mount-only" effect in RecommendationControls.tsx); every other Apply-gated
-// control this AC was really guarding against is unaffected (see the
-// FRONTEND-040-AC-01/03/04/09 and FRONTEND-042-AC-15 describe blocks below,
-// which already clear the mount call via `onQueryChange.mockClear()` before
-// asserting).
+// FRONTEND-062 (2026-09-01): the "calls onQueryChange once on mount with the
+// default query" test that used to live here (added by the since-superseded
+// "Fix 3" mount effect, itself reversed by frontend_spec_062) asserted
+// exactly the mount-fires-a-request behavior FRONTEND-062-AC-01 now
+// forbids. Replaced below with its direct opposite.
 describe('FRONTEND-011-AC-12: mounting does not trigger an Apply-gated control', () => {
   it('renders "Apply Filters", not a bare "Apply"/"Submit" button', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
@@ -495,11 +485,12 @@ describe('FRONTEND-011-AC-12: mounting does not trigger an Apply-gated control',
     ).not.toBeInTheDocument()
   })
 
-  it('calls onQueryChange once on mount with the default (Use My Series) query', () => {
+  // FRONTEND-062-AC-01: no default query is established on mount anymore --
+  // nothing calls onQueryChange until the user clicks Apply Filters.
+  it('FRONTEND-062-AC-01: does not call onQueryChange on mount', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    expect(onQueryChange).toHaveBeenCalledTimes(1)
-    expect(onQueryChange).toHaveBeenCalledWith({ sourceMode: 'useMySeries' })
+    expect(onQueryChange).not.toHaveBeenCalled()
   })
 })
 
@@ -628,6 +619,9 @@ describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch'
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
     selectPopularRightNow()
+    // FRONTEND-062: mode changes no longer auto-fetch -- Apply Filters must
+    // be clicked explicitly to produce a built query to inspect.
+    clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ sourceMode: 'trending' }),
@@ -642,6 +636,9 @@ describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch'
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectHighestRated()
+    // FRONTEND-062: mode changes no longer auto-fetch -- Apply Filters must
+    // be clicked explicitly to produce a built query to inspect.
+    clickApplyFilters()
 
     // FRONTEND-030-AC-07: switching into Highest Rated also pre-fills
     // minVoteCount to 200 when untouched.
@@ -659,6 +656,9 @@ describe('FRONTEND-027-AC-05: Day/Week toggle only under Popular Right Now', () 
 
     selectPopularRightNow()
     expect(screen.getByLabelText(/^week$/i)).toBeChecked()
+    // FRONTEND-062: mode changes no longer auto-fetch -- Apply Filters must
+    // be clicked explicitly to produce a built query to inspect.
+    clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
         sourceMode: 'trending',
@@ -1472,8 +1472,14 @@ describe('FRONTEND-040-AC-01: changing a filter updates local state but does not
   })
 })
 
-describe('FRONTEND-040-AC-02: changing Recommendation Source still calls onQueryChange immediately', () => {
-  it('calls onQueryChange immediately on a mode change', () => {
+// ~~FRONTEND-040-AC-02~~ superseded by FRONTEND-062-AC-02/AC-03 (this test
+// used to assert "calls onQueryChange immediately on a mode change" -- the
+// exact behavior frontend_spec_062 reverses). Replaced below with the new
+// contract: switching either tier of the tab widget updates pending state
+// only and clears any previously-fetched query back to undefined, never
+// firing a real built query on its own.
+describe('FRONTEND-062-AC-02: switching the top-level tab does not call onQueryChange with a built query', () => {
+  it('does not call onQueryChange with an object (only ever undefined) on a top-level tab change', () => {
     const onQueryChange = vi.fn()
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
@@ -1482,7 +1488,58 @@ describe('FRONTEND-040-AC-02: changing Recommendation Source still calls onQuery
 
     selectCustomSearch()
 
-    expect(onQueryChange).toHaveBeenCalled()
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+    expect(onQueryChange.mock.calls[0][0]).toBeUndefined()
+  })
+})
+
+// FRONTEND-042-AC-27's own tab labels apply here too: the Discover sub-tab
+// for the former "trending" mode renders as "Popular Right Now", not
+// "Trending" -- selectPopularRightNow() (this file's existing helper)
+// exercises the same sub-tab change the spec's own illustrative sketch
+// described by the old flat name.
+describe('FRONTEND-062-AC-03: switching the Discover sub-tab does not call onQueryChange with a built query', () => {
+  it('does not call onQueryChange with an object (only ever undefined) on a sub-tab change', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectDiscover()
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByRole('tab', { name: /popular right now/i }))
+
+    expect(onQueryChange).toHaveBeenCalledTimes(1)
+    expect(onQueryChange.mock.calls[0][0]).toBeUndefined()
+  })
+})
+
+describe('FRONTEND-062-AC-04: switching either tab clears the previous query', () => {
+  it('calls onQueryChange(undefined) after switching the top-level tab', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    onQueryChange.mockClear()
+
+    selectDiscover()
+
+    expect(onQueryChange).toHaveBeenCalledWith(undefined)
+  })
+
+  it('calls onQueryChange(undefined) after switching the Discover sub-tab', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    selectDiscover()
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    onQueryChange.mockClear()
+
+    fireEvent.click(screen.getByRole('tab', { name: /popular right now/i }))
+
+    expect(onQueryChange).toHaveBeenCalledWith(undefined)
   })
 })
 
@@ -1698,6 +1755,9 @@ describe('FRONTEND-042-AC-09: Popular Right Now behavior is unaffected by the re
     )
 
     selectPopularRightNow()
+    // FRONTEND-062: mode changes no longer auto-fetch -- Apply Filters must
+    // be clicked explicitly to produce a built query to inspect.
+    clickApplyFilters()
 
     expect(screen.getByLabelText(/^day$/i)).toBeInTheDocument()
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -1761,8 +1821,16 @@ describe('FRONTEND-042-AC-13: Discover sub-selector uses the Tabs ARIA pattern',
   })
 })
 
-describe('FRONTEND-042-AC-14: mode changes still auto-fetch (frontend_spec_040 preserved)', () => {
-  it('fires onQueryChange immediately on a top-level tab change', () => {
+// FRONTEND-062 (2026-09-01): this describe's title/premise ("mode changes
+// still auto-fetch") is reversed by frontend_spec_062 -- a mode change no
+// longer fetches anything, it only clears any previous query back to
+// undefined (FRONTEND-062-AC-02/AC-04). The original bare
+// `toHaveBeenCalled()` assertion happens to still pass either way (calling
+// onQueryChange(undefined) is still "being called"), but is left updated
+// here so the test actually pins the current contract rather than reading
+// as if the old one still holds.
+describe('FRONTEND-042-AC-14: mode changes clear the query (superseded by FRONTEND-062-AC-02/AC-04)', () => {
+  it('calls onQueryChange(undefined), not a built query, on a top-level tab change', () => {
     const onQueryChange = vi.fn()
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
@@ -1771,7 +1839,7 @@ describe('FRONTEND-042-AC-14: mode changes still auto-fetch (frontend_spec_040 p
 
     selectDiscover()
 
-    expect(onQueryChange).toHaveBeenCalled()
+    expect(onQueryChange).toHaveBeenCalledWith(undefined)
   })
 })
 

@@ -117,7 +117,7 @@ export type DiscoverSortByOption =
 // can use the identical bounds without duplicating the constants.
 
 interface RecommendationControlsProps {
-  readonly onQueryChange: (query: RecommendationQuery) => void
+  readonly onQueryChange: (query: RecommendationQuery | undefined) => void
   // FRONTEND-040-AC-06/07/08: broadcasts whether a recommendations request is
   // currently in flight (mirrored down from App.tsx's recommendationsLoading,
   // itself fed by RecommendationsList's onLoadingChange) so this panel can
@@ -593,20 +593,6 @@ export function RecommendationControls({
       .catch(() => undefined)
   }, [])
 
-  // Fix 3 (2026-08-28, live testing): establishes the real default query on
-  // first mount -- without this, App.tsx's recommendationQuery starts
-  // undefined and nothing ever calls onQueryChange until a user action
-  // (mode change, Apply Filters), so the very first request fires with zero
-  // query params at all and hits the backend's Custom Search
-  // unfiltered-discover fallback instead of "Use My Series" pool sourcing
-  // (initialState.mode). buildQuery/initialState already own what the
-  // default query should be, so this reuses them rather than duplicating a
-  // default in App.tsx.
-  useEffect(() => {
-    onQueryChange(buildQuery(state))
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: establishes the initial default query once; subsequent changes are deliberately gated behind Apply Filters (FRONTEND-040), not this effect
-  }, [])
-
   // FRONTEND-040-AC-01: state-only update, no longer a choke point that
   // fires a backend request on every change -- every call site except
   // handleModeChange now funnels through this. Sending is deferred until
@@ -615,14 +601,17 @@ export function RecommendationControls({
     setState((prev) => ({ ...prev, ...patch }))
   }
 
-  // FRONTEND-040-AC-02: the one control that keeps today's auto-fetch-on-
-  // change behavior -- deliberately does not go through updateState, so it
-  // keeps calling onQueryChange immediately, unchanged from before this
-  // spec. FRONTEND-042 splits this into two call sites (top-level tab,
-  // Discover sub-tab) since the selector is now a two-tier tab widget
-  // instead of one flat radio group; FRONTEND-042-AC-15 requires each to
-  // no-op on a re-click of the already-active tab, since tab <button>s
-  // don't get that behavior for free the way native radio inputs do.
+  // FRONTEND-062-AC-02/AC-04 (reverses FRONTEND-040-AC-02): switching the
+  // top-level tab now updates pending state only, like every other control
+  // -- no onQueryChange(buildQuery(next)) call. It still calls
+  // onQueryChange(undefined) to clear any previously-fetched query/results
+  // rather than leaving a different mode's stale results displayed under
+  // the newly-selected tab's controls (see this spec's Design Decisions).
+  // FRONTEND-042 splits this into two call sites (top-level tab, Discover
+  // sub-tab) since the selector is now a two-tier tab widget instead of one
+  // flat radio group; FRONTEND-042-AC-15 requires each to no-op on a
+  // re-click of the already-active tab, since tab <button>s don't get that
+  // behavior for free the way native radio inputs do.
   const handleTopLevelModeChange = (mode: SourceMode) => {
     if (mode === state.mode) return
 
@@ -643,9 +632,12 @@ export function RecommendationControls({
 
     const next = { ...state, ...patch }
     setState(next)
-    onQueryChange(buildQuery(next))
+    onQueryChange(undefined)
   }
 
+  // FRONTEND-062-AC-03/AC-04 (reverses FRONTEND-040-AC-02): same treatment
+  // as handleTopLevelModeChange above -- pending state only, plus
+  // onQueryChange(undefined) to clear a previous mode's stale results.
   const handleDiscoverSubModeChange = (discoverMode: DiscoverMode) => {
     if (state.mode === 'discover' && discoverMode === state.discoverMode) return
 
@@ -660,7 +652,7 @@ export function RecommendationControls({
 
     const next = { ...state, ...patch }
     setState(next)
-    onQueryChange(buildQuery(next))
+    onQueryChange(undefined)
   }
 
   // FRONTEND-040-AC-03: sends whatever the current pending (possibly not-

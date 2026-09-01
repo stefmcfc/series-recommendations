@@ -76,15 +76,16 @@ corrected below.
 | `SeriesList` status-based tabs with real URLs (replaces `SearchFilter`'s Status dropdown)                                                                            | —                                    | `frontend_spec_056`                            | ✅ Done                                                                                         |
 | `lastAirYear` field + series year range display (`2020-2024` / `2025-`) on `SeriesList`/`SeriesDetail`, true episode-in-range year filtering (supersedes `SERIES-037-AC-03`) | `series_spec_039`                    | `frontend_spec_058`                            | ✅ Done                                                                                         |
 | `SeriesList` compact/grid/poster-only view (Expanded/Compact/Poster-only toggle — icon buttons with `aria-label`, `localStorage`-persisted)                          | —                                    | `frontend_spec_054`                            | ✅ Done                                                                                         |
+| Recommendations: no tab (or the default on load) fires a request on its own — reverses `FRONTEND-040-AC-02`, folds "Recommendation Source" into the existing "Apply Filters" gate | —                                    | `frontend_spec_062`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered as a suggested build order, not just spec-number order — grouped into independent
 dependency chains: `043→045`, `030→044`, `052→053` (fed by standalone `036`), and `038→057`. Rows
 within a chain must build in the listed order; the chains themselves (and the fully-standalone
-rows — `034`/`050`, `035`, `051`, `040`/`060`, `041`/`061`) have no dependencies on each other and
-can be reordered freely as a block if priorities change. (The former 041→042 chain, the standalone
-048 and 054, the full 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the
+rows — `034`/`050`, `035`, `051`, `040`/`060`, `041`/`061`) have no dependencies on each
+other and can be reordered freely as a block if priorities change. (The former 041→042 chain, the standalone
+048, 054, and 062, the full 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the
 `037→039→058` year-range leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and
 frontend both — are fully delivered; see the table above.)
 

@@ -46,16 +46,65 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+// FRONTEND-062 (2026-09-01): RecommendationsList no longer fetches when its
+// `query` prop is undefined/null (that state now means "nothing has been
+// searched yet" -- see the dedicated describe block below). Most tests in
+// this file are about behavior that only exists once a fetch has actually
+// happened, so they now pass an explicit `query={{}}` (an "applied, but
+// unfiltered" query) rather than omitting the prop and implicitly relying
+// on the old mount-always-fetches behavior.
+describe('FRONTEND-062-AC-06/07/08: no fetch, no loading, a distinct prompt when query is undefined', () => {
+  it('FRONTEND-062-AC-06: does not call seriesApi.getRecommendations when query is undefined', () => {
+    render(<RecommendationsList query={undefined} />)
+
+    expect(mockGetRecommendations).not.toHaveBeenCalled()
+  })
+
+  it('FRONTEND-062-AC-07: shows no loading spinner when query is undefined', () => {
+    render(<RecommendationsList query={undefined} />)
+
+    expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument()
+  })
+
+  it('FRONTEND-062-AC-08: shows a not-yet-searched prompt when query is undefined', () => {
+    render(<RecommendationsList query={undefined} />)
+
+    expect(
+      screen.getByTestId('recommendations-not-searched'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/no recommendations yet/i),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/no shows match/i)).not.toBeInTheDocument()
+  })
+
+  it('FRONTEND-062-AC-10: onLoadingChange does not fire true on mount when query is undefined', () => {
+    const onLoadingChange = vi.fn()
+    render(
+      <RecommendationsList
+        query={undefined}
+        onLoadingChange={onLoadingChange}
+      />,
+    )
+
+    expect(onLoadingChange).not.toHaveBeenCalledWith(true)
+  })
+})
+
+// FRONTEND-062: these tests exercise "a query has already been applied and
+// the component fetches" -- an explicit query prop is now required for
+// that, since a query-less render no longer fetches at all
+// (FRONTEND-062-AC-06/07, covered separately below).
 describe('FRONTEND-010-AC-05/06: fetch on mount, loading state', () => {
   it('calls seriesApi.getRecommendations() once on mount', async () => {
     mockGetRecommendations.mockResolvedValue([])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await waitFor(() => expect(mockGetRecommendations).toHaveBeenCalledTimes(1))
   })
 
   it('shows a loading indicator while the fetch is in flight', () => {
     mockGetRecommendations.mockReturnValue(new Promise(() => undefined))
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 })
@@ -68,7 +117,7 @@ describe('FRONTEND-010-AC-08/09/10: display, empty state', () => {
         totalSourceCount: 1,
       }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(await screen.findByText('Ozark')).toBeInTheDocument()
     expect(
@@ -107,9 +156,17 @@ describe('FRONTEND-010-AC-08/09/10: display, empty state', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('shows the generic empty-state message when no query is provided at all', async () => {
+  // FRONTEND-062 (2026-09-01): this test used to assert the generic
+  // empty-results message when no query is provided -- that's no longer
+  // true. "No query at all" now means "nothing has been searched yet"
+  // (FRONTEND-062-AC-08), a distinct prompt checked ahead of the
+  // empty-results branch this test used to exercise. See
+  // FRONTEND-062-AC-06/07/08 below for the dedicated coverage of that
+  // no-query state; this test now asserts the still-applicable case of a
+  // real (but empty/unfiltered) query genuinely finding no results.
+  it('shows the generic empty-state message when the applied query has no filters', async () => {
     mockGetRecommendations.mockResolvedValue([])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(
       await screen.findByText(/no shows match these filters/i),
@@ -125,7 +182,7 @@ describe('FRONTEND-019-AC-05/06: multi-source "Because you watched" label', () =
         totalSourceCount: 2,
       }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(
       await screen.findByText('Because you watched Slow Horses, 24'),
@@ -139,7 +196,7 @@ describe('FRONTEND-019-AC-05/06: multi-source "Because you watched" label', () =
         totalSourceCount: 3,
       }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(
       await screen.findByText('Because you watched Slow Horses, 24 and 1 more'),
@@ -152,7 +209,7 @@ describe('FRONTEND-019-AC-07: no line when sourceTitles is empty', () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ sourceTitles: [], totalSourceCount: 0 }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     expect(screen.queryByText(/because you watched/i)).not.toBeInTheDocument()
@@ -168,7 +225,7 @@ describe('FRONTEND-010-AC-07: error and retry', () => {
       ),
     )
     mockGetRecommendations.mockResolvedValueOnce([])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByRole('alert')
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
@@ -184,7 +241,7 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
   it('opens AddSeriesForm pre-filled with COMPLETED status on Mark as Watched, removes the card on save', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     mockCreate.mockResolvedValue({ id: '1', title: 'Ozark' } as Series)
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
@@ -211,7 +268,7 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
 
   it('opens AddSeriesForm pre-filled with BACKLOG status on Add to List', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /add to list/i }))
@@ -226,7 +283,7 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
 
   it('FRONTEND-034-AC-02: opens AddSeriesForm with source=recommendation, hiding refresh-populated fields', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /add to list/i }))
@@ -248,7 +305,7 @@ describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
 
   it('closes the form without removing the card on cancel', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
@@ -268,7 +325,7 @@ describe('FRONTEND-010-AC-21/22: auto-refresh after a successful save', () => {
       omdbRefreshed: true,
       tmdbRefreshed: true,
     })
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
@@ -289,7 +346,7 @@ describe('FRONTEND-010-AC-21/22: auto-refresh after a successful save', () => {
       omdbRefreshed: true,
       tmdbRefreshed: true,
     })
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /add to list/i }))
@@ -307,7 +364,7 @@ describe('FRONTEND-010-AC-23: a failed auto-refresh is silent', () => {
     mockRefresh.mockRejectedValue(
       new ApiError(502, 'Unable to reach the series lookup service.'),
     )
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByRole('button', { name: /mark as watched/i }))
@@ -323,7 +380,7 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
   it('calls ignoreSeries and removes the card immediately on success', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     mockIgnoreSeries.mockResolvedValue(undefined)
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByTestId('ignore-btn'))
@@ -341,7 +398,7 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
     mockIgnoreSeries.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getByTestId('ignore-btn'))
@@ -358,7 +415,7 @@ describe('FRONTEND-010-AC-15/16/17: ignore', () => {
     mockIgnoreSeries.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
     await screen.findByText('Ozark')
 
     fireEvent.click(screen.getAllByTestId('ignore-btn')[0])
@@ -393,7 +450,7 @@ describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
 describe('FRONTEND-010-AC-20: TMDB attribution', () => {
   it('shows the attribution notice regardless of view state', async () => {
     mockGetRecommendations.mockResolvedValue([])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(
       screen.getByText(
@@ -415,7 +472,7 @@ describe('FRONTEND-020-AC-02/03: rating and vote count rendered', () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ tmdbRating: 7.749, voteCount: 1500 }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(await screen.findByText('7.7 (1,500 votes)')).toBeInTheDocument()
   })
@@ -426,7 +483,7 @@ describe('FRONTEND-020-AC-04: rating alone when voteCount is null', () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ tmdbRating: 8, voteCount: null }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(await screen.findByText('8.0')).toBeInTheDocument()
   })
@@ -437,7 +494,7 @@ describe('FRONTEND-020-AC-05: nothing rendered when tmdbRating is null', () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ tmdbRating: null, voteCount: null }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     expect(screen.queryByText(/votes\)/)).not.toBeInTheDocument()
@@ -449,7 +506,7 @@ describe('FRONTEND-028-AC-04: origin country shown on every card', () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ originCountry: 'GB' }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(await screen.findByText(/united kingdom/i)).toBeInTheDocument()
   })
@@ -458,7 +515,7 @@ describe('FRONTEND-028-AC-04: origin country shown on every card', () => {
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ originCountry: null }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     expect(screen.queryByText(/united/i)).not.toBeInTheDocument()
@@ -477,7 +534,7 @@ describe('FRONTEND-025-AC-03: streaming providers rendered', () => {
         ],
       }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(await screen.findByText('Netflix')).toBeInTheDocument()
     expect(screen.getByAltText('Netflix')).toHaveAttribute(
@@ -492,7 +549,7 @@ describe('FRONTEND-025-AC-03: streaming providers rendered', () => {
         streamingProviders: [{ name: 'BBC iPlayer', logoUrl: null }],
       }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(await screen.findByText('BBC iPlayer')).toBeInTheDocument()
     expect(screen.queryByAltText('BBC iPlayer')).not.toBeInTheDocument()
@@ -504,7 +561,7 @@ describe('FRONTEND-025-AC-04: empty streamingProviders shows a quiet note', () =
     mockGetRecommendations.mockResolvedValue([
       makeRecommendation({ streamingProviders: [] }),
     ])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     expect(
       await screen.findByText('Not currently streaming in the UK'),
@@ -515,7 +572,7 @@ describe('FRONTEND-025-AC-04: empty streamingProviders shows a quiet note', () =
 describe('FRONTEND-025-AC-05: JustWatch attribution', () => {
   it('renders a JustWatch attribution line alongside the TMDB one', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation({})])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     expect(
@@ -530,7 +587,7 @@ describe('FRONTEND-025-AC-05: JustWatch attribution', () => {
 describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expand click", () => {
   it('does not call getRecommendationKeywords on initial render', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     expect(mockGetRecommendationKeywords).not.toHaveBeenCalled()
@@ -541,7 +598,7 @@ describe("FRONTEND-028-AC-09/10: keywords are fetched only on a card's own expan
       makeRecommendation({ tmdbId: 4046 }),
     ])
     mockGetRecommendationKeywords.mockResolvedValue(['spy', 'mi5'])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
@@ -556,7 +613,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
   it('shows a scoped loading state while the fetch is in flight', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     mockGetRecommendationKeywords.mockReturnValue(new Promise(() => undefined))
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
@@ -569,7 +626,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     mockGetRecommendationKeywords.mockRejectedValue(
       new ApiError(500, 'Failed to load keywords'),
     )
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
@@ -582,7 +639,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
   it('renders each keyword and an explicit empty message when none are found', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     mockGetRecommendationKeywords.mockResolvedValue([])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
@@ -593,7 +650,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
   it('renders each keyword as a chip when the fetch resolves with results', async () => {
     mockGetRecommendations.mockResolvedValue([makeRecommendation()])
     mockGetRecommendationKeywords.mockResolvedValue(['spy', 'mi5'])
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
@@ -607,7 +664,7 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
     mockGetRecommendationKeywords.mockRejectedValue(
       new ApiError(500, 'Failed to load keywords'),
     )
-    render(<RecommendationsList />)
+    render(<RecommendationsList query={{}} />)
 
     await screen.findByText('Ozark')
     fireEvent.click(screen.getByRole('button', { name: /show keywords/i }))
@@ -620,10 +677,14 @@ describe('FRONTEND-028-AC-11/12/13: per-card loading, error, and result states',
 
 // frontend_spec_040_recommendation_controls_apply_and_lock.md
 describe('FRONTEND-040-AC-05: onLoadingChange broadcasts loading transitions', () => {
+  // FRONTEND-062-AC-10: this test's render call now passes an explicit,
+  // non-undefined query -- it was implicitly relying on the mount-always-
+  // fetches behavior this spec removes (a query-less mount no longer
+  // fetches at all, so `loading` would never flip to true to broadcast).
   it('is called as loading transitions on mount', async () => {
     const onLoadingChange = vi.fn()
     mockGetRecommendations.mockResolvedValue([])
-    render(<RecommendationsList onLoadingChange={onLoadingChange} />)
+    render(<RecommendationsList query={{}} onLoadingChange={onLoadingChange} />)
 
     expect(onLoadingChange).toHaveBeenCalledWith(true)
     await waitFor(() => expect(onLoadingChange).toHaveBeenLastCalledWith(false))

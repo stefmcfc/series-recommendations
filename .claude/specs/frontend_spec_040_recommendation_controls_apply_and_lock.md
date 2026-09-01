@@ -2,7 +2,10 @@
 
 **Status**: Implemented (2026-08-27) — `RecommendationControls.tsx`/`.module.css`,
 `RecommendationsList.tsx`, `App.tsx`, `RecommendationControls.test.tsx`,
-`RecommendationsList.test.tsx`
+`RecommendationsList.test.tsx`. **Amendment (2026-09-01)**: `FRONTEND-040-AC-02` is superseded by
+`frontend_spec_062_recommendations_no_fetch_until_apply.md` (`FRONTEND-062-AC-02`/`AC-03`) —
+"Recommendation Source" no longer keeps its auto-fetch-on-change exemption; every control,
+including both tiers of the tab widget, is now gated behind "Apply Filters."
 **Priority**: P2 (fixes a live, user-reported usability problem — the Recommendations panel appears to stop
 refreshing when a filter combination produces a heavier/slower request)
 **Depends on**: Frontend Spec 011 (`frontend_spec_011_recommendation_controls.md`, owns `RecommendationControls.tsx`
@@ -135,9 +138,14 @@ repoint every non-mode call site at the former.
 
 ---
 
-### FRONTEND-040-AC-02 [AUTO]
+### ~~FRONTEND-040-AC-02~~ [AUTO] — superseded 2026-09-01 by `FRONTEND-062-AC-02`/`AC-03`
+Original statement preserved verbatim per this project's ID-immutability convention:
 **Statement**: `handleModeChange` (the "Recommendation Source" radios) shall continue to call `onQueryChange`
 immediately on change, unchanged from today's behavior.
+
+**Superseded by**: `frontend_spec_062_recommendations_no_fetch_until_apply.md` — "Recommendation Source" (both
+tiers of the tab widget `frontend_spec_042` later split this into) no longer fires on its own; it's gated behind
+"Apply Filters" like every other control.
 
 **References**: `RecommendationControls.tsx`'s `handleModeChange`.
 
@@ -351,7 +359,7 @@ it('FRONTEND-040-AC-09: a disabled control does not fire onQueryChange when clic
 ## Acceptance Criteria Summary
 
 - [x] FRONTEND-040-AC-01: every `updateState` call site except mode change stops calling `onQueryChange`
-- [x] FRONTEND-040-AC-02: `handleModeChange` still calls `onQueryChange` immediately (regression guard)
+- [x] ~~FRONTEND-040-AC-02~~: `handleModeChange` still calls `onQueryChange` immediately (regression guard) — **superseded 2026-09-01** by `FRONTEND-062-AC-02`/`AC-03` (see `frontend_spec_062_recommendations_no_fetch_until_apply.md`)
 - [x] FRONTEND-040-AC-03: new "Apply Filters" button sends the current pending state
 - [x] FRONTEND-040-AC-04: Reset updates local state only, no auto-apply
 - [x] FRONTEND-040-AC-05: `RecommendationsList` gains `onLoadingChange`
