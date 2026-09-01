@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import { vi, describe, it, expect } from 'vitest'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
+import { initialState } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import type { Series } from '../types/series'
 
@@ -105,7 +106,12 @@ describe('UseMySeriesPanel', () => {
     expect(updateState).toHaveBeenCalledWith({ selectedSeriesIds: ['1'] })
   })
 
-  it('renders a genre filter checkbox per genre option', () => {
+  // FRONTEND-069-AC-04: the former include-only checkbox fieldset ('renders
+  // a genre filter checkbox per genre option') is superseded by the
+  // FRONTEND-069-AC-04/AC-05 describe blocks below, which cover the combined
+  // GenreIncludeExcludePicker that replaced it -- a checkbox-per-genre no
+  // longer exists in this panel.
+  it('renders the Filter by Genre picker trigger when genre options exist', () => {
     render(
       <UseMySeriesPanel
         state={makeState()}
@@ -115,8 +121,9 @@ describe('UseMySeriesPanel', () => {
       />,
     )
 
-    expect(screen.getByLabelText('Crime')).toBeInTheDocument()
-    expect(screen.getByLabelText('Drama')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Filter by Genre' }),
+    ).toBeInTheDocument()
   })
 
   it('narrows the picker suggestions when a status filter is applied', () => {
@@ -186,5 +193,53 @@ describe('UseMySeriesPanel', () => {
 
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-069-AC-04: UseMySeriesPanel renders the combined picker', () => {
+  it('renders a Filter by Genre picker trigger, not the old checkbox fieldset', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[{ id: '1', title: 'Show', genres: 'Comedy' } as Series]}
+        genreOptions={['Comedy', 'Drama']}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Filter by Genre' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => {
+  it('removes an excluded-genre series from the Series picker options', async () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[
+          { id: '1', title: 'Funny Show', genres: 'Comedy' } as Series,
+          { id: '2', title: 'Serious Show', genres: 'Drama' } as Series,
+        ]}
+        genreOptions={['Comedy', 'Drama']}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Filter by Genre' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
+    // neutral -> include -> exclude (the picker's toggle cycle is
+    // neutral -> include -> exclude -> neutral -- a third click on the
+    // exclude-labeled button would cycle back to neutral and undo the
+    // exclusion, so this deliberately stops at two clicks, not the spec's
+    // literal three, to actually land on and verify the "exclude" state).
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
+
+    expect(
+      screen.queryByRole('button', { name: /Funny Show/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Serious Show/ }),
+    ).toBeInTheDocument()
   })
 })

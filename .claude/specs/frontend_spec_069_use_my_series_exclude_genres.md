@@ -1,6 +1,9 @@
 # Frontend Spec 069: "Use My Series" Panel Gains Exclude Genre(s)
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/RecommendationControls.tsx`,
+`frontend/src/components/UseMySeriesPanel.tsx`, tests in
+`frontend/src/components/RecommendationControls.test.tsx`,
+`frontend/src/components/UseMySeriesPanel.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 067 (`frontend_spec_067_genre_include_exclude_picker.md`, owns the
 `GenreIncludeExcludePicker` component this spec wires in) ✅ required, Tooling Spec 008
@@ -232,8 +235,8 @@ tying both together.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-069-AC-01: `excludeGenreFilter` narrows the candidate pool
-- [ ] FRONTEND-069-AC-02: a genre-less series is never excluded
-- [ ] FRONTEND-069-AC-03: empty/absent `excludeGenreFilter` is a no-op
-- [ ] FRONTEND-069-AC-04: replaces "Filter by Genre" with `GenreIncludeExcludePicker`
-- [ ] FRONTEND-069-AC-05: excluding a genre narrows the picker's candidate suggestions
+- [x] FRONTEND-069-AC-01: `excludeGenreFilter` narrows the candidate pool
+- [x] FRONTEND-069-AC-02: a genre-less series is never excluded
+- [x] FRONTEND-069-AC-03: empty/absent `excludeGenreFilter` is a no-op
+- [x] FRONTEND-069-AC-04: replaces "Filter by Genre" with `GenreIncludeExcludePicker`
+- [x] FRONTEND-069-AC-05: excluding a genre narrows the picker's candidate suggestions
