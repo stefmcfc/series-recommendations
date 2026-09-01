@@ -147,14 +147,15 @@ consistent answer for both is probably better than solving it twice." Confirmed 
 both filter panels, not just an anticipated one. Confirmed both panels are still today's original
 always-expanded-top-bar / inline-disclosure shapes (2026-08-26 re-check).
 
-**Status**: Not specced. No design decisions made yet (left-hand panel vs. slide-out sheet,
-whether both panels need to look identical or just share the same underlying disclosure
-mechanism) — worth its own dedicated thinking whenever it's prioritized. **Note (2026-08-29)**:
+**Status**: Partially specced. **Note (2026-08-29)**:
 `frontend_spec_055_search_filter_overhaul.md` gives `SearchFilter` a basic show/hide disclosure
 (reusing `RecommendationControls`' existing `filtersOpen` mechanism) — the immediately-actionable
-"collapsible" want is covered there. What remains open here is specifically the bigger layout
-question (a dedicated left-hand panel or slide-out sheet, for both panels), not collapsibility
-itself.
+"collapsible" want is covered there. **Note (2026-09-01)**: `frontend_spec_071_my_series_filter_sheet.md`
+now specs the bigger layout question for `SearchFilter` specifically — a slide-out sheet (not a
+left-hand panel), triggered by a new funnel icon next to `SeriesList`'s view-mode icons, superseding
+the inline disclosure entirely. `RecommendationControls`' equivalent panel remains unspecced and
+still uses its original inline disclosure — the same sheet treatment for it is a separate future
+spec if wanted, not bundled into `frontend_spec_071`.
 
 ---
 
@@ -372,14 +373,17 @@ Idea: once a settings/config menu exists, move "Refresh All" itself into it (out
 rather than an invisible env var) — it's a maintenance/admin action, not a core browsing action, so
 it doesn't need to live on the primary list view at all.
 
-**Status**: Not specced. A real settings screen is its own feature with real design questions
-first — where would it persist (this is a single-user personal app, so per-user settings may be
-overkill; a new `AppSettings` table? a `.env`-editing convenience?) and which of the growing pile
-of env-var knobs are actually worth surfacing.
+**Status**: Shell implemented (2026-09-01). `frontend_spec_070_settings_menu.md` shipped the entry
+point and page shell only — a "Settings" nav item after "Keywords", routing to an otherwise-empty
+`/settings` page. It deliberately makes no persistence decision (where settings would live — a new
+`AppSettings` table? `localStorage`, given this is a single-user app? — is still open) since it
+ships no real setting. Each concrete case above (the Country/Language favourites list, saved
+filter/algorithm profiles, "Refresh All" relocation + skip-threshold surfacing) still needs its own
+future spec against this shell, including the persistence decision each one actually needs.
 
 Loosely related (2026-08-28): the Navigation section's "Light/dark mode toggle" idea is small
 enough to ship standalone (`localStorage`, no backend) rather than waiting on this, but would
-naturally move into a real settings screen if one gets built.
+naturally move into the real settings screen (`frontend_spec_070`'s shell) if it's built after that.
 
 ---
 
