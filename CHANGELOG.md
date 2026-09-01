@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.9.1] - 2026-09-01
+
+### Changed
+
+- Chore: dependency updates (Gradle wrapper 9.7.0→9.7.1, `org.apache.groovy:groovy` 5.1.0→5.1.1, `org.xerial:sqlite-jdbc` 3.53.2.1→3.53.4.0, `actions/setup-java` 5→6, `axios` 1.18.1→1.20.0, `@types/node` 26.2.0→26.4.0, `vitest` 4.1.10→4.1.11, `lint-staged` 17.3.0→17.4.1, `jsdom` 29.1.1→30.0.1, `@testing-library/user-event` 14.6.1→14.6.6), applied as one sweep from the open dependabot PRs rather than merging each individually. Backend build, full frontend test suite, lint, and production build all verified green after the bump.
+
+## [3.9.0] - 2026-09-01
+
 ### Added
 
 - Frontend: "Select all" / "Clear all" buttons in the Specific Series picker, scoped to the currently-filtered candidate pool (`frontend_spec_051`).

@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
@@ -60,6 +60,29 @@ jobs:
       - name: Audit
         working-directory: frontend
         run: npm audit --audit-level=high
+
+  # Enforces CLAUDE.md's Git workflow rule: a CHANGELOG.md entry landing under
+  # [Unreleased] and cutting that content into a dated version are two
+  # separate steps, and the second one must happen by the time anything
+  # reaches main. Runs on push-to-main only (not pull_request) -- a feature
+  # branch legitimately carries its own [Unreleased] entry mid-review, and
+  # only fails once that content has actually landed without being cut.
+  # Exists because narrative instructions alone let this slip twice
+  # (2026-08-25, 16 PRs; 2026-09-01, 3 PRs) before this job was added.
+  changelog-cut:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify CHANGELOG.md's Unreleased section is empty
+        run: |
+          content=$(awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md | sed '/^[[:space:]]*$/d')
+          if [ -n "$content" ]; then
+            echo "::error::CHANGELOG.md's [Unreleased] section is non-empty on main -- this merge should have cut it into a dated ## [x.y.z] - YYYY-MM-DD section and bumped backend/build.gradle.kts + frontend/package.json to match. See CLAUDE.md's Git workflow section (\"release hygiene\")."
+            echo "$content"
+            exit 1
+          fi
+          echo "OK: [Unreleased] is empty."
 
   secrets-scan:
     runs-on: ubuntu-latest
