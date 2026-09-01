@@ -13,6 +13,10 @@ versioned together as one app.
 - Backend: `GET /api/v1/series/search` gains an `excludeGenre` query param (repeatable), excluding a series whose genres contain any of the given values — mirrors the existing `genre` include param's substring/case-insensitive matching (`series_spec_042`).
 - Frontend: My Series list's Genres filter is now a single include/exclude picker (`GenreIncludeExcludePicker`) instead of an include-only checkbox list — a genre can be included or excluded, never both at once (`frontend_spec_063`).
 
+### Fixed
+
+- Frontend: `GenreIncludeExcludePicker`'s include/exclude toggle colors now meet WCAG AA contrast (4.5:1) against their white label text in both light and dark mode.
+
 ## [3.7.1] - 2026-09-01
 
 ### Fixed
