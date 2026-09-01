@@ -1,6 +1,6 @@
 # Frontend Spec 061: `AddSeriesForm`/`EditSeriesForm` Year Bounds Match `yearBounds.ts`
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/utils/seriesFormValidation.ts` (`validateYear`)
 **Priority**: P2 (correctness bug companion to the backend fix — the client-side hint is currently
 wrong and will silently reject/accept the wrong values as years pass)
 **Depends on**: Tooling Spec 005 (`tooling_spec_005_series_form_shared_fields.md`, owns
@@ -115,5 +115,5 @@ call.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-061-AC-01: `validateYear` rejects outside `MIN_VALID_YEAR`–`MAX_VALID_YEAR`, accepts the boundaries
-- [ ] FRONTEND-061-AC-02: `AddSeriesForm`/`EditSeriesForm` still block submission on an invalid year (regression guard)
+- [x] FRONTEND-061-AC-01: `validateYear` rejects outside `MIN_VALID_YEAR`–`MAX_VALID_YEAR`, accepts the boundaries
+- [x] FRONTEND-061-AC-02: `AddSeriesForm`/`EditSeriesForm` still block submission on an invalid year (regression guard)

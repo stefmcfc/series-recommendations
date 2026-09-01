@@ -4,14 +4,19 @@
 // FormState, so both forms' differently-shaped FormState/FieldErrors types
 // satisfy them structurally with no shared FormState type needed.
 
+import { MIN_VALID_YEAR, MAX_VALID_YEAR } from './yearBounds'
+
+// FRONTEND-061-AC-01: reuses the same MIN_VALID_YEAR/MAX_VALID_YEAR bound as
+// SearchFilter/RecommendationControls (and the backend's own validator)
+// rather than a second, independently-maintained range.
 export function validateYear(
   form: { year: string },
   errors: { year?: string },
 ): void {
   if (form.year.trim() === '') return
   const year = Number(form.year)
-  if (Number.isNaN(year) || year < 1 || year > 2026) {
-    errors.year = 'Year must be between 1 and 2026'
+  if (Number.isNaN(year) || year < MIN_VALID_YEAR || year > MAX_VALID_YEAR) {
+    errors.year = `Year must be between ${MIN_VALID_YEAR} and ${MAX_VALID_YEAR}`
   }
 }
 

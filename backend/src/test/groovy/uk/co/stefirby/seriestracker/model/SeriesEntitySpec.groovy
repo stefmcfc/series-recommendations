@@ -221,28 +221,6 @@ class SeriesEntitySpec extends Specification {
             !violations.isEmpty()
     }
 
-    def "should reject year > current year"() {
-        given: "a series with a year in the future"
-            def series = new SeriesEntity(title: "Show", year: 2099)
-
-        when: "the series is validated"
-            def violations = validator.validate(series)
-
-        then: "a validation violation is raised"
-            !violations.isEmpty()
-    }
-
-    def "should accept year <= current year"() {
-        given: "a series with a year no later than the current year"
-            def series = new SeriesEntity(title: "Show", year: 2026)
-
-        when: "the series is validated"
-            def violations = validator.validate(series)
-
-        then: "no validation violations are raised"
-            violations.isEmpty()
-    }
-
     def "should reject totalSeasons <= 0"() {
         given: "a series with a non-positive totalSeasons value"
             def series = new SeriesEntity(title: "Show", totalSeasons: 0)

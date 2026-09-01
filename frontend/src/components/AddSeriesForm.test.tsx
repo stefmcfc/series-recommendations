@@ -169,7 +169,7 @@ describe('FRONTEND-013..18: client-side validation', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(
-      screen.getByText(/year must be between 1 and 2026/i),
+      screen.getByText(/year must be between 1900 and \d{4}/i),
     ).toBeInTheDocument()
     expect(mockCreate).not.toHaveBeenCalled()
   })

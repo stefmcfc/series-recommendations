@@ -135,6 +135,23 @@ class SeriesControllerSpec extends Specification {
   // null field in the request body is indistinguishable from an omitted one, so update()
   // leaves the stored value unchanged either way). This test instead documents the actual,
   // established behavior; see series_spec_014_tags.md's Implementation Notes.
+  def "SERIES-041-AC-01: an out-of-range totalSeasons via PATCH returns 400, not 500"() {
+    given: "an existing series"
+        def existing = seriesService.create(new SeriesDto(title: "Show"))
+
+    when: "a PATCH request sets an invalid totalSeasons"
+        def dto = new SeriesDto(totalSeasons: -1)
+        def json = objectMapper.writeValueAsString(dto)
+        def result = mockMvc.perform(
+          patch("/api/v1/series/${existing.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(json)
+        )
+
+    then: "the response is a 400, not a 500"
+        result.andExpect(status().isBadRequest())
+  }
+
   def "SERIES-014-AC-09: PATCH /api/v1/series/{id} updates tags, and omitting it leaves the stored value unchanged"() {
     given: "an existing series with a tags value"
         def created = seriesService.create(new SeriesDto(title: "The Wire", tags: "rewatch candidate"))

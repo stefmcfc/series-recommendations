@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-09-01
+
+### Fixed
+
+- Backend: an out-of-range value for `year`, `totalSeasons`, `totalEpisodes`, `currentSeason`, `currentEpisode`, `imdbRating`, `rottenTomatoesRating`, or `rottenTomatoesPopcornmeter` on `POST`/`PATCH /api/v1/series` now returns `400 Bad Request` with a descriptive message instead of `500 Internal Server Error` (`series_spec_041`).
+- Backend: `year`'s valid range is now `1900`–current year + 1 (previously `1`–a hardcoded `2026`, already wrong and going stale every year) — enforced on both create and update, matching the bound already used elsewhere (`RecommendationCriteriaValidator`, `frontend/src/utils/yearBounds.ts`) (`series_spec_041`).
+- Frontend: `AddSeriesForm`/`EditSeriesForm`'s year field validation now matches the same `1900`–current year + 1 bound instead of the stale hardcoded `1`–`2026` range (`frontend_spec_061`).
+
 ## [3.4.0] - 2026-09-01
 
 ### Added

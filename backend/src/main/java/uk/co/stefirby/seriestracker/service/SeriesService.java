@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,11 @@ public class SeriesService {
     private static final Logger log = LoggerFactory.getLogger(SeriesService.class);
 
     private static final String SERIES_NOT_FOUND = "Series not found with id: ";
+
+    // series_spec_041_year_validation_bounds.md (SERIES-041-AC-04): the same floor already
+    // established for RecommendationCriteria.yearMin/yearMax (RecommendationCriteriaValidator,
+    // SERIES-031-AC-12) -- safely before any TV series existed.
+    private static final int MIN_VALID_YEAR = 1900;
 
     private final SeriesRepository repository;
     private final KeywordSyncService keywordSyncService;
@@ -77,6 +83,22 @@ public class SeriesService {
             if (rating.compareTo(BigDecimal.ZERO) < 0 || rating.compareTo(new BigDecimal("10.0")) > 0) {
                 throw new IllegalArgumentException("IMDb rating must be between 0.0 and 10.0");
             }
+        }
+
+        validateYearRange(dto.getYear());
+    }
+
+    /**
+     * series_spec_041_year_validation_bounds.md (SERIES-041-AC-04): mirrors
+     * RecommendationCriteriaValidator.validateYearRange's exact pattern -- the upper bound is
+     * resolved from the already-injected Clock at request time rather than a hardcoded literal,
+     * so it never goes stale. Called from both create (validateCreate) and update
+     * (applyMetadataUpdates), closing a gap where update never validated year at all.
+     */
+    private void validateYearRange(Integer year) {
+        int maxValidYear = Year.now(clock).getValue() + 1;
+        if (year != null && (year < MIN_VALID_YEAR || year > maxValidYear)) {
+            throw new IllegalArgumentException("year must be between " + MIN_VALID_YEAR + " and " + maxValidYear);
         }
     }
 
@@ -218,6 +240,7 @@ public class SeriesService {
             entity.setTitle(dto.getTitle());
         }
         if (dto.getYear() != null) {
+            validateYearRange(dto.getYear());
             entity.setYear(dto.getYear());
         }
         if (dto.getGenres() != null) {
