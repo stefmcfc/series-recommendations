@@ -84,6 +84,53 @@ candidate detail modal once that ships).
 worth revisiting once the candidate detail modal (`frontend_spec_053`) actually ships and there's a
 concrete UI home for the resulting action.
 
+### "Use My Series" source-series picker gains filter/sort parity with My Series, plus a "Select Series" relabel
+
+Raised 2026-09-01. Current state, confirmed by reading the code: `UseMySeriesPanel.tsx` only offers
+"Filter by Genre" (checkbox), "Filter by Status" (radio), and a local "Sort by" — all narrowing
+which of the user's own series become recommendation-sourcing candidates. This is a separate,
+independently-implemented filter set from `SearchFilter`'s (My Series list), not shared logic.
+
+Proposed additions to that same panel, mirroring `SearchFilter`'s field set: Exclude Genre(s)
+(checkbox, reusing `seriesApi.getGenreOptions()`), an include-Keywords filter (mirroring
+`SearchFilter`'s `KeywordPicker`), Min Personal/IMDb/TMDB Rating, and Year Min/Max — all narrowing
+the *source pool* of the user's own series. These are explicitly distinct from
+`RecommendationFiltersBox`'s existing Min TMDB Rating/Year Min-Max/Exclude Genres/Exclude Keywords
+fields, which filter the TMDB recommendation *output* instead and would be unaffected by this idea.
+**Naming collision risk to design around**: two different "Min Rating"/"Year Range" concepts would
+exist in the same tab for two different purposes — labeling needs to make the distinction obvious to
+avoid user confusion.
+
+Also proposes relabeling the area above the series picker to "Select Series," styled differently
+from My Series' own filter panel even while sharing underlying filter logic where practical. The
+existing "Filter by Genre" checkbox is kept as-is content-wise per the user — see the separate,
+explicitly-undecided "Trim the Genres checkbox list" idea below for whether the genre vocabulary
+itself should later change.
+
+**What's required**: extending `UseMySeriesPanel.tsx`'s local filter state with the new fields above,
+plus a UI relabel — see cross-reference below for the larger shared-logic question this touches.
+
+**Status**: Not specced. **Cross-reference**: this is exactly the concrete detail
+`.claude/SPEC_CANDIDATES.md`'s "Share filter/sort logic between `SeriesList`/`SearchFilter` ... and
+`RecommendationControls`' 'Use My Series' mode" candidate said it was waiting for ("once 'Use My
+Series' filtering itself stabilizes") — review this entry when that candidate is actually scoped.
+
+### Trim the Genres checkbox list (My Series + Recs) to only genres present in the user's tracked series — explicitly undecided
+
+Raised 2026-09-01, flagged by the user themselves as unsure whether it's a good idea. Confirmed both
+`SearchFilter` and every Recs genre-checkbox surface source their options from the same static,
+full 18-alias TMDB taxonomy (`TmdbGenreTable`, exposed via `GET /api/v1/series/genres`) — not from
+what the user actually has tracked.
+
+**Tradeoff to weigh before deciding**: a shorter, more relevant list for filtering what you already
+have, vs. losing the ability to pick a genre not yet present in your library (relevant for
+genre-based recommendation sourcing, where you may want to explore a genre you don't own anything in
+yet). **What's required** if pursued: in-memory parsing of the comma-separated `SeriesEntity.genres`
+column across all series, the same pattern `KeywordStatsService` already uses for keywords (per this
+file's own "Analysis" section note on why genres aren't normalized into a table).
+
+**Status**: Not specced — explicitly undecided, not just unprioritized.
+
 ---
 
 ## Search & Filter

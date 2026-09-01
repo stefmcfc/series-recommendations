@@ -83,8 +83,8 @@ corrected below.
 Ordered as a suggested build order, not just spec-number order — grouped into independent
 dependency chains: `043→045`, `030→044`, `052→053` (fed by standalone `036`), and `038→057`. Rows
 within a chain must build in the listed order; the chains themselves (and the fully-standalone
-rows — `034`/`050`, `035`, `051`, `040`/`060`, `041`/`061`) have no dependencies on each
-other and can be reordered freely as a block if priorities change. (The former 041→042 chain, the standalone
+rows — `034`/`050`, `035`, `051`, `040`/`060`, `041`/`061`, `042`/`063`, `064`, `065`) have no
+dependencies on each other and can be reordered freely as a block if priorities change. (The former 041→042 chain, the standalone
 048, 054, and 062, the full 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the
 `037→039→058` year-range leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and
 frontend both — are fully delivered; see the table above.)
@@ -103,6 +103,9 @@ frontend both — are fully delivered; see the table above.)
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | ⬜ Not started |
 | Lock TMDB-managed fields (Title/Year/Genres/Total Seasons/Total Episodes/IMDb Rating) from manual edit once set; refresh extended to also sync Title/Year/Genres and always overwrites all six | `series_spec_040` | `frontend_spec_060` | — (self-contained pair, standalone) | ⬜ Not started |
 | Correct `year` validation to `1900`–current year + 1 (matching `yearBounds.ts`/`RecommendationCriteriaValidator`); fix `ConstraintViolationException` silently returning `500` instead of `400` | `series_spec_041` | `frontend_spec_061` | — (self-contained pair, standalone) | ⬜ Not started |
+| Exclude Genre(s) filter on the My Series list (`SearchFilter`), mirroring the existing Recs-side field | `series_spec_042` | `frontend_spec_063` | — (self-contained pair, standalone) | ⬜ Not started |
+| Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | ⬜ Not started |
+| Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | — (standalone) | ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 
