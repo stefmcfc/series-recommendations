@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-09-01
+
 ### Added
 
 - Backend: `GET /api/v1/series/search` gains an `excludeGenre` query param (repeatable), excluding a series whose genres contain any of the given values — mirrors the existing `genre` include param's substring/case-insensitive matching (`series_spec_042`).
