@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Backend: Custom Search's Exclude Genres now also narrows results at the TMDB `discover/tv` API level (`without_genres`), not just via the existing post-fetch output filter (`series_spec_044`).
+
 ## [3.8.0] - 2026-09-01
 
 ### Added

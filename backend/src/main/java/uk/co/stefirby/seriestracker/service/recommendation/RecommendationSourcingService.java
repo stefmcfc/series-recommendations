@@ -107,8 +107,11 @@ public class RecommendationSourcingService {
         // are read straight from criteria (all already null-means-unset) and sent to TMDB
         // itself, for the same "don't rely solely on a post-hoc filter against one ~20-result
         // page" reason as minVoteCount above.
+        // SERIES-044-AC-04: excludeGenres is resolved via the same resolveGenreIds helper used
+        // for the include side, so both sides resolve alias names identically.
+        List<Integer> excludeGenreIds = resolveGenreIds(c.getExcludeGenres());
         DiscoverFilters filters = new DiscoverFilters(effectiveMinVoteCount, c.getMinTmdbRating(), c.getYearMin(),
-            c.getYearMax(), c.getLanguage(), c.getCountries());
+            c.getYearMax(), c.getLanguage(), c.getCountries(), excludeGenreIds);
         return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters).stream()
             .map(candidate -> new RawCandidate(candidate, null))
             .toList();

@@ -30,10 +30,15 @@ import java.util.List;
  * value only), while {@code countries} is multi-select, OR-matched, comma-joined into a single
  * {@code with_origin_country} param -- a deliberate asymmetry, not an oversight (see {@code
  * series_spec_032_custom_search_language_country_filters.md}'s Overview).
+ *
+ * <p>{@code excludeGenreIds} is sent as {@code without_genres} (comma-joined, mirroring {@code
+ * with_genres}/{@code with_keywords}) when non-empty (SERIES-044-AC-02) -- the pre-TMDB-request
+ * counterpart to {@code RecommendationOutputFilterService}'s post-fetch exclude-genres check
+ * (see {@code series_spec_044_custom_search_exclude_genres_prefilter.md}).
  */
 public record DiscoverFilters(int minVoteCount, BigDecimal minTmdbRating, Integer yearMin, Integer yearMax,
-                               String language, List<String> countries) {
+                               String language, List<String> countries, List<Integer> excludeGenreIds) {
 
     /** No filters set -- every field at its "omit the param" value. */
-    public static final DiscoverFilters NONE = new DiscoverFilters(0, null, null, null, null, List.of());
+    public static final DiscoverFilters NONE = new DiscoverFilters(0, null, null, null, null, List.of(), List.of());
 }

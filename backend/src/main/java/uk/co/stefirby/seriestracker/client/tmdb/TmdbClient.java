@@ -150,9 +150,9 @@ public class TmdbClient {
      * here.
      *
      * <p>{@code filters} carries every optional {@code discover/tv} narrowing param as one
-     * object (SERIES-031-AC-01/02/03/04, SERIES-032-AC-01/02) -- see {@link DiscoverFilters}
-     * for exactly which query param each field maps to and the "omit when unset" convention
-     * shared by all six.
+     * object (SERIES-031-AC-01/02/03/04, SERIES-032-AC-01/02, SERIES-044-AC-02/03) -- see
+     * {@link DiscoverFilters} for exactly which query param each field maps to and the "omit
+     * when unset" convention shared by all seven.
      *
      * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
      *                                  any other reason
@@ -177,11 +177,12 @@ public class TmdbClient {
     }
 
     /**
-     * Applies the six {@link DiscoverFilters}-derived {@code discover/tv} query params
-     * (SERIES-031-AC-01/02/03/04, SERIES-032-AC-01/02) under their existing omit-when-unset
-     * conditions -- extracted out of {@link #discover(List, List, String, DiscoverFilters)} to
-     * keep that method's Cognitive Complexity from growing with every future
-     * {@code DiscoverFilters} field (see {@code tooling_spec_007}).
+     * Applies the seven {@link DiscoverFilters}-derived {@code discover/tv} query params
+     * (SERIES-031-AC-01/02/03/04, SERIES-032-AC-01/02, SERIES-044-AC-02/03) under their
+     * existing omit-when-unset conditions -- extracted out of
+     * {@link #discover(List, List, String, DiscoverFilters)} to keep that method's Cognitive
+     * Complexity from growing with every future {@code DiscoverFilters} field (see
+     * {@code tooling_spec_007}).
      */
     private static UriBuilder applyDiscoverFilters(UriBuilder b, DiscoverFilters filters) {
         if (filters.minVoteCount() > 0) {
@@ -206,6 +207,9 @@ public class TmdbClient {
             // returned 0 despite each individually returning results).
             // Pipe is the actual OR separator for this param.
             b = b.queryParam("with_origin_country", String.join("|", filters.countries()));
+        }
+        if (filters.excludeGenreIds() != null && !filters.excludeGenreIds().isEmpty()) {
+            b = b.queryParam("without_genres", joinIds(filters.excludeGenreIds()));
         }
         return b;
     }
