@@ -8,9 +8,17 @@ type YearFields = Pick<Series, 'year' | 'lastAirYear' | 'productionStatus'>
  * range for a still-running/unknown-status show ("2020-"). `lastAirYear`
  * alone can't distinguish "ended" from "still running, last aired X" --
  * both a returning show and an ended one can have a resolved lastAirYear --
- * so `productionStatus` (series_spec_008) decides which shape to use.
- * Shared by SeriesList's row title and SeriesDetail's header
- * (frontend_spec_058).
+ * so `productionStatus` (series_spec_008) decides which shape to use, once
+ * `lastAirYear` is actually known. Shared by SeriesList's row title and
+ * SeriesDetail's header (frontend_spec_058).
+ *
+ * FRONTEND-066/frontend_spec_066: `productionStatus` decides the shape even
+ * when `lastAirYear` equals `year` (e.g. a freshman season of a renewed show
+ * that aired entirely within one calendar year) -- that case must still read
+ * as open-ended for a confirmed-still-returning show, not collapse to a bare
+ * year as if it had already finished. Only a genuinely unresolved
+ * `lastAirYear` (no data point at all) keeps the bare-year fallback,
+ * regardless of `productionStatus`.
  */
 export function formatSeriesYear(series: YearFields): string {
   const { year, lastAirYear, productionStatus } = series
@@ -21,9 +29,11 @@ export function formatSeriesYear(series: YearFields): string {
   // the same as an explicit `null` -- not just the exact `year: null` shape
   // AC-01 spells out.
   if (year == null) return ''
-  if (lastAirYear == null || lastAirYear === year) return `${year}`
-  if (productionStatus === 'ENDED' || productionStatus === 'CANCELED') {
-    return `${year}-${lastAirYear}`
+  if (lastAirYear == null) return `${year}`
+  const isEnded =
+    productionStatus === 'ENDED' || productionStatus === 'CANCELED'
+  if (isEnded) {
+    return lastAirYear === year ? `${year}` : `${year}-${lastAirYear}`
   }
   return `${year}-`
 }

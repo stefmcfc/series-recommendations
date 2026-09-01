@@ -38,12 +38,23 @@ it at both existing display sites.
   as a forward cross-reference for whoever sequences the build order, not a change to that spec's
   own text (per this project's ID-immutability convention, that spec's existing AC wording isn't
   edited retroactively).
+- **Note (2026-09-01)**: `FRONTEND-058-AC-01`'s `lastAirYear === year` branch was found to
+  short-circuit before the `productionStatus` check, so a confirmed-returning show whose aired span
+  is a single year (e.g. a freshman season) incorrectly rendered as a bare, closed-looking year.
+  Fixed by `frontend_spec_066_returning_series_year_range.md` — see that spec and the superseded
+  `FRONTEND-058-AC-01` marker above.
 
 ---
 
 ## Requirement 1: `formatSeriesYear` utility
 
-### FRONTEND-058-AC-01 [AUTO]
+### ~~FRONTEND-058-AC-01~~ [AUTO] — superseded 2026-09-01 by `FRONTEND-066-AC-01`
+(`frontend_spec_066_returning_series_year_range.md`): the `lastAirYear === year` branch below
+returned a bare `{year}` unconditionally, even for a confirmed-still-returning show (e.g.
+"Dexter: Resurrection", a freshman season aired entirely within one year) — that branch now also
+checks `productionStatus`, exactly like the `lastAirYear !== year` branch already did. Original
+statement and test table preserved verbatim below per this project's ID-immutability convention.
+
 **Statement**: A new `formatSeriesYear(series: Pick<Series, 'year' | 'lastAirYear' |
 'productionStatus'>): string` shall return: `''` when `year` is `null`; `` `${year}` `` when
 `lastAirYear` is `null` or equals `year`; `` `${year}-${lastAirYear}` `` when `productionStatus` is
@@ -108,5 +119,5 @@ it('FRONTEND-058-AC-02: SeriesDetail shows an open-ended range for a running sho
 
 ## Acceptance Criteria Summary
 
-- [x] FRONTEND-058-AC-01: `formatSeriesYear` covers all branches correctly
+- [x] ~~FRONTEND-058-AC-01~~: `formatSeriesYear` covers all branches correctly — **superseded 2026-09-01** by `FRONTEND-066-AC-01` (`frontend_spec_066_returning_series_year_range.md`); the `lastAirYear === year` branch now also honors `productionStatus`
 - [x] FRONTEND-058-AC-02: `SeriesList`/`SeriesDetail` both use the shared helper
