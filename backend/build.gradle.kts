@@ -12,7 +12,7 @@ version = "3.8.0"
 
 // Centralized here (kotlin:S6624) rather than inline in the dependencies block below --
 // single place to bump each, and easier for dependabot's version-bump PRs to reason about.
-val sqliteJdbcVersion = "3.53.2.1"
+val sqliteJdbcVersion = "3.53.4.0"
 val spockVersion = "2.4-groovy-5.0"
 val groovyVersion = "5.1.1"
 
