@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-09-01
+
 ### Changed
 
 - Frontend: navigating to Recommendations (or switching between "Use My Series"/"Discover" and any of Discover's sub-tabs) no longer fires a request on its own — a request is only ever sent after clicking "Apply Filters". Switching tabs now clears any previously-shown results back to a "set your filters and click Apply Filters" prompt, instead of leaving a different mode's stale results on screen (`frontend_spec_062`, reverses `FRONTEND-040-AC-02`).
