@@ -32,30 +32,6 @@ Last full review against the codebase: 2026-08-29.
 
 ## Recommendations & Lookup
 
-### "Exclude Genres" output filter matches TMDB's canonical genre names, not the alias vocabulary the "Genres" sourcing field uses
-
-Confirmed still live (2026-08-26, re-read the actual code — this bug's home moved during this
-session's `RecommendationService` split, so the exact reference below is now accurate again). The
-"Genres" sourcing field is populated from `TmdbGenreTable.allAliasNames()` — 18 alias names like
-`"Action"`, `"Sci-Fi"`, `"Fantasy"`. The "Exclude Genres" filter
-(`RecommendationOutputFilterService.matchesExcludeGenres`, `service/RecommendationOutputFilterService.java`)
-compares against `TmdbGenreTable.joinDisplayNames(candidate.genreIds())`, which returns the 16
-_canonical_ TMDB display names instead (`"Action & Adventure"`, `"Sci-Fi & Fantasy"`). A user
-typing `"Action"` into Exclude Genres (matching what the Genres field itself shows) will silently
-exclude nothing, since no candidate's canonical genre string is ever literally `"Action"`.
-
-**What's required**: either compare against the alias vocabulary instead (resolve each excluded
-alias to its TMDB genre id via `TmdbGenreTable.idFor()`, then compare ids, the same way sourcing
-already does) or expose the canonical-name list as the field's own vocabulary so what a user picks
-is guaranteed to match. The former keeps one consistent vocabulary across both Genres fields; the
-latter is a smaller code change but means Exclude Genres shows different option text than Genres.
-
-**Status**: Not specced. **Note (2026-08-26)**: `.claude/SPEC_CANDIDATES.md` has a candidate for
-turning "Exclude Genres" into a checkbox picker (mirroring "Genres") — if that's built, it forces
-resolving this vocabulary question either way, since a checkbox list needs one canonical option
-set. Worth doing together rather than fixing the matching logic first and re-doing it once the
-picker lands.
-
 ### Recommendations for a recommendation — sourcing from an arbitrary candidate `tmdbId`, not just a tracked series
 
 Raised 2026-08-29 alongside the now-specced "SeriesDetail gains a Recommendations button"/
@@ -91,10 +67,12 @@ Raised 2026-09-01. Current state, confirmed by reading the code: `UseMySeriesPan
 which of the user's own series become recommendation-sourcing candidates. This is a separate,
 independently-implemented filter set from `SearchFilter`'s (My Series list), not shared logic.
 
-Proposed additions to that same panel, mirroring `SearchFilter`'s field set: Exclude Genre(s)
-(checkbox, reusing `seriesApi.getGenreOptions()`), an include-Keywords filter (mirroring
-`SearchFilter`'s `KeywordPicker`), Min Personal/IMDb/TMDB Rating, and Year Min/Max — all narrowing
-the *source pool* of the user's own series. These are explicitly distinct from
+Proposed additions to that same panel, mirroring `SearchFilter`'s field set: an include-Keywords
+filter (mirroring `SearchFilter`'s `KeywordPicker`), Min Personal/IMDb/TMDB Rating, and Year Min/Max
+— all narrowing the *source pool* of the user's own series. (Exclude Genre(s) — also originally
+proposed here — was pulled out into its own real spec, `frontend_spec_069_use_my_series_exclude_genres.md`,
+as part of a 2026-09-01 exclude-genres consolidation across the whole app; it's tracked in
+`ROADMAP.md` now, not here.) The remaining fields are explicitly distinct from
 `RecommendationFiltersBox`'s existing Min TMDB Rating/Year Min-Max/Exclude Genres/Exclude Keywords
 fields, which filter the TMDB recommendation *output* instead and would be unaffected by this idea.
 **Naming collision risk to design around**: two different "Min Rating"/"Year Range" concepts would

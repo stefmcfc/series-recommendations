@@ -129,6 +129,56 @@ class RecommendationOutputFilterServiceSpec extends Specification {
             result[0].candidate().title() == "Comedy Show"
     }
 
+    // -- Spec 043, Requirement 1 (SERIES-043-AC-01..04): excludeGenres resolves via the alias
+    // vocabulary (TmdbGenreTable.idFor), not TMDB's canonical display names --
+
+    def "SERIES-043-AC-01: excludeGenres=['Action'] excludes a candidate whose genreIds include 10759 (Action & Adventure)"() {
+        given: "a candidate carrying TMDB genre id 10759 (canonical display name 'Action & Adventure')"
+            def candidates = [dc(candidate(10, "Action Show", 2020, new BigDecimal("8.0"), [10759]))]
+            def criteria = new RecommendationCriteria(excludeGenres: ["Action"])
+
+        when: "applyOutputFilters is called"
+            def result = outputFilterService.applyOutputFilters(candidates, criteria)
+
+        then: "the candidate is excluded, even though its canonical display name is never literally 'Action'"
+            result.isEmpty()
+    }
+
+    def "SERIES-043-AC-02: an unrecognized excludeGenres entry is silently ignored"() {
+        given: "a candidate, and excludeGenres containing a name TMDB's fixed genre table doesn't cover"
+            def candidates = [dc(candidate(10, "Show", 2020, new BigDecimal("8.0"), [18]))]
+            def criteria = new RecommendationCriteria(excludeGenres: ["NotARealGenre"])
+
+        when: "applyOutputFilters is called"
+            def result = outputFilterService.applyOutputFilters(candidates, criteria)
+
+        then: "no exception is thrown and the candidate is not excluded"
+            result.size() == 1
+    }
+
+    def "SERIES-043-AC-03: a candidate with no genreIds is not excluded"() {
+        given: "a candidate with an empty genreIds list"
+            def candidates = [dc(candidate(10, "Show", 2020, new BigDecimal("8.0"), []))]
+            def criteria = new RecommendationCriteria(excludeGenres: ["Comedy"])
+
+        when: "applyOutputFilters is called"
+            def result = outputFilterService.applyOutputFilters(candidates, criteria)
+
+        then: "the candidate survives"
+            result.size() == 1
+    }
+
+    def "SERIES-043-AC-04: no excludeGenres means no candidate is excluded on that basis"() {
+        given: "a candidate with genreIds"
+            def candidates = [dc(candidate(10, "Show", 2020, new BigDecimal("8.0"), [35]))]
+
+        when: "applyOutputFilters is called with no excludeGenres set"
+            def result = outputFilterService.applyOutputFilters(candidates, new RecommendationCriteria())
+
+        then: "the candidate survives"
+            result.size() == 1
+    }
+
     def "SERIES-007-AC-28: language excludes candidates whose originalLanguage doesn't case-insensitively match"() {
         given: "candidates with originalLanguage en and fr"
             def candidates = [

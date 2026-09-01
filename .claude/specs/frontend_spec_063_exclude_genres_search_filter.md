@@ -5,41 +5,57 @@
 **Depends on**: Series Spec 042 (`series_spec_042_exclude_genres_search.md`, owns the
 `excludeGenres` criterion/`excludeGenre` query param this UI sends) ✅ required, Frontend Spec 055
 (`frontend_spec_055_search_filter_overhaul.md`, owns `SearchFilter`'s current form/fieldset
-structure and its existing include-Genres checkbox fieldset this mirrors) ✅
+structure and its existing include-Genres checkbox fieldset this replaces) ✅ required, Frontend
+Spec 067 (`frontend_spec_067_genre_include_exclude_picker.md`, owns the shared
+`GenreIncludeExcludePicker` component this spec wires in) ✅ required
 **Area**: Frontend (`components/SearchFilter.tsx`, `types/series.ts`, `services/seriesApi.ts`)
 
 ## Overview
 
 Recommendations' `RecommendationFiltersBox` already has an Exclude Genres filter, but
-`SearchFilter` (My Series list) has none — only the existing include-Genres checkbox fieldset.
-This spec adds a matching Exclude Genre(s) checkbox fieldset to `SearchFilter`, wired to the new
-`SearchCriteria.excludeGenres`/`excludeGenre` query param from `series_spec_042`, reusing
-`seriesApi.getGenreOptions()` for its option list exactly as the include fieldset already does.
+`SearchFilter` (My Series list) has none — only the existing include-Genres checkbox fieldset. This
+spec replaces that lone include-Genres fieldset with the shared `GenreIncludeExcludePicker`
+(`frontend_spec_067`) in its default `includeExclude` mode, wired to both the existing
+`SearchCriteria.genres` and the new `SearchCriteria.excludeGenres`/`excludeGenre` query param from
+`series_spec_042`. Reuses `seriesApi.getGenreOptions()` for its option list exactly as the old
+include fieldset already did.
 
-## Design Decisions
+**Revision note (2026-09-01, exclude-genres consolidation)**: this spec originally planned a second,
+independent inline checkbox fieldset for Exclude Genre(s), duplicating the existing include-Genres
+fieldset's JSX a second time (see the superseded Design Decisions below, kept for history). That
+plan is replaced by wiring in the shared `GenreIncludeExcludePicker` instead — one control replacing
+both the old include fieldset and the never-built exclude one, with mutual exclusivity (a genre
+can't be in both lists) enforced structurally by that component rather than left unenforced as
+originally decided.
 
-- **Checkbox list, not free text** — `RecommendationFiltersBox`'s own Exclude Genres field is a
-  free-text comma list, but `.claude/SPEC_CANDIDATES.md` already has an open candidate to convert
-  *that* field to a checkbox list to match its own include-Genres fieldset. Building this new
-  My Series field as free text would create a third, inconsistent shape; building it as a checkbox
-  list (matching `SearchFilter`'s own adjacent include-Genres fieldset, one field away in the same
-  form) is both the more consistent choice today and sets up the Recs-side conversion to follow the
-  same shape later rather than inventing its own.
-- **A second, independent inline checkbox block — no shared component extracted yet.** The existing
-  include-Genres fieldset in `SearchFilter.tsx` (lines 178-199) is hand-rolled inline JSX, not a
-  reusable component. Extracting a shared `CheckboxOptionList` first (as
-  `.claude/SPEC_CANDIDATES.md`'s Recs-side exclude-genre candidate already flags as worth doing) is
-  explicitly out of scope for this spec — it would require touching the Recs side too, which isn't
-  part of this change. This spec copies the same inline pattern a second time for the exclude
-  field, accepting the short-term duplication.
-- **Reuses the same `genreOptions` state already fetched for the include fieldset** — no second
-  `seriesApi.getGenreOptions()` call. Both fieldsets render from the identical list, so a single
-  fetch already in `SearchFilter`'s `useEffect` (line 91-96) covers both.
-- **No mutual exclusivity enforced client-side** — a user can check the same genre in both Include
-  and Exclude simultaneously; the backend (`series_spec_042`, SERIES-042-AC-05) already defines
-  that exclude wins, producing an empty result for that genre. `SearchFilter` doesn't need to
-  prevent this combination or show a warning — the existing "Search" → results flow already
-  surfaces an empty list the same way any other over-constrained filter combination would.
+## Design Decisions (current)
+
+- **One `GenreIncludeExcludePicker` instance, `mode="includeExclude"`, replacing the old include
+  fieldset entirely** — not a second, separate exclude fieldset next to the existing include one.
+  `frontend_spec_067` owns the toggle/mutual-exclusivity/modal behavior; this spec only wires
+  `SearchFilter`'s `genresSelected`/new `excludeGenresSelected` form state to its
+  `included`/`excluded`/`onChange` props.
+- **Reuses the same `genreOptions` state already fetched for the old include fieldset** — no second
+  `seriesApi.getGenreOptions()` call. The picker renders from the identical list the existing
+  fetch in `SearchFilter`'s `useEffect` (line 91-96) already provides.
+- **Mutual exclusivity is enforced structurally, by `GenreIncludeExcludePicker` itself** — a user
+  cannot select the same genre in both Include and Exclude through this UI, superseding this spec's
+  original "no mutual exclusivity enforced client-side" decision (see Superseded Design Decisions
+  below). The backend's SERIES-042-AC-05 exclude-wins precedence stays as defensive behavior for any
+  caller that bypasses this UI (e.g. a direct API request), but a `SearchFilter` user can no longer
+  reach that state at all.
+
+### Superseded Design Decisions (2026-08-xx original plan, kept for history)
+
+- ~~Checkbox list, not free text~~ — superseded: the picker is neither a checkbox list nor free
+  text, it's the shared modal-toggle component; the underlying "checkbox list over free text" intent
+  is preserved (its toggle buttons list the same vocabulary a checkbox list would), just via a
+  different, now-shared control.
+- ~~A second, independent inline checkbox block — no shared component extracted yet~~ — superseded:
+  `frontend_spec_067` *is* that shared component, extracted specifically because this consolidation
+  needed the same control in three places (`SearchFilter`, Recommendations, Use My Series) at once,
+  not just here.
+- ~~No mutual exclusivity enforced client-side~~ — superseded, see Design Decisions (current) above.
 
 ## Requirements
 
@@ -107,62 +123,65 @@ describe('FRONTEND-063-AC-02: buildSearchParams sends excludeGenre', () => {
 **Test Case (Green)**: add the `if (criteria.excludeGenres?.length) params.excludeGenre =
 criteria.excludeGenres` branch to `buildSearchParams`.
 
-### Requirement 2: `SearchFilter` renders an Exclude Genre(s) checkbox fieldset
+### Requirement 2: `SearchFilter` renders a `GenreIncludeExcludePicker` in place of the old include-Genres fieldset
 
-**User Story**: As a user of the My Series list, I want to exclude series in genres I'm not
-interested in, so my results skip them without having to type genre names by hand.
+**User Story**: As a user of the My Series list, I want to include and exclude genres from one
+control, so I can narrow my results without being able to accidentally pick the same genre both
+ways.
 
-#### FRONTEND-063-AC-03 [AUTO]: renders one checkbox per genre option, unchecked by default
-**Statement**: When `SearchFilter`'s filters are expanded, the component shall render an "Exclude
-Genre(s)" fieldset with one checkbox per entry in `genreOptions`, all unchecked initially.
+#### FRONTEND-063-AC-03 [AUTO]: renders `GenreIncludeExcludePicker` wired to both genre selections
+**Statement**: When `SearchFilter`'s filters are expanded, the component shall render one
+`GenreIncludeExcludePicker` (`idPrefix="search-filter-genre"`, `label="Genres"`, default
+`includeExclude` mode) in place of the former standalone include-Genres fieldset, with `included`
+bound to `form.genresSelected` and `excluded` bound to a new `form.excludeGenresSelected`.
 
-**Rationale**: Core UI, mirroring the existing include-Genres fieldset's structure/labeling
-convention exactly.
+**Rationale**: Core wiring — one control now owns what used to be (and, per the original plan,
+would have become) two separate fieldsets.
 
 **References**:
-- Component: `components/SearchFilter.tsx` (existing include-Genres fieldset, lines 178-199)
+- Component: `components/SearchFilter.tsx` (former include-Genres fieldset, lines 178-199, removed
+  by this AC)
+- Component: `components/GenreIncludeExcludePicker.tsx` (`frontend_spec_067`)
 
 **Test Case (Red)**:
 ```typescript
-describe('FRONTEND-063-AC-03: Exclude Genre(s) checkboxes render', () => {
-  it('renders one checkbox per fetched genre option, all unchecked', async () => {
+describe('FRONTEND-063-AC-03: GenreIncludeExcludePicker renders', () => {
+  it('renders the picker trigger once filters are shown', async () => {
     vi.spyOn(seriesApi, 'getGenreOptions').mockResolvedValue(['Comedy', 'Drama'])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
     fireEvent.click(screen.getByText('Show Filters'))
-    await screen.findByText('Exclude Genre(s)')
-    const comedyCheckbox = screen.getByRole('checkbox', { name: 'Comedy', exact: false })
-    expect(comedyCheckbox).not.toBeChecked()
+    expect(await screen.findByRole('button', { name: 'Genres' })).toBeInTheDocument()
   })
 })
 ```
 
-**Test Case (Green)**: add `excludeGenresSelected: string[]` to `FormState`, an
-`excludeGenreOptions` render block below the existing include-Genres fieldset, and a
-`handleExcludeGenreToggle` handler mirroring `handleGenreToggle`.
+**Test Case (Green)**: add `excludeGenresSelected: string[]` to `FormState`/`initialFormState`,
+replace the old inline checkbox JSX with a single `<GenreIncludeExcludePicker ... />`, and an
+`onChange` handler that writes both `genresSelected`/`excludeGenresSelected` into form state.
 
-#### FRONTEND-063-AC-04 [AUTO]: checking a genre adds it to the submitted `excludeGenres`
-**Statement**: When a user checks a genre checkbox in the Exclude Genre(s) fieldset and submits
-the form, the `SearchFilter` component shall call `onSearch` with `excludeGenres` containing that
-genre.
+#### FRONTEND-063-AC-04 [AUTO]: toggling a genre to include/exclude updates the submitted criteria accordingly
+**Statement**: When a user toggles a genre to `include` or `exclude` via the picker and submits the
+form, the `SearchFilter` component shall call `onSearch` with `genres`/`excludeGenres` respectively
+containing that genre.
 
-**Rationale**: The actual filtering behavior a user triggers.
+**Rationale**: The actual filtering behavior a user triggers, for both directions.
 
 **References**:
 - Component: `components/SearchFilter.tsx` `buildCriteria`/`handleSubmit`
+- Related: `FRONTEND-067-AC-04`, `FRONTEND-067-AC-05` (picker's own toggle contract)
 
 **Test Case (Red)**:
 ```typescript
-describe('FRONTEND-063-AC-04: checking Exclude Genre(s) submits excludeGenres', () => {
-  it('includes the checked genre in onSearch criteria', async () => {
+describe('FRONTEND-063-AC-04: toggling submits genres/excludeGenres', () => {
+  it('includes an excluded genre in onSearch criteria', async () => {
     vi.spyOn(seriesApi, 'getGenreOptions').mockResolvedValue(['Comedy'])
     const onSearch = vi.fn()
     render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
     fireEvent.click(screen.getByText('Show Filters'))
-    const excludeComedy = await screen.findByRole('checkbox', {
-      name: 'Comedy',
-      // disambiguated via the Exclude Genre(s) fieldset's own labelling, e.g. id prefix
-    })
-    fireEvent.click(excludeComedy)
+    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    // neutral -> include -> exclude
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
     fireEvent.click(screen.getByText('Search'))
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({ excludeGenres: ['Comedy'] }),
@@ -172,14 +191,14 @@ describe('FRONTEND-063-AC-04: checking Exclude Genre(s) submits excludeGenres', 
 ```
 
 **Test Case (Green)**: `buildCriteria` adds `if (form.excludeGenresSelected.length > 0)
-criteria.excludeGenres = form.excludeGenresSelected`, mirroring the existing `genresSelected`
-branch.
+criteria.excludeGenres = form.excludeGenresSelected`, alongside the existing `genresSelected`
+branch (both now sourced from the same picker's `onChange`).
 
-#### FRONTEND-063-AC-05 [AUTO]: "Clear Filters" resets the Exclude Genre(s) selection
-**Statement**: When the user clicks "Clear Filters", the `SearchFilter` component shall reset
-`excludeGenresSelected` to empty, alongside every other filter field.
+#### FRONTEND-063-AC-05 [AUTO]: "Clear Filters" resets both the include and exclude genre selections
+**Statement**: When the user clicks "Clear Filters", the `SearchFilter` component shall reset both
+`genresSelected` and `excludeGenresSelected` to empty, alongside every other filter field.
 
-**Rationale**: Consistency with the existing `handleClear`/`initialFormState` behavior — a new
+**Rationale**: Consistency with the existing `handleClear`/`initialFormState` behavior — the new
 field must participate in the same reset, not be left behind as a silent exception.
 
 **References**:
@@ -187,20 +206,22 @@ field must participate in the same reset, not be left behind as a silent excepti
 
 **Test Case (Red)**:
 ```typescript
-describe('FRONTEND-063-AC-05: Clear Filters resets Exclude Genre(s)', () => {
-  it('unchecks a previously-checked exclude-genre checkbox', async () => {
+describe('FRONTEND-063-AC-05: Clear Filters resets both genre selections', () => {
+  it('resets the picker summary after Clear Filters', async () => {
     vi.spyOn(seriesApi, 'getGenreOptions').mockResolvedValue(['Comedy'])
     render(<SearchFilter onSearch={vi.fn()} onClear={vi.fn()} />)
     fireEvent.click(screen.getByText('Show Filters'))
-    const excludeComedy = await screen.findByRole('checkbox', { name: 'Comedy' })
-    fireEvent.click(excludeComedy)
+    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
-    expect(excludeComedy).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Genres' })).toBeInTheDocument()
   })
 })
 ```
 
-**Test Case (Green)**: add `excludeGenresSelected: []` to `initialFormState`.
+**Test Case (Green)**: add `excludeGenresSelected: []` alongside the existing `genresSelected: []`
+in `initialFormState`.
 
 ## Cross-References
 
@@ -208,15 +229,15 @@ describe('FRONTEND-063-AC-05: Clear Filters resets Exclude Genre(s)', () => {
 |---|---|
 | `SearchCriteria` | `frontend/src/types/series.ts` |
 | `seriesApi.search`/`buildSearchParams` | `frontend/src/services/seriesApi.ts` |
-| `SearchFilter` (existing include-Genres fieldset) | `frontend/src/components/SearchFilter.tsx` |
+| `SearchFilter` | `frontend/src/components/SearchFilter.tsx` |
+| Shared picker component | `frontend_spec_067_genre_include_exclude_picker.md`, `components/GenreIncludeExcludePicker.tsx` |
 | Backend criterion/query param | `series_spec_042_exclude_genres_search.md` |
 | Genre vocabulary (`GET /series/genres`) | `series_spec_010_genre_dropdown.md` |
-| Related Recs-side candidate (checkbox conversion) | `.claude/SPEC_CANDIDATES.md`, "'Exclude Genres' filter — checkbox list instead of free text" |
 
 ## Acceptance Criteria Summary
 
 - [ ] FRONTEND-063-AC-01: `SearchCriteria` exposes `excludeGenres`
 - [ ] FRONTEND-063-AC-02: `seriesApi.search` sends `excludeGenre` query params
-- [ ] FRONTEND-063-AC-03: renders one checkbox per genre option, unchecked by default
-- [ ] FRONTEND-063-AC-04: checking a genre adds it to the submitted `excludeGenres`
-- [ ] FRONTEND-063-AC-05: "Clear Filters" resets the Exclude Genre(s) selection
+- [ ] FRONTEND-063-AC-03: renders `GenreIncludeExcludePicker` wired to both genre selections
+- [ ] FRONTEND-063-AC-04: toggling a genre to include/exclude updates the submitted criteria accordingly
+- [ ] FRONTEND-063-AC-05: "Clear Filters" resets both the include and exclude genre selections

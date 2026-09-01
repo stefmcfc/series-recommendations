@@ -31,27 +31,6 @@ a clean fit for `StarRating` (`frontend_spec_013`): "click star N sets the minim
 already-selected star again clears back to Any" maps directly onto `StarRating`'s existing
 click-to-clear semantics — no new interaction shape needed, low effort.
 
-### "Exclude Genres" filter — checkbox list instead of free text
-
-Currently a plain comma-separated text input (`excludeGenresText`, parsed via `parseCommaList`).
-The existing "Genres" (include) field in Genre & Keyword mode already renders `genreOptions` (from
-`seriesApi.getGenreOptions()`) as a checkbox list, a few hundred lines away in the same file —
-direct precedent to reuse for the shape.
-
-**Before implementing**: that existing include-Genres checkbox list is hand-rolled inline JSX, not
-a shared component. Adding a second near-identical block for Exclude Genres would recreate the
-exact duplication pattern `tooling_spec_002`/`003`/`005` already existed to clean up elsewhere in
-this codebase — extract a small shared checkbox-list component first (e.g. a generic
-`CheckboxOptionList` over a `string[]`), then use it for both include and exclude, rather than
-copy-pasting the block a second time.
-
-**Note (2026-09-01)**: a matching want on the My Series side is now a real spec pair —
-`series_spec_042_exclude_genres_search.md`/`frontend_spec_063_exclude_genres_search_filter.md`
-(not yet built). That pair deliberately does *not* extract a shared checkbox-list component either
-(same "accept short-term duplication" call, see its own Design Decisions) — whoever eventually
-does the extraction this candidate calls for should fold both call sites in at once rather than
-finding a third one has appeared in between.
-
 ### "Exclude Keywords" filter — `KeywordPicker` instead of free text
 
 Currently also a plain comma-separated text input (`excludeKeywordsText`). The include-Keywords
@@ -222,8 +201,10 @@ time.
 
 **Note (2026-09-01)**: `.claude/ideas/future_ideas.md`'s "'Use My Series' source-series picker
 gains filter/sort parity with My Series, plus a 'Select Series' relabel" entry is exactly the
-concrete detail this candidate was waiting for (Exclude Genre(s), Keywords, Min Rating, Year Range,
-plus a "Select Series" relabel) — review it once this candidate is actually scoped.
+concrete detail this candidate was waiting for (Keywords, Min Rating, Year Range, plus a "Select
+Series" relabel — Exclude Genre(s) has since been pulled out and specced separately, see
+`frontend_spec_069_use_my_series_exclude_genres.md`) — review the remainder once this candidate is
+actually scoped.
 
 ### Full-codebase manual accessibility review
 

@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -108,19 +108,27 @@ public class RecommendationOutputFilterService {
         return yearMax == null || c.year() <= yearMax;
     }
 
+    /**
+     * SERIES-043-AC-01..04: resolves {@code excludeGenres} entries (this app's 18-item alias
+     * vocabulary, e.g. {@code "Action"}) to TMDB genre ids via {@link TmdbGenreTable#idFor
+     * (String)} -- the same resolution {@code RecommendationSourcingService.resolveGenreIds}
+     * already uses for the include-{@code genres} side -- and compares ids directly against
+     * {@code candidate.genreIds()}, never rendering either side back to a display-name string.
+     * An {@code excludeGenres} entry {@code idFor} doesn't recognize is silently skipped, not
+     * an error, mirroring {@code resolveGenreIds}'s {@code .filter(Objects::nonNull)}.
+     */
     private boolean matchesExcludeGenres(TmdbCandidate c, List<String> excludeGenres) {
         if (excludeGenres == null || excludeGenres.isEmpty()) {
             return true;
         }
-        String genresDisplay = genreTable.joinDisplayNames(c.genreIds());
-        if (genresDisplay == null) {
+        if (c.genreIds() == null || c.genreIds().isEmpty()) {
             return true;
         }
-        Set<String> candidateGenres = Arrays.stream(genresDisplay.split(","))
-            .map(String::trim)
+        Set<Integer> excludeGenreIds = excludeGenres.stream()
+            .map(genreTable::idFor)
+            .filter(Objects::nonNull)
             .collect(Collectors.toSet());
-        return excludeGenres.stream().noneMatch(excluded ->
-            candidateGenres.stream().anyMatch(g -> g.equalsIgnoreCase(excluded.trim())));
+        return excludeGenreIds.stream().noneMatch(c.genreIds()::contains);
     }
 
     private boolean matchesLanguage(TmdbCandidate c, String language) {
