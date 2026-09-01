@@ -12,6 +12,12 @@ versioned together as one app.
 
 - Frontend: My Series' filter panel is now a slide-out sheet, opened via a new funnel button next to `SeriesList`'s view-mode icons, replacing the inline "Show Filters"/"Hide Filters" disclosure — Search and Clear Filters now close the sheet after acting, and the funnel button shows an active-filter indicator (`frontend_spec_071`).
 
+## [3.10.1] - 2026-09-01
+
+### Changed
+
+- Docs: added `frontend_spec_072` through `077` (My Series settings migration, real-time title filter, rewatch tab, filter-sheet sectioning, and shared genre/keyword picker polish) and updated `ROADMAP.md`/`future_ideas.md` accordingly — no code changes.
+
 ## [3.10.0] - 2026-09-01
 
 ### Added

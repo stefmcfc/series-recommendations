@@ -121,6 +121,12 @@ delivered; see the table above.)
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
+| Settings gains Export (now unfiltered) and Refresh All, relocated off the My Series page | — | `frontend_spec_072` | — (standalone, build first in this chain — declutters `SeriesList`'s header) | 🟨 P3 · ⬜ Not started |
+| My Series Title becomes a real-time (debounced) filter on the page itself, removed from the filter sheet | — | `frontend_spec_073` | — (standalone) | 🟨 P3 · ⬜ Not started |
+| "Flagged for rewatch" becomes a `/my-series/rewatch` tab, removed from the filter sheet | — | `frontend_spec_074` | `frontend_spec_056` (tab-bar pattern reused) | 🟨 P3 · ⬜ Not started |
+| My Series filter sheet fields grouped into sectioned dividers (Genres & Keywords / Ratings / Years) | — | `frontend_spec_075` | `frontend_spec_073`, `frontend_spec_074` (build after — lays out the final field set once) | 🟨 P3 · ⬜ Not started |
+| `GenreIncludeExcludePicker` gains removable chips below its trigger + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | `frontend_spec_067` (standalone otherwise) | 🟨 P3 · ⬜ Not started |
+| `KeywordPicker` gains a pills-only mode, applied to the 2 usages with a paired "Browse..." modal | — | `frontend_spec_077` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
 | Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | — (standalone) | 🟩 P4 · ⬜ Not started |
 
