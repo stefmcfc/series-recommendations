@@ -1,10 +1,12 @@
 package uk.co.stefirby.seriestracker.exception;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -82,6 +84,36 @@ public class GlobalExceptionHandler {
             .collect(Collectors.joining(", "));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ApiResponse.error(message));
+    }
+
+    // SERIES-041-AC-01: a jakarta.validation.ConstraintViolationException is thrown by
+    // Hibernate when a SeriesEntity's own @Min/@Max/@DecimalMin/@DecimalMax constraint is
+    // violated -- e.g. an out-of-range totalSeasons via update, which never went through
+    // validateCreate's manual checks. Without this handler it falls through to the catch-all
+    // Exception.class handler below and becomes a 500.
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+            .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+            .collect(Collectors.joining(", "));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.error(message));
+    }
+
+    // SERIES-041-AC-01: because a new/managed entity's actual INSERT/UPDATE is deferred until
+    // flush time, and @Transactional's own flush-then-commit happens inside
+    // JpaTransactionManager.doCommit (after the annotated service method has already
+    // returned), Hibernate's ConstraintViolationException doesn't reach the handler above
+    // directly -- Spring wraps it (via a RollbackException) in a TransactionSystemException
+    // first. Unwrap it here and delegate to the same handling as a directly-thrown
+    // ConstraintViolationException; anything else is a genuine unexpected transactional
+    // failure, left to the catch-all Exception.class handler below.
+    @ExceptionHandler(TransactionSystemException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTransactionSystemException(TransactionSystemException ex) {
+        if (ex.getRootCause() instanceof ConstraintViolationException cve) {
+            return handleConstraintViolation(cve);
+        }
+        return handleUnexpected(ex);
     }
 
     @ExceptionHandler(Exception.class)

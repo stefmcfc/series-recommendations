@@ -7,12 +7,15 @@ import {
   validateRottenTomatoesRating,
   validateRottenTomatoesPopcornmeter,
 } from './seriesFormValidation'
+import { MIN_VALID_YEAR, MAX_VALID_YEAR } from './yearBounds'
 
 describe('TOOLING-005-AC-01: shared series form validators', () => {
   it('validateYear rejects out-of-range years, ignores blank', () => {
     const errors: { year?: string } = {}
-    validateYear({ year: '2030' }, errors)
-    expect(errors.year).toBe('Year must be between 1 and 2026')
+    validateYear({ year: String(MAX_VALID_YEAR + 1) }, errors)
+    expect(errors.year).toBe(
+      `Year must be between ${MIN_VALID_YEAR} and ${MAX_VALID_YEAR}`,
+    )
 
     const noError: { year?: string } = {}
     validateYear({ year: '' }, noError)
@@ -54,5 +57,39 @@ describe('TOOLING-005-AC-01: shared series form validators', () => {
     expect(errors.rottenTomatoesPopcornmeter).toBe(
       'Rotten Tomatoes rating must be between 0 and 100',
     )
+  })
+})
+
+describe('FRONTEND-061-AC-01: validateYear uses the shared 1900–current year + 1 bound', () => {
+  it('rejects a year below 1900', () => {
+    const form = { year: '1899' }
+    const errors: { year?: string } = {}
+    validateYear(form, errors)
+    expect(errors.year).toBe(
+      `Year must be between ${MIN_VALID_YEAR} and ${MAX_VALID_YEAR}`,
+    )
+  })
+
+  it('rejects a year beyond current year + 1', () => {
+    const form = { year: String(MAX_VALID_YEAR + 1) }
+    const errors: { year?: string } = {}
+    validateYear(form, errors)
+    expect(errors.year).toBe(
+      `Year must be between ${MIN_VALID_YEAR} and ${MAX_VALID_YEAR}`,
+    )
+  })
+
+  it('accepts current year + 1 (the boundary)', () => {
+    const form = { year: String(MAX_VALID_YEAR) }
+    const errors: { year?: string } = {}
+    validateYear(form, errors)
+    expect(errors.year).toBeUndefined()
+  })
+
+  it('accepts 1900 (the boundary)', () => {
+    const form = { year: '1900' }
+    const errors: { year?: string } = {}
+    validateYear(form, errors)
+    expect(errors.year).toBeUndefined()
   })
 })

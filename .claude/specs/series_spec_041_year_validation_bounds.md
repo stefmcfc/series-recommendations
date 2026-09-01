@@ -1,6 +1,11 @@
 # Series Spec 041: Correct `year` Validation Bounds, Fix Silent 500 on Any Range Violation
 
-**Status**: Not started
+**Status**: Implemented — `exception/GlobalExceptionHandler.java` (new `ConstraintViolationException`
+and `TransactionSystemException` handlers), `model/SeriesEntity.java` (`year`'s `@Min`/`@Max`
+bounds), `service/SeriesService.java` (new `validateYearRange`, called from `validateCreate` and
+`applyMetadataUpdates`), plus their Spock specs (`GlobalExceptionHandlerSpec`, `SeriesEntitySpec`,
+`SeriesServiceSpec`, `SeriesControllerSpec`). Paired frontend half (`frontend_spec_061`) handled
+separately.
 **Priority**: P2 (correctness bug — `year`'s upper bound is a hardcoded constant that is already
 wrong today and goes stale every year; a range violation on `year` or any other bounded numeric
 field currently returns `500 Internal Server Error` instead of a proper `400`)
@@ -215,6 +220,17 @@ confirmed unaffected.
 - **`API.md`** should note that `year` is validated against `1900`–current year + 1 (not a fixed
   upper bound), and that any range violation on a numeric field now returns `400` with a descriptive
   message rather than `500`.
+- **Discovered during implementation**: `SeriesEntity`'s actual INSERT/UPDATE is deferred to flush
+  time, and `@Transactional`'s auto-flush-then-commit happens inside `JpaTransactionManager.
+  doCommit` -- *after* `SeriesService.update`/`create` has already returned control to the
+  transactional proxy. So the `ConstraintViolationException` Hibernate throws at flush time never
+  reaches `GlobalExceptionHandler.handleConstraintViolation` directly; Spring wraps it (via a
+  `jakarta.persistence.RollbackException`) in a `org.springframework.transaction.
+  TransactionSystemException` first. `GlobalExceptionHandler` needed a second handler,
+  `handleTransactionSystemException`, that unwraps `TransactionSystemException.getRootCause()` and
+  delegates to `handleConstraintViolation` when it's a `ConstraintViolationException` -- confirmed
+  via `SeriesControllerSpec`'s real `MockMvc` PATCH test (SERIES-041-AC-01), which failed with the
+  single `ConstraintViolationException` handler alone until this was added.
 
 ## Cross-References
 
@@ -230,8 +246,8 @@ confirmed unaffected.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-041-AC-01: `ConstraintViolationException` returns `400`, not `500`
-- [ ] SERIES-041-AC-02: valid requests are unaffected by the new handler (regression guard)
-- [ ] SERIES-041-AC-03: `SeriesEntity.year`'s `@Min` corrected to `1900`, `@Max(2026)` removed
-- [ ] SERIES-041-AC-04: `create`/`update` reject `year` outside `1900`–current year + 1 via `IllegalArgumentException`
-- [ ] SERIES-041-AC-05: a `year` within bounds is still accepted (regression guard)
+- [x] SERIES-041-AC-01: `ConstraintViolationException` returns `400`, not `500`
+- [x] SERIES-041-AC-02: valid requests are unaffected by the new handler (regression guard)
+- [x] SERIES-041-AC-03: `SeriesEntity.year`'s `@Min` corrected to `1900`, `@Max(2026)` removed
+- [x] SERIES-041-AC-04: `create`/`update` reject `year` outside `1900`–current year + 1 via `IllegalArgumentException`
+- [x] SERIES-041-AC-05: a `year` within bounds is still accepted (regression guard)

@@ -89,7 +89,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
     render(
       <SeriesFormFields
         form={makeFormValues()}
-        fieldErrors={{ year: 'Year must be between 1 and 2026' }}
+        fieldErrors={{ year: 'Year must be between 1900 and 2027' }}
         updateField={() => vi.fn()}
         onPersonalRatingChange={vi.fn()}
         onPosterUrlChange={vi.fn()}
@@ -99,7 +99,7 @@ describe('TOOLING-005-AC-03: renders the shared field set', () => {
       />,
     )
     expect(
-      screen.getByText('Year must be between 1 and 2026'),
+      screen.getByText('Year must be between 1900 and 2027'),
     ).toBeInTheDocument()
   })
 

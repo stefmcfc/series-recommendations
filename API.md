@@ -49,6 +49,14 @@ Update a series (partial).
 
 Delete a series.
 
+**Validation (`series_spec_041_year_validation_bounds.md`)**: `POST`/`PATCH` reject any bounded
+numeric field outside its valid range with `400 Bad Request` and a descriptive message — this
+includes `year`, `totalSeasons`, `totalEpisodes`, `currentSeason`, `currentEpisode`, `imdbRating`,
+`rottenTomatoesRating`, and `rottenTomatoesPopcornmeter` (previously some of these returned `500
+Internal Server Error` instead). `year` specifically must be between `1900` and the current year +
+1 (resolved dynamically at request time, not a fixed upper bound) — the same convention already
+used for `yearMin`/`yearMax` on Custom Search/Recommendations (see below).
+
 ## Search & Export
 
 ### `GET /api/v1/series/search`

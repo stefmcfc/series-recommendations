@@ -27,9 +27,12 @@ public class SeriesEntity {
     @NotBlank(message = "Title is required")
     private String title;
 
+    // series_spec_041_year_validation_bounds.md (SERIES-041-AC-03): the floor (1900) is a
+    // legitimate static bound and stays here, but the dynamic upper bound (current year + 1)
+    // can't be expressed as a compile-time @Max constant -- it's enforced imperatively by
+    // SeriesService.validateYearRange instead.
     @Column(nullable = true)
-    @Min(value = 1, message = "Year must be greater than 0")
-    @Max(value = 2026, message = "Year must be <= current year")
+    @Min(value = 1900, message = "Year must be >= 1900")
     private Integer year;
 
     @Column(nullable = true, length = 500)

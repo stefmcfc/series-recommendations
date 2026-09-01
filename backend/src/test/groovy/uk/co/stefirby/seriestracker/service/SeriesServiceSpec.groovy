@@ -13,6 +13,8 @@ import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -710,5 +712,46 @@ class SeriesServiceSpec extends Specification {
 
     then: "an EntityNotFoundException is thrown"
         thrown(EntityNotFoundException)
+  }
+
+  def "SERIES-041-AC-04: create rejects a year beyond current year + 1"() {
+    given: "a fixed clock at 2026-08-31"
+        def fixedClock = Clock.fixed(Instant.parse("2026-08-31T00:00:00Z"), ZoneOffset.UTC)
+        def service = new SeriesService(seriesRepository, keywordSyncService, fixedClock)
+
+    when: "create is called with year 2028 (current year + 2)"
+        service.create(new SeriesDto(title: "Show", year: 2028))
+
+    then: "an IllegalArgumentException is thrown"
+        def ex = thrown(IllegalArgumentException)
+        ex.message.contains("1900")
+
+    when: "create is called with year 2027 (current year + 1, the boundary)"
+        def result = service.create(new SeriesDto(title: "Show 2", year: 2027))
+
+    then: "it succeeds"
+        result.year == 2027
+  }
+
+  def "SERIES-041-AC-04: update rejects a year below 1900"() {
+    given: "an existing series with no year set"
+        def existing = seriesService.create(new SeriesDto(title: "Show"))
+
+    when: "update sets year to 1899"
+        seriesService.update(existing.id, new SeriesDto(year: 1899))
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-041-AC-05: update accepts a year of exactly 1900, the boundary"() {
+    given: "an existing series with no year set"
+        def existing = seriesService.create(new SeriesDto(title: "Show"))
+
+    when: "update sets year to 1900"
+        def result = seriesService.update(existing.id, new SeriesDto(year: 1900))
+
+    then: "it succeeds"
+        result.year == 1900
   }
 }
