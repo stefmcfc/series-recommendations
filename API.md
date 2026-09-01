@@ -72,9 +72,9 @@ used for `yearMin`/`yearMax` on Custom Search/Recommendations (see below).
 
 ### `GET /api/v1/series/search`
 
-Search and filter series (`title`, `genre`, `keyword`, `status`, `minPersonalRating`,
-`minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`). Supports
-`sortBy`/`sortDirection` — see Sorting below. `yearMin`/`yearMax` use true interval-overlap
+Search and filter series (`title`, `genre`, `excludeGenre`, `keyword`, `status`,
+`minPersonalRating`, `minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`).
+Supports `sortBy`/`sortDirection` — see Sorting below. `yearMin`/`yearMax` use true interval-overlap
 matching: a series' known airing span is `[year, lastAirYear ?? year]` (`lastAirYear` is the year
 of the most recently aired episode TMDB reports, resolved at create/refresh time — `null` when
 unresolved, in which case the span collapses to `year` alone), and it matches when that span
@@ -82,6 +82,12 @@ overlaps `[yearMin, yearMax]` — so a show that started before the requested ra
 airing through it still matches. This upgrades `series_spec_037_search_filter_overhaul.md`'s
 original stopgap (which matched only the stored `year` field) — see
 `series_spec_039_last_air_year.md`.
+
+`genre` and `excludeGenre` (`series_spec_042_exclude_genres_search.md`) are both singular,
+repeatable query params (`?genre=Comedy&genre=Drama`) matched by case-insensitive substring against
+the stored `genres` field, with OR semantics across multiple values. `excludeGenre` drops any
+series whose `genres` string contains any of the requested values; a series with no genres at all
+is never excluded by it. If a series matches both `genre` and `excludeGenre`, the exclusion wins.
 
 **Breaking change (`series_spec_037`)**: `maxPersonalRating`, `maxImdbRating`, and
 `startedNotFinished` are no longer accepted — a rating floor (`min...`) is the only supported

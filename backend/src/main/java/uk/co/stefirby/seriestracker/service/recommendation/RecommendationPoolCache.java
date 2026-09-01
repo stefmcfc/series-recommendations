@@ -55,7 +55,7 @@ public class RecommendationPoolCache {
      * Returns the live (non-expired) cached value for {@code key} if one exists; otherwise calls
      * {@code loader.get()}, stores the result, and returns it (SERIES-035-AC-01/02/03).
      */
-    public List<RawCandidate> getOrCompute(PoolCacheKey key, Supplier<List<RawCandidate>> loader) {
+    List<RawCandidate> getOrCompute(PoolCacheKey key, Supplier<List<RawCandidate>> loader) {
         CacheEntry live = entries.get(key);
         if (live != null && !isExpired(live)) {
             return live.value();

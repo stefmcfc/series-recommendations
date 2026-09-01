@@ -1,6 +1,8 @@
 # Frontend Spec 063: Exclude Genre(s) Filter on `SearchFilter`
 
-**Status**: Not started
+**Status**: Implemented (`frontend/src/types/series.ts`, `frontend/src/services/seriesApi.ts`,
+`frontend/src/components/SearchFilter.tsx`, `frontend/src/components/SearchFilter.module.css`,
+`frontend/src/services/__tests__/seriesApi.test.ts`, `frontend/src/components/SearchFilter.test.tsx`)
 **Priority**: P3
 **Depends on**: Series Spec 042 (`series_spec_042_exclude_genres_search.md`, owns the
 `excludeGenres` criterion/`excludeGenre` query param this UI sends) ✅ required, Frontend Spec 055
@@ -236,8 +238,8 @@ in `initialFormState`.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-063-AC-01: `SearchCriteria` exposes `excludeGenres`
-- [ ] FRONTEND-063-AC-02: `seriesApi.search` sends `excludeGenre` query params
-- [ ] FRONTEND-063-AC-03: renders `GenreIncludeExcludePicker` wired to both genre selections
-- [ ] FRONTEND-063-AC-04: toggling a genre to include/exclude updates the submitted criteria accordingly
-- [ ] FRONTEND-063-AC-05: "Clear Filters" resets both the include and exclude genre selections
+- [x] FRONTEND-063-AC-01: `SearchCriteria` exposes `excludeGenres`
+- [x] FRONTEND-063-AC-02: `seriesApi.search` sends `excludeGenre` query params
+- [x] FRONTEND-063-AC-03: renders `GenreIncludeExcludePicker` wired to both genre selections
+- [x] FRONTEND-063-AC-04: toggling a genre to include/exclude updates the submitted criteria accordingly
+- [x] FRONTEND-063-AC-05: "Clear Filters" resets both the include and exclude genre selections

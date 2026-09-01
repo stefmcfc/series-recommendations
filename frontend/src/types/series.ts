@@ -193,6 +193,9 @@ export interface RecommendationQuery {
 export interface SearchCriteria {
   title?: string
   genres?: string[]
+  // FRONTEND-063/SERIES-042: mirrors the existing `genres` field's shape
+  // exactly -- sent as the `excludeGenre` query param by buildSearchParams.
+  excludeGenres?: string[]
   keywords?: string[]
   status?: SeriesStatus
   minPersonalRating?: number

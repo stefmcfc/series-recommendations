@@ -115,6 +115,10 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   const params: Record<string, unknown> = {}
   if (criteria.title != null) params.title = criteria.title
   if (criteria.genres?.length) params.genre = criteria.genres
+  // FRONTEND-063-AC-02/SERIES-042-AC-06: excludeGenre (singular, repeatable),
+  // matching the existing genre param's convention.
+  if (criteria.excludeGenres?.length)
+    params.excludeGenre = criteria.excludeGenres
   if (criteria.keywords?.length) params.keyword = criteria.keywords
   if (criteria.status != null) params.status = criteria.status
   if (criteria.minPersonalRating != null)

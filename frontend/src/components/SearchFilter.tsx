@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { SearchCriteria } from '../types/series'
+import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { KeywordPicker } from './KeywordPicker'
 import { StarRating } from './StarRating'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
@@ -14,6 +15,10 @@ interface SearchFilterProps {
 interface FormState {
   title: string
   genresSelected: string[]
+  // FRONTEND-063-AC-03: exclude-side selection for the shared
+  // GenreIncludeExcludePicker, alongside the existing genresSelected
+  // (include-side).
+  excludeGenresSelected: string[]
   keywordsSelected: string[]
   // FRONTEND-055-AC-06: number|null (not string) to match StarRating's own
   // value/onChange shape directly -- no string parsing needed for this
@@ -29,6 +34,7 @@ interface FormState {
 const initialFormState: FormState = {
   title: '',
   genresSelected: [],
+  excludeGenresSelected: [],
   keywordsSelected: [],
   minPersonalRating: null,
   minImdbRating: '',
@@ -44,6 +50,9 @@ function buildCriteria(form: FormState): SearchCriteria {
   if (form.title.trim() !== '') criteria.title = form.title.trim()
 
   if (form.genresSelected.length > 0) criteria.genres = form.genresSelected
+
+  if (form.excludeGenresSelected.length > 0)
+    criteria.excludeGenres = form.excludeGenresSelected
 
   if (form.keywordsSelected.length > 0)
     criteria.keywords = form.keywordsSelected
@@ -119,16 +128,16 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
       setForm((prev) => ({ ...prev, [field]: event.target.checked }))
     }
 
-  const handleGenreToggle =
-    (genre: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = event.target.checked
-      setForm((prev) => ({
-        ...prev,
-        genresSelected: checked
-          ? [...prev.genresSelected, genre]
-          : prev.genresSelected.filter((g) => g !== genre),
-      }))
-    }
+  const handleGenresChange = (next: {
+    included: string[]
+    excluded: string[]
+  }) => {
+    setForm((prev) => ({
+      ...prev,
+      genresSelected: next.included,
+      excludeGenresSelected: next.excluded,
+    }))
+  }
 
   const handleKeywordsChange = (next: string[]) => {
     setForm((prev) => ({ ...prev, keywordsSelected: next }))
@@ -176,26 +185,14 @@ export function SearchFilter({ onSearch, onClear }: SearchFilterProps) {
               </div>
 
               <div className={styles.field}>
-                <span>Genres</span>
-                <div className={styles.seriesPicker}>
-                  {genreOptions.length === 0 ? (
-                    <p className={styles.hint}>No genres to choose from yet.</p>
-                  ) : (
-                    genreOptions.map((genre) => (
-                      <div key={genre} className={styles.seriesOption}>
-                        <input
-                          id={`genre-checkbox-${genre}`}
-                          type="checkbox"
-                          checked={form.genresSelected.includes(genre)}
-                          onChange={handleGenreToggle(genre)}
-                        />
-                        <label htmlFor={`genre-checkbox-${genre}`}>
-                          {genre}
-                        </label>
-                      </div>
-                    ))
-                  )}
-                </div>
+                <GenreIncludeExcludePicker
+                  idPrefix="search-filter-genre"
+                  label="Genres"
+                  genreOptions={genreOptions}
+                  included={form.genresSelected}
+                  excluded={form.excludeGenresSelected}
+                  onChange={handleGenresChange}
+                />
               </div>
 
               <div className={styles.field}>

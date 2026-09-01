@@ -330,6 +330,32 @@ describe('SH-006: search', () => {
   })
 })
 
+describe('FRONTEND-063-AC-02: buildSearchParams sends excludeGenre', () => {
+  it('includes excludeGenre when excludeGenres is set', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ excludeGenres: ['Comedy', 'Horror'] })
+
+    expect(client.get).toHaveBeenCalledWith(
+      '/series/search',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          excludeGenre: ['Comedy', 'Horror'],
+        }),
+      }),
+    )
+  })
+
+  it('omits excludeGenre when excludeGenres is empty/absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({})
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params).not.toHaveProperty('excludeGenre')
+  })
+})
+
 // ---------------------------------------------------------------------------
 // FRONTEND-023-AC-03: refresh(), refreshAll(), getRefreshStatus()
 // ---------------------------------------------------------------------------
