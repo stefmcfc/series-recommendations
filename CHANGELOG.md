@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Backend: Recommendations' "Exclude Genres" output filter now correctly excludes a candidate when given an alias genre name (e.g. `"Action"`, the same vocabulary the "Genres" field itself shows) — it previously compared against TMDB's canonical display names (e.g. `"Action & Adventure"`) instead, so it silently excluded nothing (`series_spec_043`).
+
+### Added
+
+- Frontend: new shared `GenreIncludeExcludePicker` component — a modal listing every genre with a single toggle per genre cycling neutral/include/exclude, mutually exclusive by construction (`frontend_spec_067`). Not yet wired into any screen; lands in a future entry once `frontend_spec_063`/`068`/`069` adopt it.
+
 ## [3.7.0] - 2026-09-01
 
 ### Added

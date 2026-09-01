@@ -1,6 +1,6 @@
 # Series Spec 043: Fix Exclude Genres Vocabulary Mismatch in `RecommendationOutputFilterService`
 
-**Status**: Not started
+**Status**: Implemented — `backend/src/main/java/uk/co/stefirby/seriestracker/service/recommendation/RecommendationOutputFilterService.java` (`matchesExcludeGenres`), tests in `backend/src/test/groovy/uk/co/stefirby/seriestracker/service/recommendation/RecommendationOutputFilterServiceSpec.groovy`
 **Priority**: P2
 **Depends on**: Series Spec 007 (`series_spec_007_recommendation_sourcing.md`, owns
 `RecommendationOutputFilterService.matchesExcludeGenres`, the method this spec fixes) ✅ required,
@@ -190,7 +190,7 @@ return, unchanged.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-043-AC-01: an alias-name exclude value excludes a candidate carrying its resolved id
-- [ ] SERIES-043-AC-02: an unresolvable excludeGenres entry is skipped, not an error
-- [ ] SERIES-043-AC-03: a candidate with no genres is never excluded
-- [ ] SERIES-043-AC-04: empty/absent excludeGenres remains a no-op
+- [x] SERIES-043-AC-01: an alias-name exclude value excludes a candidate carrying its resolved id
+- [x] SERIES-043-AC-02: an unresolvable excludeGenres entry is skipped, not an error
+- [x] SERIES-043-AC-03: a candidate with no genres is never excluded
+- [x] SERIES-043-AC-04: empty/absent excludeGenres remains a no-op

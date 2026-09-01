@@ -85,27 +85,23 @@ corrected below.
 | Recommendation candidate details (season/episode counts, IMDb rating) — new endpoint | `series_spec_036`                    | —                                               | ✅ Done                                                                                         |
 | Recommendation candidate detail modal ("View Details," replaces "Show keywords" on the shared `RecommendationCard`) | —                                    | `frontend_spec_053`                            | ✅ Done                                                                                         |
 | `formatSeriesYear` shows an open-ended range for a returning show whose aired span is a single year (previously collapsed to a bare year, reading as already-finished) — supersedes `FRONTEND-058-AC-01` | —                                    | `frontend_spec_066`                            | ✅ Done                                                                                         |
+| Fix Exclude Genres vocabulary mismatch in Recs output filter — compares TMDB genre ids now, not canonical display-name strings against alias input | `series_spec_043`                    | —                                              | ✅ Done                                                                                         |
+| Shared `GenreIncludeExcludePicker` — one toggle-per-genre modal replacing separate include/exclude genre checkbox fieldsets, mutual exclusivity by construction (not yet wired into any consumer — see `frontend_spec_063`/`068`/`069` below) | —                                    | `frontend_spec_067`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains:
-`frontend_spec_043→frontend_spec_045`, `series_spec_030→frontend_spec_044`,
-`series_spec_038→frontend_spec_057`, `frontend_spec_067→frontend_spec_063`,
-`frontend_spec_067→frontend_spec_069`, and `frontend_spec_067`+`series_spec_044`→`frontend_spec_068`
-(the exclude-genres consolidation's own chains — spelled out with full spec names rather than bare
-numbers here since it introduced a `series_spec_043`/`044` that would otherwise collide, in this
-prose only, with the pre-existing `frontend_spec_043`/`044`/`045`). Rows within a chain must build
-in the listed order; the chains themselves (and the fully-standalone rows — `frontend_spec_051`,
-`frontend_spec_064`, `frontend_spec_065`) have no dependencies on each other and can be reordered
+`frontend_spec_043→frontend_spec_045`, `series_spec_030→frontend_spec_044`, and
+`series_spec_038→frontend_spec_057`. Rows within a chain must build in the listed order; the chains
+themselves (and the fully-standalone rows — `frontend_spec_051`, `frontend_spec_063`,
+`frontend_spec_064`, `frontend_spec_065`, `series_spec_044`, `frontend_spec_068`,
+`frontend_spec_069`) have no dependencies on each other *within this table* and can be reordered
 freely as a block if priorities change — but re-check priority order too when doing so, since this
-table's row order isn't just dependency-derived anymore. **Branch grouping vs. dependency**:
-`series_spec_043` has no code dependency on `frontend_spec_067` (or anything else), but per a
-2026-09-01 branching decision the two ship in the same branch anyway — both are small, independent,
-touch disjoint files, and bundling them doesn't create the chained-branch/orphaned-child-PR risk
-this project's git workflow rule (`CLAUDE.md`) otherwise guards against, since neither is a parent
-the other three exclude-genres rows below build on top of (that's `frontend_spec_067` alone). Their
-Depends On cells note this explicitly so it isn't mistaken for a real code dependency. (The former 041→042 chain, the standalone 048, 054, and 062, the
+table's row order isn't just dependency-derived anymore. (`frontend_spec_063`/`068`/`069` each still
+depend on `frontend_spec_067` per their own Depends On cells — that dependency is just already
+satisfied, since `frontend_spec_067` shipped 2026-09-01 alongside `series_spec_043`, bundled into one
+branch despite having no code dependency on each other; see the table above.) (The former 041→042 chain, the standalone 048, 054, and 062, the
 052→053 chain fed by standalone 036 (all three now delivered), the full
 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the `037→039→058` year-range
 leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and frontend both — are fully
@@ -113,17 +109,15 @@ delivered; see the table above.)
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| Fix Exclude Genres vocabulary mismatch in Recs output filter — compares TMDB genre ids now, not canonical display-name strings against alias input | `series_spec_043` | — | — (no code dependency; ships in the same branch as `frontend_spec_067`, branch-only bundling) | 🟧 P2 · ⬜ Not started |
 | Confirm before discarding unsaved changes on Cancel/Escape (AddSeriesForm/EditSeriesForm) | —                 | `frontend_spec_043` | —                                                                                                         | 🟨 P3 · ⬜ Not started |
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Specific Series picker "Select all" / "Clear all" bulk actions | — | `frontend_spec_051` | `frontend_spec_035` (already delivered — effectively standalone within this table) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
-| Shared `GenreIncludeExcludePicker` — one toggle-per-genre modal replacing separate include/exclude genre checkbox fieldsets, mutual exclusivity by construction | — | `frontend_spec_067` | — (standalone; ships in the same branch as `series_spec_043`, branch-only bundling, no code dependency; consumed by the three rows below) | 🟨 P3 · ⬜ Not started |
-| Exclude Genre(s) filter on the My Series list (`SearchFilter`), mirroring the existing Recs-side field | `series_spec_042` | `frontend_spec_063` | `frontend_spec_067` (shared picker) | 🟨 P3 · ⬜ Not started |
+| Exclude Genre(s) filter on the My Series list (`SearchFilter`), mirroring the existing Recs-side field | `series_spec_042` | `frontend_spec_063` | `frontend_spec_067` (shared picker, ✅ delivered above) | 🟨 P3 · ⬜ Not started |
 | Custom Search exclude genres becomes a pre-TMDB `without_genres` `discover/tv` filter, alongside the existing post-fetch check | `series_spec_044` | — | — (standalone; `frontend_spec_068` is what surfaces `excludeGenres` for Custom Search) | 🟨 P3 · ⬜ Not started |
-| Recommendations' Exclude Genres becomes the shared genre picker — combined include/exclude in Custom Search, exclude-only elsewhere — replacing free text | — | `frontend_spec_068` | `frontend_spec_067`, `series_spec_044` | 🟨 P3 · ⬜ Not started |
-| "Use My Series" source picker gains Exclude Genre(s) (client-side, narrows the candidate pool) | — | `frontend_spec_069` | `frontend_spec_067` | 🟨 P3 · ⬜ Not started |
+| Recommendations' Exclude Genres becomes the shared genre picker — combined include/exclude in Custom Search, exclude-only elsewhere — replacing free text | — | `frontend_spec_068` | `frontend_spec_067` (✅ delivered above), `series_spec_044` | 🟨 P3 · ⬜ Not started |
+| "Use My Series" source picker gains Exclude Genre(s) (client-side, narrows the candidate pool) | — | `frontend_spec_069` | `frontend_spec_067` (✅ delivered above) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
 | Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | — (standalone) | 🟩 P4 · ⬜ Not started |
 

@@ -1,6 +1,6 @@
 # Frontend Spec 067: Shared `GenreIncludeExcludePicker` Component
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/GenreIncludeExcludePicker.tsx`, `GenreIncludeExcludePicker.module.css`, `GenreIncludeExcludePicker.test.tsx`
 **Priority**: P3
 **Depends on**: none (net-new, self-contained component)
 **Area**: Frontend (`components/GenreIncludeExcludePicker.tsx`, new)
@@ -419,13 +419,13 @@ describe('FRONTEND-067-AC-10: overlapping props resolve to exclude', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-067-AC-01: renders a closed-by-default trigger button
-- [ ] FRONTEND-067-AC-02: trigger button summarizes the current selection
-- [ ] FRONTEND-067-AC-03: clicking the trigger opens a modal listing every genre option
-- [ ] FRONTEND-067-AC-04: `includeExclude` mode — neutral click adds to `included`
-- [ ] FRONTEND-067-AC-05: include click moves the genre to `excluded`
-- [ ] FRONTEND-067-AC-06: exclude click returns the genre to neutral
-- [ ] FRONTEND-067-AC-07: `excludeOnly` mode skips the include state entirely
-- [ ] FRONTEND-067-AC-08: "Clear" resets both lists to empty
-- [ ] FRONTEND-067-AC-09: "Done" and Escape close the modal without changing the selection
-- [ ] FRONTEND-067-AC-10: a genre present in both props renders as excluded
+- [x] FRONTEND-067-AC-01: renders a closed-by-default trigger button
+- [x] FRONTEND-067-AC-02: trigger button summarizes the current selection
+- [x] FRONTEND-067-AC-03: clicking the trigger opens a modal listing every genre option
+- [x] FRONTEND-067-AC-04: `includeExclude` mode — neutral click adds to `included`
+- [x] FRONTEND-067-AC-05: include click moves the genre to `excluded`
+- [x] FRONTEND-067-AC-06: exclude click returns the genre to neutral
+- [x] FRONTEND-067-AC-07: `excludeOnly` mode skips the include state entirely
+- [x] FRONTEND-067-AC-08: "Clear" resets both lists to empty
+- [x] FRONTEND-067-AC-09: "Done" and Escape close the modal without changing the selection
+- [x] FRONTEND-067-AC-10: a genre present in both props renders as excluded
