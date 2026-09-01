@@ -8,6 +8,7 @@ import {
   LANGUAGE_PINNED_CODES,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
+import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import styles from './RecommendationControls.module.css'
 
 interface CustomSearchPanelProps {
@@ -30,16 +31,6 @@ export function CustomSearchPanel({
   const showGenreKeywordHint =
     state.genresSelected.length === 0 && state.keywordsSelected.length === 0
 
-  const handleGenreToggle =
-    (genre: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = event.target.checked
-      updateState({
-        genresSelected: checked
-          ? [...state.genresSelected, genre]
-          : state.genresSelected.filter((g) => g !== genre),
-      })
-    }
-
   const updateField =
     (field: keyof ControlsState) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -54,25 +45,25 @@ export function CustomSearchPanel({
       className={styles.tabPanel}
     >
       <div className={styles.genreKeywordFields}>
+        {/* FRONTEND-068-AC-02: combined include/exclude Genres picker,
+            replacing the former include-only checkbox fieldset -- one
+            control now covers both `genres` and `excludeGenres`, mutual
+            exclusivity guaranteed by GenreIncludeExcludePicker itself
+            (frontend_spec_067). */}
         <div className={styles.field}>
-          <span>Genres</span>
-          <div className={styles.seriesPicker}>
-            {genreOptions.length === 0 ? (
-              <p className={styles.hint}>No genres to choose from yet.</p>
-            ) : (
-              genreOptions.map((genre) => (
-                <div key={genre} className={styles.seriesOption}>
-                  <input
-                    id={`genre-checkbox-${genre}`}
-                    type="checkbox"
-                    checked={state.genresSelected.includes(genre)}
-                    onChange={handleGenreToggle(genre)}
-                  />
-                  <label htmlFor={`genre-checkbox-${genre}`}>{genre}</label>
-                </div>
-              ))
-            )}
-          </div>
+          <GenreIncludeExcludePicker
+            idPrefix="custom-search-genre"
+            label="Genres"
+            genreOptions={genreOptions}
+            included={state.genresSelected}
+            excluded={state.excludeGenresSelected}
+            onChange={({ included, excluded }) =>
+              updateState({
+                genresSelected: included,
+                excludeGenresSelected: excluded,
+              })
+            }
+          />
         </div>
         <div className={styles.field}>
           <KeywordPicker
