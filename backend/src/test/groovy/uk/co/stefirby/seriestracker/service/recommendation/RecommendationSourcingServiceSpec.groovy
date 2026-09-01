@@ -10,6 +10,7 @@ import uk.co.stefirby.seriestracker.repository.SeriesRepository
 import uk.co.stefirby.seriestracker.service.TmdbGenreTable
 import spock.lang.Specification
 
+import java.time.Clock
 import java.time.LocalDateTime
 
 class RecommendationSourcingServiceSpec extends Specification {
@@ -18,7 +19,8 @@ class RecommendationSourcingServiceSpec extends Specification {
     TmdbClient tmdbClient = Mock()
 
     RecommendationSourcingService sourcingService =
-        new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200)
+        new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
+            new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -247,7 +249,8 @@ class RecommendationSourcingServiceSpec extends Specification {
 
     def "SERIES-007-AC-01: max-source-series cap is configurable via constructor"() {
         given: "a sourcing service configured with maxSourceSeries=2, and 3 eligible COMPLETED series"
-            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 2, 200)
+            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 2, 200,
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
             def now = LocalDateTime.now()
             def sources = (1..3).collect {
                 completedSeries("Show ${it}", "tt${it.toString().padLeft(7, '0')}", now.minusDays(it))
@@ -326,7 +329,8 @@ class RecommendationSourcingServiceSpec extends Specification {
 
     def "SERIES-007-AC-11: an explicit seriesIds pool larger than max-source-series is ordered and truncated"() {
         given: "a sourcing service configured with maxSourceSeries=1, and two selected series with different personalRatings"
-            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 1, 200)
+            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 1, 200,
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
             def low = completedSeries("Low", "tt0000001", LocalDateTime.now(), null, 2)
             low.id = UUID.randomUUID()
             def high = completedSeries("High", "tt0000002", LocalDateTime.now(), null, 5)
@@ -536,7 +540,8 @@ class RecommendationSourcingServiceSpec extends Specification {
 
     def "SERIES-029-AC-07: sourceByGenreOrKeyword sources via discover with the configured 200 default when minVoteCount is unset"() {
         given: "a sourcing service with defaultMinVoteCount=200"
-            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200)
+            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
             def criteria = new RecommendationCriteria(genres: ["Crime"])
 
         when: "sourceByGenreOrKeyword is called with genres=['Crime'], no minVoteCount"
@@ -548,7 +553,8 @@ class RecommendationSourcingServiceSpec extends Specification {
 
     def "SERIES-029-AC-07/SERIES-029-AC-09: an explicit minVoteCount overrides the 200 default"() {
         given: "a sourcing service with defaultMinVoteCount=200"
-            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200)
+            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
             def criteria = new RecommendationCriteria(genres: ["Crime"], minVoteCount: 5)
 
         when: "sourceByGenreOrKeyword is called with genres=['Crime'], minVoteCount=5"
@@ -663,5 +669,55 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", { DiscoverFilters f ->
                 f.minTmdbRating() == null && f.yearMin() == null && f.yearMax() == null
             }) >> []
+    }
+
+    // -- Spec 035, Requirement 2 (SERIES-035-AC-06/07/08): sourceFromPool resolves through the pool cache --
+
+    def "SERIES-035-AC-06: sourceFromPool resolves its result through the pool cache"() {
+        given: "a real pool cache and one eligible COMPLETED series"
+            def poolCache = new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)
+            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache)
+            def source = completedSeries("Breaking Bad", "tt0903747", LocalDateTime.now())
+            seriesRepository.findAll() >> [source]
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.recommendations(1396) >> [candidate(2316)]
+
+        when: "sourceFromPool is called twice with an identical criteria/limit"
+            sourcing.sourceFromPool(new RecommendationCriteria(), 20)
+            sourcing.sourceFromPool(new RecommendationCriteria(), 20)
+
+        then: "TMDB is only consulted once -- the second call was a cache hit"
+            1 * tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+    }
+
+    def "SERIES-035-AC-07: a sortBy-only change is a cache hit, not a re-fetch"() {
+        given: "a real pool cache and one eligible COMPLETED series"
+            def poolCache = new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)
+            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache)
+            def source = completedSeries("Breaking Bad", "tt0903747", LocalDateTime.now())
+            seriesRepository.findAll() >> [source]
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.recommendations(1396) >> [candidate(2316)]
+
+        when: "sourceFromPool is called with sortBy=score, then again with sortBy=recommendationCount"
+            sourcing.sourceFromPool(new RecommendationCriteria(sortBy: "score"), 20)
+            sourcing.sourceFromPool(new RecommendationCriteria(sortBy: "recommendationCount"), 20)
+
+        then: "TMDB is only consulted on the first call"
+            1 * tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+    }
+
+    def "SERIES-035-AC-08: trending/topRated/genre-directed sourcing remain uncached (regression guard)"() {
+        given: "a real pool cache shared with the sourcing service under test"
+            def poolCache = new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)
+            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache)
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+
+        when: "sourceByGenreOrKeyword is called twice with identical criteria"
+            sourcing.sourceByGenreOrKeyword(criteria)
+            sourcing.sourceByGenreOrKeyword(criteria)
+
+        then: "TMDB is consulted on every call -- no caching leaked into this path"
+            2 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
     }
 }

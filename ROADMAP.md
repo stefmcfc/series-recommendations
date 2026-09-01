@@ -80,23 +80,23 @@ corrected below.
 | `excludeFromRecommendations` enforced for explicit series selection (reverses `SERIES-008-AC-05`), Specific Series picker enforcement, `SeriesList` visual indicator | `series_spec_034`                    | `frontend_spec_050`                            | ✅ Done                                                                                         |
 | Correct `year` validation to `1900`–current year + 1 (matching `yearBounds.ts`/`RecommendationCriteriaValidator`); fix `ConstraintViolationException`/`TransactionSystemException` silently returning `500` instead of `400` | `series_spec_041`                    | `frontend_spec_061`                            | ✅ Done                                                                                         |
 | Lock TMDB-managed fields (Title/Year/Genres/Total Seasons/Total Episodes/IMDb Rating) from manual edit once set; refresh extended to also sync Title/Year/Genres and always overwrites all six | `series_spec_040`                    | `frontend_spec_060`                            | ✅ Done                                                                                         |
+| Cache "Use My Series" sourced candidate pool (TTL/capacity-bounded, keyed on seriesIds/minSourceRating/limit) — a sortBy-only or output-filter-only change is now a cache hit, not a TMDB re-fetch | `series_spec_035`                    | —                                               | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains:
 `043→045`, `030→044`, `052→053` (fed by standalone `036`), and `038→057`. Rows within a chain must
-build in the listed order; the chains themselves (and the fully-standalone rows — `035`, `051`,
-`042`/`063`, `064`, `065`) have no dependencies on each other and can be reordered freely as a
-block if priorities change — but re-check priority order too when doing so, since this table's row
-order isn't just dependency-derived anymore. (The former 041→042 chain, the standalone 048, 054,
-and 062, the full 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the
-`037→039→058` year-range leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and
-frontend both — are fully delivered; see the table above.)
+build in the listed order; the chains themselves (and the fully-standalone rows — `051`, `042`/
+`063`, `064`, `065`) have no dependencies on each other and can be reordered freely as a block if
+priorities change — but re-check priority order too when doing so, since this table's row order
+isn't just dependency-derived anymore. (The former 041→042 chain, the standalone 048, 054, and 062, the full
+031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the `037→039→058` year-range
+leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and frontend both — are fully
+delivered; see the table above.)
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| "Use My Series" pool-based sourcing cached (TTL-bounded, keyed on seriesIds/minSourceRating/limit) — sort-only and output-filter-only changes skip re-fetching TMDB | `series_spec_035` | — | — (standalone) | 🟧 P2 · ⬜ Not started |
 | Confirm before discarding unsaved changes on Cancel/Escape (AddSeriesForm/EditSeriesForm) | —                 | `frontend_spec_043` | —                                                                                                         | 🟨 P3 · ⬜ Not started |
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
