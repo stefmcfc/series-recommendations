@@ -8,6 +8,18 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-09-01
+
+### Added
+
+- Frontend: `EditSeriesForm` shows an inline "Managed by refresh — use Refresh to update" hint next to Title, Year, Genres, Total Seasons, Total Episodes, and IMDb Rating whenever that field already has a value, explaining why it's disabled (`frontend_spec_060`).
+
+### Changed
+
+- Backend: `PATCH /api/v1/series/{id}` now silently ignores an attempted change to `title`, `year`, `genres`, `totalSeasons`, `totalEpisodes`, or `imdbRating` once each already has a value — those fields are TMDB/OMDb-managed and can only be updated by refreshing the series afterward (`series_spec_040`). `title` is effectively always locked (a series always has a non-blank title once created).
+- Backend: refreshing a series now also syncs `title`, `year`, and `genres` from TMDB (previously only `totalSeasons`/`totalEpisodes`/`tmdbRating`/etc were refreshed) — this is now the only way to correct those three fields once set, so refresh had to gain the ability to keep them current (`series_spec_040`, partially reverses `SERIES-018-AC-04`).
+- Frontend: `EditSeriesForm`'s Title input is now always disabled — a series can no longer be renamed by hand, only by refreshing it against TMDB's current title (`frontend_spec_060`).
+
 ## [3.4.1] - 2026-09-01
 
 ### Fixed

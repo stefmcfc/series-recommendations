@@ -12,6 +12,7 @@ import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import uk.co.stefirby.seriestracker.service.KeywordSyncService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
+import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,10 +32,13 @@ import java.util.UUID;
  * {@code tmdbId}) and the narrowed OMDb ratings-only call, updating only the external-data
  * fields each source owns. Either source failing is independently non-fatal
  * (SERIES-018-AC-05/AC-06) -- a partial success is saved, not rolled back
- * (SERIES-018-AC-08). {@code title}, {@code genres}, {@code posterUrl}, {@code
- * personalRating}, {@code personalNotes}, {@code status}, {@code currentSeason}, {@code
- * currentEpisode}, {@code imdbId}, {@code dateAdded}, and {@code dateCompleted} are never
- * touched (SERIES-018-AC-04).
+ * (SERIES-018-AC-08). {@code posterUrl}, {@code personalRating}, {@code personalNotes}, {@code
+ * status}, {@code currentSeason}, {@code currentEpisode}, {@code imdbId}, {@code dateAdded},
+ * and {@code dateCompleted} are never touched (SERIES-018-AC-04). {@code title}/{@code genres}
+ * (alongside {@code year}) were also once in that never-touched list, but
+ * {@code series_spec_040_tmdb_managed_field_lock.md} (SERIES-040-AC-04) now has this method
+ * keep them in sync with TMDB too, since a manual edit to those three is locked out once set
+ * (SERIES-040-AC-01) -- a refresh is the only way left to correct them.
  */
 @Service
 public class SeriesRefreshService {
@@ -46,16 +50,19 @@ public class SeriesRefreshService {
     private final OmdbClient omdbClient;
     private final SeriesService seriesService;
     private final KeywordSyncService keywordSyncService;
+    private final TmdbGenreTable genreTable;
     private final Clock clock;
 
     public SeriesRefreshService(SeriesRepository repository, TmdbClient tmdbClient,
                                  OmdbClient omdbClient, SeriesService seriesService,
-                                 KeywordSyncService keywordSyncService, Clock clock) {
+                                 KeywordSyncService keywordSyncService, TmdbGenreTable genreTable,
+                                 Clock clock) {
         this.repository = repository;
         this.tmdbClient = tmdbClient;
         this.omdbClient = omdbClient;
         this.seriesService = seriesService;
         this.keywordSyncService = keywordSyncService;
+        this.genreTable = genreTable;
         this.clock = clock;
     }
 
@@ -127,11 +134,15 @@ public class SeriesRefreshService {
     }
 
     /**
-     * Updates {@code totalSeasons}/{@code totalEpisodes}/{@code tmdbRating}/{@code
-     * tmdbVoteCount}/{@code productionStatus}/{@code originCountry}/{@code overview}/{@code
-     * lastAirYear} from a fresh TMDB detail lookup (SERIES-018-AC-02, {@code originCountry} per
-     * SERIES-021-AC-09, {@code overview} per SERIES-023-AC-13, {@code lastAirYear} per
-     * SERIES-039-AC-04), and reconciles
+     * Updates {@code title}/{@code year}/{@code genres}/{@code totalSeasons}/{@code
+     * totalEpisodes}/{@code tmdbRating}/{@code tmdbVoteCount}/{@code productionStatus}/{@code
+     * originCountry}/{@code overview}/{@code lastAirYear} from a fresh TMDB detail lookup
+     * (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09, {@code overview} per
+     * SERIES-023-AC-13, {@code lastAirYear} per SERIES-039-AC-04, {@code title}/{@code year}/
+     * {@code genres} per {@code series_spec_040_tmdb_managed_field_lock.md} SERIES-040-AC-04 --
+     * applied unconditionally regardless of the entity's current value, unlike a manual
+     * {@code SeriesService.update}, which SERIES-040-AC-01 locks out once each is non-null), and
+     * reconciles
      * {@code keywords} via {@link KeywordSyncService#syncKeywords} using the same resolved
      * {@code tmdbId} (SERIES-019-AC-08). Returns {@code false} without attempting a lookup
      * when the entity has no {@code imdbId} to resolve a {@code tmdbId} from, or when TMDB is
@@ -152,6 +163,19 @@ public class SeriesRefreshService {
             // entity's existing value unchanged rather than wiping it -- a refresh should never
             // be able to blank out data that's already been recorded, just because today's
             // response happens not to include it.
+            // series_spec_040_tmdb_managed_field_lock.md (SERIES-040-AC-04/05): title/year/
+            // genres are now kept in sync here too, unconditionally overwriting whatever the
+            // entity's current value is -- this is the one path SERIES-040-AC-01's manual-edit
+            // lock doesn't apply to.
+            if (detail.title() != null) {
+                entity.setTitle(detail.title());
+            }
+            if (detail.year() != null) {
+                entity.setYear(detail.year());
+            }
+            if (detail.genreIds() != null && !detail.genreIds().isEmpty()) {
+                entity.setGenres(genreTable.joinDisplayNames(detail.genreIds()));
+            }
             if (detail.numberOfSeasons() != null) {
                 entity.setTotalSeasons(detail.numberOfSeasons());
             }

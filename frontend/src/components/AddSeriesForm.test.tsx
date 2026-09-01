@@ -1265,3 +1265,43 @@ describe('FRONTEND-034-AC-06: submitted payload is unaffected under source=recom
     expect(payload.status).toBe(SeriesStatus.BACKLOG)
   })
 })
+
+describe('FRONTEND-060-AC-04: unaffected by the TMDB-managed field lock (regression guard)', () => {
+  it('leaves Year, Genres, Total Seasons, Total Episodes, and IMDb Rating fully enabled with no locked hint, regardless of typed values', () => {
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^year/i), {
+      target: { value: '2024' },
+    })
+    fireEvent.change(screen.getByLabelText(/^genres/i), {
+      target: { value: 'Drama' },
+    })
+    fireEvent.change(screen.getByLabelText(/total seasons/i), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByLabelText(/total episodes/i), {
+      target: { value: '10' },
+    })
+    fireEvent.change(screen.getByLabelText(/^imdb rating/i), {
+      target: { value: '9.1' },
+    })
+
+    expect(screen.getByLabelText(/^year/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/^genres/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/total seasons/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/total episodes/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/^imdb rating/i)).not.toBeDisabled()
+
+    for (const field of [
+      'year',
+      'genres',
+      'totalSeasons',
+      'totalEpisodes',
+      'imdbRating',
+    ]) {
+      expect(
+        screen.queryByTestId(`${field}-locked-hint`),
+      ).not.toBeInTheDocument()
+    }
+  })
+})

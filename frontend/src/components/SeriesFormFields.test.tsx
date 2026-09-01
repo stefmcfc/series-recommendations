@@ -235,3 +235,86 @@ describe('FRONTEND-034-AC-03/04: source=recommendation trims fields and locks St
     ).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-060-AC-01/02/04: lockedFields disables managed inputs with a hint', () => {
+  it('disables Year, Genres, Total Seasons, Total Episodes, and IMDb Rating when locked, each with a hint', () => {
+    render(
+      <SeriesFormFields
+        form={makeFormValues()}
+        fieldErrors={{}}
+        updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        lockedFields={{
+          year: true,
+          genres: true,
+          totalSeasons: true,
+          totalEpisodes: true,
+          imdbRating: true,
+        }}
+      />,
+    )
+
+    expect(screen.getByLabelText(/^year/i)).toBeDisabled()
+    expect(screen.getByLabelText(/^genres/i)).toBeDisabled()
+    expect(screen.getByLabelText(/total seasons/i)).toBeDisabled()
+    expect(screen.getByLabelText(/total episodes/i)).toBeDisabled()
+    expect(screen.getByLabelText(/^imdb rating/i)).toBeDisabled()
+
+    for (const field of [
+      'year',
+      'genres',
+      'totalSeasons',
+      'totalEpisodes',
+      'imdbRating',
+    ]) {
+      expect(screen.getByTestId(`${field}-locked-hint`)).toHaveTextContent(
+        'Managed by refresh — use Refresh to update',
+      )
+    }
+  })
+
+  it('leaves fields enabled with no hint when lockedFields is undefined (AddSeriesForm regression guard)', () => {
+    renderFields()
+
+    expect(screen.getByLabelText(/^year/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/^genres/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/total seasons/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/total episodes/i)).not.toBeDisabled()
+    expect(screen.getByLabelText(/^imdb rating/i)).not.toBeDisabled()
+
+    for (const field of [
+      'year',
+      'genres',
+      'totalSeasons',
+      'totalEpisodes',
+      'imdbRating',
+    ]) {
+      expect(
+        screen.queryByTestId(`${field}-locked-hint`),
+      ).not.toBeInTheDocument()
+    }
+  })
+
+  it('leaves a field with an explicit false lockedFields entry enabled with no hint', () => {
+    render(
+      <SeriesFormFields
+        form={makeFormValues()}
+        fieldErrors={{}}
+        updateField={() => vi.fn()}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        lockedFields={{ year: false }}
+      />,
+    )
+
+    expect(screen.getByLabelText(/^year/i)).not.toBeDisabled()
+    expect(screen.queryByTestId('year-locked-hint')).not.toBeInTheDocument()
+  })
+})

@@ -754,4 +754,74 @@ class SeriesServiceSpec extends Specification {
     then: "it succeeds"
         result.year == 1900
   }
+
+  def "SERIES-040-AC-01: update cannot change year once it is already set"() {
+    given: "an existing series with year = 2019"
+        def existing = seriesService.create(new SeriesDto(title: "Show", year: 2019))
+
+    when: "update attempts to change year to 2020, alongside an unrelated field change"
+        seriesService.update(existing.id, new SeriesDto(title: "Show", year: 2020, personalNotes: "great"))
+
+    then: "year is unchanged, but the unrelated field still applied"
+        def result = seriesService.getById(existing.id)
+        result.year == 2019
+        result.personalNotes == "great"
+  }
+
+  def "SERIES-040-AC-01: update cannot change genres/totalSeasons/totalEpisodes/imdbRating once already set"() {
+    given: "an existing series with all four fields set"
+        def existing = seriesService.create(new SeriesDto(
+          title: "Show", genres: "Drama", totalSeasons: 5, totalEpisodes: 60, imdbRating: 8.0
+        ))
+
+    when: "update attempts to change all four"
+        seriesService.update(existing.id, new SeriesDto(
+          genres: "Comedy", totalSeasons: 6, totalEpisodes: 70, imdbRating: 9.0
+        ))
+
+    then: "none of the four locked fields changed"
+        def result = seriesService.getById(existing.id)
+        result.genres == "Drama"
+        result.totalSeasons == 5
+        result.totalEpisodes == 60
+        result.imdbRating == 8.0
+  }
+
+  def "SERIES-040-AC-01: update cannot change title once it is already set"() {
+    given: "an existing series with a title"
+        def existing = seriesService.create(new SeriesDto(title: "Original Title"))
+
+    when: "update attempts to rename it"
+        seriesService.update(existing.id, new SeriesDto(title: "Renamed Title"))
+
+    then: "the title is unchanged"
+        seriesService.getById(existing.id).title == "Original Title"
+  }
+
+  def "SERIES-040-AC-02: update CAN set year when it is currently null"() {
+    given: "an existing, manually-added series with no year"
+        def existing = seriesService.create(new SeriesDto(title: "Show"))
+
+    when: "update sets year for the first time"
+        seriesService.update(existing.id, new SeriesDto(year: 2019))
+
+    then: "year is set"
+        seriesService.getById(existing.id).year == 2019
+  }
+
+  def "SERIES-040-AC-02: update CAN set genres/totalSeasons/totalEpisodes/imdbRating when currently null"() {
+    given: "an existing, manually-added series with none of the four fields set"
+        def existing = seriesService.create(new SeriesDto(title: "Show"))
+
+    when: "update sets all four for the first time"
+        def result = seriesService.update(existing.id, new SeriesDto(
+          genres: "Comedy", totalSeasons: 6, totalEpisodes: 70, imdbRating: 9.0
+        ))
+
+    then: "all four are set"
+        result.genres == "Comedy"
+        result.totalSeasons == 6
+        result.totalEpisodes == 70
+        result.imdbRating == 9.0
+  }
 }

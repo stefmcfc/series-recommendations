@@ -1,6 +1,9 @@
 # Series Spec 040: Lock TMDB-Managed Fields From Manual Edit (Refresh-Only Once Set)
 
-**Status**: Not started
+**Status**: Implemented — `SeriesService.applyMetadataUpdates`/`applyRatingAndPersonalUpdates`
+(the `PATCH` lock, `service/SeriesService.java`) and `SeriesRefreshService.refreshFromTmdb` (the
+`title`/`year`/`genres` refresh sync, `service/refresh/SeriesRefreshService.java`), covered by
+`SeriesServiceSpec.groovy` and `SeriesRefreshServiceSpec.groovy`.
 **Priority**: P2 (data integrity — an unrestricted manual edit can silently drift a series' record
 away from TMDB's own data for fields this app otherwise treats TMDB as the source of truth for)
 **Depends on**: Series Spec 002 (`series_spec_002_crud.md`, owns `SeriesService.update`/
@@ -249,8 +252,8 @@ already covered by existing `SeriesRefreshServiceSpec.groovy` tests for the othe
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-040-AC-01: `update` cannot change any of the six locked fields once non-null
-- [ ] SERIES-040-AC-02: `update` can still set any of the six when currently null
-- [ ] SERIES-040-AC-03: every other field remains freely editable via `update` (regression guard)
-- [ ] SERIES-040-AC-04: refresh always overwrites title/year/genres from a fresh TMDB result
-- [ ] SERIES-040-AC-05: a null/empty TMDB value for title/year/genres never blanks the existing value (regression guard)
+- [x] SERIES-040-AC-01: `update` cannot change any of the six locked fields once non-null
+- [x] SERIES-040-AC-02: `update` can still set any of the six when currently null
+- [x] SERIES-040-AC-03: every other field remains freely editable via `update` (regression guard)
+- [x] SERIES-040-AC-04: refresh always overwrites title/year/genres from a fresh TMDB result
+- [x] SERIES-040-AC-05: a null/empty TMDB value for title/year/genres never blanks the existing value (regression guard)
