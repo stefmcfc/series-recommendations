@@ -11,6 +11,14 @@ vocabulary both the include and this new exclude field draw their checkbox optio
 `controller/SeriesController.java`) — paired with Frontend Spec 063
 (`frontend_spec_063_exclude_genres_search_filter.md`)
 
+**Note (2026-09-01, exclude-genres consolidation)**: this spec's backend scope and every AC below
+are unchanged. `frontend_spec_063` was revised the same day to wire `SearchFilter` through a new
+shared `GenreIncludeExcludePicker` component (`frontend_spec_067`) instead of a second inline
+checkbox fieldset, and that component makes selecting the same genre in both Include and Exclude
+structurally impossible client-side. SERIES-042-AC-05 below (an excluded genre wins when both are
+somehow set) stays in place regardless — it's still correct, still tested, defensive behavior for
+any direct API caller that isn't going through that UI.
+
 ## Overview
 
 Recommendations' `RecommendationFiltersBox` already has an "Exclude Genres" filter
@@ -262,6 +270,7 @@ def "SERIES-042-AC-06: GET /series/search?excludeGenre=Comedy excludes Comedy se
 | Existing include-genre pattern this mirrors | `series_spec_037_search_filter_overhaul.md` |
 | Genre vocabulary (`GET /series/genres`) | `series_spec_010_genre_dropdown.md`, `service/TmdbGenreTable.java` |
 | Frontend UI for this filter | `frontend_spec_063_exclude_genres_search_filter.md` |
+| Shared include/exclude toggle component `SearchFilter` now uses | `frontend_spec_067_genre_include_exclude_picker.md` |
 | Known, unrelated vocabulary-mismatch bug on the Recs side (not inherited here) | `.claude/ideas/future_ideas.md`, "'Exclude Genres' output filter matches TMDB's canonical genre names..." |
 
 ## Acceptance Criteria Summary
