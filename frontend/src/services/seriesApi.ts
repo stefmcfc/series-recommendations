@@ -13,6 +13,7 @@ import type {
   KeywordStat,
   SortOptions,
   StreamingProvider,
+  CandidateDetail,
 } from '../types/series'
 import { ApiError } from '../types/api'
 
@@ -205,6 +206,18 @@ export const seriesApi = {
   getRecommendationKeywords: (tmdbId: number): Promise<string[]> =>
     request<{ data: string[]; count: number }>(() =>
       client.get('/series/recommendations/' + tmdbId + '/keywords'),
+    ).then((res) => res.data),
+
+  // FRONTEND-053-AC-04/SERIES-036: single-object envelope (matching
+  // getById), not the list-plus-count shape getRecommendationKeywords uses.
+  getRecommendationDetails: (
+    tmdbId: number,
+    imdbId: string,
+  ): Promise<CandidateDetail> =>
+    request<{ data: CandidateDetail }>(() =>
+      client.get('/series/recommendations/' + tmdbId + '/details', {
+        params: { imdbId },
+      }),
     ).then((res) => res.data),
 
   getWatchProviders: (id: string): Promise<StreamingProvider[]> =>

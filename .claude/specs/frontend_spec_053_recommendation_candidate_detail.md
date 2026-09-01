@@ -1,6 +1,11 @@
 # Frontend Spec 053: Recommendation Candidate Detail View
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/types/series.ts` (`CandidateDetail`),
+`frontend/src/services/seriesApi.ts` (`getRecommendationDetails`),
+`frontend/src/components/RecommendationCard.tsx` (removed keywords
+expand/state, added "View Details"), `frontend/src/components/
+RecommendationDetailModal.tsx` + `.module.css` (new), with updated tests in
+`RecommendationCard.test.tsx` and `RecommendationsList.test.tsx`
 **Priority**: P3 (resolves a confirmed, longstanding gap — a recommendation candidate never showed
 more than what's always visible on the card)
 **Depends on**: Frontend Spec 052 (`frontend_spec_052_series_detail_recommendations_button.md`,
@@ -160,8 +165,8 @@ surfaces continuing to render `RecommendationCard` unchanged, now showing the ne
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-053-AC-01: "View Details" replaces "Show keywords" on `RecommendationCard`
-- [ ] FRONTEND-053-AC-02: every other `RecommendationCard` behavior is unaffected
-- [ ] FRONTEND-053-AC-03: the modal shows the candidate's already-known fields
-- [ ] FRONTEND-053-AC-04: details and keywords fetch and fail independently
-- [ ] FRONTEND-053-AC-05: both `RecommendationsList` and the SeriesDetail modal gain the new action for free
+- [x] FRONTEND-053-AC-01: "View Details" replaces "Show keywords" on `RecommendationCard`
+- [x] FRONTEND-053-AC-02: every other `RecommendationCard` behavior is unaffected
+- [x] FRONTEND-053-AC-03: the modal shows the candidate's already-known fields
+- [x] FRONTEND-053-AC-04: details and keywords fetch and fail independently
+- [x] FRONTEND-053-AC-05: both `RecommendationsList` and the SeriesDetail modal gain the new action for free

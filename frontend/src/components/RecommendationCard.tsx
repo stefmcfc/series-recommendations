@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { seriesApi } from '../services/seriesApi'
-import { ApiError } from '../types/api'
 import type { Recommendation } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
 import { formatCountryName } from '../utils/countryName'
+import { RecommendationDetailModal } from './RecommendationDetailModal'
 import styles from './RecommendationCard.module.css'
 
 interface RecommendationCardProps {
@@ -25,11 +24,13 @@ interface RecommendationCardProps {
 // FRONTEND-052-AC-01: extracted from RecommendationsList.tsx's former inline
 // per-candidate card JSX so it can be reused by both RecommendationsList and
 // the new SeriesDetail "Recommendations" modal (SeriesRecommendationsModal)
-// without duplicating ~150 lines of JSX. Keywords loading/result/error and
-// poster-error state move here as local useState -- previously keyed by
-// imdbId in a parent-level Set/Record because one parent rendered many cards
-// from a flat array; now each card is its own component instance, so plain
-// local state is simpler and correctly scoped.
+// without duplicating ~150 lines of JSX. Poster-error state lives here as
+// local useState.
+//
+// FRONTEND-053: the standalone "Show keywords" expand (and its keywordsLoading/
+// keywordResult/keywordError state) has moved into RecommendationDetailModal,
+// opened by the "View Details" button below -- see that spec's Design
+// Decisions for why a second "learn more" affordance wasn't kept alongside it.
 export function RecommendationCard({
   recommendation,
   onMarkWatched,
@@ -39,31 +40,9 @@ export function RecommendationCard({
   ignoreError = null,
 }: RecommendationCardProps) {
   const [posterError, setPosterError] = useState(false)
-  const [keywordsLoading, setKeywordsLoading] = useState(false)
-  const [keywordResult, setKeywordResult] = useState<string[] | null>(null)
-  const [keywordError, setKeywordError] = useState<string | null>(null)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
 
   const r = recommendation
-
-  const handleShowKeywords = () => {
-    setKeywordError(null)
-    setKeywordsLoading(true)
-
-    seriesApi
-      .getRecommendationKeywords(r.tmdbId)
-      .then((keywords) => {
-        setKeywordsLoading(false)
-        setKeywordResult(keywords)
-      })
-      .catch((err: unknown) => {
-        setKeywordsLoading(false)
-        const message =
-          err instanceof ApiError
-            ? err.message
-            : 'An unexpected error occurred. Please try again.'
-        setKeywordError(message)
-      })
-  }
 
   return (
     <li className={styles.card} data-testid="recommendation-card">
@@ -132,12 +111,11 @@ export function RecommendationCard({
           </button>
           <button
             type="button"
-            className={styles.keywordsButton}
-            data-testid="show-keywords-btn"
-            disabled={keywordsLoading}
-            onClick={handleShowKeywords}
+            className={styles.viewDetailsButton}
+            data-testid="view-details-btn"
+            onClick={() => setDetailModalOpen(true)}
           >
-            Show keywords
+            View Details
           </button>
           {ignoreError && (
             <span className={styles.ignoreError} role="alert">
@@ -145,33 +123,14 @@ export function RecommendationCard({
             </span>
           )}
         </div>
-
-        {keywordsLoading && (
-          <output
-            className={styles.keywordsLoading}
-            aria-label="Loading keywords"
-          >
-            Loading keywords...
-          </output>
-        )}
-        {keywordError && (
-          <span className={styles.keywordsError} role="alert">
-            {keywordError}
-          </span>
-        )}
-        {keywordResult !== null &&
-          (keywordResult.length === 0 ? (
-            <p className={styles.keywordsEmpty}>No keywords found</p>
-          ) : (
-            <ul className={styles.keywordsList}>
-              {keywordResult.map((keyword) => (
-                <li key={keyword} className={styles.keywordChip}>
-                  {keyword}
-                </li>
-              ))}
-            </ul>
-          ))}
       </div>
+
+      {detailModalOpen && (
+        <RecommendationDetailModal
+          recommendation={r}
+          onClose={() => setDetailModalOpen(false)}
+        />
+      )}
     </li>
   )
 }

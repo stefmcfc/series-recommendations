@@ -142,6 +142,15 @@ export interface Recommendation {
   tmdbId: number
 }
 
+// FRONTEND-053/SERIES-036: mirrors the backend's CandidateDetailDto
+// field-for-field. All three fields are independently nullable -- see that
+// DTO's Javadoc for exactly which upstream failure nulls out which field(s).
+export interface CandidateDetail {
+  numberOfSeasons: number | null
+  numberOfEpisodes: number | null
+  imdbRating: number | null
+}
+
 export interface RecommendationQuery {
   limit?: number
   seriesIds?: string[]
