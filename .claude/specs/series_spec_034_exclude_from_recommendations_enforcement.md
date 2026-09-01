@@ -1,6 +1,6 @@
 # Series Spec 034: Enforce `excludeFromRecommendations` for Explicit Series Selection
 
-**Status**: Not started
+**Status**: Implemented (2026-09-01) — `service/recommendation/RecommendationSourcingService.java` (`resolveSourcePool`/`automaticPool`), `test/groovy/uk/co/stefirby/seriestracker/service/recommendation/RecommendationSourcingServiceSpec.groovy`. Frontend follow-up is `frontend_spec_050`, not yet done.
 **Priority**: P2 (product decision reversal — a "don't use this for recommendations" flag that can be silently bypassed by hand-picking the series undermines the point of the flag)
 **Depends on**: Series Spec 007 (`series_spec_007_recommendation_sourcing.md`, owns `resolveSourcePool`/`explicitPool`/`automaticPool`) ✅, Series Spec 008 (`series_spec_008_series_lifecycle_data.md`, owns the flag itself and the `SERIES-008-AC-05` decision this spec reverses) ✅
 **Area**: Backend (`service/RecommendationSourcingService.java`) — paired with Frontend Spec 050 (`frontend_spec_050_exclude_from_recommendations_ui.md`), which stops the "Use My Series" Specific Series picker from ever offering an excluded series as a selectable option in the first place.
@@ -197,7 +197,7 @@ this spec doesn't touch that check.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-034-AC-01: `excludeFromRecommendations` filters the pool regardless of explicit vs. automatic resolution
-- [ ] SERIES-034-AC-02: an all-excluded explicit selection yields an empty pool, not an error
-- [ ] SERIES-034-AC-03: a mixed selection sources only the non-excluded series
-- [ ] SERIES-034-AC-04: unknown-id validation (`SERIES-007-AC-09`) is unaffected
+- [x] SERIES-034-AC-01: `excludeFromRecommendations` filters the pool regardless of explicit vs. automatic resolution
+- [x] SERIES-034-AC-02: an all-excluded explicit selection yields an empty pool, not an error
+- [x] SERIES-034-AC-03: a mixed selection sources only the non-excluded series
+- [x] SERIES-034-AC-04: unknown-id validation (`SERIES-007-AC-09`) is unaffected

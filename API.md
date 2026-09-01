@@ -116,14 +116,17 @@ Sourcing mode is selected via `sourceMode` (`trending`|`topRated`|`useMySeries`)
 - **`sourceMode=useMySeries`** (or an explicit `seriesIds` selection, even without this flag)
   sources from TMDB based on your `COMPLETED` series (title-based), supplemented by your
   most-watched genres when there's too little title-based data yet. A series with
-  `excludeFromRecommendations: true` is skipped entirely from the *automatic* (non-`seriesIds`)
-  version of this pool (both the title-based pool and the genre-frequency count derived from it)
-  — set it via `POST`/`PATCH /api/v1/series` when a show is rated fine but isn't representative of
-  your taste; this exclusion does **not** apply once `seriesIds` is set explicitly, which always
-  wins over the standing preference. `sourceMode=useMySeries` is mutually exclusive with
-  `genres`/`keywords` (`400` if combined) but **compatible** with `seriesIds` — narrowing "Use My
-  Series" to a specific selection while keeping the pool-based ranking/diversity-cap behavior
-  below.
+  `excludeFromRecommendations: true` is skipped entirely from this pool — set it via
+  `POST`/`PATCH /api/v1/series` when a show is rated fine but isn't representative of your taste.
+  **Behavior change (`series_spec_034`)**: this exclusion now applies uniformly to both the
+  automatic pool and an explicit `seriesIds` selection — an excluded series named in `seriesIds`
+  is silently dropped from the effective source pool rather than being honored (not an error; if
+  every requested id turns out to be excluded, the pool is simply empty). This reverses the
+  previous behavior, where naming a series explicitly always won over the standing preference.
+  A `seriesIds` entry that doesn't match any existing series at all is still rejected with `400`,
+  unaffected by this change. `sourceMode=useMySeries` is mutually exclusive with `genres`/
+  `keywords` (`400` if combined) but **compatible** with `seriesIds` — narrowing "Use My Series" to
+  a specific selection while keeping the pool-based ranking/diversity-cap behavior below.
 - **`sourceMode=trending`** sources TMDB's globally trending shows (`trendingWindow=day|week`,
   default `week`).
 - **`sourceMode=topRated`** sources TMDB's highest-rated shows overall using `minVoteCount`

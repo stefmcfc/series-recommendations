@@ -337,6 +337,21 @@
   white-space: nowrap;
 }
 
+/* FRONTEND-050-AC-04: a "don't use" marker, not an alert or a status/success
+   color -- deliberately muted/neutral, unlike newContentBadge's accent
+   color. Uses the existing opaque --border/--text-h theme tokens (not an
+   alpha-blended color) so contrast holds in both light and dark mode. */
+.excludedBadge {
+  flex-shrink: 0;
+  background: var(--border);
+  color: var(--text-h);
+  border-radius: 999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .rewatchToggle {
   background: transparent;
   color: var(--text);

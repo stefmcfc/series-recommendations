@@ -843,6 +843,43 @@ describe('FRONTEND-023-AC-18: new-content badge per row', () => {
   })
 })
 
+describe('FRONTEND-050-AC-04: excluded-from-recommendations badge', () => {
+  it('shows the badge for a series with excludeFromRecommendations=true', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ excludeFromRecommendations: true }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    expect(
+      await screen.findByTestId('excluded-from-recommendations-badge'),
+    ).toBeInTheDocument()
+  })
+
+  it('does not show the badge for a series with excludeFromRecommendations=false', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ excludeFromRecommendations: false }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    await screen.findByTestId('series-row')
+    expect(
+      screen.queryByTestId('excluded-from-recommendations-badge'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-050-AC-05: badge is read-only', () => {
+  it('renders the badge as a plain span with no interactive role', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ excludeFromRecommendations: true }),
+    ])
+    render(<SeriesList {...defaultProps} />)
+    const badge = await screen.findByTestId(
+      'excluded-from-recommendations-badge',
+    )
+    expect(badge.tagName).toBe('SPAN')
+    expect(badge).not.toHaveAttribute('role', 'button')
+  })
+})
+
 describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
   it('includes the skipped count when greater than zero', async () => {
     mockGetAll.mockResolvedValue([])

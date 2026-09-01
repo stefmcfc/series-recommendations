@@ -107,23 +107,59 @@ class RecommendationSourcingServiceSpec extends Specification {
             0 * tmdbClient.findTvIdByImdbId("tt2222222")
     }
 
-    def "SERIES-008-AC-05: an explicit seriesIds selection is not filtered by excludeFromRecommendations"() {
+    def "SERIES-034-AC-01: an explicit seriesIds selection IS filtered by excludeFromRecommendations"() {
         given: "a COMPLETED series with excludeFromRecommendations=true"
             def excluded = completedSeries("Excluded Show", "tt3333333", LocalDateTime.now())
             excluded.excludeFromRecommendations = true
             excluded.id = UUID.randomUUID()
             seriesRepository.findAllById([excluded.id]) >> [excluded]
-            tmdbClient.recommendations(123) >> []
-            tmdbClient.similar(123) >> []
 
         and: "criteria explicitly selects that series"
             def criteria = new RecommendationCriteria(seriesIds: [excluded.id.toString()])
 
         when: "sourceFromPool is called"
+            def result = sourcingService.sourceFromPool(criteria, 20)
+
+        then: "the excluded series is NOT consulted, and the pool is empty"
+            0 * tmdbClient.findTvIdByImdbId("tt3333333")
+            result.isEmpty()
+    }
+
+    def "SERIES-034-AC-02: an all-excluded seriesIds selection yields an empty pool, not an error"() {
+        given: "two excluded COMPLETED series"
+            def a = completedSeries("A", "tt1111111", LocalDateTime.now())
+            a.excludeFromRecommendations = true
+            a.id = UUID.randomUUID()
+            def b = completedSeries("B", "tt2222222", LocalDateTime.now())
+            b.excludeFromRecommendations = true
+            b.id = UUID.randomUUID()
+            seriesRepository.findAllById([a.id, b.id]) >> [a, b]
+            def criteria = new RecommendationCriteria(seriesIds: [a.id.toString(), b.id.toString()])
+
+        when: "sourceFromPool is called"
+            def result = sourcingService.sourceFromPool(criteria, 20)
+
+        then: "no exception is thrown and the result is empty"
+            result.isEmpty()
+            0 * tmdbClient.findTvIdByImdbId(_)
+    }
+
+    def "SERIES-034-AC-03: a mixed seriesIds selection sources only the non-excluded series"() {
+        given: "one excluded and one eligible COMPLETED series, both explicitly selected"
+            def excluded = completedSeries("Excluded", "tt1111111", LocalDateTime.now())
+            excluded.excludeFromRecommendations = true
+            excluded.id = UUID.randomUUID()
+            def eligible = completedSeries("Eligible", "tt2222222", LocalDateTime.now())
+            eligible.id = UUID.randomUUID()
+            seriesRepository.findAllById([excluded.id, eligible.id]) >> [excluded, eligible]
+            def criteria = new RecommendationCriteria(seriesIds: [excluded.id.toString(), eligible.id.toString()])
+
+        when: "sourceFromPool is called"
             sourcingService.sourceFromPool(criteria, 20)
 
-        then: "the excluded series IS consulted, since it was explicitly selected"
-            1 * tmdbClient.findTvIdByImdbId("tt3333333") >> Optional.of(123)
+        then: "only the eligible series is consulted"
+            0 * tmdbClient.findTvIdByImdbId("tt1111111")
+            1 * tmdbClient.findTvIdByImdbId("tt2222222") >> Optional.empty()
     }
 
     def "SERIES-006-AC-16: falls back to similar() when recommendations() is empty"() {

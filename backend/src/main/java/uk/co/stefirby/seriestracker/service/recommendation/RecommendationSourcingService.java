@@ -171,6 +171,7 @@ public class RecommendationSourcingService {
             : automaticPool();
 
         return pool.stream()
+            .filter(e -> !e.isExcludeFromRecommendations())
             .filter(e -> c.getMinSourceRating() == null
                 || (e.getPersonalRating() != null && e.getPersonalRating() >= c.getMinSourceRating()))
             .sorted(SourceOrderComparator.INSTANCE)
@@ -180,18 +181,18 @@ public class RecommendationSourcingService {
 
     /**
      * Automatic "watched" pool (SERIES-006-AC-14): every {@code COMPLETED} series with a
-     * resolvable {@code imdbId}, excluding any series with {@code excludeFromRecommendations
-     * == true} (SERIES-008-AC-04) -- this filter applies here, not in {@link #explicitPool},
-     * so an explicit {@code seriesIds} selection is deliberately unaffected by it
-     * (SERIES-008-AC-05). Because {@link #genreBasedSupplement} is derived from this same
-     * pool, excluding a series here also removes it from the genre frequency count.
+     * resolvable {@code imdbId}. {@code excludeFromRecommendations == true} series are no
+     * longer filtered here -- that check now lives in {@link #resolveSourcePool}'s shared
+     * filter chain, applied identically whether the pool came from this method or from
+     * {@link #explicitPool} (SERIES-034-AC-01, superseding SERIES-008-AC-05). Because {@link
+     * #genreBasedSupplement} is derived from this same pool (post-filtering, via {@code
+     * resolveSourcePool}), an excluded series is still absent from the genre frequency count.
      */
     private List<SeriesEntity> automaticPool() {
         return seriesRepository.findAll().stream()
             .filter(e -> e.getStatus() == SeriesStatus.COMPLETED
                 && e.getImdbId() != null
-                && !e.getImdbId().isBlank()
-                && !e.isExcludeFromRecommendations())
+                && !e.getImdbId().isBlank())
             .toList();
     }
 

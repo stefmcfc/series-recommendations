@@ -45,6 +45,13 @@ this codebase — extract a small shared checkbox-list component first (e.g. a g
 `CheckboxOptionList` over a `string[]`), then use it for both include and exclude, rather than
 copy-pasting the block a second time.
 
+**Note (2026-09-01)**: a matching want on the My Series side is now a real spec pair —
+`series_spec_042_exclude_genres_search.md`/`frontend_spec_063_exclude_genres_search_filter.md`
+(not yet built). That pair deliberately does *not* extract a shared checkbox-list component either
+(same "accept short-term duplication" call, see its own Design Decisions) — whoever eventually
+does the extraction this candidate calls for should fold both call sites in at once rather than
+finding a third one has appeared in between.
+
 ### "Exclude Keywords" filter — `KeywordPicker` instead of free text
 
 Currently also a plain comma-separated text input (`excludeKeywordsText`). The include-Keywords
@@ -212,6 +219,11 @@ and `RecommendationControls` extend/compose), and whether `SeriesList`'s existin
 filter/sort logic (or `series_spec_003`'s backend search/filter, if server-side filtering turns out
 to matter more for "Use My Series" too) could be reused directly rather than reimplemented a second
 time.
+
+**Note (2026-09-01)**: `.claude/ideas/future_ideas.md`'s "'Use My Series' source-series picker
+gains filter/sort parity with My Series, plus a 'Select Series' relabel" entry is exactly the
+concrete detail this candidate was waiting for (Exclude Genre(s), Keywords, Min Rating, Year Range,
+plus a "Select Series" relabel) — review it once this candidate is actually scoped.
 
 ### Full-codebase manual accessibility review
 
