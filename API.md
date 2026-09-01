@@ -43,6 +43,17 @@ Get a series by ID.
 
 Update a series (partial).
 
+**Behavior change (`series_spec_040_tmdb_managed_field_lock.md`)**: `title`, `year`, `genres`,
+`totalSeasons`, `totalEpisodes`, and `imdbRating` are TMDB (or OMDb, for `imdbRating`)-managed
+fields — once a series' value for one of these is non-null, an attempted change to it via this
+endpoint is silently ignored (not rejected as `400`/`409`); every other field in the same request
+still applies normally. A manually-added series with no value yet for one of these six can still
+set it once, the first time. The only way to change one of these six after that point is
+`POST /api/v1/series/{id}/refresh` (or a bulk refresh), which always overwrites all six from
+TMDB/OMDb's current data regardless of this lock. `title` in particular is `@NotBlank` and so is
+never null once a series exists — in practice this makes `title` permanently refresh-only
+immediately after creation.
+
 ---
 
 ### `DELETE /api/v1/series/{id}`
@@ -221,11 +232,17 @@ re-ignoring the same `imdbId` returns `200` instead of `201`.
 
 ### `POST /api/v1/series/{id}/refresh`
 
-Re-fetch one series' external data: TMDB detail (`totalSeasons`/`totalEpisodes`/`tmdbRating`/
-`tmdbVoteCount`/`productionStatus`), its normalized `keywords` set, and a narrowed OMDb ratings
-call (`imdbRating`/`rottenTomatoesRating`). Either source failing is independently non-fatal — a
-partial success is saved, not rolled back. User-owned fields (`title`, `genres`,
-`personalRating`, etc.) are never touched. Always forces a real refresh, ignoring
+Re-fetch one series' external data: TMDB detail (`title`/`year`/`genres`/`totalSeasons`/
+`totalEpisodes`/`tmdbRating`/`tmdbVoteCount`/`productionStatus`), its normalized `keywords` set,
+and a narrowed OMDb ratings call (`imdbRating`/`rottenTomatoesRating`). Either source failing is
+independently non-fatal — a partial success is saved, not rolled back. User-/system-owned fields
+(`posterUrl`, `personalRating`, `personalNotes`, `status`, `currentSeason`, `currentEpisode`,
+`imdbId`, `dateAdded`, `dateCompleted`) are never touched.
+**Behavior change (`series_spec_040_tmdb_managed_field_lock.md`)**: `title`/`year`/`genres` are no
+longer in that untouched list — a refresh now also overwrites them from TMDB's fresh result
+(never blanking an existing value when TMDB's response omits one), the counterpart to `PATCH`
+locking those same fields (plus `totalSeasons`/`totalEpisodes`/`imdbRating`) from manual edit once
+set — see below. Always forces a real refresh, ignoring
 `app.tmdb.refresh-skip-threshold-minutes` (that threshold applies only to bulk refresh). If
 `totalSeasons`/`totalEpisodes` increased since before this refresh (and a prior value existed — a
 first-ever populated value doesn't count), `newContentDetectedAt` is set to now; if the series was

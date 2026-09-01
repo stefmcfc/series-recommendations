@@ -81,6 +81,11 @@
   font-size: 0.8125rem;
 }
 
+.fieldHint {
+  color: var(--text);
+  font-size: 0.8125rem;
+}
+
 @media (prefers-color-scheme: dark) {
   .fieldError {
     color: #fca5a5;

@@ -147,14 +147,27 @@ export function EditSeriesForm({
   onSuccess,
 }: EditSeriesFormProps) {
   const [form, setForm] = useState<FormState>(() => toFormState(series))
+  // FRONTEND-060-AC-01/02: series_spec_040 locks these fields from manual
+  // PATCH edits once each is non-null -- mirror that here so the UI never
+  // shows an editable control for something the API will silently ignore.
+  const lockedFields = {
+    year: series.year != null,
+    genres: series.genres != null,
+    totalSeasons: series.totalSeasons != null,
+    totalEpisodes: series.totalEpisodes != null,
+    imdbRating: series.imdbRating != null,
+  }
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [posterPreviewError, setPosterPreviewError] = useState(false)
-  const titleInputRef = useRef<HTMLInputElement>(null)
+  // FRONTEND-060-AC-03: the Title input is now permanently disabled, so it
+  // can no longer receive focus (disabled elements are unfocusable) --
+  // initial focus moves to the dialog container itself instead of Title.
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    titleInputRef.current?.focus()
+    dialogRef.current?.focus()
   }, [])
 
   const updateField =
@@ -231,10 +244,12 @@ export function EditSeriesForm({
       {/* A native <dialog> needs showModal()/close() lifecycle management (focus trap, native backdrop) to behave correctly, not just a tag swap -- a bigger, riskier change than this div+role warrants right now (jsdom's <dialog> support has known gaps). Deliberately not converted. */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior (frontend_spec_004.md FRONTEND-004-AC-19); the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
       <div // NOSONAR: typescript:S6819, see comment above
+        ref={dialogRef}
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-series-heading"
+        tabIndex={-1}
         onKeyDown={handleKeyDown}
       >
         <h2 id="edit-series-heading" className={styles.heading}>
@@ -251,14 +266,23 @@ export function EditSeriesForm({
           <div className={styles.field}>
             <label htmlFor="title">Title *</label>
             <input
-              ref={titleInputRef}
               id="title"
               type="text"
               required
+              disabled
               value={form.title}
               onChange={updateField('title')}
-              aria-describedby={fieldErrors.title ? 'title-error' : undefined}
+              aria-describedby={
+                fieldErrors.title ? 'title-error' : 'title-locked-hint'
+              }
             />
+            <span
+              id="title-locked-hint"
+              data-testid="title-locked-hint"
+              className={styles.fieldHint}
+            >
+              Managed by refresh — use Refresh to update
+            </span>
             {fieldErrors.title && (
               <span id="title-error" className={styles.fieldError}>
                 {fieldErrors.title}
@@ -277,6 +301,7 @@ export function EditSeriesForm({
               handleExcludeFromRecommendationsChange
             }
             posterPreviewError={posterPreviewError}
+            lockedFields={lockedFields}
           >
             <div className={styles.field}>
               <label htmlFor="currentSeason">Current Season</label>

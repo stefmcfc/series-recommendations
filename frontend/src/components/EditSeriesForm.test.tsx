@@ -70,14 +70,17 @@ function renderForm(
 }
 
 describe('FRONTEND-004-AC-16/17: dialog structure & focus', () => {
-  it('renders as a labelled dialog focused on the title input', () => {
+  // FRONTEND-060-AC-03: Title is now permanently disabled (disabled elements
+  // are unfocusable), so initial focus moves to the dialog container itself
+  // rather than the Title input -- see EditSeriesForm.tsx's dialogRef.
+  it('renders as a labelled dialog focused on the dialog itself', () => {
     renderForm()
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('aria-modal', 'true')
     expect(
       screen.getByRole('heading', { name: /edit series/i }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/^title/i)).toHaveFocus()
+    expect(dialog).toHaveFocus()
   })
 })
 
@@ -487,6 +490,69 @@ describe('FRONTEND-012-AC-05: exclude checkbox initialized from series, always s
         expect.objectContaining({ excludeFromRecommendations: true }),
       ),
     )
+  })
+})
+
+describe('FRONTEND-060-AC-01: locked fields are disabled once set', () => {
+  it('disables Year, Genres, Total Seasons, Total Episodes, and IMDb Rating when all are non-null', () => {
+    const series = makeSeries({
+      year: 2019,
+      genres: 'Drama',
+      totalSeasons: 3,
+      totalEpisodes: 24,
+      imdbRating: 8.4,
+    })
+    renderForm({ series })
+
+    expect(screen.getByLabelText('Year')).toBeDisabled()
+    expect(screen.getByLabelText('Genres')).toBeDisabled()
+    expect(screen.getByLabelText('Total Seasons')).toBeDisabled()
+    expect(screen.getByLabelText('Total Episodes')).toBeDisabled()
+    expect(screen.getByLabelText('IMDb Rating')).toBeDisabled()
+    expect(screen.getByTestId('year-locked-hint')).toBeInTheDocument()
+    expect(screen.getByTestId('genres-locked-hint')).toBeInTheDocument()
+    expect(screen.getByTestId('totalSeasons-locked-hint')).toBeInTheDocument()
+    expect(screen.getByTestId('totalEpisodes-locked-hint')).toBeInTheDocument()
+    expect(screen.getByTestId('imdbRating-locked-hint')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-060-AC-02: a null field stays editable with no locked hint', () => {
+  it('leaves Year enabled with no hint when series.year is null', () => {
+    renderForm({
+      series: makeSeries({
+        year: null,
+        genres: null,
+        totalSeasons: null,
+        totalEpisodes: null,
+        imdbRating: null,
+      }),
+    })
+
+    expect(screen.getByLabelText('Year')).not.toBeDisabled()
+    expect(screen.queryByTestId('year-locked-hint')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Genres')).not.toBeDisabled()
+    expect(screen.queryByTestId('genres-locked-hint')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Total Seasons')).not.toBeDisabled()
+    expect(
+      screen.queryByTestId('totalSeasons-locked-hint'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Total Episodes')).not.toBeDisabled()
+    expect(
+      screen.queryByTestId('totalEpisodes-locked-hint'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByLabelText('IMDb Rating')).not.toBeDisabled()
+    expect(
+      screen.queryByTestId('imdbRating-locked-hint'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-060-AC-03: Title is always disabled in EditSeriesForm', () => {
+  it('disables the Title input unconditionally, with its own hint', () => {
+    renderForm({ series: makeSeries({ title: 'Ozark' }) })
+    expect(screen.getByLabelText('Title *')).toBeDisabled()
+    expect(screen.getByTestId('title-locked-hint')).toBeInTheDocument()
   })
 })
 

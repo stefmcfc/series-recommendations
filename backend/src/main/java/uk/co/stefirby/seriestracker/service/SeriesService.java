@@ -235,21 +235,30 @@ public class SeriesService {
         return entityToDto(entity);
     }
 
+    /**
+     * series_spec_040_tmdb_managed_field_lock.md (SERIES-040-AC-01/02): title/year/genres/
+     * totalSeasons/totalEpisodes/imdbRating are TMDB (or OMDb, for imdbRating)-managed fields --
+     * once the entity already carries a non-null value, a manual PATCH can no longer change it
+     * (the incoming dto value is silently dropped); only a refresh (SeriesRefreshService) may
+     * overwrite it after that point. The guard only withholds a *change* to an already-set
+     * value -- a manually-added series with no value yet can still have it set for the first
+     * time here.
+     */
     private void applyMetadataUpdates(SeriesEntity entity, SeriesDto dto) {
-        if (dto.getTitle() != null) {
+        if (dto.getTitle() != null && entity.getTitle() == null) {
             entity.setTitle(dto.getTitle());
         }
-        if (dto.getYear() != null) {
+        if (dto.getYear() != null && entity.getYear() == null) {
             validateYearRange(dto.getYear());
             entity.setYear(dto.getYear());
         }
-        if (dto.getGenres() != null) {
+        if (dto.getGenres() != null && entity.getGenres() == null) {
             entity.setGenres(dto.getGenres());
         }
-        if (dto.getTotalSeasons() != null) {
+        if (dto.getTotalSeasons() != null && entity.getTotalSeasons() == null) {
             entity.setTotalSeasons(dto.getTotalSeasons());
         }
-        if (dto.getTotalEpisodes() != null) {
+        if (dto.getTotalEpisodes() != null && entity.getTotalEpisodes() == null) {
             entity.setTotalEpisodes(dto.getTotalEpisodes());
         }
         if (dto.getCurrentEpisode() != null) {
@@ -267,7 +276,10 @@ public class SeriesService {
     }
 
     private void applyRatingAndPersonalUpdates(SeriesEntity entity, SeriesDto dto) {
-        if (dto.getImdbRating() != null) {
+        // series_spec_040_tmdb_managed_field_lock.md (SERIES-040-AC-01/02): same
+        // "only-when-currently-null" lock as applyMetadataUpdates -- imdbRating is
+        // OMDb-managed and only ever changes by hand once, before its first refresh.
+        if (dto.getImdbRating() != null && entity.getImdbRating() == null) {
             entity.setImdbRating(dto.getImdbRating());
         }
         if (dto.getRottenTomatoesRating() != null) {

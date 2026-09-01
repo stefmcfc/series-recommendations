@@ -26,6 +26,11 @@ type FieldChangeEvent = ChangeEvent<
   HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
 >
 
+// FRONTEND-060: text shown alongside a field EditSeriesForm has disabled
+// because series_spec_040 locks it from manual PATCH edits once non-null --
+// see this component's `lockedFields` prop below.
+const LOCKED_FIELD_HINT = 'Managed by refresh — use Refresh to update'
+
 interface SeriesFormFieldsProps {
   readonly form: SeriesFormFieldsValues
   readonly fieldErrors: Partial<Record<SeriesFormFieldName, string>>
@@ -41,6 +46,28 @@ interface SeriesFormFieldsProps {
   readonly posterPreviewError: boolean
   readonly children?: ReactNode
   readonly source?: 'manual' | 'recommendation'
+  // FRONTEND-060-AC-01/02: EditSeriesForm passes true for whichever of these
+  // fields is already non-null on the series being edited (series_spec_040
+  // locks them from manual PATCH edits at that point); AddSeriesForm never
+  // passes this prop, so every field there stays fully interactive.
+  readonly lockedFields?: Partial<
+    Record<
+      'year' | 'genres' | 'totalSeasons' | 'totalEpisodes' | 'imdbRating',
+      boolean
+    >
+  >
+}
+
+function LockedFieldHint({ field }: { readonly field: string }) {
+  return (
+    <span
+      id={`${field}-locked-hint`}
+      data-testid={`${field}-locked-hint`}
+      className={styles.fieldHint}
+    >
+      {LOCKED_FIELD_HINT}
+    </span>
+  )
 }
 
 // TOOLING-005-AC-03: the field blocks AddSeriesForm and EditSeriesForm both
@@ -60,6 +87,7 @@ export function SeriesFormFields({
   posterPreviewError,
   children,
   source = 'manual',
+  lockedFields,
 }: SeriesFormFieldsProps) {
   const safePosterUrl =
     form.posterUrl.trim() !== '' ? sanitizeImageUrl(form.posterUrl) : null
@@ -73,8 +101,16 @@ export function SeriesFormFields({
           type="number"
           value={form.year}
           onChange={updateField('year')}
-          aria-describedby={fieldErrors.year ? 'year-error' : undefined}
+          disabled={lockedFields?.year}
+          aria-describedby={
+            lockedFields?.year
+              ? 'year-locked-hint'
+              : fieldErrors.year
+                ? 'year-error'
+                : undefined
+          }
         />
+        {lockedFields?.year && <LockedFieldHint field="year" />}
         {fieldErrors.year && (
           <span id="year-error" className={styles.fieldError}>
             {fieldErrors.year}
@@ -89,7 +125,12 @@ export function SeriesFormFields({
           type="text"
           value={form.genres}
           onChange={updateField('genres')}
+          disabled={lockedFields?.genres}
+          aria-describedby={
+            lockedFields?.genres ? 'genres-locked-hint' : undefined
+          }
         />
+        {lockedFields?.genres && <LockedFieldHint field="genres" />}
       </div>
 
       <div className={styles.field}>
@@ -110,10 +151,18 @@ export function SeriesFormFields({
             type="number"
             value={form.totalSeasons}
             onChange={updateField('totalSeasons')}
+            disabled={lockedFields?.totalSeasons}
             aria-describedby={
-              fieldErrors.totalSeasons ? 'totalSeasons-error' : undefined
+              lockedFields?.totalSeasons
+                ? 'totalSeasons-locked-hint'
+                : fieldErrors.totalSeasons
+                  ? 'totalSeasons-error'
+                  : undefined
             }
           />
+          {lockedFields?.totalSeasons && (
+            <LockedFieldHint field="totalSeasons" />
+          )}
           {fieldErrors.totalSeasons && (
             <span id="totalSeasons-error" className={styles.fieldError}>
               {fieldErrors.totalSeasons}
@@ -130,10 +179,18 @@ export function SeriesFormFields({
             type="number"
             value={form.totalEpisodes}
             onChange={updateField('totalEpisodes')}
+            disabled={lockedFields?.totalEpisodes}
             aria-describedby={
-              fieldErrors.totalEpisodes ? 'totalEpisodes-error' : undefined
+              lockedFields?.totalEpisodes
+                ? 'totalEpisodes-locked-hint'
+                : fieldErrors.totalEpisodes
+                  ? 'totalEpisodes-error'
+                  : undefined
             }
           />
+          {lockedFields?.totalEpisodes && (
+            <LockedFieldHint field="totalEpisodes" />
+          )}
           {fieldErrors.totalEpisodes && (
             <span id="totalEpisodes-error" className={styles.fieldError}>
               {fieldErrors.totalEpisodes}
@@ -171,10 +228,16 @@ export function SeriesFormFields({
             step="0.1"
             value={form.imdbRating}
             onChange={updateField('imdbRating')}
+            disabled={lockedFields?.imdbRating}
             aria-describedby={
-              fieldErrors.imdbRating ? 'imdbRating-error' : undefined
+              lockedFields?.imdbRating
+                ? 'imdbRating-locked-hint'
+                : fieldErrors.imdbRating
+                  ? 'imdbRating-error'
+                  : undefined
             }
           />
+          {lockedFields?.imdbRating && <LockedFieldHint field="imdbRating" />}
           {fieldErrors.imdbRating && (
             <span id="imdbRating-error" className={styles.fieldError}>
               {fieldErrors.imdbRating}

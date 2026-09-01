@@ -1,6 +1,11 @@
 # Frontend Spec 060: `EditSeriesForm` Disables TMDB-Managed Fields Once Set
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/SeriesFormFields.tsx` (`lockedFields` prop,
+`LockedFieldHint`), `frontend/src/components/SeriesFormFields.module.css` (`.fieldHint`),
+`frontend/src/components/EditSeriesForm.tsx` (computes `lockedFields` from `series`, disables Title
+unconditionally with its own hint, moves initial dialog focus off the now-permanently-disabled Title
+input), `frontend/src/components/EditSeriesForm.module.css` (`.fieldHint`). Tests:
+`SeriesFormFields.test.tsx`, `EditSeriesForm.test.tsx`, `AddSeriesForm.test.tsx` (regression guard).
 **Priority**: P2 (data integrity companion to the backend enforcement — without this, a user can
 still type into a field the API will silently ignore, with no indication why their edit didn't
 stick)
@@ -54,6 +59,14 @@ UI never shows an editable control for something the API won't actually accept.
 - **Locked-field state is derived directly from the `series` prop already passed into
   `EditSeriesForm`** (`series.year != null`, etc.) — no new fetch, no new state shape beyond a
   small derived object computed once from `series` and threaded through to `SeriesFormFields`.
+- **Side effect on `EditSeriesForm`'s initial-focus behavior (frontend_spec_004 AC-16/17)**: that
+  spec's dialog-focus contract had focus land on the Title input on open. Since Title is now always
+  `disabled` (AC-03 above), it can no longer receive focus at all (disabled elements are
+  unfocusable, matching real-browser behavior — this isn't jsdom-specific). Initial focus moves to
+  the dialog container itself (`tabIndex={-1}` on the `role="dialog"` element) instead for
+  `EditSeriesForm` only; `AddSeriesForm`'s Title remains enabled and unaffected, so its focus
+  behavior is unchanged. `EditSeriesForm.test.tsx`'s corresponding test was updated to assert focus
+  on the dialog rather than the Title input.
 
 ---
 
@@ -160,7 +173,7 @@ enabled regardless of any value already typed into the form, since `AddSeriesFor
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-060-AC-01: Year/Genres/Total Seasons/Total Episodes/IMDb Rating disable with a hint once non-null
-- [ ] FRONTEND-060-AC-02: a null field of the same set stays editable with no hint
-- [ ] FRONTEND-060-AC-03: Title is always disabled in `EditSeriesForm`, with its own hint
-- [ ] FRONTEND-060-AC-04: `AddSeriesForm` is entirely unaffected (regression guard)
+- [x] FRONTEND-060-AC-01: Year/Genres/Total Seasons/Total Episodes/IMDb Rating disable with a hint once non-null
+- [x] FRONTEND-060-AC-02: a null field of the same set stays editable with no hint
+- [x] FRONTEND-060-AC-03: Title is always disabled in `EditSeriesForm`, with its own hint
+- [x] FRONTEND-060-AC-04: `AddSeriesForm` is entirely unaffected (regression guard)

@@ -13,6 +13,7 @@ import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 import uk.co.stefirby.seriestracker.service.KeywordSyncService
 import uk.co.stefirby.seriestracker.service.SeriesService
+import uk.co.stefirby.seriestracker.service.TmdbGenreTable
 
 import java.time.Clock
 import java.time.LocalDateTime
@@ -24,9 +25,10 @@ class SeriesRefreshServiceSpec extends Specification {
     OmdbClient omdbClient = Mock()
     KeywordSyncService keywordSyncService = Mock()
     SeriesService seriesService = new SeriesService(repository, keywordSyncService, Clock.systemDefaultZone())
+    TmdbGenreTable genreTable = new TmdbGenreTable()
 
     SeriesRefreshService refreshService =
-        new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService, Clock.systemDefaultZone())
+        new SeriesRefreshService(repository, tmdbClient, omdbClient, seriesService, keywordSyncService, genreTable, Clock.systemDefaultZone())
 
     private static SeriesEntity existing(UUID id, String imdbId = "tt0903747") {
         new SeriesEntity(
@@ -158,12 +160,10 @@ class SeriesRefreshServiceSpec extends Specification {
             result.series().rottenTomatoesRating == 98
     }
 
-    def "SERIES-018-AC-04: title/genres/posterUrl/personalRating/personalNotes/status/currentSeason/currentEpisode/imdbId/dateAdded/dateCompleted are untouched"() {
+    def "SERIES-018-AC-04: posterUrl/personalRating/personalNotes/status/currentSeason/currentEpisode/imdbId/dateAdded/dateCompleted are untouched"() {
         given: "an existing series with user-owned fields set"
             def id = UUID.randomUUID()
             def entity = existing(id)
-            entity.title = "Breaking Bad (Original Title)"
-            entity.genres = "Crime, Drama"
             entity.posterUrl = "https://example.com/poster.jpg"
             entity.personalRating = 5
             entity.personalNotes = "Loved it"
@@ -184,8 +184,6 @@ class SeriesRefreshServiceSpec extends Specification {
             def result = refreshService.refresh(id)
 
         then: "user-/system-owned fields are unchanged"
-            result.series().title == "Breaking Bad (Original Title)"
-            result.series().genres == "Crime, Drama"
             result.series().posterUrl == "https://example.com/poster.jpg"
             result.series().personalRating == 5
             result.series().personalNotes == "Loved it"
@@ -195,6 +193,54 @@ class SeriesRefreshServiceSpec extends Specification {
             result.series().imdbId == "tt0903747"
             result.series().dateAdded == dateAdded
             result.series().dateCompleted == dateCompleted
+    }
+
+    def "SERIES-040-AC-04: refresh overwrites title/year/genres from a fresh TMDB result"() {
+        given: "an existing series with a stale title/year/genres"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.title = "Old Title"
+            entity.year = 2018
+            entity.genres = "Crime, Drama"
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                "Breaking Bad", 2019, [18, 10765], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US", null, null)
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "title/year/genres are all overwritten from the fresh TMDB result"
+            result.series().title == "Breaking Bad"
+            result.series().year == 2019
+            result.series().genres == "Drama, Sci-Fi & Fantasy"
+    }
+
+    def "SERIES-040-AC-05: a null title/year and empty genreIds from TMDB never blank the existing values"() {
+        given: "an existing series with title/year/genres already set"
+            def id = UUID.randomUUID()
+            def entity = existing(id)
+            entity.title = "Breaking Bad"
+            entity.year = 2008
+            entity.genres = "Crime, Drama"
+            repository.findById(id) >> Optional.of(entity)
+            repository.save(_) >> { SeriesEntity e -> e }
+            tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
+            tmdbClient.details(1396) >> new TmdbSeriesDetail(
+                null, null, [], "/poster.jpg", 6, 63,
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US", null, null)
+            omdbClient.ratingsForImdbId(_) >> new OmdbRatings(new BigDecimal("9.5"), 97)
+
+        when: "the series is refreshed"
+            def result = refreshService.refresh(id)
+
+        then: "title/year/genres remain unchanged"
+            result.series().title == "Breaking Bad"
+            result.series().year == 2008
+            result.series().genres == "Crime, Drama"
     }
 
     def "SERIES-018-AC-05/09: TMDB failure leaves TMDB-sourced fields and lastRefreshedAt unchanged when OMDb also fails"() {
