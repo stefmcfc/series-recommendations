@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect } from 'vitest'
 import { CustomSearchPanel } from './CustomSearchPanel'
+import { initialState } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 
 // TOOLING-008-AC-03: dedicated, isolated coverage for the panel extracted
@@ -22,7 +23,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     minVoteCountTouched: false,
     yearMin: '',
     yearMax: '',
-    excludeGenresText: '',
+    excludeGenresSelected: [],
     excludeKeywordsText: '',
     language: '',
     countriesSelected: [],
@@ -33,7 +34,13 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
 }
 
 describe('CustomSearchPanel', () => {
-  it('renders a checkbox per genre option and a Keywords picker', () => {
+  // FRONTEND-068-AC-02/AC-03: the former include-only checkbox fieldset
+  // ('renders a checkbox per genre option...'/'calls updateState with the
+  // toggled genre added') is superseded by the FRONTEND-068-AC-02/AC-03
+  // describe blocks below, which cover the combined
+  // GenreIncludeExcludePicker that replaced it -- a checkbox-per-genre no
+  // longer exists in this panel.
+  it('renders a Keywords picker', () => {
     render(
       <CustomSearchPanel
         state={makeState()}
@@ -43,25 +50,7 @@ describe('CustomSearchPanel', () => {
       />,
     )
 
-    expect(screen.getByLabelText('Drama')).toBeInTheDocument()
-    expect(screen.getByLabelText('Comedy')).toBeInTheDocument()
     expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
-  })
-
-  it('calls updateState with the toggled genre added', () => {
-    const updateState = vi.fn()
-    render(
-      <CustomSearchPanel
-        state={makeState()}
-        updateState={updateState}
-        genreOptions={['Drama']}
-        keywordOptions={[]}
-      />,
-    )
-
-    fireEvent.click(screen.getByLabelText('Drama'))
-
-    expect(updateState).toHaveBeenCalledWith({ genresSelected: ['Drama'] })
   })
 
   it('shows the hint only when both genres and keywords are empty', () => {
@@ -120,5 +109,41 @@ describe('CustomSearchPanel', () => {
 
     expect(screen.getByLabelText(/countries/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^language/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-068-AC-02: CustomSearchPanel renders the combined picker', () => {
+  it('renders a Genres picker trigger, not the old checkbox fieldset', () => {
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={['Comedy', 'Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Genres' })).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-068-AC-03: excluding a genre updates state correctly', () => {
+  it('moves a genre from genresSelected to excludeGenresSelected', () => {
+    const updateState = vi.fn()
+    const state = { ...initialState, genresSelected: ['Comedy'] }
+    render(
+      <CustomSearchPanel
+        state={state}
+        updateState={updateState}
+        genreOptions={['Comedy']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Genres — 1 included' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
+    expect(updateState).toHaveBeenCalledWith({
+      genresSelected: [],
+      excludeGenresSelected: ['Comedy'],
+    })
   })
 })

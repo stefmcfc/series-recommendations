@@ -24,7 +24,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     minVoteCountTouched: false,
     yearMin: '',
     yearMax: '',
-    excludeGenresText: '',
+    excludeGenresSelected: [],
     excludeKeywordsText: '',
     language: '',
     countriesSelected: [],

@@ -143,7 +143,7 @@ export interface ControlsState {
   minVoteCountTouched: boolean
   yearMin: string
   yearMax: string
-  excludeGenresText: string
+  excludeGenresSelected: string[]
   excludeKeywordsText: string
   language: string
   // FRONTEND-047-AC-04/05/06: mirrors genresSelected/keywordsSelected's
@@ -183,7 +183,12 @@ export const SPECIFIC_SERIES_SORT_BY_OPTIONS: {
   { value: 'tmdbRating', label: 'TMDB Rating' },
 ]
 
-const initialState: ControlsState = {
+// TOOLING-008/FRONTEND-068: exported so buildQuery's field-population
+// behavior (excludeGenresSelected -> query.excludeGenres, no comma-parsing)
+// is directly testable, mirroring COUNTRY_PINNED_OPTIONS/
+// buildSpecificSeriesCandidatePool's existing module-level-export rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+export const initialState: ControlsState = {
   mode: 'useMySeries',
   discoverMode: 'customSearch',
   selectedSeriesIds: [],
@@ -196,7 +201,7 @@ const initialState: ControlsState = {
   minVoteCountTouched: false,
   yearMin: '',
   yearMax: '',
-  excludeGenresText: '',
+  excludeGenresSelected: [],
   excludeKeywordsText: '',
   language: '',
   countriesSelected: [],
@@ -365,8 +370,9 @@ function applyExcludeAndMiscFilters(
   state: ControlsState,
   query: RecommendationQuery,
 ): void {
-  const excludeGenres = parseCommaList(state.excludeGenresText)
-  if (excludeGenres.length > 0) query.excludeGenres = excludeGenres
+  if (state.excludeGenresSelected.length > 0) {
+    query.excludeGenres = state.excludeGenresSelected
+  }
 
   const excludeKeywords = parseCommaList(state.excludeKeywordsText)
   if (excludeKeywords.length > 0) query.excludeKeywords = excludeKeywords
@@ -558,7 +564,8 @@ export function buildSpecificSeriesCandidatePool(
   return [...sorted, ...missingSelected]
 }
 
-function buildQuery(state: ControlsState): RecommendationQuery {
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+export function buildQuery(state: ControlsState): RecommendationQuery {
   const query: RecommendationQuery = {}
   applySourceModeQuery(state, query)
   applyRatingAndRangeFilters(state, query)
@@ -819,6 +826,7 @@ export function RecommendationControls({
         updateState={updateState}
         isCustomSearch={isCustomSearch}
         showMinSourceRating={showMinSourceRating}
+        genreOptions={genreOptions}
       />
 
       {/* FRONTEND-040-AC-03: the single explicit "Apply Filters" action --

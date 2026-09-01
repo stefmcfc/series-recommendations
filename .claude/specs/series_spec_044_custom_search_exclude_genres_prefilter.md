@@ -1,6 +1,10 @@
 # Series Spec 044: `without_genres` Pre-TMDB Filter for Genre/Keyword-Directed Sourcing (Custom Search)
 
-**Status**: Not started
+**Status**: Implemented — `backend/src/main/java/uk/co/stefirby/seriestracker/client/tmdb/DiscoverFilters.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/client/tmdb/TmdbClient.java`,
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/recommendation/RecommendationSourcingService.java`,
+tests in `backend/src/test/groovy/uk/co/stefirby/seriestracker/client/tmdb/TmdbClientSpec.groovy` and
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/recommendation/RecommendationSourcingServiceSpec.groovy`
 **Priority**: P3
 **Depends on**: Tooling Spec 007 (`tooling_spec_007_tmdb_client_discover_filters_extraction.md`, owns
 the `DiscoverFilters` record this spec extends) ✅ required, Series Spec 031
@@ -267,9 +271,9 @@ def "SERIES-044-AC-06: no excludeGenres means an empty excludeGenreIds is sent"(
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-044-AC-01: `DiscoverFilters` exposes `excludeGenreIds`
-- [ ] SERIES-044-AC-02: sends `without_genres` (comma-joined) when `excludeGenreIds` is non-empty
-- [ ] SERIES-044-AC-03: omits `without_genres` when `excludeGenreIds` is null/empty
-- [ ] SERIES-044-AC-04: `sourceByGenreOrKeyword` resolves `excludeGenres` alias names to TMDB ids
-- [ ] SERIES-044-AC-05: an unresolvable excludeGenres entry is silently skipped
-- [ ] SERIES-044-AC-06: empty/absent excludeGenres sends no without_genres param
+- [x] SERIES-044-AC-01: `DiscoverFilters` exposes `excludeGenreIds`
+- [x] SERIES-044-AC-02: sends `without_genres` (comma-joined) when `excludeGenreIds` is non-empty
+- [x] SERIES-044-AC-03: omits `without_genres` when `excludeGenreIds` is null/empty
+- [x] SERIES-044-AC-04: `sourceByGenreOrKeyword` resolves `excludeGenres` alias names to TMDB ids
+- [x] SERIES-044-AC-05: an unresolvable excludeGenres entry is silently skipped
+- [x] SERIES-044-AC-06: empty/absent excludeGenres sends no without_genres param

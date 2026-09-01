@@ -8,6 +8,7 @@ import {
   LANGUAGE_PINNED_CODES,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
+import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import styles from './RecommendationControls.module.css'
 
 interface RecommendationFiltersBoxProps {
@@ -15,6 +16,10 @@ interface RecommendationFiltersBoxProps {
   readonly updateState: (patch: Partial<ControlsState>) => void
   readonly isCustomSearch: boolean
   readonly showMinSourceRating: boolean
+  // FRONTEND-068-AC-04: RecommendationControls already fetches genreOptions
+  // for CustomSearchPanel/UseMySeriesPanel -- threaded one prop further so
+  // this box's exclude-only picker can use the same list.
+  readonly genreOptions: string[]
 }
 
 // TOOLING-008-AC-05: the shared Filters disclosure box (toggle button, every
@@ -28,6 +33,7 @@ export function RecommendationFiltersBox({
   updateState,
   isCustomSearch,
   showMinSourceRating,
+  genreOptions,
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -54,7 +60,7 @@ export function RecommendationFiltersBox({
       minVoteCountTouched: false,
       yearMin: '',
       yearMax: '',
-      excludeGenresText: '',
+      excludeGenresSelected: [],
       excludeKeywordsText: '',
       language: '',
       countriesSelected: [],
@@ -151,17 +157,27 @@ export function RecommendationFiltersBox({
             </>
           )}
 
-          <div className={styles.field}>
-            <label htmlFor="recommendation-exclude-genres">
-              Exclude Genres
-            </label>
-            <input
-              id="recommendation-exclude-genres"
-              type="text"
-              value={state.excludeGenresText}
-              onChange={updateField('excludeGenresText')}
-            />
-          </div>
+          {/* FRONTEND-068-AC-04: exclude-only picker relocated here in
+              place of the former free-text input -- renders only while
+              !isCustomSearch, mirroring the existing Min TMDB Rating/Year
+              Min/Year Max/Country/Language relocation-by-isCustomSearch
+              pattern; Custom Search gets the combined picker in
+              CustomSearchPanel instead (frontend_spec_068 AC-02). */}
+          {!isCustomSearch && (
+            <div className={styles.field}>
+              <GenreIncludeExcludePicker
+                idPrefix="recs-filters-exclude-genre"
+                label="Exclude Genres"
+                mode="excludeOnly"
+                genreOptions={genreOptions}
+                included={[]}
+                excluded={state.excludeGenresSelected}
+                onChange={({ excluded }) =>
+                  updateState({ excludeGenresSelected: excluded })
+                }
+              />
+            </div>
+          )}
 
           <div className={styles.field}>
             <label htmlFor="recommendation-exclude-keywords">

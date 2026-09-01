@@ -9,6 +9,8 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import {
   RecommendationControls,
   buildSpecificSeriesCandidatePool,
+  buildQuery,
+  initialState,
 } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
 import type { Series } from '../types/series'
@@ -226,29 +228,41 @@ describe('FRONTEND-014-AC-03: degrades gracefully if getGenreOptions() rejects',
 })
 
 describe('FRONTEND-014-AC-04/05: genre checkbox list', () => {
-  it('renders a checkbox per fetched genre and toggles genresSelected on click', async () => {
+  // FRONTEND-068-AC-02: the checkbox-per-genre fieldset this AC originally
+  // covered was replaced by GenreIncludeExcludePicker -- updated to open
+  // the picker and toggle each genre's own button instead of a checkbox.
+  // The picker's neutral -> include -> exclude cycle means a third click on
+  // an already-included genre moves it to `exclude` (removed from `genres`,
+  // added to `excludeGenres`), not back to neutral -- either way it's
+  // absent from `genres`, which is all this test's assertions check.
+  it('renders a toggle per fetched genre and toggles genresSelected on click', async () => {
     mockGetGenreOptions.mockResolvedValue(['Action', 'Drama'])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
+    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
 
-    const dramaCheckbox = await screen.findByLabelText('Drama')
-    expect(screen.getByLabelText('Action')).toBeInTheDocument()
+    const dramaToggle = await screen.findByRole('button', {
+      name: 'Drama: neutral',
+    })
+    expect(
+      screen.getByRole('button', { name: 'Action: neutral' }),
+    ).toBeInTheDocument()
 
-    fireEvent.click(dramaCheckbox)
+    fireEvent.click(dramaToggle)
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Drama'] }),
     )
 
-    fireEvent.click(screen.getByLabelText('Action'))
+    fireEvent.click(screen.getByRole('button', { name: 'Action: neutral' }))
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Drama', 'Action'] }),
     )
 
-    fireEvent.click(dramaCheckbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Drama: include' }))
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Action'] }),
@@ -262,7 +276,8 @@ describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     selectCustomSearch()
-    await screen.findByLabelText('Action')
+    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    await screen.findByRole('button', { name: 'Action: neutral' })
 
     expect(
       screen.queryByRole('textbox', { name: /^genres/i }),
@@ -289,7 +304,7 @@ describe('FRONTEND-014-AC-08: empty genresSelected omits genres from the query',
 })
 
 describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', () => {
-  it('hides the hint once a genre checkbox is checked, shows it again once unchecked', async () => {
+  it('hides the hint once a genre is included, shows it again once cleared', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama'])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
@@ -298,13 +313,25 @@ describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', 
       screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
 
-    const dramaCheckbox = await screen.findByLabelText('Drama')
-    fireEvent.click(dramaCheckbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    const dramaToggle = await screen.findByRole('button', {
+      name: 'Drama: neutral',
+    })
+    fireEvent.click(dramaToggle)
     expect(
       screen.queryByText(/browse the most popular shows overall/i),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(dramaCheckbox)
+    // FRONTEND-068-AC-02: the picker's cycle is neutral -> include ->
+    // exclude -> neutral -- Clear returns both included/excluded to empty
+    // directly, which is the equivalent "un-toggle" action for this test
+    // (a second click on the same toggle would move Drama to `exclude`,
+    // which still shows the hint's "empty genres" condition since
+    // genresSelected would be empty -- but exercising Clear here matches
+    // the picker's own documented reset affordance instead).
+    fireEvent.click(
+      screen.getByTestId('custom-search-genre-genre-picker-clear-btn'),
+    )
     expect(
       screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
@@ -312,14 +339,17 @@ describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', 
 })
 
 describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
-  it('clears checked genres when switching from Custom Search to Use My Series', async () => {
+  it('clears included genres when switching from Custom Search to Use My Series', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama'])
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    const dramaCheckbox = await screen.findByLabelText('Drama')
-    fireEvent.click(dramaCheckbox)
+    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    const dramaToggle = await screen.findByRole('button', {
+      name: 'Drama: neutral',
+    })
+    fireEvent.click(dramaToggle)
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ genres: ['Drama'] }),
@@ -365,7 +395,11 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/year min/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/year max/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/exclude genres/i)).toBeInTheDocument()
+    // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
+    // trigger button, not a labeled text input.
+    expect(
+      screen.getByRole('button', { name: 'Exclude Genres' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText(/^language/i)).toBeInTheDocument()
   })
 
@@ -869,7 +903,11 @@ describe('FRONTEND-030-AC-03/04: Exclude Keywords filter field', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
 
-    expect(screen.getByLabelText(/exclude genres/i)).toBeInTheDocument()
+    // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
+    // trigger button, not a labeled text input.
+    expect(
+      screen.getByRole('button', { name: 'Exclude Genres' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText(/exclude keywords/i)).toBeInTheDocument()
   })
 })
@@ -1806,7 +1844,7 @@ describe('FRONTEND-042-AC-07: Discover reveals its three sub-tabs', () => {
 })
 
 describe('FRONTEND-042-AC-08: Custom Search behaves exactly like former Genre & Keyword', () => {
-  it('renders genre checkboxes and a keyword picker, sends genres/keywords', async () => {
+  it('renders a genre picker and a keyword picker, sends genres/keywords', async () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy'])
     const onQueryChange = vi.fn()
     render(
@@ -1814,9 +1852,13 @@ describe('FRONTEND-042-AC-08: Custom Search behaves exactly like former Genre & 
     )
 
     selectCustomSearch()
-    await screen.findByLabelText(/comedy/i)
-
-    fireEvent.click(screen.getByLabelText(/comedy/i))
+    // FRONTEND-068-AC-02: Genres is now a GenreIncludeExcludePicker trigger
+    // button, not a checkbox per genre -- open it, then toggle Comedy in
+    // (awaited since genreOptions loads asynchronously).
+    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Comedy: neutral' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
     expect(onQueryChange).toHaveBeenCalledWith(
@@ -2340,5 +2382,21 @@ describe('FRONTEND-047: Reset Filters clears countriesSelected', () => {
     expect(
       screen.queryByRole('button', { name: 'Remove US' }),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-068-AC-01: excludeGenresSelected drives query.excludeGenres', () => {
+  it('sends excludeGenres from the array field, no parsing', () => {
+    const state = {
+      ...initialState,
+      excludeGenresSelected: ['Comedy', 'Horror'],
+    }
+    const query = buildQuery(state)
+    expect(query.excludeGenres).toEqual(['Comedy', 'Horror'])
+  })
+
+  it('omits excludeGenres when the array is empty', () => {
+    const query = buildQuery(initialState)
+    expect(query.excludeGenres).toBeUndefined()
   })
 })

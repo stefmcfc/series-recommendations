@@ -516,7 +516,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-025-AC-07: genre-directed candidates keep TMDB's own returned order"() {
         given: "discover returns candidates in a specific, non-tmdbRating-sorted order"
             def criteria = new RecommendationCriteria(genres: ["Drama"])
-            tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> [
+            tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> [
                 candidate(10, "Low Rated", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
             ]
@@ -556,7 +556,7 @@ class RecommendationServiceSpec extends Specification {
     def "SERIES-025-AC-08: legacy sortBy has no effect under genre-directed sourcing"() {
         given: "criteria with genres set and sortBy=recommendationCount"
             def criteria = new RecommendationCriteria(genres: ["Drama"], sortBy: "recommendationCount")
-            tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> [
+            tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> [
                 candidate(10, "A", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "B", 2020, new BigDecimal("9.0"), [18], 300)
             ]

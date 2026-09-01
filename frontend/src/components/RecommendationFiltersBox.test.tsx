@@ -22,7 +22,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     minVoteCountTouched: false,
     yearMin: '',
     yearMax: '',
-    excludeGenresText: '',
+    excludeGenresSelected: [],
     excludeKeywordsText: '',
     language: '',
     countriesSelected: [],
@@ -42,6 +42,7 @@ function renderBox(
       updateState={updateState}
       isCustomSearch={false}
       showMinSourceRating={true}
+      genreOptions={[]}
       {...overrides}
     />,
   )
@@ -57,7 +58,11 @@ describe('RecommendationFiltersBox', () => {
 
     expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/exclude genres/i)).toBeInTheDocument()
+    // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
+    // trigger button, not a labeled text input.
+    expect(
+      screen.getByRole('button', { name: 'Exclude Genres' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText(/exclude keywords/i)).toBeInTheDocument()
   })
 
@@ -110,10 +115,64 @@ describe('RecommendationFiltersBox', () => {
       minVoteCountTouched: false,
       yearMin: '',
       yearMax: '',
-      excludeGenresText: '',
+      excludeGenresSelected: [],
       excludeKeywordsText: '',
       language: '',
       countriesSelected: [],
     })
+  })
+})
+
+describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
+  it('renders the picker when not Custom Search', () => {
+    render(
+      <RecommendationFiltersBox
+        state={makeState()}
+        updateState={vi.fn()}
+        isCustomSearch={false}
+        showMinSourceRating={false}
+        genreOptions={['Comedy']}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    expect(
+      screen.getByRole('button', { name: 'Exclude Genres' }),
+    ).toBeInTheDocument()
+  })
+
+  it('does not render the picker when Custom Search is active', () => {
+    render(
+      <RecommendationFiltersBox
+        state={makeState()}
+        updateState={vi.fn()}
+        isCustomSearch={true}
+        showMinSourceRating={false}
+        genreOptions={['Comedy']}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    expect(
+      screen.queryByRole('button', { name: /Exclude Genres/ }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () => {
+  it('calls updateState with excludeGenresSelected: []', () => {
+    const updateState = vi.fn()
+    render(
+      <RecommendationFiltersBox
+        state={{ ...makeState(), excludeGenresSelected: ['Comedy'] }}
+        updateState={updateState}
+        isCustomSearch={false}
+        showMinSourceRating={false}
+        genreOptions={['Comedy']}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+    expect(updateState).toHaveBeenCalledWith(
+      expect.objectContaining({ excludeGenresSelected: [] }),
+    )
   })
 })

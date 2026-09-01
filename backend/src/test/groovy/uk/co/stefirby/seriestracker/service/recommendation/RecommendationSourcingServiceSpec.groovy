@@ -399,11 +399,46 @@ class RecommendationSourcingServiceSpec extends Specification {
             def result = sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover() is called with Drama's id (18) only -- Spy has no genre mapping"
-            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> [candidate(50, "Drama Show")]
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> [candidate(50, "Drama Show")]
 
         and: "the candidate has no linked source series"
             result.size() == 1
             result[0].sourceSeries() == null
+    }
+
+    // -- Spec 044 (SERIES-044-AC-04/05/06): excludeGenres resolved and forwarded as DiscoverFilters.excludeGenreIds --
+
+    def "SERIES-044-AC-04: sourceByGenreOrKeyword resolves excludeGenres and passes them to discover"() {
+        given: "criteria with genres=[Drama] and excludeGenres=[Comedy]"
+            def criteria = new RecommendationCriteria(genres: ["Drama"], excludeGenres: ["Comedy"])
+
+        when: "sourceByGenreOrKeyword is called"
+            sourcingService.sourceByGenreOrKeyword(criteria)
+
+        then: "discover is called with with_genres resolving Drama (18) and without_genres resolving Comedy (35)"
+            1 * tmdbClient.discover([18], [], _, { DiscoverFilters f -> f.excludeGenreIds() == [35] }) >> []
+    }
+
+    def "SERIES-044-AC-05: an unrecognized excludeGenres entry doesn't reach DiscoverFilters"() {
+        given: "criteria with an excludeGenres entry TMDB's fixed genre table doesn't cover"
+            def criteria = new RecommendationCriteria(excludeGenres: ["NotARealGenre"])
+
+        when: "sourceByGenreOrKeyword is called"
+            sourcingService.sourceByGenreOrKeyword(criteria)
+
+        then: "discover is called with an empty excludeGenreIds, not an error"
+            1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.excludeGenreIds().isEmpty() }) >> []
+    }
+
+    def "SERIES-044-AC-06: no excludeGenres means an empty excludeGenreIds is sent"() {
+        given: "criteria with genres set but no excludeGenres"
+            def criteria = new RecommendationCriteria(genres: ["Drama"])
+
+        when: "sourceByGenreOrKeyword is called"
+            sourcingService.sourceByGenreOrKeyword(criteria)
+
+        then: "discover is called with an empty excludeGenreIds"
+            1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.excludeGenreIds().isEmpty() }) >> []
     }
 
     def "SERIES-007-AC-15: genres and keywords are combined into a single discover() call"() {
@@ -415,7 +450,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "searchKeyword resolves Spy, and discover is called with both resolved ids"
             1 * tmdbClient.searchKeyword("Spy") >> Optional.of(9720)
-            1 * tmdbClient.discover([18], [9720], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
+            1 * tmdbClient.discover([18], [9720], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 
     def "SERIES-007-AC-14: an unresolvable keyword is skipped, not an error"() {
@@ -427,7 +462,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "discover is called with an empty keyword id list, and no exception is thrown"
             1 * tmdbClient.searchKeyword("nonexistent") >> Optional.empty()
-            1 * tmdbClient.discover([], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
+            1 * tmdbClient.discover([], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
             result.isEmpty()
     }
 
@@ -439,7 +474,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover is still called normally, unaffected by minSourceRating"
-            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 
     // -- Spec 022, Requirement 2 (SERIES-022-AC-07): directed sourcing -- trending --
@@ -522,7 +557,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover is called with popularity.desc"
-            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 
     def "SERIES-025-AC-06: genre-directed sourcing forwards an explicit discoverSortBy"() {
@@ -533,7 +568,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcingService.sourceByGenreOrKeyword(criteria)
 
         then: "discover is called with vote_count.desc"
-            1 * tmdbClient.discover([18], [], "vote_count.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
+            1 * tmdbClient.discover([18], [], "vote_count.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 
     // -- Spec 029, Requirement 2 (SERIES-029-AC-06..09): genre-directed sourcing vote-count floor --
@@ -718,6 +753,6 @@ class RecommendationSourcingServiceSpec extends Specification {
             sourcing.sourceByGenreOrKeyword(criteria)
 
         then: "TMDB is consulted on every call -- no caching leaked into this path"
-            2 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null)) >> []
+            2 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 }

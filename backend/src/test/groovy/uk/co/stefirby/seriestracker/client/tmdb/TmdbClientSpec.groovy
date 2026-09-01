@@ -262,7 +262,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
         when: "discover is called with minVoteCount=200"
-            def result = client().discover([18], [], "vote_average.desc", new DiscoverFilters(200, null, null, null, null, []))
+            def result = client().discover([18], [], "vote_average.desc", new DiscoverFilters(200, null, null, null, null, [], []))
 
         then: "the request included vote_count.gte=200, and the result is mapped"
             result.size() == 1
@@ -292,7 +292,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with minTmdbRating=7.5"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, new BigDecimal("7.5"), null, null, null, []))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, new BigDecimal("7.5"), null, null, null, [], []))
 
         then: "the request included vote_average.gte=7.5"
             mockServer.verify()
@@ -316,7 +316,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with yearMin=2020"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, 2020, null, null, []))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, 2020, null, null, [], []))
 
         then: "the request included air_date.gte=2020-01-01"
             mockServer.verify()
@@ -340,7 +340,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with yearMax=2024"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, 2024, null, []))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, 2024, null, [], []))
 
         then: "the request included air_date.lte=2024-12-31"
             mockServer.verify()
@@ -364,7 +364,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with minVoteCount=200"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, []))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, [], []))
 
         then: "the request included vote_count.gte=200, unchanged from before this spec"
             mockServer.verify()
@@ -380,7 +380,7 @@ class TmdbClientSpec extends Specification {
 
         when: "discover is called with minTmdbRating, yearMin and yearMax all set"
             client().discover([35], [], "popularity.desc",
-                new DiscoverFilters(0, new BigDecimal("7.5"), 2020, 2024, null, []))
+                new DiscoverFilters(0, new BigDecimal("7.5"), 2020, 2024, null, [], []))
 
         then: "all three params were sent on the same request"
             mockServer.verify()
@@ -395,7 +395,7 @@ class TmdbClientSpec extends Specification {
 
         when: "discover is called with language=en"
             client().discover([35], [], "popularity.desc",
-                new DiscoverFilters(0, null, null, null, "en", []))
+                new DiscoverFilters(0, null, null, null, "en", [], []))
 
         then: "the request included with_original_language=en"
             mockServer.verify()
@@ -419,7 +419,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with a blank language"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, null, "   ", []))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, null, "   ", [], []))
 
         then: "no with_original_language param was sent"
             mockServer.verify()
@@ -437,7 +437,7 @@ class TmdbClientSpec extends Specification {
 
         when: "discover is called with countries=[US, GB]"
             client().discover([35], [], "popularity.desc",
-                new DiscoverFilters(0, null, null, null, null, ["US", "GB"]))
+                new DiscoverFilters(0, null, null, null, null, ["US", "GB"], []))
 
         then: "the request included with_origin_country=US|GB (pipe-joined, OR semantics)"
             mockServer.verify()
@@ -461,7 +461,7 @@ class TmdbClientSpec extends Specification {
                 .andRespond(withSuccess('{"results": []}', MediaType.APPLICATION_JSON))
 
         when: "discover is called with an empty countries list"
-            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, null, null, []))
+            client().discover([35], [], "popularity.desc", new DiscoverFilters(0, null, null, null, null, [], []))
 
         then: "no with_origin_country param was sent"
             mockServer.verify()
@@ -478,10 +478,49 @@ class TmdbClientSpec extends Specification {
 
         when: "discover is called with every DiscoverFilters field set"
             client().discover([35], [], "popularity.desc",
-                new DiscoverFilters(200, new BigDecimal("7.5"), 2020, 2024, "en", ["US"]))
+                new DiscoverFilters(200, new BigDecimal("7.5"), 2020, 2024, "en", ["US"], []))
 
         then: "the pre-existing params are unaffected"
             mockServer.verify()
+    }
+
+    // -- SERIES-044: DiscoverFilters -- excludeGenreIds sent as without_genres --
+
+    def "SERIES-044-AC-01: DiscoverFilters exposes excludeGenreIds, NONE defaults it to empty"() {
+        expect: "a constructed DiscoverFilters carries the given excludeGenreIds"
+            new DiscoverFilters(0, null, null, null, null, [], [18, 35]).excludeGenreIds() == [18, 35]
+
+        and: "DiscoverFilters.NONE has an empty excludeGenreIds"
+            DiscoverFilters.NONE.excludeGenreIds() == []
+    }
+
+    def "SERIES-044-AC-02: discover() sends without_genres comma-joined when excludeGenreIds is set"() {
+        given: "a mocked TMDB server expecting without_genres=35,27"
+            def body = '{"results":[{"id":200,"name":"Drama Show"}]}'
+            mockServer.expect(requestTo(Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("without_genres", "35,27"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "discover is called with excludeGenreIds=[35, 27]"
+            def result = client().discover([18], [], "popularity.desc",
+                new DiscoverFilters(0, null, null, null, null, [], [35, 27]))
+
+        then: "the request included without_genres, and the result is mapped"
+            result.size() == 1
+    }
+
+    def "SERIES-044-AC-03: discover() omits without_genres when excludeGenreIds is empty"() {
+        given: "a mocked TMDB server with no without_genres expectation"
+            def body = '{"results":[{"id":201,"name":"Any Show"}]}'
+            mockServer.expect(requestTo(Matchers.containsString("discover/tv")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "discover is called with DiscoverFilters.NONE"
+            def result = client().discover([18], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no without_genres param was required, and the result is mapped"
+            result.size() == 1
     }
 
     def "SERIES-007-AC-05: resolves a keyword name to a TMDB keyword id"() {

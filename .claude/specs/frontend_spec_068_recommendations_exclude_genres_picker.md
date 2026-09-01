@@ -1,6 +1,11 @@
 # Frontend Spec 068: Recommendations' Exclude Genres Becomes the Shared Genre Picker
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/RecommendationControls.tsx`,
+`frontend/src/components/CustomSearchPanel.tsx`,
+`frontend/src/components/RecommendationFiltersBox.tsx`, tests in
+`frontend/src/components/RecommendationControls.test.tsx`,
+`frontend/src/components/CustomSearchPanel.test.tsx`,
+`frontend/src/components/RecommendationFiltersBox.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 067 (`frontend_spec_067_genre_include_exclude_picker.md`, owns the
 `GenreIncludeExcludePicker` component this spec wires in) ✅ required, Tooling Spec 008
@@ -269,8 +274,8 @@ describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () =>
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-068-AC-01: `excludeGenresText` is replaced by `excludeGenresSelected: string[]`
-- [ ] FRONTEND-068-AC-02: replaces the include-only Genres fieldset with `GenreIncludeExcludePicker`
-- [ ] FRONTEND-068-AC-03: excluding a genre updates the submitted query's `excludeGenres`
-- [ ] FRONTEND-068-AC-04: renders the exclude-only picker only while `!isCustomSearch`
-- [ ] FRONTEND-068-AC-05: "Reset Filters" resets `excludeGenresSelected` to empty
+- [x] FRONTEND-068-AC-01: `excludeGenresText` is replaced by `excludeGenresSelected: string[]`
+- [x] FRONTEND-068-AC-02: replaces the include-only Genres fieldset with `GenreIncludeExcludePicker`
+- [x] FRONTEND-068-AC-03: excluding a genre updates the submitted query's `excludeGenres`
+- [x] FRONTEND-068-AC-04: renders the exclude-only picker only while `!isCustomSearch`
+- [x] FRONTEND-068-AC-05: "Reset Filters" resets `excludeGenresSelected` to empty
