@@ -54,16 +54,20 @@ public class RecommendationSourcingService {
      */
     private final int defaultMinVoteCount;
 
+    private final RecommendationPoolCache poolCache;
+
     public RecommendationSourcingService(SeriesRepository seriesRepository,
                                           TmdbClient tmdbClient,
                                           TmdbGenreTable genreTable,
                                           @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
-                                          @Value("${app.tmdb.default-min-vote-count:200}") int defaultMinVoteCount) {
+                                          @Value("${app.tmdb.default-min-vote-count:200}") int defaultMinVoteCount,
+                                          RecommendationPoolCache poolCache) {
         this.seriesRepository = seriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.maxSourceSeries = maxSourceSeries;
         this.defaultMinVoteCount = defaultMinVoteCount;
+        this.poolCache = poolCache;
     }
 
     // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
@@ -146,7 +150,25 @@ public class RecommendationSourcingService {
 
     // -- Requirement 4 (Spec 006) / Requirement 4+6 (Spec 007): pool-based (title + genre supplement) sourcing --
 
+    /**
+     * SERIES-035-AC-06/07: resolves through {@link RecommendationPoolCache} rather than always
+     * re-running the expensive body directly -- a repeat call whose {@code seriesIds}/{@code
+     * minSourceRating}/{@code limit} are unchanged (e.g. a {@code sortBy}-only re-request) is a
+     * cache hit, skipping every TMDB call the loader below would otherwise make.
+     */
     List<RawCandidate> sourceFromPool(RecommendationCriteria c, int limit) {
+        PoolCacheKey key = buildCacheKey(c, limit);
+        return poolCache.getOrCompute(key, () -> doSourceFromPool(c, limit));
+    }
+
+    private PoolCacheKey buildCacheKey(RecommendationCriteria c, int limit) {
+        List<UUID> seriesIds = c.getSeriesIds() == null
+            ? List.of()
+            : c.getSeriesIds().stream().map(this::parseUuid).toList();
+        return new PoolCacheKey(seriesIds, c.getMinSourceRating(), limit);
+    }
+
+    private List<RawCandidate> doSourceFromPool(RecommendationCriteria c, int limit) {
         List<SeriesEntity> pool = resolveSourcePool(c);
         if (pool.isEmpty()) {
             log.debug("Source pool is empty; skipping recommendation sourcing entirely");

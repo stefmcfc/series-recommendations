@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.5.1] - 2026-09-01
+
+### Changed
+
+- Backend: "Use My Series" recommendation sourcing now caches its TMDB-sourced candidate pool (TTL-bounded at 10 minutes by default, capacity-bounded at 50 entries, keyed on `seriesIds`/`minSourceRating`/`limit`) — changing Sort By, or any output-only filter (`excludeGenres`, `excludeKeywords`, `minTmdbRating`), on an otherwise-unchanged source pool is now a cache hit instead of re-running every TMDB call for the whole pool. No request/response contract change (`series_spec_035`).
+
 ## [3.5.0] - 2026-09-01
 
 ### Added

@@ -1,6 +1,12 @@
 # Series Spec 035: Cache the "Use My Series" Sourced Candidate Pool
 
-**Status**: Not started
+**Status**: Implemented -- `backend/src/main/java/uk/co/stefirby/seriestracker/service/recommendation/PoolCacheKey.java` (new),
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/recommendation/RecommendationPoolCache.java` (new),
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/recommendation/RecommendationSourcingService.java` (wired),
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/recommendation/RecommendationPoolCacheSpec.groovy` (new),
+`backend/src/test/groovy/uk/co/stefirby/seriestracker/service/recommendation/RecommendationSourcingServiceSpec.groovy` (constructor
+update + new AC-06/07/08 tests), `backend/src/test/groovy/uk/co/stefirby/seriestracker/service/recommendation/RecommendationServiceSpec.groovy`
+(constructor update, 3 call sites), `RUNBOOK.md` (2 new config rows)
 **Priority**: P2 (real, confirmed waste — every sort-only re-request today re-runs every TMDB call
 for the source pool, up to `app.tmdb.max-source-series` (default 20) `findTvIdByImdbId` +
 `recommendations`/`similar` calls, plus a possible `discover` supplement, purely to re-order data
@@ -350,11 +356,11 @@ unaffected by this spec.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-035-AC-01: a cache miss calls the loader and returns its result
-- [ ] SERIES-035-AC-02: a repeat call with an equal key within TTL is a cache hit
-- [ ] SERIES-035-AC-03: an expired entry is a cache miss
-- [ ] SERIES-035-AC-04: `PoolCacheKey` normalizes `seriesIds` order for equality
-- [ ] SERIES-035-AC-05: inserting past capacity evicts the oldest entry
-- [ ] SERIES-035-AC-06: `sourceFromPool` resolves its result through the pool cache
-- [ ] SERIES-035-AC-07: a `sortBy`-only change is a cache hit, not a re-fetch
-- [ ] SERIES-035-AC-08: `trending`/`topRated`/Custom Search sourcing remain uncached
+- [x] SERIES-035-AC-01: a cache miss calls the loader and returns its result
+- [x] SERIES-035-AC-02: a repeat call with an equal key within TTL is a cache hit
+- [x] SERIES-035-AC-03: an expired entry is a cache miss
+- [x] SERIES-035-AC-04: `PoolCacheKey` normalizes `seriesIds` order for equality
+- [x] SERIES-035-AC-05: inserting past capacity evicts the oldest entry
+- [x] SERIES-035-AC-06: `sourceFromPool` resolves its result through the pool cache
+- [x] SERIES-035-AC-07: a `sortBy`-only change is a cache hit, not a re-fetch
+- [x] SERIES-035-AC-08: `trending`/`topRated`/Custom Search sourcing remain uncached
