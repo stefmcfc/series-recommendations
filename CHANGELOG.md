@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: "Select all" / "Clear all" buttons in the Specific Series picker, scoped to the currently-filtered candidate pool (`frontend_spec_051`).
+
 ### Changed
 
 - Backend: Custom Search's Exclude Genres now also narrows results at the TMDB `discover/tv` API level (`without_genres`), not just via the existing post-fetch output filter (`series_spec_044`).

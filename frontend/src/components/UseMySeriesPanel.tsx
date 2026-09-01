@@ -233,6 +233,37 @@ export function UseMySeriesPanel({
                 maxSuggestionsWhenEmpty={SPECIFIC_SERIES_PICKER_LIMIT}
               />
 
+              {/* FRONTEND-051-AC-01/02/03: bulk select/clear the picker's
+                  current candidate pool -- neither button calls
+                  onQueryChange directly, both only update pending
+                  ControlsState via updateState, staying behind the existing
+                  Apply Filters gate (frontend_spec_040) like every other
+                  Specific-Series-picker interaction. */}
+              <div className={styles.bulkSelectRow}>
+                <button
+                  type="button"
+                  className={styles.browseSeriesButton}
+                  disabled={specificSeriesCandidatePool.length === 0}
+                  onClick={() =>
+                    updateState({
+                      selectedSeriesIds: specificSeriesCandidatePool.map(
+                        (s) => s.id,
+                      ),
+                    })
+                  }
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  className={styles.browseSeriesButton}
+                  disabled={state.selectedSeriesIds.length === 0}
+                  onClick={() => updateState({ selectedSeriesIds: [] })}
+                >
+                  Clear all
+                </button>
+              </div>
+
               <button
                 type="button"
                 className={styles.browseSeriesButton}
