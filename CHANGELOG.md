@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-09-01
+
 ### Fixed
 
 - Backend: Recommendations' "Exclude Genres" output filter now correctly excludes a candidate when given an alias genre name (e.g. `"Action"`, the same vocabulary the "Genres" field itself shows) — it previously compared against TMDB's canonical display names (e.g. `"Action & Adventure"`) instead, so it silently excluded nothing (`series_spec_043`).
