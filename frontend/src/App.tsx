@@ -17,6 +17,7 @@ import { SearchFilter } from './components/SearchFilter'
 import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
 import { KeywordsView } from './components/KeywordsView'
+import { SettingsPage } from './components/SettingsPage'
 import {
   SeriesStatus,
   type Series,
@@ -175,6 +176,9 @@ function App() {
                 <NavLink to="/keywords" className={navLinkClassName}>
                   Keywords
                 </NavLink>
+                <NavLink to="/settings" className={navLinkClassName}>
+                  Settings
+                </NavLink>
               </div>
             </nav>
 
@@ -224,6 +228,7 @@ function App() {
                 }
               />
               <Route path="/keywords" element={<KeywordsView />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/my-series" replace />} />
             </Routes>
           </>

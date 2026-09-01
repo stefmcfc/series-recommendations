@@ -453,6 +453,32 @@ describe('FRONTEND-041-AC-08: /keywords renders the keywords view', () => {
   })
 })
 
+describe('FRONTEND-070-AC-01: Settings nav link renders after Keywords', () => {
+  it('renders a Settings link after Keywords in the nav', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('add-series-btn')
+
+    const links = screen.getAllByRole('link').map((el) => el.textContent)
+    const keywordsIndex = links.findIndex((text) => text === 'Keywords')
+    const settingsIndex = links.findIndex((text) => text === 'Settings')
+
+    expect(keywordsIndex).toBeGreaterThan(-1)
+    expect(settingsIndex).toBe(keywordsIndex + 1)
+  })
+})
+
+describe('FRONTEND-070-AC-02: /settings renders the Settings page shell', () => {
+  it('renders SettingsPage content at /settings', async () => {
+    mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/settings')
+
+    render(<App />)
+
+    expect(await screen.findByTestId('settings-view')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-041-AC-09: nav updates the URL and supports Back', () => {
   it('navigates and supports browser Back', async () => {
     mockGetAll.mockResolvedValue([])

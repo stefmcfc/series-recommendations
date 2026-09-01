@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.10.0] - 2026-09-01
+
+### Added
+
+- Frontend: Settings nav item after Keywords, routing to a `/settings` page shell (placeholder only, no real settings yet) (`frontend_spec_070`).
+
 ## [3.9.1] - 2026-09-01
 
 ### Changed

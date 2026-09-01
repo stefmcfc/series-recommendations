@@ -92,6 +92,7 @@ corrected below.
 | Recommendations' Exclude Genres becomes the shared genre picker — combined include/exclude in Custom Search, exclude-only elsewhere — replacing free text | —                                    | `frontend_spec_068`                            | ✅ Done                                                                                         |
 | "Use My Series" source picker gains Exclude Genre(s) (client-side, narrows the candidate pool) — replaces the include-only "Filter by Genre" checkbox fieldset with the shared `GenreIncludeExcludePicker` | —                                    | `frontend_spec_069`                            | ✅ Done                                                                                         |
 | Specific Series picker "Select all" / "Clear all" bulk actions, scoped to the currently-filtered candidate pool | —                                    | `frontend_spec_051`                            | ✅ Done                                                                                         |
+| Settings menu (shell only) — "Settings" nav item after Keywords, routing to an otherwise-empty page; no real settings yet | —                                    | `frontend_spec_070`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
@@ -119,6 +120,7 @@ delivered; see the table above.)
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
+| My Series filter sheet — funnel icon next to `SeriesList`'s view-mode icons opens `SearchFilter`'s fields as a slide-out sheet, replacing the inline disclosure | — | `frontend_spec_071` | `frontend_spec_055` (owns the fields/disclosure this supersedes) ✅ already delivered | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
 | Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | — (standalone) | 🟩 P4 · ⬜ Not started |
 
