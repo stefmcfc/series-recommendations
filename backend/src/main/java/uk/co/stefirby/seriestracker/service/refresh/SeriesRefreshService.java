@@ -159,51 +159,7 @@ public class SeriesRefreshService {
                 return false;
             }
             TmdbSeriesDetail detail = tmdbClient.details(tmdbId);
-            // SERIES-027-AC-07: a null value from TMDB for any of these fields leaves the
-            // entity's existing value unchanged rather than wiping it -- a refresh should never
-            // be able to blank out data that's already been recorded, just because today's
-            // response happens not to include it.
-            // series_spec_040_tmdb_managed_field_lock.md (SERIES-040-AC-04/05): title/year/
-            // genres are now kept in sync here too, unconditionally overwriting whatever the
-            // entity's current value is -- this is the one path SERIES-040-AC-01's manual-edit
-            // lock doesn't apply to.
-            if (detail.title() != null) {
-                entity.setTitle(detail.title());
-            }
-            if (detail.year() != null) {
-                entity.setYear(detail.year());
-            }
-            if (detail.genreIds() != null && !detail.genreIds().isEmpty()) {
-                entity.setGenres(genreTable.joinDisplayNames(detail.genreIds()));
-            }
-            if (detail.numberOfSeasons() != null) {
-                entity.setTotalSeasons(detail.numberOfSeasons());
-            }
-            if (detail.numberOfEpisodes() != null) {
-                entity.setTotalEpisodes(detail.numberOfEpisodes());
-            }
-            if (detail.voteAverage() != null) {
-                entity.setTmdbRating(detail.voteAverage());
-            }
-            if (detail.voteCount() != null) {
-                entity.setTmdbVoteCount(detail.voteCount());
-            }
-            if (detail.productionStatus() != null) {
-                entity.setProductionStatus(detail.productionStatus());
-            }
-            if (detail.originCountry() != null) {
-                entity.setOriginCountry(detail.originCountry());
-            }
-            if (detail.overview() != null) {
-                entity.setOverview(detail.overview());
-            }
-            // series_spec_039_last_air_year.md (SERIES-039-AC-04): unlike productionStatus/
-            // originCountry, a running show's lastAirYear genuinely changes as new episodes
-            // air, so it's re-resolved on every refresh, same null-preserving posture as the
-            // fields above.
-            if (detail.lastAirYear() != null) {
-                entity.setLastAirYear(detail.lastAirYear());
-            }
+            applyTmdbDetail(entity, detail);
             // series_spec_019_keyword_tracking.md (SERIES-019-AC-08): reconciles this series'
             // keyword set against TMDB's current data using the same tmdbId just resolved
             // above -- non-fatal on its own (KeywordSyncService never throws).
@@ -212,6 +168,56 @@ public class SeriesRefreshService {
         } catch (ExternalServiceException e) {
             log.info("TMDB refresh unavailable for series {} (imdbId={}): {}", entity.getId(), imdbId, e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * SERIES-027-AC-07: a null value from TMDB for any of these fields leaves the entity's
+     * existing value unchanged rather than wiping it -- a refresh should never be able to blank
+     * out data that's already been recorded, just because today's response happens not to
+     * include it. {@code series_spec_040_tmdb_managed_field_lock.md} (SERIES-040-AC-04/05):
+     * title/year/genres are kept in sync here too, unconditionally overwriting whatever the
+     * entity's current value is -- this is the one path SERIES-040-AC-01's manual-edit lock
+     * doesn't apply to. {@code series_spec_039_last_air_year.md} (SERIES-039-AC-04):
+     * lastAirYear is re-resolved on every refresh, same null-preserving posture, since a
+     * running show's value genuinely changes as new episodes air. Extracted out of {@link
+     * #refreshFromTmdb} (java:S3776) -- a flat sequence of independent null-guarded field
+     * copies with no real branching, so pulling it into its own method resets the cognitive-
+     * complexity count without changing behavior.
+     */
+    private void applyTmdbDetail(SeriesEntity entity, TmdbSeriesDetail detail) {
+        if (detail.title() != null) {
+            entity.setTitle(detail.title());
+        }
+        if (detail.year() != null) {
+            entity.setYear(detail.year());
+        }
+        if (detail.genreIds() != null && !detail.genreIds().isEmpty()) {
+            entity.setGenres(genreTable.joinDisplayNames(detail.genreIds()));
+        }
+        if (detail.numberOfSeasons() != null) {
+            entity.setTotalSeasons(detail.numberOfSeasons());
+        }
+        if (detail.numberOfEpisodes() != null) {
+            entity.setTotalEpisodes(detail.numberOfEpisodes());
+        }
+        if (detail.voteAverage() != null) {
+            entity.setTmdbRating(detail.voteAverage());
+        }
+        if (detail.voteCount() != null) {
+            entity.setTmdbVoteCount(detail.voteCount());
+        }
+        if (detail.productionStatus() != null) {
+            entity.setProductionStatus(detail.productionStatus());
+        }
+        if (detail.originCountry() != null) {
+            entity.setOriginCountry(detail.originCountry());
+        }
+        if (detail.overview() != null) {
+            entity.setOverview(detail.overview());
+        }
+        if (detail.lastAirYear() != null) {
+            entity.setLastAirYear(detail.lastAirYear());
         }
     }
 
