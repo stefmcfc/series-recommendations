@@ -49,6 +49,7 @@ public class SeriesSearchService {
         return repository.findAll().stream()
             .filter(s -> matchesTitle(s, criteria.getTitle()))
             .filter(s -> matchesGenres(s, criteria.getGenres()))
+            .filter(s -> matchesExcludeGenres(s, criteria.getExcludeGenres()))
             .filter(s -> matchesKeywords(s, criteria.getKeywords()))
             .filter(s -> matchesStatus(s, criteria.getStatus()))
             .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating()))
@@ -71,6 +72,18 @@ public class SeriesSearchService {
         if (s.getGenres() == null || s.getGenres().isBlank()) return false;
         String lower = s.getGenres().toLowerCase(Locale.ROOT);
         return genres.stream().anyMatch(g -> lower.contains(g.toLowerCase(Locale.ROOT)));
+    }
+
+    // series_spec_042_exclude_genres_search.md (SERIES-042-AC-02/03/04/05): a negated,
+    // any-match mirror of matchesGenres above. A genre-less series (null/blank genres) is never
+    // excluded -- there's nothing to match against, same null-handling convention matchesGenres
+    // uses for include. Applied as an independent filter stage alongside matchesGenres, so a
+    // series matching both an included and an excluded genre is excluded (exclude wins).
+    private boolean matchesExcludeGenres(SeriesEntity s, List<String> excludeGenres) {
+        if (excludeGenres == null || excludeGenres.isEmpty()) return true;
+        if (s.getGenres() == null || s.getGenres().isBlank()) return true;
+        String lower = s.getGenres().toLowerCase(Locale.ROOT);
+        return excludeGenres.stream().noneMatch(g -> lower.contains(g.toLowerCase(Locale.ROOT)));
     }
 
     // SERIES-019-AC-19: exact (case-insensitive) match against the normalized keyword set,

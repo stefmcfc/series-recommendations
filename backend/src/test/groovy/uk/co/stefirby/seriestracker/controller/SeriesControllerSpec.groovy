@@ -467,4 +467,18 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data.length()').value(1))
         result.andExpect(jsonPath('$.data[0].title').value("Rewatch Me"))
   }
+
+  def "SERIES-042-AC-06: GET /api/v1/series/search?excludeGenre=Comedy excludes Comedy series"() {
+    given: "a Comedy series and a Drama series exist"
+        seriesService.create(new SeriesDto(title: "Funny Show", genres: "Comedy"))
+        seriesService.create(new SeriesDto(title: "Serious Show", genres: "Drama"))
+
+    when: "GET /api/v1/series/search?excludeGenre=Comedy is requested"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("excludeGenre", "Comedy"))
+
+    then: "the response is 200 and excludes the Comedy series"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data[*].title').value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("Funny Show"))))
+        result.andExpect(jsonPath('$.data[*].title').value(org.hamcrest.Matchers.hasItem("Serious Show")))
+  }
 }

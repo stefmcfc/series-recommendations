@@ -6,6 +6,9 @@ import java.util.List;
 public class SeriesSearchCriteria {
     private String title;
     private List<String> genres;
+    // series_spec_042_exclude_genres_search.md (SERIES-042-AC-01): mirrors genres' shape exactly;
+    // matched by SeriesSearchService.matchesExcludeGenres, a negated version of matchesGenres.
+    private List<String> excludeGenres;
     // series_spec_019_keyword_tracking.md (SERIES-019-AC-18): mirrors genres' shape/OR-logic
     // exactly, but matched exactly (case-insensitively) rather than by substring -- see
     // SeriesSearchService.matchesKeywords.
@@ -40,6 +43,8 @@ public class SeriesSearchCriteria {
     public void setTitle(String title) { this.title = title; }
     public List<String> getGenres() { return genres; }
     public void setGenres(List<String> genres) { this.genres = genres; }
+    public List<String> getExcludeGenres() { return excludeGenres; }
+    public void setExcludeGenres(List<String> excludeGenres) { this.excludeGenres = excludeGenres; }
     public List<String> getKeywords() { return keywords; }
     public void setKeywords(List<String> keywords) { this.keywords = keywords; }
     public String getStatus() { return status; }

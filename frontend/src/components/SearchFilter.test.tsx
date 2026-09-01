@@ -128,14 +128,27 @@ describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
   })
 })
 
-describe('FRONTEND-055-AC-03: genre checkbox list', () => {
-  it('renders genres as checkboxes and submits selected ones', async () => {
+describe('FRONTEND-063-AC-03: GenreIncludeExcludePicker renders', () => {
+  it('renders the picker trigger once filters are shown', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Comedy', 'Drama'])
+    renderFilter()
+    openFilters()
+    expect(
+      await screen.findByRole('button', { name: 'Genres' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-063-AC-04: toggling submits genres/excludeGenres', () => {
+  it('includes an included genre in onSearch criteria', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama', 'Comedy', 'Crime'])
     const { onSearch } = renderFilter()
     openFilters()
 
-    fireEvent.click(await screen.findByLabelText('Drama'))
-    fireEvent.click(screen.getByLabelText('Crime'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Drama: neutral' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Crime: neutral' }))
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
@@ -143,12 +156,44 @@ describe('FRONTEND-055-AC-03: genre checkbox list', () => {
     )
   })
 
-  it('omits genres from criteria when nothing is selected', () => {
+  it('includes an excluded genre in onSearch criteria', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Comedy'])
+    const onSearch = vi.fn()
+    render(<SearchFilter onSearch={onSearch} onClear={vi.fn()} />)
+    openFilters()
+    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    // neutral -> include -> exclude
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    fireEvent.click(screen.getByText('Search'))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ excludeGenres: ['Comedy'] }),
+    )
+  })
+
+  it('omits genres/excludeGenres from criteria when nothing is selected', () => {
     const { onSearch } = renderFilter()
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     expect(onSearch).toHaveBeenCalledWith(
-      expect.not.objectContaining({ genres: expect.anything() }),
+      expect.not.objectContaining({
+        genres: expect.anything(),
+        excludeGenres: expect.anything(),
+      }),
     )
+  })
+})
+
+describe('FRONTEND-063-AC-05: Clear Filters resets both genre selections', () => {
+  it('resets the picker summary after Clear Filters', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Comedy'])
+    renderFilter()
+    openFilters()
+    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    fireEvent.click(screen.getByTestId('clear-filters-btn'))
+    expect(screen.getByRole('button', { name: 'Genres' })).toBeInTheDocument()
   })
 })
 

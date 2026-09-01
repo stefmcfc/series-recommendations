@@ -1,6 +1,8 @@
 # Series Spec 042: Exclude Genre(s) Filter on `GET /series/search`
 
-**Status**: Not started
+**Status**: Implemented — `dto/SeriesSearchCriteria.java`, `service/SeriesSearchService.java`
+(`matchesExcludeGenres`), `controller/SeriesController.java` (`excludeGenre` query param on
+`GET /series/search`)
 **Priority**: P3
 **Depends on**: Series Spec 037 (`series_spec_037_search_filter_overhaul.md`, owns
 `SeriesSearchCriteria`/`SeriesSearchService.search` and the existing include-`genres`
@@ -275,9 +277,9 @@ def "SERIES-042-AC-06: GET /series/search?excludeGenre=Comedy excludes Comedy se
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-042-AC-01: `SeriesSearchCriteria` exposes `excludeGenres`
-- [ ] SERIES-042-AC-02: excludes a series matching any requested excluded genre
-- [ ] SERIES-042-AC-03: a genre-less series is never excluded
-- [ ] SERIES-042-AC-04: an empty/absent `excludeGenres` is a no-op
-- [ ] SERIES-042-AC-05: include and exclude compose — an excluded genre wins
-- [ ] SERIES-042-AC-06: `excludeGenre` query param maps to `excludeGenres` criteria
+- [x] SERIES-042-AC-01: `SeriesSearchCriteria` exposes `excludeGenres`
+- [x] SERIES-042-AC-02: excludes a series matching any requested excluded genre
+- [x] SERIES-042-AC-03: a genre-less series is never excluded
+- [x] SERIES-042-AC-04: an empty/absent `excludeGenres` is a no-op
+- [x] SERIES-042-AC-05: include and exclude compose — an excluded genre wins
+- [x] SERIES-042-AC-06: `excludeGenre` query param maps to `excludeGenres` criteria

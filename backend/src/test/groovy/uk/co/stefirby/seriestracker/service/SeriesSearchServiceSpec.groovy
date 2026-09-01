@@ -545,4 +545,67 @@ class SeriesSearchServiceSpec extends Specification {
         then: "it's excluded -- its aired span never reaches yearMax"
             results.isEmpty()
     }
+
+    def "SERIES-042-AC-01: SeriesSearchCriteria exposes excludeGenres getter/setter"() {
+        given: "a new SeriesSearchCriteria"
+            def criteria = new SeriesSearchCriteria()
+
+        when: "excludeGenres is set"
+            criteria.setExcludeGenres(["Comedy", "Horror"])
+
+        then: "the getter returns the same list"
+            criteria.getExcludeGenres() == ["Comedy", "Horror"]
+    }
+
+    def "SERIES-042-AC-02: excludes a series whose genres contain an excluded value"() {
+        given: "a Comedy series and a Drama series, both scoped by a unique title fragment"
+            seriesRepository.save(new SeriesEntity(title: "AC02 Funny Show", genres: "Comedy"))
+            seriesRepository.save(new SeriesEntity(title: "AC02 Serious Show", genres: "Drama"))
+
+        when: "searching with excludeGenres=[Comedy], scoped to these two"
+            def criteria = new SeriesSearchCriteria(title: "AC02")
+            criteria.setExcludeGenres(["Comedy"])
+            def results = searchService.search(criteria)
+
+        then: "only the Drama series is returned"
+            results*.title == ["AC02 Serious Show"]
+    }
+
+    def "SERIES-042-AC-03: a series with no genres is not excluded"() {
+        given: "a series with no genres set"
+            seriesRepository.save(new SeriesEntity(title: "AC03 No Genre Show", genres: null))
+
+        when: "searching with excludeGenres=[Comedy], scoped to this series"
+            def criteria = new SeriesSearchCriteria(title: "AC03")
+            criteria.setExcludeGenres(["Comedy"])
+            def results = searchService.search(criteria)
+
+        then: "the genre-less series is still returned"
+            results*.title == ["AC03 No Genre Show"]
+    }
+
+    def "SERIES-042-AC-04: no excludeGenres means no series is excluded on that basis"() {
+        given: "a Comedy series"
+            seriesRepository.save(new SeriesEntity(title: "Funny Show", genres: "Comedy"))
+
+        when: "searching with no excludeGenres set"
+            def results = searchService.search(new SeriesSearchCriteria())
+
+        then: "the Comedy series is still returned"
+            results*.title.contains("Funny Show")
+    }
+
+    def "SERIES-042-AC-05: a series matching both genres and excludeGenres is excluded"() {
+        given: "a series tagged with both Comedy and Drama"
+            seriesRepository.save(new SeriesEntity(title: "AC05 Dramedy", genres: "Comedy, Drama"))
+
+        when: "searching with genres=[Comedy] and excludeGenres=[Drama], scoped to this series"
+            def criteria = new SeriesSearchCriteria(title: "AC05")
+            criteria.setGenres(["Comedy"])
+            criteria.setExcludeGenres(["Drama"])
+            def results = searchService.search(criteria)
+
+        then: "no series is returned"
+            results.isEmpty()
+    }
 }

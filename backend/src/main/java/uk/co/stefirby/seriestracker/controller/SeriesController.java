@@ -86,6 +86,7 @@ public class SeriesController {
     public ResponseEntity<ApiResponse<List<SeriesDto>>> search(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) List<String> genre,
+            @RequestParam(required = false) List<String> excludeGenre,
             @RequestParam(required = false) List<String> keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer minPersonalRating,
@@ -100,6 +101,7 @@ public class SeriesController {
         SeriesSearchCriteria c = new SeriesSearchCriteria();
         c.setTitle(title);
         c.setGenres(genre);
+        c.setExcludeGenres(excludeGenre);
         c.setKeywords(keyword);
         c.setStatus(status);
         c.setMinPersonalRating(minPersonalRating);
