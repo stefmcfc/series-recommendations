@@ -3,6 +3,7 @@ import type { Series } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
 import type { PickerOption } from './KeywordPicker'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
+import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import {
   buildSpecificSeriesCandidatePool,
   seriesPickerLabel,
@@ -40,6 +41,14 @@ export function UseMySeriesPanel({
   const [specificSeriesGenreFilter, setSpecificSeriesGenreFilter] = useState<
     string[]
   >([])
+  // FRONTEND-069-AC-04: replaces the former include-only "Filter by Genre"
+  // checkbox fieldset with the shared GenreIncludeExcludePicker -- this new
+  // state slot is the exclude side, specificSeriesGenreFilter above stays
+  // the include side.
+  const [
+    specificSeriesExcludeGenreFilter,
+    setSpecificSeriesExcludeGenreFilter,
+  ] = useState<string[]>([])
   const [specificSeriesStatusFilter, setSpecificSeriesStatusFilter] =
     useState<SpecificSeriesStatusFilter>('any')
   const [specificSeriesSortBy, setSpecificSeriesSortBy] =
@@ -52,14 +61,6 @@ export function UseMySeriesPanel({
   const handleSpecificSeriesSelectionChange = (next: string[]) => {
     updateState({ selectedSeriesIds: next })
   }
-
-  const handleSpecificSeriesGenreFilterToggle =
-    (genre: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const checked = event.target.checked
-      setSpecificSeriesGenreFilter((prev) =>
-        checked ? [...prev, genre] : prev.filter((g) => g !== genre),
-      )
-    }
 
   const handleSpecificSeriesSortByChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
@@ -84,6 +85,7 @@ export function UseMySeriesPanel({
   const specificSeriesCandidatePool = buildSpecificSeriesCandidatePool(
     allSeries,
     specificSeriesGenreFilter,
+    specificSeriesExcludeGenreFilter,
     specificSeriesStatusFilter,
     specificSeriesSortBy,
     specificSeriesSortDirection,
@@ -122,28 +124,24 @@ export function UseMySeriesPanel({
               {/* Layout-only, no spec (2026-08-27): Filter by Genre's scrollable box left a lot of empty width next to it, so Status + Sort now share that row as a second column -- temporary until this section is revisited for a sheet/modal-based filter UI. */}
               <div className={styles.specificSeriesFiltersRow}>
                 {genreOptions.length > 0 && (
-                  <fieldset className={styles.modeFieldset}>
-                    <legend>Filter by Genre</legend>
-                    <div className={styles.seriesPicker}>
-                      {genreOptions.map((genre) => (
-                        <div key={genre} className={styles.seriesOption}>
-                          <input
-                            id={`specific-series-genre-filter-${genre}`}
-                            type="checkbox"
-                            checked={specificSeriesGenreFilter.includes(genre)}
-                            onChange={handleSpecificSeriesGenreFilterToggle(
-                              genre,
-                            )}
-                          />
-                          <label
-                            htmlFor={`specific-series-genre-filter-${genre}`}
-                          >
-                            {genre}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </fieldset>
+                  // FRONTEND-069-AC-04: combined include/exclude Filter by
+                  // Genre picker, replacing the former include-only checkbox
+                  // fieldset -- one control now covers both
+                  // specificSeriesGenreFilter and
+                  // specificSeriesExcludeGenreFilter, mutual exclusivity
+                  // guaranteed by GenreIncludeExcludePicker itself
+                  // (frontend_spec_067).
+                  <GenreIncludeExcludePicker
+                    idPrefix="specific-series-genre"
+                    label="Filter by Genre"
+                    genreOptions={genreOptions}
+                    included={specificSeriesGenreFilter}
+                    excluded={specificSeriesExcludeGenreFilter}
+                    onChange={({ included, excluded }) => {
+                      setSpecificSeriesGenreFilter(included)
+                      setSpecificSeriesExcludeGenreFilter(excluded)
+                    }}
+                  />
                 )}
 
                 <div className={styles.specificSeriesRightColumn}>

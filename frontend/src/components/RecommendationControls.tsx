@@ -454,6 +454,29 @@ function filterSpecificSeriesByGenre(
   })
 }
 
+// FRONTEND-069-AC-01/02/03: negated mirror of filterSpecificSeriesByGenre
+// above -- same exact-token-match shape (lowercased, comma-split, trimmed),
+// deliberately not the backend's substring match (this spec's Design
+// Decisions), since it's extending an already-established client-side
+// function rather than introducing a new one from scratch. A genre-less
+// series (`s.genres` null/empty) yields an empty seriesGenres array, whose
+// `.some(...)` is always false, so it's never excluded (AC-02) -- no
+// special-case branch needed beyond the existing optional-chaining pattern.
+function filterSpecificSeriesByExcludeGenre(
+  series: Series[],
+  excludeGenreFilter: string[],
+): Series[] {
+  if (excludeGenreFilter.length === 0) return series
+  const lowerFilter = new Set(
+    excludeGenreFilter.map((genre) => genre.toLowerCase()),
+  )
+  return series.filter((s) => {
+    const seriesGenres =
+      s.genres?.split(',').map((genre) => genre.trim().toLowerCase()) ?? []
+    return !seriesGenres.some((genre) => lowerFilter.has(genre))
+  })
+}
+
 // FRONTEND-035-AC-12: three fixed options -- Any Status (default, everything
 // passes), Completed Only, Completed or Watching.
 function filterSpecificSeriesByStatus(
@@ -542,6 +565,7 @@ function compareSpecificSeries(
 export function buildSpecificSeriesCandidatePool(
   allSeries: Series[],
   genreFilter: string[],
+  excludeGenreFilter: string[],
   statusFilter: SpecificSeriesStatusFilter,
   sortBy: SpecificSeriesSortBy,
   sortDirection: SpecificSeriesSortDirection,
@@ -549,7 +573,10 @@ export function buildSpecificSeriesCandidatePool(
 ): Series[] {
   const selectable = allSeries.filter((s) => !s.excludeFromRecommendations)
   const filtered = filterSpecificSeriesByStatus(
-    filterSpecificSeriesByGenre(selectable, genreFilter),
+    filterSpecificSeriesByExcludeGenre(
+      filterSpecificSeriesByGenre(selectable, genreFilter),
+      excludeGenreFilter,
+    ),
     statusFilter,
   )
   const sorted = [...filtered].sort((a, b) =>

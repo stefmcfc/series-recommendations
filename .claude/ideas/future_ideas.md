@@ -62,28 +62,34 @@ concrete UI home for the resulting action.
 
 ### "Use My Series" source-series picker gains filter/sort parity with My Series, plus a "Select Series" relabel
 
-Raised 2026-09-01. Current state, confirmed by reading the code: `UseMySeriesPanel.tsx` only offers
-"Filter by Genre" (checkbox), "Filter by Status" (radio), and a local "Sort by" — all narrowing
-which of the user's own series become recommendation-sourcing candidates. This is a separate,
-independently-implemented filter set from `SearchFilter`'s (My Series list), not shared logic.
+Raised 2026-09-01. Original state, confirmed by reading the code at the time: `UseMySeriesPanel.tsx`
+only offered "Filter by Genre" (checkbox), "Filter by Status" (radio), and a local "Sort by" — all
+narrowing which of the user's own series become recommendation-sourcing candidates. This is a
+separate, independently-implemented filter set from `SearchFilter`'s (My Series list), not shared
+logic.
 
-Proposed additions to that same panel, mirroring `SearchFilter`'s field set: an include-Keywords
-filter (mirroring `SearchFilter`'s `KeywordPicker`), Min Personal/IMDb/TMDB Rating, and Year Min/Max
-— all narrowing the *source pool* of the user's own series. (Exclude Genre(s) — also originally
+**Update (2026-09-01, later same day)**: the Exclude Genre(s) piece of this idea — also originally
 proposed here — was pulled out into its own real spec, `frontend_spec_069_use_my_series_exclude_genres.md`,
-as part of a 2026-09-01 exclude-genres consolidation across the whole app; it's tracked in
-`ROADMAP.md` now, not here.) The remaining fields are explicitly distinct from
-`RecommendationFiltersBox`'s existing Min TMDB Rating/Year Min-Max/Exclude Genres/Exclude Keywords
-fields, which filter the TMDB recommendation *output* instead and would be unaffected by this idea.
-**Naming collision risk to design around**: two different "Min Rating"/"Year Range" concepts would
-exist in the same tab for two different purposes — labeling needs to make the distinction obvious to
-avoid user confusion.
+as part of a 2026-09-01 exclude-genres consolidation across the whole app, and has since shipped
+(`ROADMAP.md`'s Delivered table). As part of that, the former "Filter by Genre" checkbox fieldset was
+replaced entirely by the shared `GenreIncludeExcludePicker` (`frontend_spec_067`) — so the "existing
+'Filter by Genre' checkbox is kept as-is content-wise" note two paragraphs below is now stale; it's a
+picker, not a checkbox list, though the genre *vocabulary* it offers is unchanged (still the same
+"Trim the Genres checkbox list" question below).
+
+Remaining, still-unspecced scope: an include-Keywords filter (mirroring `SearchFilter`'s
+`KeywordPicker`), Min Personal/IMDb/TMDB Rating, and Year Min/Max — all narrowing the *source pool*
+of the user's own series — plus the "Select Series" relabel proposed below. These fields are
+explicitly distinct from `RecommendationFiltersBox`'s existing Min TMDB Rating/Year Min-Max/Exclude
+Genres/Exclude Keywords fields, which filter the TMDB recommendation *output* instead and would be
+unaffected by this idea. **Naming collision risk to design around**: two different "Min Rating"/"Year
+Range" concepts would exist in the same tab for two different purposes — labeling needs to make the
+distinction obvious to avoid user confusion.
 
 Also proposes relabeling the area above the series picker to "Select Series," styled differently
-from My Series' own filter panel even while sharing underlying filter logic where practical. The
-existing "Filter by Genre" checkbox is kept as-is content-wise per the user — see the separate,
-explicitly-undecided "Trim the Genres checkbox list" idea below for whether the genre vocabulary
-itself should later change.
+from My Series' own filter panel even while sharing underlying filter logic where practical. See the
+separate, explicitly-undecided "Trim the Genres checkbox list" idea below for whether the genre
+vocabulary itself should later change.
 
 **What's required**: extending `UseMySeriesPanel.tsx`'s local filter state with the new fields above,
 plus a UI relabel — see cross-reference below for the larger shared-logic question this touches.

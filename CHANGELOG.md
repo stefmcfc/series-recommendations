@@ -12,6 +12,7 @@ versioned together as one app.
 
 - Backend: Custom Search's Exclude Genres now also narrows results at the TMDB `discover/tv` API level (`without_genres`), not just via the existing post-fetch output filter (`series_spec_044`).
 - Frontend: Recommendations' Exclude Genres is now the shared `GenreIncludeExcludePicker` instead of a free-text field — combined include/exclude in Custom Search, exclude-only elsewhere (`frontend_spec_068`).
+- Frontend: "Use My Series" panel's "Filter by Genre" is now the shared `GenreIncludeExcludePicker`, gaining Exclude Genre(s) alongside the existing include filter — replaces the former include-only checkbox fieldset (`frontend_spec_069`).
 
 ## [3.8.0] - 2026-09-01
 

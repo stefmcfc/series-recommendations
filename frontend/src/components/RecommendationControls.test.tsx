@@ -106,6 +106,19 @@ function selectHighestRated() {
   fireEvent.click(screen.getByRole('tab', { name: /highest rated/i }))
 }
 
+// FRONTEND-069-AC-04: "Filter by Genre" is now the shared
+// GenreIncludeExcludePicker (trigger button + modal), replacing the old
+// inline checkbox-per-genre fieldset -- opens the modal, toggles one genre
+// from neutral straight to `include` (one click, mirroring what a direct
+// checkbox click used to do), then closes the modal again so it doesn't
+// leave a second `role="dialog"` element behind for tests that go on to
+// open the "Show all series" modal.
+function includeSpecificSeriesGenre(genre: string) {
+  fireEvent.click(screen.getByRole('button', { name: 'Filter by Genre' }))
+  fireEvent.click(screen.getByRole('button', { name: `${genre}: neutral` }))
+  fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+}
+
 describe('FRONTEND-011-AC-03: two-tier sourcing mode selector', () => {
   it('renders Use My Series and Discover tabs, defaulting to Use My Series', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
@@ -1224,7 +1237,7 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
 
-    fireEvent.click(screen.getByLabelText('Comedy'))
+    includeSpecificSeriesGenre('Comedy')
     clickApplyFilters()
 
     // Narrowed away from the genre-filtered candidate pool, but the chip
@@ -1307,6 +1320,7 @@ describe('FRONTEND-050-AC-03: an already-selected-then-excluded series still res
     const pool = buildSpecificSeriesCandidatePool(
       [nowExcluded],
       [],
+      [],
       'any',
       'title',
       'asc',
@@ -1374,7 +1388,8 @@ describe('FRONTEND-035-AC-10: genre/status filters render but never appear in th
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(await screen.findByLabelText('Drama'))
+    await screen.findByRole('button', { name: 'Filter by Genre' })
+    includeSpecificSeriesGenre('Drama')
     fireEvent.click(screen.getByLabelText(/completed only/i))
     // FRONTEND-042: "Use My Series" is now active by default (no separate
     // mode-change click to trigger the auto-fetch this test relies on), so
@@ -1395,7 +1410,8 @@ describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the
       makeSeries({ id: '2', title: 'Ozark', genres: 'Crime, Drama' }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(await screen.findByLabelText('Comedy'))
+    await screen.findByRole('button', { name: 'Filter by Genre' })
+    includeSpecificSeriesGenre('Comedy')
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
     const dialog = screen.getByRole('dialog')
@@ -1491,7 +1507,8 @@ describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => 
       }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(await screen.findByLabelText('Drama'))
+    await screen.findByRole('button', { name: 'Filter by Genre' })
+    includeSpecificSeriesGenre('Drama')
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
     const dialog = screen.getByRole('dialog')
@@ -2398,5 +2415,80 @@ describe('FRONTEND-068-AC-01: excludeGenresSelected drives query.excludeGenres',
   it('omits excludeGenres when the array is empty', () => {
     const query = buildQuery(initialState)
     expect(query.excludeGenres).toBeUndefined()
+  })
+})
+
+describe('FRONTEND-069-AC-01: excludeGenreFilter narrows the pool', () => {
+  it('omits a series matching an excluded genre', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'Funny Show',
+        genres: 'Comedy',
+        excludeFromRecommendations: false,
+      },
+      {
+        id: '2',
+        title: 'Serious Show',
+        genres: 'Drama',
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const pool = buildSpecificSeriesCandidatePool(
+      series,
+      [],
+      ['Comedy'],
+      'any',
+      'title',
+      'asc',
+      [],
+    )
+    expect(pool.map((s) => s.title)).toEqual(['Serious Show'])
+  })
+})
+
+describe('FRONTEND-069-AC-02: a genre-less series is not excluded', () => {
+  it('keeps a series with no genres regardless of excludeGenreFilter', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'No Genre Show',
+        genres: null,
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const pool = buildSpecificSeriesCandidatePool(
+      series,
+      [],
+      ['Comedy'],
+      'any',
+      'title',
+      'asc',
+      [],
+    )
+    expect(pool.map((s) => s.title)).toEqual(['No Genre Show'])
+  })
+})
+
+describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
+  it('returns every series unchanged when excludeGenreFilter is empty', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'Show',
+        genres: 'Comedy',
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const pool = buildSpecificSeriesCandidatePool(
+      series,
+      [],
+      [],
+      'any',
+      'title',
+      'asc',
+      [],
+    )
+    expect(pool.map((s) => s.title)).toEqual(['Show'])
   })
 })
