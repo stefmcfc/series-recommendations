@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.controller
 
 import org.hamcrest.Matchers
+import uk.co.stefirby.seriestracker.dto.CandidateDetailDto
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.dto.RecommendationDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
@@ -423,5 +424,49 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(status().isOk())
             result.andExpect(jsonPath('$.data').isArray())
             result.andExpect(jsonPath('$.count').value(0))
+    }
+
+    // -- SERIES-036: GET /api/v1/series/recommendations/{tmdbId}/details --
+
+    def "SERIES-036-AC-04: GET .../details returns a single-object envelope"() {
+        given: "the service resolves a detail DTO"
+            when(recommendationService.getDetailsForCandidate(1396, "tt0903747"))
+                .thenReturn(new CandidateDetailDto(5, 62, new BigDecimal("9.5")))
+
+        when: "GET /api/v1/series/recommendations/1396/details?imdbId=tt0903747 is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations/1396/details").param("imdbId", "tt0903747"))
+
+        then: "the response is 200 with the detail DTO under data"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data.numberOfSeasons').value(5))
+            result.andExpect(jsonPath('$.data.numberOfEpisodes').value(62))
+            result.andExpect(jsonPath('$.data.imdbRating').value(9.5))
+    }
+
+    def "SERIES-036-AC-04: GET .../details works without the optional imdbId query param"() {
+        given: "the service resolves a detail DTO with a null imdbId passed through"
+            when(recommendationService.getDetailsForCandidate(1396, null))
+                .thenReturn(new CandidateDetailDto(5, 62, null))
+
+        when: "GET /api/v1/series/recommendations/1396/details is requested with no imdbId"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations/1396/details"))
+
+        then: "the response is 200, imdbRating is null"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data.numberOfSeasons').value(5))
+            result.andExpect(jsonPath('$.data.imdbRating').doesNotExist())
+    }
+
+    def "SERIES-036-AC-05: the existing keywords endpoint is unaffected by the new details endpoint"() {
+        given: "the service resolves two keywords for tmdbId 4046"
+            when(recommendationService.getKeywordsForCandidate(4046)).thenReturn(["spy", "mi5"])
+
+        when: "GET /api/v1/series/recommendations/4046/keywords is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations/4046/keywords"))
+
+        then: "the keywords endpoint behaves exactly as before"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data', Matchers.hasSize(2)))
+            result.andExpect(jsonPath('$.count').value(2))
     }
 }

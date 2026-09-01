@@ -1,6 +1,15 @@
 # Frontend Spec 052: `SeriesDetail` "Recommendations" Button (Modal) + Shared `RecommendationCard`
 
-**Status**: Not started
+**Status**: Implemented — `components/RecommendationCard.tsx` (+
+`RecommendationCard.module.css`, `RecommendationCard.test.tsx`),
+`components/RecommendationsList.tsx` (refactored to render
+`<RecommendationCard>`, dead card CSS removed from
+`RecommendationsList.module.css`), `components/SeriesDetailActionsPanel.tsx`
+(new "Recommendations" button), `components/SeriesRecommendationsModal.tsx`
+(+ `SeriesRecommendationsModal.module.css`, new modal component) and
+`components/SeriesDetail.tsx` (wires the modal open/close state + disabled
+prop), `components/SeriesDetail.test.tsx` (new FRONTEND-052 coverage),
+`SeriesDetail.module.css` (`.recommendationsButton`).
 **Priority**: P3 (quality-of-life — lets a user get recs for one series without leaving its detail
 page or manually narrowing "Use My Series" to it)
 **Depends on**: Frontend Spec 005 (`frontend_spec_005_series_detail.md`, owns `SeriesDetail.tsx`/
@@ -249,11 +258,11 @@ existing `SeriesDetail.test.tsx` suite continuing to pass unmodified.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-052-AC-01: `RecommendationCard` renders standalone, with its own keywords/poster-error state
-- [ ] FRONTEND-052-AC-02: `RecommendationsList` behavior is unchanged after the extraction
-- [ ] FRONTEND-052-AC-03: `SeriesDetailActionsPanel` renders a "Recommendations" button after Refresh
-- [ ] FRONTEND-052-AC-04: clicking it opens a dialog titled after the series
-- [ ] FRONTEND-052-AC-05: the modal fetches recommendations scoped to `seriesIds=[series.id]`
-- [ ] FRONTEND-052-AC-06: loading/error/empty states render correctly
-- [ ] FRONTEND-052-AC-07: the button is disabled for an excluded series
-- [ ] FRONTEND-052-AC-08: the modal doesn't interfere with `SeriesDetail`'s other state
+- [x] FRONTEND-052-AC-01: `RecommendationCard` renders standalone, with its own keywords/poster-error state
+- [x] FRONTEND-052-AC-02: `RecommendationsList` behavior is unchanged after the extraction
+- [x] FRONTEND-052-AC-03: `SeriesDetailActionsPanel` renders a "Recommendations" button after Refresh
+- [x] FRONTEND-052-AC-04: clicking it opens a dialog titled after the series
+- [x] FRONTEND-052-AC-05: the modal fetches recommendations scoped to `seriesIds=[series.id]`
+- [x] FRONTEND-052-AC-06: loading/error/empty states render correctly
+- [x] FRONTEND-052-AC-07: the button is disabled for an excluded series
+- [x] FRONTEND-052-AC-08: the modal doesn't interfere with `SeriesDetail`'s other state

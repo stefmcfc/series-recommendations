@@ -4,7 +4,7 @@ import { SeriesDetail } from './SeriesDetail'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { Series, StreamingProvider } from '../types/series'
+import type { Recommendation, Series, StreamingProvider } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockGetById = vi.mocked(seriesApi.getById)
@@ -12,6 +12,7 @@ const mockDelete = vi.mocked(seriesApi.delete)
 const mockRefresh = vi.mocked(seriesApi.refresh)
 const mockAcknowledgeNewContent = vi.mocked(seriesApi.acknowledgeNewContent)
 const mockGetWatchProviders = vi.mocked(seriesApi.getWatchProviders)
+const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -45,6 +46,27 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     overview: null,
     excludeFromRecommendations: false,
     flaggedForRewatch: false,
+    ...overrides,
+  }
+}
+
+function makeRecommendation(
+  overrides: Partial<Recommendation> = {},
+): Recommendation {
+  return {
+    title: 'Ozark',
+    year: 2017,
+    genres: 'Crime, Drama',
+    overview: 'A financial planner relocates his family.',
+    posterUrl: null,
+    tmdbRating: 8.4,
+    voteCount: null,
+    streamingProviders: [],
+    imdbId: 'tt5071412',
+    sourceTitles: [],
+    totalSourceCount: 0,
+    originCountry: null,
+    tmdbId: 1234,
     ...overrides,
   }
 }
@@ -942,5 +964,136 @@ describe('FRONTEND-036-AC-07: resets on navigating to a different series', () =>
 
     await screen.findByText('Another show.')
     expect(screen.queryByText('Netflix')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-052-AC-03: Recommendations button', () => {
+  it('renders a Recommendations button after Refresh', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByTestId('recommendations-btn')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-052-AC-04: opens a dialog titled after the series', () => {
+  it('opens a dialog titled after the series', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ title: 'Ozark' }))
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+
+    expect(
+      await screen.findByRole('dialog', { name: /recommendations for ozark/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-052-AC-05: fetches recommendations scoped to this series', () => {
+  it('calls seriesApi.getRecommendations with sourceMode/seriesIds and renders results', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ id: 's1', title: 'Breaking Bad' }),
+    )
+    mockGetRecommendations.mockResolvedValue([
+      makeRecommendation({ title: 'Better Call Saul' }),
+    ])
+    render(<SeriesDetail id="s1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+
+    expect(await screen.findByText('Better Call Saul')).toBeInTheDocument()
+    expect(mockGetRecommendations).toHaveBeenCalledWith({
+      sourceMode: 'useMySeries',
+      seriesIds: ['s1'],
+    })
+  })
+})
+
+describe('FRONTEND-052-AC-06: loading, empty, and error states', () => {
+  it('shows loading, then an empty-state message', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+
+    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    expect(
+      await screen.findByText(/no recommendations found/i),
+    ).toBeInTheDocument()
+  })
+
+  it('shows an error message on fetch failure', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockGetRecommendations.mockRejectedValue(new Error('network error'))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+  })
+
+  it('dismisses on Escape and on the Done button', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+    await screen.findByRole('dialog')
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-052-AC-07: disabled for an excluded series', () => {
+  it('disables the button and sets an explanatory aria-label', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ excludeFromRecommendations: true }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    const button = await screen.findByTestId('recommendations-btn')
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute(
+      'aria-label',
+      'This series is excluded from recommendations',
+    )
+  })
+
+  it('does not disable the button for a non-excluded series', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ excludeFromRecommendations: false }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(await screen.findByTestId('recommendations-btn')).not.toBeDisabled()
+  })
+})
+
+describe('FRONTEND-052-AC-08: does not interfere with other SeriesDetail state', () => {
+  it('leaves delete confirmation working normally after opening and closing the modal', async () => {
+    mockGetById.mockResolvedValue(makeSeries())
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+    await screen.findByRole('dialog')
+    fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
   })
 })

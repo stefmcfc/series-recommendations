@@ -1,6 +1,9 @@
 # Series Spec 036: Recommendation Candidate Details (Season/Episode Counts + IMDb Rating)
 
-**Status**: Not started
+**Status**: Implemented — `dto/CandidateDetailDto.java` (new),
+`service/recommendation/RecommendationService.java` (`getDetailsForCandidate`),
+`controller/SeriesRecommendationController.java` (`GET .../details`), tests in
+`RecommendationServiceSpec.groovy` and `SeriesControllerRecommendationsSpec.groovy`, `API.md`.
 **Priority**: P3 (quality-of-life — fills a confirmed, longstanding gap: a recommendation candidate
 never showed anything beyond what TMDB's discover/recommendations response already carries)
 **Depends on**: Series Spec 006 (`series_spec_006_recommendations.md`, owns
@@ -209,8 +212,8 @@ controller.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-036-AC-01: `getDetailsForCandidate` resolves all three fields on success
-- [ ] SERIES-036-AC-02: a TMDB failure nulls season/episode without failing the request
-- [ ] SERIES-036-AC-03: a blank imdbId or OMDb failure nulls imdbRating without failing the request
-- [ ] SERIES-036-AC-04: `GET .../details` returns a single-object envelope
-- [ ] SERIES-036-AC-05: the existing keywords endpoint is unaffected
+- [x] SERIES-036-AC-01: `getDetailsForCandidate` resolves all three fields on success
+- [x] SERIES-036-AC-02: a TMDB failure nulls season/episode without failing the request
+- [x] SERIES-036-AC-03: a blank imdbId or OMDb failure nulls imdbRating without failing the request
+- [x] SERIES-036-AC-04: `GET .../details` returns a single-object envelope
+- [x] SERIES-036-AC-05: the existing keywords endpoint is unaffected

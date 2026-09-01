@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
+import uk.co.stefirby.seriestracker.dto.CandidateDetailDto;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.service.recommendation.RecommendationService;
@@ -76,5 +77,18 @@ public class SeriesRecommendationController {
     public ResponseEntity<ApiResponse<List<String>>> recommendationKeywords(@PathVariable int tmdbId) {
         List<String> keywords = recommendationService.getKeywordsForCandidate(tmdbId);
         return ResponseEntity.ok(new ApiResponse<>(keywords, keywords.size()));
+    }
+
+    /**
+     * SERIES-036-AC-04: single-object envelope (matching {@code SeriesController.getById}'s
+     * {@code ApiResponse<SeriesDto>} shape), not the list-plus-{@code count} shape {@link
+     * #recommendationKeywords(int)}/{@link #recommendations} use -- this returns one object,
+     * not a collection.
+     */
+    @GetMapping("/recommendations/{tmdbId}/details")
+    public ResponseEntity<ApiResponse<CandidateDetailDto>> recommendationDetails(
+            @PathVariable int tmdbId, @RequestParam(required = false) String imdbId) {
+        CandidateDetailDto details = recommendationService.getDetailsForCandidate(tmdbId, imdbId);
+        return ResponseEntity.ok(new ApiResponse<>(details));
     }
 }

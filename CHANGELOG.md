@@ -8,6 +8,19 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-09-01
+
+### Added
+
+- Frontend: `SeriesDetail` gains a "Recommendations" button (after Refresh) that opens a modal showing recommendations sourced from just that series — no more manually narrowing "Use My Series" to it on the Recommendations page (`frontend_spec_052`). Disabled, with an explanatory label, for a series marked "exclude from recommendations".
+- Backend: new `GET /api/v1/series/recommendations/{tmdbId}/details?imdbId={imdbId}` endpoint resolving a candidate's season/episode counts (TMDB) and IMDb rating (OMDb) on demand — each field degrades independently to `null` on its own source's failure, never failing the whole request (`series_spec_036`). Not yet consumed by the frontend; that's `frontend_spec_053`.
+
+### Changed
+
+- Frontend: extracted the per-candidate recommendation card (title/year/genres/overview/rating/streaming providers/actions) out of `RecommendationsList` into a standalone `RecommendationCard` component, now shared by both `RecommendationsList` and the new `SeriesDetail` modal above. No behavior change to the existing Recommendations page (`frontend_spec_052`).
+- Backend: `OmdbClient` now compiles its ratings-suffix regex once as a static `Pattern` instead of per-rating inside a loop; `SeriesRefreshService.refreshFromTmdb`'s flat sequence of TMDB field copies is now a separate `applyTmdbDetail` helper. No behavior change — SonarQube findings (`java:S9142`, `java:S3776`).
+- Frontend: `SeriesFormFields` extracts its repeated "locked hint, else validation error, else none" logic into one `resolveDescribedBy` helper instead of a nested ternary at each locked-capable field. No behavior change — SonarQube findings (`typescript:S3358`, `typescript:S3776`).
+
 ## [3.5.1] - 2026-09-01
 
 ### Changed

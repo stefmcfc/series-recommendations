@@ -1,11 +1,16 @@
 package uk.co.stefirby.seriestracker.service.recommendation
 
+import uk.co.stefirby.seriestracker.client.omdb.OmdbClient
+import uk.co.stefirby.seriestracker.client.omdb.OmdbRatings
 import uk.co.stefirby.seriestracker.client.tmdb.DiscoverFilters
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbSeriesDetail
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
+import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
+import uk.co.stefirby.seriestracker.model.ProductionStatus
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
@@ -22,9 +27,10 @@ class RecommendationServiceSpec extends Specification {
     SeriesRepository seriesRepository = Mock()
     IgnoredSeriesRepository ignoredSeriesRepository = Mock()
     TmdbClient tmdbClient = Mock()
+    OmdbClient omdbClient = Mock()
 
     RecommendationService recommendationService =
-        new RecommendationService(tmdbClient,
+        new RecommendationService(tmdbClient, omdbClient,
             new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
@@ -58,7 +64,7 @@ class RecommendationServiceSpec extends Specification {
      * interaction cardinality directly, matching the spec's own test sketches.
      */
     private RecommendationService serviceWithMockSourcing(RecommendationSourcingService sourcingService) {
-        new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), sourcingService,
+        new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), sourcingService,
             new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient),
             new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200),
             new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"),
@@ -101,6 +107,93 @@ class RecommendationServiceSpec extends Specification {
 
         then: "an empty list is returned"
             result == []
+    }
+
+    // -- Spec 036 (SERIES-036-AC-01/02/03): getDetailsForCandidate --
+
+    private static TmdbSeriesDetail seriesDetail(Integer numberOfSeasons = 5, Integer numberOfEpisodes = 62) {
+        new TmdbSeriesDetail("Breaking Bad", 2008, [18], "/p.jpg", numberOfSeasons, numberOfEpisodes,
+            new BigDecimal("8.9"), 15000, ProductionStatus.ENDED, "US", "overview", 2013)
+    }
+
+    def "SERIES-036-AC-01: resolves season/episode counts and IMDb rating"() {
+        given: "TMDB and OMDb both resolve successfully"
+            tmdbClient.details(1396) >> seriesDetail()
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 96)
+
+        when: "getDetailsForCandidate is called"
+            def result = recommendationService.getDetailsForCandidate(1396, "tt0903747")
+
+        then: "all three fields are populated"
+            result.numberOfSeasons() == 5
+            result.numberOfEpisodes() == 62
+            result.imdbRating() == new BigDecimal("9.5")
+    }
+
+    def "SERIES-036-AC-02: a TMDB failure nulls the season/episode fields without failing the request"() {
+        given: "TMDB fails, OMDb succeeds"
+            tmdbClient.details(1396) >> { throw new ExternalServiceException("TMDB unavailable") }
+            omdbClient.ratingsForImdbId("tt0903747") >> new OmdbRatings(new BigDecimal("9.5"), 96)
+
+        when: "getDetailsForCandidate is called"
+            def result = recommendationService.getDetailsForCandidate(1396, "tt0903747")
+
+        then: "season/episode are null, IMDb rating still resolved, no exception thrown"
+            result.numberOfSeasons() == null
+            result.numberOfEpisodes() == null
+            result.imdbRating() == new BigDecimal("9.5")
+    }
+
+    def "SERIES-036-AC-03: a blank imdbId nulls imdbRating without failing the request, OMDb never called"() {
+        given: "TMDB succeeds, imdbId is blank"
+            tmdbClient.details(1396) >> seriesDetail()
+
+        when: "getDetailsForCandidate is called with a blank imdbId"
+            def result = recommendationService.getDetailsForCandidate(1396, "")
+
+        then: "imdbRating is null, season/episode still resolved, no exception thrown, OMDb never called"
+            result.imdbRating() == null
+            result.numberOfSeasons() == 5
+            0 * omdbClient.ratingsForImdbId(_)
+    }
+
+    def "SERIES-036-AC-03: a null imdbId nulls imdbRating without failing the request, OMDb never called"() {
+        given: "TMDB succeeds, imdbId is null"
+            tmdbClient.details(1396) >> seriesDetail()
+
+        when: "getDetailsForCandidate is called with a null imdbId"
+            def result = recommendationService.getDetailsForCandidate(1396, null)
+
+        then: "imdbRating is null, season/episode still resolved, no exception thrown, OMDb never called"
+            result.imdbRating() == null
+            result.numberOfSeasons() == 5
+            0 * omdbClient.ratingsForImdbId(_)
+    }
+
+    def "SERIES-036-AC-03: an OMDb failure (ExternalServiceException) nulls imdbRating without failing the request"() {
+        given: "TMDB succeeds, OMDb throws ExternalServiceException"
+            tmdbClient.details(1396) >> seriesDetail()
+            omdbClient.ratingsForImdbId("tt0903747") >> { throw new ExternalServiceException("OMDb unavailable") }
+
+        when: "getDetailsForCandidate is called"
+            def result = recommendationService.getDetailsForCandidate(1396, "tt0903747")
+
+        then: "imdbRating is null, season/episode still resolved, no exception thrown"
+            result.imdbRating() == null
+            result.numberOfSeasons() == 5
+    }
+
+    def "SERIES-036-AC-03: an OMDb failure (EntityNotFoundException) nulls imdbRating without failing the request"() {
+        given: "TMDB succeeds, OMDb throws EntityNotFoundException"
+            tmdbClient.details(1396) >> seriesDetail()
+            omdbClient.ratingsForImdbId("tt0903747") >> { throw new EntityNotFoundException("no match") }
+
+        when: "getDetailsForCandidate is called"
+            def result = recommendationService.getDetailsForCandidate(1396, "tt0903747")
+
+        then: "imdbRating is null, season/episode still resolved, no exception thrown"
+            result.imdbRating() == null
+            result.numberOfSeasons() == 5
     }
 
     def "SERIES-006-AC-25: caps results at the requested limit"() {
@@ -150,7 +243,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
+            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -169,7 +262,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(tmdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
+            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)

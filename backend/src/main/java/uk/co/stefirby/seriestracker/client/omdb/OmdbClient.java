@@ -14,6 +14,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
  * Client for the OMDb API (<a href="https://www.omdbapi.com/">omdbapi.com</a>), narrowed by
@@ -41,6 +42,11 @@ import java.util.function.Function;
 public class OmdbClient {
 
     private static final String NOT_AVAILABLE = "N/A";
+
+    // java:S9142: compiled once rather than per-call inside parseRatingFromSource's loop --
+    // OMDb ratings values look like "9.5/10" or "96%", so this strips whichever suffix is
+    // present.
+    private static final Pattern RATING_SUFFIX = Pattern.compile("[/%]");
 
     private final String apiKey;
     private final RestClient restClient;
@@ -113,7 +119,7 @@ public class OmdbClient {
                 if (value == null) {
                     return null;
                 }
-                String numeric = value.split("[/%]")[0].trim();
+                String numeric = RATING_SUFFIX.split(value)[0].trim();
                 try {
                     return Integer.valueOf(numeric);
                 } catch (NumberFormatException _) {

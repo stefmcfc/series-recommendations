@@ -1,9 +1,13 @@
 package uk.co.stefirby.seriestracker.service.recommendation;
 
+import uk.co.stefirby.seriestracker.client.omdb.OmdbClient;
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword;
+import uk.co.stefirby.seriestracker.client.tmdb.TmdbSeriesDetail;
+import uk.co.stefirby.seriestracker.dto.CandidateDetailDto;
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
+import uk.co.stefirby.seriestracker.exception.EntityNotFoundException;
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -35,6 +40,7 @@ public class RecommendationService {
     private static final int DEFAULT_MAX_SOURCES_SHOWN = 3;
 
     private final TmdbClient tmdbClient;
+    private final OmdbClient omdbClient;
     private final RecommendationCriteriaValidator criteriaValidator;
     private final RecommendationSourcingService sourcingService;
     private final RecommendationDeduplicationService deduplicationService;
@@ -59,6 +65,7 @@ public class RecommendationService {
     private final RecommendationDtoAssembler dtoAssembler;
 
     public RecommendationService(TmdbClient tmdbClient,
+                                  OmdbClient omdbClient,
                                   RecommendationCriteriaValidator criteriaValidator,
                                   RecommendationSourcingService sourcingService,
                                   RecommendationDeduplicationService deduplicationService,
@@ -68,6 +75,7 @@ public class RecommendationService {
                                   @Value("${app.tmdb.max-candidates:50}") int maxCandidates,
                                   @Value("${app.tmdb.max-per-source:8}") int maxPerSource) {
         this.tmdbClient = tmdbClient;
+        this.omdbClient = omdbClient;
         this.criteriaValidator = criteriaValidator;
         this.sourcingService = sourcingService;
         this.deduplicationService = deduplicationService;
@@ -193,6 +201,43 @@ public class RecommendationService {
         } catch (ExternalServiceException e) {
             log.info("TMDB keywords unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
             return List.of();
+        }
+    }
+
+    /**
+     * Backs {@code GET /api/v1/series/recommendations/{tmdbId}/details} (SERIES-036-AC-01/02/
+     * 03): an on-demand, single-candidate lookup filling in a recommendation card's season/
+     * episode counts and IMDb rating, deliberately not folded into {@link #recommend(int,
+     * RecommendationCriteria)} itself for the same reason {@link
+     * #getKeywordsForCandidate(int)} isn't -- see that method's own doc comment. Each of the
+     * two data sources (TMDB for season/episode counts, OMDb for the IMDb rating) degrades
+     * independently: a failure in one never affects the other, and neither ever propagates --
+     * this always returns a {@link CandidateDetailDto}, never throws.
+     */
+    @Transactional(readOnly = true)
+    public CandidateDetailDto getDetailsForCandidate(int tmdbId, String imdbId) {
+        Integer numberOfSeasons = null;
+        Integer numberOfEpisodes = null;
+        try {
+            TmdbSeriesDetail detail = tmdbClient.details(tmdbId);
+            numberOfSeasons = detail.numberOfSeasons();
+            numberOfEpisodes = detail.numberOfEpisodes();
+        } catch (ExternalServiceException e) {
+            log.info("TMDB details unavailable for tmdbId={}: {}", tmdbId, e.getMessage());
+        }
+
+        return new CandidateDetailDto(numberOfSeasons, numberOfEpisodes, resolveImdbRating(imdbId));
+    }
+
+    private BigDecimal resolveImdbRating(String imdbId) {
+        if (imdbId == null || imdbId.isBlank()) {
+            return null;
+        }
+        try {
+            return omdbClient.ratingsForImdbId(imdbId).imdbRating();
+        } catch (ExternalServiceException | EntityNotFoundException e) {
+            log.info("OMDb rating unavailable for imdbId={}: {}", imdbId, e.getMessage());
+            return null;
         }
     }
 }

@@ -335,6 +335,25 @@
   cursor: not-allowed;
 }
 
+.recommendationsButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.recommendationsButton:hover:not(:disabled) {
+  background: var(--social-bg);
+}
+
+.recommendationsButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .lastRefreshed {
   font-size: 0.8125rem;
   color: var(--text);

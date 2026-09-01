@@ -8,6 +8,7 @@ import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
 import { SeriesDetailFields } from './SeriesDetailFields'
 import { SeriesDetailActionsPanel } from './SeriesDetailActionsPanel'
+import { SeriesRecommendationsModal } from './SeriesRecommendationsModal'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -62,6 +63,12 @@ export function SeriesDetail({
   const [streamingCheckResult, setStreamingCheckResult] = useState<
     StreamingProvider[] | null
   >(null)
+  // FRONTEND-052-AC-04/08: an independent overlay -- its own useState, no
+  // shared state with editing/delete-confirmation/refresh above, so opening
+  // or closing it can't interfere with any of that (AC-08's regression
+  // guard).
+  const [recommendationsModalOpen, setRecommendationsModalOpen] =
+    useState(false)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -79,6 +86,7 @@ export function SeriesDetail({
     setStreamingCheckLoading(false)
     setStreamingCheckError(null)
     setStreamingCheckResult(null)
+    setRecommendationsModalOpen(false)
   }
 
   useEffect(() => {
@@ -232,6 +240,14 @@ export function SeriesDetail({
       })
   }
 
+  const handleRecommendationsClick = () => {
+    setRecommendationsModalOpen(true)
+  }
+
+  const handleRecommendationsClose = () => {
+    setRecommendationsModalOpen(false)
+  }
+
   const backButton = (
     <button
       type="button"
@@ -323,7 +339,16 @@ export function SeriesDetail({
             onRewatchToggle={handleRewatchToggle}
             acknowledging={acknowledging}
             onDismissNewContentClick={handleDismissNewContentClick}
+            onRecommendationsClick={handleRecommendationsClick}
+            recommendationsDisabled={series.excludeFromRecommendations}
           />
+
+          {recommendationsModalOpen && (
+            <SeriesRecommendationsModal
+              series={series}
+              onClose={handleRecommendationsClose}
+            />
+          )}
 
           {rewatchError && (
             <div className={styles.error} role="alert">

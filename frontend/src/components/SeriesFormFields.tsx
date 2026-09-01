@@ -58,6 +58,22 @@ interface SeriesFormFieldsProps {
   >
 }
 
+// typescript:S3358: a locked field's hint takes precedence over a validation
+// error (a locked field can't realistically have one, since its value never
+// changes once disabled) -- extracted so the two-level "locked, then error,
+// then neither" choice reads as one named step instead of a nested ternary
+// repeated at every locked-capable field below.
+function resolveDescribedBy(
+  locked: boolean | undefined,
+  lockedId: string,
+  error: string | undefined,
+  errorId: string,
+): string | undefined {
+  if (locked) return lockedId
+  if (error) return errorId
+  return undefined
+}
+
 function LockedFieldHint({ field }: { readonly field: string }) {
   return (
     <span
@@ -102,13 +118,12 @@ export function SeriesFormFields({
           value={form.year}
           onChange={updateField('year')}
           disabled={lockedFields?.year}
-          aria-describedby={
-            lockedFields?.year
-              ? 'year-locked-hint'
-              : fieldErrors.year
-                ? 'year-error'
-                : undefined
-          }
+          aria-describedby={resolveDescribedBy(
+            lockedFields?.year,
+            'year-locked-hint',
+            fieldErrors.year,
+            'year-error',
+          )}
         />
         {lockedFields?.year && <LockedFieldHint field="year" />}
         {fieldErrors.year && (
@@ -152,13 +167,12 @@ export function SeriesFormFields({
             value={form.totalSeasons}
             onChange={updateField('totalSeasons')}
             disabled={lockedFields?.totalSeasons}
-            aria-describedby={
-              lockedFields?.totalSeasons
-                ? 'totalSeasons-locked-hint'
-                : fieldErrors.totalSeasons
-                  ? 'totalSeasons-error'
-                  : undefined
-            }
+            aria-describedby={resolveDescribedBy(
+              lockedFields?.totalSeasons,
+              'totalSeasons-locked-hint',
+              fieldErrors.totalSeasons,
+              'totalSeasons-error',
+            )}
           />
           {lockedFields?.totalSeasons && (
             <LockedFieldHint field="totalSeasons" />
@@ -180,13 +194,12 @@ export function SeriesFormFields({
             value={form.totalEpisodes}
             onChange={updateField('totalEpisodes')}
             disabled={lockedFields?.totalEpisodes}
-            aria-describedby={
-              lockedFields?.totalEpisodes
-                ? 'totalEpisodes-locked-hint'
-                : fieldErrors.totalEpisodes
-                  ? 'totalEpisodes-error'
-                  : undefined
-            }
+            aria-describedby={resolveDescribedBy(
+              lockedFields?.totalEpisodes,
+              'totalEpisodes-locked-hint',
+              fieldErrors.totalEpisodes,
+              'totalEpisodes-error',
+            )}
           />
           {lockedFields?.totalEpisodes && (
             <LockedFieldHint field="totalEpisodes" />
@@ -229,13 +242,12 @@ export function SeriesFormFields({
             value={form.imdbRating}
             onChange={updateField('imdbRating')}
             disabled={lockedFields?.imdbRating}
-            aria-describedby={
-              lockedFields?.imdbRating
-                ? 'imdbRating-locked-hint'
-                : fieldErrors.imdbRating
-                  ? 'imdbRating-error'
-                  : undefined
-            }
+            aria-describedby={resolveDescribedBy(
+              lockedFields?.imdbRating,
+              'imdbRating-locked-hint',
+              fieldErrors.imdbRating,
+              'imdbRating-error',
+            )}
           />
           {lockedFields?.imdbRating && <LockedFieldHint field="imdbRating" />}
           {fieldErrors.imdbRating && (
