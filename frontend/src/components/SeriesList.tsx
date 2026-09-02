@@ -24,6 +24,14 @@ interface SeriesListProps {
   readonly isFiltersOpen?: boolean
   readonly onOpenFilters?: () => void
   readonly hasActiveFilters?: boolean
+  // FRONTEND-073-AC-03/04: the live Title search box is a controlled input --
+  // SeriesList doesn't own the raw title value itself, MySeriesView (App.tsx)
+  // does, the same way it already owns isFiltersOpen/hasActiveFilters.
+  // Optional (defaulting to an inert, uncontrolled-looking empty box) so
+  // every pre-existing <SeriesList /> render in this file's other tests
+  // keeps working unchanged.
+  readonly titleSearch?: string
+  readonly onTitleSearchChange?: (value: string) => void
 }
 
 // FRONTEND-013-AC-12: sort field options, in display order. Extended by
@@ -113,6 +121,8 @@ export function SeriesList({
   isFiltersOpen = false,
   onOpenFilters,
   hasActiveFilters = false,
+  titleSearch = '',
+  onTitleSearchChange,
 }: SeriesListProps) {
   const [series, setSeries] = useState<Series[]>([])
   const [loading, setLoading] = useState(true)
@@ -216,6 +226,16 @@ export function SeriesList({
     setConfirmingDeleteId(id)
   }
 
+  const handleTitleSearchChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    onTitleSearchChange?.(event.target.value)
+  }
+
+  const handleTitleSearchClear = () => {
+    onTitleSearchChange?.('')
+  }
+
   const handleSortByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSortBy(event.target.value as SortByOption)
   }
@@ -287,145 +307,171 @@ export function SeriesList({
   return (
     <div className={styles.container} data-testid="series-list">
       <div className={styles.header}>
-        <h2 className={styles.heading}>My Series</h2>
-        <div className={styles.sortControl}>
-          <label htmlFor="series-sort-by" className={styles.sortLabel}>
-            Sort by
-          </label>
-          <select
-            id="series-sort-by"
-            className={styles.sortSelect}
-            aria-label="Sort by"
-            value={sortBy}
-            onChange={handleSortByChange}
-          >
-            {SORT_BY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className={styles.sortDirectionButton}
-            aria-label={
-              sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'
-            }
-            onClick={handleSortDirectionToggle}
-          >
-            {sortDirection === 'asc' ? '↑' : '↓'}
-          </button>
-        </div>
-        <div className={styles.viewModeToggle}>
-          <button
-            type="button"
-            className={styles.viewModeButton}
-            data-testid="view-mode-expanded-btn"
-            aria-label="Expanded view"
-            aria-pressed={viewMode === 'expanded'}
-            onClick={() => setViewMode('expanded')}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <line x1="4" y1="6" x2="20" y2="6" />
-              <line x1="4" y1="12" x2="20" y2="12" />
-              <line x1="4" y1="18" x2="20" y2="18" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={styles.viewModeButton}
-            data-testid="view-mode-compact-btn"
-            aria-label="Compact view"
-            aria-pressed={viewMode === 'compact'}
-            onClick={() => setViewMode('compact')}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={styles.viewModeButton}
-            data-testid="view-mode-poster-btn"
-            aria-label="Poster-only view"
-            aria-pressed={viewMode === 'poster'}
-            onClick={() => setViewMode('poster')}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="9.5" r="1.5" />
-              <path d="M21 15l-5-5-9 9" />
-            </svg>
-          </button>
-        </div>
-        <div className={styles.filtersTrigger}>
-          <button
-            type="button"
-            className={styles.filtersButton}
-            data-testid="open-filters-btn"
-            aria-label={hasActiveFilters ? 'Filters (active)' : 'Filters'}
-            aria-expanded={isFiltersOpen}
-            onClick={() => onOpenFilters?.()}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="3 4 21 4 14 13 14 20 10 22 10 13 3 4" />
-            </svg>
-            {hasActiveFilters && (
-              <span
-                className={styles.filtersActiveDot}
-                data-testid="filters-active-dot"
-              />
+        <div className={styles.headerTop}>
+          <h2 className={styles.heading}>My Series</h2>
+          <div className={styles.titleSearchWrap}>
+            <input
+              id="live-title-search"
+              data-testid="live-title-search"
+              className={styles.titleSearchInput}
+              type="text"
+              aria-label="Search by title"
+              placeholder="Search by title..."
+              value={titleSearch}
+              onChange={handleTitleSearchChange}
+            />
+            {titleSearch !== '' && (
+              <button
+                type="button"
+                className={styles.titleSearchClear}
+                aria-label="Clear title search"
+                onClick={handleTitleSearchClear}
+              >
+                ×
+              </button>
             )}
-          </button>
+          </div>
         </div>
-        <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.addButton}
-            data-testid="add-series-btn"
-            aria-label="Add new series"
-            onClick={() => onAddClick?.()}
-          >
-            Add Series
-          </button>
+        <div className={styles.headerToolbar}>
+          <div className={styles.sortControl}>
+            <label htmlFor="series-sort-by" className={styles.sortLabel}>
+              Sort by
+            </label>
+            <select
+              id="series-sort-by"
+              className={styles.sortSelect}
+              aria-label="Sort by"
+              value={sortBy}
+              onChange={handleSortByChange}
+            >
+              {SORT_BY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className={styles.sortDirectionButton}
+              aria-label={
+                sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'
+              }
+              onClick={handleSortDirectionToggle}
+            >
+              {sortDirection === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
+          <div className={styles.viewModeToggle}>
+            <button
+              type="button"
+              className={styles.viewModeButton}
+              data-testid="view-mode-expanded-btn"
+              aria-label="Expanded view"
+              aria-pressed={viewMode === 'expanded'}
+              onClick={() => setViewMode('expanded')}
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="18" x2="20" y2="18" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={styles.viewModeButton}
+              data-testid="view-mode-compact-btn"
+              aria-label="Compact view"
+              aria-pressed={viewMode === 'compact'}
+              onClick={() => setViewMode('compact')}
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={styles.viewModeButton}
+              data-testid="view-mode-poster-btn"
+              aria-label="Poster-only view"
+              aria-pressed={viewMode === 'poster'}
+              onClick={() => setViewMode('poster')}
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="9.5" r="1.5" />
+                <path d="M21 15l-5-5-9 9" />
+              </svg>
+            </button>
+          </div>
+          <div className={styles.filtersTrigger}>
+            <button
+              type="button"
+              className={styles.filtersButton}
+              data-testid="open-filters-btn"
+              aria-label={hasActiveFilters ? 'Filters (active)' : 'Filters'}
+              aria-expanded={isFiltersOpen}
+              onClick={() => onOpenFilters?.()}
+            >
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="3 4 21 4 14 13 14 20 10 22 10 13 3 4" />
+              </svg>
+              {hasActiveFilters && (
+                <span
+                  className={styles.filtersActiveDot}
+                  data-testid="filters-active-dot"
+                />
+              )}
+            </button>
+          </div>
+          <div className={styles.headerActions}>
+            <button
+              type="button"
+              className={styles.addButton}
+              data-testid="add-series-btn"
+              aria-label="Add new series"
+              onClick={() => onAddClick?.()}
+            >
+              Add Series
+            </button>
+          </div>
         </div>
       </div>
 

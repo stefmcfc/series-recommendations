@@ -18,7 +18,6 @@ interface SearchFilterProps {
 }
 
 interface FormState {
-  title: string
   genresSelected: string[]
   // FRONTEND-063-AC-03: exclude-side selection for the shared
   // GenreIncludeExcludePicker, alongside the existing genresSelected
@@ -37,7 +36,6 @@ interface FormState {
 }
 
 const initialFormState: FormState = {
-  title: '',
   genresSelected: [],
   excludeGenresSelected: [],
   keywordsSelected: [],
@@ -51,8 +49,6 @@ const initialFormState: FormState = {
 
 function buildCriteria(form: FormState): SearchCriteria {
   const criteria: SearchCriteria = {}
-
-  if (form.title.trim() !== '') criteria.title = form.title.trim()
 
   if (form.genresSelected.length > 0) criteria.genres = form.genresSelected
 
@@ -89,7 +85,11 @@ export function SearchFilter({
   )
   const [genreOptions, setGenreOptions] = useState<string[]>([])
   const [browseModalOpen, setBrowseModalOpen] = useState(false)
-  const titleInputRef = useRef<HTMLInputElement>(null)
+  // FRONTEND-073-AC-02: Title used to be this sheet's first field (and this
+  // ref's focus target) -- now that it's lived on the My Series page itself
+  // since frontend_spec_073, the Close button is the first focusable element
+  // remaining inside the sheet.
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   // FRONTEND-071-AC-05: moves focus into the sheet as soon as it opens.
   // Without this, focus stays on the funnel trigger button in SeriesList --
@@ -99,7 +99,7 @@ export function SearchFilter({
   // jsx-a11y/no-autofocus disallows) on the isOpen transition.
   useEffect(() => {
     if (isOpen) {
-      titleInputRef.current?.focus()
+      closeButtonRef.current?.focus()
     }
   }, [isOpen])
 
@@ -207,6 +207,7 @@ export function SearchFilter({
               Filters
             </h2>
             <button
+              ref={closeButtonRef}
               type="button"
               className={styles.closeButton}
               aria-label="Close"
@@ -217,17 +218,6 @@ export function SearchFilter({
           </div>
 
           <div className={styles.filtersBody} data-testid="filters-body">
-            <div className={styles.field}>
-              <label htmlFor="search-title">Title</label>
-              <input
-                ref={titleInputRef}
-                id="search-title"
-                type="text"
-                value={form.title}
-                onChange={updateField('title')}
-              />
-            </div>
-
             <div className={styles.field}>
               <GenreIncludeExcludePicker
                 idPrefix="search-filter-genre"

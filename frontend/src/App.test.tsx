@@ -154,18 +154,18 @@ describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
 })
 
 describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
-  it('applies a search from SearchFilter to the rendered list', async () => {
+  it('applies a search from the live Title search box to the rendered list', async () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
     mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
 
     render(<App />)
     await screen.findByText('The Office')
 
-    fireEvent.click(screen.getByTestId('open-filters-btn'))
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    // FRONTEND-073-AC-03/04: Title is now a live, always-visible box on the
+    // page itself -- no sheet to open, no Search button to click.
+    fireEvent.change(screen.getByTestId('live-title-search'), {
       target: { value: 'office' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith(
@@ -182,8 +182,8 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
     await screen.findByTestId('series-list')
 
     fireEvent.click(screen.getByTestId('open-filters-btn'))
-    fireEvent.change(await screen.findByLabelText(/title/i), {
-      target: { value: 'office' },
+    fireEvent.change(await screen.findByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     await waitFor(() => expect(mockSearch).toHaveBeenCalledTimes(1))
@@ -236,14 +236,18 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
     render(<App />)
     await screen.findByText('The Office')
 
+    // FRONTEND-073: Title itself now lives in MySeriesView's own local state
+    // (rawTitle/debouncedTitle), which does not survive a route
+    // unmount/remount -- unlike sheet-owned criteria (App-level state), which
+    // this test is actually exercising here via a still-sheet-owned field.
     fireEvent.click(screen.getByTestId('open-filters-btn'))
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: 'office' },
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'office' }),
+        expect.objectContaining({ minImdbRating: 7.5 }),
         undefined,
       ),
     )
@@ -279,7 +283,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
       ),
     )
     expect(mockSearch.mock.calls[mockSearch.mock.calls.length - 1][0]).toEqual(
-      expect.objectContaining({ title: 'office' }),
+      expect.objectContaining({ minImdbRating: 7.5 }),
     )
     expect(await screen.findByText('The Office')).toBeInTheDocument()
   })
@@ -606,11 +610,9 @@ describe('FRONTEND-056-AC-05: SearchFilter criteria and tab-derived status combi
     render(<App />)
     await screen.findByTestId('series-list')
 
-    fireEvent.click(screen.getByTestId('open-filters-btn'))
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByTestId('live-title-search'), {
       target: { value: 'test' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith(
@@ -630,11 +632,9 @@ describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each 
     render(<App />)
     await screen.findByTestId('series-list')
 
-    fireEvent.click(screen.getByTestId('open-filters-btn'))
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByTestId('live-title-search'), {
       target: { value: 'office' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith(
@@ -642,7 +642,8 @@ describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each 
         undefined,
       ),
     )
-    // Still on the Watching tab -- submitting the form didn't navigate away.
+    // Still on the Watching tab -- the live title box's own state didn't
+    // navigate away.
     expect(screen.getByRole('link', { name: 'Watching' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -681,8 +682,8 @@ describe('FRONTEND-071-AC-09: opening Filters from SeriesList shows the sheet', 
     await screen.findByTestId('series-list')
 
     fireEvent.click(screen.getByTestId('open-filters-btn'))
-    fireEvent.change(await screen.findByLabelText(/title/i), {
-      target: { value: 'office' },
+    fireEvent.change(await screen.findByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
@@ -690,5 +691,64 @@ describe('FRONTEND-071-AC-09: opening Filters from SeriesList shows the sheet', 
       screen.queryByRole('dialog', { name: /filters/i }),
     ).not.toBeInTheDocument()
     expect(await screen.findByTestId('filters-active-dot')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-073-AC-04: typing debounces into fetch criteria', () => {
+  // FRONTEND-073-AC-01's own hook-level test uses vi.useFakeTimers() against
+  // a bare renderHook() (no React scheduler/act() interplay to worry about).
+  // Faking timers around a full <App/> render is a different story: React's
+  // own Scheduler package falls back to setTimeout in this jsdom environment,
+  // so fake timers freeze scheduled work indefinitely (findByTestId/waitFor
+  // never resolve, even for content already in the DOM) -- real timers plus
+  // waitFor's default polling exercises the same 350ms debounce contract
+  // without that hazard.
+  it('does not refetch until the debounce settles', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockSearch.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.change(screen.getByTestId('live-title-search'), {
+      target: { value: 'office' },
+    })
+    expect(mockSearch).not.toHaveBeenCalled()
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'office' }),
+        undefined,
+      ),
+    )
+  })
+})
+
+describe('FRONTEND-073-AC-05: live title clear is independent of Clear Filters', () => {
+  it('Clear Filters in the sheet does not reset the live title box', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.change(screen.getByTestId('live-title-search'), {
+      target: { value: 'office' },
+    })
+    fireEvent.click(screen.getByTestId('open-filters-btn'))
+    fireEvent.click(await screen.findByTestId('clear-filters-btn'))
+
+    expect(screen.getByTestId('live-title-search')).toHaveValue('office')
+  })
+})
+
+describe('FRONTEND-073-AC-06: active-filter dot ignores live title', () => {
+  it('does not show the active-filter dot from typing a title alone', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.change(screen.getByTestId('live-title-search'), {
+      target: { value: 'office' },
+    })
+
+    expect(screen.queryByTestId('filters-active-dot')).not.toBeInTheDocument()
   })
 })

@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.13.0] - 2026-09-02
+
+### Added
+
+- Frontend: `useDebouncedValue` hook (`frontend/src/hooks/useDebouncedValue.ts`) — generic value debounce, no equivalent utility existed in the frontend before now (`frontend_spec_073`).
+
+### Changed
+
+- Frontend: My Series' Title field moved out of the filter sheet onto the page itself, as a live search box next to the "My Series" heading with its own clear button — typing filters the list automatically (350ms debounced), no sheet or Search button needed (`frontend_spec_073`).
+- Frontend: the filter sheet's funnel-icon active-filter indicator no longer lights up from typing in the live Title search box — it stays scoped to sheet-owned filters only (`frontend_spec_073`).
+
 ## [3.12.0] - 2026-09-02
 
 ### Changed

@@ -13,6 +13,7 @@ import { SeriesDetail } from './components/SeriesDetail'
 import { AddSeriesForm } from './components/AddSeriesForm'
 import { EditSeriesForm } from './components/EditSeriesForm'
 import { SearchFilter } from './components/SearchFilter'
+import { useDebouncedValue } from './hooks/useDebouncedValue'
 import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
 import { KeywordsView } from './components/KeywordsView'
@@ -74,17 +75,28 @@ function MySeriesView({
 }: MySeriesViewProps) {
   const { statusTab } = useParams<{ statusTab?: string }>()
   const status = statusFromTabParam(statusTab)
+  // FRONTEND-073-AC-03/04: the live Title search box's raw value lives here
+  // -- MySeriesView is the shared parent of SeriesList (which renders the
+  // box) and effectiveCriteria (which needs the debounced value) -- debounced
+  // 350ms before it drives a fetch, so a fetch isn't fired on every keystroke.
+  const [rawTitle, setRawTitle] = useState('')
+  const debouncedTitle = useDebouncedValue(rawTitle, 350)
   // Memoized so SeriesList's own effect (keyed on criteria object identity,
   // not deep equality) doesn't re-fetch on every unrelated App re-render --
-  // only when criteria or the route-derived status actually change.
+  // only when criteria, the route-derived status, or the debounced title
+  // actually change.
   const effectiveCriteria: SearchCriteria = useMemo(
-    () => ({ ...criteria, status }),
-    [criteria, status],
+    () => ({ ...criteria, status, title: debouncedTitle || undefined }),
+    [criteria, status, debouncedTitle],
   )
   // FRONTEND-071-AC-09: the filter sheet's open/closed state is lifted here
   // -- the shared parent of the trigger (SeriesList) and the panel
   // (SearchFilter), which are otherwise unrelated siblings.
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  // FRONTEND-073-AC-06: derived from sheet-owned `criteria` only (set via
+  // SearchFilter's onSearch) -- the live title box's rawTitle/debouncedTitle
+  // deliberately never factors in here, since the funnel's dot signals
+  // filters hidden inside the sheet, and title isn't hidden anywhere anymore.
   const hasActiveFilters = criteria != null && Object.keys(criteria).length > 0
 
   return (
@@ -121,6 +133,8 @@ function MySeriesView({
         isFiltersOpen={isFiltersOpen}
         onOpenFilters={() => setIsFiltersOpen(true)}
         hasActiveFilters={hasActiveFilters}
+        titleSearch={rawTitle}
+        onTitleSearchChange={setRawTitle}
       />
     </>
   )
