@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.13.0] - 2026-09-02
+
 ### Added
 
 - Frontend: `useDebouncedValue` hook (`frontend/src/hooks/useDebouncedValue.ts`) — generic value debounce, no equivalent utility existed in the frontend before now (`frontend_spec_073`).
