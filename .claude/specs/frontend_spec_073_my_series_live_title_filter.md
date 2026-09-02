@@ -1,6 +1,6 @@
 # Frontend Spec 073: My Series Title Becomes a Real-Time Filter
 
-**Status**: Not started
+**Status**: Implemented — `hooks/useDebouncedValue.ts`, `hooks/useDebouncedValue.test.ts`, `components/SearchFilter.tsx`, `components/SearchFilter.test.tsx`, `components/SeriesList.tsx`, `components/SeriesList.module.css`, `components/SeriesList.test.tsx`, `App.tsx`, `App.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 071 (`frontend_spec_071_my_series_filter_sheet.md`, owns the sheet this spec removes a field from) ✅ required
 **Area**: Frontend (`components/SearchFilter.tsx`, `components/SeriesList.tsx`, `App.tsx`, new `hooks/useDebouncedValue.ts`)
@@ -207,9 +207,13 @@ describe('FRONTEND-073-AC-06: active-filter dot ignores live title', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-073-AC-01: `useDebouncedValue` debounces a changing value
-- [ ] FRONTEND-073-AC-02: sheet no longer has a Title field
-- [ ] FRONTEND-073-AC-03: My Series renders a live Title search box
-- [ ] FRONTEND-073-AC-04: typing debounces into the fetch criteria
-- [ ] FRONTEND-073-AC-05: clearing the live title box is independent of Clear Filters
-- [ ] FRONTEND-073-AC-06: the funnel icon's active-filter dot ignores live title
+- [x] FRONTEND-073-AC-01: `useDebouncedValue` debounces a changing value
+- [x] FRONTEND-073-AC-02: sheet no longer has a Title field
+- [x] FRONTEND-073-AC-03: My Series renders a live Title search box
+- [x] FRONTEND-073-AC-04: typing debounces into the fetch criteria
+- [x] FRONTEND-073-AC-05: clearing the live title box is independent of Clear Filters
+- [x] FRONTEND-073-AC-06: the funnel icon's active-filter dot ignores live title
+
+## Implementation Notes
+
+- AC-04's `App.test.tsx` coverage uses real timers (`await waitFor(...)`) rather than the `vi.useFakeTimers()` + `vi.advanceTimersByTime(350)` pattern shown in this spec's own test-case snippet. That pattern works fine against the isolated `useDebouncedValue` hook (AC-01's test, `renderHook()` with no full React tree), but faking timers around a full `<App />` render hangs indefinitely: React's Scheduler package falls back to `setTimeout` in this jsdom test environment, so once fake timers are active, `findByTestId`/`waitFor` never resolve even for content already committed to the DOM. Real timers plus `waitFor`'s default polling exercise the same 350ms debounce contract without that hazard.

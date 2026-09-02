@@ -44,7 +44,6 @@ describe('FRONTEND-006-AC-01/02: fields', () => {
   it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()
     for (const label of [
-      /title/i,
       /min imdb rating/i,
       /min tmdb rating/i,
       /min year/i,
@@ -55,16 +54,28 @@ describe('FRONTEND-006-AC-01/02: fields', () => {
   })
 })
 
+describe('FRONTEND-073-AC-02: sheet no longer has a Title field', () => {
+  it('does not render a Title input inside the sheet', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    expect(screen.queryByLabelText(/^title$/i)).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
   it('calls onSearch with only populated fields', () => {
     const { onSearch } = renderFilter()
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: 'office' },
-    })
+    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'office' }),
+      expect.objectContaining({ flaggedForRewatch: true }),
     )
     const payload = onSearch.mock.calls[0][0]
     expect(payload).not.toHaveProperty('minPersonalRating')
@@ -243,7 +254,9 @@ describe('FRONTEND-071-AC-05: open sheet is an accessible dialog', () => {
     // Firing the event directly on `dialog` (as this test used to) can't
     // catch that class of bug, since it bypasses real focus/bubbling
     // entirely -- fire it from wherever focus actually landed instead.
-    expect(document.activeElement).toHaveAccessibleName('Title')
+    // FRONTEND-073-AC-02: Title (the previous focus target) has moved out of
+    // this sheet -- Close is now the first focusable element inside it.
+    expect(document.activeElement).toHaveAccessibleName('Close')
     fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
@@ -276,13 +289,13 @@ describe('FRONTEND-071-AC-06: Search applies and closes', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: 'office' },
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'office' }),
+      expect.objectContaining({ minImdbRating: 7.5 }),
     )
     expect(onClose).toHaveBeenCalledTimes(1)
   })
@@ -319,7 +332,6 @@ describe('FRONTEND-071-AC-08: all fields still present', () => {
       />,
     )
     for (const label of [
-      /title/i,
       /min imdb rating/i,
       /min tmdb rating/i,
       /min year/i,
@@ -403,15 +415,15 @@ describe('FRONTEND-006-AC-07/08: clearing', () => {
 
   it('resets fields and calls onClear, not onSearch', () => {
     const { onSearch, onClear } = renderFilter()
-    fireEvent.change(screen.getByLabelText(/title/i), {
-      target: { value: 'office' },
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
     })
     fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
 
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
     expect(onClear).toHaveBeenCalledTimes(1)
     expect(onSearch).not.toHaveBeenCalled()
-    expect(screen.getByLabelText(/title/i)).toHaveValue('')
+    expect(screen.getByLabelText(/min imdb rating/i)).toHaveValue(null)
     expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
   })
 })
@@ -420,7 +432,7 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
   it('never logs entered filter values to the console', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     const { onSearch } = renderFilter()
-    fireEvent.change(screen.getByLabelText(/title/i), {
+    fireEvent.change(screen.getByLabelText('Keywords'), {
       target: { value: 'secret-title' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))

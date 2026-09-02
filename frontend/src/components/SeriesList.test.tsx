@@ -1270,3 +1270,62 @@ describe('FRONTEND-071-AC-03: active-filter indicator', () => {
     expect(screen.getByRole('button', { name: 'Filters' })).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-073-AC-03: live Title search box renders on the page', () => {
+  it('renders a title search input outside any dialog', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+      />,
+    )
+    await screen.findByTestId('series-list')
+
+    expect(screen.getByTestId('live-title-search')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('calls onTitleSearchChange as the controlled input changes, and shows a clear button when non-empty', async () => {
+    mockGetAll.mockResolvedValue([])
+    const onTitleSearchChange = vi.fn()
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        titleSearch=""
+        onTitleSearchChange={onTitleSearchChange}
+      />,
+    )
+    await screen.findByTestId('series-list')
+
+    expect(
+      screen.queryByLabelText(/clear title search/i),
+    ).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByTestId('live-title-search'), {
+      target: { value: 'office' },
+    })
+    expect(onTitleSearchChange).toHaveBeenCalledWith('office')
+  })
+
+  it('clears the title search via its own clear button, independent of any sheet state', async () => {
+    mockGetAll.mockResolvedValue([])
+    const onTitleSearchChange = vi.fn()
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        titleSearch="office"
+        onTitleSearchChange={onTitleSearchChange}
+      />,
+    )
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByLabelText(/clear title search/i))
+    expect(onTitleSearchChange).toHaveBeenCalledWith('')
+  })
+})
