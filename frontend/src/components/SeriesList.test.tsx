@@ -16,8 +16,6 @@ vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
 const mockDelete = vi.mocked(seriesApi.delete)
 const mockSearch = vi.mocked(seriesApi.search)
-const mockRefreshAll = vi.mocked(seriesApi.refreshAll)
-const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -63,13 +61,21 @@ const defaultProps = {}
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
-  mockGetRefreshStatus.mockResolvedValue({
-    status: 'IDLE',
-    totalCount: 0,
-    completedCount: 0,
-    skippedCount: 0,
-    startedAt: null,
-    finishedAt: null,
+})
+
+describe('FRONTEND-072-AC-03: Refresh All no longer renders on SeriesList', () => {
+  it('does not render the Refresh All button', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(
+      <SeriesList
+        onSeriesClick={vi.fn()}
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+      />,
+    )
+    await screen.findByTestId('series-list')
+
+    expect(screen.queryByTestId('refresh-all-btn')).not.toBeInTheDocument()
   })
 })
 
@@ -727,99 +733,6 @@ describe('FRONTEND-026-AC-12/13: year and country next to the title', () => {
   })
 })
 
-describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () => {
-  it('disables the button, shows progress, then re-enables and re-fetches on completion', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockRefreshAll.mockResolvedValue({
-      status: 'IN_PROGRESS',
-      totalCount: 15,
-      completedCount: 0,
-      skippedCount: 0,
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-    })
-    render(<SeriesList />)
-    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
-
-    fireEvent.click(screen.getByRole('button', { name: /refresh all/i }))
-    expect(await screen.findByText(/refreshing 0 of 15/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /refresh all/i })).toBeDisabled()
-
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'COMPLETED',
-      totalCount: 15,
-      completedCount: 15,
-      skippedCount: 0,
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-    })
-
-    await waitFor(
-      () =>
-        expect(
-          screen.getByRole('button', { name: /refresh all/i }),
-        ).not.toBeDisabled(),
-      { timeout: 8000 },
-    )
-    expect(mockGetAll).toHaveBeenCalledTimes(2)
-  }, 10000)
-})
-
-describe('FRONTEND-023-AC-11: resumes polling on mount if a job is already running', () => {
-  it('enters the disabled/polling state without a click', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'IN_PROGRESS',
-      totalCount: 15,
-      completedCount: 4,
-      skippedCount: 0,
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-    })
-
-    render(<SeriesList />)
-
-    expect(await screen.findByText(/refreshing 4 of 15/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /refresh all/i })).toBeDisabled()
-  })
-})
-
-describe('FRONTEND-023-AC-14: 409 on click is treated as already-in-progress, not an error', () => {
-  it('enters polling state instead of showing an error', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockRefreshAll.mockRejectedValue(
-      new ApiError(409, 'A refresh is already in progress'),
-    )
-    render(<SeriesList />)
-    await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
-
-    fireEvent.click(screen.getByRole('button', { name: /refresh all/i }))
-
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /refresh all/i }),
-      ).toBeDisabled(),
-    )
-  })
-})
-
-describe('FRONTEND-023-AC-15: last full refresh display', () => {
-  it('shows relative time from the status endpoint finishedAt', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'COMPLETED',
-      totalCount: 15,
-      completedCount: 15,
-      skippedCount: 0,
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-    })
-    render(<SeriesList />)
-    expect(await screen.findByText(/last full refresh/i)).toBeInTheDocument()
-  })
-})
-
 describe('FRONTEND-023-AC-18: new-content badge per row', () => {
   it('shows a "New content" badge on a row whose newContentDetectedAt is set', async () => {
     mockGetAll.mockResolvedValue([
@@ -877,79 +790,6 @@ describe('FRONTEND-050-AC-05: badge is read-only', () => {
     )
     expect(badge.tagName).toBe('SPAN')
     expect(badge).not.toHaveAttribute('role', 'button')
-  })
-})
-
-describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
-  it('includes the skipped count when greater than zero', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'IN_PROGRESS',
-      totalCount: 15,
-      completedCount: 4,
-      skippedCount: 3,
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-    })
-    render(<SeriesList />)
-
-    expect(
-      await screen.findByText(/refreshing 4 of 15 \(3 skipped\)/i),
-    ).toBeInTheDocument()
-  })
-
-  it('omits the parenthetical when skippedCount is zero', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'IN_PROGRESS',
-      totalCount: 15,
-      completedCount: 4,
-      skippedCount: 0,
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-    })
-    render(<SeriesList />)
-
-    expect(
-      await screen.findByText(/refreshing 4 of 15\.\.\./i),
-    ).toBeInTheDocument()
-  })
-})
-
-describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () => {
-  it('includes the skipped count when greater than zero, and it stays visible after completion', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'COMPLETED',
-      totalCount: 15,
-      completedCount: 15,
-      skippedCount: 3,
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-    })
-    render(<SeriesList />)
-
-    expect(
-      await screen.findByText(
-        /last full refresh:.*\(3 skipped, already up to date\)/i,
-      ),
-    ).toBeInTheDocument()
-  })
-
-  it('omits the parenthetical when skippedCount is zero', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockGetRefreshStatus.mockResolvedValue({
-      status: 'COMPLETED',
-      totalCount: 15,
-      completedCount: 15,
-      skippedCount: 0,
-      startedAt: new Date().toISOString(),
-      finishedAt: new Date().toISOString(),
-    })
-    render(<SeriesList />)
-
-    await screen.findByText(/last full refresh/i)
-    expect(screen.queryByText(/skipped/i)).not.toBeInTheDocument()
   })
 })
 

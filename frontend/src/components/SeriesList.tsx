@@ -1,14 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
-import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type {
-  Series,
-  SearchCriteria,
-  RefreshJobStatus,
-  SortOptions,
-} from '../types/series'
-import { formatRelativeTime } from '../utils/relativeTime'
+import type { Series, SearchCriteria, SortOptions } from '../types/series'
 import { formatCountryName } from '../utils/countryName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
@@ -76,26 +69,6 @@ function activeRating(
     : { value: series.imdbRating, source: 'IMDb' }
 }
 
-// Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
-// enough that a short bulk job's progress feels live, infrequent enough not
-// to hammer the status endpoint.
-const REFRESH_POLL_INTERVAL_MS = 2500
-
-function buildRefreshProgressText(status: RefreshJobStatus): string {
-  const skippedSuffix =
-    status.skippedCount > 0 ? ` (${status.skippedCount} skipped)` : ''
-  return `Refreshing ${status.completedCount} of ${status.totalCount}${skippedSuffix}...`
-}
-
-function buildLastFullRefreshText(status: RefreshJobStatus): string {
-  const finishedAt = status.finishedAt as string
-  const skippedSuffix =
-    status.skippedCount > 0
-      ? ` (${status.skippedCount} skipped, already up to date)`
-      : ''
-  return `Last full refresh: ${formatRelativeTime(finishedAt)}${skippedSuffix}`
-}
-
 // FRONTEND-054-AC-01/03: three opt-in rendering modes over the same fetched
 // `series` array -- purely a display toggle, no new fetch/filter/sort logic.
 type ViewMode = 'expanded' | 'compact' | 'poster'
@@ -151,8 +124,6 @@ export function SeriesList({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [posterErrorIds, setPosterErrorIds] = useState<Set<string>>(new Set())
-  const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
-  const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
   // FRONTEND-012-AC-12/14: per-row rewatch toggle errors, keyed by series id
   // -- mirrors RecommendationsList's per-card scoped-error pattern
   // (FRONTEND-010-AC-17) since more than one row's toggle can be in flight.
@@ -168,7 +139,6 @@ export function SeriesList({
   const [viewMode, setViewMode] = useState<ViewMode>(() => readStoredViewMode())
 
   const criteriaActive = hasActiveCriteria(criteria)
-  const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
 
   // FRONTEND-054-AC-03: written on every change; a write failure (private
   // browsing, quota, storage disabled) degrades silently.
@@ -207,85 +177,6 @@ export function SeriesList({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- criteriaActive is derived from criteria; including both is redundant and would cause criteria's object identity to trigger duplicate re-fetches.
   }, [refreshIndex, criteria, sortBy, sortDirection])
-
-  // FRONTEND-023-AC-11: check once on mount so a page reload mid-batch
-  // resumes the disabled/polling state instead of showing a stale enabled
-  // button.
-  useEffect(() => {
-    let cancelled = false
-
-    seriesApi
-      .getRefreshStatus()
-      .then((status) => {
-        if (cancelled) return
-        setJobStatus(status)
-      })
-      .catch(() => {
-        // Non-critical background check -- leave the button in its default
-        // enabled state if the status endpoint itself is unreachable.
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  // FRONTEND-023-AC-12/13: poll while a bulk job is in progress, whether
-  // just started by this click or discovered on mount. Stops itself (via
-  // effect cleanup) once jobStatus.status is no longer IN_PROGRESS.
-  useEffect(() => {
-    if (!refreshAllInProgress) return
-
-    const intervalId = setInterval(() => {
-      seriesApi
-        .getRefreshStatus()
-        .then((status) => {
-          setJobStatus(status)
-          if (status.status !== 'IN_PROGRESS') {
-            setRefreshIndex((index) => index + 1)
-          }
-        })
-        .catch(() => {
-          // Transient poll failure -- keep polling on the next tick rather
-          // than surfacing an error for a background check.
-        })
-    }, REFRESH_POLL_INTERVAL_MS)
-
-    return () => {
-      clearInterval(intervalId)
-    }
-  }, [refreshAllInProgress])
-
-  const handleRefreshAllClick = () => {
-    setRefreshAllError(null)
-
-    seriesApi
-      .refreshAll()
-      .then((status) => {
-        setJobStatus(status)
-      })
-      .catch((err: unknown) => {
-        if (err instanceof ApiError && err.status === 409) {
-          // FRONTEND-023-AC-14: a job is already running server-side --
-          // reflect that the same way a mount-time discovery would, rather
-          // than surfacing it as a user-facing error.
-          setJobStatus({
-            status: 'IN_PROGRESS',
-            totalCount: 0,
-            completedCount: 0,
-            skippedCount: 0,
-            startedAt: null,
-            finishedAt: null,
-          })
-          return
-        }
-        if (err instanceof ApiError) {
-          setRefreshAllError(err.message)
-        } else {
-          setRefreshAllError('An unexpected error occurred. Please try again.')
-        }
-      })
-  }
 
   const handleRetry = useCallback(() => {
     setLoading(true)
@@ -528,25 +419,6 @@ export function SeriesList({
         <div className={styles.headerActions}>
           <button
             type="button"
-            className={styles.refreshAllButton}
-            data-testid="refresh-all-btn"
-            disabled={refreshAllInProgress}
-            onClick={handleRefreshAllClick}
-          >
-            Refresh All
-          </button>
-          {refreshAllInProgress && jobStatus && (
-            <span className={styles.refreshProgress}>
-              {buildRefreshProgressText(jobStatus)}
-            </span>
-          )}
-          {jobStatus?.finishedAt != null && (
-            <span className={styles.lastFullRefresh}>
-              {buildLastFullRefreshText(jobStatus)}
-            </span>
-          )}
-          <button
-            type="button"
             className={styles.addButton}
             data-testid="add-series-btn"
             aria-label="Add new series"
@@ -556,12 +428,6 @@ export function SeriesList({
           </button>
         </div>
       </div>
-
-      {refreshAllError && (
-        <div className={styles.error} role="alert">
-          <p>{refreshAllError}</p>
-        </div>
-      )}
 
       {loading && (
         <output className={styles.loading} aria-label="Loading">

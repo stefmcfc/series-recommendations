@@ -122,12 +122,14 @@ describe('FRONTEND-004-AC-36: cancelling an edit', () => {
   })
 })
 
-describe('FRONTEND-007-AC-13: export controls rendered', () => {
-  it('renders ExportControls on the main page', async () => {
+describe('FRONTEND-072-AC-01: Export controls no longer render on My Series', () => {
+  it('does not render Export JSON/CSV buttons on the My Series page', async () => {
     mockGetAll.mockResolvedValue([])
     render(<App />)
-    await screen.findByTestId('export-json-btn')
-    expect(screen.getByTestId('export-csv-btn')).toBeInTheDocument()
+    await screen.findByTestId('series-list')
+
+    expect(screen.queryByTestId('export-json-btn')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('export-csv-btn')).not.toBeInTheDocument()
   })
 })
 
@@ -427,7 +429,6 @@ describe('FRONTEND-041-AC-06: /my-series renders the list view', () => {
     render(<App />)
 
     expect(await screen.findByTestId('series-list')).toBeInTheDocument()
-    expect(screen.getByTestId('export-json-btn')).toBeInTheDocument()
   })
 })
 

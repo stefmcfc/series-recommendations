@@ -1,6 +1,6 @@
 # Frontend Spec 072: Settings Gains Export and Refresh All
 
-**Status**: Not started
+**Status**: Implemented — `App.tsx`, `App.test.tsx`, `components/SettingsPage.tsx`, `components/SettingsPage.module.css`, `components/SettingsPage.test.tsx`, `components/SeriesList.tsx`, `components/SeriesList.module.css`, `components/SeriesList.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 070 (`frontend_spec_070_settings_menu.md`, owns the `SettingsPage` shell this spec adds real content to) ✅ required
 **Area**: Frontend (`components/SettingsPage.tsx`, `components/SeriesList.tsx`, `App.tsx`)
@@ -181,8 +181,8 @@ describe('FRONTEND-072-AC-05: Refresh All starts a job and polls to completion',
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-072-AC-01: `ExportControls` no longer renders on My Series
-- [ ] FRONTEND-072-AC-02: Settings renders unfiltered Export controls
-- [ ] FRONTEND-072-AC-03: `SeriesList` no longer renders Refresh All
-- [ ] FRONTEND-072-AC-04: Settings renders Refresh All, resyncing on mount
-- [ ] FRONTEND-072-AC-05: clicking Refresh All in Settings starts a job and polls to completion
+- [x] FRONTEND-072-AC-01: `ExportControls` no longer renders on My Series
+- [x] FRONTEND-072-AC-02: Settings renders unfiltered Export controls
+- [x] FRONTEND-072-AC-03: `SeriesList` no longer renders Refresh All
+- [x] FRONTEND-072-AC-04: Settings renders Refresh All, resyncing on mount
+- [x] FRONTEND-072-AC-05: clicking Refresh All in Settings starts a job and polls to completion

@@ -12,7 +12,6 @@ import { SeriesList } from './components/SeriesList'
 import { SeriesDetail } from './components/SeriesDetail'
 import { AddSeriesForm } from './components/AddSeriesForm'
 import { EditSeriesForm } from './components/EditSeriesForm'
-import { ExportControls } from './components/ExportControls'
 import { SearchFilter } from './components/SearchFilter'
 import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
@@ -113,7 +112,6 @@ function MySeriesView({
         onSearch={onSearch}
         onClear={onClear}
       />
-      <ExportControls criteria={effectiveCriteria} />
       <SeriesList
         key={seriesListKey}
         onSeriesClick={onSeriesClick}

@@ -12,3 +12,58 @@
 .placeholder {
   color: var(--text);
 }
+
+.section {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.refreshAllButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.refreshAllButton:hover:not(:disabled) {
+  background: var(--social-bg);
+}
+
+.refreshAllButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refreshProgress,
+.lastFullRefresh {
+  font-size: 0.8125rem;
+  color: var(--text);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: #b91c1c;
+  background: #fdf0f0;
+  border: 1px solid rgba(185, 28, 28, 0.3);
+  border-radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error {
+    color: #fca5a5;
+    background: #3a1a1a;
+    border-color: rgba(248, 113, 113, 0.35);
+  }
+}
