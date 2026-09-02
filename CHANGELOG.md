@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-09-02
+
+### Changed
+
+- Frontend: Export (JSON/CSV) moved from My Series to Settings, and now always exports the whole library rather than respecting the active My Series filter (`frontend_spec_072`).
+- Frontend: Refresh All (button, in-progress/last-refreshed text, and mid-batch resync-on-mount) moved from My Series to Settings, with no change to its polling/job semantics (`frontend_spec_072`).
+
 ## [3.11.0] - 2026-09-02
 
 ### Changed

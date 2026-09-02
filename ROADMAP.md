@@ -94,6 +94,7 @@ corrected below.
 | Specific Series picker "Select all" / "Clear all" bulk actions, scoped to the currently-filtered candidate pool | —                                    | `frontend_spec_051`                            | ✅ Done                                                                                         |
 | Settings menu (shell only) — "Settings" nav item after Keywords, routing to an otherwise-empty page; no real settings yet | —                                    | `frontend_spec_070`                            | ✅ Done                                                                                         |
 | My Series filter sheet — funnel icon next to `SeriesList`'s view-mode icons opens `SearchFilter`'s fields as a slide-out sheet, replacing the inline disclosure | —                                    | `frontend_spec_071`                            | ✅ Done                                                                                         |
+| Settings gains Export (now unfiltered) and Refresh All, relocated off the My Series page | —                                    | `frontend_spec_072`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
@@ -121,7 +122,6 @@ delivered; see the table above.)
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
-| Settings gains Export (now unfiltered) and Refresh All, relocated off the My Series page | — | `frontend_spec_072` | — (standalone, build first in this chain — declutters `SeriesList`'s header) | 🟨 P3 · ⬜ Not started |
 | My Series Title becomes a real-time (debounced) filter on the page itself, removed from the filter sheet | — | `frontend_spec_073` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | "Flagged for rewatch" becomes a `/my-series/rewatch` tab, removed from the filter sheet | — | `frontend_spec_074` | `frontend_spec_056` (tab-bar pattern reused) | 🟨 P3 · ⬜ Not started |
 | My Series filter sheet fields grouped into sectioned dividers (Genres & Keywords / Ratings / Years) | — | `frontend_spec_075` | `frontend_spec_073`, `frontend_spec_074` (build after — lays out the final field set once) | 🟨 P3 · ⬜ Not started |
