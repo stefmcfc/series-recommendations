@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-09-02
+
 ### Changed
 
 - Frontend: Export (JSON/CSV) moved from My Series to Settings, and now always exports the whole library rather than respecting the active My Series filter (`frontend_spec_072`).
