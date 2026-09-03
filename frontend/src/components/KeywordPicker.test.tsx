@@ -534,8 +534,8 @@ describe('FRONTEND-047-AC-03: existing consumers are unaffected', () => {
   })
 })
 
-describe('FRONTEND-077-AC-01: hideInput suppresses input and suggestions', () => {
-  it('renders no text input or suggestions when hideInput is true', () => {
+describe('FRONTEND-077-AC-01: hideInput suppresses only the text input', () => {
+  it('renders no text input when hideInput is true, but still shows suggestions', () => {
     render(
       <KeywordPicker
         id="test"
@@ -547,9 +547,23 @@ describe('FRONTEND-077-AC-01: hideInput suppresses input and suggestions', () =>
       />,
     )
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('list', { name: /suggestions/i }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'comedy' })).toBeInTheDocument()
+  })
+
+  it('still shows the empty-input default suggestion list when hideInput is true', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Series"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['Show A', 'Show B']}
+        maxSuggestionsWhenEmpty={5}
+        hideInput
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Show A' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Show B' })).toBeInTheDocument()
   })
 })
 
@@ -573,8 +587,8 @@ describe('FRONTEND-077-AC-02: pills still render and remain removable', () => {
   })
 })
 
-describe('FRONTEND-077-AC-03: label remains visible without an input', () => {
-  it('still shows the label text when hideInput is true', () => {
+describe('FRONTEND-077-AC-03: accessibly named without a visible label', () => {
+  it('sets aria-label instead of showing visible label text when hideInput is true', () => {
     render(
       <KeywordPicker
         id="test"
@@ -585,21 +599,8 @@ describe('FRONTEND-077-AC-03: label remains visible without an input', () => {
         hideInput
       />,
     )
-    expect(screen.getByText('Keywords')).toBeInTheDocument()
-  })
-
-  it('does not render a <label htmlFor> for the field once the input is gone', () => {
-    render(
-      <KeywordPicker
-        id="test"
-        label="Keywords"
-        selected={[]}
-        onChange={vi.fn()}
-        options={['drama']}
-        hideInput
-      />,
-    )
-    expect(screen.queryByLabelText('Keywords')).not.toBeInTheDocument()
+    expect(screen.queryByText('Keywords')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
   })
 })
 

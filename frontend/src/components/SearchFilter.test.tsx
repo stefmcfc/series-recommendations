@@ -566,8 +566,8 @@ describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => 
       screen.getByRole('button', { name: /^search$/i }),
     ).toBeInTheDocument()
     // FRONTEND-077-AC-04: the inline Keywords field no longer has a
-    // <label htmlFor> once hideInput is set -- it's a plain <span> now.
-    expect(screen.getByText('Keywords')).toBeInTheDocument()
+    // <label htmlFor> once hideInput is set -- a non-visual aria-label now.
+    expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
   })
 })
 
@@ -785,8 +785,8 @@ describe('FRONTEND-075-AC-01: Genres & Keywords section', () => {
       within(section).getByRole('button', { name: /^genres$/i }),
     ).toBeInTheDocument()
     // FRONTEND-077-AC-04: hideInput replaces the inline field's
-    // <label htmlFor> with a plain <span> once its own input is gone.
-    expect(within(section).getByText(/^keywords$/i)).toBeInTheDocument()
+    // <label htmlFor> with a non-visual aria-label once its own input is gone.
+    expect(within(section).getByLabelText(/^keywords$/i)).toBeInTheDocument()
   })
 })
 

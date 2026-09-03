@@ -1396,12 +1396,12 @@ describe('FRONTEND-050-AC-03: an already-selected-then-excluded series still res
 })
 
 describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_PICKER_LIMIT', () => {
-  // FRONTEND-077-AC-05: this cap is no longer independently observable --
-  // hideInput suppresses the inline field's suggestions entirely, capped or
-  // not. This test now documents that outcome directly; the "Show all
-  // series" modal remains uncapped, covered separately by
-  // FRONTEND-035-AC-09 below.
-  it('renders no inline suggestions at all now that the inline Series field hides its input', async () => {
+  // FRONTEND-077-AC-05 (corrected 2026-09-03, live review): hideInput
+  // suppresses only the inline field's typing input, not its suggestions --
+  // the default (empty-input) suggestion list still renders inline, still
+  // capped at SPECIFIC_SERIES_PICKER_LIMIT. The "Show all series" modal
+  // remains uncapped, covered separately by FRONTEND-035-AC-09 below.
+  it('renders inline suggestions capped at SPECIFIC_SERIES_PICKER_LIMIT, with no inline typing input', async () => {
     mockGetAll.mockResolvedValue(
       Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
         makeSeries({
@@ -1421,7 +1421,7 @@ describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_
     const suggestions = screen
       .queryAllByRole('button')
       .filter((b) => /^Show \d/.test(b.textContent ?? ''))
-    expect(suggestions).toHaveLength(0)
+    expect(suggestions).toHaveLength(SPECIFIC_SERIES_PICKER_LIMIT)
   })
 })
 
@@ -1847,8 +1847,8 @@ describe('FRONTEND-042-AC-02: the series picker is always visible under Use My S
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
 
     // FRONTEND-077-AC-05: hideInput replaces the inline field's
-    // <label htmlFor> with a plain <span> once its own input is gone.
-    expect(await screen.findByText(/^series$/i)).toBeInTheDocument()
+    // <label htmlFor> with a non-visual aria-label once its own input is gone.
+    expect(await screen.findByLabelText(/^series$/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /show all series/i }),
     ).toBeInTheDocument()

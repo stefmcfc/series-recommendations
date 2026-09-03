@@ -91,9 +91,11 @@ describe('UseMySeriesPanel', () => {
   })
 
   // FRONTEND-077-AC-05: the inline Series field no longer renders its own
-  // input/suggestions (hideInput) -- picking a series now goes through the
-  // "Show all series" modal, which keeps its own full picker.
-  it('offers each series as a pickable suggestion in the "Show all series" modal and calls updateState when picked', () => {
+  // typing input (hideInput), but its empty-input default suggestion list
+  // still renders (corrected 2026-09-03, live review -- hideInput must not
+  // suppress suggestions, only the input itself) -- a series remains
+  // pickable both inline and via the "Show all series" modal.
+  it('offers each series as a pickable suggestion both inline and in the "Show all series" modal', () => {
     const updateState = vi.fn()
     render(
       <UseMySeriesPanel
@@ -105,9 +107,9 @@ describe('UseMySeriesPanel', () => {
       />,
     )
 
-    expect(
-      screen.queryByRole('button', { name: 'Ozark - COMPLETED' }),
-    ).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ozark - COMPLETED' }))
+    expect(updateState).toHaveBeenCalledWith({ selectedSeriesIds: ['1'] })
+    updateState.mockClear()
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
     const dialog = screen.getByRole('dialog')
