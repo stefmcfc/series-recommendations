@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Frontend: My Series filter sheet's "Min Personal Rating" label now renders with the same bold/heading styling as its sibling rating fields — it was a bare `<span>` that didn't match the `.field label` CSS rule.
+
 ## [3.16.0] - 2026-09-03
 
 ### Changed
