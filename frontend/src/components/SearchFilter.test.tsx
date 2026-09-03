@@ -71,11 +71,13 @@ describe('FRONTEND-073-AC-02: sheet no longer has a Title field', () => {
 describe('FRONTEND-006-AC-03/04/05: submit builds criteria', () => {
   it('calls onSearch with only populated fields', () => {
     const { onSearch } = renderFilter()
-    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
-      expect.objectContaining({ flaggedForRewatch: true }),
+      expect.objectContaining({ minImdbRating: 7.5 }),
     )
     const payload = onSearch.mock.calls[0][0]
     expect(payload).not.toHaveProperty('minPersonalRating')
@@ -340,7 +342,6 @@ describe('FRONTEND-071-AC-08: all fields still present', () => {
       expect(screen.getByLabelText(label)).toBeInTheDocument()
     }
     expect(screen.getByText('Min Personal Rating')).toBeInTheDocument()
-    expect(screen.getByLabelText(/flagged for rewatch/i)).toBeInTheDocument()
   })
 })
 
@@ -418,13 +419,11 @@ describe('FRONTEND-006-AC-07/08: clearing', () => {
     fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
       target: { value: '7.5' },
     })
-    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
 
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
     expect(onClear).toHaveBeenCalledTimes(1)
     expect(onSearch).not.toHaveBeenCalled()
     expect(screen.getByLabelText(/min imdb rating/i)).toHaveValue(null)
-    expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
   })
 })
 
@@ -709,30 +708,21 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
   })
 })
 
-describe('FRONTEND-012-AC-15: rewatch filter checkbox', () => {
-  it('renders unchecked by default', () => {
-    renderFilter()
-    expect(screen.getByLabelText(/flagged for rewatch/i)).not.toBeChecked()
-  })
-
-  it('includes flaggedForRewatch in criteria only when checked', () => {
-    const { onSearch } = renderFilter()
-
-    fireEvent.click(screen.getByLabelText(/flagged for rewatch/i))
-    fireEvent.click(screen.getByRole('button', { name: /search/i }))
-
-    expect(onSearch).toHaveBeenCalledWith(
-      expect.objectContaining({ flaggedForRewatch: true }),
+// FRONTEND-012-AC-15's checkbox coverage is superseded outright by
+// frontend_spec_074's Rewatch tab in App.tsx -- see
+// FRONTEND-074-AC-04 below for its replacement coverage.
+describe('FRONTEND-074-AC-04: sheet no longer has a rewatch checkbox', () => {
+  it('does not render a Flagged for rewatch checkbox', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
     )
-  })
-
-  it('omits flaggedForRewatch when left unchecked', () => {
-    const { onSearch } = renderFilter()
-
-    fireEvent.click(screen.getByRole('button', { name: /search/i }))
-
-    expect(onSearch).toHaveBeenCalledWith(
-      expect.not.objectContaining({ flaggedForRewatch: expect.anything() }),
-    )
+    expect(
+      screen.queryByLabelText(/flagged for rewatch/i),
+    ).not.toBeInTheDocument()
   })
 })

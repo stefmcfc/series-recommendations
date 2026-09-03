@@ -33,6 +33,10 @@ const navLinkClassName = ({ isActive }: NavLinkRenderProps) =>
 // uppercase SeriesStatus enum value SeriesSearchCriteria.status expects.
 // The bare /my-series route (statusTab undefined) and any unrecognized
 // segment both fall through to "All" (status undefined).
+// FRONTEND-074-AC-02: 'rewatch' is not a SeriesStatus value -- it maps to
+// undefined here (see flaggedForRewatchFromTabParam below for the flag it
+// actually sets), so selecting it shows flagged series across every status
+// rather than mapping to one of the existing enum values.
 function statusFromTabParam(statusTab?: string): SeriesStatus | undefined {
   switch (statusTab) {
     case 'watching':
@@ -46,6 +50,15 @@ function statusFromTabParam(statusTab?: string): SeriesStatus | undefined {
     default:
       return undefined
   }
+}
+
+// FRONTEND-074-AC-02: the companion to statusFromTabParam -- one path param
+// can no longer be represented by a single SeriesStatus | undefined once
+// 'rewatch' is a recognized tab, since it needs to set a flag instead of a
+// status. Only the 'rewatch' tab sets this; every other tab leaves it
+// undefined so it's omitted from effectiveCriteria entirely.
+function flaggedForRewatchFromTabParam(statusTab?: string): true | undefined {
+  return statusTab === 'rewatch' ? true : undefined
 }
 
 interface MySeriesViewProps {
@@ -75,6 +88,7 @@ function MySeriesView({
 }: MySeriesViewProps) {
   const { statusTab } = useParams<{ statusTab?: string }>()
   const status = statusFromTabParam(statusTab)
+  const flaggedForRewatch = flaggedForRewatchFromTabParam(statusTab)
   // FRONTEND-073-AC-03/04: the live Title search box's raw value lives here
   // -- MySeriesView is the shared parent of SeriesList (which renders the
   // box) and effectiveCriteria (which needs the debounced value) -- debounced
@@ -86,8 +100,13 @@ function MySeriesView({
   // only when criteria, the route-derived status, or the debounced title
   // actually change.
   const effectiveCriteria: SearchCriteria = useMemo(
-    () => ({ ...criteria, status, title: debouncedTitle || undefined }),
-    [criteria, status, debouncedTitle],
+    () => ({
+      ...criteria,
+      status,
+      title: debouncedTitle || undefined,
+      ...(flaggedForRewatch ? { flaggedForRewatch } : {}),
+    }),
+    [criteria, status, debouncedTitle, flaggedForRewatch],
   )
   // FRONTEND-071-AC-09: the filter sheet's open/closed state is lifted here
   // -- the shared parent of the trigger (SeriesList) and the panel
@@ -116,6 +135,9 @@ function MySeriesView({
         </NavLink>
         <NavLink to="/my-series/dropped" className={navLinkClassName}>
           Dropped
+        </NavLink>
+        <NavLink to="/my-series/rewatch" className={navLinkClassName}>
+          Rewatch
         </NavLink>
       </nav>
       <SearchFilter

@@ -1,6 +1,6 @@
 # Frontend Spec 074: "Flagged for Rewatch" Becomes a Tab
 
-**Status**: Not started
+**Status**: Implemented — `App.tsx`, `App.test.tsx`, `components/SearchFilter.tsx`, `components/SearchFilter.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 056 (`frontend_spec_056_series_list_status_tabs.md`, owns the `/my-series/:statusTab` route and tab-bar pattern this spec extends) ✅ required, Frontend Spec 071 (owns the sheet this spec removes a field from) ✅ required
 **Area**: Frontend (`App.tsx`, `components/SearchFilter.tsx`)
@@ -135,7 +135,7 @@ describe('FRONTEND-074-AC-04: sheet no longer has a rewatch checkbox', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-074-AC-01: Rewatch tab renders alongside the status tabs
-- [ ] FRONTEND-074-AC-02: selecting Rewatch filters by the flag, not status
-- [ ] FRONTEND-074-AC-03: Rewatch tab shows active state correctly
-- [ ] FRONTEND-074-AC-04: sheet no longer has a "Flagged for rewatch" field
+- [x] FRONTEND-074-AC-01: Rewatch tab renders alongside the status tabs
+- [x] FRONTEND-074-AC-02: selecting Rewatch filters by the flag, not status
+- [x] FRONTEND-074-AC-03: Rewatch tab shows active state correctly
+- [x] FRONTEND-074-AC-04: sheet no longer has a "Flagged for rewatch" field
