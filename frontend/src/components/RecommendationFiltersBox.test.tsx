@@ -52,7 +52,9 @@ describe('RecommendationFiltersBox', () => {
     renderBox()
     expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
@@ -66,7 +68,9 @@ describe('RecommendationFiltersBox', () => {
 
   it('hides Min TMDB Rating/Year Min/Year Max/Country/Language when isCustomSearch is true', () => {
     renderBox({ isCustomSearch: true })
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^year min/i)).not.toBeInTheDocument()
@@ -79,7 +83,9 @@ describe('RecommendationFiltersBox', () => {
 
   it('marks minVoteCountTouched when Min Vote Count is edited', () => {
     const { updateState } = renderBox()
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '50' },
@@ -93,7 +99,9 @@ describe('RecommendationFiltersBox', () => {
 
   it('clears every filter field via Reset Filters', () => {
     const { updateState } = renderBox()
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
 
@@ -121,7 +129,9 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
         genreOptions={['Comedy']}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Recommendations Filters' }),
+    )
     expect(
       screen.getByRole('button', { name: 'Exclude Genres' }),
     ).toBeInTheDocument()
@@ -136,7 +146,9 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
         genreOptions={['Comedy']}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Recommendations Filters' }),
+    )
     expect(
       screen.queryByRole('button', { name: /Exclude Genres/ }),
     ).not.toBeInTheDocument()
@@ -154,7 +166,9 @@ describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () =>
         genreOptions={['Comedy']}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Recommendations Filters' }),
+    )
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
     expect(updateState).toHaveBeenCalledWith(
       expect.objectContaining({ excludeGenresSelected: [] }),

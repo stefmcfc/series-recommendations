@@ -297,6 +297,13 @@
 }
 
 .specificSeriesFiltersRow {
+  /* FRONTEND-081: now nested one level deeper, inside .filtersBody's own
+     grid (the new "Filter & sort my series" disclosure body) -- without
+     spanning every column here, this row would be squeezed into a single
+     .filtersBody cell instead of keeping its own full-width internal
+     layout, same as .filtersActions below already does for the same
+     reason. */
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 1rem;

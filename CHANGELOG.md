@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: "Use My Series" gains a new "Filter & sort my series" disclosure section (open by default) wrapping the existing Genre/Status/Sort controls, extended with five new client-side-only picker-narrowing fields — Keywords, Min Personal Rating, Min IMDb Rating, "Min TMDB Rating (My Series)", and "Year Min/Max (My Series)" — the client-side successor to the retired `minSourceRating` backend gate, never dropping an explicitly-selected series (`frontend_spec_081`).
+
+### Changed
+
+- Frontend: on the Recommendations page, "Post TMDB filtering" (`RecommendationFiltersBox`) now renders before "Sort filtered recs" (`HighestRatedPanel`) instead of after, for every recommendation mode (`frontend_spec_081`).
+- Frontend: the "Use My Series" candidate picker's sort direction now defaults sensibly per newly-selected field — descending for every field except Title, which defaults ascending (`frontend_spec_064` Requirement 2, implemented via `frontend_spec_081`).
+- Frontend: Recommendations' "Filters" disclosure toggle relabeled to "Recommendations Filters", and the submit button relabeled from "Apply Filters" to "Get Recommendations", with no change to either's behavior (`frontend_spec_065`, implemented via `frontend_spec_081`).
+- Frontend: `RecommendationsList`'s empty-state hint text ("Set your filters above and click...") now references "Get Recommendations" instead of the retired "Apply Filters" wording, catching a stray reference the relabel above missed.
+
 ## [3.16.0] - 2026-09-03
 
 ### Changed

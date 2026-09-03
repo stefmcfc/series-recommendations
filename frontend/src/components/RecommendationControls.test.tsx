@@ -12,6 +12,7 @@ import {
   buildQuery,
   initialState,
 } from './RecommendationControls'
+import type { SpecificSeriesFilters } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
 import type { Series } from '../types/series'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
@@ -64,13 +65,36 @@ beforeEach(() => {
   mockGetKeywordStats.mockResolvedValue([])
 })
 
+// FRONTEND-081: buildSpecificSeriesCandidatePool's filter criteria moved
+// from 7 positional parameters to a single options object -- this helper
+// keeps the direct unit tests below concise, only specifying the fields each
+// test actually cares about.
+function makeSpecificSeriesFilters(
+  overrides: Partial<SpecificSeriesFilters> = {},
+): SpecificSeriesFilters {
+  return {
+    genreFilter: [],
+    excludeGenreFilter: [],
+    statusFilter: 'any',
+    sortBy: 'title',
+    sortDirection: 'asc',
+    keywordsFilter: [],
+    minPersonalRating: null,
+    minImdbRating: '',
+    minTmdbRating: '',
+    yearMin: '',
+    yearMax: '',
+    ...overrides,
+  }
+}
+
 // FRONTEND-040-AC-01/03: every control except "Recommendation Source" is now
 // Apply-gated -- most existing tests below click this between changing a
 // field and asserting on onQueryChange, mirroring how frontend_spec_035
 // updated this same file's interaction shape (not the behavioral intent)
 // when the Specific Series picker's UI changed.
 function clickApplyFilters() {
-  fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+  fireEvent.click(screen.getByRole('button', { name: /get recommendations/i }))
 }
 
 // FRONTEND-042: the old five flat radios ("Automatic"/"Specific Series"/
@@ -401,13 +425,17 @@ describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
 describe('FRONTEND-011-AC-07: output filter fields', () => {
   it('renders the Filters section collapsed by default', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText(/^min tmdb rating$/i),
+    ).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/year min/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/year max/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year min$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year max$/i)).toBeInTheDocument()
     // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
     // trigger button, not a labeled text input.
     expect(
@@ -421,9 +449,11 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
   it('omits minVoteCount from the query when the field is left blank', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
-    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+    fireEvent.change(screen.getByLabelText(/^min tmdb rating$/i), {
       target: { value: '7' },
     })
     clickApplyFilters()
@@ -439,12 +469,14 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
   it('sends numeric, not string, values for populated number fields', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '50' },
     })
-    fireEvent.change(screen.getByLabelText(/year min/i), {
+    fireEvent.change(screen.getByLabelText(/^year min$/i), {
       target: { value: '2020' },
     })
     // FRONTEND-047: Language is now a single-select picker -- setting a
@@ -478,8 +510,10 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
       await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    fireEvent.change(screen.getByLabelText(/^min tmdb rating$/i), {
       target: { value: '7' },
     })
     clickApplyFilters()
@@ -494,7 +528,7 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
       sourceMode: 'useMySeries',
       seriesIds: ['1'],
     })
-    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveValue(null)
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveValue(null)
   })
 })
 
@@ -508,10 +542,10 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
 // exactly the mount-fires-a-request behavior FRONTEND-062-AC-01 now
 // forbids. Replaced below with its direct opposite.
 describe('FRONTEND-011-AC-12: mounting does not trigger an Apply-gated control', () => {
-  it('renders "Apply Filters", not a bare "Apply"/"Submit" button', () => {
+  it('renders "Get Recommendations", not a bare "Apply"/"Submit" button', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     expect(
-      screen.getByRole('button', { name: /apply filters/i }),
+      screen.getByRole('button', { name: /get recommendations/i }),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /^apply$/i }),
@@ -533,11 +567,15 @@ describe('FRONTEND-011-AC-12: mounting does not trigger an Apply-gated control',
 describe('FRONTEND-048-AC-01: Max Per Source is never rendered', () => {
   it('does not render under any mode', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     expect(screen.queryByLabelText(/max per source/i)).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: /^discover$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     expect(screen.queryByLabelText(/max per source/i)).not.toBeInTheDocument()
   })
 })
@@ -545,7 +583,9 @@ describe('FRONTEND-048-AC-01: Max Per Source is never rendered', () => {
 describe('FRONTEND-048-AC-02: Max Sources Shown is never rendered', () => {
   it('does not render under any mode', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     expect(
       screen.queryByLabelText(/max sources shown/i),
     ).not.toBeInTheDocument()
@@ -558,7 +598,9 @@ describe('FRONTEND-048-AC-03: query never includes maxPerSource/maxSourcesShown'
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.not.objectContaining({
@@ -574,7 +616,9 @@ describe('FRONTEND-019-AC-11: Sort By is a top-level control, defaults to Best M
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     expect(screen.getByLabelText(/best match/i)).toBeChecked()
-    expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
+    expect(
+      screen.queryByLabelText(/^min tmdb rating$/i),
+    ).not.toBeInTheDocument()
   })
 })
 
@@ -607,7 +651,9 @@ describe('FRONTEND-019-AC-13: Reset Filters does not affect Sort By', () => {
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(screen.getByLabelText(/most recommended/i))
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     fireEvent.click(screen.getByRole('button', { name: /reset filters/i }))
     clickApplyFilters()
 
@@ -732,7 +778,9 @@ describe('FRONTEND-027-AC-06: no additional control for Highest Rated beyond min
     expect(screen.queryByLabelText(/^week$/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^day$/i)).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
   })
 })
@@ -863,7 +911,9 @@ describe('FRONTEND-030-AC-03/04: Exclude Keywords filter field', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
       target: { value: 'Zombie, Heist' },
     })
@@ -876,7 +926,9 @@ describe('FRONTEND-030-AC-03/04: Exclude Keywords filter field', () => {
 
   it('renders Exclude Keywords immediately adjacent to Exclude Genres', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
     // trigger button, not a labeled text input.
@@ -892,7 +944,9 @@ describe('FRONTEND-030-AC-05: Reset Filters clears Exclude Keywords', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
       target: { value: 'Zombie' },
     })
@@ -909,7 +963,9 @@ describe('FRONTEND-030-AC-05: Reset Filters clears Exclude Keywords', () => {
 describe('FRONTEND-030-AC-07/08: mode-aware Min Vote Count auto-fill', () => {
   it('pre-fills 200 when switching to Highest Rated, reverts to empty when switching away', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     selectHighestRated()
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
@@ -922,7 +978,9 @@ describe('FRONTEND-030-AC-07/08: mode-aware Min Vote Count auto-fill', () => {
 describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbered by a mode switch', () => {
   it('preserves a user-typed value across mode changes in either direction', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     selectHighestRated()
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
@@ -935,7 +993,9 @@ describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbere
 
   it('preserves a user-typed value when switching into Highest Rated too', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
       target: { value: '50' },
@@ -950,7 +1010,9 @@ describe('FRONTEND-030-AC-10: Reset Filters clears minVoteCount and minVoteCount
   it('clears a touched, manually-edited value and does not re-trigger the topRated auto-fill', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     selectHighestRated()
     fireEvent.change(screen.getByLabelText(/min vote count/i), {
@@ -1281,11 +1343,7 @@ describe('FRONTEND-050-AC-03: an already-selected-then-excluded series still res
     })
     const pool = buildSpecificSeriesCandidatePool(
       [nowExcluded],
-      [],
-      [],
-      'any',
-      'title',
-      'asc',
+      makeSpecificSeriesFilters(),
       ['1'],
     )
 
@@ -1356,7 +1414,9 @@ describe('FRONTEND-035-AC-10: genre/status filters render but never appear in th
     // FRONTEND-042: "Use My Series" is now active by default (no separate
     // mode-change click to trigger the auto-fetch this test relies on), so
     // Apply Filters is clicked explicitly to produce a query to inspect.
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     const lastCall = onQueryChange.mock.calls.at(-1)![0]
     expect(lastCall).not.toHaveProperty('genres')
@@ -1615,7 +1675,9 @@ describe('FRONTEND-062-AC-04: switching either tab clears the previous query', (
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
     onQueryChange.mockClear()
 
     selectDiscover()
@@ -1629,7 +1691,9 @@ describe('FRONTEND-062-AC-04: switching either tab clears the previous query', (
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
     selectDiscover()
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
     onQueryChange.mockClear()
 
     fireEvent.click(screen.getByRole('tab', { name: /popular right now/i }))
@@ -1649,7 +1713,9 @@ describe('FRONTEND-040-AC-03: Apply Filters sends the current pending state', ()
     fireEvent.click(screen.getByLabelText(/^most recommended/i))
     expect(onQueryChange).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ sortBy: 'recommendationCount' }),
@@ -1664,8 +1730,10 @@ describe('FRONTEND-040-AC-04: Reset updates local state without firing a request
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
     selectCustomSearch()
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i })) // open the disclosure
-    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    ) // open the disclosure
+    fireEvent.change(screen.getByLabelText(/^min tmdb rating$/i), {
       target: { value: '5' },
     })
     onQueryChange.mockClear()
@@ -1673,7 +1741,7 @@ describe('FRONTEND-040-AC-04: Reset updates local state without firing a request
     fireEvent.click(screen.getByRole('button', { name: /^reset filters$/i }))
 
     expect(onQueryChange).not.toHaveBeenCalled()
-    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveValue(null)
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveValue(null)
   })
 })
 
@@ -1700,7 +1768,7 @@ describe('FRONTEND-040-AC-08: Recommendation Source and Apply Filters are disabl
     expect(screen.getByRole('tab', { name: /use my series/i })).toBeDisabled()
     expect(screen.getByRole('tab', { name: /^discover$/i })).toBeDisabled()
     expect(
-      screen.getByRole('button', { name: /apply filters/i }),
+      screen.getByRole('button', { name: /get recommendations/i }),
     ).toBeDisabled()
   })
 })
@@ -1713,7 +1781,9 @@ describe('FRONTEND-040-AC-09: a disabled control cannot fire onQueryChange', () 
     )
     onQueryChange.mockClear()
 
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).not.toHaveBeenCalled()
   })
@@ -1775,7 +1845,9 @@ describe("FRONTEND-042-AC-05: a selection behaves exactly like today's Specific 
       target: { value: 'Show' },
     })
     fireEvent.click(await screen.findByText('Show'))
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
@@ -1838,7 +1910,9 @@ describe('FRONTEND-042-AC-08: Custom Search behaves exactly like former Genre & 
     fireEvent.click(
       await screen.findByRole('button', { name: 'Comedy: neutral' }),
     )
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ genres: ['Comedy'] }),
@@ -1871,7 +1945,9 @@ describe('FRONTEND-042-AC-09: Popular Right Now behavior is unaffected by the re
 describe("FRONTEND-042-AC-10: Highest Rated's minVoteCount default survives the re-nesting", () => {
   it('pre-fills 200 entering Highest Rated, clears it leaving', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     selectHighestRated()
     expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
@@ -1971,9 +2047,11 @@ describe('FRONTEND-046-AC-01: rating/year fields render in the Custom Search pan
     selectCustomSearch()
 
     const panel = screen.getByRole('tabpanel', { name: /custom search/i })
-    expect(within(panel).getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
-    expect(within(panel).getByLabelText(/^year min/i)).toBeInTheDocument()
-    expect(within(panel).getByLabelText(/^year max/i)).toBeInTheDocument()
+    expect(
+      within(panel).getByLabelText(/^min tmdb rating$/i),
+    ).toBeInTheDocument()
+    expect(within(panel).getByLabelText(/^year min$/i)).toBeInTheDocument()
+    expect(within(panel).getByLabelText(/^year max$/i)).toBeInTheDocument()
   })
 })
 
@@ -1981,17 +2059,19 @@ describe('FRONTEND-046-AC-02: Filters box omits these fields under Custom Search
   it('does not render the relocated fields inside Filters', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     selectCustomSearch()
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     const filtersBody = screen.getByTestId('filters-body')
     expect(
-      within(filtersBody).queryByLabelText(/min tmdb rating/i),
+      within(filtersBody).queryByLabelText(/^min tmdb rating$/i),
     ).not.toBeInTheDocument()
     expect(
-      within(filtersBody).queryByLabelText(/^year min/i),
+      within(filtersBody).queryByLabelText(/^year min$/i),
     ).not.toBeInTheDocument()
     expect(
-      within(filtersBody).queryByLabelText(/^year max/i),
+      within(filtersBody).queryByLabelText(/^year max$/i),
     ).not.toBeInTheDocument()
   })
 })
@@ -2004,11 +2084,13 @@ describe('FRONTEND-046-AC-03: other modes are unaffected', () => {
   ])('renders the fields inside Filters under %s', (_, selectMode) => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     selectMode()
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
-    expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/^year min/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/^year max/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year min$/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year max$/i)).toBeInTheDocument()
   })
 })
 
@@ -2029,13 +2111,15 @@ describe('FRONTEND-046-AC-05: query output is unaffected by relocation', () => {
     )
     selectCustomSearch()
 
-    fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
+    fireEvent.change(screen.getByLabelText(/^min tmdb rating$/i), {
       target: { value: '7.5' },
     })
-    fireEvent.change(screen.getByLabelText(/^year min/i), {
+    fireEvent.change(screen.getByLabelText(/^year min$/i), {
       target: { value: '2020' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ minTmdbRating: 7.5, yearMin: 2020 }),
@@ -2047,22 +2131,24 @@ describe('SERIES-031-AC-11/12 (frontend hint): rating/year inputs carry min/max 
   it('constrains Min TMDB Rating to 0-10 in both locations', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveAttribute(
       'min',
       '0',
     )
-    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveAttribute(
       'max',
       '10',
     )
 
     selectCustomSearch()
-    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveAttribute(
       'min',
       '0',
     )
-    expect(screen.getByLabelText(/min tmdb rating/i)).toHaveAttribute(
+    expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveAttribute(
       'max',
       '10',
     )
@@ -2072,17 +2158,19 @@ describe('SERIES-031-AC-11/12 (frontend hint): rating/year inputs carry min/max 
     const maxYear = String(new Date().getFullYear() + 1)
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('min', '1900')
-    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('max', maxYear)
-    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('min', '1900')
-    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('max', maxYear)
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByLabelText(/^year min$/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year min$/i)).toHaveAttribute('max', maxYear)
+    expect(screen.getByLabelText(/^year max$/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year max$/i)).toHaveAttribute('max', maxYear)
 
     selectCustomSearch()
-    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('min', '1900')
-    expect(screen.getByLabelText(/^year min/i)).toHaveAttribute('max', maxYear)
-    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('min', '1900')
-    expect(screen.getByLabelText(/^year max/i)).toHaveAttribute('max', maxYear)
+    expect(screen.getByLabelText(/^year min$/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year min$/i)).toHaveAttribute('max', maxYear)
+    expect(screen.getByLabelText(/^year max$/i)).toHaveAttribute('min', '1900')
+    expect(screen.getByLabelText(/^year max$/i)).toHaveAttribute('max', maxYear)
   })
 })
 
@@ -2094,7 +2182,9 @@ describe('FRONTEND-049-AC-01: Use My Series sends sourceMode even with no select
     )
     onQueryChange.mockClear()
 
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ sourceMode: 'useMySeries' }),
@@ -2115,7 +2205,9 @@ describe('FRONTEND-049-AC-02: sourceMode and seriesIds are both sent together', 
       target: { value: 'Show' },
     })
     fireEvent.click(await screen.findByText('Show'))
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ sourceMode: 'useMySeries', seriesIds: ['1'] }),
@@ -2147,7 +2239,9 @@ describe('FRONTEND-049-AC-04: an empty Custom Search request still fires', () =>
     selectCustomSearch()
     onQueryChange.mockClear()
 
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalled()
   })
@@ -2167,14 +2261,18 @@ describe('FRONTEND-047-AC-04: Country picker renders under Custom Search', () =>
 describe('FRONTEND-047-AC-05: Country picker relocates to Filters for other modes', () => {
   it('shows Country inside Filters under Use My Series', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     expect(screen.getByLabelText(/countries/i)).toBeInTheDocument()
   })
 
   it('does not render Country inside Custom Search panel while Custom Search is not active', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     selectCustomSearch()
 
     const filtersBody = screen.getByTestId('filters-body')
@@ -2192,9 +2290,13 @@ describe('FRONTEND-047-AC-06: countries sent in the query', () => {
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ countries: ['US'] }),
@@ -2207,7 +2309,9 @@ describe('FRONTEND-047-AC-06: countries sent in the query', () => {
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ countries: expect.anything() }),
@@ -2218,7 +2322,9 @@ describe('FRONTEND-047-AC-06: countries sent in the query', () => {
 describe('FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-derived', () => {
   it('offers a searchable country beyond the pinned two without fetching series data', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.change(screen.getByLabelText(/countries/i), {
       target: { value: 'japan' },
@@ -2242,7 +2348,9 @@ describe('FRONTEND-047-AC-07: country options are hardcoded, not tracked-data-de
 describe('FRONTEND-047-AC-08: Language picker has pinned quick-select options', () => {
   it('renders English and Spanish quick-selects', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     expect(
       screen.getByRole('button', { name: /^english$/i }),
@@ -2256,7 +2364,9 @@ describe('FRONTEND-047-AC-08: Language picker has pinned quick-select options', 
 describe('FRONTEND-047-AC-09: selecting replaces, does not accumulate', () => {
   it('replaces the previous language selection', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^french$/i }))
@@ -2284,11 +2394,15 @@ describe('FRONTEND-047-AC-12: language selection can be cleared', () => {
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
 
     fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
     fireEvent.click(screen.getByRole('button', { name: /remove en$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ language: expect.anything() }),
@@ -2307,7 +2421,9 @@ describe('FRONTEND-047-AC-10: Language picker relocates the same way as Country'
 
   it('does not render Language inside Filters while Custom Search is active', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     selectCustomSearch()
 
     const filtersBody = screen.getByTestId('filters-body')
@@ -2323,9 +2439,13 @@ describe('FRONTEND-047-AC-11: query output for language is unaffected', () => {
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ language: 'en' }),
@@ -2339,7 +2459,9 @@ describe('FRONTEND-047-AC-11: query output for language is unaffected', () => {
     )
     selectCustomSearch()
     fireEvent.click(screen.getByRole('button', { name: /^english$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /get recommendations/i }),
+    )
 
     expect(onQueryChange).toHaveBeenCalledWith(
       expect.objectContaining({ language: 'en' }),
@@ -2350,7 +2472,9 @@ describe('FRONTEND-047-AC-11: query output for language is unaffected', () => {
 describe('FRONTEND-047: Reset Filters clears countriesSelected', () => {
   it('clears the selected countries chip on reset', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     fireEvent.click(screen.getByRole('button', { name: /^us$/i }))
     expect(
       screen.getByRole('button', { name: 'Remove US' }),
@@ -2398,11 +2522,7 @@ describe('FRONTEND-069-AC-01: excludeGenreFilter narrows the pool', () => {
     ] as Series[]
     const pool = buildSpecificSeriesCandidatePool(
       series,
-      [],
-      ['Comedy'],
-      'any',
-      'title',
-      'asc',
+      makeSpecificSeriesFilters({ excludeGenreFilter: ['Comedy'] }),
       [],
     )
     expect(pool.map((s) => s.title)).toEqual(['Serious Show'])
@@ -2421,11 +2541,7 @@ describe('FRONTEND-069-AC-02: a genre-less series is not excluded', () => {
     ] as Series[]
     const pool = buildSpecificSeriesCandidatePool(
       series,
-      [],
-      ['Comedy'],
-      'any',
-      'title',
-      'asc',
+      makeSpecificSeriesFilters({ excludeGenreFilter: ['Comedy'] }),
       [],
     )
     expect(pool.map((s) => s.title)).toEqual(['No Genre Show'])
@@ -2444,11 +2560,7 @@ describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
     ] as Series[]
     const pool = buildSpecificSeriesCandidatePool(
       series,
-      [],
-      [],
-      'any',
-      'title',
-      'asc',
+      makeSpecificSeriesFilters(),
       [],
     )
     expect(pool.map((s) => s.title)).toEqual(['Show'])
@@ -2535,5 +2647,21 @@ describe('FRONTEND-051-AC-04: gated behind Apply Filters', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /select all/i }))
     expect(onQueryChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-081-AC-10: Sort filtered recs renders after Post TMDB filtering', () => {
+  it('places the Sort By fieldset after the Filters disclosure in document order', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    const filtersToggle = screen.getByRole('button', {
+      name: /recommendations filters/i,
+    })
+    const sortByLegend = screen.getByText('Sort By')
+
+    expect(
+      filtersToggle.compareDocumentPosition(sortByLegend) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 })

@@ -8,6 +8,9 @@ owns the "Apply Filters" button this spec renames) ✅, Frontend Spec 042
 relabel applies to uniformly) ✅
 **Area**: Frontend (`components/RecommendationFiltersBox.tsx`, `components/RecommendationControls.tsx`,
 `components/RecommendationControls.test.tsx`)
+**Status**: Implemented — via `frontend_spec_081_use_my_series_page_restructure.md`'s Requirement 10
+(same touch of `components/RecommendationFiltersBox.tsx`, `components/RecommendationControls.tsx`,
+`components/RecommendationControls.test.tsx`, `components/RecommendationFiltersBox.test.tsx`)
 
 ## Overview
 
@@ -142,6 +145,6 @@ suite to confirm no other file references the old strings.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-065-AC-01: renders "Recommendations Filters"
-- [ ] FRONTEND-065-AC-02: renders "Get Recommendations"
-- [ ] FRONTEND-065-AC-03: existing test suite's name matchers are updated, behavior unchanged
+- [x] FRONTEND-065-AC-01: renders "Recommendations Filters"
+- [x] FRONTEND-065-AC-02: renders "Get Recommendations"
+- [x] FRONTEND-065-AC-03: existing test suite's name matchers are updated, behavior unchanged
