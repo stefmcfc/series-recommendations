@@ -371,22 +371,30 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.findTvIdByImdbId("tt0000003") >> Optional.empty()
     }
 
-    def "SERIES-007-AC-20: minSourceRating excludes series below the threshold, including null ratings"() {
-        given: "series A (rating 2), B (rating 4), C (rating null)"
-            def a = completedSeries("A", "tt0000001", LocalDateTime.now(), null, 2)
-            def b = completedSeries("B", "tt0000002", LocalDateTime.now(), null, 4)
-            def c = completedSeries("C", "tt0000003", LocalDateTime.now(), null, null)
-            seriesRepository.findAll() >> [a, b, c]
-            tmdbClient.findTvIdByImdbId(_) >> Optional.empty()
-            def criteria = new RecommendationCriteria(minSourceRating: 3)
+    def "SERIES-045-AC-02: a low-rated series is no longer excluded from the automatic pool"() {
+        given: "a COMPLETED series with a low personalRating and an imdbId"
+            def series = completedSeries("Low Rated Show", "tt0000001", LocalDateTime.now(), null, 1)
+            seriesRepository.findAll() >> [series]
+
+        when: "sourceFromPool is called with no rating-related criteria set"
+            sourcingService.sourceFromPool(new RecommendationCriteria(), 20)
+
+        then: "the low-rated series is still used as a source"
+            1 * tmdbClient.findTvIdByImdbId("tt0000001") >> Optional.empty()
+    }
+
+    def "SERIES-045-AC-02: an explicitly-selected low-rated series is never dropped"() {
+        given: "a low-rated series explicitly named in seriesIds"
+            def series = completedSeries("Low Rated Show", "tt0000002", LocalDateTime.now(), null, 1)
+            series.id = UUID.randomUUID()
+            seriesRepository.findAllById([series.id]) >> [series]
+            def criteria = new RecommendationCriteria(seriesIds: [series.id.toString()])
 
         when: "sourceFromPool is called"
             sourcingService.sourceFromPool(criteria, 20)
 
-        then: "only B is used as a source"
+        then: "the series is consulted regardless of its rating"
             1 * tmdbClient.findTvIdByImdbId("tt0000002") >> Optional.empty()
-            0 * tmdbClient.findTvIdByImdbId("tt0000001")
-            0 * tmdbClient.findTvIdByImdbId("tt0000003")
     }
 
     // -- Requirement 5 (SERIES-007-AC-12..18): directed sourcing via genres/keywords --
@@ -464,17 +472,6 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.searchKeyword("nonexistent") >> Optional.empty()
             1 * tmdbClient.discover([], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
             result.isEmpty()
-    }
-
-    def "SERIES-007-AC-20: minSourceRating is a no-op in genre/keyword direct-sourcing mode"() {
-        given: "criteria requests genres directly along with a minSourceRating (no source pool to apply it to)"
-            def criteria = new RecommendationCriteria(genres: ["Drama"], minSourceRating: 5)
-
-        when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
-
-        then: "discover is still called normally, unaffected by minSourceRating"
-            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 
     // -- Spec 022, Requirement 2 (SERIES-022-AC-07): directed sourcing -- trending --

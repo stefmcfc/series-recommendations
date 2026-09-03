@@ -15,7 +15,6 @@ interface RecommendationFiltersBoxProps {
   readonly state: ControlsState
   readonly updateState: (patch: Partial<ControlsState>) => void
   readonly isCustomSearch: boolean
-  readonly showMinSourceRating: boolean
   // FRONTEND-068-AC-04: RecommendationControls already fetches genreOptions
   // for CustomSearchPanel/UseMySeriesPanel -- threaded one prop further so
   // this box's exclude-only picker can use the same list.
@@ -32,7 +31,6 @@ export function RecommendationFiltersBox({
   state,
   updateState,
   isCustomSearch,
-  showMinSourceRating,
   genreOptions,
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -54,7 +52,6 @@ export function RecommendationFiltersBox({
 
   const handleResetFilters = () => {
     updateState({
-      minSourceRating: '',
       minTmdbRating: '',
       minVoteCount: '',
       minVoteCountTouched: false,
@@ -80,26 +77,6 @@ export function RecommendationFiltersBox({
 
       {filtersOpen && (
         <div className={styles.filtersBody} data-testid="filters-body">
-          {showMinSourceRating && (
-            <div className={styles.field}>
-              <label htmlFor="recommendation-min-source-rating">
-                Min Source Rating
-              </label>
-              <select
-                id="recommendation-min-source-rating"
-                value={state.minSourceRating}
-                onChange={updateField('minSourceRating')}
-              >
-                <option value="">Any</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-              </select>
-            </div>
-          )}
-
           {!isCustomSearch && (
             <div className={styles.field}>
               <label htmlFor="recommendation-min-tmdb-rating">

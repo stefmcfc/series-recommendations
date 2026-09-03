@@ -156,8 +156,8 @@ public class RecommendationSourcingService {
     /**
      * SERIES-035-AC-06/07: resolves through {@link RecommendationPoolCache} rather than always
      * re-running the expensive body directly -- a repeat call whose {@code seriesIds}/{@code
-     * minSourceRating}/{@code limit} are unchanged (e.g. a {@code sortBy}-only re-request) is a
-     * cache hit, skipping every TMDB call the loader below would otherwise make.
+     * limit} are unchanged (e.g. a {@code sortBy}-only re-request) is a cache hit, skipping
+     * every TMDB call the loader below would otherwise make.
      */
     List<RawCandidate> sourceFromPool(RecommendationCriteria c, int limit) {
         PoolCacheKey key = buildCacheKey(c, limit);
@@ -168,7 +168,7 @@ public class RecommendationSourcingService {
         List<UUID> seriesIds = c.getSeriesIds() == null
             ? List.of()
             : c.getSeriesIds().stream().map(this::parseUuid).toList();
-        return new PoolCacheKey(seriesIds, c.getMinSourceRating(), limit);
+        return new PoolCacheKey(seriesIds, limit);
     }
 
     private List<RawCandidate> doSourceFromPool(RecommendationCriteria c, int limit) {
@@ -197,8 +197,6 @@ public class RecommendationSourcingService {
 
         return pool.stream()
             .filter(e -> !e.isExcludeFromRecommendations())
-            .filter(e -> c.getMinSourceRating() == null
-                || (e.getPersonalRating() != null && e.getPersonalRating() >= c.getMinSourceRating()))
             .sorted(SourceOrderComparator.INSTANCE)
             .limit(maxSourceSeries)
             .toList();

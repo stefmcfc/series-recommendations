@@ -36,7 +36,6 @@ public class RecommendationCriteriaValidator {
 
         validateSourceMode(c, hasSourceMode);
         validateMutuallyExclusiveModes(hasSeriesIds, hasGenreOrKeyword, hasSourceMode, isUseMySeriesMode);
-        validateMinSourceRating(c);
         validateMinTmdbRating(c);
         validateYearRange(c);
         validateTrendingWindow(c);
@@ -75,12 +74,6 @@ public class RecommendationCriteriaValidator {
         if (hasSourceMode && (hasSeriesIds || hasGenreOrKeyword)) {
             throw new IllegalArgumentException(
                 "sourceMode cannot be combined with seriesIds/genres/keywords -- these are mutually exclusive request modes");
-        }
-    }
-
-    private void validateMinSourceRating(RecommendationCriteria c) {
-        if (c.getMinSourceRating() != null && (c.getMinSourceRating() < 1 || c.getMinSourceRating() > 5)) {
-            throw new IllegalArgumentException("minSourceRating must be between 1 and 5");
         }
     }
 

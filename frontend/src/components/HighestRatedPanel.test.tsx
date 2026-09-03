@@ -16,7 +16,6 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     genresSelected: [],
     keywordsSelected: [],
     trendingWindow: 'week',
-    minSourceRating: '',
     minTmdbRating: '',
     minVoteCount: '',
     minVoteCountTouched: false,

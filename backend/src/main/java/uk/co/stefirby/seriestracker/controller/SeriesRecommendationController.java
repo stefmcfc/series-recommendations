@@ -32,7 +32,6 @@ public class SeriesRecommendationController {
             @RequestParam(required = false) List<String> seriesIds,
             @RequestParam(required = false) List<String> genres,
             @RequestParam(required = false) List<String> keywords,
-            @RequestParam(required = false) Integer minSourceRating,
             @RequestParam(required = false) BigDecimal minTmdbRating,
             @RequestParam(required = false) Integer minVoteCount,
             @RequestParam(required = false) Integer yearMin,
@@ -53,7 +52,6 @@ public class SeriesRecommendationController {
         criteria.setSeriesIds(seriesIds);
         criteria.setGenres(genres);
         criteria.setKeywords(keywords);
-        criteria.setMinSourceRating(minSourceRating);
         criteria.setMinTmdbRating(minTmdbRating);
         criteria.setMinVoteCount(minVoteCount);
         criteria.setYearMin(yearMin);

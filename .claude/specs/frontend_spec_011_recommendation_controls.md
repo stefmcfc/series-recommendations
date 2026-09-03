@@ -68,7 +68,7 @@ Adds a control panel above `RecommendationsList` — analogous to `SearchFilter`
 
 #### Acceptance Criteria
 
-- **FRONTEND-011-AC-07** [AUTO]: `RecommendationControls` shall render, in a collapsible "Filters" section (collapsed by default): `minSourceRating` (1–5 dropdown, shown only for `Automatic`/`Specific Series` modes per Design Decisions), `minTmdbRating` (number input, step 0.1), `minVoteCount` (number input), `yearMin`/`yearMax` (number inputs), `excludeGenres` (comma-separated text input), `language` (text input, e.g. `en`), `maxPerSource` (number input).
+- **FRONTEND-011-AC-07** [AUTO]: `RecommendationControls` shall render, in a collapsible "Filters" section (collapsed by default): ~~`minSourceRating` (1–5 dropdown, shown only for `Automatic`/`Specific Series` modes per Design Decisions)~~ **— this clause superseded by `frontend_spec_080`, 2026-09-03: `minSourceRating` is retired entirely, field removed, nothing left to render — every other field below is unaffected and still current** —, `minTmdbRating` (number input, step 0.1), `minVoteCount` (number input), `yearMin`/`yearMax` (number inputs), `excludeGenres` (comma-separated text input), `language` (text input, e.g. `en`), `maxPerSource` (number input).
 - **FRONTEND-011-AC-08** [AUTO]: An empty filter field shall be omitted from `RecommendationQuery` entirely (not sent as an empty string or `0`), so server-side defaults (e.g. `minVoteCount`'s default of 20, `SERIES-007-AC-25`) apply exactly as they do when the field is untouched.
 - **FRONTEND-011-AC-09** [AUTO]: A "Reset Filters" action shall clear every field in the Filters section (but not the sourcing mode/selection from Requirement 2) and re-fetch.
 

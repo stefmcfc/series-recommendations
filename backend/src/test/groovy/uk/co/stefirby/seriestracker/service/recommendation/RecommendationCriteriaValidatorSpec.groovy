@@ -32,17 +32,6 @@ class RecommendationCriteriaValidatorSpec extends Specification {
             thrown(IllegalArgumentException)
     }
 
-    def "SERIES-007-AC-20: minSourceRating out of range (1-5) is rejected"() {
-        given: "an out-of-range minSourceRating"
-            def criteria = new RecommendationCriteria(minSourceRating: 9)
-
-        when: "validate is called"
-            validator.validate(criteria)
-
-        then: "an IllegalArgumentException is thrown"
-            thrown(IllegalArgumentException)
-    }
-
     // -- Spec 031, Requirement 3 (SERIES-031-AC-11/12): minTmdbRating/year bounds validation --
 
     def "SERIES-031-AC-11: a negative minTmdbRating is rejected"() {
