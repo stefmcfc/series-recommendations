@@ -21,6 +21,12 @@ versioned together as one app.
 - Frontend: "Use My Series"' "Filter & sort my series" section restructured (before merge, live review) into Status and Sort by as their own full-width rows, and Genre/Keyword/rating/year fields onto fixed 4-column grid rows, replacing the previous Genre-plus-stacked-Status/Sort two-column layout (`frontend_spec_081`).
 - Frontend: "Use My Series"' Keywords filter no longer accepts free text — it only narrows against a tracked series' actual keywords, so typing an untracked value could never match anything (`frontend_spec_081`).
 
+## [3.16.1] - 2026-09-03
+
+### Fixed
+
+- Frontend: My Series filter sheet's "Min Personal Rating" label now renders with the same bold/heading styling as its sibling rating fields — it was a bare `<span>` that didn't match the `.field label` CSS rule.
+
 ## [3.16.0] - 2026-09-03
 
 ### Changed
