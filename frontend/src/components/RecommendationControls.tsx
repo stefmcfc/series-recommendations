@@ -4,6 +4,7 @@ import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series, SortOptions } from '../types/series'
 import type { PickerOption } from './KeywordPicker'
 import { formatCountryName } from '../utils/countryName'
+import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
 import { CustomSearchPanel } from './CustomSearchPanel'
 import { TrendingPanel } from './TrendingPanel'
@@ -398,7 +399,8 @@ export function seriesPickerLabel(
   series: Series,
   statusFilter: SpecificSeriesStatusFilter,
 ): string {
-  const yearPart = series.year != null ? ` (${series.year})` : ''
+  const formattedYear = formatSeriesYear(series)
+  const yearPart = formattedYear !== '' ? ` (${formattedYear})` : ''
   const countryPart =
     series.originCountry != null
       ? ` | ${formatCountryName(series.originCountry)}`
@@ -412,7 +414,8 @@ export function seriesPickerDisplay(
   series: Series,
   statusFilter: SpecificSeriesStatusFilter,
 ): ReactNode {
-  const yearPart = series.year != null ? ` (${series.year})` : ''
+  const formattedYear = formatSeriesYear(series)
+  const yearPart = formattedYear !== '' ? ` (${formattedYear})` : ''
   const countryPart =
     series.originCountry != null
       ? ` | ${formatCountryName(series.originCountry)}`

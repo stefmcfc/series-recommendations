@@ -11,6 +11,8 @@ import {
   buildSpecificSeriesCandidatePool,
   buildQuery,
   initialState,
+  seriesPickerLabel,
+  seriesPickerDisplay,
 } from './RecommendationControls'
 import type { SpecificSeriesFilters } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
@@ -2710,5 +2712,60 @@ describe('FRONTEND-081-AC-10: Sort filtered recs renders after Post TMDB filteri
       filtersToggle.compareDocumentPosition(sortByLegend) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-084-AC-01: seriesPickerLabel shows the full year range', () => {
+  it('shows a closed range for an ended multi-year show', () => {
+    const series = makeSeries({
+      title: 'Ended Show',
+      year: 2015,
+      lastAirYear: 2020,
+      productionStatus: 'ENDED',
+    })
+    expect(seriesPickerLabel(series, 'any')).toContain('(2015-2020)')
+  })
+
+  it('shows an open-ended range for a still-running show', () => {
+    const series = makeSeries({
+      title: 'Running Show',
+      year: 2022,
+      lastAirYear: 2024,
+      productionStatus: 'RETURNING_SERIES',
+    })
+    expect(seriesPickerLabel(series, 'any')).toContain('(2022-)')
+  })
+
+  it('shows a bare year when lastAirYear is unresolved', () => {
+    const series = makeSeries({
+      title: 'Unknown End',
+      year: 2021,
+      lastAirYear: null,
+    })
+    expect(seriesPickerLabel(series, 'any')).toContain('(2021)')
+  })
+})
+
+describe('FRONTEND-084-AC-02: seriesPickerDisplay shows the full year range', () => {
+  it('renders a closed range for an ended multi-year show', () => {
+    const series = makeSeries({
+      title: 'Ended Show',
+      year: 2015,
+      lastAirYear: 2020,
+      productionStatus: 'ENDED',
+    })
+    render(<>{seriesPickerDisplay(series, 'any')}</>)
+    expect(screen.getByText(/\(2015-2020\)/)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-084-AC-03: no year portion when year is null', () => {
+  it('omits the year parenthetical entirely', () => {
+    const series = makeSeries({
+      title: 'No Year',
+      year: null,
+      lastAirYear: null,
+    })
+    expect(seriesPickerLabel(series, 'any')).not.toContain('(')
   })
 })
