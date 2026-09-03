@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.16.0] - 2026-09-03
+
 ### Changed
 
 - Backend: `minSourceRating` is retired entirely from the recommendation request contract — the source pool (automatic or an explicit `seriesIds` pick) is no longer filtered by `personalRating`, so an explicitly-selected series is never silently dropped by a rating threshold; a stale `?minSourceRating=` query param is now silently ignored rather than validated (`series_spec_045`).
