@@ -1,6 +1,6 @@
 # Frontend Spec 075: My Series Filter Sheet Grouped Into Sections
 
-**Status**: Not started
+**Status**: Implemented — `components/SearchFilter.tsx`, `components/SearchFilter.module.css`, `components/SearchFilter.test.tsx`
 **Priority**: P3
 **Depends on**: Frontend Spec 073 (`frontend_spec_073_my_series_live_title_filter.md`, removes Title from the sheet) ✅ required, Frontend Spec 074 (`frontend_spec_074_my_series_rewatch_tab.md`, removes the rewatch checkbox from the sheet) ✅ required
 **Area**: Frontend (`components/SearchFilter.tsx`, `components/SearchFilter.module.css`)
@@ -155,8 +155,8 @@ describe('FRONTEND-075-AC-05: no change to field behavior', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-075-AC-01: "Genres & Keywords" section
-- [ ] FRONTEND-075-AC-02: "Ratings" section
-- [ ] FRONTEND-075-AC-03: "Years" section
-- [ ] FRONTEND-075-AC-04: sections other than the first are visually divided
-- [ ] FRONTEND-075-AC-05: no change to field behavior
+- [x] FRONTEND-075-AC-01: "Genres & Keywords" section
+- [x] FRONTEND-075-AC-02: "Ratings" section
+- [x] FRONTEND-075-AC-03: "Years" section
+- [x] FRONTEND-075-AC-04: sections other than the first are visually divided
+- [x] FRONTEND-075-AC-05: no change to field behavior

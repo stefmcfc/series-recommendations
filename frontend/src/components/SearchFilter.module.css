@@ -52,10 +52,35 @@
 }
 
 .filtersBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* FRONTEND-075-AC-01/02/03: each of the three grouped sections lays out its
+   own fields the same way .filtersBody used to lay out all six flat --
+   a responsive grid, fields aligned to their own bottom edge. */
+.filterSection {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1rem;
   align-items: end;
+}
+
+.filterSectionHeading {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+/* FRONTEND-075-AC-04: top-border divider applied to every section after the
+   first ("Ratings", "Years") -- omitted on "Genres & Keywords" so there's no
+   stray line above the very first section. */
+.sectionDivider {
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
 }
 
 .field {

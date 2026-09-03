@@ -205,103 +205,119 @@ export function SearchFilter({
           </div>
 
           <div className={styles.filtersBody} data-testid="filters-body">
-            <div className={styles.field}>
-              <GenreIncludeExcludePicker
-                idPrefix="search-filter-genre"
-                label="Genres"
-                genreOptions={genreOptions}
-                included={form.genresSelected}
-                excluded={form.excludeGenresSelected}
-                onChange={handleGenresChange}
-              />
-            </div>
+            <section className={styles.filterSection}>
+              <h3 className={styles.filterSectionHeading}>Genres & Keywords</h3>
 
-            <div className={styles.field}>
-              <KeywordPicker
-                id="search-keywords"
-                label="Keywords"
-                selected={form.keywordsSelected}
-                onChange={handleKeywordsChange}
-                options={keywordOptionsError ? [] : keywordOptions}
-                placeholder="Type to filter tracked keywords"
-                allowFreeText
-                // A default suggestion list here (rather than only once typing)
-                // read as cluttered in this field's narrower layout, and the
-                // "Browse all keywords" modal already covers browsing without
-                // typing -- so this field only shows matches once you type.
-                maxSuggestionsWhenEmpty={0}
-              />
-              {keywordOptionsError && (
-                <p className={styles.keywordError} role="alert">
-                  {keywordOptionsError}
-                </p>
-              )}
-              <button
-                type="button"
-                className={styles.browseKeywordsButton}
-                onClick={() => setBrowseModalOpen(true)}
-              >
-                Browse all keywords
-              </button>
-            </div>
+              <div className={styles.field}>
+                <GenreIncludeExcludePicker
+                  idPrefix="search-filter-genre"
+                  label="Genres"
+                  genreOptions={genreOptions}
+                  included={form.genresSelected}
+                  excluded={form.excludeGenresSelected}
+                  onChange={handleGenresChange}
+                />
+              </div>
 
-            <div className={styles.field}>
-              <span>Min Personal Rating</span>
-              <StarRating
-                value={form.minPersonalRating}
-                onChange={handleMinPersonalRatingChange}
-              />
-            </div>
+              <div className={styles.field}>
+                <KeywordPicker
+                  id="search-keywords"
+                  label="Keywords"
+                  selected={form.keywordsSelected}
+                  onChange={handleKeywordsChange}
+                  options={keywordOptionsError ? [] : keywordOptions}
+                  placeholder="Type to filter tracked keywords"
+                  allowFreeText
+                  // A default suggestion list here (rather than only once typing)
+                  // read as cluttered in this field's narrower layout, and the
+                  // "Browse all keywords" modal already covers browsing without
+                  // typing -- so this field only shows matches once you type.
+                  maxSuggestionsWhenEmpty={0}
+                />
+                {keywordOptionsError && (
+                  <p className={styles.keywordError} role="alert">
+                    {keywordOptionsError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className={styles.browseKeywordsButton}
+                  onClick={() => setBrowseModalOpen(true)}
+                >
+                  Browse all keywords
+                </button>
+              </div>
+            </section>
 
-            <div className={styles.field}>
-              <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
-              <input
-                id="search-min-imdb-rating"
-                type="number"
-                min="0"
-                max="10"
-                step="0.1"
-                value={form.minImdbRating}
-                onChange={updateField('minImdbRating')}
-              />
-            </div>
+            <section
+              className={`${styles.filterSection} ${styles.sectionDivider}`}
+            >
+              <h3 className={styles.filterSectionHeading}>Ratings</h3>
 
-            <div className={styles.field}>
-              <label htmlFor="search-min-tmdb-rating">Min TMDB Rating</label>
-              <input
-                id="search-min-tmdb-rating"
-                type="number"
-                min="0"
-                max="10"
-                step="0.1"
-                value={form.minTmdbRating}
-                onChange={updateField('minTmdbRating')}
-              />
-            </div>
+              <div className={styles.field}>
+                <span>Min Personal Rating</span>
+                <StarRating
+                  value={form.minPersonalRating}
+                  onChange={handleMinPersonalRatingChange}
+                />
+              </div>
 
-            <div className={styles.field}>
-              <label htmlFor="search-year-min">Min Year</label>
-              <input
-                id="search-year-min"
-                type="number"
-                min={MIN_VALID_YEAR}
-                max={MAX_VALID_YEAR}
-                value={form.yearMin}
-                onChange={updateField('yearMin')}
-              />
-            </div>
+              <div className={styles.field}>
+                <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
+                <input
+                  id="search-min-imdb-rating"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={form.minImdbRating}
+                  onChange={updateField('minImdbRating')}
+                />
+              </div>
 
-            <div className={styles.field}>
-              <label htmlFor="search-year-max">Max Year</label>
-              <input
-                id="search-year-max"
-                type="number"
-                min={MIN_VALID_YEAR}
-                max={MAX_VALID_YEAR}
-                value={form.yearMax}
-                onChange={updateField('yearMax')}
-              />
-            </div>
+              <div className={styles.field}>
+                <label htmlFor="search-min-tmdb-rating">Min TMDB Rating</label>
+                <input
+                  id="search-min-tmdb-rating"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={form.minTmdbRating}
+                  onChange={updateField('minTmdbRating')}
+                />
+              </div>
+            </section>
+
+            <section
+              className={`${styles.filterSection} ${styles.sectionDivider}`}
+            >
+              <h3 className={styles.filterSectionHeading}>Years</h3>
+
+              <div className={styles.field}>
+                <label htmlFor="search-year-min">Min Year</label>
+                <input
+                  id="search-year-min"
+                  type="number"
+                  min={MIN_VALID_YEAR}
+                  max={MAX_VALID_YEAR}
+                  value={form.yearMin}
+                  onChange={updateField('yearMin')}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="search-year-max">Max Year</label>
+                <input
+                  id="search-year-max"
+                  type="number"
+                  min={MIN_VALID_YEAR}
+                  max={MAX_VALID_YEAR}
+                  value={form.yearMax}
+                  onChange={updateField('yearMax')}
+                />
+              </div>
+            </section>
           </div>
 
           <div className={styles.actions}>
