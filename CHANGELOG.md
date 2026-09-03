@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.14.0] - 2026-09-03
+
 ### Changed
 
 - Frontend: "Flagged for rewatch" moved from a checkbox in the filter sheet to its own "Rewatch" tab (`/my-series/rewatch`) alongside All/Watching/Completed/Backlog/Dropped, matching every other status tab's mutually-exclusive behavior (`frontend_spec_074`).
