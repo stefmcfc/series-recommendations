@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.17.0] - 2026-09-03
+
 ### Added
 
 - Frontend: "Use My Series" gains a new "Filter & sort my series" disclosure section (open by default) wrapping the existing Genre/Status/Sort controls, extended with five new client-side-only picker-narrowing fields — Keywords, Min Personal Rating, Min IMDb Rating, "Min TMDB Rating (My Series)", and "Year Min/Max (My Series)" — the client-side successor to the retired `minSourceRating` backend gate, never dropping an explicitly-selected series (`frontend_spec_081`).
