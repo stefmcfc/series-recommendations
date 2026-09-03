@@ -34,6 +34,13 @@ interface KeywordPickerProps {
   readonly focusOnMount?: boolean
   readonly allowFreeText?: boolean
   readonly maxSuggestionsWhenEmpty?: number
+  // FRONTEND-077-AC-01/02/03: suppresses the text input and its label only
+  // (not the suggestions list, which still renders -- some usages rely on
+  // its empty-input default list to browse without typing at all). Used at
+  // call sites that already have a paired "Browse..." modal providing full
+  // search/typing elsewhere on the same panel, where the inline input would
+  // otherwise duplicate it.
+  readonly hideInput?: boolean
 }
 
 function isSameKeyword(a: string, b: string): boolean {
@@ -92,6 +99,7 @@ export function KeywordPicker({
   focusOnMount,
   allowFreeText = false,
   maxSuggestionsWhenEmpty,
+  hideInput = false,
 }: KeywordPickerProps) {
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -194,18 +202,34 @@ export function KeywordPicker({
   }
 
   return (
-    <div className={styles.container}>
-      <label htmlFor={id}>{label}</label>
-      <input
-        ref={inputRef}
-        id={id}
-        type="text"
-        value={inputValue}
-        placeholder={placeholder}
-        onChange={(event) => setInputValue(event.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+    // FRONTEND-077-AC-03 (corrected 2026-09-03, live review): hideInput
+    // usages all sit next to a "Browse..."/"Show all..." button whose own
+    // text already names the field visibly, so a separate visible label is
+    // redundant -- a non-visual aria-label keeps the field group named for
+    // screen readers without it. SearchFilter.tsx's Min Personal Rating
+    // field (no adjacent CTA to lean on) still uses a visible <span>, unaffected.
+    <div
+      className={styles.container}
+      aria-label={hideInput ? label : undefined}
+    >
+      {!hideInput && <label htmlFor={id}>{label}</label>}
+      {!hideInput && (
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          value={inputValue}
+          placeholder={placeholder}
+          onChange={(event) => setInputValue(event.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      )}
 
+      {/* FRONTEND-077-AC-01 (corrected 2026-09-03, live review): suggestions
+          render regardless of hideInput -- the empty-input default list
+          (e.g. UseMySeriesPanel's Series field, maxSuggestionsWhenEmpty set)
+          is a distinct, valuable browse-without-typing feature that hideInput
+          must not remove as a side effect of hiding the typing input itself. */}
       {visibleSuggestions.length > 0 && (
         <ul className={styles.suggestions}>
           {visibleSuggestions.map((option) => (

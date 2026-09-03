@@ -65,6 +65,14 @@ export function UseMySeriesPanel({
     useState<SpecificSeriesSortDirection>('asc')
   const [specificSeriesBrowseModalOpen, setSpecificSeriesBrowseModalOpen] =
     useState(false)
+  // FRONTEND-077-AC-07: separate open/closed state for the new "Browse all
+  // keywords" modal paired with the Keywords filter field below -- mirrors
+  // specificSeriesBrowseModalOpen above in every respect, just for a
+  // different field/modal pairing.
+  const [
+    specificSeriesKeywordsBrowseModalOpen,
+    setSpecificSeriesKeywordsBrowseModalOpen,
+  ] = useState(false)
   // FRONTEND-081: the five new Section 1 fields -- local useState exactly
   // like the five above (never part of ControlsState, this spec's Design
   // Decisions), client-side-only picker-narrowing aids that replace the
@@ -110,6 +118,17 @@ export function UseMySeriesPanel({
   ) => {
     if (event.key === 'Escape') {
       setSpecificSeriesBrowseModalOpen(false)
+    }
+  }
+
+  // FRONTEND-077-AC-07: same Escape-to-dismiss pattern as
+  // handleSpecificSeriesModalKeyDown above, for the new Browse Keywords
+  // modal.
+  const handleSpecificSeriesKeywordsModalKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event.key === 'Escape') {
+      setSpecificSeriesKeywordsBrowseModalOpen(false)
     }
   }
 
@@ -312,7 +331,24 @@ export function UseMySeriesPanel({
                           options={keywordOptions}
                           placeholder="Type to filter tracked keywords"
                           maxSuggestionsWhenEmpty={0}
+                          // FRONTEND-077-AC-08: the new "Browse all keywords"
+                          // modal below is now the sole place to type/search
+                          // for this field -- the inline field only shows
+                          // what's already selected.
+                          hideInput
                         />
+                        {/* FRONTEND-077-AC-07: mirrors the "Show all series"
+                            button's placement/style directly below its own
+                            paired field. */}
+                        <button
+                          type="button"
+                          className={styles.browseSeriesButton}
+                          onClick={() =>
+                            setSpecificSeriesKeywordsBrowseModalOpen(true)
+                          }
+                        >
+                          Browse all keywords
+                        </button>
                       </div>
                     </div>
 
@@ -416,6 +452,10 @@ export function UseMySeriesPanel({
                 options={specificSeriesOptions}
                 placeholder="Type to search your series"
                 maxSuggestionsWhenEmpty={SPECIFIC_SERIES_PICKER_LIMIT}
+                // FRONTEND-077-AC-05: the "Show all series" modal below is
+                // now the sole place to type/search for this field -- the
+                // inline field only shows what's already selected.
+                hideInput
               />
 
               {/* FRONTEND-051-AC-01/02/03: bulk select/clear the picker's
@@ -491,6 +531,54 @@ export function UseMySeriesPanel({
                 type="button"
                 className={styles.doneButton}
                 onClick={() => setSpecificSeriesBrowseModalOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FRONTEND-077-AC-07: new "Browse all keywords" modal, paired with
+          the Keywords filter field above -- copies the "Browse Series" modal
+          just above verbatim in shape (overlay, role="dialog", aria-modal,
+          Escape-to-dismiss, heading, full KeywordPicker, Done button). */}
+      {specificSeriesKeywordsBrowseModalOpen && (
+        <div className={styles.overlay}>
+          {/* A native <dialog> needs showModal()/close() lifecycle management (focus trap, native backdrop) to behave correctly, not just a tag swap -- deliberately not converted here, mirroring SearchFilter.tsx's "Browse all keywords" modal (jsdom's <dialog> support has known gaps). */}
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior, matching SearchFilter.tsx's "Browse all keywords" modal; the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
+          <div // NOSONAR: typescript:S6819, see comment above
+            className={styles.dialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="browse-specific-series-keywords-heading"
+            onKeyDown={handleSpecificSeriesKeywordsModalKeyDown}
+          >
+            <h2
+              id="browse-specific-series-keywords-heading"
+              className={styles.dialogHeading}
+            >
+              Browse Keywords
+            </h2>
+
+            <KeywordPicker
+              id="browse-specific-series-keywords"
+              label="Keywords"
+              selected={specificSeriesKeywordsFilter}
+              onChange={setSpecificSeriesKeywordsFilter}
+              options={keywordOptions}
+              placeholder="Type to filter tracked keywords"
+              focusOnMount
+              // FRONTEND-077-AC-07: no maxSuggestionsWhenEmpty here -- this
+              // modal is the dedicated "browse everything" surface, so it
+              // intentionally omits the cap the inline field uses.
+            />
+
+            <div className={styles.dialogActions}>
+              <button
+                type="button"
+                className={styles.doneButton}
+                onClick={() => setSpecificSeriesKeywordsBrowseModalOpen(false)}
               >
                 Done
               </button>

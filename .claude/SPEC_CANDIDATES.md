@@ -17,19 +17,12 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-03. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-09-03 (staleness sweep post-"Use My Series" restructure). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 ---
 
 ## Candidates
-
-### "Min Source Rating" → "Minimum User Rating", using `StarRating`
-
-Currently a `<select>` dropdown (`Any`/`1`–`5`) at `RecommendationControls.tsx:557-569`. Confirmed
-a clean fit for `StarRating` (`frontend_spec_013`): "click star N sets the minimum to N, click the
-already-selected star again clears back to Any" maps directly onto `StarRating`'s existing
-click-to-clear semantics — no new interaction shape needed, low effort.
 
 ### "Exclude Keywords" filter — `KeywordPicker` instead of free text
 
@@ -100,8 +93,13 @@ implemented as one.
 - `SourceOrderComparator` (personal rating desc, then date completed desc) is hardcoded and does
   double duty: it decides both which of your shows get queried at all (before the
   `maxSourceSeries` cap) and, for multi-source candidates, whose rating wins for scoring.
-- The only existing source-pool filter is `minSourceRating`; there's no genre/year/status filter
-  on the source pool itself today, only on the resulting candidates (the output filters).
+- **Updated 2026-09-03**: there is no backend source-pool filter at all anymore — `minSourceRating`
+  (the only one that ever existed) was retired entirely (`series_spec_045`), since it could
+  silently drop an explicitly hand-picked series. `frontend_spec_081`'s "Filter & sort my series"
+  section reintroduced a personal-rating (and genre/keyword/IMDb/TMDB-rating/year) filter, but
+  deliberately as a **client-side-only picker-narrowing aid** — it never reaches the backend, so
+  it doesn't satisfy this item's "filter the source pool server-side" framing. Item #9 below is
+  still fully open.
 - Each source show's TMDB call (`/recommendations`, falling back to `/similar`) returns TMDB's
   first page only — up to TMDB's own page size (~20) per source, uncapped by this app, no
   pagination ever requested. **This is a separate number from `maxSourceSeries`** (default 20, how
@@ -169,8 +167,14 @@ just a smaller, field-scoped instance of one already in use.
 
 **Note (2026-08-29)**: Max Per Source/Max Sources Shown were confirmed dead under every Discover
 mode and removed from the frontend entirely (`frontend_spec_048`, delivered) rather than hidden —
-this candidate's own scope for those two fields now narrows to "Use My Series" mode only, where
-they're still live.
+this candidate's own scope for those two fields narrowed to "Use My Series" mode only at the time.
+**Update (2026-09-03)**: re-checked against the current code (post `frontend_spec_081`) — neither
+field has any frontend UI control anywhere anymore, including "Use My Series" (grep for
+`maxPerSource`/`maxSourcesShown` across `frontend/src/components/*.tsx` returns zero matches
+outside test files; both remain live backend request params with defaults, just with nothing in
+the UI to set them). This candidate's scope for those two fields is now moot — nothing left to
+attach a disclosure box to. Only "Sort By" (the Best Match/Most Recommended radio pair) is still a
+live candidate for this treatment.
 
 ### Share filter/sort logic between `SeriesList`/`SearchFilter` (My Series) and `RecommendationControls`' "Use My Series" mode
 
@@ -205,6 +209,32 @@ concrete detail this candidate was waiting for (Keywords, Min Rating, Year Range
 Series" relabel — Exclude Genre(s) has since been pulled out and specced separately, see
 `frontend_spec_069_use_my_series_exclude_genres.md`) — review the remainder once this candidate is
 actually scoped.
+
+**Update (2026-09-03)**: the wait condition above is now satisfied — `series_spec_045`/
+`frontend_spec_080`/`frontend_spec_081` landed the full "Use My Series" filter restructure this
+candidate was deferred behind (Keywords/Min Personal/IMDb/TMDB Rating/Year Range/Status all added
+to `UseMySeriesPanel`, Genre already had parity via `frontend_spec_069`). Confirmed current shape:
+both `SeriesList`/`SearchFilter` (server-side, `SeriesSearchCriteria` → `SeriesSearchService`) and
+`UseMySeriesPanel`'s new picker-narrowing section (client-side only, `SpecificSeriesFilters` →
+`buildSpecificSeriesCandidatePool` in `RecommendationControls.tsx`) now filter by the same
+conceptual fields — genre include/exclude, keywords, personal/IMDb/TMDB rating, year range,
+status — but via two still-fully-separate implementations, one server-side one client-side, with
+no shared types or logic. This candidate is now genuinely ripe to scope: the "genuinely common
+subset" this note anticipated is now concrete and enumerable (see the field list above), not
+speculative. The likely shared surface is the *matching predicates* specifically
+(`SeriesSearchService`'s `matchesGenres`/`matchesKeywords`/`matchesPersonalRating`/etc. vs.
+`RecommendationControls.tsx`'s `filterSpecificSeriesBy*` functions solve the identical problem
+twice, once server-side once client-side) — not a full state-shape unification, since one is a
+network request shape and the other is a pure in-memory array filter and those two have
+genuinely different constraints.
+
+**Update (2026-09-03, same day)**: a first concrete slice of "make the two features' filtering
+feel like one shared thing" is being picked up immediately, not deferred further —
+`frontend_spec_077_keyword_picker_pills_only.md` (not yet started) was extended from 2 usages to 3
+to also give `UseMySeriesPanel`'s newer Keywords filter field the same "Browse all keywords" modal
++ no-inline-typing treatment `SearchFilter`'s own Keywords field already has. This is a UI/
+interaction-consistency slice, not the predicates-sharing refactor described above — that larger
+piece is still open and un-scoped.
 
 ### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
 

@@ -534,6 +534,76 @@ describe('FRONTEND-047-AC-03: existing consumers are unaffected', () => {
   })
 })
 
+describe('FRONTEND-077-AC-01: hideInput suppresses only the text input', () => {
+  it('renders no text input when hideInput is true, but still shows suggestions', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={['drama']}
+        onChange={vi.fn()}
+        options={['drama', 'comedy']}
+        hideInput
+      />,
+    )
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'comedy' })).toBeInTheDocument()
+  })
+
+  it('still shows the empty-input default suggestion list when hideInput is true', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Series"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['Show A', 'Show B']}
+        maxSuggestionsWhenEmpty={5}
+        hideInput
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Show A' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Show B' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-077-AC-02: pills still render and remain removable', () => {
+  it('renders pills and removes one on click, even with hideInput', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={['drama', 'comedy']}
+        onChange={onChange}
+        options={['drama', 'comedy']}
+        hideInput
+      />,
+    )
+    expect(screen.getByText('drama')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove drama' }))
+    expect(onChange).toHaveBeenCalledWith(['comedy'])
+  })
+})
+
+describe('FRONTEND-077-AC-03: accessibly named without a visible label', () => {
+  it('sets aria-label instead of showing visible label text when hideInput is true', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['drama']}
+        hideInput
+      />,
+    )
+    expect(screen.queryByText('Keywords')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-047-AC-01 (PickerOption[] options): pinned codes resolve to full labels', () => {
   it('shows the pinned option using its label from the options list, not the raw code', () => {
     render(

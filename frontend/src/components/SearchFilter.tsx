@@ -233,6 +233,10 @@ export function SearchFilter({
                   // "Browse all keywords" modal already covers browsing without
                   // typing -- so this field only shows matches once you type.
                   maxSuggestionsWhenEmpty={0}
+                  // FRONTEND-077-AC-04: the "Browse all keywords" modal below
+                  // is now the sole place to type/search for this field --
+                  // the inline field only shows what's already selected.
+                  hideInput
                 />
                 {keywordOptionsError && (
                   <p className={styles.keywordError} role="alert">

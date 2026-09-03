@@ -431,9 +431,18 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
   it('never logs entered filter values to the console', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     const { onSearch } = renderFilter()
-    fireEvent.change(screen.getByLabelText('Keywords'), {
-      target: { value: 'secret-title' },
-    })
+    // FRONTEND-077-AC-04: the inline Keywords field no longer has its own
+    // input (hideInput) -- typing now happens in the "Browse all keywords"
+    // modal instead.
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    const dialogInput = within(dialog).getByLabelText('Keywords')
+    fireEvent.change(dialogInput, { target: { value: 'secret-title' } })
+    fireEvent.keyDown(dialogInput, { key: 'Enter' })
+    fireEvent.click(within(dialog).getByRole('button', { name: /^done$/i }))
+
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     expect(onSearch).toHaveBeenCalled()
     expect(
@@ -443,7 +452,12 @@ describe('FRONTEND-006-AC-19: no console logging of filter values', () => {
 })
 
 describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () => {
-  it('filters suggestions as text is typed, and includes a chosen keyword on Search', async () => {
+  // FRONTEND-077-AC-04: hideInput moved typing/suggestion-filtering from the
+  // inline Keywords field to the "Browse all keywords" modal -- this test
+  // now exercises that flow, while the underlying behavioral assertion
+  // (picking a keyword ends up in the built criteria on Search) is
+  // unchanged.
+  it('filters suggestions as text is typed in the browse modal, and includes a chosen keyword on Search', async () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
       { name: 'heist', seriesCount: 2, averagePersonalRating: 3.1 },
@@ -460,12 +474,17 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
 
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
 
-    const input = screen.getByLabelText('Keywords')
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    const input = within(dialog).getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
     expect(
-      screen.queryByRole('button', { name: 'heist' }),
+      within(dialog).queryByRole('button', { name: 'heist' }),
     ).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'spy' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'spy' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: /^done$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
 
     expect(onSearch).toHaveBeenCalledWith(
@@ -476,9 +495,16 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
   // Live review (2026-08-24) found the default suggestion list read as
   // cluttered in this field's narrower layout -- reverted to
   // frontend_spec_029's original "no suggestions until typed" behavior
-  // here specifically; "Browse all keywords" is the dedicated surface for
-  // browsing without typing (frontend_spec_032 Requirement 4).
-  it('shows no suggestions until something is typed', async () => {
+  // here specifically. FRONTEND-077-AC-04 (frontend_spec_077) has since
+  // hidden the inline field's input entirely (hideInput), so this
+  // "no suggestions until typed" premise no longer applies to it -- and it
+  // was never meant to apply to the "Browse all keywords" modal, which is
+  // deliberately uncapped/shows-everything-immediately by design (already
+  // covered by FRONTEND-032-AC-10 below). Superseded rather than replaced
+  // 1:1: this original test's premise has no remaining call site to attach
+  // to. Replaced with a direct regression check that the inline field no
+  // longer renders any suggestions UI, capped or not.
+  it('renders no suggestions for the inline field regardless of typed text (hideInput)', async () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
@@ -491,20 +517,13 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
       />,
     )
 
-    await screen.findByPlaceholderText(/type to filter tracked keywords/i)
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    expect(
+      screen.queryByPlaceholderText(/type to filter tracked keywords/i),
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'spy' }),
     ).not.toBeInTheDocument()
-
-    fireEvent.change(
-      screen.getByPlaceholderText(/type to filter tracked keywords/i),
-      {
-        target: { value: 'sp' },
-      },
-    )
-    expect(
-      await screen.findByRole('button', { name: 'spy' }),
-    ).toBeInTheDocument()
   })
 
   it('omits keywords from criteria when nothing is selected', async () => {
@@ -546,6 +565,8 @@ describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => 
     expect(
       screen.getByRole('button', { name: /^search$/i }),
     ).toBeInTheDocument()
+    // FRONTEND-077-AC-04: the inline Keywords field no longer has a
+    // <label htmlFor> once hideInput is set -- a non-visual aria-label now.
     expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
   })
 })
@@ -619,8 +640,12 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
   })
 })
 
-describe('FRONTEND-032-AC-09: inline field accepts free text', () => {
-  it('adds typed text not present in options on Enter', () => {
+describe('FRONTEND-032-AC-09: free text is accepted via the browse-all-keywords modal', () => {
+  // FRONTEND-077-AC-04: the inline field no longer has its own input
+  // (hideInput) -- the "Browse all keywords" modal is now the only place to
+  // type, so free-text add is exercised there instead. The resulting pill
+  // still renders inline (outside the modal), unaffected by hideInput.
+  it('adds typed text not present in options on Enter, inside the modal', () => {
     render(
       <SearchFilter
         isOpen={true}
@@ -629,11 +654,16 @@ describe('FRONTEND-032-AC-09: inline field accepts free text', () => {
         onClear={vi.fn()}
       />,
     )
-    const input = screen.getByPlaceholderText(
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    const input = within(dialog).getByPlaceholderText(
       /type to filter tracked keywords/i,
     )
     fireEvent.change(input, { target: { value: 'brand-new-keyword' } })
     fireEvent.keyDown(input, { key: 'Enter' })
+    fireEvent.click(within(dialog).getByRole('button', { name: /^done$/i }))
     expect(screen.getByText('brand-new-keyword')).toBeInTheDocument()
   })
 })
@@ -682,8 +712,12 @@ describe('FRONTEND-029-AC-23: opening the modal does not re-fetch keyword option
   })
 })
 
-describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field', () => {
-  it('inline keyword field is reachable by label with named suggestion/remove buttons', async () => {
+describe('FRONTEND-029-AC-24/25: accessible names for the keyword picker', () => {
+  // FRONTEND-077-AC-04: selection now happens via the modal's own labelled
+  // input/suggestion buttons (hideInput removed the inline field's own
+  // input) -- the resulting chip's accessible "Remove spy" name is still
+  // asserted on the inline picker, since that's where selected chips render.
+  it('selecting a suggestion in the browse modal produces a named inline Remove button', async () => {
     mockGetKeywordStats.mockResolvedValue([
       { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
     ])
@@ -697,11 +731,18 @@ describe('FRONTEND-029-AC-24/25: accessible names for the inline keyword field',
     )
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
 
-    const input = screen.getByLabelText('Keywords')
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    const input = within(dialog).getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'sp' } })
-    expect(screen.getByRole('button', { name: 'spy' })).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'spy' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'spy' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: /^done$/i }))
     expect(
       screen.getByRole('button', { name: 'Remove spy' }),
     ).toBeInTheDocument()
@@ -743,6 +784,8 @@ describe('FRONTEND-075-AC-01: Genres & Keywords section', () => {
     expect(
       within(section).getByRole('button', { name: /^genres$/i }),
     ).toBeInTheDocument()
+    // FRONTEND-077-AC-04: hideInput replaces the inline field's
+    // <label htmlFor> with a non-visual aria-label once its own input is gone.
     expect(within(section).getByLabelText(/^keywords$/i)).toBeInTheDocument()
   })
 })
@@ -834,5 +877,27 @@ describe('FRONTEND-075-AC-05: no change to field behavior', () => {
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({ minImdbRating: 7.5 }),
     )
+  })
+})
+
+describe('FRONTEND-077-AC-04: SearchFilter inline Keywords hides its input', () => {
+  it('shows no text input for the inline Keywords field, but the modal still has one', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.queryByPlaceholderText('Type to filter tracked keywords'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
+    expect(
+      screen.getByPlaceholderText('Type to filter tracked keywords'),
+    ).toBeInTheDocument()
   })
 })

@@ -143,6 +143,21 @@ function includeSpecificSeriesGenre(genre: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Done' }))
 }
 
+// FRONTEND-077-AC-05: the inline Series field no longer renders its own
+// typing input (hideInput) -- picking a series in these tests now
+// routes through the "Show all series" modal, which keeps its own full
+// KeywordPicker unaffected by hideInput. Closes the modal again afterward
+// so it doesn't leave a second `role="dialog"` element behind for a test
+// that goes on to open another modal.
+async function pickSpecificSeries(name: string | RegExp) {
+  fireEvent.click(
+    await screen.findByRole('button', { name: /show all series/i }),
+  )
+  const dialog = screen.getByRole('dialog')
+  fireEvent.click(within(dialog).getByRole('button', { name }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
+}
+
 describe('FRONTEND-011-AC-03: two-tier sourcing mode selector', () => {
   it('renders Use My Series and Discover tabs, defaulting to Use My Series', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
@@ -162,6 +177,8 @@ describe('FRONTEND-011-AC-03: two-tier sourcing mode selector', () => {
 // suggestion button), but the behavioral assertion each pins (picking a
 // series populates seriesIds) is unchanged.
 describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
+  // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
+  // the inline Series field no longer renders its own typing input (its default suggestion list still shows, but the modal exercises the same options uncapped).
   it('fetches series and offers each as a pickable suggestion, populating seriesIds when picked', async () => {
     mockGetAll.mockResolvedValue([
       makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
@@ -175,22 +192,34 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    const input = await screen.findByRole('textbox', { name: 'Series' })
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+    let dialog = screen.getByRole('dialog')
     expect(
-      screen.getByRole('button', { name: 'Ozark - COMPLETED' }),
+      within(dialog).getByRole('button', { name: 'Ozark - COMPLETED' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'The Wire - WATCHING' }),
+      within(dialog).getByRole('button', { name: 'The Wire - WATCHING' }),
     ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ozark - COMPLETED' }))
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Ozark - COMPLETED' }),
+    )
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
+    dialog = screen.getByRole('dialog')
+    const input = within(dialog).getByRole('textbox', { name: 'Series' })
     fireEvent.change(input, { target: { value: 'wire' } })
-    fireEvent.click(screen.getByRole('button', { name: 'The Wire - WATCHING' }))
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'The Wire - WATCHING' }),
+    )
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1', '2'] }),
@@ -222,13 +251,17 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+    const dialog = screen.getByRole('dialog')
     expect(
-      await screen.findByRole('button', {
+      within(dialog).getByRole('button', {
         name: 'Ozark (2017) | United States - COMPLETED',
       }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', {
+      within(dialog).getByRole('button', {
         name: 'Ozark (2022) | United Kingdom - BACKLOG',
       }),
     ).toBeInTheDocument()
@@ -240,8 +273,12 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+    const dialog = screen.getByRole('dialog')
     expect(
-      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
+      within(dialog).getByRole('button', { name: 'Ozark - COMPLETED' }),
     ).toBeInTheDocument()
   })
 })
@@ -407,9 +444,7 @@ describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
-    )
+    await pickSpecificSeries('Ozark - COMPLETED')
     clickApplyFilters()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ seriesIds: ['1'] }),
@@ -506,9 +541,7 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
-    )
+    await pickSpecificSeries('Ozark - COMPLETED')
 
     fireEvent.click(
       screen.getByRole('button', { name: /^recommendations filters$/i }),
@@ -697,9 +730,7 @@ describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch'
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
-    )
+    await pickSpecificSeries('Ozark - COMPLETED')
     selectPopularRightNow()
     // FRONTEND-062: mode changes no longer auto-fetch -- Apply Filters must
     // be clicked explicitly to produce a built query to inspect.
@@ -1192,6 +1223,10 @@ describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an
   })
 })
 
+// FRONTEND-077-AC-05: the inline Series field no longer renders its own
+// typing input (hideInput) -- this AC's typed-filtering behavior is
+// now exercised inside the "Show all series" modal, which keeps its own
+// full KeywordPicker.
 describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () => {
   it('builds one PickerOption per candidate series, offered as suggestions', async () => {
     mockGetAll.mockResolvedValue([
@@ -1205,13 +1240,17 @@ describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () 
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
-    const input = await screen.findByRole('textbox', { name: 'Series' })
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+    const dialog = screen.getByRole('dialog')
+    const input = within(dialog).getByRole('textbox', { name: 'Series' })
     fireEvent.change(input, { target: { value: 'ozark' } })
     expect(
-      screen.getByRole('button', { name: 'Ozark - COMPLETED' }),
+      within(dialog).getByRole('button', { name: 'Ozark - COMPLETED' }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'The Wire - WATCHING' }),
+      within(dialog).queryByRole('button', { name: 'The Wire - WATCHING' }),
     ).not.toBeInTheDocument()
   })
 })
@@ -1224,9 +1263,7 @@ describe('FRONTEND-035-AC-06: picking a suggestion populates seriesIds', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
-    )
+    await pickSpecificSeries('Ozark - COMPLETED')
     clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -1257,9 +1294,7 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'Ozark - COMPLETED' }),
-    )
+    await pickSpecificSeries('Ozark - COMPLETED')
 
     includeSpecificSeriesGenre('Comedy')
     clickApplyFilters()
@@ -1280,6 +1315,10 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
   })
 })
 
+// FRONTEND-077-AC-05: routed through the "Show all series" modal now that
+// the inline field no longer renders its own typing input -- this
+// necessarily overlaps with FRONTEND-050-AC-02 below, which already checks
+// the same thing via the modal.
 describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific Series picker', () => {
   it('does not show an excluded series as a selectable suggestion', async () => {
     mockGetAll.mockResolvedValue([
@@ -1293,11 +1332,15 @@ describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific 
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
+    fireEvent.click(
+      await screen.findByRole('button', { name: /show all series/i }),
+    )
+    const dialog = screen.getByRole('dialog')
     expect(
-      await screen.findByRole('button', { name: /Included Show/ }),
+      within(dialog).getByRole('button', { name: /Included Show/ }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /Excluded Show/ }),
+      within(dialog).queryByRole('button', { name: /Excluded Show/ }),
     ).not.toBeInTheDocument()
   })
 })
@@ -1353,7 +1396,12 @@ describe('FRONTEND-050-AC-03: an already-selected-then-excluded series still res
 })
 
 describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_PICKER_LIMIT', () => {
-  it('shows at most SPECIFIC_SERIES_PICKER_LIMIT suggestions with an empty input', async () => {
+  // FRONTEND-077-AC-05 (corrected 2026-09-03, live review): hideInput
+  // suppresses only the inline field's typing input, not its suggestions --
+  // the default (empty-input) suggestion list still renders inline, still
+  // capped at SPECIFIC_SERIES_PICKER_LIMIT. The "Show all series" modal
+  // remains uncapped, covered separately by FRONTEND-035-AC-09 below.
+  it('renders inline suggestions capped at SPECIFIC_SERIES_PICKER_LIMIT, with no inline typing input', async () => {
     mockGetAll.mockResolvedValue(
       Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
         makeSeries({
@@ -1363,12 +1411,15 @@ describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_
       ),
     )
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('textbox', { name: 'Series' })
+    await screen.findByRole('button', { name: /show all series/i })
 
+    expect(
+      screen.queryByRole('textbox', { name: 'Series' }),
+    ).not.toBeInTheDocument()
     // Matches suggestion buttons ("Show 00 - COMPLETED"...) but not the
     // "Show all series" button, which also contains the substring "Show".
     const suggestions = screen
-      .getAllByRole('button')
+      .queryAllByRole('button')
       .filter((b) => /^Show \d/.test(b.textContent ?? ''))
     expect(suggestions).toHaveLength(SPECIFIC_SERIES_PICKER_LIMIT)
   })
@@ -1385,7 +1436,7 @@ describe('FRONTEND-035-AC-09: Show all series modal is uncapped and shares selec
       ),
     )
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('textbox', { name: 'Series' })
+    await screen.findByRole('button', { name: /show all series/i })
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
 
@@ -1552,7 +1603,7 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
       makeSeries({ id: '2', title: 'A Show', year: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('textbox', { name: 'Series' })
+    await screen.findByRole('button', { name: /show all series/i })
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
     const dialog = screen.getByRole('dialog')
@@ -1570,7 +1621,7 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
       makeSeries({ id: '2', title: 'A Show', year: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('textbox', { name: 'Series' })
+    await screen.findByRole('button', { name: /show all series/i })
 
     fireEvent.click(screen.getByLabelText(/sort ascending/i))
 
@@ -1596,7 +1647,7 @@ describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction
       makeSeries({ id: '2', title: 'Rated', personalRating: 4, year: null }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('textbox', { name: 'Series' })
+    await screen.findByRole('button', { name: /show all series/i })
 
     fireEvent.change(screen.getByLabelText(/sort by/i), {
       target: { value: 'personalRating' },
@@ -1795,6 +1846,8 @@ describe('FRONTEND-042-AC-02: the series picker is always visible under Use My S
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
 
+    // FRONTEND-077-AC-05: hideInput replaces the inline field's
+    // <label htmlFor> with a non-visual aria-label once its own input is gone.
     expect(await screen.findByLabelText(/^series$/i)).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /show all series/i }),
@@ -1833,18 +1886,15 @@ describe("FRONTEND-042-AC-04: empty selection behaves exactly like today's Autom
 })
 
 describe("FRONTEND-042-AC-05: a selection behaves exactly like today's Specific Series", () => {
+  // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
+  // the inline field no longer renders its own input.
   it('sends seriesIds once a series is picked', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     const onQueryChange = vi.fn()
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    await screen.findByLabelText(/^series$/i)
-
-    fireEvent.change(screen.getByLabelText(/^series$/i), {
-      target: { value: 'Show' },
-    })
-    fireEvent.click(await screen.findByText('Show'))
+    await pickSpecificSeries('Show (2017) - COMPLETED')
     fireEvent.click(
       screen.getByRole('button', { name: /get recommendations/i }),
     )
@@ -2193,18 +2243,15 @@ describe('FRONTEND-049-AC-01: Use My Series sends sourceMode even with no select
 })
 
 describe('FRONTEND-049-AC-02: sourceMode and seriesIds are both sent together', () => {
+  // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
+  // the inline field no longer renders its own input.
   it('includes both when a series is selected', async () => {
     mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
     const onQueryChange = vi.fn()
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
     )
-    await screen.findByLabelText(/^series$/i)
-
-    fireEvent.change(screen.getByLabelText(/^series$/i), {
-      target: { value: 'Show' },
-    })
-    fireEvent.click(await screen.findByText('Show'))
+    await pickSpecificSeries('Show (2017) - COMPLETED')
     fireEvent.click(
       screen.getByRole('button', { name: /get recommendations/i }),
     )
