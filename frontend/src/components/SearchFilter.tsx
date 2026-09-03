@@ -32,7 +32,6 @@ interface FormState {
   minTmdbRating: string
   yearMin: string
   yearMax: string
-  flaggedForRewatch: boolean
 }
 
 const initialFormState: FormState = {
@@ -44,7 +43,6 @@ const initialFormState: FormState = {
   minTmdbRating: '',
   yearMin: '',
   yearMax: '',
-  flaggedForRewatch: false,
 }
 
 function buildCriteria(form: FormState): SearchCriteria {
@@ -66,8 +64,6 @@ function buildCriteria(form: FormState): SearchCriteria {
     criteria.minTmdbRating = Number(form.minTmdbRating)
   if (form.yearMin.trim() !== '') criteria.yearMin = Number(form.yearMin)
   if (form.yearMax.trim() !== '') criteria.yearMax = Number(form.yearMax)
-
-  if (form.flaggedForRewatch) criteria.flaggedForRewatch = true
 
   return criteria
 }
@@ -125,10 +121,7 @@ export function SearchFilter({
     (
       field: Exclude<
         keyof FormState,
-        | 'genresSelected'
-        | 'keywordsSelected'
-        | 'minPersonalRating'
-        | 'flaggedForRewatch'
+        'genresSelected' | 'keywordsSelected' | 'minPersonalRating'
       >,
     ) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,12 +131,6 @@ export function SearchFilter({
   const handleMinPersonalRatingChange = (value: number | null) => {
     setForm((prev) => ({ ...prev, minPersonalRating: value }))
   }
-
-  const updateCheckbox =
-    (field: keyof FormState) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: event.target.checked }))
-    }
 
   const handleGenresChange = (next: {
     included: string[]
@@ -313,18 +300,6 @@ export function SearchFilter({
                 max={MAX_VALID_YEAR}
                 value={form.yearMax}
                 onChange={updateField('yearMax')}
-              />
-            </div>
-
-            <div className={styles.checkboxField}>
-              <label htmlFor="search-flagged-for-rewatch">
-                Flagged for rewatch
-              </label>
-              <input
-                id="search-flagged-for-rewatch"
-                type="checkbox"
-                checked={form.flaggedForRewatch}
-                onChange={updateCheckbox('flaggedForRewatch')}
               />
             </div>
           </div>

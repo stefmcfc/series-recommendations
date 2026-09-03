@@ -739,6 +739,50 @@ describe('FRONTEND-073-AC-05: live title clear is independent of Clear Filters',
   })
 })
 
+describe('FRONTEND-074-AC-01: Rewatch tab renders', () => {
+  it('renders a Rewatch link alongside the status tabs', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(screen.getByRole('link', { name: 'Rewatch' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-074-AC-02: Rewatch tab filters by flaggedForRewatch', () => {
+  it('fetches with flaggedForRewatch true and no status when on the Rewatch tab', async () => {
+    mockGetAll.mockResolvedValue([])
+    mockSearch.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series/rewatch')
+    render(<App />)
+
+    await waitFor(() =>
+      expect(mockSearch).toHaveBeenCalledWith(
+        expect.objectContaining({ flaggedForRewatch: true, status: undefined }),
+        undefined,
+      ),
+    )
+  })
+})
+
+describe('FRONTEND-074-AC-03: Rewatch tab shows active state', () => {
+  it('marks only Rewatch active when on /my-series/rewatch', async () => {
+    mockGetAll.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series/rewatch')
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(screen.getByRole('link', { name: 'Rewatch' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(screen.getByRole('link', { name: 'All' })).not.toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+})
+
 describe('FRONTEND-073-AC-06: active-filter dot ignores live title', () => {
   it('does not show the active-filter dot from typing a title alone', async () => {
     mockGetAll.mockResolvedValue([])
