@@ -144,7 +144,7 @@ function includeSpecificSeriesGenre(genre: string) {
 }
 
 // FRONTEND-077-AC-05: the inline Series field no longer renders its own
-// input/suggestions (hideInput) -- picking a series in these tests now
+// typing input (hideInput) -- picking a series in these tests now
 // routes through the "Show all series" modal, which keeps its own full
 // KeywordPicker unaffected by hideInput. Closes the modal again afterward
 // so it doesn't leave a second `role="dialog"` element behind for a test
@@ -178,7 +178,7 @@ describe('FRONTEND-011-AC-03: two-tier sourcing mode selector', () => {
 // series populates seriesIds) is unchanged.
 describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
   // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
-  // the inline Series field no longer renders its own input/suggestions.
+  // the inline Series field no longer renders its own typing input (its default suggestion list still shows, but the modal exercises the same options uncapped).
   it('fetches series and offers each as a pickable suggestion, populating seriesIds when picked', async () => {
     mockGetAll.mockResolvedValue([
       makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
@@ -1224,7 +1224,7 @@ describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an
 })
 
 // FRONTEND-077-AC-05: the inline Series field no longer renders its own
-// input/suggestions (hideInput) -- this AC's typed-filtering behavior is
+// typing input (hideInput) -- this AC's typed-filtering behavior is
 // now exercised inside the "Show all series" modal, which keeps its own
 // full KeywordPicker.
 describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () => {
@@ -1316,7 +1316,7 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
 })
 
 // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
-// the inline field no longer renders suggestions of its own -- this
+// the inline field no longer renders its own typing input -- this
 // necessarily overlaps with FRONTEND-050-AC-02 below, which already checks
 // the same thing via the modal.
 describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific Series picker', () => {

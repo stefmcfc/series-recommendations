@@ -142,7 +142,7 @@ describe('UseMySeriesPanel', () => {
   })
 
   // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
-  // the inline field no longer renders suggestions of its own.
+  // the inline field no longer renders its own typing input.
   it('narrows the picker suggestions when a status filter is applied', () => {
     render(
       <UseMySeriesPanel
@@ -240,7 +240,7 @@ describe('FRONTEND-069-AC-04: UseMySeriesPanel renders the combined picker', () 
 
 describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => {
   // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
-  // the inline field no longer renders suggestions of its own.
+  // the inline field no longer renders its own typing input.
   it('removes an excluded-genre series from the Series picker options', async () => {
     render(
       <UseMySeriesPanel
@@ -348,8 +348,8 @@ describe('FRONTEND-081-AC-04: Keywords filter narrows the picker', () => {
       within(keywordsDialog).getByRole('button', { name: /^done$/i }),
     )
 
-    // FRONTEND-077-AC-05: the inline Series field no longer renders
-    // suggestions of its own -- checked via the "Show all series" modal.
+    // FRONTEND-077-AC-05: the inline Series field no longer renders its own
+    // typing input -- checked via the "Show all series" modal.
     const seriesDialog = openBrowseSeriesModal()
     expect(within(seriesDialog).getByText('Has Keyword')).toBeInTheDocument()
     expect(
@@ -358,8 +358,8 @@ describe('FRONTEND-081-AC-04: Keywords filter narrows the picker', () => {
   })
 })
 
-// FRONTEND-077-AC-05: the inline Series field no longer renders suggestions
-// of its own (hideInput) -- every "narrows the picker" assertion below now
+// FRONTEND-077-AC-05: the inline Series field no longer renders its own
+// typing input (hideInput) -- every "narrows the picker" assertion below now
 // checks the "Show all series" modal's contents instead of the page at
 // large.
 function openBrowseSeriesModal() {
@@ -527,7 +527,7 @@ describe('FRONTEND-081 (2026-09-03 live-review amendment): Keywords field reject
 
     // Since no filter was actually applied, the series remains in the pool
     // -- checked via the "Show all series" modal now that the inline Series
-    // field no longer renders suggestions of its own (FRONTEND-077-AC-05).
+    // field no longer renders its own typing input (FRONTEND-077-AC-05).
     const seriesDialog = openBrowseSeriesModal()
     expect(within(seriesDialog).getByText('Has Keyword')).toBeInTheDocument()
   })

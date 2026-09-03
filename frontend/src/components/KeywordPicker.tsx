@@ -34,8 +34,9 @@ interface KeywordPickerProps {
   readonly focusOnMount?: boolean
   readonly allowFreeText?: boolean
   readonly maxSuggestionsWhenEmpty?: number
-  // FRONTEND-077-AC-01/02/03: suppresses the text input and its suggestions
-  // list, leaving only the selected-pills list (still removable). Used at
+  // FRONTEND-077-AC-01/02/03: suppresses the text input and its label only
+  // (not the suggestions list, which still renders -- some usages rely on
+  // its empty-input default list to browse without typing at all). Used at
   // call sites that already have a paired "Browse..." modal providing full
   // search/typing elsewhere on the same panel, where the inline input would
   // otherwise duplicate it.
