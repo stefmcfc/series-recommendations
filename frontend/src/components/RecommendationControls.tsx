@@ -137,7 +137,6 @@ export interface ControlsState {
   genresSelected: string[]
   keywordsSelected: string[]
   trendingWindow: TrendingWindow
-  minSourceRating: string
   minTmdbRating: string
   minVoteCount: string
   minVoteCountTouched: boolean
@@ -195,7 +194,6 @@ export const initialState: ControlsState = {
   genresSelected: [],
   keywordsSelected: [],
   trendingWindow: 'week',
-  minSourceRating: '',
   minTmdbRating: '',
   minVoteCount: '',
   minVoteCountTouched: false,
@@ -354,10 +352,6 @@ function applyRatingAndRangeFilters(
   state: ControlsState,
   query: RecommendationQuery,
 ): void {
-  const hasSourcePool = state.mode === 'useMySeries'
-  if (hasSourcePool && state.minSourceRating.trim() !== '') {
-    query.minSourceRating = Number(state.minSourceRating)
-  }
   if (state.minTmdbRating.trim() !== '')
     query.minTmdbRating = Number(state.minTmdbRating)
   if (state.minVoteCount.trim() !== '')
@@ -712,8 +706,6 @@ export function RecommendationControls({
   const isCustomSearch =
     state.mode === 'discover' && state.discoverMode === 'customSearch'
 
-  const showMinSourceRating = state.mode === 'useMySeries'
-
   // FRONTEND-042: Sort By is hidden only under Discover > Popular Right Now,
   // unchanged behavior from the old flat 'trending' mode, rekeyed.
   const hideSortBy =
@@ -852,7 +844,6 @@ export function RecommendationControls({
         state={state}
         updateState={updateState}
         isCustomSearch={isCustomSearch}
-        showMinSourceRating={showMinSourceRating}
         genreOptions={genreOptions}
       />
 

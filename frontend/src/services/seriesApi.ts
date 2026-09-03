@@ -80,7 +80,6 @@ function buildRecommendationParams(
   addJoinedIfNonEmpty(params, 'seriesIds', query.seriesIds)
   addJoinedIfNonEmpty(params, 'genres', query.genres)
   addJoinedIfNonEmpty(params, 'keywords', query.keywords)
-  addIfPresent(params, 'minSourceRating', query.minSourceRating)
   addIfPresent(params, 'minTmdbRating', query.minTmdbRating)
   addIfPresent(params, 'minVoteCount', query.minVoteCount)
   addIfPresent(params, 'yearMin', query.yearMin)

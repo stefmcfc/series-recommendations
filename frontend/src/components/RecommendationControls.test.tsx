@@ -415,20 +415,6 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/^language/i)).toBeInTheDocument()
   })
-
-  it('shows minSourceRating for Use My Series but not Custom Search', () => {
-    render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    expect(screen.getByLabelText(/min source rating/i)).toBeInTheDocument()
-
-    selectCustomSearch()
-    expect(
-      screen.queryByLabelText(/min source rating/i),
-    ).not.toBeInTheDocument()
-
-    selectUseMySeries()
-    expect(screen.getByLabelText(/min source rating/i)).toBeInTheDocument()
-  })
 })
 
 describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zero', () => {
@@ -748,30 +734,6 @@ describe('FRONTEND-027-AC-06: no additional control for Highest Rated beyond min
 
     fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
-  })
-})
-
-describe('FRONTEND-027-AC-07: minSourceRating hidden for both new modes', () => {
-  it('hides Min Source Rating under Popular Right Now', () => {
-    render(<RecommendationControls onQueryChange={vi.fn()} />)
-
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    selectPopularRightNow()
-
-    expect(
-      screen.queryByLabelText(/min source rating/i),
-    ).not.toBeInTheDocument()
-  })
-
-  it('hides Min Source Rating under Highest Rated', () => {
-    render(<RecommendationControls onQueryChange={vi.fn()} />)
-
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-    selectHighestRated()
-
-    expect(
-      screen.queryByLabelText(/min source rating/i),
-    ).not.toBeInTheDocument()
   })
 })
 

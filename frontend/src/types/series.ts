@@ -156,7 +156,6 @@ export interface RecommendationQuery {
   seriesIds?: string[]
   genres?: string[]
   keywords?: string[]
-  minSourceRating?: number
   minTmdbRating?: number
   minVoteCount?: number
   yearMin?: number

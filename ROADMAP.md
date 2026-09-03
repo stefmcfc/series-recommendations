@@ -98,6 +98,7 @@ corrected below.
 | My Series Title becomes a real-time (debounced) filter on the page itself, removed from the filter sheet | —                                    | `frontend_spec_073`                            | ✅ Done                                                                                         |
 | "Flagged for rewatch" becomes a `/my-series/rewatch` tab, removed from the filter sheet | —                                    | `frontend_spec_074`                            | ✅ Done                                                                                         |
 | My Series filter sheet fields grouped into sectioned dividers (Genres & Keywords / Ratings / Years) | —                                    | `frontend_spec_075`                            | ✅ Done                                                                                         |
+| Retire `minSourceRating` — an explicit `seriesIds` pick is no longer silently dropped by a rating threshold; automatic-mode source pool reverts to unfiltered-by-rating | `series_spec_045` | `frontend_spec_080` | ✅ Done |
 
 ## Specced, coming soon
 

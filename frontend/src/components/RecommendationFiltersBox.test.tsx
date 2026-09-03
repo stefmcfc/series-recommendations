@@ -16,7 +16,6 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     genresSelected: [],
     keywordsSelected: [],
     trendingWindow: 'week',
-    minSourceRating: '',
     minTmdbRating: '',
     minVoteCount: '',
     minVoteCountTouched: false,
@@ -41,7 +40,6 @@ function renderBox(
       state={makeState()}
       updateState={updateState}
       isCustomSearch={false}
-      showMinSourceRating={true}
       genreOptions={[]}
       {...overrides}
     />,
@@ -64,15 +62,6 @@ describe('RecommendationFiltersBox', () => {
       screen.getByRole('button', { name: 'Exclude Genres' }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText(/exclude keywords/i)).toBeInTheDocument()
-  })
-
-  it('shows Min Source Rating only when showMinSourceRating is true', () => {
-    renderBox({ showMinSourceRating: false })
-    fireEvent.click(screen.getByRole('button', { name: /^filters$/i }))
-
-    expect(
-      screen.queryByLabelText(/min source rating/i),
-    ).not.toBeInTheDocument()
   })
 
   it('hides Min TMDB Rating/Year Min/Year Max/Country/Language when isCustomSearch is true', () => {
@@ -109,7 +98,6 @@ describe('RecommendationFiltersBox', () => {
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
 
     expect(updateState).toHaveBeenCalledWith({
-      minSourceRating: '',
       minTmdbRating: '',
       minVoteCount: '',
       minVoteCountTouched: false,
@@ -130,7 +118,6 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
         state={makeState()}
         updateState={vi.fn()}
         isCustomSearch={false}
-        showMinSourceRating={false}
         genreOptions={['Comedy']}
       />,
     )
@@ -146,7 +133,6 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
         state={makeState()}
         updateState={vi.fn()}
         isCustomSearch={true}
-        showMinSourceRating={false}
         genreOptions={['Comedy']}
       />,
     )
@@ -165,7 +151,6 @@ describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () =>
         state={{ ...makeState(), excludeGenresSelected: ['Comedy'] }}
         updateState={updateState}
         isCustomSearch={false}
-        showMinSourceRating={false}
         genreOptions={['Comedy']}
       />,
     )

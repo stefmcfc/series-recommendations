@@ -143,7 +143,6 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 .param("seriesIds", id)
                 .param("genres", "Drama")
                 .param("keywords", "Spy")
-                .param("minSourceRating", "3")
                 .param("minTmdbRating", "6.5")
                 .param("minVoteCount", "10")
                 .param("yearMin", "2010")
@@ -191,7 +190,7 @@ class SeriesControllerRecommendationsSpec extends Specification {
             }))
     }
 
-    // -- SERIES-007-AC-09/17/20: service-level IllegalArgumentException maps to 400 --
+    // -- SERIES-007-AC-09/17: service-level IllegalArgumentException maps to 400 --
 
     def "SERIES-007-AC-09: an unknown series id in seriesIds is rejected"() {
         given: "RecommendationService rejects the request as it would for an unknown seriesIds entry"
@@ -220,16 +219,17 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(status().isBadRequest())
     }
 
-    def "SERIES-007-AC-20: minSourceRating outside 1-5 is rejected"() {
-        given: "RecommendationService rejects the request as it would for an out-of-range minSourceRating"
-            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
-                .thenThrow(new IllegalArgumentException("minSourceRating must be between 1 and 5"))
+    // -- SERIES-045-AC-03: minSourceRating is retired -- an old client sending it is ignored, not rejected --
 
-        when: "GET /api/v1/series/recommendations?minSourceRating=9 is requested"
-            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("minSourceRating", "9"))
+    def "SERIES-045-AC-03: minSourceRating on the query string is silently ignored, not rejected"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
 
-        then: "the response is 400"
-            result.andExpect(status().isBadRequest())
+        when: "GET /api/v1/series/recommendations?minSourceRating=3 is requested (a now-unknown param)"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("minSourceRating", "3"))
+
+        then: "the request still succeeds (200), not 400"
+            result.andExpect(status().isOk())
     }
 
     // -- SERIES-007-AC-31: malformed typed params -> 400 (real Spring conversion failure, no stub needed) --

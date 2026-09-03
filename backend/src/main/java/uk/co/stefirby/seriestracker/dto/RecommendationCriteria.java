@@ -24,7 +24,6 @@ public class RecommendationCriteria {
     private List<String> seriesIds;
     private List<String> genres;
     private List<String> keywords;
-    private Integer minSourceRating;
     private BigDecimal minTmdbRating;
     private Integer minVoteCount;
     private Integer yearMin;
@@ -52,9 +51,6 @@ public class RecommendationCriteria {
 
     public List<String> getKeywords() { return keywords; }
     public void setKeywords(List<String> keywords) { this.keywords = keywords; }
-
-    public Integer getMinSourceRating() { return minSourceRating; }
-    public void setMinSourceRating(Integer minSourceRating) { this.minSourceRating = minSourceRating; }
 
     public BigDecimal getMinTmdbRating() { return minTmdbRating; }
     public void setMinTmdbRating(BigDecimal minTmdbRating) { this.minTmdbRating = minTmdbRating; }
