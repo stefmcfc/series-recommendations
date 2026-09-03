@@ -552,6 +552,14 @@ function filterSpecificSeriesByMinTmdbRating(
 // set) -- same null-exclusion-when-active convention as the rating filters
 // above. Either bound may be set independently; an unset bound imposes no
 // constraint on that side of the range.
+//
+// FRONTEND-082-AC-01/02/03: mirrors the backend's interval-overlap semantics
+// (SeriesSearchService.matchesYearRange) exactly. A series spans
+// [year, lastAirYear ?? year]; yearMax still only ever checks the series'
+// start year (year), while yearMin checks the series' effective end year
+// (lastAirYear if set, else year) so a still-running/long-running show whose
+// start predates the range but whose airing span reaches into it still
+// matches.
 function filterSpecificSeriesByYearRange(
   series: Series[],
   yearMin: string,
@@ -564,7 +572,7 @@ function filterSpecificSeriesByYearRange(
   const max = trimmedMax === '' ? null : Number(trimmedMax)
   return series.filter((s) => {
     if (s.year == null) return false
-    if (min != null && s.year < min) return false
+    if (min != null && (s.lastAirYear ?? s.year) < min) return false
     if (max != null && s.year > max) return false
     return true
   })

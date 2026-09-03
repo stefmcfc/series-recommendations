@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import styles from './GenreIncludeExcludePicker.module.css'
 
 export type GenreIncludeExcludeMode = 'includeExclude' | 'excludeOnly'
@@ -99,11 +100,7 @@ export function GenreIncludeExcludePicker({
     setOpen(false)
   }
 
-  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      setOpen(false)
-    }
-  }
+  const handleDialogKeyDown = useEscapeToClose(() => setOpen(false))
 
   const headingId = `${idPrefix}-genre-picker-heading`
 

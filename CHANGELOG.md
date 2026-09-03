@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: extracted the identical Escape-to-close keydown handler duplicated across 9 dialogs in 7 components (`AddSeriesForm`, `EditSeriesForm`, `GenreIncludeExcludePicker`, `RecommendationDetailModal`, `SearchFilter` (x2), `SeriesRecommendationsModal`, `UseMySeriesPanel` (x2)) into a shared `useEscapeToClose` hook — no behavior change (`frontend_spec_083`).
+
+### Fixed
+
+- Frontend: "Use My Series" picker's Year Min/Max filter now uses interval-overlap matching (a series spans `[year, lastAirYear ?? year]`) instead of a `year`-only point check, matching the backend's own `matchesYearRange` semantics — a still-running or long-running show whose start year predates the filter range but whose airing span reaches into it is no longer silently excluded from the picker (`frontend_spec_082`).
+
 ## [3.18.0] - 2026-09-03
 
 ### Added

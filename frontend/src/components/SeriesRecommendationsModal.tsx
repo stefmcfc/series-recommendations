@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
@@ -61,11 +62,7 @@ export function SeriesRecommendationsModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleModalKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      onClose()
-    }
-  }
+  const handleModalKeyDown = useEscapeToClose(onClose)
 
   const handleMarkAsWatched = (recommendation: Recommendation) => {
     setPendingAdd({ recommendation, status: SeriesStatus.COMPLETED })
