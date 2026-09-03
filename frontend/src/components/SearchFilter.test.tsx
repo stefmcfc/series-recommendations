@@ -726,3 +726,113 @@ describe('FRONTEND-074-AC-04: sheet no longer has a rewatch checkbox', () => {
     ).not.toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-075-AC-01: Genres & Keywords section', () => {
+  it('groups Genres and Keywords under one heading', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    const heading = screen.getByRole('heading', { name: 'Genres & Keywords' })
+    const section = heading.closest('section') ?? heading.parentElement!
+    expect(
+      within(section).getByRole('button', { name: /^genres$/i }),
+    ).toBeInTheDocument()
+    expect(within(section).getByLabelText(/^keywords$/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-075-AC-02: Ratings section', () => {
+  it('groups the three rating fields under one heading', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    const heading = screen.getByRole('heading', { name: 'Ratings' })
+    const section = heading.closest('section') ?? heading.parentElement!
+    expect(within(section).getByText('Min Personal Rating')).toBeInTheDocument()
+    expect(
+      within(section).getByLabelText(/min imdb rating/i),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByLabelText(/min tmdb rating/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-075-AC-03: Years section', () => {
+  it('groups Min Year and Max Year under one heading', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    const heading = screen.getByRole('heading', { name: 'Years' })
+    const section = heading.closest('section') ?? heading.parentElement!
+    expect(within(section).getByLabelText(/min year/i)).toBeInTheDocument()
+    expect(within(section).getByLabelText(/max year/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-075-AC-04: dividers between sections', () => {
+  it('applies a divider class to sections after the first', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    const ratingsSection = screen
+      .getByRole('heading', { name: 'Ratings' })
+      .closest('section')!
+    const yearsSection = screen
+      .getByRole('heading', { name: 'Years' })
+      .closest('section')!
+    const genresSection = screen
+      .getByRole('heading', { name: 'Genres & Keywords' })
+      .closest('section')!
+    expect(ratingsSection.className).toMatch(/sectionDivider/)
+    expect(yearsSection.className).toMatch(/sectionDivider/)
+    expect(genresSection.className).not.toMatch(/sectionDivider/)
+  })
+})
+
+describe('FRONTEND-075-AC-05: no change to field behavior', () => {
+  it('still builds the same criteria shape after sectioning', () => {
+    const onSearch = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={onSearch}
+        onClear={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '7.5' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ minImdbRating: 7.5 }),
+    )
+  })
+})

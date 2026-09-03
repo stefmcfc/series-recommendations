@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: the My Series filter sheet's six fields are now grouped into three labelled, divided sections — "Genres & Keywords", "Ratings", "Years" — instead of one flat list, with no change to any field's own behavior (`frontend_spec_075`).
+
 ## [3.14.0] - 2026-09-03
 
 ### Changed

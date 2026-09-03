@@ -17,7 +17,7 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-08-29. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-09-03. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 ---
@@ -205,6 +205,31 @@ concrete detail this candidate was waiting for (Keywords, Min Rating, Year Range
 Series" relabel — Exclude Genre(s) has since been pulled out and specced separately, see
 `frontend_spec_069_use_my_series_exclude_genres.md`) — review the remainder once this candidate is
 actually scoped.
+
+### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
+
+Raised 2026-09-03 alongside a browser walkthrough of `frontend_spec_074`. Confirmed via reading the
+code: `SearchFilter` today only fires a backend `/search` call on explicit form submission (the
+"Search" button) — every field (Genres, Keywords, ratings, years) is gathered into one
+`SearchCriteria` and sent as a single request. The one exception is My Series' Title box
+(`frontend_spec_073`), which already debounces 350ms and fires the same backend `/search` call live
+as the user types — there is no client-side filtering of a full in-memory list anywhere in this app;
+`SeriesSearchService` always filters server-side over every series in SQLite per request
+(`series_spec_003`, "fine at this app's scale, revisit if it becomes a bottleneck"). Extending
+real-time behavior to the rest of the sheet would follow that same debounced-call pattern, not a new
+architecture — the backend load at this app's scale is not a real concern.
+
+**Open question, deliberately left unresolved** (parked rather than designed, per 2026-09-03
+discussion): whether every field should go fully live, or only some. The genuine tradeoff is that
+click-to-select fields (Genre/Keyword pickers) produce a meaningful search on every change, but
+free-typed numeric fields (Min IMDb/TMDB Rating, Year Min/Max) don't — going live on every keystroke
+would fire a search against implausible partial values (e.g. "1" → "19" → "199" → "1999" while typing
+a year), unlike Title where a partial substring match is still meaningful. Whoever scopes this should
+decide, field by field, whether it goes live immediately, live-on-blur, or stays gated behind the
+explicit Search button — not necessarily uniform treatment across the whole sheet.
+
+**Status**: Spec candidate, not yet designed. No field-by-field behavior decided — see the open
+question above.
 
 ### Full-codebase manual accessibility review
 

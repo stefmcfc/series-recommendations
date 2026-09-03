@@ -97,6 +97,7 @@ corrected below.
 | Settings gains Export (now unfiltered) and Refresh All, relocated off the My Series page | —                                    | `frontend_spec_072`                            | ✅ Done                                                                                         |
 | My Series Title becomes a real-time (debounced) filter on the page itself, removed from the filter sheet | —                                    | `frontend_spec_073`                            | ✅ Done                                                                                         |
 | "Flagged for rewatch" becomes a `/my-series/rewatch` tab, removed from the filter sheet | —                                    | `frontend_spec_074`                            | ✅ Done                                                                                         |
+| My Series filter sheet fields grouped into sectioned dividers (Genres & Keywords / Ratings / Years) | —                                    | `frontend_spec_075`                            | ✅ Done                                                                                         |
 
 ## Specced, coming soon
 
@@ -112,9 +113,9 @@ so, since this table's row order isn't just dependency-derived anymore. (`series
 not hard, dependency) have shipped, and so has `frontend_spec_069` — its own Depends On cell named
 `frontend_spec_067`, already satisfied since that spec shipped 2026-09-01 alongside `series_spec_043`;
 all three now moved into the Delivered table above. The standalone `frontend_spec_051` has also
-shipped and moved into the Delivered table above. The standalone `frontend_spec_073` and
-`frontend_spec_074` have also shipped and moved into the Delivered table above —
-`frontend_spec_075`'s Depends On cell still names both since those dependencies are now satisfied.)
+shipped and moved into the Delivered table above. The standalone `frontend_spec_073`,
+`frontend_spec_074`, and `frontend_spec_075` have also shipped and moved into the Delivered table
+above.)
 (The former 041→042 chain, the standalone 048, 054, and 062, the
 052→053 chain fed by standalone 036 (all three now delivered), the full
 031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the `037→039→058` year-range
@@ -127,7 +128,6 @@ delivered; see the table above.)
 | EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
-| My Series filter sheet fields grouped into sectioned dividers (Genres & Keywords / Ratings / Years) | — | `frontend_spec_075` | `frontend_spec_073`, `frontend_spec_074` (build after — lays out the final field set once) | 🟨 P3 · ⬜ Not started |
 | `GenreIncludeExcludePicker` gains removable chips below its trigger + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | `frontend_spec_067` (standalone otherwise) | 🟨 P3 · ⬜ Not started |
 | `KeywordPicker` gains a pills-only mode, applied to the 2 usages with a paired "Browse..." modal | — | `frontend_spec_077` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
