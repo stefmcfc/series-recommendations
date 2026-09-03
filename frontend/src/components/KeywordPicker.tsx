@@ -34,6 +34,12 @@ interface KeywordPickerProps {
   readonly focusOnMount?: boolean
   readonly allowFreeText?: boolean
   readonly maxSuggestionsWhenEmpty?: number
+  // FRONTEND-077-AC-01/02/03: suppresses the text input and its suggestions
+  // list, leaving only the selected-pills list (still removable). Used at
+  // call sites that already have a paired "Browse..." modal providing full
+  // search/typing elsewhere on the same panel, where the inline input would
+  // otherwise duplicate it.
+  readonly hideInput?: boolean
 }
 
 function isSameKeyword(a: string, b: string): boolean {
@@ -92,6 +98,7 @@ export function KeywordPicker({
   focusOnMount,
   allowFreeText = false,
   maxSuggestionsWhenEmpty,
+  hideInput = false,
 }: KeywordPickerProps) {
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -195,31 +202,41 @@ export function KeywordPicker({
 
   return (
     <div className={styles.container}>
-      <label htmlFor={id}>{label}</label>
-      <input
-        ref={inputRef}
-        id={id}
-        type="text"
-        value={inputValue}
-        placeholder={placeholder}
-        onChange={(event) => setInputValue(event.target.value)}
-        onKeyDown={handleKeyDown}
-      />
+      {hideInput ? (
+        // FRONTEND-077-AC-03: no <input> for a <label htmlFor> to point at
+        // once hideInput suppresses it -- a plain <span> keeps the field
+        // group visibly named for accessibility, matching the precedent
+        // SearchFilter.tsx's Min Personal Rating field already uses.
+        <span>{label}</span>
+      ) : (
+        <>
+          <label htmlFor={id}>{label}</label>
+          <input
+            ref={inputRef}
+            id={id}
+            type="text"
+            value={inputValue}
+            placeholder={placeholder}
+            onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={handleKeyDown}
+          />
 
-      {visibleSuggestions.length > 0 && (
-        <ul className={styles.suggestions}>
-          {visibleSuggestions.map((option) => (
-            <li key={option.id}>
-              <button
-                type="button"
-                className={styles.suggestionButton}
-                onClick={() => addOption(option)}
-              >
-                {option.display ?? option.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+          {visibleSuggestions.length > 0 && (
+            <ul className={styles.suggestions}>
+              {visibleSuggestions.map((option) => (
+                <li key={option.id}>
+                  <button
+                    type="button"
+                    className={styles.suggestionButton}
+                    onClick={() => addOption(option)}
+                  >
+                    {option.display ?? option.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       {selected.length > 0 && (

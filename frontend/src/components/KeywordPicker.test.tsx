@@ -534,6 +534,75 @@ describe('FRONTEND-047-AC-03: existing consumers are unaffected', () => {
   })
 })
 
+describe('FRONTEND-077-AC-01: hideInput suppresses input and suggestions', () => {
+  it('renders no text input or suggestions when hideInput is true', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={['drama']}
+        onChange={vi.fn()}
+        options={['drama', 'comedy']}
+        hideInput
+      />,
+    )
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('list', { name: /suggestions/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-077-AC-02: pills still render and remain removable', () => {
+  it('renders pills and removes one on click, even with hideInput', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={['drama', 'comedy']}
+        onChange={onChange}
+        options={['drama', 'comedy']}
+        hideInput
+      />,
+    )
+    expect(screen.getByText('drama')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove drama' }))
+    expect(onChange).toHaveBeenCalledWith(['comedy'])
+  })
+})
+
+describe('FRONTEND-077-AC-03: label remains visible without an input', () => {
+  it('still shows the label text when hideInput is true', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['drama']}
+        hideInput
+      />,
+    )
+    expect(screen.getByText('Keywords')).toBeInTheDocument()
+  })
+
+  it('does not render a <label htmlFor> for the field once the input is gone', () => {
+    render(
+      <KeywordPicker
+        id="test"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        options={['drama']}
+        hideInput
+      />,
+    )
+    expect(screen.queryByLabelText('Keywords')).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-047-AC-01 (PickerOption[] options): pinned codes resolve to full labels', () => {
   it('shows the pinned option using its label from the options list, not the raw code', () => {
     render(

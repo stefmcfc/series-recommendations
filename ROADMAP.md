@@ -101,6 +101,7 @@ corrected below.
 | Retire `minSourceRating` — an explicit `seriesIds` pick is no longer silently dropped by a rating threshold; automatic-mode source pool reverts to unfiltered-by-rating | `series_spec_045` | `frontend_spec_080` | ✅ Done |
 | "Use My Series" page restructure — Filter & sort my series (new, client-side-only fields replacing retired `minSourceRating`) → Select my series → Post TMDB filtering → Sort filtered recs → Get Recommendations, in that order; also implements `frontend_spec_064`'s Requirement 2 and all of `frontend_spec_065` as part of the same touch | — | `frontend_spec_081` | ✅ Done |
 | Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | ✅ Done — shipped via `frontend_spec_081` |
+| `KeywordPicker` gains a pills-only mode (`hideInput`), applied to `SearchFilter`'s Keywords field and `UseMySeriesPanel`'s Series field and Keywords filter field, each paired with a full-featured "Browse..." modal; also adds `UseMySeriesPanel`'s new "Browse all keywords" modal for the third pairing | — | `frontend_spec_077` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -111,23 +112,10 @@ then by suggested build order within a tier — grouped into independent depende
 themselves (and the fully-standalone `frontend_spec_064` row) have no dependencies on each other
 *within this table* — and can be reordered freely as a block if priorities change — but re-check
 priority order too when doing so, since this table's row order isn't just dependency-derived
-anymore. `frontend_spec_081` (now delivered, see the table above) implemented `frontend_spec_064`'s
+anymore. `frontend_spec_081` (delivered, see the table above) implemented `frontend_spec_064`'s
 Requirement 2 (the "Use My Series" picker sort half) as part of its own work — `frontend_spec_064`
 stays listed here since its Requirement 1 (`SeriesList`'s own sort) is unrelated and still entirely
-open — and, separately, all of `frontend_spec_065`, which is fully delivered and has moved into the
-Delivered table above. (`series_spec_042`/
-`frontend_spec_063` and `frontend_spec_068` (which also listed `series_spec_044` as a recommended,
-not hard, dependency) have shipped, and so has `frontend_spec_069` — its own Depends On cell named
-`frontend_spec_067`, already satisfied since that spec shipped 2026-09-01 alongside `series_spec_043`;
-all three now moved into the Delivered table above. The standalone `frontend_spec_051` has also
-shipped and moved into the Delivered table above. The standalone `frontend_spec_073`,
-`frontend_spec_074`, and `frontend_spec_075` have also shipped and moved into the Delivered table
-above.)
-(The former 041→042 chain, the standalone 048, 054, and 062, the
-052→053 chain fed by standalone 036 (all three now delivered), the full
-031→046, 033→049, and 032→047 chains, the `037→055→056` frontend leg, the `037→039→058` year-range
-leg, `056`'s AC-07 addition, and `035`'s AC-17 addition — backend and frontend both — are fully
-delivered; see the table above.)
+open.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
@@ -136,7 +124,6 @@ delivered; see the table above.)
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
 | `GenreIncludeExcludePicker` gains removable chips below its trigger + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | `frontend_spec_067` (standalone otherwise) | 🟨 P3 · ⬜ Not started |
-| `KeywordPicker` gains a pills-only mode, applied to the 2 usages with a paired "Browse..." modal | — | `frontend_spec_077` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` (Requirement 1, still open); the "Use My Series" candidate picker half (Requirement 2) already shipped via `frontend_spec_081` | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
