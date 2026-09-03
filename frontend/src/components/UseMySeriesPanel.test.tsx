@@ -441,6 +441,34 @@ describe('FRONTEND-081-AC-09: selected series survive new filters', () => {
   })
 })
 
+describe('FRONTEND-081 (2026-09-03 live-review amendment): Keywords field rejects free text', () => {
+  it('does not add a typed keyword that has no matching tracked option on Enter', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'Has Keyword', keywords: ['space opera'] }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={['space opera']}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/keywords/i), {
+      target: { value: 'zzz-not-a-tracked-keyword' },
+    })
+    fireEvent.keyDown(screen.getByLabelText(/keywords/i), { key: 'Enter' })
+
+    expect(
+      screen.queryByText('zzz-not-a-tracked-keyword'),
+    ).not.toBeInTheDocument()
+    // Since no filter was actually applied, both series remain in the pool.
+    expect(screen.getByText('Has Keyword')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-064-AC-04: picker sort defaults to descending for non-Title fields', () => {
   it('sets specificSeriesSortDirection to desc when switching to IMDb Rating', () => {
     render(
