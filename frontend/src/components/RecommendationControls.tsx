@@ -488,6 +488,88 @@ function filterSpecificSeriesByStatus(
   return series
 }
 
+// FRONTEND-081-AC-04: same exact-token, case-insensitive match shape as
+// filterSpecificSeriesByGenre above (this spec's Design Decisions), applied
+// to Series.keywords instead of the comma-separated genres string. No
+// keywords selected means every series passes.
+function filterSpecificSeriesByKeywords(
+  series: Series[],
+  keywordsFilter: string[],
+): Series[] {
+  if (keywordsFilter.length === 0) return series
+  const lowerFilter = new Set(
+    keywordsFilter.map((keyword) => keyword.toLowerCase()),
+  )
+  return series.filter((s) =>
+    s.keywords.some((keyword) => lowerFilter.has(keyword.toLowerCase())),
+  )
+}
+
+// FRONTEND-081-AC-05: a null personalRating never passes an active
+// threshold -- matches SeriesSearchService's matchesPersonalRating
+// null-handling convention (this spec's Design Decisions). No threshold set
+// (null) means every series passes.
+function filterSpecificSeriesByMinPersonalRating(
+  series: Series[],
+  minPersonalRating: number | null,
+): Series[] {
+  if (minPersonalRating == null) return series
+  return series.filter(
+    (s) => s.personalRating != null && s.personalRating >= minPersonalRating,
+  )
+}
+
+// FRONTEND-081-AC-06: same null-exclusion-when-active convention as
+// filterSpecificSeriesByMinPersonalRating above, applied to imdbRating.
+// minImdbRating is a raw text-input string; a blank/whitespace-only value is
+// treated as "not set" (matches SearchFilter.tsx's own FormState -> criteria
+// conversion).
+function filterSpecificSeriesByMinImdbRating(
+  series: Series[],
+  minImdbRating: string,
+): Series[] {
+  const trimmed = minImdbRating.trim()
+  if (trimmed === '') return series
+  const threshold = Number(trimmed)
+  return series.filter((s) => s.imdbRating != null && s.imdbRating >= threshold)
+}
+
+// FRONTEND-081-AC-07: same shape as filterSpecificSeriesByMinImdbRating
+// above, applied to tmdbRating. Distinct from RecommendationFiltersBox's own
+// unrelated "Min TMDB Rating" (post-TMDB) field -- see this spec's
+// Design Decisions on the "(My Series)" label suffix.
+function filterSpecificSeriesByMinTmdbRating(
+  series: Series[],
+  minTmdbRating: string,
+): Series[] {
+  const trimmed = minTmdbRating.trim()
+  if (trimmed === '') return series
+  const threshold = Number(trimmed)
+  return series.filter((s) => s.tmdbRating != null && s.tmdbRating >= threshold)
+}
+
+// FRONTEND-081-AC-08: a null year never passes an active range (either bound
+// set) -- same null-exclusion-when-active convention as the rating filters
+// above. Either bound may be set independently; an unset bound imposes no
+// constraint on that side of the range.
+function filterSpecificSeriesByYearRange(
+  series: Series[],
+  yearMin: string,
+  yearMax: string,
+): Series[] {
+  const trimmedMin = yearMin.trim()
+  const trimmedMax = yearMax.trim()
+  if (trimmedMin === '' && trimmedMax === '') return series
+  const min = trimmedMin === '' ? null : Number(trimmedMin)
+  const max = trimmedMax === '' ? null : Number(trimmedMax)
+  return series.filter((s) => {
+    if (s.year == null) return false
+    if (min != null && s.year < min) return false
+    if (max != null && s.year > max) return false
+    return true
+  })
+}
+
 function getSpecificSeriesSortValue(
   series: Series,
   sortBy: SpecificSeriesSortBy,
@@ -535,10 +617,37 @@ function compareSpecificSeries(
   return direction === 'asc' ? comparison : -comparison
 }
 
+// FRONTEND-081: bundles buildSpecificSeriesCandidatePool's filter criteria
+// into a single options object (this spec's Design Decisions) -- 13
+// positional parameters (the original 7 plus the six new fields below) would
+// be unreadable/error-prone at the one call site that builds this. sortBy/
+// sortDirection are included here (not split out) since they're still just
+// one more field this same options object threads through unchanged.
+export interface SpecificSeriesFilters {
+  genreFilter: string[]
+  excludeGenreFilter: string[]
+  statusFilter: SpecificSeriesStatusFilter
+  sortBy: SpecificSeriesSortBy
+  sortDirection: SpecificSeriesSortDirection
+  // FRONTEND-081-AC-04 through AC-08: the five new Section 1 fields
+  // (frontend_spec_081), local-only state in UseMySeriesPanel, never part of
+  // ControlsState/RecommendationQuery -- same scope call as the five fields
+  // above (this spec's Design Decisions).
+  keywordsFilter: string[]
+  minPersonalRating: number | null
+  minImdbRating: string
+  minTmdbRating: string
+  yearMin: string
+  yearMax: string
+}
+
 // FRONTEND-035-AC-13: fixed pipeline order -- genre filter, then status
 // filter, then client-side sort -- shared by both the inline picker and the
 // browse-all modal, so what's offered (subject to KeywordPicker's own cap or
-// typed-text search) is always computed identically.
+// typed-text search) is always computed identically. FRONTEND-081 extends
+// this chain with five more independent narrowing steps (keywords, min
+// personal/IMDb/TMDB rating, year range) -- order among these doesn't affect
+// the result since each is just another `.filter()` step.
 //
 // FRONTEND-050-AC-01/AC-02: a series with excludeFromRecommendations === true
 // is dropped before genre/status filtering runs, so neither the inline
@@ -546,35 +655,49 @@ function compareSpecificSeries(
 // offers it as a selectable option -- the flag means what it says everywhere
 // in the UI, not just automatically at recommendation time.
 //
-// FRONTEND-035-AC-07 / FRONTEND-050-AC-03: any already-selected series the
-// genre/status filter narrows away -- or that has since been marked
-// excluded -- is unioned back in *after* sorting, purely so KeywordPicker's
-// chip-label lookup (which resolves a selected id against whatever `options`
-// it was last given -- see KeywordPicker.tsx) can still find a correct
-// label instead of falling back to rendering the raw id. This is
-// deliberately sourced from the unfiltered `allSeries`, not `selectable`,
+// FRONTEND-035-AC-07 / FRONTEND-050-AC-03 / FRONTEND-081-AC-09: any
+// already-selected series the filter chain narrows away -- or that has since
+// been marked excluded -- is unioned back in *after* sorting, purely so
+// KeywordPicker's chip-label lookup (which resolves a selected id against
+// whatever `options` it was last given -- see KeywordPicker.tsx) can still
+// find a correct label instead of falling back to rendering the raw id. This
+// is deliberately sourced from the unfiltered `allSeries`, not `selectable`,
 // and never affects what's offered as a *suggestion*: KeywordPicker already
-// excludes anything in `selected` from its suggestion list.
+// excludes anything in `selected` from its suggestion list. This step
+// operates generically on whatever the filter chain excluded, so it already
+// covers the five new FRONTEND-081 predicates with no change of its own.
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
 export function buildSpecificSeriesCandidatePool(
   allSeries: Series[],
-  genreFilter: string[],
-  excludeGenreFilter: string[],
-  statusFilter: SpecificSeriesStatusFilter,
-  sortBy: SpecificSeriesSortBy,
-  sortDirection: SpecificSeriesSortDirection,
+  filters: SpecificSeriesFilters,
   selectedSeriesIds: string[],
 ): Series[] {
   const selectable = allSeries.filter((s) => !s.excludeFromRecommendations)
-  const filtered = filterSpecificSeriesByStatus(
-    filterSpecificSeriesByExcludeGenre(
-      filterSpecificSeriesByGenre(selectable, genreFilter),
-      excludeGenreFilter,
+  const filtered = filterSpecificSeriesByYearRange(
+    filterSpecificSeriesByMinTmdbRating(
+      filterSpecificSeriesByMinImdbRating(
+        filterSpecificSeriesByMinPersonalRating(
+          filterSpecificSeriesByKeywords(
+            filterSpecificSeriesByStatus(
+              filterSpecificSeriesByExcludeGenre(
+                filterSpecificSeriesByGenre(selectable, filters.genreFilter),
+                filters.excludeGenreFilter,
+              ),
+              filters.statusFilter,
+            ),
+            filters.keywordsFilter,
+          ),
+          filters.minPersonalRating,
+        ),
+        filters.minImdbRating,
+      ),
+      filters.minTmdbRating,
     ),
-    statusFilter,
+    filters.yearMin,
+    filters.yearMax,
   )
   const sorted = [...filtered].sort((a, b) =>
-    compareSpecificSeries(a, b, sortBy, sortDirection),
+    compareSpecificSeries(a, b, filters.sortBy, filters.sortDirection),
   )
 
   const sortedIds = new Set(sorted.map((s) => s.id))
@@ -761,6 +884,7 @@ export function RecommendationControls({
             updateState={updateState}
             allSeries={allSeries}
             genreOptions={genreOptions}
+            keywordOptions={keywordOptions}
           />
         )}
 
@@ -836,10 +960,11 @@ export function RecommendationControls({
         )}
       </div>
 
-      {!hideSortBy && (
-        <HighestRatedPanel state={state} updateState={updateState} />
-      )}
-
+      {/* FRONTEND-081-AC-10: Post TMDB filtering (RecommendationFiltersBox)
+          now renders before Sort filtered recs (HighestRatedPanel), reversing
+          their previous order -- both already render unconditionally in this
+          same shared position for every mode, so the reorder is global, not
+          mode-specific (this spec's Design Decisions). */}
       <RecommendationFiltersBox
         state={state}
         updateState={updateState}
@@ -847,18 +972,23 @@ export function RecommendationControls({
         genreOptions={genreOptions}
       />
 
-      {/* FRONTEND-040-AC-03: the single explicit "Apply Filters" action --
-          every other control above now only updates local (pending) state;
-          nothing reaches the backend until this is clicked. Placed after
-          the Filters disclosure section, mirroring AddSeriesForm/
-          EditSeriesForm's submit-button-at-the-end convention. */}
+      {!hideSortBy && (
+        <HighestRatedPanel state={state} updateState={updateState} />
+      )}
+
+      {/* FRONTEND-040-AC-03: the single explicit "Get Recommendations"
+          action -- every other control above now only updates local
+          (pending) state; nothing reaches the backend until this is
+          clicked. Placed after the Filters disclosure section, mirroring
+          AddSeriesForm/EditSeriesForm's submit-button-at-the-end
+          convention. FRONTEND-065-AC-02: relabeled from "Apply Filters". */}
       <button
         type="button"
         className={styles.applyButton}
         onClick={handleApplyFilters}
         disabled={loading}
       >
-        Apply Filters
+        Get Recommendations
       </button>
 
       {/* FRONTEND-040-AC-07/08: a second, independent loading indicator

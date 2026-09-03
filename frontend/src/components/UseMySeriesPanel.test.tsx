@@ -78,6 +78,7 @@ describe('UseMySeriesPanel', () => {
         updateState={vi.fn()}
         allSeries={[]}
         genreOptions={[]}
+        keywordOptions={[]}
       />,
     )
 
@@ -97,6 +98,7 @@ describe('UseMySeriesPanel', () => {
         updateState={updateState}
         allSeries={[makeSeries({ id: '1', title: 'Ozark' })]}
         genreOptions={[]}
+        keywordOptions={[]}
       />,
     )
 
@@ -117,6 +119,7 @@ describe('UseMySeriesPanel', () => {
         updateState={vi.fn()}
         allSeries={[makeSeries()]}
         genreOptions={['Crime', 'Drama']}
+        keywordOptions={[]}
       />,
     )
 
@@ -135,6 +138,7 @@ describe('UseMySeriesPanel', () => {
           makeSeries({ id: '2', title: 'The Wire', status: 'DROPPED' }),
         ]}
         genreOptions={[]}
+        keywordOptions={[]}
       />,
     )
 
@@ -160,6 +164,7 @@ describe('UseMySeriesPanel', () => {
           makeSeries({ id: '2', title: 'The Wire' }),
         ]}
         genreOptions={[]}
+        keywordOptions={[]}
       />,
     )
 
@@ -184,6 +189,7 @@ describe('UseMySeriesPanel', () => {
         updateState={vi.fn()}
         allSeries={[makeSeries()]}
         genreOptions={[]}
+        keywordOptions={[]}
       />,
     )
 
@@ -203,6 +209,7 @@ describe('FRONTEND-069-AC-04: UseMySeriesPanel renders the combined picker', () 
         updateState={vi.fn()}
         allSeries={[{ id: '1', title: 'Show', genres: 'Comedy' } as Series]}
         genreOptions={['Comedy', 'Drama']}
+        keywordOptions={[]}
       />,
     )
     expect(
@@ -223,6 +230,7 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
           { id: '2', title: 'Serious Show', genres: 'Drama' } as Series,
         ]}
         genreOptions={['Comedy', 'Drama']}
+        keywordOptions={[]}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Filter by Genre' }))
@@ -239,6 +247,267 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
     ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Serious Show/ }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081-AC-01: Filter & sort my series disclosure, open by default', () => {
+  it('renders expanded on mount', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: /filter & sort my series/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByLabelText(/completed only/i)).toBeVisible()
+  })
+})
+
+describe('FRONTEND-081-AC-02: toggle collapses/expands the section', () => {
+  it('hides and shows the filter controls on click', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    const toggle = screen.getByRole('button', {
+      name: /filter & sort my series/i,
+    })
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText(/completed only/i)).not.toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('FRONTEND-081-AC-04: Keywords filter narrows the picker', () => {
+  it('only offers series matching a selected keyword', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'Has Keyword', keywords: ['space opera'] }),
+      makeSeries({ id: '2', title: 'No Keyword', keywords: [] }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={['space opera']}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/keywords/i), {
+      target: { value: 'space opera' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'space opera' }))
+
+    expect(screen.getByText('Has Keyword')).toBeInTheDocument()
+    expect(screen.queryByText('No Keyword')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081-AC-05: Min Personal Rating filter narrows the picker', () => {
+  it('only offers series at or above the selected star rating', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'High Rated', personalRating: 5 }),
+      makeSeries({ id: '2', title: 'Low Rated', personalRating: 2 }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rate 4 star(s)' }))
+
+    expect(screen.getByText('High Rated')).toBeInTheDocument()
+    expect(screen.queryByText('Low Rated')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081-AC-06: Min IMDb Rating filter narrows the picker', () => {
+  it('only offers series at or above the entered IMDb rating', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'High IMDb', imdbRating: 8.5 }),
+      makeSeries({ id: '2', title: 'Low IMDb', imdbRating: 5.0 }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '8' },
+    })
+
+    expect(screen.getByText('High IMDb')).toBeInTheDocument()
+    expect(screen.queryByText('Low IMDb')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081-AC-07: Min TMDB Rating (My Series) filter narrows the picker', () => {
+  it('only offers series at or above the entered TMDB rating', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'High TMDB', tmdbRating: 8.5 }),
+      makeSeries({ id: '2', title: 'Low TMDB', tmdbRating: 5.0 }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/min tmdb rating \(my series\)/i), {
+      target: { value: '8' },
+    })
+
+    expect(screen.getByText('High TMDB')).toBeInTheDocument()
+    expect(screen.queryByText('Low TMDB')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081-AC-08: Year Min/Max (My Series) filters narrow the picker', () => {
+  it('only offers series within the entered year range', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'In Range', year: 2020 }),
+      makeSeries({ id: '2', title: 'Out of Range', year: 2005 }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
+      target: { value: '2015' },
+    })
+
+    expect(screen.getByText('In Range')).toBeInTheDocument()
+    expect(screen.queryByText('Out of Range')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081-AC-09: selected series survive new filters', () => {
+  it('keeps a selected series in the pool even if a new filter would exclude it', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'Selected Low IMDb', imdbRating: 2.0 }),
+    ]
+    const stateWithSelection = { ...initialState, selectedSeriesIds: ['1'] }
+    render(
+      <UseMySeriesPanel
+        state={stateWithSelection}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '8' },
+    })
+
+    expect(screen.getByText('Selected Low IMDb')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-081 (2026-09-03 live-review amendment): Keywords field rejects free text', () => {
+  it('does not add a typed keyword that has no matching tracked option on Enter', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'Has Keyword', keywords: ['space opera'] }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={['space opera']}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/keywords/i), {
+      target: { value: 'zzz-not-a-tracked-keyword' },
+    })
+    fireEvent.keyDown(screen.getByLabelText(/keywords/i), { key: 'Enter' })
+
+    expect(
+      screen.queryByText('zzz-not-a-tracked-keyword'),
+    ).not.toBeInTheDocument()
+    // Since no filter was actually applied, both series remain in the pool.
+    expect(screen.getByText('Has Keyword')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-064-AC-04: picker sort defaults to descending for non-Title fields', () => {
+  it('sets specificSeriesSortDirection to desc when switching to IMDb Rating', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'imdbRating' },
+    })
+    expect(
+      screen.getByRole('button', { name: 'Sort descending' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-064-AC-05: picker sort defaults to ascending for Title', () => {
+  it('sets specificSeriesSortDirection to asc when switching to Title from a descending field', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'year' },
+    })
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'title' },
+    })
+    expect(
+      screen.getByRole('button', { name: 'Sort ascending' }),
     ).toBeInTheDocument()
   })
 })

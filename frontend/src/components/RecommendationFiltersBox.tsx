@@ -66,13 +66,16 @@ export function RecommendationFiltersBox({
 
   return (
     <div className={styles.filtersSection}>
+      {/* FRONTEND-065-AC-01: relabeled from "Filters" -- disambiguates from
+          My Series' own, differently-worded "Show Filters"/"Hide Filters"
+          disclosure (frontend_spec_055), fulfilled via frontend_spec_081. */}
       <button
         type="button"
         className={styles.filtersToggle}
         aria-expanded={filtersOpen}
         onClick={() => setFiltersOpen((open) => !open)}
       >
-        Filters
+        Recommendations Filters
       </button>
 
       {filtersOpen && (

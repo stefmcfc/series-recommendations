@@ -1,6 +1,9 @@
 # Frontend Spec 064: Sort Direction Defaults on Field Selection
 
-**Status**: Not started
+**Status**: Partially implemented — Requirement 2 (`UseMySeriesPanel`'s picker sort,
+FRONTEND-064-AC-04/AC-05) was implemented via `frontend_spec_081_use_my_series_page_restructure.md`
+(`components/UseMySeriesPanel.tsx`, `components/UseMySeriesPanel.test.tsx`). Requirement 1
+(`SeriesList`'s own sort, FRONTEND-064-AC-01/AC-02/AC-03) remains not started.
 **Priority**: P4
 **Depends on**: Frontend Spec 013 (`frontend_spec_013_star_ratings.md`, owns `SeriesList`'s
 `sortBy`/`sortDirection` state and `SORT_BY_OPTIONS`) ✅, Frontend Spec 035
@@ -196,5 +199,5 @@ covers this case.
 - [ ] FRONTEND-064-AC-01: `SeriesList` — selecting a non-Title field defaults direction to descending
 - [ ] FRONTEND-064-AC-02: `SeriesList` — selecting Title defaults direction to ascending
 - [ ] FRONTEND-064-AC-03: `SeriesList` — a manual direction toggle is preserved until the field changes again
-- [ ] FRONTEND-064-AC-04: `UseMySeriesPanel` — selecting a non-Title field defaults direction to descending
-- [ ] FRONTEND-064-AC-05: `UseMySeriesPanel` — selecting Title defaults direction to ascending
+- [x] FRONTEND-064-AC-04: `UseMySeriesPanel` — selecting a non-Title field defaults direction to descending
+- [x] FRONTEND-064-AC-05: `UseMySeriesPanel` — selecting Title defaults direction to ascending

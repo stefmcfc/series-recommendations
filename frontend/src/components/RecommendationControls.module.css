@@ -210,7 +210,15 @@
   min-width: 8rem;
 }
 
-.field label {
+/* FRONTEND-081 (2026-09-03 live-review amendment): direct-child combinator
+   (`.field > span`), not the descendant selector `.field span` -- Min
+   Personal Rating renders its label as a bare <span> (StarRating has no
+   single input to htmlFor-associate a <label> with), but a descendant
+   selector would also reach into KeywordPicker's/
+   GenreIncludeExcludePicker's own internal <span> markup nested inside the
+   same .field wrapper and could visually break their chip styling. */
+.field label,
+.field > span {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text-h);
@@ -296,17 +304,30 @@
   gap: 1rem;
 }
 
-.specificSeriesFiltersRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 1rem;
-  align-items: start;
+/* FRONTEND-081 (2026-09-03 live-review amendment): full-width-row utility
+   for Status and Sort by, which now sit in their own rows below the Genre/
+   Keyword grid rather than sharing a column together -- same "span every
+   .filtersBody track" technique .filtersActions above already uses, just
+   pulled out as a reusable class name. */
+.filterFullWidthRow {
+  grid-column: 1 / -1;
 }
 
-.specificSeriesRightColumn {
-  display: flex;
-  flex-direction: column;
+/* Fixed 4-track grid used by the Genre/Keyword row (each field spans 2
+   tracks) and the ratings/year rows (each field occupies 1 track, trailing
+   tracks left empty) -- same "fixed grid, leave the remainder empty"
+   convention as SeriesDetail.module.css's .threeColRow, deliberately not
+   auto-fit so narrow fields like the rating/year inputs don't stretch to
+   fill the row. */
+.filterFourColGrid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.filterSpanTwo {
+  grid-column: span 2;
 }
 
 .sortControl {

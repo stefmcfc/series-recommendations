@@ -8,6 +8,21 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.17.0] - 2026-09-03
+
+### Added
+
+- Frontend: "Use My Series" gains a new "Filter & sort my series" disclosure section (open by default) wrapping the existing Genre/Status/Sort controls, extended with five new client-side-only picker-narrowing fields — Keywords, Min Personal Rating, Min IMDb Rating, "Min TMDB Rating (My Series)", and "Year Min/Max (My Series)" — the client-side successor to the retired `minSourceRating` backend gate, never dropping an explicitly-selected series (`frontend_spec_081`).
+
+### Changed
+
+- Frontend: on the Recommendations page, "Post TMDB filtering" (`RecommendationFiltersBox`) now renders before "Sort filtered recs" (`HighestRatedPanel`) instead of after, for every recommendation mode (`frontend_spec_081`).
+- Frontend: the "Use My Series" candidate picker's sort direction now defaults sensibly per newly-selected field — descending for every field except Title, which defaults ascending (`frontend_spec_064` Requirement 2, implemented via `frontend_spec_081`).
+- Frontend: Recommendations' "Filters" disclosure toggle relabeled to "Recommendations Filters", and the submit button relabeled from "Apply Filters" to "Get Recommendations", with no change to either's behavior (`frontend_spec_065`, implemented via `frontend_spec_081`).
+- Frontend: `RecommendationsList`'s empty-state hint text ("Set your filters above and click...") now references "Get Recommendations" instead of the retired "Apply Filters" wording, catching a stray reference the relabel above missed.
+- Frontend: "Use My Series"' "Filter & sort my series" section restructured (before merge, live review) into Status and Sort by as their own full-width rows, and Genre/Keyword/rating/year fields onto fixed 4-column grid rows, replacing the previous Genre-plus-stacked-Status/Sort two-column layout (`frontend_spec_081`).
+- Frontend: "Use My Series"' Keywords filter no longer accepts free text — it only narrows against a tracked series' actual keywords, so typing an untracked value could never match anything (`frontend_spec_081`).
+
 ## [3.16.1] - 2026-09-03
 
 ### Fixed

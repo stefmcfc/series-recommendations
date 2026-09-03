@@ -4,6 +4,8 @@ import { KeywordPicker } from './KeywordPicker'
 import type { PickerOption } from './KeywordPicker'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
+import { StarRating } from './StarRating'
+import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   buildSpecificSeriesCandidatePool,
   seriesPickerLabel,
@@ -23,6 +25,11 @@ interface UseMySeriesPanelProps {
   readonly updateState: (patch: Partial<ControlsState>) => void
   readonly allSeries: Series[]
   readonly genreOptions: string[]
+  // FRONTEND-081-AC-04: threaded from RecommendationControls's already-
+  // fetched keywordOptions state (previously only passed to
+  // CustomSearchPanel), so the new Keywords field can offer the same
+  // tracked-keyword suggestions.
+  readonly keywordOptions: string[]
 }
 
 // TOOLING-008-AC-02: the Specific Series picker (search/filter/sort/"Show
@@ -37,6 +44,7 @@ export function UseMySeriesPanel({
   updateState,
   allSeries,
   genreOptions,
+  keywordOptions,
 }: UseMySeriesPanelProps) {
   const [specificSeriesGenreFilter, setSpecificSeriesGenreFilter] = useState<
     string[]
@@ -57,15 +65,40 @@ export function UseMySeriesPanel({
     useState<SpecificSeriesSortDirection>('asc')
   const [specificSeriesBrowseModalOpen, setSpecificSeriesBrowseModalOpen] =
     useState(false)
+  // FRONTEND-081: the five new Section 1 fields -- local useState exactly
+  // like the five above (never part of ControlsState, this spec's Design
+  // Decisions), client-side-only picker-narrowing aids that replace the
+  // retired backend minSourceRating gate conceptually.
+  const [specificSeriesKeywordsFilter, setSpecificSeriesKeywordsFilter] =
+    useState<string[]>([])
+  const [specificSeriesMinPersonalRating, setSpecificSeriesMinPersonalRating] =
+    useState<number | null>(null)
+  const [specificSeriesMinImdbRating, setSpecificSeriesMinImdbRating] =
+    useState('')
+  const [specificSeriesMinTmdbRating, setSpecificSeriesMinTmdbRating] =
+    useState('')
+  const [specificSeriesYearMin, setSpecificSeriesYearMin] = useState('')
+  const [specificSeriesYearMax, setSpecificSeriesYearMax] = useState('')
+  // FRONTEND-081-AC-01: "Filter & sort my series" disclosure, defaulting
+  // OPEN (unlike RecommendationFiltersBox's own filtersOpen, which defaults
+  // closed) so the new filtering capability isn't buried on first render.
+  const [filterSectionOpen, setFilterSectionOpen] = useState(true)
 
   const handleSpecificSeriesSelectionChange = (next: string[]) => {
     updateState({ selectedSeriesIds: next })
   }
 
+  // FRONTEND-064-AC-04/AC-05: selecting a new sort field also resets the
+  // direction to a sensible default -- descending for every field except
+  // Title, which defaults ascending. A subsequent manual toggle
+  // (handleSpecificSeriesSortDirectionToggle) is left alone until the field
+  // changes again.
   const handleSpecificSeriesSortByChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
   ) => {
-    setSpecificSeriesSortBy(event.target.value as SpecificSeriesSortBy)
+    const newField = event.target.value as SpecificSeriesSortBy
+    setSpecificSeriesSortBy(newField)
+    setSpecificSeriesSortDirection(newField === 'title' ? 'asc' : 'desc')
   }
 
   const handleSpecificSeriesSortDirectionToggle = () => {
@@ -84,11 +117,19 @@ export function UseMySeriesPanel({
   // and the "Show all series" modal.
   const specificSeriesCandidatePool = buildSpecificSeriesCandidatePool(
     allSeries,
-    specificSeriesGenreFilter,
-    specificSeriesExcludeGenreFilter,
-    specificSeriesStatusFilter,
-    specificSeriesSortBy,
-    specificSeriesSortDirection,
+    {
+      genreFilter: specificSeriesGenreFilter,
+      excludeGenreFilter: specificSeriesExcludeGenreFilter,
+      statusFilter: specificSeriesStatusFilter,
+      sortBy: specificSeriesSortBy,
+      sortDirection: specificSeriesSortDirection,
+      keywordsFilter: specificSeriesKeywordsFilter,
+      minPersonalRating: specificSeriesMinPersonalRating,
+      minImdbRating: specificSeriesMinImdbRating,
+      minTmdbRating: specificSeriesMinTmdbRating,
+      yearMin: specificSeriesYearMin,
+      yearMax: specificSeriesYearMax,
+    },
     state.selectedSeriesIds,
   )
   const specificSeriesOptions: PickerOption[] = specificSeriesCandidatePool.map(
@@ -121,106 +162,250 @@ export function UseMySeriesPanel({
             <p className={styles.hint}>No series to choose from yet.</p>
           ) : (
             <>
-              {/* Layout-only, no spec (2026-08-27): Filter by Genre's scrollable box left a lot of empty width next to it, so Status + Sort now share that row as a second column -- temporary until this section is revisited for a sheet/modal-based filter UI. */}
-              <div className={styles.specificSeriesFiltersRow}>
-                {genreOptions.length > 0 && (
-                  // FRONTEND-069-AC-04: combined include/exclude Filter by
-                  // Genre picker, replacing the former include-only checkbox
-                  // fieldset -- one control now covers both
-                  // specificSeriesGenreFilter and
-                  // specificSeriesExcludeGenreFilter, mutual exclusivity
-                  // guaranteed by GenreIncludeExcludePicker itself
-                  // (frontend_spec_067).
-                  <GenreIncludeExcludePicker
-                    idPrefix="specific-series-genre"
-                    label="Filter by Genre"
-                    genreOptions={genreOptions}
-                    included={specificSeriesGenreFilter}
-                    excluded={specificSeriesExcludeGenreFilter}
-                    onChange={({ included, excluded }) => {
-                      setSpecificSeriesGenreFilter(included)
-                      setSpecificSeriesExcludeGenreFilter(excluded)
-                    }}
-                  />
-                )}
+              {/* FRONTEND-081-AC-01/02: "Filter & sort my series" disclosure
+                  -- same collapse/expand mechanics as
+                  RecommendationFiltersBox's own toggle, but seeded open
+                  (filterSectionOpen defaults true) so the new filtering
+                  capability isn't buried. */}
+              <div className={styles.filtersSection}>
+                <button
+                  type="button"
+                  className={styles.filtersToggle}
+                  aria-expanded={filterSectionOpen}
+                  onClick={() => setFilterSectionOpen((open) => !open)}
+                >
+                  Filter & sort my series
+                </button>
 
-                <div className={styles.specificSeriesRightColumn}>
-                  <fieldset className={styles.modeFieldset}>
-                    <legend>Filter by Status</legend>
-
-                    <div className={styles.modeOption}>
-                      <input
-                        id="specific-series-status-any"
-                        type="radio"
-                        name="specific-series-status"
-                        checked={specificSeriesStatusFilter === 'any'}
-                        onChange={() => setSpecificSeriesStatusFilter('any')}
-                      />
-                      <label htmlFor="specific-series-status-any">
-                        Any Status
-                      </label>
-                    </div>
-
-                    <div className={styles.modeOption}>
-                      <input
-                        id="specific-series-status-completed-only"
-                        type="radio"
-                        name="specific-series-status"
-                        checked={specificSeriesStatusFilter === 'completedOnly'}
-                        onChange={() =>
-                          setSpecificSeriesStatusFilter('completedOnly')
-                        }
-                      />
-                      <label htmlFor="specific-series-status-completed-only">
-                        Completed Only
-                      </label>
-                    </div>
-
-                    <div className={styles.modeOption}>
-                      <input
-                        id="specific-series-status-completed-or-watching"
-                        type="radio"
-                        name="specific-series-status"
-                        checked={
-                          specificSeriesStatusFilter === 'completedOrWatching'
-                        }
-                        onChange={() =>
-                          setSpecificSeriesStatusFilter('completedOrWatching')
-                        }
-                      />
-                      <label htmlFor="specific-series-status-completed-or-watching">
-                        Completed or Watching
-                      </label>
-                    </div>
-                  </fieldset>
-
-                  <div className={styles.sortControl}>
-                    <label htmlFor="specific-series-sort-by">Sort by</label>
-                    <select
-                      id="specific-series-sort-by"
-                      value={specificSeriesSortBy}
-                      onChange={handleSpecificSeriesSortByChange}
+                {filterSectionOpen && (
+                  <div
+                    className={styles.filtersBody}
+                    data-testid="specific-series-filters-body"
+                  >
+                    {/* FRONTEND-081 (2026-09-03 live-review amendment): Status
+                        and Sort by are now their own full-width rows
+                        (previously stacked together in a shared right-hand
+                        column next to Genre) -- see the spec's Design
+                        Decisions for the full before/after. */}
+                    <fieldset
+                      className={`${styles.modeFieldset} ${styles.filterFullWidthRow}`}
                     >
-                      {SPECIFIC_SERIES_SORT_BY_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className={styles.sortDirectionButton}
-                      aria-label={
-                        specificSeriesSortDirection === 'asc'
-                          ? 'Sort ascending'
-                          : 'Sort descending'
-                      }
-                      onClick={handleSpecificSeriesSortDirectionToggle}
+                      <legend>Filter by Status</legend>
+
+                      <div className={styles.modeOption}>
+                        <input
+                          id="specific-series-status-any"
+                          type="radio"
+                          name="specific-series-status"
+                          checked={specificSeriesStatusFilter === 'any'}
+                          onChange={() => setSpecificSeriesStatusFilter('any')}
+                        />
+                        <label htmlFor="specific-series-status-any">
+                          Any Status
+                        </label>
+                      </div>
+
+                      <div className={styles.modeOption}>
+                        <input
+                          id="specific-series-status-completed-only"
+                          type="radio"
+                          name="specific-series-status"
+                          checked={
+                            specificSeriesStatusFilter === 'completedOnly'
+                          }
+                          onChange={() =>
+                            setSpecificSeriesStatusFilter('completedOnly')
+                          }
+                        />
+                        <label htmlFor="specific-series-status-completed-only">
+                          Completed Only
+                        </label>
+                      </div>
+
+                      <div className={styles.modeOption}>
+                        <input
+                          id="specific-series-status-completed-or-watching"
+                          type="radio"
+                          name="specific-series-status"
+                          checked={
+                            specificSeriesStatusFilter === 'completedOrWatching'
+                          }
+                          onChange={() =>
+                            setSpecificSeriesStatusFilter('completedOrWatching')
+                          }
+                        />
+                        <label htmlFor="specific-series-status-completed-or-watching">
+                          Completed or Watching
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    <div
+                      className={`${styles.sortControl} ${styles.filterFullWidthRow}`}
                     >
-                      {specificSeriesSortDirection === 'asc' ? '↑' : '↓'}
-                    </button>
+                      <label htmlFor="specific-series-sort-by">Sort by</label>
+                      <select
+                        id="specific-series-sort-by"
+                        value={specificSeriesSortBy}
+                        onChange={handleSpecificSeriesSortByChange}
+                      >
+                        {SPECIFIC_SERIES_SORT_BY_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className={styles.sortDirectionButton}
+                        aria-label={
+                          specificSeriesSortDirection === 'asc'
+                            ? 'Sort ascending'
+                            : 'Sort descending'
+                        }
+                        onClick={handleSpecificSeriesSortDirectionToggle}
+                      >
+                        {specificSeriesSortDirection === 'asc' ? '↑' : '↓'}
+                      </button>
+                    </div>
+
+                    {/* FRONTEND-081 (2026-09-03 live-review amendment):
+                        Genre and Keyword now share a fixed 4-column grid row,
+                        each spanning 2 columns, instead of sitting in
+                        separate auto-fit .filtersBody cells. */}
+                    <div className={styles.filterFourColGrid}>
+                      {genreOptions.length > 0 && (
+                        // FRONTEND-069-AC-04: combined include/exclude Filter
+                        // by Genre picker, replacing the former include-only
+                        // checkbox fieldset -- one control now covers both
+                        // specificSeriesGenreFilter and
+                        // specificSeriesExcludeGenreFilter, mutual
+                        // exclusivity guaranteed by GenreIncludeExcludePicker
+                        // itself (frontend_spec_067).
+                        <div className={styles.filterSpanTwo}>
+                          <GenreIncludeExcludePicker
+                            idPrefix="specific-series-genre"
+                            label="Filter by Genre"
+                            genreOptions={genreOptions}
+                            included={specificSeriesGenreFilter}
+                            excluded={specificSeriesExcludeGenreFilter}
+                            onChange={({ included, excluded }) => {
+                              setSpecificSeriesGenreFilter(included)
+                              setSpecificSeriesExcludeGenreFilter(excluded)
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* FRONTEND-081 (2026-09-03 live-review amendment):
+                          allowFreeText removed -- this field narrows the
+                          picker to a tracked series' actual keywords, so an
+                          untracked typed keyword could never match anything.
+                          Mirrors SearchFilter.tsx's Keywords field in every
+                          other respect. */}
+                      <div className={styles.filterSpanTwo}>
+                        <KeywordPicker
+                          id="specific-series-keywords"
+                          label="Keywords"
+                          selected={specificSeriesKeywordsFilter}
+                          onChange={setSpecificSeriesKeywordsFilter}
+                          options={keywordOptions}
+                          placeholder="Type to filter tracked keywords"
+                          maxSuggestionsWhenEmpty={0}
+                        />
+                      </div>
+                    </div>
+
+                    {/* FRONTEND-081-AC-05: the client-side successor to the
+                        retired backend minSourceRating gate
+                        (series_spec_045) -- narrows the picker only, never
+                        drops an explicit pick server-side. */}
+                    <div className={styles.filterFourColGrid}>
+                      <div className={styles.field}>
+                        <span>Min Personal Rating</span>
+                        <StarRating
+                          value={specificSeriesMinPersonalRating}
+                          onChange={setSpecificSeriesMinPersonalRating}
+                        />
+                      </div>
+
+                      <div className={styles.field}>
+                        <label htmlFor="specific-series-min-imdb-rating">
+                          Min IMDb Rating
+                        </label>
+                        <input
+                          id="specific-series-min-imdb-rating"
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          value={specificSeriesMinImdbRating}
+                          onChange={(event) =>
+                            setSpecificSeriesMinImdbRating(event.target.value)
+                          }
+                        />
+                      </div>
+
+                      {/* FRONTEND-081-AC-07: "(My Series)" suffix
+                          disambiguates from RecommendationFiltersBox's own
+                          unsuffixed "Min TMDB Rating" (post-TMDB, unrelated
+                          field). */}
+                      <div className={styles.field}>
+                        <label htmlFor="specific-series-min-tmdb-rating">
+                          Min TMDB Rating (My Series)
+                        </label>
+                        <input
+                          id="specific-series-min-tmdb-rating"
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          value={specificSeriesMinTmdbRating}
+                          onChange={(event) =>
+                            setSpecificSeriesMinTmdbRating(event.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* FRONTEND-081-AC-08: "(My Series)" suffix disambiguates
+                        from RecommendationFiltersBox's own unsuffixed "Year
+                        Min"/"Year Max" (post-TMDB, unrelated fields). */}
+                    <div className={styles.filterFourColGrid}>
+                      <div className={styles.field}>
+                        <label htmlFor="specific-series-year-min">
+                          Year Min (My Series)
+                        </label>
+                        <input
+                          id="specific-series-year-min"
+                          type="number"
+                          min={MIN_VALID_YEAR}
+                          max={MAX_VALID_YEAR}
+                          value={specificSeriesYearMin}
+                          onChange={(event) =>
+                            setSpecificSeriesYearMin(event.target.value)
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.field}>
+                        <label htmlFor="specific-series-year-max">
+                          Year Max (My Series)
+                        </label>
+                        <input
+                          id="specific-series-year-max"
+                          type="number"
+                          min={MIN_VALID_YEAR}
+                          max={MAX_VALID_YEAR}
+                          value={specificSeriesYearMax}
+                          onChange={(event) =>
+                            setSpecificSeriesYearMax(event.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <KeywordPicker

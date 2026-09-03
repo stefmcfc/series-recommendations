@@ -99,6 +99,8 @@ corrected below.
 | "Flagged for rewatch" becomes a `/my-series/rewatch` tab, removed from the filter sheet | —                                    | `frontend_spec_074`                            | ✅ Done                                                                                         |
 | My Series filter sheet fields grouped into sectioned dividers (Genres & Keywords / Ratings / Years) | —                                    | `frontend_spec_075`                            | ✅ Done                                                                                         |
 | Retire `minSourceRating` — an explicit `seriesIds` pick is no longer silently dropped by a rating threshold; automatic-mode source pool reverts to unfiltered-by-rating | `series_spec_045` | `frontend_spec_080` | ✅ Done |
+| "Use My Series" page restructure — Filter & sort my series (new, client-side-only fields replacing retired `minSourceRating`) → Select my series → Post TMDB filtering → Sort filtered recs → Get Recommendations, in that order; also implements `frontend_spec_064`'s Requirement 2 and all of `frontend_spec_065` as part of the same touch | — | `frontend_spec_081` | ✅ Done |
+| Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | ✅ Done — shipped via `frontend_spec_081` |
 
 ## Specced, coming soon
 
@@ -106,10 +108,14 @@ Ordered by priority first (P2 before P3 before P4 — see each spec's own `Prior
 then by suggested build order within a tier — grouped into independent dependency chains:
 `frontend_spec_043→frontend_spec_045`, `series_spec_030→frontend_spec_044`, and
 `series_spec_038→frontend_spec_057`. Rows within a chain must build in the listed order; the chains
-themselves (and the fully-standalone rows — `frontend_spec_064`, `frontend_spec_065`) have no
-dependencies on each other *within this table* and
-can be reordered freely as a block if priorities change — but re-check priority order too when doing
-so, since this table's row order isn't just dependency-derived anymore. (`series_spec_042`/
+themselves (and the fully-standalone `frontend_spec_064` row) have no dependencies on each other
+*within this table* — and can be reordered freely as a block if priorities change — but re-check
+priority order too when doing so, since this table's row order isn't just dependency-derived
+anymore. `frontend_spec_081` (now delivered, see the table above) implemented `frontend_spec_064`'s
+Requirement 2 (the "Use My Series" picker sort half) as part of its own work — `frontend_spec_064`
+stays listed here since its Requirement 1 (`SeriesList`'s own sort) is unrelated and still entirely
+open — and, separately, all of `frontend_spec_065`, which is fully delivered and has moved into the
+Delivered table above. (`series_spec_042`/
 `frontend_spec_063` and `frontend_spec_068` (which also listed `series_spec_044` as a recommended,
 not hard, dependency) have shipped, and so has `frontend_spec_069` — its own Depends On cell named
 `frontend_spec_067`, already satisfied since that spec shipped 2026-09-01 alongside `series_spec_043`;
@@ -133,8 +139,7 @@ delivered; see the table above.)
 | `KeywordPicker` gains a pills-only mode, applied to the 2 usages with a paired "Browse..." modal | — | `frontend_spec_077` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | — (standalone) | 🟨 P3 · ⬜ Not started |
-| Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` and the "Use My Series" candidate picker | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
-| Relabel Recommendations' "Filters" → "Recommendations Filters" and "Apply Filters" → "Get Recommendations" | — | `frontend_spec_065` | — (standalone) | 🟩 P4 · ⬜ Not started |
+| Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` (Requirement 1, still open); the "Use My Series" candidate picker half (Requirement 2) already shipped via `frontend_spec_081` | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 

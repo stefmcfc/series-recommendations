@@ -171,7 +171,7 @@ export function RecommendationsList({
           data-testid="recommendations-not-searched"
         >
           <p>
-            Set your filters above and click "Apply Filters" to see
+            Set your filters above and click "Get Recommendations" to see
             recommendations.
           </p>
         </div>
