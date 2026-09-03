@@ -8,9 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.18.0] - 2026-09-03
+
 ### Added
 
-- Frontend: `KeywordPicker` gains an optional `hideInput` prop that suppresses its text input and suggestions list, leaving only the selected-pills list (still removable) (`frontend_spec_077`).
+- Frontend: `KeywordPicker` gains an optional `hideInput` prop that suppresses its text input (and label), leaving its suggestions list (including any default empty-input list) and selected-pills list (still removable) unaffected (`frontend_spec_077`).
 - Frontend: "Use My Series" gains a new "Browse all keywords" modal paired with its "Filter & sort my series" Keywords field, mirroring the existing "Browse Series" modal and `SearchFilter`'s own "Browse all keywords" modal (`frontend_spec_077`).
 
 ### Changed
