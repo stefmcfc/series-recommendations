@@ -40,6 +40,22 @@ function renderFilter(isOpen = true) {
   return { onSearch, onClear, onClose }
 }
 
+describe('FRONTEND-076-AC-04: SearchFilter genre picker is renamed', () => {
+  it('renders the trigger as "Include / Exclude Genres"', () => {
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-006-AC-01/02: fields', () => {
   it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()
@@ -147,7 +163,7 @@ describe('FRONTEND-063-AC-03: GenreIncludeExcludePicker renders', () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy', 'Drama'])
     renderFilter()
     expect(
-      await screen.findByRole('button', { name: 'Genres' }),
+      await screen.findByRole('button', { name: 'Include / Exclude Genres' }),
     ).toBeInTheDocument()
   })
 })
@@ -157,7 +173,9 @@ describe('FRONTEND-063-AC-04: toggling submits genres/excludeGenres', () => {
     mockGetGenreOptions.mockResolvedValue(['Drama', 'Comedy', 'Crime'])
     const { onSearch } = renderFilter()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Drama: neutral' }))
     fireEvent.click(screen.getByRole('button', { name: 'Crime: neutral' }))
     fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
@@ -179,7 +197,9 @@ describe('FRONTEND-063-AC-04: toggling submits genres/excludeGenres', () => {
         onClear={vi.fn()}
       />,
     )
-    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     // neutral -> include -> exclude
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
@@ -206,11 +226,15 @@ describe('FRONTEND-063-AC-05: Clear Filters resets both genre selections', () =>
   it('resets the picker summary after Clear Filters', async () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy'])
     renderFilter()
-    fireEvent.click(await screen.findByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
     fireEvent.click(screen.getByRole('button', { name: /^done$/i }))
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
-    expect(screen.getByRole('button', { name: 'Genres' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    ).toBeInTheDocument()
   })
 })
 
@@ -782,7 +806,9 @@ describe('FRONTEND-075-AC-01: Genres & Keywords section', () => {
     const heading = screen.getByRole('heading', { name: 'Genres & Keywords' })
     const section = heading.closest('section') ?? heading.parentElement!
     expect(
-      within(section).getByRole('button', { name: /^genres$/i }),
+      within(section).getByRole('button', {
+        name: /^include \/ exclude genres$/i,
+      }),
     ).toBeInTheDocument()
     // FRONTEND-077-AC-04: hideInput replaces the inline field's
     // <label htmlFor> with a non-visual aria-label once its own input is gone.

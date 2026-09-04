@@ -47,6 +47,21 @@ function renderBox(
   return { ...utils, updateState }
 }
 
+describe('FRONTEND-076-AC-06: exclude-only usage keeps its own label', () => {
+  it('still renders "Exclude Genres", not the renamed label', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Exclude Genres' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Include / Exclude Genres' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('RecommendationFiltersBox', () => {
   it('renders collapsed by default, revealing fields once toggled', () => {
     renderBox()

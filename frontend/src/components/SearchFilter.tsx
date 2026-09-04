@@ -204,7 +204,7 @@ export function SearchFilter({
               <div className={styles.field}>
                 <GenreIncludeExcludePicker
                   idPrefix="search-filter-genre"
-                  label="Genres"
+                  label="Include / Exclude Genres"
                   genreOptions={genreOptions}
                   included={form.genresSelected}
                   excluded={form.excludeGenresSelected}

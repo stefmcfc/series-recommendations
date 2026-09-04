@@ -297,7 +297,7 @@ export function UseMySeriesPanel({
                         <div className={styles.filterSpanTwo}>
                           <GenreIncludeExcludePicker
                             idPrefix="specific-series-genre"
-                            label="Filter by Genre"
+                            label="Include / Exclude Genres"
                             genreOptions={genreOptions}
                             included={specificSeriesGenreFilter}
                             excluded={specificSeriesExcludeGenreFilter}

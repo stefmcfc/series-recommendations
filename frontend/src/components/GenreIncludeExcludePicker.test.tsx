@@ -235,3 +235,64 @@ describe('FRONTEND-067-AC-10: overlapping props resolve to exclude', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-076-AC-01: included genres render as removable chips', () => {
+  it('renders a chip per included genre and removes it on click', () => {
+    const onChange = vi.fn()
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Include / Exclude Genres"
+        genreOptions={['Comedy', 'Drama']}
+        included={['Comedy']}
+        excluded={[]}
+        onChange={onChange}
+      />,
+    )
+    expect(screen.getByText('Comedy')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove Comedy from included' }),
+    )
+    expect(onChange).toHaveBeenCalledWith({ included: [], excluded: [] })
+  })
+})
+
+describe('FRONTEND-076-AC-02: excluded genres render as removable chips', () => {
+  it('renders a chip per excluded genre and removes it on click', () => {
+    const onChange = vi.fn()
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Exclude Genres"
+        mode="excludeOnly"
+        genreOptions={['Comedy', 'Horror']}
+        included={[]}
+        excluded={['Horror']}
+        onChange={onChange}
+      />,
+    )
+    expect(screen.getByText('Horror')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove Horror from excluded' }),
+    )
+    expect(onChange).toHaveBeenCalledWith({ included: [], excluded: [] })
+  })
+})
+
+describe('FRONTEND-076-AC-03: no chips when nothing is selected', () => {
+  it('renders no chip list when included/excluded are both empty', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Include / Exclude Genres"
+        genreOptions={['Comedy']}
+        included={[]}
+        excluded={[]}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+})

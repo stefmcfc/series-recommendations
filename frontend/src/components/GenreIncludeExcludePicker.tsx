@@ -114,6 +114,47 @@ export function GenreIncludeExcludePicker({
         {buildTriggerSummary(label, included, excluded)}
       </button>
 
+      {(included.length > 0 || excluded.length > 0) && (
+        <ul className={styles.chips}>
+          {included.map((genre) => (
+            <li key={`include-${genre}`} className={styles.chipInclude}>
+              <span>{genre}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${genre} from included`}
+                className={styles.chipRemove}
+                onClick={() =>
+                  onChange({
+                    included: included.filter((g) => g !== genre),
+                    excluded,
+                  })
+                }
+              >
+                &times;
+              </button>
+            </li>
+          ))}
+          {excluded.map((genre) => (
+            <li key={`exclude-${genre}`} className={styles.chipExclude}>
+              <span>{genre}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${genre} from excluded`}
+                className={styles.chipRemove}
+                onClick={() =>
+                  onChange({
+                    included,
+                    excluded: excluded.filter((g) => g !== genre),
+                  })
+                }
+              >
+                &times;
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {open && (
         <div className={styles.overlay}>
           {/* A native <dialog> needs showModal()/close() lifecycle management (focus trap, native backdrop) to behave correctly, not just a tag swap -- deliberately not converted here, mirroring UseMySeriesPanel.tsx's "Browse Series" modal and SearchFilter.tsx's "Browse all keywords" modal (jsdom's <dialog> support has known gaps). */}

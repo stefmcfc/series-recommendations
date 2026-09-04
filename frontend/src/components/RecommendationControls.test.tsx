@@ -140,7 +140,9 @@ function selectHighestRated() {
 // leave a second `role="dialog"` element behind for tests that go on to
 // open the "Show all series" modal.
 function includeSpecificSeriesGenre(genre: string) {
-  fireEvent.click(screen.getByRole('button', { name: 'Filter by Genre' }))
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+  )
   fireEvent.click(screen.getByRole('button', { name: `${genre}: neutral` }))
   fireEvent.click(screen.getByRole('button', { name: 'Done' }))
 }
@@ -317,7 +319,9 @@ describe('FRONTEND-014-AC-04/05: genre checkbox list', () => {
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    )
 
     const dramaToggle = await screen.findByRole('button', {
       name: 'Drama: neutral',
@@ -352,7 +356,9 @@ describe('FRONTEND-014-AC-06: free-text Genres input is gone', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     selectCustomSearch()
-    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     await screen.findByRole('button', { name: 'Action: neutral' })
 
     expect(
@@ -389,7 +395,9 @@ describe('FRONTEND-014-AC-09: hint reflects genresSelected/keywords emptiness', 
       screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     const dramaToggle = await screen.findByRole('button', {
       name: 'Drama: neutral',
     })
@@ -421,7 +429,9 @@ describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     const dramaToggle = await screen.findByRole('button', {
       name: 'Drama: neutral',
     })
@@ -1461,7 +1471,7 @@ describe('FRONTEND-035-AC-10: genre/status filters render but never appear in th
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    await screen.findByRole('button', { name: 'Filter by Genre' })
+    await screen.findByRole('button', { name: 'Include / Exclude Genres' })
     includeSpecificSeriesGenre('Drama')
     fireEvent.click(screen.getByLabelText(/completed only/i))
     // FRONTEND-042: "Use My Series" is now active by default (no separate
@@ -1485,7 +1495,7 @@ describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the
       makeSeries({ id: '2', title: 'Ozark', genres: 'Crime, Drama' }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('button', { name: 'Filter by Genre' })
+    await screen.findByRole('button', { name: 'Include / Exclude Genres' })
     includeSpecificSeriesGenre('Comedy')
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1582,7 +1592,7 @@ describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => 
       }),
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('button', { name: 'Filter by Genre' })
+    await screen.findByRole('button', { name: 'Include / Exclude Genres' })
     includeSpecificSeriesGenre('Drama')
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -1958,7 +1968,9 @@ describe('FRONTEND-042-AC-08: Custom Search behaves exactly like former Genre & 
     // FRONTEND-068-AC-02: Genres is now a GenreIncludeExcludePicker trigger
     // button, not a checkbox per genre -- open it, then toggle Comedy in
     // (awaited since genreOptions loads asynchronously).
-    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     fireEvent.click(
       await screen.findByRole('button', { name: 'Comedy: neutral' }),
     )
