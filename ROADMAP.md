@@ -131,6 +131,10 @@ open.
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` (Requirement 1, still open); the "Use My Series" candidate picker half (Requirement 2) already shipped via `frontend_spec_081` | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
+| "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | — (build first — establishes the pattern units 2–4 reuse) | 🟨 P3 · ⬜ Not started |
+| "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | `frontend_spec_086` | 🟨 P3 · ⬜ Not started |
+| "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` | 🟨 P3 · ⬜ Not started |
+| "Analysis/Trends" expansion, unit 4/4: Country-of-Origin stats (same treatment), added as a third `Analysis` tab | `series_spec_049` | `frontend_spec_089` | `series_spec_047`, `frontend_spec_088` | 🟨 P3 · ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 
