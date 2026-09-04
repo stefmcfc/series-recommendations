@@ -17,7 +17,8 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-03 (staleness sweep post-"Use My Series" restructure). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-09-04 ("Share filter/sort logic..." candidate closed — resolved into
+`frontend_spec_082`/`frontend_spec_083`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 ---
@@ -175,66 +176,6 @@ outside test files; both remain live backend request params with defaults, just 
 the UI to set them). This candidate's scope for those two fields is now moot — nothing left to
 attach a disclosure box to. Only "Sort By" (the Best Match/Most Recommended radio pair) is still a
 live candidate for this treatment.
-
-### Share filter/sort logic between `SeriesList`/`SearchFilter` (My Series) and `RecommendationControls`' "Use My Series" mode
-
-From a 2026-08-29 discussion. Both features filter/sort over the same underlying series data — My
-Series shows the full tracked-series record, "Use My Series" returns a cut-down projection (title/
-year/rating/etc, no personal notes) sourced _from_ that same tracked pool before TMDB
-recommendations are layered on top. Right now `SearchFilter`'s criteria (title/genre/status/
-rating-range/started-not-finished) and `RecommendationControls`' "Use My Series" filters
-(`minSourceRating`, genre-narrowing via the Specific Series picker) are two separate, independently
-maintained implementations of "filter my tracked series," with their own types, their own state
-shape, and their own UI.
-
-**Deliberately deferred, not spec'd yet** — per discussion, the user expects the two to grow more
-alike (not less) as "Use My Series" filtering itself evolves, particularly once the "Customizable
-recommendation 'algorithm'" candidate above lands and reshapes what "Use My Series"' own source-pool
-filters look like. Spec'ing a shared abstraction _before_ that reshaping happens risks designing
-around the wrong shape — some differences between the two are likely permanent (Recommendations
-layers in TMDB-sourced fields My Series has no concept of; My Series has status transitions and
-personal notes Recommendations never touches), but the genuinely common subset (title/genre/rating
-filtering, sort direction) should become clearer once "Use My Series" itself stabilizes post-revamp.
-
-**What to watch for, once "Use My Series" filtering changes land**: whether the two features'
-filter criteria types could share a common base (e.g. a `SeriesFilterCriteria` both `SearchFilter`
-and `RecommendationControls` extend/compose), and whether `SeriesList`'s existing client-side
-filter/sort logic (or `series_spec_003`'s backend search/filter, if server-side filtering turns out
-to matter more for "Use My Series" too) could be reused directly rather than reimplemented a second
-time.
-
-**Note (2026-09-01)**: `.claude/ideas/future_ideas.md`'s "'Use My Series' source-series picker
-gains filter/sort parity with My Series, plus a 'Select Series' relabel" entry is exactly the
-concrete detail this candidate was waiting for (Keywords, Min Rating, Year Range, plus a "Select
-Series" relabel — Exclude Genre(s) has since been pulled out and specced separately, see
-`frontend_spec_069_use_my_series_exclude_genres.md`) — review the remainder once this candidate is
-actually scoped.
-
-**Update (2026-09-03)**: the wait condition above is now satisfied — `series_spec_045`/
-`frontend_spec_080`/`frontend_spec_081` landed the full "Use My Series" filter restructure this
-candidate was deferred behind (Keywords/Min Personal/IMDb/TMDB Rating/Year Range/Status all added
-to `UseMySeriesPanel`, Genre already had parity via `frontend_spec_069`). Confirmed current shape:
-both `SeriesList`/`SearchFilter` (server-side, `SeriesSearchCriteria` → `SeriesSearchService`) and
-`UseMySeriesPanel`'s new picker-narrowing section (client-side only, `SpecificSeriesFilters` →
-`buildSpecificSeriesCandidatePool` in `RecommendationControls.tsx`) now filter by the same
-conceptual fields — genre include/exclude, keywords, personal/IMDb/TMDB rating, year range,
-status — but via two still-fully-separate implementations, one server-side one client-side, with
-no shared types or logic. This candidate is now genuinely ripe to scope: the "genuinely common
-subset" this note anticipated is now concrete and enumerable (see the field list above), not
-speculative. The likely shared surface is the *matching predicates* specifically
-(`SeriesSearchService`'s `matchesGenres`/`matchesKeywords`/`matchesPersonalRating`/etc. vs.
-`RecommendationControls.tsx`'s `filterSpecificSeriesBy*` functions solve the identical problem
-twice, once server-side once client-side) — not a full state-shape unification, since one is a
-network request shape and the other is a pure in-memory array filter and those two have
-genuinely different constraints.
-
-**Update (2026-09-03, same day)**: a first concrete slice of "make the two features' filtering
-feel like one shared thing" is being picked up immediately, not deferred further —
-`frontend_spec_077_keyword_picker_pills_only.md` (not yet started) was extended from 2 usages to 3
-to also give `UseMySeriesPanel`'s newer Keywords filter field the same "Browse all keywords" modal
-+ no-inline-typing treatment `SearchFilter`'s own Keywords field already has. This is a UI/
-interaction-consistency slice, not the predicates-sharing refactor described above — that larger
-piece is still open and un-scoped.
 
 ### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
 

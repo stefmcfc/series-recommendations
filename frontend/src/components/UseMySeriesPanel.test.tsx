@@ -469,6 +469,102 @@ describe('FRONTEND-081-AC-08: Year Min/Max (My Series) filters narrow the picker
   })
 })
 
+describe('FRONTEND-082-AC-01: interval-overlap year matching includes a series via lastAirYear', () => {
+  it('includes a series whose year is below yearMin but lastAirYear reaches it', () => {
+    const series = [
+      makeSeries({
+        id: '1',
+        title: 'Long Runner',
+        year: 2015,
+        lastAirYear: 2023,
+      }),
+      makeSeries({
+        id: '2',
+        title: 'Ended Early',
+        year: 2015,
+        lastAirYear: 2016,
+      }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
+      target: { value: '2020' },
+    })
+    const dialog = openBrowseSeriesModal()
+
+    expect(within(dialog).getByText('Long Runner')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Ended Early')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-082-AC-02: yearMax still checks year, not lastAirYear', () => {
+  it('excludes a series whose year exceeds yearMax even if lastAirYear would not', () => {
+    const series = [
+      makeSeries({
+        id: '1',
+        title: 'Starts Late',
+        year: 2025,
+        lastAirYear: 2025,
+      }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/year max \(my series\)/i), {
+      target: { value: '2020' },
+    })
+    const dialog = openBrowseSeriesModal()
+
+    expect(within(dialog).queryByText('Starts Late')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-082-AC-03: no lastAirYear falls back to year, unchanged', () => {
+  it('still matches or excludes correctly using year alone when lastAirYear is null', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'In Range', year: 2021, lastAirYear: null }),
+      makeSeries({
+        id: '2',
+        title: 'Out of Range',
+        year: 2010,
+        lastAirYear: null,
+      }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
+      target: { value: '2020' },
+    })
+    const dialog = openBrowseSeriesModal()
+
+    expect(within(dialog).getByText('In Range')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Out of Range')).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-081-AC-09: selected series survive new filters', () => {
   it('keeps a selected series in the pool even if a new filter would exclude it', () => {
     const series = [

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
@@ -355,11 +356,11 @@ export function AddSeriesForm({
     setTmdbCandidates([])
   }
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape' && !submitting) {
+  const handleKeyDown = useEscapeToClose(() => {
+    if (!submitting) {
       onCancel()
     }
-  }
+  })
 
   const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()

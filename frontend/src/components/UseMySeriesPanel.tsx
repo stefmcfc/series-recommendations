@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import type { Series } from '../types/series'
 import { KeywordPicker } from './KeywordPicker'
 import type { PickerOption } from './KeywordPicker'
@@ -113,24 +114,16 @@ export function UseMySeriesPanel({
     setSpecificSeriesSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
   }
 
-  const handleSpecificSeriesModalKeyDown = (
-    event: React.KeyboardEvent<HTMLDivElement>,
-  ) => {
-    if (event.key === 'Escape') {
-      setSpecificSeriesBrowseModalOpen(false)
-    }
-  }
+  const handleSpecificSeriesModalKeyDown = useEscapeToClose(() =>
+    setSpecificSeriesBrowseModalOpen(false),
+  )
 
   // FRONTEND-077-AC-07: same Escape-to-dismiss pattern as
   // handleSpecificSeriesModalKeyDown above, for the new Browse Keywords
   // modal.
-  const handleSpecificSeriesKeywordsModalKeyDown = (
-    event: React.KeyboardEvent<HTMLDivElement>,
-  ) => {
-    if (event.key === 'Escape') {
-      setSpecificSeriesKeywordsBrowseModalOpen(false)
-    }
-  }
+  const handleSpecificSeriesKeywordsModalKeyDown = useEscapeToClose(() =>
+    setSpecificSeriesKeywordsBrowseModalOpen(false),
+  )
 
   // FRONTEND-035-AC-05/13: computed once, shared by both the inline picker
   // and the "Show all series" modal.

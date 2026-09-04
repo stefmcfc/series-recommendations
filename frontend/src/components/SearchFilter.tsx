@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { seriesApi } from '../services/seriesApi'
 import type { SearchCriteria } from '../types/series'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
@@ -159,20 +160,12 @@ export function SearchFilter({
     onClose()
   }
 
-  const handleModalKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      setBrowseModalOpen(false)
-    }
-  }
+  const handleModalKeyDown = useEscapeToClose(() => setBrowseModalOpen(false))
 
   // FRONTEND-071-AC-05: same Escape-to-close pattern as
   // handleModalKeyDown/the "Browse all keywords" modal, on the sheet's own
   // dialog root.
-  const handleSheetKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      onClose()
-    }
-  }
+  const handleSheetKeyDown = useEscapeToClose(onClose)
 
   if (!isOpen) {
     return null
