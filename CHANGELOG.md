@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.18.1] - 2026-09-04
+
 ### Changed
 
 - Frontend: extracted the identical Escape-to-close keydown handler duplicated across 9 dialogs in 7 components (`AddSeriesForm`, `EditSeriesForm`, `GenreIncludeExcludePicker`, `RecommendationDetailModal`, `SearchFilter` (x2), `SeriesRecommendationsModal`, `UseMySeriesPanel` (x2)) into a shared `useEscapeToClose` hook — no behavior change (`frontend_spec_083`).
