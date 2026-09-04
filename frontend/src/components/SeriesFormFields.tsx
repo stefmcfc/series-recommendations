@@ -56,6 +56,41 @@ interface SeriesFormFieldsProps {
       boolean
     >
   >
+  // FRONTEND-044-AC-01: EditSeriesForm's opt-in signal to render a Clear
+  // button beside each of the 10 applicable fields below; AddSeriesForm
+  // never passes this, so its render is untouched.
+  readonly onClearField?: (field: SeriesFormFieldName) => void
+}
+
+// FRONTEND-044-AC-01/02/03: renders nothing when onClearField is omitted
+// (AddSeriesForm's render stays untouched); otherwise a small Clear button,
+// disabled once the field is already blank, that reports the field name up
+// to EditSeriesForm on click. EditSeriesForm's own onClearField handler owns
+// both blanking the field and tracking it in clearedFields -- this component
+// never mutates form state directly.
+function ClearFieldButton({
+  field,
+  label,
+  value,
+  onClearField,
+}: {
+  readonly field: SeriesFormFieldName
+  readonly label: string
+  readonly value: string
+  readonly onClearField?: (field: SeriesFormFieldName) => void
+}) {
+  if (!onClearField) return null
+  return (
+    <button
+      type="button"
+      className={styles.clearButton}
+      aria-label={`Clear ${label}`}
+      disabled={value.trim() === ''}
+      onClick={() => onClearField(field)}
+    >
+      &times;
+    </button>
+  )
 }
 
 // typescript:S3358: a locked field's hint takes precedence over a validation
@@ -104,6 +139,7 @@ export function SeriesFormFields({
   children,
   source = 'manual',
   lockedFields,
+  onClearField,
 }: SeriesFormFieldsProps) {
   const safePosterUrl =
     form.posterUrl.trim() !== '' ? sanitizeImageUrl(form.posterUrl) : null
@@ -112,19 +148,27 @@ export function SeriesFormFields({
     <>
       <div className={styles.field}>
         <label htmlFor="year">Year</label>
-        <input
-          id="year"
-          type="number"
-          value={form.year}
-          onChange={updateField('year')}
-          disabled={lockedFields?.year}
-          aria-describedby={resolveDescribedBy(
-            lockedFields?.year,
-            'year-locked-hint',
-            fieldErrors.year,
-            'year-error',
-          )}
-        />
+        <div className={styles.fieldRow}>
+          <input
+            id="year"
+            type="number"
+            value={form.year}
+            onChange={updateField('year')}
+            disabled={lockedFields?.year}
+            aria-describedby={resolveDescribedBy(
+              lockedFields?.year,
+              'year-locked-hint',
+              fieldErrors.year,
+              'year-error',
+            )}
+          />
+          <ClearFieldButton
+            field="year"
+            label="Year"
+            value={form.year}
+            onClearField={onClearField}
+          />
+        </div>
         {lockedFields?.year && <LockedFieldHint field="year" />}
         {fieldErrors.year && (
           <span id="year-error" className={styles.fieldError}>
@@ -135,45 +179,69 @@ export function SeriesFormFields({
 
       <div className={styles.field}>
         <label htmlFor="genres">Genres</label>
-        <input
-          id="genres"
-          type="text"
-          value={form.genres}
-          onChange={updateField('genres')}
-          disabled={lockedFields?.genres}
-          aria-describedby={
-            lockedFields?.genres ? 'genres-locked-hint' : undefined
-          }
-        />
+        <div className={styles.fieldRow}>
+          <input
+            id="genres"
+            type="text"
+            value={form.genres}
+            onChange={updateField('genres')}
+            disabled={lockedFields?.genres}
+            aria-describedby={
+              lockedFields?.genres ? 'genres-locked-hint' : undefined
+            }
+          />
+          <ClearFieldButton
+            field="genres"
+            label="Genres"
+            value={form.genres}
+            onClearField={onClearField}
+          />
+        </div>
         {lockedFields?.genres && <LockedFieldHint field="genres" />}
       </div>
 
       <div className={styles.field}>
         <label htmlFor="tags">Tags</label>
-        <input
-          id="tags"
-          type="text"
-          value={form.tags}
-          onChange={updateField('tags')}
-        />
+        <div className={styles.fieldRow}>
+          <input
+            id="tags"
+            type="text"
+            value={form.tags}
+            onChange={updateField('tags')}
+          />
+          <ClearFieldButton
+            field="tags"
+            label="Tags"
+            value={form.tags}
+            onClearField={onClearField}
+          />
+        </div>
       </div>
 
       {source !== 'recommendation' && (
         <div className={styles.field}>
           <label htmlFor="totalSeasons">Total Seasons</label>
-          <input
-            id="totalSeasons"
-            type="number"
-            value={form.totalSeasons}
-            onChange={updateField('totalSeasons')}
-            disabled={lockedFields?.totalSeasons}
-            aria-describedby={resolveDescribedBy(
-              lockedFields?.totalSeasons,
-              'totalSeasons-locked-hint',
-              fieldErrors.totalSeasons,
-              'totalSeasons-error',
-            )}
-          />
+          <div className={styles.fieldRow}>
+            <input
+              id="totalSeasons"
+              type="number"
+              value={form.totalSeasons}
+              onChange={updateField('totalSeasons')}
+              disabled={lockedFields?.totalSeasons}
+              aria-describedby={resolveDescribedBy(
+                lockedFields?.totalSeasons,
+                'totalSeasons-locked-hint',
+                fieldErrors.totalSeasons,
+                'totalSeasons-error',
+              )}
+            />
+            <ClearFieldButton
+              field="totalSeasons"
+              label="Total Seasons"
+              value={form.totalSeasons}
+              onClearField={onClearField}
+            />
+          </div>
           {lockedFields?.totalSeasons && (
             <LockedFieldHint field="totalSeasons" />
           )}
@@ -188,19 +256,27 @@ export function SeriesFormFields({
       {source !== 'recommendation' && (
         <div className={styles.field}>
           <label htmlFor="totalEpisodes">Total Episodes</label>
-          <input
-            id="totalEpisodes"
-            type="number"
-            value={form.totalEpisodes}
-            onChange={updateField('totalEpisodes')}
-            disabled={lockedFields?.totalEpisodes}
-            aria-describedby={resolveDescribedBy(
-              lockedFields?.totalEpisodes,
-              'totalEpisodes-locked-hint',
-              fieldErrors.totalEpisodes,
-              'totalEpisodes-error',
-            )}
-          />
+          <div className={styles.fieldRow}>
+            <input
+              id="totalEpisodes"
+              type="number"
+              value={form.totalEpisodes}
+              onChange={updateField('totalEpisodes')}
+              disabled={lockedFields?.totalEpisodes}
+              aria-describedby={resolveDescribedBy(
+                lockedFields?.totalEpisodes,
+                'totalEpisodes-locked-hint',
+                fieldErrors.totalEpisodes,
+                'totalEpisodes-error',
+              )}
+            />
+            <ClearFieldButton
+              field="totalEpisodes"
+              label="Total Episodes"
+              value={form.totalEpisodes}
+              onClearField={onClearField}
+            />
+          </div>
           {lockedFields?.totalEpisodes && (
             <LockedFieldHint field="totalEpisodes" />
           )}
@@ -235,20 +311,28 @@ export function SeriesFormFields({
       {source !== 'recommendation' && (
         <div className={styles.field}>
           <label htmlFor="imdbRating">IMDb Rating</label>
-          <input
-            id="imdbRating"
-            type="number"
-            step="0.1"
-            value={form.imdbRating}
-            onChange={updateField('imdbRating')}
-            disabled={lockedFields?.imdbRating}
-            aria-describedby={resolveDescribedBy(
-              lockedFields?.imdbRating,
-              'imdbRating-locked-hint',
-              fieldErrors.imdbRating,
-              'imdbRating-error',
-            )}
-          />
+          <div className={styles.fieldRow}>
+            <input
+              id="imdbRating"
+              type="number"
+              step="0.1"
+              value={form.imdbRating}
+              onChange={updateField('imdbRating')}
+              disabled={lockedFields?.imdbRating}
+              aria-describedby={resolveDescribedBy(
+                lockedFields?.imdbRating,
+                'imdbRating-locked-hint',
+                fieldErrors.imdbRating,
+                'imdbRating-error',
+              )}
+            />
+            <ClearFieldButton
+              field="imdbRating"
+              label="IMDb Rating"
+              value={form.imdbRating}
+              onClearField={onClearField}
+            />
+          </div>
           {lockedFields?.imdbRating && <LockedFieldHint field="imdbRating" />}
           {fieldErrors.imdbRating && (
             <span id="imdbRating-error" className={styles.fieldError}>
@@ -263,17 +347,25 @@ export function SeriesFormFields({
           <label htmlFor="rottenTomatoesRating">
             Rotten Tomatoes Rating (Tomatometer)
           </label>
-          <input
-            id="rottenTomatoesRating"
-            type="number"
-            value={form.rottenTomatoesRating}
-            onChange={updateField('rottenTomatoesRating')}
-            aria-describedby={
-              fieldErrors.rottenTomatoesRating
-                ? 'rottenTomatoesRating-error'
-                : undefined
-            }
-          />
+          <div className={styles.fieldRow}>
+            <input
+              id="rottenTomatoesRating"
+              type="number"
+              value={form.rottenTomatoesRating}
+              onChange={updateField('rottenTomatoesRating')}
+              aria-describedby={
+                fieldErrors.rottenTomatoesRating
+                  ? 'rottenTomatoesRating-error'
+                  : undefined
+              }
+            />
+            <ClearFieldButton
+              field="rottenTomatoesRating"
+              label="Rotten Tomatoes Rating (Tomatometer)"
+              value={form.rottenTomatoesRating}
+              onClearField={onClearField}
+            />
+          </div>
           {fieldErrors.rottenTomatoesRating && (
             <span id="rottenTomatoesRating-error" className={styles.fieldError}>
               {fieldErrors.rottenTomatoesRating}
@@ -287,17 +379,25 @@ export function SeriesFormFields({
           <label htmlFor="rottenTomatoesPopcornmeter">
             Rotten Tomatoes Rating (Popcornmeter)
           </label>
-          <input
-            id="rottenTomatoesPopcornmeter"
-            type="number"
-            value={form.rottenTomatoesPopcornmeter}
-            onChange={updateField('rottenTomatoesPopcornmeter')}
-            aria-describedby={
-              fieldErrors.rottenTomatoesPopcornmeter
-                ? 'rottenTomatoesPopcornmeter-error'
-                : undefined
-            }
-          />
+          <div className={styles.fieldRow}>
+            <input
+              id="rottenTomatoesPopcornmeter"
+              type="number"
+              value={form.rottenTomatoesPopcornmeter}
+              onChange={updateField('rottenTomatoesPopcornmeter')}
+              aria-describedby={
+                fieldErrors.rottenTomatoesPopcornmeter
+                  ? 'rottenTomatoesPopcornmeter-error'
+                  : undefined
+              }
+            />
+            <ClearFieldButton
+              field="rottenTomatoesPopcornmeter"
+              label="Rotten Tomatoes Rating (Popcornmeter)"
+              value={form.rottenTomatoesPopcornmeter}
+              onClearField={onClearField}
+            />
+          </div>
           {fieldErrors.rottenTomatoesPopcornmeter && (
             <span
               id="rottenTomatoesPopcornmeter-error"
@@ -326,21 +426,37 @@ export function SeriesFormFields({
 
       <div className={styles.field}>
         <label htmlFor="personalNotes">Personal Notes</label>
-        <textarea
-          id="personalNotes"
-          value={form.personalNotes}
-          onChange={updateField('personalNotes')}
-        />
+        <div className={styles.fieldRow}>
+          <textarea
+            id="personalNotes"
+            value={form.personalNotes}
+            onChange={updateField('personalNotes')}
+          />
+          <ClearFieldButton
+            field="personalNotes"
+            label="Personal Notes"
+            value={form.personalNotes}
+            onClearField={onClearField}
+          />
+        </div>
       </div>
 
       <div className={styles.field}>
         <label htmlFor="posterUrl">Poster URL</label>
-        <input
-          id="posterUrl"
-          type="text"
-          value={form.posterUrl}
-          onChange={onPosterUrlChange}
-        />
+        <div className={styles.fieldRow}>
+          <input
+            id="posterUrl"
+            type="text"
+            value={form.posterUrl}
+            onChange={onPosterUrlChange}
+          />
+          <ClearFieldButton
+            field="posterUrl"
+            label="Poster URL"
+            value={form.posterUrl}
+            onClearField={onClearField}
+          />
+        </div>
         {safePosterUrl && !posterPreviewError && (
           <img
             src={safePosterUrl}

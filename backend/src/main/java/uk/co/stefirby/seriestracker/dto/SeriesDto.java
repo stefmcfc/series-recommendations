@@ -89,6 +89,14 @@ public class SeriesDto {
     // KeywordSyncService.syncKeywords). Never null, empty list when a series has none.
     private List<String> keywords = List.of();
 
+    // series_spec_030_clear_optional_fields.md (SERIES-030-AC-01): input-only, mirroring
+    // tmdbId's existing input-only convention (SERIES-019-AC-23) but on the opposite side of
+    // the create/update split -- read only by SeriesService.update to explicitly null out the
+    // named optional fields (SeriesService.CLEARABLE_FIELDS), never persisted on SeriesEntity
+    // and never set by entityToDto. SeriesService.create has nothing to clear, so it never
+    // reads this field.
+    private List<String> clearedFields;
+
     public SeriesDto() {
         // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
     }
@@ -185,4 +193,7 @@ public class SeriesDto {
 
     public Boolean getFlaggedForRewatch() { return flaggedForRewatch; }
     public void setFlaggedForRewatch(Boolean flaggedForRewatch) { this.flaggedForRewatch = flaggedForRewatch; }
+
+    public List<String> getClearedFields() { return clearedFields; }
+    public void setClearedFields(List<String> clearedFields) { this.clearedFields = clearedFields; }
 }

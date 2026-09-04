@@ -92,6 +92,12 @@ export type UpdateSeriesRequest = Partial<CreateSeriesRequest> & {
   currentSeason?: number
   currentEpisode?: number
   flaggedForRewatch?: boolean
+  // FRONTEND-044/SERIES-030: names of fields to explicitly set back to null
+  // in this PATCH -- distinct from simply omitting a field, which leaves its
+  // current value unchanged. Only sent (non-empty) when at least one Clear
+  // button was used; see series_spec_030_clear_optional_fields.md for the
+  // 13-field allow-list this is validated against server-side.
+  clearedFields?: string[]
 }
 
 export interface SeriesLookupResult {

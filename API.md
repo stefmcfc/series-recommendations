@@ -48,11 +48,31 @@ Update a series (partial).
 fields — once a series' value for one of these is non-null, an attempted change to it via this
 endpoint is silently ignored (not rejected as `400`/`409`); every other field in the same request
 still applies normally. A manually-added series with no value yet for one of these six can still
-set it once, the first time. The only way to change one of these six after that point is
-`POST /api/v1/series/{id}/refresh` (or a bulk refresh), which always overwrites all six from
-TMDB/OMDb's current data regardless of this lock. `title` in particular is `@NotBlank` and so is
-never null once a series exists — in practice this makes `title` permanently refresh-only
-immediately after creation.
+set it once, the first time. `POST /api/v1/series/{id}/refresh` (or a bulk refresh) always
+overwrites all six from TMDB/OMDb's current data regardless of this lock. `title` in particular is
+`@NotBlank` and so is never null once a series exists — in practice this makes `title` permanently
+refresh-only immediately after creation. **Clearing one of the other five (see `clearedFields`
+below) is the second way to reopen one for manual edit** — clearing sets the field back to `null`,
+so the lock condition ("is the current value non-null") no longer holds, deliberately, not a bug:
+see `series_spec_040_tmdb_managed_field_lock.md`'s 2026-09-04 update.
+
+**Clearing a field to null (`series_spec_030_clear_optional_fields.md`)**: the request body may
+carry an optional `clearedFields: string[]`, naming fields to explicitly set back to `null`
+(distinct from omitting a field, which leaves its current value unchanged). Only these 13 fields
+may appear: `year`, `genres`, `tags`, `totalSeasons`, `totalEpisodes`, `currentSeason`,
+`currentEpisode`, `imdbRating`, `rottenTomatoesRating`, `rottenTomatoesPopcornmeter`,
+`personalRating`, `personalNotes`, `posterUrl`. `title`, `status`,
+`excludeFromRecommendations`, and `flaggedForRewatch` cannot be cleared (required fields and
+booleans with no meaningful "unset" state). `clearedFields` is applied before every other field
+patch in the same request — clearing `totalSeasons` while also setting `currentSeason` validates
+the new `currentSeason` against the now-null `totalSeasons`, not its pre-request value. Two shapes
+are rejected with `400 Bad Request`: a name not in the 13 above, and a name that also carries a
+non-null value for that same field elsewhere in the same request body (a self-contradictory "clear
+this" + "set this" instruction). Not read by `POST /api/v1/series` — a new series has nothing to
+clear. No interaction with the `series_spec_040` lock above is enforced — clearing one of the five
+overlapping fields (`year`, `genres`, `totalSeasons`, `totalEpisodes`, `imdbRating`) is allowed even
+while locked, and deliberately reopens that field to one more manual edit until it's next set again
+(see the lock's own entry above).
 
 ---
 

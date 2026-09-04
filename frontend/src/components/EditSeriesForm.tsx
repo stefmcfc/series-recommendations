@@ -51,6 +51,45 @@ interface FormState {
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
 
+// FRONTEND-044: the 13 fields series_spec_030 allows in a PATCH's
+// `clearedFields` -- all string-valued in FormState, so blanking one via
+// `[field]: ''` is always type-safe. Mirrors series_spec_030's own
+// CLEARABLE_FIELDS allow-list on the backend.
+type ClearableFieldName =
+  | 'year'
+  | 'genres'
+  | 'tags'
+  | 'totalSeasons'
+  | 'totalEpisodes'
+  | 'currentSeason'
+  | 'currentEpisode'
+  | 'imdbRating'
+  | 'rottenTomatoesRating'
+  | 'rottenTomatoesPopcornmeter'
+  | 'personalRating'
+  | 'personalNotes'
+  | 'posterUrl'
+
+const CLEARABLE_FIELD_NAMES: readonly ClearableFieldName[] = [
+  'year',
+  'genres',
+  'tags',
+  'totalSeasons',
+  'totalEpisodes',
+  'currentSeason',
+  'currentEpisode',
+  'imdbRating',
+  'rottenTomatoesRating',
+  'rottenTomatoesPopcornmeter',
+  'personalRating',
+  'personalNotes',
+  'posterUrl',
+]
+
+function isClearableField(field: keyof FormState): field is ClearableFieldName {
+  return (CLEARABLE_FIELD_NAMES as readonly string[]).includes(field)
+}
+
 function numberToFormValue(value: number | null): string {
   return value == null ? '' : String(value)
 }
@@ -118,7 +157,10 @@ function validate(form: FormState): FieldErrors {
   return errors
 }
 
-function buildPayload(form: FormState): UpdateSeriesRequest {
+function buildPayload(
+  form: FormState,
+  clearedFields: ReadonlySet<ClearableFieldName>,
+): UpdateSeriesRequest {
   const payload: UpdateSeriesRequest = {
     title: form.title.trim(),
     status: form.status,
@@ -147,6 +189,12 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
     payload.personalNotes = form.personalNotes.trim()
   if (form.posterUrl.trim() !== '') payload.posterUrl = form.posterUrl.trim()
   payload.excludeFromRecommendations = form.excludeFromRecommendations
+
+  // FRONTEND-044-AC-04: omitted entirely (not sent as []) when nothing was
+  // cleared, matching this codebase's wire-minimization convention.
+  if (clearedFields.size > 0) {
+    payload.clearedFields = [...clearedFields]
+  }
 
   return payload
 }
@@ -186,6 +234,13 @@ export function EditSeriesForm({
     totalEpisodes: series.totalEpisodes != null,
     imdbRating: series.imdbRating != null,
   }
+  // FRONTEND-044-AC-04/05: fields explicitly cleared via a Clear button (or,
+  // for Personal Rating, via deselecting its star) -- mutually exclusive
+  // with that field carrying a value by construction (see updateField/
+  // handlePosterUrlChange/handlePersonalRatingChange below).
+  const [clearedFields, setClearedFields] = useState<Set<ClearableFieldName>>(
+    () => new Set(),
+  )
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -205,6 +260,19 @@ export function EditSeriesForm({
     dialogRef.current?.focus()
   }, [])
 
+  // FRONTEND-044-AC-05: typing any new non-blank value into a previously
+  // cleared field removes it from clearedFields again -- a field is either
+  // carrying a value or explicitly marked cleared, never both.
+  const unclearField = (field: keyof FormState) => {
+    if (!isClearableField(field)) return
+    setClearedFields((prev) => {
+      if (!prev.has(field)) return prev
+      const next = new Set(prev)
+      next.delete(field)
+      return next
+    })
+  }
+
   const updateField =
     (field: keyof FormState) =>
     (
@@ -212,21 +280,56 @@ export function EditSeriesForm({
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
       >,
     ) => {
-      setForm((prev) => ({ ...prev, [field]: event.target.value }))
+      const value = event.target.value
+      setForm((prev) => ({ ...prev, [field]: value }))
+      if (value.trim() !== '') unclearField(field)
     }
 
+  // FRONTEND-044-AC-06: EditSeriesForm's existing personalRating callback
+  // additionally marks/unmarks 'personalRating' in clearedFields based on
+  // whether the new value is null -- StarRating's own click-to-deselect
+  // gesture (frontend_spec_013) is Personal Rating's entire Clear affordance,
+  // deliberately not a 11th SeriesFormFields-rendered button.
   const handlePersonalRatingChange = (value: number | null) => {
     setForm((prev) => ({
       ...prev,
       personalRating: value === null ? '' : String(value),
     }))
+    setClearedFields((prev) => {
+      const alreadyMarked = prev.has('personalRating')
+      if (value === null && !alreadyMarked) {
+        return new Set(prev).add('personalRating')
+      }
+      if (value !== null && alreadyMarked) {
+        const next = new Set(prev)
+        next.delete('personalRating')
+        return next
+      }
+      return prev
+    })
   }
 
   const handlePosterUrlChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    setForm((prev) => ({ ...prev, posterUrl: event.target.value }))
+    const value = event.target.value
+    setForm((prev) => ({ ...prev, posterUrl: value }))
     setPosterPreviewError(false)
+    if (value.trim() !== '') unclearField('posterUrl')
+  }
+
+  // FRONTEND-044-AC-02/07: shared by SeriesFormFields' 10 Clear buttons (via
+  // onClearField, typed keyof SeriesFormFieldsValues -- a superset including
+  // non-clearable fields like 'status' the guard below rejects) and
+  // EditSeriesForm's own inline Current Season/Current Episode Clear
+  // buttons -- blanks the field's displayed value and marks it cleared in
+  // one step, so the UI and the pending "will be cleared" intent never
+  // disagree.
+  const handleClearField = (field: keyof FormState) => {
+    if (!isClearableField(field)) return
+    setForm((prev) => ({ ...prev, [field]: '' }))
+    setClearedFields((prev) => new Set(prev).add(field))
+    if (field === 'posterUrl') setPosterPreviewError(false)
   }
 
   const handleExcludeFromRecommendationsChange = (
@@ -295,7 +398,10 @@ export function EditSeriesForm({
     setSubmitting(true)
 
     try {
-      const updated = await seriesApi.update(series.id, buildPayload(form))
+      const updated = await seriesApi.update(
+        series.id,
+        buildPayload(form, clearedFields),
+      )
       setSubmitting(false)
       onSuccess(updated)
     } catch (err) {
@@ -438,18 +544,32 @@ export function EditSeriesForm({
             }
             posterPreviewError={posterPreviewError}
             lockedFields={lockedFields}
+            onClearField={handleClearField}
           >
             <div className={styles.field}>
               <label htmlFor="currentSeason">Current Season</label>
-              <input
-                id="currentSeason"
-                type="number"
-                value={form.currentSeason}
-                onChange={updateField('currentSeason')}
-                aria-describedby={
-                  fieldErrors.currentSeason ? 'currentSeason-error' : undefined
-                }
-              />
+              <div className={styles.fieldRow}>
+                <input
+                  id="currentSeason"
+                  type="number"
+                  value={form.currentSeason}
+                  onChange={updateField('currentSeason')}
+                  aria-describedby={
+                    fieldErrors.currentSeason
+                      ? 'currentSeason-error'
+                      : undefined
+                  }
+                />
+                <button
+                  type="button"
+                  className={styles.clearButton}
+                  aria-label="Clear Current Season"
+                  disabled={form.currentSeason.trim() === ''}
+                  onClick={() => handleClearField('currentSeason')}
+                >
+                  &times;
+                </button>
+              </div>
               {fieldErrors.currentSeason && (
                 <span id="currentSeason-error" className={styles.fieldError}>
                   {fieldErrors.currentSeason}
@@ -459,17 +579,28 @@ export function EditSeriesForm({
 
             <div className={styles.field}>
               <label htmlFor="currentEpisode">Current Episode</label>
-              <input
-                id="currentEpisode"
-                type="number"
-                value={form.currentEpisode}
-                onChange={updateField('currentEpisode')}
-                aria-describedby={
-                  fieldErrors.currentEpisode
-                    ? 'currentEpisode-error'
-                    : undefined
-                }
-              />
+              <div className={styles.fieldRow}>
+                <input
+                  id="currentEpisode"
+                  type="number"
+                  value={form.currentEpisode}
+                  onChange={updateField('currentEpisode')}
+                  aria-describedby={
+                    fieldErrors.currentEpisode
+                      ? 'currentEpisode-error'
+                      : undefined
+                  }
+                />
+                <button
+                  type="button"
+                  className={styles.clearButton}
+                  aria-label="Clear Current Episode"
+                  disabled={form.currentEpisode.trim() === ''}
+                  onClick={() => handleClearField('currentEpisode')}
+                >
+                  &times;
+                </button>
+              </div>
               {fieldErrors.currentEpisode && (
                 <span id="currentEpisode-error" className={styles.fieldError}>
                   {fieldErrors.currentEpisode}

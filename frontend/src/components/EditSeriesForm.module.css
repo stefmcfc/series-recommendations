@@ -101,6 +101,46 @@
   flex: 1;
 }
 
+/* FRONTEND-044: Current Season/Current Episode's own inline Clear buttons --
+   mirrors SeriesFormFields.module.css's .fieldRow/.clearButton pattern used
+   for the shared fields' Clear buttons. */
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fieldRow input {
+  flex: 1;
+  min-width: 0;
+}
+
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
+  padding: 0;
+  background: transparent;
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.clearButton:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.clearButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .lookupButton {
   background: transparent;
   color: var(--text);

@@ -83,6 +83,22 @@ a refresh.
   fields to `null` would be a deliberate, real way for a user to "unlock" it for one more manual
   edit before it's refreshed again — a sensible emergent behavior of the two specs combined, but
   `series_spec_030`'s own null-vs-omitted sentinel mechanics are out of scope here.
+  **Update (2026-09-04)**: `series_spec_030` has now shipped, confirming this is real, not just
+  anticipated — `SeriesService.applyClearedFields` nulls any of its 13 clearable fields
+  unconditionally, with no lock check at all, so a `clearedFields` entry for `year`/`genres`/
+  `totalSeasons`/`totalEpisodes`/`imdbRating` (5 of this spec's 6 locked fields; `title` is never
+  clearable — it's required, not in `series_spec_030`'s clearable set) does exactly this: nulls the
+  field, and since `SERIES-040-AC-01`'s lock condition is simply "is the entity's current value
+  non-null," the field is thereby reopened to one more manual `PATCH` value until either a
+  subsequent refresh or another manual edit sets it non-null again. Deliberately kept this way after
+  discussion (2026-09-04): the lock's actual purpose is preventing *silent* drift from a routine
+  `PATCH` that happens to carry a stale value the user didn't mean to touch — not blocking a
+  *deliberate* Clear-button click, which is a conscious override, not silent drift. Also closes a
+  real dead end this spec's lock could otherwise cause on its own: a manually-entered value for a
+  field the external source (TMDB/OMDb) never ends up populating (e.g. a genuinely obscure/new show,
+  or a series with no `imdbId` yet, so refresh can't run at all) would otherwise be stuck forever —
+  un-retypeable (locked) and un-fixable (refresh is null-preserving, `SERIES-027-AC-07`) — recreating
+  the exact problem `series_spec_030` exists to solve, just narrowed to these five fields.
 
 ---
 
