@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Backend: `SeriesService`'s `clearedFields` handling (`CLEARABLE_FIELDS`, `hasNonNullValue`, `clearField`) is now a single private `ClearableField` enum pairing each field's wire name with its dto-check and entity-clear behavior, instead of a constant plus two parallel switch statements. No behavior change — SonarQube finding (`java:S1192`, every field name literal duplicated 3 times).
+
 ## [3.19.0] - 2026-09-04
 
 ### Added

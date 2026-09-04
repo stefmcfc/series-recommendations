@@ -17,10 +17,13 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @Service
 public class SeriesService {
@@ -34,14 +37,57 @@ public class SeriesService {
     // SERIES-031-AC-12) -- safely before any TV series existed.
     private static final int MIN_VALID_YEAR = 1900;
 
-    // series_spec_030_clear_optional_fields.md (SERIES-030-AC-03/AC-06): the fixed set of
-    // optional, genuinely-nullable fields a clearedFields entry may name. title/status
-    // (required) and excludeFromRecommendations/flaggedForRewatch (booleans with no clearable
-    // "unset" state) are deliberately excluded.
-    private static final Set<String> CLEARABLE_FIELDS = Set.of(
-        "year", "genres", "tags", "totalSeasons", "totalEpisodes", "currentSeason",
-        "currentEpisode", "imdbRating", "rottenTomatoesRating", "rottenTomatoesPopcornmeter",
-        "personalRating", "personalNotes", "posterUrl");
+    /**
+     * series_spec_030_clear_optional_fields.md (SERIES-030-AC-03/AC-06): the fixed set of
+     * optional, genuinely-nullable fields a clearedFields entry may name, each paired with how
+     * to check the dto for a conflicting value (AC-04) and how to null it on the entity.
+     * title/status (required) and excludeFromRecommendations/flaggedForRewatch (booleans with
+     * no clearable "unset" state) are deliberately excluded. A private nested enum, not a
+     * separate class -- SeriesService is its only consumer and this keeps the wire-name/
+     * dto-check/entity-clear mapping in one place instead of two parallel switch statements
+     * that had to be kept in sync by hand (java:S1192 -- every field name was duplicated across
+     * this constant and both switches).
+     */
+    private enum ClearableField {
+        YEAR("year", dto -> dto.getYear() != null, entity -> entity.setYear(null)),
+        GENRES("genres", dto -> dto.getGenres() != null, entity -> entity.setGenres(null)),
+        TAGS("tags", dto -> dto.getTags() != null, entity -> entity.setTags(null)),
+        TOTAL_SEASONS("totalSeasons", dto -> dto.getTotalSeasons() != null, entity -> entity.setTotalSeasons(null)),
+        TOTAL_EPISODES(
+            "totalEpisodes", dto -> dto.getTotalEpisodes() != null, entity -> entity.setTotalEpisodes(null)),
+        CURRENT_SEASON(
+            "currentSeason", dto -> dto.getCurrentSeason() != null, entity -> entity.setCurrentSeason(null)),
+        CURRENT_EPISODE(
+            "currentEpisode", dto -> dto.getCurrentEpisode() != null, entity -> entity.setCurrentEpisode(null)),
+        IMDB_RATING("imdbRating", dto -> dto.getImdbRating() != null, entity -> entity.setImdbRating(null)),
+        ROTTEN_TOMATOES_RATING(
+            "rottenTomatoesRating",
+            dto -> dto.getRottenTomatoesRating() != null,
+            entity -> entity.setRottenTomatoesRating(null)),
+        ROTTEN_TOMATOES_POPCORNMETER(
+            "rottenTomatoesPopcornmeter",
+            dto -> dto.getRottenTomatoesPopcornmeter() != null,
+            entity -> entity.setRottenTomatoesPopcornmeter(null)),
+        PERSONAL_RATING(
+            "personalRating", dto -> dto.getPersonalRating() != null, entity -> entity.setPersonalRating(null)),
+        PERSONAL_NOTES(
+            "personalNotes", dto -> dto.getPersonalNotes() != null, entity -> entity.setPersonalNotes(null)),
+        POSTER_URL("posterUrl", dto -> dto.getPosterUrl() != null, entity -> entity.setPosterUrl(null));
+
+        private final String wireName;
+        private final Predicate<SeriesDto> hasValue;
+        private final Consumer<SeriesEntity> clear;
+
+        ClearableField(String wireName, Predicate<SeriesDto> hasValue, Consumer<SeriesEntity> clear) {
+            this.wireName = wireName;
+            this.hasValue = hasValue;
+            this.clear = clear;
+        }
+
+        static Optional<ClearableField> fromWireName(String wireName) {
+            return Arrays.stream(values()).filter(f -> f.wireName.equals(wireName)).findFirst();
+        }
+    }
 
     private final SeriesRepository repository;
     private final KeywordSyncService keywordSyncService;
@@ -250,69 +296,32 @@ public class SeriesService {
     /**
      * series_spec_030_clear_optional_fields.md (SERIES-030-AC-01/02/03/04/05/06): explicitly
      * nulls each optional field named in {@code dto.getClearedFields()} on the entity, before
-     * any of the other update passes run. Validates every name is both recognized
-     * (CLEARABLE_FIELDS, AC-03/AC-06) and not simultaneously carrying a non-null value
-     * elsewhere in the same dto (AC-04) before mutating anything.
+     * any of the other update passes run. Resolving each name to a {@link ClearableField}
+     * first -- validating it's both recognized and not simultaneously carrying a non-null
+     * value elsewhere in the same dto (AC-03/AC-04/AC-06) -- before clearing any of them
+     * preserves the original "validate everything, then mutate" ordering: {@code toList()}
+     * forces every {@link #resolveClearableField} call (and thus any thrown exception) to
+     * happen before the {@code forEach} that actually mutates {@code entity} begins.
      */
     private void applyClearedFields(SeriesEntity entity, SeriesDto dto) {
         List<String> clearedFields = dto.getClearedFields();
         if (clearedFields == null || clearedFields.isEmpty()) {
             return;
         }
-        for (String field : clearedFields) {
-            validateClearedField(field, dto);
-        }
-        for (String field : clearedFields) {
-            clearField(entity, field);
-        }
+        clearedFields.stream()
+            .map(field -> resolveClearableField(field, dto))
+            .toList()
+            .forEach(clearable -> clearable.clear.accept(entity));
     }
 
-    private void validateClearedField(String field, SeriesDto dto) {
-        if (!CLEARABLE_FIELDS.contains(field)) {
-            throw new IllegalArgumentException("'" + field + "' cannot be cleared via clearedFields");
-        }
-        if (hasNonNullValue(field, dto)) {
+    private ClearableField resolveClearableField(String field, SeriesDto dto) {
+        ClearableField clearable = ClearableField.fromWireName(field)
+            .orElseThrow(() -> new IllegalArgumentException("'" + field + "' cannot be cleared via clearedFields"));
+        if (clearable.hasValue.test(dto)) {
             throw new IllegalArgumentException(
                 "'" + field + "' cannot be both cleared and set in the same request");
         }
-    }
-
-    private boolean hasNonNullValue(String field, SeriesDto dto) {
-        return switch (field) {
-            case "year" -> dto.getYear() != null;
-            case "genres" -> dto.getGenres() != null;
-            case "tags" -> dto.getTags() != null;
-            case "totalSeasons" -> dto.getTotalSeasons() != null;
-            case "totalEpisodes" -> dto.getTotalEpisodes() != null;
-            case "currentSeason" -> dto.getCurrentSeason() != null;
-            case "currentEpisode" -> dto.getCurrentEpisode() != null;
-            case "imdbRating" -> dto.getImdbRating() != null;
-            case "rottenTomatoesRating" -> dto.getRottenTomatoesRating() != null;
-            case "rottenTomatoesPopcornmeter" -> dto.getRottenTomatoesPopcornmeter() != null;
-            case "personalRating" -> dto.getPersonalRating() != null;
-            case "personalNotes" -> dto.getPersonalNotes() != null;
-            case "posterUrl" -> dto.getPosterUrl() != null;
-            default -> false;
-        };
-    }
-
-    private void clearField(SeriesEntity entity, String field) {
-        switch (field) {
-            case "year" -> entity.setYear(null);
-            case "genres" -> entity.setGenres(null);
-            case "tags" -> entity.setTags(null);
-            case "totalSeasons" -> entity.setTotalSeasons(null);
-            case "totalEpisodes" -> entity.setTotalEpisodes(null);
-            case "currentSeason" -> entity.setCurrentSeason(null);
-            case "currentEpisode" -> entity.setCurrentEpisode(null);
-            case "imdbRating" -> entity.setImdbRating(null);
-            case "rottenTomatoesRating" -> entity.setRottenTomatoesRating(null);
-            case "rottenTomatoesPopcornmeter" -> entity.setRottenTomatoesPopcornmeter(null);
-            case "personalRating" -> entity.setPersonalRating(null);
-            case "personalNotes" -> entity.setPersonalNotes(null);
-            case "posterUrl" -> entity.setPosterUrl(null);
-            default -> throw new IllegalArgumentException("'" + field + "' cannot be cleared via clearedFields");
-        }
+        return clearable;
     }
 
     /**
