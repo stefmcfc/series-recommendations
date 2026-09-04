@@ -1,6 +1,6 @@
 # Frontend Spec 044: EditSeriesForm — Explicit Per-Field Clear Buttons
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (pairs with the backend capability this depends on)
 **Depends on**: Series Spec 030 (`series_spec_030_clear_optional_fields.md`, the `clearedFields` PATCH capability
 this spec's UI produces) — **backend must ship first**, this spec's payload is meaningless without it. Frontend
@@ -335,11 +335,11 @@ describe('FRONTEND-044-AC-08: AddSeriesForm is unaffected', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-044-AC-01: `SeriesFormFields` renders Clear buttons when `onClearField` is provided
-- [ ] FRONTEND-044-AC-02: clicking Clear blanks the field and reports it
-- [ ] FRONTEND-044-AC-03: Clear is disabled when the field is already blank
-- [ ] FRONTEND-044-AC-04: `clearedFields` is sent on save
-- [ ] FRONTEND-044-AC-05: re-typing a value un-clears the field
-- [ ] FRONTEND-044-AC-06: Personal Rating clears via its own star gesture, no separate button
-- [ ] FRONTEND-044-AC-07: `currentSeason`/`currentEpisode` have their own Clear buttons
-- [ ] FRONTEND-044-AC-08: `AddSeriesForm` is completely unaffected
+- [x] FRONTEND-044-AC-01: `SeriesFormFields` renders Clear buttons when `onClearField` is provided
+- [x] FRONTEND-044-AC-02: clicking Clear blanks the field and reports it
+- [x] FRONTEND-044-AC-03: Clear is disabled when the field is already blank
+- [x] FRONTEND-044-AC-04: `clearedFields` is sent on save
+- [x] FRONTEND-044-AC-05: re-typing a value un-clears the field
+- [x] FRONTEND-044-AC-06: Personal Rating clears via its own star gesture, no separate button
+- [x] FRONTEND-044-AC-07: `currentSeason`/`currentEpisode` have their own Clear buttons
+- [x] FRONTEND-044-AC-08: `AddSeriesForm` is completely unaffected

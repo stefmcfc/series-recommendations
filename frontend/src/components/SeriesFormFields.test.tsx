@@ -236,6 +236,84 @@ describe('FRONTEND-034-AC-03/04: source=recommendation trims fields and locks St
   })
 })
 
+describe('FRONTEND-044-AC-01: Clear buttons render when onClearField is provided', () => {
+  it('renders a Clear button for each applicable field', () => {
+    render(
+      <SeriesFormFields
+        form={makeFormValues({ year: '2020' })}
+        fieldErrors={{}}
+        updateField={vi.fn()}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        onClearField={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: /clear year/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /clear genres/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-044-AC-02: clicking Clear blanks the field and reports it', () => {
+  it('calls onClearField and blanks the input', () => {
+    const onClearField = vi.fn()
+    const updateField = vi.fn(() => vi.fn())
+    render(
+      <SeriesFormFields
+        form={makeFormValues({ year: '2020' })}
+        fieldErrors={{}}
+        updateField={updateField}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        onClearField={onClearField}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /clear year/i }))
+
+    expect(onClearField).toHaveBeenCalledWith('year')
+  })
+})
+
+describe('FRONTEND-044-AC-03: Clear disabled when already blank', () => {
+  it('disables Clear for an already-empty field', () => {
+    render(
+      <SeriesFormFields
+        form={makeFormValues({ year: '' })}
+        fieldErrors={{}}
+        updateField={vi.fn()}
+        onPersonalRatingChange={vi.fn()}
+        onPosterUrlChange={vi.fn()}
+        onPosterLoadError={vi.fn()}
+        onExcludeFromRecommendationsChange={vi.fn()}
+        posterPreviewError={false}
+        onClearField={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /clear year/i })).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-044: no Clear buttons render when onClearField is omitted (AddSeriesForm regression guard)', () => {
+  it('renders no Clear buttons by default', () => {
+    renderFields({ year: '2020' })
+    expect(
+      screen.queryByRole('button', { name: /^clear /i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-060-AC-01/02/04: lockedFields disables managed inputs with a hint', () => {
   it('disables Year, Genres, Total Seasons, Total Episodes, and IMDb Rating when locked, each with a hint', () => {
     render(

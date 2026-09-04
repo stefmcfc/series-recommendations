@@ -39,6 +39,47 @@
   font-size: 0.8125rem;
 }
 
+/* FRONTEND-044: wraps a field's input/textarea together with its optional
+   Clear button so the two sit on one row without disturbing the label/hint/
+   error stacking above and below (still governed by .field). */
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fieldRow input,
+.fieldRow textarea {
+  flex: 1;
+  min-width: 0;
+}
+
+.clearButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
+  padding: 0;
+  background: transparent;
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.clearButton:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.clearButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 @media (prefers-color-scheme: dark) {
   .fieldError {
     color: #fca5a5;

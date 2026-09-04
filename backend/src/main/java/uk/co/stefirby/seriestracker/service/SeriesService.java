@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -32,6 +33,15 @@ public class SeriesService {
     // established for RecommendationCriteria.yearMin/yearMax (RecommendationCriteriaValidator,
     // SERIES-031-AC-12) -- safely before any TV series existed.
     private static final int MIN_VALID_YEAR = 1900;
+
+    // series_spec_030_clear_optional_fields.md (SERIES-030-AC-03/AC-06): the fixed set of
+    // optional, genuinely-nullable fields a clearedFields entry may name. title/status
+    // (required) and excludeFromRecommendations/flaggedForRewatch (booleans with no clearable
+    // "unset" state) are deliberately excluded.
+    private static final Set<String> CLEARABLE_FIELDS = Set.of(
+        "year", "genres", "tags", "totalSeasons", "totalEpisodes", "currentSeason",
+        "currentEpisode", "imdbRating", "rottenTomatoesRating", "rottenTomatoesPopcornmeter",
+        "personalRating", "personalNotes", "posterUrl");
 
     private final SeriesRepository repository;
     private final KeywordSyncService keywordSyncService;
@@ -215,10 +225,11 @@ public class SeriesService {
 
     /**
      * Each independent group of field patches is its own method (java:S3776) -- this method's
-     * own job is just to run them all in order. The one real order dependency,
-     * {@code applyMetadataUpdates} (which may patch {@code totalSeasons}) running before {@code
-     * applyCurrentSeason} (which reads {@code entity.getTotalSeasons()} for its validation), is
-     * preserved.
+     * own job is just to run them all in order. Two real order dependencies are preserved:
+     * {@code applyClearedFields} (series_spec_030_clear_optional_fields.md, SERIES-030-AC-05)
+     * must run first, since a cleared {@code totalSeasons} has to land on the entity before
+     * {@code applyCurrentSeason} reads it; and {@code applyMetadataUpdates} (which may patch
+     * {@code totalSeasons}) must run before {@code applyCurrentSeason} for the same reason.
      */
     @Transactional
     public SeriesDto update(UUID id, SeriesDto dto) {
@@ -226,6 +237,7 @@ public class SeriesService {
         SeriesEntity entity = repository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException(SERIES_NOT_FOUND + id));
 
+        applyClearedFields(entity, dto);
         applyMetadataUpdates(entity, dto);
         applyRatingAndPersonalUpdates(entity, dto);
         applyCurrentSeason(entity, dto);
@@ -233,6 +245,74 @@ public class SeriesService {
 
         entity = repository.save(entity);
         return entityToDto(entity);
+    }
+
+    /**
+     * series_spec_030_clear_optional_fields.md (SERIES-030-AC-01/02/03/04/05/06): explicitly
+     * nulls each optional field named in {@code dto.getClearedFields()} on the entity, before
+     * any of the other update passes run. Validates every name is both recognized
+     * (CLEARABLE_FIELDS, AC-03/AC-06) and not simultaneously carrying a non-null value
+     * elsewhere in the same dto (AC-04) before mutating anything.
+     */
+    private void applyClearedFields(SeriesEntity entity, SeriesDto dto) {
+        List<String> clearedFields = dto.getClearedFields();
+        if (clearedFields == null || clearedFields.isEmpty()) {
+            return;
+        }
+        for (String field : clearedFields) {
+            validateClearedField(field, dto);
+        }
+        for (String field : clearedFields) {
+            clearField(entity, field);
+        }
+    }
+
+    private void validateClearedField(String field, SeriesDto dto) {
+        if (!CLEARABLE_FIELDS.contains(field)) {
+            throw new IllegalArgumentException("'" + field + "' cannot be cleared via clearedFields");
+        }
+        if (hasNonNullValue(field, dto)) {
+            throw new IllegalArgumentException(
+                "'" + field + "' cannot be both cleared and set in the same request");
+        }
+    }
+
+    private boolean hasNonNullValue(String field, SeriesDto dto) {
+        return switch (field) {
+            case "year" -> dto.getYear() != null;
+            case "genres" -> dto.getGenres() != null;
+            case "tags" -> dto.getTags() != null;
+            case "totalSeasons" -> dto.getTotalSeasons() != null;
+            case "totalEpisodes" -> dto.getTotalEpisodes() != null;
+            case "currentSeason" -> dto.getCurrentSeason() != null;
+            case "currentEpisode" -> dto.getCurrentEpisode() != null;
+            case "imdbRating" -> dto.getImdbRating() != null;
+            case "rottenTomatoesRating" -> dto.getRottenTomatoesRating() != null;
+            case "rottenTomatoesPopcornmeter" -> dto.getRottenTomatoesPopcornmeter() != null;
+            case "personalRating" -> dto.getPersonalRating() != null;
+            case "personalNotes" -> dto.getPersonalNotes() != null;
+            case "posterUrl" -> dto.getPosterUrl() != null;
+            default -> false;
+        };
+    }
+
+    private void clearField(SeriesEntity entity, String field) {
+        switch (field) {
+            case "year" -> entity.setYear(null);
+            case "genres" -> entity.setGenres(null);
+            case "tags" -> entity.setTags(null);
+            case "totalSeasons" -> entity.setTotalSeasons(null);
+            case "totalEpisodes" -> entity.setTotalEpisodes(null);
+            case "currentSeason" -> entity.setCurrentSeason(null);
+            case "currentEpisode" -> entity.setCurrentEpisode(null);
+            case "imdbRating" -> entity.setImdbRating(null);
+            case "rottenTomatoesRating" -> entity.setRottenTomatoesRating(null);
+            case "rottenTomatoesPopcornmeter" -> entity.setRottenTomatoesPopcornmeter(null);
+            case "personalRating" -> entity.setPersonalRating(null);
+            case "personalNotes" -> entity.setPersonalNotes(null);
+            case "posterUrl" -> entity.setPosterUrl(null);
+            default -> throw new IllegalArgumentException("'" + field + "' cannot be cleared via clearedFields");
+        }
     }
 
     /**

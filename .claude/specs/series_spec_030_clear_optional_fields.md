@@ -1,6 +1,6 @@
 # Series Spec 030: Explicit Clear-to-Null for Optional Series Fields
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (data-correction gap — no way to remove a previously-set optional value short of editing the
 database directly)
 **Depends on**: Series Spec 002 (`series_spec_002_crud.md`, owns `PATCH /api/v1/series/{id}` and `SeriesDto`'s
@@ -244,14 +244,15 @@ def "SERIES-030-AC-06: required/boolean fields cannot be cleared"() {
 | `SeriesDto`'s existing input-only field precedent (`tmdbId`, read only by `create`) this spec's `clearedFields` (read only by `update`) mirrors in the opposite direction | `series_spec_019_keyword_tracking.md`'s `SeriesDto.tmdbId` javadoc |
 | `currentSeason`-vs-`totalSeasons` validation this spec's ordering decision protects | `series_spec_001_entity.md` / `SeriesService.applyCurrentSeason` |
 | Frontend UI (per-field Clear buttons) producing `clearedFields` | `frontend_spec_044_edit_series_clear_fields.md` |
+| Interaction confirmed during this spec's implementation (2026-09-04): clearing one of `year`/`genres`/`totalSeasons`/`totalEpisodes`/`imdbRating` deliberately reopens it to one more manual edit, since `applyClearedFields` has no lock check — intentional, not a gap | `series_spec_040_tmdb_managed_field_lock.md`'s 2026-09-04 Design Decisions update |
 
 ---
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-030-AC-01: `clearedFields` nulls the named field
-- [ ] SERIES-030-AC-02: unrelated fields are unaffected
-- [ ] SERIES-030-AC-03: an unrecognized field name is rejected (400)
-- [ ] SERIES-030-AC-04: a field cannot be both cleared and set in one request (400)
-- [ ] SERIES-030-AC-05: clearing is applied before `currentSeason` validation
-- [ ] SERIES-030-AC-06: required/boolean fields cannot be cleared (400)
+- [x] SERIES-030-AC-01: `clearedFields` nulls the named field
+- [x] SERIES-030-AC-02: unrelated fields are unaffected
+- [x] SERIES-030-AC-03: an unrecognized field name is rejected (400)
+- [x] SERIES-030-AC-04: a field cannot be both cleared and set in one request (400)
+- [x] SERIES-030-AC-05: clearing is applied before `currentSeason` validation
+- [x] SERIES-030-AC-06: required/boolean fields cannot be cleared (400)

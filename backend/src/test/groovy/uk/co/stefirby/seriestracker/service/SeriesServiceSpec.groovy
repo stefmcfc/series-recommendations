@@ -9,6 +9,7 @@ import uk.co.stefirby.seriestracker.exception.ConflictException
 import uk.co.stefirby.seriestracker.exception.EntityNotFoundException
 import uk.co.stefirby.seriestracker.model.KeywordEntity
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
@@ -823,5 +824,97 @@ class SeriesServiceSpec extends Specification {
         result.totalSeasons == 6
         result.totalEpisodes == 70
         result.imdbRating == 9.0
+  }
+
+  def "SERIES-030-AC-01: clearedFields nulls personalRating"() {
+    given: "a series with a personal rating set"
+        def entity = seriesRepository.save(new SeriesEntity(title: "Show", personalRating: 4))
+
+    when: "PATCH is requested with clearedFields: [personalRating]"
+        def dto = new SeriesDto()
+        dto.clearedFields = ["personalRating"]
+        def result = seriesService.update(entity.id, dto)
+
+    then: "personalRating is null in the response"
+        result.personalRating == null
+
+    and: "it's null in the persisted entity too"
+        seriesRepository.findById(entity.id).get().personalRating == null
+  }
+
+  def "SERIES-030-AC-02: unrelated fields are unaffected by clearedFields"() {
+    given: "a series with title, personalRating, and genres set"
+        def entity = seriesRepository.save(new SeriesEntity(title: "Show", personalRating: 4, genres: "Drama"))
+
+    when: "PATCH clears only personalRating"
+        def dto = new SeriesDto()
+        dto.clearedFields = ["personalRating"]
+        def result = seriesService.update(entity.id, dto)
+
+    then: "genres and title are untouched"
+        result.genres == "Drama"
+        result.title == "Show"
+  }
+
+  def "SERIES-030-AC-03: an unrecognized field name in clearedFields is rejected"() {
+    given: "a series exists"
+        def entity = seriesRepository.save(new SeriesEntity(title: "Show"))
+
+    when: "PATCH is requested with clearedFields containing an unclearable/unknown field"
+        def dto = new SeriesDto()
+        dto.clearedFields = ["title"]
+        seriesService.update(entity.id, dto)
+
+    then: "an IllegalArgumentException is thrown (mapped to 400 by GlobalExceptionHandler)"
+        thrown(IllegalArgumentException)
+
+    and: "the entity is unchanged"
+        seriesRepository.findById(entity.id).get().title == "Show"
+  }
+
+  def "SERIES-030-AC-04: a field cannot be both cleared and set in the same request"() {
+    given: "a series exists"
+        def entity = seriesRepository.save(new SeriesEntity(title: "Show", personalRating: 4))
+
+    when: "PATCH both clears and sets personalRating"
+        def dto = new SeriesDto()
+        dto.clearedFields = ["personalRating"]
+        dto.personalRating = 3
+        seriesService.update(entity.id, dto)
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-030-AC-05: clearing totalSeasons is applied before currentSeason validation"() {
+    given: "a series with totalSeasons=5, currentSeason=3"
+        def entity = seriesRepository.save(
+            new SeriesEntity(title: "Show", totalSeasons: 5, currentSeason: 3))
+
+    when: "PATCH clears totalSeasons and sets currentSeason=8 in the same request"
+        def dto = new SeriesDto()
+        dto.clearedFields = ["totalSeasons"]
+        dto.currentSeason = 8
+        def result = seriesService.update(entity.id, dto)
+
+    then: "no exception -- there's no longer a totalSeasons to exceed"
+        result.currentSeason == 8
+        result.totalSeasons == null
+  }
+
+  def "SERIES-030-AC-06: required/boolean fields cannot be cleared"() {
+    given: "a series exists"
+        def entity = seriesRepository.save(new SeriesEntity(title: "Show", status: SeriesStatus.WATCHING))
+
+    when: "PATCH attempts to clear #fieldName"
+        def dto = new SeriesDto()
+        dto.clearedFields = [fieldName]
+        seriesService.update(entity.id, dto)
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+
+    where:
+        fieldName << ["title", "status", "excludeFromRecommendations", "flaggedForRewatch"]
   }
 }

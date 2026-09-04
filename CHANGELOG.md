@@ -12,6 +12,8 @@ versioned together as one app.
 
 - Frontend: `AddSeriesForm`/`EditSeriesForm` now prompt with a new reusable `ConfirmDialog` component before discarding unsaved changes on Cancel or Escape — untouched forms still close immediately, unchanged from today (`frontend_spec_043`).
 - Frontend: `EditSeriesForm` gains a "Look Up" button beside Title, mirroring `AddSeriesForm`'s existing TMDB search/candidate-picker flow (extracted into a shared `hooks/useTmdbLookup.ts`) — resolving a result always opens `ConfirmDialog`'s overwrite prompt first rather than applying immediately, since edited fields may already carry manual corrections (`frontend_spec_045`).
+- Backend: `PATCH /api/v1/series/{id}` accepts a new optional `clearedFields: string[]`, explicitly setting a named optional field back to `null` — previously there was no way to remove a previously-set value (e.g. a stray personal rating) via the API at all, since `null` on the wire was indistinguishable from "field not sent." Rejects an unrecognized field name or a field named in both `clearedFields` and carrying a non-null value elsewhere in the same request with `400` (`series_spec_030`).
+- Frontend: `EditSeriesForm` gains a small Clear button on 12 of the 13 backend-clearable fields (Personal Rating clears via its existing click-to-deselect star gesture instead), wired to the new `clearedFields` payload — disabled once a field is already blank, and clearing a field the TMDB-managed-field lock (`series_spec_040`) currently disables is allowed by design, deliberately reopening it to one more manual edit (`frontend_spec_044`).
 
 ## [3.18.1] - 2026-09-04
 

@@ -108,17 +108,17 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
     for (const label of [
       /^title/i,
       /^year/i,
-      /genres/i,
-      /total seasons/i,
-      /total episodes/i,
-      /current season/i,
-      /current episode/i,
+      /^genres/i,
+      /^total seasons/i,
+      /^total episodes/i,
+      /^current season/i,
+      /^current episode/i,
       /^status/i,
-      /imdb rating/i,
-      /rotten tomatoes rating \(tomatometer\)/i,
-      /rotten tomatoes rating \(popcornmeter\)/i,
+      /^imdb rating/i,
+      /^rotten tomatoes rating \(tomatometer\)/i,
+      /^rotten tomatoes rating \(popcornmeter\)/i,
       /personal rating/i,
-      /notes/i,
+      /^personal notes/i,
     ]) {
       expect(screen.getByLabelText(label)).toBeInTheDocument()
     }
@@ -133,8 +133,8 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
       }),
     })
     expect(screen.getByLabelText(/^title/i)).toHaveValue('The Office')
-    expect(screen.getByLabelText(/current season/i)).toHaveValue(3)
-    expect(screen.getByLabelText(/current episode/i)).toHaveValue(12)
+    expect(screen.getByLabelText(/^current season/i)).toHaveValue(3)
+    expect(screen.getByLabelText(/^current episode/i)).toHaveValue(12)
   })
 
   it('renders null fields as empty', () => {
@@ -145,10 +145,10 @@ describe('FRONTEND-004-AC-20/21: fields pre-populated', () => {
       }),
     })
     expect(
-      screen.getByLabelText(/rotten tomatoes rating \(tomatometer\)/i),
+      screen.getByLabelText(/^rotten tomatoes rating \(tomatometer\)/i),
     ).toHaveValue(null)
     expect(
-      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+      screen.getByLabelText(/^rotten tomatoes rating \(popcornmeter\)/i),
     ).toHaveValue(null)
   })
 })
@@ -161,11 +161,11 @@ describe('FRONTEND-037-AC-03: Popcornmeter field on EditSeriesForm', () => {
     )
 
     expect(
-      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+      screen.getByLabelText(/^rotten tomatoes rating \(popcornmeter\)/i),
     ).toHaveValue(91)
 
     fireEvent.change(
-      screen.getByLabelText(/rotten tomatoes rating \(popcornmeter\)/i),
+      screen.getByLabelText(/^rotten tomatoes rating \(popcornmeter\)/i),
       { target: { value: '85' } },
     )
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
@@ -270,10 +270,10 @@ describe('FRONTEND-004-AC-33: submission payload', () => {
     const series = makeSeries({ currentSeason: 4, currentEpisode: 8 })
     mockUpdate.mockResolvedValue(series)
     renderForm({ series })
-    fireEvent.change(screen.getByLabelText(/current season/i), {
+    fireEvent.change(screen.getByLabelText(/^current season/i), {
       target: { value: '' },
     })
-    fireEvent.change(screen.getByLabelText(/current episode/i), {
+    fireEvent.change(screen.getByLabelText(/^current episode/i), {
       target: { value: '' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -290,14 +290,14 @@ describe('FRONTEND-009-AC-16/17: Poster URL field', () => {
     renderForm({
       series: makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
     })
-    expect(screen.getByLabelText(/poster url/i)).toHaveValue(
+    expect(screen.getByLabelText(/^poster url/i)).toHaveValue(
       'https://example.com/poster.jpg',
     )
   })
 
   it('renders an empty Poster URL field when series.posterUrl is null', () => {
     renderForm({ series: makeSeries({ posterUrl: null }) })
-    expect(screen.getByLabelText(/poster url/i)).toHaveValue('')
+    expect(screen.getByLabelText(/^poster url/i)).toHaveValue('')
   })
 
   it('renders a preview when Poster URL is populated, hides it on load failure', () => {
@@ -320,7 +320,7 @@ describe('FRONTEND-009-AC-16/17: Poster URL field', () => {
     const series = makeSeries({ id: 'abc-123' })
     mockUpdate.mockResolvedValue(series)
     renderForm({ series })
-    fireEvent.change(screen.getByLabelText(/poster url/i), {
+    fireEvent.change(screen.getByLabelText(/^poster url/i), {
       target: { value: 'https://example.com/new-poster.jpg' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -627,7 +627,7 @@ describe('FRONTEND-004-AC-38: no leaked data', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     mockUpdate.mockResolvedValue(makeSeries())
     renderForm()
-    fireEvent.change(screen.getByLabelText(/notes/i), {
+    fireEvent.change(screen.getByLabelText(/^personal notes/i), {
       target: { value: 'private note' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -636,6 +636,146 @@ describe('FRONTEND-004-AC-38: no leaked data', () => {
     expect(
       logSpy.mock.calls.flat().some((c) => String(c).includes('private note')),
     ).toBe(false)
+  })
+})
+
+describe('FRONTEND-044-AC-04: clearedFields is sent on save', () => {
+  it('includes clearedFields for an explicitly cleared field', async () => {
+    const series = makeSeries({ id: '1', personalRating: 4 })
+    mockUpdate.mockResolvedValue(series)
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByLabelText('Rate 4 star(s)'))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({ clearedFields: ['personalRating'] }),
+      ),
+    )
+  })
+})
+
+describe('FRONTEND-044-AC-05: re-typing a value un-clears the field', () => {
+  it('removes the field from clearedFields once a new value is typed', async () => {
+    const series = makeSeries({ id: '1', year: 2020, genres: null })
+    mockUpdate.mockResolvedValue(series)
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /clear year/i }))
+    fireEvent.change(screen.getByLabelText(/^year/i), {
+      target: { value: '2021' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({ year: 2021 }),
+      ),
+    )
+    // FRONTEND-044-AC-05/Design Decisions: clearedFields is omitted
+    // entirely (not sent as []) once nothing remains cleared -- re-typing
+    // 'year' removed it from the set, leaving the set empty.
+    const payload = mockUpdate.mock.calls[0][1]
+    expect(payload).not.toHaveProperty('clearedFields')
+  })
+})
+
+describe('FRONTEND-044-AC-06: Personal Rating clears via its own star gesture', () => {
+  it('has no separate Clear button, but clears via deselecting the star', async () => {
+    const series = makeSeries({ id: '1', personalRating: 4 })
+    mockUpdate.mockResolvedValue(series)
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    expect(
+      screen.queryByRole('button', { name: /clear personal rating/i }),
+    ).not.toBeInTheDocument()
+
+    // Deselect: clicking the currently-selected star again clears it.
+    fireEvent.click(screen.getByLabelText('Rate 4 star(s)'))
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({ clearedFields: ['personalRating'] }),
+      ),
+    )
+  })
+})
+
+describe('FRONTEND-044-AC-07: currentSeason/currentEpisode have their own Clear buttons', () => {
+  it('clears currentSeason via its own button', async () => {
+    const series = makeSeries({ id: '1', currentSeason: 3 })
+    mockUpdate.mockResolvedValue(series)
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /clear current season/i }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({ clearedFields: ['currentSeason'] }),
+      ),
+    )
+  })
+
+  it('clears currentEpisode via its own button', async () => {
+    const series = makeSeries({ id: '1', currentEpisode: 7 })
+    mockUpdate.mockResolvedValue(series)
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /clear current episode/i }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({ clearedFields: ['currentEpisode'] }),
+      ),
+    )
+  })
+
+  it('disables Clear when the field is already blank', () => {
+    renderForm({
+      series: makeSeries({ currentSeason: null, currentEpisode: null }),
+    })
+    expect(
+      screen.getByRole('button', { name: /clear current season/i }),
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /clear current episode/i }),
+    ).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-044: omits clearedFields entirely when nothing was cleared', () => {
+  it('never sends clearedFields on an untouched save', async () => {
+    const series = makeSeries({ id: '1' })
+    mockUpdate.mockResolvedValue(series)
+    renderForm({ series })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    const payload = mockUpdate.mock.calls[0][1]
+    expect(payload).not.toHaveProperty('clearedFields')
   })
 })
 

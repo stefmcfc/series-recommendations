@@ -43,6 +43,28 @@ function renderForm(
   return { onCancel, onSuccess }
 }
 
+describe('FRONTEND-044-AC-08: AddSeriesForm is unaffected', () => {
+  it('renders no Clear buttons and never sends clearedFields', async () => {
+    mockCreate.mockResolvedValue({ id: '1', title: 'Show' } as Series)
+    render(<AddSeriesForm onCancel={vi.fn()} onSuccess={vi.fn()} />)
+
+    expect(
+      screen.queryByRole('button', { name: /^clear /i }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.not.objectContaining({ clearedFields: expect.anything() }),
+      ),
+    )
+  })
+})
+
 describe('FRONTEND-003-AC-05/06: dialog structure & focus', () => {
   it('renders as a labelled dialog', () => {
     renderForm()
