@@ -33,7 +33,17 @@ app:
   cors:
     # Comma-separated list of origins allowed to call /api/** cross-origin (never a
     # wildcard). Override via the APP_CORS_ALLOWED_ORIGINS env var without a code change.
-    allowed-origins: http://localhost:5173
+    # Includes both http://localhost:5173 and http://127.0.0.1:5173 -- vite.config.ts pins
+    # the dev server to the 127.0.0.1 loopback explicitly (VPN/IPv6 compatibility, see
+    # RUNBOOK.md), so the browser's Origin header is 127.0.0.1:5173 whenever a developer
+    # accesses the app via that host (the default since that vite.config.ts change) or when
+    # frontend/.env.local's VITE_API_BASE=/api/v1 workaround proxies calls through Vite --
+    # the browser still attaches this Origin header to non-GET requests even though the
+    # request is same-origin from its own perspective, and Vite forwards it to the backend
+    # unchanged. Omitting either origin here silently breaks every PATCH/POST/DELETE request
+    # made from that host with a real "Invalid CORS request" 403 -- confirmed as a live bug
+    # this way on 2026-09-04 (RUNBOOK.md's Troubleshooting section has the full story).
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
   omdb:
     # Base URL for the OMDb API (https://www.omdbapi.com/). Overridable via the
     # APP_OMDB_BASE_URL env var without a code change (e.g. to point at a test double).

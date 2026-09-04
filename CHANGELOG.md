@@ -15,6 +15,11 @@ versioned together as one app.
 - Backend: `PATCH /api/v1/series/{id}` accepts a new optional `clearedFields: string[]`, explicitly setting a named optional field back to `null` — previously there was no way to remove a previously-set value (e.g. a stray personal rating) via the API at all, since `null` on the wire was indistinguishable from "field not sent." Rejects an unrecognized field name or a field named in both `clearedFields` and carrying a non-null value elsewhere in the same request with `400` (`series_spec_030`).
 - Frontend: `EditSeriesForm` gains a small Clear button on 12 of the 13 backend-clearable fields (Personal Rating clears via its existing click-to-deselect star gesture instead), wired to the new `clearedFields` payload — disabled once a field is already blank, and clearing a field the TMDB-managed-field lock (`series_spec_040`) currently disables is allowed by design, deliberately reopening it to one more manual edit (`frontend_spec_044`).
 
+### Fixed
+
+- Backend: `app.cors.allowed-origins` now includes `http://127.0.0.1:5173` alongside `http://localhost:5173` — every real save/refresh/delete from a browser at the dev server's own documented `127.0.0.1` URL was silently rejected with `403 "Invalid CORS request"` (a genuine bug, not a browser-automation-tool quirk as a couple of this session's earlier PR descriptions mistakenly assumed), since the allow-list never recognized that origin. `GET` requests and `curl` reproductions were unaffected, which masked the gap (`tooling_spec_001`).
+- Frontend: buttons, inputs, selects, and textareas now inherit the page's font stack (`system-ui, "Segoe UI", Roboto, sans-serif`) instead of the browser's own default form-control font (Arial in Chrome) — a global `font: inherit` reset in `index.css`, since no browser applies this by default and none of this app's component styles had set it individually.
+
 ## [3.18.1] - 2026-09-04
 
 ### Changed

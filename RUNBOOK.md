@@ -350,7 +350,7 @@ gradlew.bat test
 
 **Frontend showed "Failed to load series. Please try again." in a real browser (not Vitest) — fixed**
 
-This was a real, currently-blocking CORS gap (confirmed both with and without VPN — not network-related), tracked as `TOOLING-001-AC-16` in `tooling_spec_001_code_quality_security.md`. It's now fixed: `uk.co.stefirby.seriestracker.config.CorsConfig` (a `WebMvcConfigurer` bean) allows cross-origin requests to `/api/**` from the origin(s) configured in `app.cors.allowed-origins` (default `http://localhost:5173`, see the Environment Variables section above), restricted to the `GET`/`POST`/`PATCH`/`DELETE` methods and `Content-Type` header the frontend actually uses — never a wildcard `*`.
+This was a real, currently-blocking CORS gap (confirmed both with and without VPN — not network-related), tracked as `TOOLING-001-AC-16` in `tooling_spec_001_code_quality_security.md`. It's now fixed: `uk.co.stefirby.seriestracker.config.CorsConfig` (a `WebMvcConfigurer` bean) allows cross-origin requests to `/api/**` from the origin(s) configured in `app.cors.allowed-origins` (default `http://localhost:5173,http://127.0.0.1:5173`, see the Environment Variables section above), restricted to the `GET`/`POST`/`PATCH`/`DELETE` methods and `Content-Type` header the frontend actually uses — never a wildcard `*`.
 
 No `frontend/.env.local` proxy workaround is needed anymore: `seriesApi.ts` can call `http://localhost:8080/api/v1` directly from a browser tab serving the frontend on `http://localhost:5173`, and the response will include a matching `Access-Control-Allow-Origin` header. If you deploy the frontend from a different origin, add it to `app.cors.allowed-origins` (comma-separated) or override via `APP_CORS_ALLOWED_ORIGINS` — don't loosen this to a wildcard.
 
@@ -370,8 +370,22 @@ If the browser also can't reach the backend directly (`http://localhost:8080`) w
 same IPv6 reason, the most robust local fix is `frontend/.env.local` (gitignored) with
 `VITE_API_BASE=/api/v1` — this routes every API call through Vite's own dev-server proxy
 (`vite.config.ts`'s `server.proxy`), which resolves `localhost:8080` server-side in Node, unaffected
-by the browser/VPN's IPv6 behavior, and sidesteps the CORS origin-matching question entirely since
-the request becomes same-origin from the browser's perspective.
+by the browser/VPN's IPv6 behavior.
+
+**This does *not* sidestep CORS origin-matching, despite the request looking same-origin to the
+browser** — a real bug hit this way on 2026-09-04: the browser still attaches an `Origin` header
+(here, `http://127.0.0.1:5173`, matching `server.host` above) to every non-`GET` request even
+though the fetch target is same-origin from its own perspective, and Vite's proxy (`changeOrigin:
+true` only rewrites `Host`, not `Origin`) forwards that header to the backend unchanged. The
+backend's own `CorsConfig` still inspects it and rejects anything not in `app.cors.allowed-origins`
+with `403 "Invalid CORS request"` — invisible to a `curl` reproduction of the same request, since
+`curl` doesn't send an `Origin` header by default and so never triggers the check at all. `GET`
+requests were unaffected (browsers typically omit `Origin` for same-origin `GET`), which is why this
+surfaced specifically as every *save*/*refresh*/*delete* action failing with "An error occurred"
+while browsing and searching worked fine. Fixed by adding `http://127.0.0.1:5173` to
+`app.cors.allowed-origins` alongside `http://localhost:5173` (see above) — if you access the dev
+server via a host/port not already in that list, add it there too, in either mode (direct or
+proxied).
 
 ---
 

@@ -35,6 +35,21 @@ class CorsConfigSpec extends Specification {
           .header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin))
   }
 
+  def "TOOLING-001-AC-16: the 127.0.0.1 dev origin also receives Access-Control-Allow-Origin"() {
+    given: "a request from the IPv4-loopback origin vite.config.ts pins the dev server to"
+        def allowedOrigin = "http://127.0.0.1:5173"
+
+    when: "the request is made with an Origin header of the 127.0.0.1 dev origin"
+        def result = mockMvc.perform(
+          get("/api/v1/series").header(HttpHeaders.ORIGIN, allowedOrigin)
+        )
+
+    then: "the response is successful and echoes back that origin -- regression guard for a real bug where this origin was missing from the allow-list (2026-09-04)"
+        result.andExpect(status().isOk())
+        result.andExpect(MockMvcResultMatchers
+          .header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, allowedOrigin))
+  }
+
   def "TOOLING-001-AC-16: disallowed origin does not receive a CORS allow header"() {
     given: "a request to an /api/** endpoint from an origin that is not on the allow-list"
         def disallowedOrigin = "http://evil.example.com"

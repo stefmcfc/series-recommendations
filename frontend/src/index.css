@@ -66,6 +66,20 @@ body {
   margin: 0;
 }
 
+/* Form controls don't inherit font-family from the page by default in any
+   browser -- their UA stylesheet sets it directly on the element (e.g.
+   Chrome's default button/input font is Arial), which wins over inherited
+   values in the cascade. Without this reset, every button/input/select/
+   textarea across the app renders in that browser default instead of the
+   --sans stack set on :root above, however consistent each component's own
+   CSS module otherwise is. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 h1,
 h2 {
   font-family: var(--heading), sans-serif;
