@@ -139,20 +139,24 @@ public class RecommendationOutputFilterService {
     }
 
     /**
-     * SERIES-032-AC-08: excludes a candidate whose {@code originCountry} doesn't case-
+     * SERIES-032-AC-08: excludes a candidate whose {@code originCountries} doesn't case-
      * insensitively match any entry in {@code countries} -- an include-match, the inverse of
      * {@link #matchesExcludeGenres}'s exclude-match shape. Runs unconditionally for every
      * source mode, no {@code isDirectedByGenreOrKeyword()} skip: unlike the year-range check
      * (SERIES-031-AC-09), {@code origin_country} is present on every candidate TMDB already
      * returns (discover, trending, and topRated responses alike), so there's no post-fetch
-     * data gap to guard against.
+     * data gap to guard against. Widened by SERIES-046-AC-10 from a single-value check against
+     * only the candidate's first country to a true set-intersection: the candidate is included
+     * if *any* of its origin countries case-insensitively matches *any* entry of {@code
+     * countries}.
      */
     private boolean matchesCountries(TmdbCandidate c, List<String> countries) {
         if (countries == null || countries.isEmpty()) {
             return true;
         }
-        return c.originCountry() != null
-            && countries.stream().anyMatch(country -> country.equalsIgnoreCase(c.originCountry()));
+        return c.originCountries() != null
+            && c.originCountries().stream()
+                .anyMatch(candidateCountry -> countries.stream().anyMatch(candidateCountry::equalsIgnoreCase));
     }
 
     /**

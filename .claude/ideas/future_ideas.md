@@ -199,31 +199,6 @@ together with Country just because they were raised at the same time.
 
 ---
 
-## Series List
-
-### Only the first `origin_country` is stored/shown, even when TMDB reports more than one (e.g. "MobLand": GB + US)
-
-Confirmed (2026-08-29) this is a deliberate existing design decision, not an oversight:
-`series_spec_021_origin_country.md` chose to store a single ISO 3166-1 alpha-2 code.
-`TmdbClient.firstOriginCountry()` explicitly takes `list.getFirst()` from TMDB's `origin_country`
-array and discards the rest, and every DTO along the path (`SeriesEntity.originCountry`,
-`SeriesLookupDto`, `SeriesDto`, `TmdbLookupCandidateDto`, `RecommendationDto`) carries a single
-`String`, not a list. TMDB itself does return multiple entries for co-productions.
-
-**What's required**: widening `originCountry` to a list would touch `TmdbClient.firstOriginCountry`
-(and its duplicated logic in `TmdbSearchCandidate`/`TmdbSeriesDetail`/`TmdbCandidate`), the entity
-column (single string → comma-separated or a join table), every DTO listed above, and
-`RecommendationOutputFilterService`'s country-match filter (currently a single-value
-`equalsIgnoreCase` check), which would need to become a set-intersection check. A real schema
-migration, not just a display change.
-
-**Status**: Not specced. Revisit `series_spec_021_origin_country.md`'s original rationale for
-choosing single-value before committing to this — the "first entry only" choice may have been a
-deliberate simplification worth keeping unless multi-country display turns out to matter in
-practice.
-
----
-
 ## Analysis
 
 ### Keywords tab becomes a broader "Analysis"/"Trends" section — Genres and Country of Origin get the same treatment, plus filtering, name sort, and a blended-rating column

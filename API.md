@@ -224,7 +224,9 @@ equivalent would mean only the first of several selected languages ever reached 
 candidate whose `originCountry` doesn't case-insensitively match any entry — applied as a
 post-fetch output filter **unconditionally, across every sourcing mode**, with no asymmetry
 (unlike the year fields above): `origin_country` is present on every candidate TMDB already
-returns regardless of endpoint, so there's no post-fetch data gap to guard against. For Custom
+returns regardless of endpoint, so there's no post-fetch data gap to guard against. A
+co-production candidate matches if **any** of its origin countries (not just the first) matches
+any entry here (`series_spec_046_multi_origin_country.md`, SERIES-046-AC-10). For Custom
 Search sourcing specifically, `countries` is **additionally** sent to TMDB itself as
 `with_origin_country` (**pipe-joined**, e.g. `with_origin_country=US%7CGB`) for the same pre-fetch
 reason as `language` above. Unlike `language`, `countries` is multi-select/OR-matched. TMDB's own

@@ -83,9 +83,11 @@ public class RecommendationCriteria {
     /**
      * {@code List<String>} of ISO 3166-1 alpha-2 country codes (SERIES-032-AC-04), mirroring
      * {@code excludeGenres}'s exact null/empty-means-no-op convention -- a candidate matches if
-     * its {@code TmdbCandidate.originCountry()} case-insensitively equals any entry. Unlike
-     * {@code language}, which stays single-select (TMDB's {@code with_original_language}
-     * accepts one value only), this is multi-select/OR-matched.
+     * any entry of its {@code TmdbCandidate.originCountries()} case-insensitively equals any
+     * entry here (SERIES-046-AC-10 widened this from a single-value check against only the
+     * candidate's first origin country). Unlike {@code language}, which stays single-select
+     * (TMDB's {@code with_original_language} accepts one value only), this is
+     * multi-select/OR-matched.
      */
     public List<String> getCountries() { return countries; }
     public void setCountries(List<String> countries) { this.countries = countries; }

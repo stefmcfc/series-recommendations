@@ -831,6 +831,17 @@ describe('FRONTEND-012 amendment (live review): year/country in heading', () => 
   })
 })
 
+describe('FRONTEND-085-AC-04: multi-country origin shown next to the heading', () => {
+  it('renders every origin country for a multi-country series', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ originCountry: 'GB,US' }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    expect(
+      await screen.findByText('| United Kingdom, United States'),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-012 amendment (live review): full-width Overview field', () => {
   it('renders Overview alone in its field row, not alongside other fields', async () => {
     mockGetById.mockResolvedValue(

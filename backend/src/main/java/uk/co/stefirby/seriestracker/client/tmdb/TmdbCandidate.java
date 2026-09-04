@@ -20,9 +20,11 @@ import java.util.List;
  * {@code minVoteCount}/{@code language} output filters -- both are documented as present on
  * every result object of the same three endpoints.
  *
- * <p>{@code originCountry} (SERIES-023-AC-01) is the first entry of this same result's
- * {@code origin_country} array, parsed by the shared {@code mapResults} helper -- {@code null}
- * when absent or empty. See {@code series_spec_023_recommendation_metadata_and_overview.md}.
+ * <p>{@code originCountries} (SERIES-023-AC-01, widened to every entry by SERIES-046-AC-03) is
+ * every entry of this same result's {@code origin_country} array, parsed by the shared {@code
+ * mapResults} helper -- an empty list, not {@code null}, when absent or empty. See {@code
+ * series_spec_023_recommendation_metadata_and_overview.md} and {@code
+ * series_spec_046_multi_origin_country.md}.
  */
 public record TmdbCandidate(
     int tmdbId,
@@ -34,6 +36,6 @@ public record TmdbCandidate(
     List<Integer> genreIds,
     Integer voteCount,
     String originalLanguage,
-    String originCountry
+    List<String> originCountries
 ) {
 }

@@ -20,7 +20,7 @@ class RecommendationOutputFilterServiceSpec extends Specification {
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 300, String originalLanguage = "en") {
-        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
+        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, [])
     }
 
     private static DedupedCandidate dc(TmdbCandidate c) {
@@ -37,7 +37,13 @@ class RecommendationOutputFilterServiceSpec extends Specification {
 
     private static DedupedCandidate candidateWithOriginCountry(String originCountry) {
         new DedupedCandidate(
-            new TmdbCandidate(1, "Show", 2020, "overview", "/poster.jpg", new BigDecimal("8.0"), [18], 300, "en", originCountry),
+            new TmdbCandidate(1, "Show", 2020, "overview", "/poster.jpg", new BigDecimal("8.0"), [18], 300, "en", [originCountry]),
+            [], "tt1")
+    }
+
+    private static DedupedCandidate candidateWithOriginCountries(List<String> originCountries) {
+        new DedupedCandidate(
+            new TmdbCandidate(1, "Show", 2020, "overview", "/poster.jpg", new BigDecimal("8.0"), [18], 300, "en", originCountries),
             [], "tt1")
     }
 
@@ -375,6 +381,18 @@ class RecommendationOutputFilterServiceSpec extends Specification {
 
         then: "the candidate is excluded despite trending's ranking-bypass"
             result.isEmpty()
+    }
+
+    def "SERIES-046-AC-10: a candidate matches on a non-first origin country"() {
+        given: "a candidate whose second origin country matches the filter, but whose first doesn't"
+            def criteria = new RecommendationCriteria(countries: ["US"])
+            def candidate = candidateWithOriginCountries(["GB", "US"])
+
+        when: "output filtering runs with countries: [\"US\"]"
+            def result = outputFilterService.applyOutputFilters([candidate], criteria)
+
+        then: "the candidate is included, not wrongly excluded"
+            result.contains(candidate)
     }
 
     def "SERIES-032-AC-09: post-fetch language check is unaffected, still runs unconditionally"() {

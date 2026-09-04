@@ -28,7 +28,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 100, String originalLanguage = "en") {
-        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
+        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, [])
     }
 
     def "SERIES-016-AC-02: toDto populates voteCount from the TMDB candidate verbatim"() {
@@ -45,7 +45,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
     def "SERIES-023-AC-02/03: toDto carries originCountry and tmdbId from the candidate"() {
         given: "a deduped candidate with originCountry/tmdbId set"
             def dc = new DedupedCandidate(
-                new TmdbCandidate(2, "Show", 2020, "overview", null, new BigDecimal("7.0"), [], 100, "en", "US"),
+                new TmdbCandidate(2, "Show", 2020, "overview", null, new BigDecimal("7.0"), [], 100, "en", ["US"]),
                 [], "tt0000002")
 
         when: "toDto is called"
@@ -56,11 +56,24 @@ class RecommendationDtoAssemblerSpec extends Specification {
             result.tmdbId == 2
     }
 
+    def "SERIES-046-AC-09: assembled RecommendationDto carries every origin country, comma-joined"() {
+        given: "a DedupedCandidate wrapping a TmdbCandidate with two origin countries"
+            def candidate = new TmdbCandidate(2996, "MobLand", 2025, "overview", "/poster.jpg",
+                new BigDecimal("7.5"), [80], 200, "en", ["GB", "US"])
+            def dc = new DedupedCandidate(candidate, [], null)
+
+        when: "toDto(dc, 5) is called"
+            def dto = dtoAssembler.toDto(dc, 5)
+
+        then: "originCountry is both entries, comma-joined"
+            dto.originCountry == "GB,US"
+    }
+
     def "SERIES-012-AC-02: candidate poster URLs are built from TmdbClient.POSTER_BASE_URL"() {
         given: "a TMDB candidate with a poster_path"
             def dc = new DedupedCandidate(
                 new TmdbCandidate(99, "Discovered Show", 2020, "overview", "/poster.jpg",
-                    new BigDecimal("7.5"), [18], 100, "en", null),
+                    new BigDecimal("7.5"), [18], 100, "en", []),
                 [], "tt0000099")
 
         when: "toDto is called"

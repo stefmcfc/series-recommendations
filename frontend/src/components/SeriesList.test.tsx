@@ -733,6 +733,19 @@ describe('FRONTEND-026-AC-12/13: year and country next to the title', () => {
   })
 })
 
+describe('FRONTEND-085-AC-04: multi-country origin shown next to the title', () => {
+  it('renders every origin country for a multi-country series', async () => {
+    mockGetAll.mockResolvedValue([
+      makeSeries({ title: 'MobLand', year: 2025, originCountry: 'GB,US' }),
+    ])
+    render(<SeriesList />)
+
+    expect(
+      await screen.findByText(/United Kingdom, United States/),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-023-AC-18: new-content badge per row', () => {
   it('shows a "New content" badge on a row whose newContentDetectedAt is set', async () => {
     mockGetAll.mockResolvedValue([

@@ -29,9 +29,10 @@ import java.util.List;
  * TMDB-sourced fields above; a second call per refreshed series would needlessly double TMDB
  * traffic during a rate-limited bulk refresh (see {@code series_spec_018_series_refresh.md}).
  *
- * <p>{@code originCountry} (SERIES-021-AC-02) is the first entry of this same endpoint's
- * {@code origin_country} array -- {@code null} when absent or empty -- see
- * {@code series_spec_021_origin_country.md}.
+ * <p>{@code originCountries} (SERIES-021-AC-02, widened to every entry by SERIES-046-AC-01) is
+ * every entry of this same endpoint's {@code origin_country} array -- an empty list, not
+ * {@code null}, when absent or empty -- see {@code series_spec_021_origin_country.md} and
+ * {@code series_spec_046_multi_origin_country.md}.
  *
  * <p>{@code overview} (SERIES-023-AC-08) is parsed from this same endpoint's {@code overview}
  * field via the same {@code str(...)} helper applied to every other string field here -- zero
@@ -54,7 +55,7 @@ public record TmdbSeriesDetail(
     BigDecimal voteAverage,
     Integer voteCount,
     ProductionStatus productionStatus,
-    String originCountry,
+    List<String> originCountries,
     String overview,
     Integer lastAirYear
 ) {

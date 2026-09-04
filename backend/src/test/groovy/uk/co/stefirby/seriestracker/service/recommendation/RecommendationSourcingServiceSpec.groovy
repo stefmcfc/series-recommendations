@@ -38,7 +38,7 @@ class RecommendationSourcingServiceSpec extends Specification {
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 100, String originalLanguage = "en") {
-        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
+        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, [])
     }
 
     // -- Automatic pool sourcing (SERIES-006-AC-14/15/16/17/20, SERIES-008-AC-04/05) --

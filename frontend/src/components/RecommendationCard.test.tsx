@@ -193,3 +193,44 @@ describe('FRONTEND-053-AC-03/04: View Details opens the candidate detail modal',
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-085-AC-06: RecommendationCard/RecommendationDetailModal show every origin country', () => {
+  it('renders both countries in the card', () => {
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({ originCountry: 'GB,US' })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByText(/United Kingdom, United States/),
+    ).toBeInTheDocument()
+  })
+
+  it('renders both countries in the detail modal', async () => {
+    mockGetRecommendationDetails.mockResolvedValue({
+      numberOfSeasons: null,
+      numberOfEpisodes: null,
+      imdbRating: null,
+    })
+    mockGetRecommendationKeywords.mockResolvedValue([])
+
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({ originCountry: 'GB,US' })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('view-details-btn'))
+    const dialog = await screen.findByRole('dialog')
+
+    expect(
+      within(dialog).getByText(/United Kingdom, United States/),
+    ).toBeInTheDocument()
+  })
+})

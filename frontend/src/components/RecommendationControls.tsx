@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series, SortOptions } from '../types/series'
 import type { PickerOption } from './KeywordPicker'
-import { formatCountryName } from '../utils/countryName'
+import { formatCountryNames } from '../utils/countryName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
 import { CustomSearchPanel } from './CustomSearchPanel'
@@ -403,7 +403,7 @@ export function seriesPickerLabel(
   const yearPart = formattedYear !== '' ? ` (${formattedYear})` : ''
   const countryPart =
     series.originCountry != null
-      ? ` | ${formatCountryName(series.originCountry)}`
+      ? ` | ${formatCountryNames(series.originCountry)}`
       : ''
   const statusPart = statusFilter === 'any' ? ` - ${series.status}` : ''
   return `${series.title}${yearPart}${countryPart}${statusPart}`
@@ -418,7 +418,7 @@ export function seriesPickerDisplay(
   const yearPart = formattedYear !== '' ? ` (${formattedYear})` : ''
   const countryPart =
     series.originCountry != null
-      ? ` | ${formatCountryName(series.originCountry)}`
+      ? ` | ${formatCountryNames(series.originCountry)}`
       : ''
   return (
     <>

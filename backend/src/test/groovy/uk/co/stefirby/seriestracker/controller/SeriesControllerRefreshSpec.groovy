@@ -82,7 +82,7 @@ class SeriesControllerRefreshSpec extends Specification {
             when(tmdbClient.findTvIdByImdbId("tt0903747")).thenReturn(Optional.of(1396))
             when(tmdbClient.details(1396)).thenReturn(new TmdbSeriesDetail(
                 "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
-                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US", null, null))
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, ["US"], null, null))
             when(omdbClient.ratingsForImdbId("tt0903747")).thenReturn(new OmdbRatings(new BigDecimal("9.5"), 97))
 
         when: "POST /refresh is requested"
@@ -170,7 +170,7 @@ class SeriesControllerRefreshSpec extends Specification {
             when(tmdbClient.findTvIdByImdbId("tt0903747")).thenReturn(Optional.of(1396))
             when(tmdbClient.details(1396)).thenReturn(new TmdbSeriesDetail(
                 "Breaking Bad", 2008, [18], "/poster.jpg", 6, 63,
-                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, "US", null, null))
+                new BigDecimal("8.9"), 1200, ProductionStatus.ENDED, ["US"], null, null))
             when(omdbClient.ratingsForImdbId("tt0903747")).thenReturn(new OmdbRatings(new BigDecimal("9.5"), 97))
             mockMvc.perform(post("/api/v1/series/${created.id}/refresh")).andExpect(status().isOk())
                 .andExpect(jsonPath('$.data.series.newContentDetectedAt').exists())

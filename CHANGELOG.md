@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: series and recommendation candidates now carry every TMDB `origin_country` entry, not just the first — a co-production like "MobLand" (GB + US) is stored/exported as `"GB,US"` instead of silently dropping all but its first-listed country. `RecommendationOutputFilterService`'s Custom Search country filter now matches a candidate if *any* of its countries is selected, not just its first (`series_spec_046`).
+- Frontend: `SeriesList`/`SeriesDetail`, the `AddSeriesForm`/`EditSeriesForm` TMDB candidate pickers, and `RecommendationCard`/`RecommendationDetailModal`/`RecommendationControls` now display every one of a series/candidate's origin countries (e.g. "United Kingdom, United States") via a new `formatCountryNames` utility, instead of only the first (`frontend_spec_085`).
+
 ### Changed
 
 - Backend: `SeriesService`'s `clearedFields` handling (`CLEARABLE_FIELDS`, `hasNonNullValue`, `clearField`) is now a single private `ClearableField` enum pairing each field's wire name with its dto-check and entity-clear behavior, instead of a constant plus two parallel switch statements. No behavior change — SonarQube finding (`java:S1192`, every field name literal duplicated 3 times).

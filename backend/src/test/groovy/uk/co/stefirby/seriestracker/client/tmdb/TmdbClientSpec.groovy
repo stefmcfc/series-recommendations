@@ -135,7 +135,7 @@ class TmdbClientSpec extends Specification {
             result[0].originalLanguage() == "en"
     }
 
-    def "SERIES-023-AC-01: recommendations() maps origin_country's first entry onto TmdbCandidate"() {
+    def "SERIES-023-AC-01: recommendations() maps origin_country's entries onto TmdbCandidate"() {
         given: "a TMDB recommendations response with an origin_country array"
             def body = '{"results": [{"id": 2, "name": "Show", "origin_country": ["US"]}]}'
             mockServer.expect(requestTo(Matchers.containsString("tv/1396/recommendations")))
@@ -144,11 +144,11 @@ class TmdbClientSpec extends Specification {
         when: "recommendations(1396) is called"
             def results = client().recommendations(1396)
 
-        then: "originCountry is the array's first entry"
-            results[0].originCountry() == "US"
+        then: "originCountries carries the array's entries"
+            results[0].originCountries() == ["US"]
     }
 
-    def "SERIES-023-AC-01: an absent origin_country maps to a null originCountry on TmdbCandidate"() {
+    def "SERIES-023-AC-01: an absent origin_country maps to an empty originCountries on TmdbCandidate"() {
         given: "a TMDB recommendations result with no origin_country field"
             def body = '{"results": [{"id": 2, "name": "Show"}]}'
             mockServer.expect(requestTo(Matchers.containsString("tv/1396/recommendations")))
@@ -157,8 +157,22 @@ class TmdbClientSpec extends Specification {
         when: "recommendations(1396) is called"
             def results = client().recommendations(1396)
 
-        then: "originCountry is null"
-            results[0].originCountry() == null
+        then: "originCountries is empty"
+            results[0].originCountries() == []
+    }
+
+    def "SERIES-046-AC-03: recommendations/similar/discover map every origin_country entry onto TmdbCandidate"() {
+        given: "a TMDB discover/recommendations response with a multi-entry origin_country array"
+            mockServer.expect(requestTo(Matchers.containsString("discover/tv")))
+                .andRespond(withSuccess('''
+                    {"results": [{"id": 2996, "name": "MobLand", "origin_country": ["GB", "US"]}]}
+                ''', MediaType.APPLICATION_JSON))
+
+        when: "discover(...) is called"
+            def results = client().discover([], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "originCountries carries both entries"
+            results[0].originCountries() == ["GB", "US"]
     }
 
     def "SERIES-007-AC-23: vote_count/original_language are null when absent"() {
@@ -629,6 +643,18 @@ class TmdbClientSpec extends Specification {
             TmdbClient.POSTER_BASE_URL == "https://image.tmdb.org/t/p/w500"
     }
 
+    def "SERIES-046-AC-04: joinOriginCountries comma-joins a multi-entry list"() {
+        expect: "a multi-entry list joins with a bare comma, no space"
+            TmdbClient.joinOriginCountries(["GB", "US"]) == "GB,US"
+
+        and: "a single-entry list returns that one value unchanged"
+            TmdbClient.joinOriginCountries(["GB"]) == "GB"
+
+        and: "an empty or null list returns null"
+            TmdbClient.joinOriginCountries([]) == null
+            TmdbClient.joinOriginCountries(null) == null
+    }
+
     def "SERIES-012-AC-03/04/05: search maps every entry of results[] onto TmdbSearchCandidate, omitting a redundant originalTitle"() {
         given: "TMDB responds to a search with two results, one with a differing original_name"
             def body = '''
@@ -665,7 +691,7 @@ class TmdbClientSpec extends Specification {
             result[1].posterPath() == null
     }
 
-    def "SERIES-021-AC-01: search maps origin_country's first entry onto TmdbSearchCandidate"() {
+    def "SERIES-021-AC-01: search maps origin_country's entries onto TmdbSearchCandidate"() {
         given: "TMDB search results include an origin_country array"
             def body = '{"results": [{"id": 2996, "name": "The Office", "origin_country": ["GB"]}]}'
             mockServer.expect(requestTo(Matchers.containsString("search/tv")))
@@ -674,11 +700,11 @@ class TmdbClientSpec extends Specification {
         when: "search('The Office') is called"
             def results = client().search("The Office")
 
-        then: "originCountry is the array's first entry"
-            results[0].originCountry() == "GB"
+        then: "originCountries carries the array's entries"
+            results[0].originCountries() == ["GB"]
     }
 
-    def "SERIES-021-AC-01: an absent origin_country maps to a null originCountry"() {
+    def "SERIES-021-AC-01: an absent origin_country maps to an empty originCountries"() {
         given: "a TMDB search result with no origin_country field"
             def body = '{"results": [{"id": 1, "name": "Show"}]}'
             mockServer.expect(requestTo(Matchers.containsString("search/tv")))
@@ -687,8 +713,22 @@ class TmdbClientSpec extends Specification {
         when: "search('Show') is called"
             def results = client().search("Show")
 
-        then: "originCountry is null"
-            results[0].originCountry() == null
+        then: "originCountries is empty"
+            results[0].originCountries() == []
+    }
+
+    def "SERIES-046-AC-02: search maps every origin_country entry onto TmdbSearchCandidate"() {
+        given: "a TMDB search result with a multi-entry origin_country array"
+            mockServer.expect(requestTo(Matchers.containsString("search/tv")))
+                .andRespond(withSuccess('''
+                    {"results": [{"id": 2996, "name": "MobLand", "origin_country": ["GB", "US"]}]}
+                ''', MediaType.APPLICATION_JSON))
+
+        when: "search(\"MobLand\") is called"
+            def results = client().search("MobLand")
+
+        then: "originCountries carries both entries"
+            results[0].originCountries() == ["GB", "US"]
     }
 
     def "SERIES-012-AC-06: an absent or empty results array maps to an empty list, no exception"() {
@@ -777,7 +817,7 @@ class TmdbClientSpec extends Specification {
             result.productionStatus() == null
     }
 
-    def "SERIES-021-AC-02: details maps origin_country's first entry onto TmdbSeriesDetail"() {
+    def "SERIES-021-AC-02: details maps origin_country's entries onto TmdbSeriesDetail"() {
         given: "a TMDB detail response with an origin_country array"
             def body = '{"name": "The Office", "origin_country": ["GB"], "genres": []}'
             mockServer.expect(requestTo(Matchers.containsString("tv/2996")))
@@ -786,11 +826,11 @@ class TmdbClientSpec extends Specification {
         when: "details(2996) is called"
             def result = client().details(2996)
 
-        then: "originCountry is the array's first entry"
-            result.originCountry() == "GB"
+        then: "originCountries carries the array's entries"
+            result.originCountries() == ["GB"]
     }
 
-    def "SERIES-021-AC-02: an absent origin_country maps to a null originCountry on TmdbSeriesDetail"() {
+    def "SERIES-021-AC-02: an absent origin_country maps to an empty originCountries on TmdbSeriesDetail"() {
         given: "a TMDB detail response with no origin_country field"
             def body = '{"name": "Obscure Show", "genres": []}'
             mockServer.expect(requestTo(Matchers.containsString("tv/2997")))
@@ -799,8 +839,22 @@ class TmdbClientSpec extends Specification {
         when: "details(2997) is called"
             def result = client().details(2997)
 
-        then: "originCountry is null"
-            result.originCountry() == null
+        then: "originCountries is empty"
+            result.originCountries() == []
+    }
+
+    def "SERIES-046-AC-01: details maps every origin_country entry onto TmdbSeriesDetail"() {
+        given: "a TMDB detail response with a multi-entry origin_country array"
+            mockServer.expect(requestTo(Matchers.containsString("tv/2996")))
+                .andRespond(withSuccess('''
+                    {"name": "MobLand", "origin_country": ["GB", "US"], "genres": []}
+                ''', MediaType.APPLICATION_JSON))
+
+        when: "details(2996) is called"
+            def detail = client().details(2996)
+
+        then: "originCountries carries both entries, in order"
+            detail.originCountries() == ["GB", "US"]
     }
 
     def "SERIES-023-AC-08: details maps overview onto TmdbSeriesDetail"() {

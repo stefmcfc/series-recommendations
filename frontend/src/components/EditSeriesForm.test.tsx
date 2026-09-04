@@ -837,6 +837,25 @@ describe('FRONTEND-045-AC-04: multi-match candidates also gate through the confi
   })
 })
 
+describe('FRONTEND-085-AC-05: candidate picker shows every origin country', () => {
+  it('renders both countries for a multi-country TMDB candidate', async () => {
+    const series = { id: '1', title: 'Show', status: 'WATCHING' } as Series
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 1, title: 'MobLand', year: 2025, originCountry: 'GB,US' },
+      { tmdbId: 2, title: 'MobLand', year: 2025, originCountry: 'GB,US' },
+    ])
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    expect(
+      (await screen.findAllByText(/United Kingdom, United States/)).length,
+    ).toBeGreaterThan(0)
+  })
+})
+
 describe('FRONTEND-045-AC-05: confirming applies the resolved result', () => {
   it('overwrites fields on Overwrite', async () => {
     const series = {

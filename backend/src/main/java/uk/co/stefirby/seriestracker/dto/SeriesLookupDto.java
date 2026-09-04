@@ -34,8 +34,10 @@ public class SeriesLookupDto {
     private String posterUrl;
     private String imdbId;
 
-    // series_spec_021_origin_country.md (SERIES-021-AC-04): the resolved candidate's first
-    // origin_country entry, sourced from TmdbSeriesDetail.originCountry().
+    // series_spec_021_origin_country.md (SERIES-021-AC-04): the resolved candidate's origin
+    // country/countries, sourced from TmdbSeriesDetail.originCountries() -- comma-joined via
+    // TmdbClient.joinOriginCountries when there's more than one (series_spec_046_multi_origin
+    // _country.md, SERIES-046-AC-06).
     private String originCountry;
 
     // series_spec_021_origin_country.md (SERIES-021-AC-07): closes a gap left by

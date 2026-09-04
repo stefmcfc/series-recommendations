@@ -24,7 +24,7 @@ class RecommendationRankingServiceSpec extends Specification {
     }
 
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", BigDecimal voteAverage = new BigDecimal("8.0")) {
-        new TmdbCandidate(tmdbId, title, 2020, "overview", "/poster.jpg", voteAverage, [18], 100, "en", null)
+        new TmdbCandidate(tmdbId, title, 2020, "overview", "/poster.jpg", voteAverage, [18], 100, "en", [])
     }
 
     private static DedupedCandidate dc(TmdbCandidate c, List<SeriesEntity> sources = []) {
