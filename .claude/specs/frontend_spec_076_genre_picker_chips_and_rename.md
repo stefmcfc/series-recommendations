@@ -1,6 +1,6 @@
 # Frontend Spec 076: `GenreIncludeExcludePicker` Gains Removable Chips and a Rename
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: Frontend Spec 067 (`frontend_spec_067_genre_include_exclude_picker.md`, owns the component this spec enhances) ✅ required
 **Area**: Frontend (`components/GenreIncludeExcludePicker.tsx`)
@@ -193,9 +193,9 @@ describe('FRONTEND-076-AC-06: exclude-only usage keeps its own label', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-076-AC-01: included genres render as removable chips
-- [ ] FRONTEND-076-AC-02: excluded genres render as removable chips
-- [ ] FRONTEND-076-AC-03: no chips render when both lists are empty
-- [ ] FRONTEND-076-AC-04: `SearchFilter` uses the new label
-- [ ] FRONTEND-076-AC-05: `UseMySeriesPanel` and `CustomSearchPanel` use the new label
-- [ ] FRONTEND-076-AC-06: `RecommendationFiltersBox`'s exclude-only usage is unchanged
+- [x] FRONTEND-076-AC-01: included genres render as removable chips
+- [x] FRONTEND-076-AC-02: excluded genres render as removable chips
+- [x] FRONTEND-076-AC-03: no chips render when both lists are empty
+- [x] FRONTEND-076-AC-04: `SearchFilter` uses the new label
+- [x] FRONTEND-076-AC-05: `UseMySeriesPanel` and `CustomSearchPanel` use the new label
+- [x] FRONTEND-076-AC-06: `RecommendationFiltersBox`'s exclude-only usage is unchanged

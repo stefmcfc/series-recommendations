@@ -70,6 +70,23 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   }
 }
 
+describe('FRONTEND-076-AC-05: other include/exclude usages are renamed', () => {
+  it('renders "Include / Exclude Genres" in UseMySeriesPanel', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Comedy']}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('UseMySeriesPanel', () => {
   it('shows the "no series" hint when allSeries is empty', () => {
     render(
@@ -137,7 +154,7 @@ describe('UseMySeriesPanel', () => {
     )
 
     expect(
-      screen.getByRole('button', { name: 'Filter by Genre' }),
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
     ).toBeInTheDocument()
   })
 
@@ -232,7 +249,7 @@ describe('FRONTEND-069-AC-04: UseMySeriesPanel renders the combined picker', () 
       />,
     )
     expect(
-      screen.getByRole('button', { name: 'Filter by Genre' }),
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
@@ -254,7 +271,9 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
         keywordOptions={[]}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Filter by Genre' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: neutral' }))
     // neutral -> include -> exclude (the picker's toggle cycle is
     // neutral -> include -> exclude -> neutral -- a third click on the

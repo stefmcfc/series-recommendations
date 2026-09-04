@@ -32,6 +32,22 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
   }
 }
 
+describe('FRONTEND-076-AC-05: other include/exclude usages are renamed', () => {
+  it('renders "Include / Exclude Genres" in CustomSearchPanel', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={['Drama', 'Comedy']}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('CustomSearchPanel', () => {
   // FRONTEND-068-AC-02/AC-03: the former include-only checkbox fieldset
   // ('renders a checkbox per genre option...'/'calls updateState with the
@@ -121,7 +137,9 @@ describe('FRONTEND-068-AC-02: CustomSearchPanel renders the combined picker', ()
         keywordOptions={[]}
       />,
     )
-    expect(screen.getByRole('button', { name: 'Genres' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Include / Exclude Genres' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
 })
@@ -138,7 +156,11 @@ describe('FRONTEND-068-AC-03: excluding a genre updates state correctly', () => 
         keywordOptions={[]}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Genres — 1 included' }))
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Include / Exclude Genres — 1 included',
+      }),
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
     expect(updateState).toHaveBeenCalledWith({
       genresSelected: [],

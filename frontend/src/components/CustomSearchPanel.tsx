@@ -53,7 +53,7 @@ export function CustomSearchPanel({
         <div className={styles.field}>
           <GenreIncludeExcludePicker
             idPrefix="custom-search-genre"
-            label="Genres"
+            label="Include / Exclude Genres"
             genreOptions={genreOptions}
             included={state.genresSelected}
             excluded={state.excludeGenresSelected}
