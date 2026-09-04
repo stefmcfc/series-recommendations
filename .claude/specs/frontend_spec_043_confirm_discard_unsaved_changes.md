@@ -1,6 +1,6 @@
 # Frontend Spec 043: Confirm Before Discarding Unsaved Changes (AddSeriesForm / EditSeriesForm)
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (data-loss prevention — no reported incident, but a real gap: closing either form currently
 discards typed input with zero warning)
 **Depends on**: Frontend Spec 003 (`frontend_spec_003_add_series_form.md`, owns `AddSeriesForm`'s existing
@@ -291,13 +291,13 @@ closes only the confirm dialog, leaving edits intact.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-043-AC-01: `ConfirmDialog` renders message and actions as an alertdialog
-- [ ] FRONTEND-043-AC-02: confirm/cancel button and Escape wiring, with propagation stopped
-- [ ] FRONTEND-043-AC-03: AddSeriesForm opens the confirm dialog on Cancel when dirty
-- [ ] FRONTEND-043-AC-04: AddSeriesForm cancels immediately when untouched
-- [ ] FRONTEND-043-AC-05: AddSeriesForm's Escape mirrors its Cancel gating
-- [ ] FRONTEND-043-AC-06: AddSeriesForm's confirm dialog outcomes (Discard/Keep Editing)
-- [ ] FRONTEND-043-AC-07: EditSeriesForm opens the confirm dialog on Cancel when dirty
-- [ ] FRONTEND-043-AC-08: EditSeriesForm cancels immediately when untouched
-- [ ] FRONTEND-043-AC-09: EditSeriesForm's Escape mirrors its Cancel gating
-- [ ] FRONTEND-043-AC-10: EditSeriesForm's confirm dialog outcomes (Discard/Keep Editing)
+- [x] FRONTEND-043-AC-01: `ConfirmDialog` renders message and actions as an alertdialog
+- [x] FRONTEND-043-AC-02: confirm/cancel button and Escape wiring, with propagation stopped
+- [x] FRONTEND-043-AC-03: AddSeriesForm opens the confirm dialog on Cancel when dirty
+- [x] FRONTEND-043-AC-04: AddSeriesForm cancels immediately when untouched
+- [x] FRONTEND-043-AC-05: AddSeriesForm's Escape mirrors its Cancel gating
+- [x] FRONTEND-043-AC-06: AddSeriesForm's confirm dialog outcomes (Discard/Keep Editing)
+- [x] FRONTEND-043-AC-07: EditSeriesForm opens the confirm dialog on Cancel when dirty
+- [x] FRONTEND-043-AC-08: EditSeriesForm cancels immediately when untouched
+- [x] FRONTEND-043-AC-09: EditSeriesForm's Escape mirrors its Cancel gating
+- [x] FRONTEND-043-AC-10: EditSeriesForm's confirm dialog outcomes (Discard/Keep Editing)

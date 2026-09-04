@@ -10,6 +10,8 @@ import type {
   Series,
 } from '../types/series'
 import { formatCountryName } from '../utils/countryName'
+import { isFormDirty } from '../utils/formDirtyCheck'
+import { ConfirmDialog } from './ConfirmDialog'
 import { SeriesFormFields } from './SeriesFormFields'
 import {
   validateYear,
@@ -242,6 +244,11 @@ export function AddSeriesForm({
   const [form, setForm] = useState<FormState>(() =>
     buildInitialFormState(initialValues),
   )
+  // FRONTEND-043: a second, never-updated snapshot of the form's initial
+  // state, captured once at mount -- the comparison baseline for the
+  // discard-unsaved-changes confirm dialog. Note the setter is never called.
+  const [initialForm] = useState(() => buildInitialFormState(initialValues))
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -356,9 +363,20 @@ export function AddSeriesForm({
     setTmdbCandidates([])
   }
 
+  // FRONTEND-043-AC-03/05: gates Cancel/Escape behind a confirm dialog when
+  // the form has unsaved changes; closes immediately (today's behavior) when
+  // it's unchanged from its initial state.
+  const handleCancelClick = () => {
+    if (isFormDirty(form, initialForm)) {
+      setShowDiscardConfirm(true)
+    } else {
+      onCancel()
+    }
+  }
+
   const handleKeyDown = useEscapeToClose(() => {
     if (!submitting) {
-      onCancel()
+      handleCancelClick()
     }
   })
 
@@ -514,7 +532,7 @@ export function AddSeriesForm({
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={onCancel}
+              onClick={handleCancelClick}
               disabled={submitting}
             >
               Cancel
@@ -529,6 +547,15 @@ export function AddSeriesForm({
           </div>
         </form>
       </div>
+
+      {showDiscardConfirm && (
+        <ConfirmDialog
+          message="Discard this series? Your changes will be lost."
+          confirmLabel="Discard"
+          onConfirm={onCancel}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
+      )}
     </div>
   )
 }
