@@ -1342,3 +1342,39 @@ describe('FRONTEND-073-AC-03: live Title search box renders on the page', () => 
     expect(onTitleSearchChange).toHaveBeenCalledWith('')
   })
 })
+
+describe('FRONTEND-079-AC-01: icon buttons carry a tooltip label', () => {
+  it('sets data-tooltip to match aria-label on each icon-only toolbar button', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(
+      <SeriesList
+        onAddClick={vi.fn()}
+        onEditClick={vi.fn()}
+        onSeriesClick={vi.fn()}
+      />,
+    )
+    await screen.findByTestId('series-list')
+
+    const sortDirectionButton = screen.getByRole('button', {
+      name: 'Sort descending',
+    })
+    expect(sortDirectionButton).toHaveAttribute(
+      'data-tooltip',
+      'Sort descending',
+    )
+
+    const expandedButton = screen.getByRole('button', { name: 'Expanded view' })
+    expect(expandedButton).toHaveAttribute('data-tooltip', 'Expanded view')
+
+    const compactButton = screen.getByRole('button', { name: 'Compact view' })
+    expect(compactButton).toHaveAttribute('data-tooltip', 'Compact view')
+
+    const posterButton = screen.getByRole('button', {
+      name: 'Poster-only view',
+    })
+    expect(posterButton).toHaveAttribute('data-tooltip', 'Poster-only view')
+
+    const filtersButton = screen.getByRole('button', { name: 'Filters' })
+    expect(filtersButton).toHaveAttribute('data-tooltip', 'Filters')
+  })
+})

@@ -906,6 +906,42 @@ describe('FRONTEND-075-AC-05: no change to field behavior', () => {
   })
 })
 
+describe('FRONTEND-079-AC-03: clicking the backdrop closes the sheet', () => {
+  it('calls onClose when the overlay itself is clicked', () => {
+    const onClose = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={onClose}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('dialog'))
+
+    expect(onClose).toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-079-AC-04: clicking inside the sheet does not close it', () => {
+  it('does not call onClose when a field inside the sheet is clicked', () => {
+    const onClose = vi.fn()
+    render(
+      <SearchFilter
+        isOpen={true}
+        onClose={onClose}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Filters'))
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+})
+
 describe('FRONTEND-077-AC-04: SearchFilter inline Keywords hides its input', () => {
   it('shows no text input for the inline Keywords field, but the modal still has one', () => {
     render(
