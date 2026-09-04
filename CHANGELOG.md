@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.21.0] - 2026-09-05
+
 ### Added
 
 - Frontend: `SeriesList`'s icon-only toolbar buttons (sort direction, the three view-mode toggles, Filters) now show a visible tooltip label on hover and on keyboard focus, via a `data-tooltip` attribute mirroring each button's existing `aria-label` (`frontend_spec_079`).
