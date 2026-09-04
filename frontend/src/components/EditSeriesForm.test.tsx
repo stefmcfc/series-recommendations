@@ -8,6 +8,8 @@ import type { Series } from '../types/series'
 
 vi.mock('../services/seriesApi')
 const mockUpdate = vi.mocked(seriesApi.update)
+const mockSearchTmdb = vi.mocked(seriesApi.searchTmdb)
+const mockResolveTmdbCandidate = vi.mocked(seriesApi.resolveTmdbCandidate)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -296,11 +298,6 @@ describe('FRONTEND-009-AC-16/17: Poster URL field', () => {
   it('renders an empty Poster URL field when series.posterUrl is null', () => {
     renderForm({ series: makeSeries({ posterUrl: null }) })
     expect(screen.getByLabelText(/poster url/i)).toHaveValue('')
-  })
-
-  it('does not render a "Look Up" button', () => {
-    renderForm()
-    expect(screen.queryByTestId('lookup-btn')).not.toBeInTheDocument()
   })
 
   it('renders a preview when Poster URL is populated, hides it on load failure', () => {
@@ -639,5 +636,136 @@ describe('FRONTEND-004-AC-38: no leaked data', () => {
     expect(
       logSpy.mock.calls.flat().some((c) => String(c).includes('private note')),
     ).toBe(false)
+  })
+})
+
+describe('FRONTEND-045-AC-02: EditSeriesForm renders Look Up', () => {
+  it('renders a Look Up button beside Title', () => {
+    const series = { id: '1', title: 'Show', status: 'WATCHING' } as Series
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    expect(screen.getByTestId('lookup-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('lookup-btn')).not.toBeDisabled()
+  })
+})
+
+describe('FRONTEND-045-AC-03: a single match opens the confirm dialog, not an immediate apply', () => {
+  it('opens ConfirmDialog instead of applying immediately', async () => {
+    const series = {
+      id: '1',
+      title: 'Show',
+      status: 'WATCHING',
+      year: 2019,
+    } as Series
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 42, title: 'Show', year: 2020 },
+    ])
+    mockResolveTmdbCandidate.mockResolvedValue({ title: 'Show', year: 2020 })
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByLabelText(/^year/i)).toHaveValue(2019) // unchanged until confirmed
+  })
+})
+
+describe('FRONTEND-045-AC-04: multi-match candidates also gate through the confirm dialog', () => {
+  it('opens the confirm dialog after picking a candidate', async () => {
+    const series = { id: '1', title: 'Show', status: 'WATCHING' } as Series
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 1, title: 'Show', year: 2019 },
+      { tmdbId: 2, title: 'Show', year: 2020 },
+    ])
+    mockResolveTmdbCandidate.mockResolvedValue({ title: 'Show', year: 2020 })
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    fireEvent.click(
+      await screen
+        .findAllByTestId('lookup-tmdb-candidate')
+        .then((els) => els[1]),
+    )
+
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-045-AC-05: confirming applies the resolved result', () => {
+  it('overwrites fields on Overwrite', async () => {
+    const series = {
+      id: '1',
+      title: 'Show',
+      status: 'WATCHING',
+      year: 2019,
+    } as Series
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 42, title: 'Show', year: 2020 },
+    ])
+    mockResolveTmdbCandidate.mockResolvedValue({ title: 'Show', year: 2020 })
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    fireEvent.click(await screen.findByRole('button', { name: /^overwrite$/i }))
+
+    expect(screen.getByLabelText(/^year/i)).toHaveValue(2020)
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-045-AC-06: cancelling discards the resolved result', () => {
+  it('leaves the form unchanged on Keep Current Values', async () => {
+    const series = {
+      id: '1',
+      title: 'Show',
+      status: 'WATCHING',
+      year: 2019,
+    } as Series
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 42, title: 'Show', year: 2020 },
+    ])
+    mockResolveTmdbCandidate.mockResolvedValue({ title: 'Show', year: 2020 })
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /keep current values/i }),
+    )
+
+    expect(screen.getByLabelText(/^year/i)).toHaveValue(2019)
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-045-AC-07: confirm dialog explains the overwrite', () => {
+  it('names the overwrite in the dialog message', async () => {
+    const series = { id: '1', title: 'Show', status: 'WATCHING' } as Series
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 42, title: 'Show', year: 2020 },
+    ])
+    mockResolveTmdbCandidate.mockResolvedValue({ title: 'Show', year: 2020 })
+    render(
+      <EditSeriesForm series={series} onCancel={vi.fn()} onSuccess={vi.fn()} />,
+    )
+
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    // Narrower than a bare /overwrite/i: both the dialog's message and its
+    // "Overwrite" confirm button match that pattern, which makes a plain
+    // findByText(/overwrite/i) ambiguous (two matching elements). This still
+    // asserts the message itself names the overwrite.
+    expect(
+      await screen.findByText(/overwrite the fields below/i),
+    ).toBeInTheDocument()
   })
 })

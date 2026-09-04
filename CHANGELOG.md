@@ -11,6 +11,7 @@ versioned together as one app.
 ### Added
 
 - Frontend: `AddSeriesForm`/`EditSeriesForm` now prompt with a new reusable `ConfirmDialog` component before discarding unsaved changes on Cancel or Escape — untouched forms still close immediately, unchanged from today (`frontend_spec_043`).
+- Frontend: `EditSeriesForm` gains a "Look Up" button beside Title, mirroring `AddSeriesForm`'s existing TMDB search/candidate-picker flow (extracted into a shared `hooks/useTmdbLookup.ts`) — resolving a result always opens `ConfirmDialog`'s overwrite prompt first rather than applying immediately, since edited fields may already carry manual corrections (`frontend_spec_045`).
 
 ## [3.18.1] - 2026-09-04
 

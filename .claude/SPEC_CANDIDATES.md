@@ -232,6 +232,24 @@ as they're individually noticed.
   documented, deliberate choice in each spec's Design Decisions (avoiding `<dialog>`'s
   showModal()/close() lifecycle complexity), but never evaluated as a *pattern* across every dialog
   at once for whether that tradeoff still holds as more dialogs have accumulated.
+  **Update (2026-09-04)**: live-reproduced the concrete failure mode this causes, while manually
+  verifying `frontend_spec_043` (discard-unsaved-changes confirm dialog) in a real browser. The
+  mechanism is broader than just "modal closes without returning focus": *any* click on a button
+  that removes the currently-focused element from the DOM — while the dialog itself stays mounted —
+  reverts `document.activeElement` to `document.body`. Since each dialog's Escape handler is a plain
+  `onKeyDown` on the dialog's own root div (not a document-level listener), a keydown whose target is
+  `body` never bubbles into it, so Escape silently does nothing until the user manually clicks or
+  tabs back inside. Confirmed concretely: `AddSeriesForm`/`EditSeriesForm`'s new `ConfirmDialog`
+  (spec 043) goes Escape-inert after clicking "Keep Editing"; the identical shape exists in
+  `SearchFilter`'s "Browse Keywords" modal (`Done` button) and `UseMySeriesPanel`'s two "Browse..."
+  modals (`Done`/close buttons) — not yet individually re-verified instance-by-instance beyond these,
+  since the full audit above is this candidate's natural home for that. Always fails safe (Escape
+  becomes inert, never closes/discards the wrong thing) — no data loss in any observed case. One
+  precedent already exists in this codebase for the fix: `SearchFilter`'s own sheet-*open* transition
+  (`FRONTEND-071-AC-05`) already solves the identical problem for its own case via a `useEffect` that
+  programmatically `.focus()`s a ref'd element on the relevant open/close transition — a future fix
+  spec should generalize that same pattern (e.g. a shared hook that refocuses a dialog's root/first
+  element whenever a child it contains unmounts) rather than re-deriving a new approach.
 - Heading hierarchy and skip-link presence across full pages, not per-component.
 - Touch/click target sizing (WCAG 2.5.8) app-wide, not just the one instance flagged during
   `frontend_spec_054`'s icon-button design.

@@ -1,6 +1,6 @@
 # Frontend Spec 045: EditSeriesForm Gains "Look Up" (with Overwrite Confirmation)
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (parity gap — `AddSeriesForm` can re-fetch TMDB data, `EditSeriesForm` cannot)
 **Depends on**: Frontend Spec 043 (`frontend_spec_043_confirm_discard_unsaved_changes.md`, the `ConfirmDialog`
 component this spec reuses) — **implement after 043 ships.** Frontend Spec 022
@@ -249,10 +249,10 @@ describe('FRONTEND-045-AC-07: confirm dialog explains the overwrite', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-045-AC-01: `AddSeriesForm`'s Look Up flow is unchanged after the `useTmdbLookup` extraction
-- [ ] FRONTEND-045-AC-02: `EditSeriesForm` renders the Look Up button
-- [ ] FRONTEND-045-AC-03: a single match opens the confirm dialog, doesn't apply immediately
-- [ ] FRONTEND-045-AC-04: multi-match candidates also gate through the confirm dialog
-- [ ] FRONTEND-045-AC-05: confirming applies the resolved result
-- [ ] FRONTEND-045-AC-06: cancelling discards the resolved result
-- [ ] FRONTEND-045-AC-07: the confirm dialog names the overwrite
+- [x] FRONTEND-045-AC-01: `AddSeriesForm`'s Look Up flow is unchanged after the `useTmdbLookup` extraction
+- [x] FRONTEND-045-AC-02: `EditSeriesForm` renders the Look Up button
+- [x] FRONTEND-045-AC-03: a single match opens the confirm dialog, doesn't apply immediately
+- [x] FRONTEND-045-AC-04: multi-match candidates also gate through the confirm dialog
+- [x] FRONTEND-045-AC-05: confirming applies the resolved result
+- [x] FRONTEND-045-AC-06: cancelling discards the resolved result
+- [x] FRONTEND-045-AC-07: the confirm dialog names the overwrite

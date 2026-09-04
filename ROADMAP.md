@@ -106,15 +106,14 @@ corrected below.
 | `useEscapeToClose` hook — extracts the identical Escape-to-close handler duplicated across 9 dialogs in 7 components into one shared hook | — | `frontend_spec_083` | ✅ Done |
 | Use My Series picker's option text shows a series' full year range (via the shared `formatSeriesYear` utility), not just its first-air year | — | `frontend_spec_084` | ✅ Done |
 | Confirm before discarding unsaved changes on Cancel/Escape (`AddSeriesForm`/`EditSeriesForm`), via a new reusable `ConfirmDialog` component | — | `frontend_spec_043` | ✅ Done |
+| `EditSeriesForm` gains "Look Up" (with overwrite confirmation) — extracts a shared `hooks/useTmdbLookup.ts` from `AddSeriesForm` (behavior-preserving) and ports it into `EditSeriesForm`, gated behind `ConfirmDialog`'s overwrite prompt | — | `frontend_spec_045` | ✅ Done |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains:
 `series_spec_030→frontend_spec_044` and
-`series_spec_038→frontend_spec_057`. `frontend_spec_045` still depends on `frontend_spec_043`,
-which shipped first (see "Delivered" above) — that chain's remaining half is a single row now, no
-longer a two-row chain. Rows within a chain must build in the listed order; the chains
+`series_spec_038→frontend_spec_057`. Rows within a chain must build in the listed order; the chains
 themselves (and the fully-standalone `frontend_spec_064`
 row) have no dependencies on each other
 *within this table* — and can be reordered freely as a block if priorities change — but re-check
@@ -126,7 +125,6 @@ open.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (delivered — reuses its `ConfirmDialog` component)                                    | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
 | `GenreIncludeExcludePicker` gains removable chips below its trigger + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | `frontend_spec_067` (standalone otherwise) | 🟨 P3 · ⬜ Not started |

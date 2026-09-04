@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useTmdbLookup } from '../hooks/useTmdbLookup'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
-import type { Series, UpdateSeriesRequest } from '../types/series'
+import type {
+  Series,
+  SeriesLookupResult,
+  UpdateSeriesRequest,
+} from '../types/series'
+import { formatCountryName } from '../utils/countryName'
 import { isFormDirty } from '../utils/formDirtyCheck'
+import { mergeCommonLookupFields } from '../utils/seriesLookupMerge'
 import { ConfirmDialog } from './ConfirmDialog'
 import { SeriesFormFields } from './SeriesFormFields'
 import {
@@ -144,6 +151,20 @@ function buildPayload(form: FormState): UpdateSeriesRequest {
   return payload
 }
 
+// FRONTEND-045-AC-05: shares the common fields' merge logic with
+// AddSeriesForm.applyLookupResult via mergeCommonLookupFields --
+// EditSeriesForm's FormState doesn't track the TMDB-only metadata fields
+// (imdbId, tmdbRating, tmdbVoteCount, originCountry, productionStatus,
+// tmdbId, overview) AddSeriesForm additionally merges, since those are
+// managed by the separate Refresh flow (frontend_spec_060) here, not by
+// Look Up.
+function applyLookupResult(
+  form: FormState,
+  result: SeriesLookupResult,
+): FormState {
+  return mergeCommonLookupFields(form, result)
+}
+
 export function EditSeriesForm({
   series,
   onCancel,
@@ -169,6 +190,12 @@ export function EditSeriesForm({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [posterPreviewError, setPosterPreviewError] = useState(false)
+  // FRONTEND-045-AC-03/06: a resolved-but-not-yet-applied lookup result --
+  // non-null implies the overwrite-confirm dialog is open. Unlike
+  // AddSeriesForm, resolving never applies the result directly; it's held
+  // here until the user confirms or cancels.
+  const [pendingLookupResult, setPendingLookupResult] =
+    useState<SeriesLookupResult | null>(null)
   // FRONTEND-060-AC-03: the Title input is now permanently disabled, so it
   // can no longer receive focus (disabled elements are unfocusable) --
   // initial focus moves to the dialog container itself instead of Title.
@@ -209,6 +236,32 @@ export function EditSeriesForm({
       ...prev,
       excludeFromRecommendations: event.target.checked,
     }))
+  }
+
+  const {
+    lookingUp,
+    lookupError,
+    tmdbCandidates,
+    resolvingTmdbCandidate,
+    handleLookup,
+    handleSelectTmdbCandidate,
+    handleCancelTmdbCandidates,
+  } = useTmdbLookup(form.title, setPendingLookupResult)
+
+  // FRONTEND-045-AC-05: "Overwrite" applies the pending resolved result via
+  // the same merge AddSeriesForm uses, then clears the pending state.
+  const handleConfirmOverwrite = () => {
+    if (pendingLookupResult) {
+      setForm((prev) => applyLookupResult(prev, pendingLookupResult))
+      setPosterPreviewError(false)
+    }
+    setPendingLookupResult(null)
+  }
+
+  // FRONTEND-045-AC-06: "Keep Current Values" discards the resolved result
+  // entirely -- no field mutation, form stays exactly as it was.
+  const handleCancelOverwrite = () => {
+    setPendingLookupResult(null)
   }
 
   // FRONTEND-043-AC-07/09: gates Cancel/Escape behind a confirm dialog when
@@ -284,17 +337,28 @@ export function EditSeriesForm({
         <form onSubmit={handleSubmit} noValidate>
           <div className={styles.field}>
             <label htmlFor="title">Title *</label>
-            <input
-              id="title"
-              type="text"
-              required
-              disabled
-              value={form.title}
-              onChange={updateField('title')}
-              aria-describedby={
-                fieldErrors.title ? 'title-error' : 'title-locked-hint'
-              }
-            />
+            <div className={styles.titleRow}>
+              <input
+                id="title"
+                type="text"
+                required
+                disabled
+                value={form.title}
+                onChange={updateField('title')}
+                aria-describedby={
+                  fieldErrors.title ? 'title-error' : 'title-locked-hint'
+                }
+              />
+              <button
+                type="button"
+                className={styles.lookupButton}
+                data-testid="lookup-btn"
+                disabled={form.title.trim() === '' || lookingUp}
+                onClick={handleLookup}
+              >
+                {lookingUp ? 'Looking up...' : 'Look Up'}
+              </button>
+            </div>
             <span
               id="title-locked-hint"
               data-testid="title-locked-hint"
@@ -306,6 +370,59 @@ export function EditSeriesForm({
               <span id="title-error" className={styles.fieldError}>
                 {fieldErrors.title}
               </span>
+            )}
+            {lookupError && (
+              <div className={styles.lookupError} role="alert">
+                {lookupError}
+              </div>
+            )}
+            {tmdbCandidates.length > 0 && (
+              <div
+                className={styles.candidates}
+                data-testid="lookup-tmdb-candidates"
+              >
+                <ul className={styles.candidateList}>
+                  {tmdbCandidates.map((candidate) => (
+                    <li key={candidate.tmdbId}>
+                      <button
+                        type="button"
+                        className={styles.candidateButton}
+                        data-testid="lookup-tmdb-candidate"
+                        disabled={resolvingTmdbCandidate}
+                        onClick={() => handleSelectTmdbCandidate(candidate)}
+                      >
+                        {candidate.posterUrl && (
+                          <img
+                            src={candidate.posterUrl}
+                            alt=""
+                            className={styles.candidatePoster}
+                          />
+                        )}
+                        <span>
+                          {candidate.title}
+                          {candidate.year != null ? ` (${candidate.year})` : ''}
+                          {candidate.originalTitle != null &&
+                          candidate.originalTitle !== candidate.title
+                            ? ` — ${candidate.originalTitle}`
+                            : ''}
+                          {candidate.originCountry != null
+                            ? ` — ${formatCountryName(candidate.originCountry)}`
+                            : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className={styles.candidatesCancelButton}
+                  data-testid="lookup-tmdb-candidates-cancel"
+                  disabled={resolvingTmdbCandidate}
+                  onClick={handleCancelTmdbCandidates}
+                >
+                  Cancel
+                </button>
+              </div>
             )}
           </div>
 
@@ -387,6 +504,16 @@ export function EditSeriesForm({
           confirmLabel="Discard"
           onConfirm={onCancel}
           onCancel={() => setShowDiscardConfirm(false)}
+        />
+      )}
+
+      {pendingLookupResult && (
+        <ConfirmDialog
+          message="Looking this up will overwrite the fields below with fresh TMDB data. Continue?"
+          confirmLabel="Overwrite"
+          cancelLabel="Keep Current Values"
+          onConfirm={handleConfirmOverwrite}
+          onCancel={handleCancelOverwrite}
         />
       )}
     </div>
