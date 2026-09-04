@@ -26,7 +26,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
     }
 
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}") {
-        new TmdbCandidate(tmdbId, title, 2020, "overview", "/poster.jpg", new BigDecimal("8.0"), [18], 100, "en", null)
+        new TmdbCandidate(tmdbId, title, 2020, "overview", "/poster.jpg", new BigDecimal("8.0"), [18], 100, "en", [])
     }
 
     def "SERIES-006-AC-22/23/24: excludes unresolvable, already-added, and already-ignored candidates, and dedupes"() {

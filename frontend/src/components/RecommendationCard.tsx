@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Recommendation } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
-import { formatCountryName } from '../utils/countryName'
+import { formatCountryNames } from '../utils/countryName'
 import { RecommendationDetailModal } from './RecommendationDetailModal'
 import styles from './RecommendationCard.module.css'
 
@@ -63,7 +63,7 @@ export function RecommendationCard({
           {r.originCountry !== null && (
             <span className={styles.country}>
               {' | '}
-              {formatCountryName(r.originCountry)}
+              {formatCountryNames(r.originCountry)}
             </span>
           )}
           {r.tmdbRating !== null && (

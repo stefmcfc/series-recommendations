@@ -44,7 +44,7 @@ public class RecommendationDtoAssembler {
             dc.imdbId(),
             sourceTitles,
             dc.sourceSeries().size(),
-            c.originCountry(),
+            TmdbClient.joinOriginCountries(c.originCountries()),
             c.tmdbId()
         );
     }

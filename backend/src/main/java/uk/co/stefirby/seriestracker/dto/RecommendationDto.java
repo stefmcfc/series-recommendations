@@ -22,9 +22,11 @@ import java.util.List;
  * frontend build a "Because you watched X, Y and N more" label without re-deriving
  * attribution itself (SERIES-015-AC-09/10/11).
  *
- * <p>{@code originCountry} (SERIES-023-AC-02) is the candidate's first {@code origin_country}
- * entry, passed through from {@link uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate}
- * verbatim. {@code tmdbId} (SERIES-023-AC-03) is the candidate's own TMDB id, already resolved
+ * <p>{@code originCountry} (SERIES-023-AC-02) is the candidate's {@code origin_country}
+ * entries, comma-joined via {@code TmdbClient.joinOriginCountries} when there's more than one
+ * (series_spec_046_multi_origin_country.md, SERIES-046-AC-09), sourced from
+ * {@link uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate#originCountries()}. {@code
+ * tmdbId} (SERIES-023-AC-03) is the candidate's own TMDB id, already resolved
  * internally on every candidate -- exposed here so the frontend can request this specific
  * candidate's keywords ({@code GET /api/v1/series/recommendations/{tmdbId}/keywords}) without a
  * separate title-based re-lookup. See {@code

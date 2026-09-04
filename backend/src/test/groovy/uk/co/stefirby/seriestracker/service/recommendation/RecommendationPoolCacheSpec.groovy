@@ -34,7 +34,7 @@ class RecommendationPoolCacheSpec extends Specification {
 
     private static RawCandidate rawCandidate(int tmdbId) {
         new RawCandidate(new TmdbCandidate(tmdbId, "Candidate ${tmdbId}", 2020, "overview", "/poster.jpg",
-            new BigDecimal("8.0"), [18], 100, "en", null), null)
+            new BigDecimal("8.0"), [18], 100, "en", []), null)
     }
 
     def "SERIES-035-AC-01: a cache miss calls the loader and returns its result"() {

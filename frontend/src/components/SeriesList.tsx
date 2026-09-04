@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { SeriesStatus } from '../types/series'
 import type { Series, SearchCriteria, SortOptions } from '../types/series'
-import { formatCountryName } from '../utils/countryName'
+import { formatCountryNames } from '../utils/countryName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
@@ -575,7 +575,7 @@ export function SeriesList({
                     {s.originCountry != null && (
                       <span className={styles.country}>
                         {' | '}
-                        {formatCountryName(s.originCountry)}
+                        {formatCountryNames(s.originCountry)}
                       </span>
                     )}
                   </div>

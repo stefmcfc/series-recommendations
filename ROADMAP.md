@@ -109,6 +109,7 @@ corrected below.
 | `EditSeriesForm` gains "Look Up" (with overwrite confirmation) — extracts a shared `hooks/useTmdbLookup.ts` from `AddSeriesForm` (behavior-preserving) and ports it into `EditSeriesForm`, gated behind `ConfirmDialog`'s overwrite prompt | — | `frontend_spec_045` | ✅ Done |
 | Explicit clear-to-null for optional series fields — `PATCH`'s new `clearedFields: string[]`, applied before every other field patch; `EditSeriesForm` gains a per-field Clear button on 12 of the 13 clearable fields (Personal Rating clears via its existing star-deselect gesture instead) | `series_spec_030` | `frontend_spec_044` | ✅ Done |
 | `GenreIncludeExcludePicker` gains removable chips below its trigger (both include/exclude and exclude-only modes) + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | ✅ Done |
+| Store/show every TMDB `origin_country` entry, not just the first (e.g. co-productions like "MobLand": GB + US) — widens `TmdbClient` parsing, `SeriesEntity`/DTOs, and fixes `RecommendationOutputFilterService`'s country filter to match on any of a candidate's countries | `series_spec_046` | `frontend_spec_085` | ✅ Done |
 
 ## Specced, coming soon
 

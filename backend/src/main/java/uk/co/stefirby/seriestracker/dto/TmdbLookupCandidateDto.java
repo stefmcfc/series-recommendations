@@ -16,8 +16,10 @@ public class TmdbLookupCandidateDto {
     private String originalTitle;
     private String posterUrl;
 
-    // series_spec_021_origin_country.md (SERIES-021-AC-03): the candidate's first
-    // origin_country entry, letting a user disambiguate same-title remakes before picking one.
+    // series_spec_021_origin_country.md (SERIES-021-AC-03): the candidate's origin
+    // country/countries, comma-joined when there's more than one (series_spec_046_multi_origin
+    // _country.md, SERIES-046-AC-05), letting a user disambiguate same-title remakes before
+    // picking one.
     private String originCountry;
 
     public TmdbLookupCandidateDto() {

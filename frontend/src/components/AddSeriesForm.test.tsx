@@ -1020,6 +1020,25 @@ describe('FRONTEND-026-AC-08: candidate picker shows origin country', () => {
   })
 })
 
+describe('FRONTEND-085-AC-05: candidate picker shows every origin country', () => {
+  it('renders both countries for a multi-country TMDB candidate', async () => {
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 1, title: 'MobLand', year: 2025, originCountry: 'GB,US' },
+      { tmdbId: 2, title: 'MobLand', year: 2025, originCountry: 'GB,US' },
+    ])
+    renderForm()
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'MobLand' },
+    })
+    fireEvent.click(screen.getByTestId('lookup-btn'))
+
+    expect(
+      (await screen.findAllByText(/United Kingdom, United States/)).length,
+    ).toBeGreaterThan(0)
+  })
+})
+
 describe('FRONTEND-003-AC-31/32: no leaked data, no out-of-contract fields', () => {
   it('never logs form values to the console', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)

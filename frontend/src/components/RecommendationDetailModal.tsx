@@ -4,7 +4,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { CandidateDetail, Recommendation } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
-import { formatCountryName } from '../utils/countryName'
+import { formatCountryNames } from '../utils/countryName'
 import styles from './RecommendationDetailModal.module.css'
 
 interface RecommendationDetailModalProps {
@@ -111,7 +111,7 @@ export function RecommendationDetailModal({
             <div className={styles.metaRow}>
               {r.year !== null && <span>{r.year}</span>}
               {r.originCountry !== null && (
-                <span>{formatCountryName(r.originCountry)}</span>
+                <span>{formatCountryNames(r.originCountry)}</span>
               )}
               {r.tmdbRating !== null && (
                 <span>

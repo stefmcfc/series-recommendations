@@ -2781,3 +2781,26 @@ describe('FRONTEND-084-AC-03: no year portion when year is null', () => {
     expect(seriesPickerLabel(series, 'any')).not.toContain('(')
   })
 })
+
+describe('FRONTEND-085-AC-07: RecommendationControls source-series display shows every origin country', () => {
+  it('renders both countries for a multi-country source series in seriesPickerLabel', () => {
+    const series = makeSeries({
+      title: 'MobLand',
+      originCountry: 'GB,US',
+    })
+    expect(seriesPickerLabel(series, 'any')).toContain(
+      'United Kingdom, United States',
+    )
+  })
+
+  it('renders both countries for a multi-country source series in seriesPickerDisplay', () => {
+    const series = makeSeries({
+      title: 'MobLand',
+      originCountry: 'GB,US',
+    })
+    render(<>{seriesPickerDisplay(series, 'any')}</>)
+    expect(
+      screen.getByText(/United Kingdom, United States/),
+    ).toBeInTheDocument()
+  })
+})

@@ -9,7 +9,7 @@ import type {
   SeriesLookupResult,
   UpdateSeriesRequest,
 } from '../types/series'
-import { formatCountryName } from '../utils/countryName'
+import { formatCountryNames } from '../utils/countryName'
 import { isFormDirty } from '../utils/formDirtyCheck'
 import { mergeCommonLookupFields } from '../utils/seriesLookupMerge'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -512,7 +512,7 @@ export function EditSeriesForm({
                             ? ` — ${candidate.originalTitle}`
                             : ''}
                           {candidate.originCountry != null
-                            ? ` — ${formatCountryName(candidate.originCountry)}`
+                            ? ` — ${formatCountryNames(candidate.originCountry)}`
                             : ''}
                         </span>
                       </button>

@@ -32,3 +32,19 @@ export function formatCountryName(code: string | null): string | null {
     return code
   }
 }
+
+/**
+ * Resolves a possibly comma-separated multi-country raw value (e.g. "GB,US"
+ * for a co-production, matching the backend's bare-comma, no-space storage
+ * delimiter) to a human-readable, comma-space-joined display string (e.g.
+ * "United Kingdom, United States"). Each code is resolved individually via
+ * formatCountryName, so an unresolvable code within a multi-code value falls
+ * back to its raw code in place rather than failing the whole value, and a
+ * single-code input produces an identical result to calling
+ * formatCountryName directly.
+ */
+export function formatCountryNames(raw: string | null): string | null {
+  if (raw === null) return null
+
+  return raw.split(',').map(formatCountryName).join(', ')
+}

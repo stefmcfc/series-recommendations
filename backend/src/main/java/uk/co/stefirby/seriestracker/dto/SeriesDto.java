@@ -44,8 +44,9 @@ public class SeriesDto {
     // dateCompleted/productionStatus's own SERIES-008-AC-09 design.
     private String productionStatus;
 
-    // series_spec_021_origin_country.md (SERIES-021-AC-05): the raw ISO 3166-1 alpha-2 code
-    // TMDB reports as this series' first origin_country entry -- read at create time
+    // series_spec_021_origin_country.md (SERIES-021-AC-05): the raw ISO 3166-1 alpha-2 code(s)
+    // TMDB reports for this series' origin_country array, comma-joined when there's more than
+    // one (series_spec_046_multi_origin_country.md, SERIES-046-AC-07) -- read at create time
     // (SERIES-021-AC-06), same direct flow-through precedent as tmdbRating/tmdbVoteCount.
     private String originCountry;
 

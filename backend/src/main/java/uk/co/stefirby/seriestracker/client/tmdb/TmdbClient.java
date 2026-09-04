@@ -362,7 +362,7 @@ public class TmdbClient {
             ExternalApiSupport.toBigDecimal(body.get("vote_average")),
             ExternalApiSupport.toInteger(body.get("vote_count")),
             ProductionStatus.fromTmdbStatus(ExternalApiSupport.str(body.get("status"))).orElse(null),
-            firstOriginCountry(body.get(FIELD_ORIGIN_COUNTRY)),
+            originCountries(body.get(FIELD_ORIGIN_COUNTRY)),
             ExternalApiSupport.str(body.get("overview")),
             extractYear(ExternalApiSupport.str(body.get(FIELD_LAST_AIR_DATE)))
         );
@@ -430,7 +430,7 @@ public class TmdbClient {
                 toIntegerList(item.get("genre_ids")),
                 ExternalApiSupport.toInteger(item.get("vote_count")),
                 ExternalApiSupport.str(item.get("original_language")),
-                firstOriginCountry(item.get(FIELD_ORIGIN_COUNTRY))
+                originCountries(item.get(FIELD_ORIGIN_COUNTRY))
             ));
         }
         return candidates;
@@ -469,7 +469,7 @@ public class TmdbClient {
                 extractYear(ExternalApiSupport.str(item.get(FIELD_FIRST_AIR_DATE))),
                 ExternalApiSupport.str(item.get(FIELD_POSTER_PATH)),
                 toIntegerList(item.get("genre_ids")),
-                firstOriginCountry(item.get(FIELD_ORIGIN_COUNTRY))
+                originCountries(item.get(FIELD_ORIGIN_COUNTRY))
             ));
         }
         return candidates;
@@ -499,17 +499,42 @@ public class TmdbClient {
     }
 
     /**
-     * Extracts the first entry of TMDB's {@code origin_country} array (SERIES-021-AC-01/02) --
-     * only the first entry is kept, per {@code series_spec_021_origin_country.md}'s design
-     * decision, mirroring {@link #findTvIdByImdbId(String)}'s own existing precedent of taking
-     * an array response's first entry. {@code null} when the field is absent or empty.
+     * Extracts every entry of TMDB's {@code origin_country} array (SERIES-021-AC-01/02,
+     * widened from only the first entry by SERIES-046-AC-01/02/03 -- {@code
+     * series_spec_046_multi_origin_country.md} -- since a co-production's non-first origin
+     * country was previously silently discarded). An empty list, not {@code null}, when the
+     * field is absent or empty, mirroring {@link #toIntegerList(Object)}'s existing
+     * empty-list-not-null convention for the sibling {@code genre_ids} parser.
      */
     @SuppressWarnings("unchecked")
-    private static String firstOriginCountry(Object value) {
-        if (!(value instanceof List<?> list) || list.isEmpty()) {
+    private static List<String> originCountries(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> countries = new ArrayList<>();
+        for (Object o : (List<Object>) list) {
+            String country = ExternalApiSupport.str(o);
+            if (country != null) {
+                countries.add(country);
+            }
+        }
+        return countries;
+    }
+
+    /**
+     * Joins a parsed {@code originCountries} list into the single comma-separated {@code
+     * String} every DTO/entity boundary actually stores (SERIES-046-AC-04) -- mirrors {@code
+     * TmdbGenreTable.joinDisplayNames}'s null/empty-list handling, but simpler (no id-to-name
+     * resolution needed, just a join). A bare comma (no space) matches {@code
+     * SeriesEntity.genres}'s own storage convention. Returns {@code null} for a null or empty
+     * list, so an absent origin country still round-trips as {@code null} rather than an empty
+     * string.
+     */
+    public static String joinOriginCountries(List<String> originCountries) {
+        if (originCountries == null || originCountries.isEmpty()) {
             return null;
         }
-        return ExternalApiSupport.str(((List<Object>) list).getFirst());
+        return String.join(",", originCountries);
     }
 
     private static List<Integer> toIntegerList(Object value) {

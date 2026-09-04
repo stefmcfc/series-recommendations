@@ -303,6 +303,20 @@ class SeriesExportServiceSpec extends Specification {
             csv.contains("GB")
     }
 
+    def "SERIES-046-AC-12: CSV export includes a multi-country originCountry value unchanged"() {
+        given: "a series with a comma-joined multi-country originCountry, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "MobLand", originCountry: "GB,US"))
+            def series = seriesService.getAll()
+
+        when: "a CSV export is generated"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+            def dataRow = lines.find { it.contains("MobLand") }
+
+        then: "the data row includes the full value, not truncated to one country"
+            dataRow.contains("GB,US")
+    }
+
     def "SERIES-027-AC-05: exportAsCsv includes a rottenTomatoesPopcornmeter header and value"() {
         given: "a series with a rottenTomatoesPopcornmeter value, among the retrieved series"
             seriesService.create(new SeriesDto(title: "Ozark", rottenTomatoesPopcornmeter: 91))

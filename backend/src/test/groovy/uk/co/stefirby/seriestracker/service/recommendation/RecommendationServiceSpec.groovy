@@ -53,7 +53,7 @@ class RecommendationServiceSpec extends Specification {
     private static TmdbCandidate candidate(int tmdbId, String title = "Candidate ${tmdbId}", Integer year = 2020,
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 300, String originalLanguage = "en") {
-        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, null)
+        new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, [])
     }
 
     /**
@@ -113,7 +113,7 @@ class RecommendationServiceSpec extends Specification {
 
     private static TmdbSeriesDetail seriesDetail(Integer numberOfSeasons = 5, Integer numberOfEpisodes = 62) {
         new TmdbSeriesDetail("Breaking Bad", 2008, [18], "/p.jpg", numberOfSeasons, numberOfEpisodes,
-            new BigDecimal("8.9"), 15000, ProductionStatus.ENDED, "US", "overview", 2013)
+            new BigDecimal("8.9"), 15000, ProductionStatus.ENDED, ["US"], "overview", 2013)
     }
 
     def "SERIES-036-AC-01: resolves season/episode counts and IMDb rating"() {

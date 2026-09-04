@@ -13,9 +13,10 @@ import java.util.List;
  * original-language name (e.g. "Money Heist" / "La Casa de Papel") -- {@code null} when absent
  * or identical to {@code title}.
  *
- * <p>{@code originCountry} (SERIES-021-AC-01) is the first entry of this endpoint's {@code
- * origin_country} array -- {@code null} when absent or empty -- see {@code
- * series_spec_021_origin_country.md}.
+ * <p>{@code originCountries} (SERIES-021-AC-01, widened to every entry by SERIES-046-AC-02) is
+ * every entry of this endpoint's {@code origin_country} array -- an empty list, not {@code
+ * null}, when absent or empty -- see {@code series_spec_021_origin_country.md} and {@code
+ * series_spec_046_multi_origin_country.md}.
  */
 public record TmdbSearchCandidate(
     int tmdbId,
@@ -24,6 +25,6 @@ public record TmdbSearchCandidate(
     Integer year,
     String posterPath,
     List<Integer> genreIds,
-    String originCountry
+    List<String> originCountries
 ) {
 }

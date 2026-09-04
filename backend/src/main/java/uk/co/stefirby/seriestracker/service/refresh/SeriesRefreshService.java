@@ -210,8 +210,8 @@ public class SeriesRefreshService {
         if (detail.productionStatus() != null) {
             entity.setProductionStatus(detail.productionStatus());
         }
-        if (detail.originCountry() != null) {
-            entity.setOriginCountry(detail.originCountry());
+        if (!detail.originCountries().isEmpty()) {
+            entity.setOriginCountry(TmdbClient.joinOriginCountries(detail.originCountries()));
         }
         if (detail.overview() != null) {
             entity.setOverview(detail.overview());

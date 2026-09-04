@@ -201,6 +201,29 @@ class SeriesServiceSpec extends Specification {
         created.productionStatus == null
   }
 
+  def "SERIES-046-AC-07: create persists a multi-country originCountry unchanged"() {
+    given: "a SeriesDto with a comma-joined multi-country originCountry"
+        def dto = new SeriesDto(title: "MobLand", originCountry: "GB,US")
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "the full value is persisted unchanged"
+        created.originCountry == "GB,US"
+  }
+
+  def "SERIES-046-AC-08: a multi-country value round-trips through create without truncation"() {
+    given: "a SeriesDto with a comma-joined multi-country originCountry longer than 2 characters"
+        def dto = new SeriesDto(title: "MobLand", originCountry: "GB,US,FR")
+
+    when: "create(dto) is called and the entity is re-fetched from the real (non-mocked) repository"
+        def created = seriesService.create(dto)
+        def reloaded = seriesRepository.findById(created.id).get()
+
+    then: "the full value persisted and reloaded without truncation"
+        reloaded.originCountry == "GB,US,FR"
+  }
+
   def "SERIES-023-AC-11: create persists overview unchanged from the incoming dto"() {
     given: "a SeriesDto with overview set"
         def dto = new SeriesDto(title: "The Office", overview: "A mockumentary sitcom.")

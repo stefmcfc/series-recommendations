@@ -136,11 +136,15 @@ public class SeriesEntity {
     @Enumerated(EnumType.STRING)
     private ProductionStatus productionStatus;
 
-    // series_spec_021_origin_country.md (SERIES-021-AC-05): the raw ISO 3166-1 alpha-2 code
-    // TMDB reports as this series' first origin_country entry -- nullable (manually-added
-    // series never went through a TMDB lookup won't have one), no format validation, same
-    // posture as imdbId (see the spec's Design Decisions).
-    @Column(nullable = true, length = 2)
+    // series_spec_021_origin_country.md (SERIES-021-AC-05): the raw ISO 3166-1 alpha-2 code(s)
+    // TMDB reports for this series' origin_country array, comma-joined when there's more than
+    // one (series_spec_046_multi_origin_country.md, SERIES-046-AC-07/08) -- nullable
+    // (manually-added series never went through a TMDB lookup won't have one), no format
+    // validation, same posture as imdbId (see the spec's Design Decisions). length widened
+    // from 2 to 50 by SERIES-046-AC-08 (entity-annotation only, no Flyway migration -- see that
+    // spec's Design Decisions for why SQLite makes a real ALTER COLUMN migration inexpressible
+    // here).
+    @Column(nullable = true, length = 50)
     private String originCountry;
 
     // series_spec_023_recommendation_metadata_and_overview.md (SERIES-023-AC-10): a series'
