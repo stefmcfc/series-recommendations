@@ -1266,6 +1266,68 @@ describe('FRONTEND-034-AC-06: submitted payload is unaffected under source=recom
   })
 })
 
+describe('FRONTEND-043-AC-03: AddSeriesForm gates Cancel when dirty', () => {
+  it('opens the confirm dialog instead of cancelling immediately', () => {
+    const onCancel = vi.fn()
+    render(<AddSeriesForm onCancel={onCancel} onSuccess={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'The Wire' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-043-AC-04: no prompt when untouched', () => {
+  it('cancels immediately when nothing changed', () => {
+    const onCancel = vi.fn()
+    render(<AddSeriesForm onCancel={onCancel} onSuccess={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(onCancel).toHaveBeenCalled()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-043-AC-05: Escape mirrors Cancel gating', () => {
+  it('opens the confirm dialog on Escape when dirty', () => {
+    const onCancel = vi.fn()
+    render(<AddSeriesForm onCancel={onCancel} onSuccess={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'The Wire' },
+    })
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-043-AC-06: confirm dialog outcomes', () => {
+  it('Discard calls onCancel; Keep Editing preserves the form', () => {
+    const onCancel = vi.fn()
+    render(<AddSeriesForm onCancel={onCancel} onSuccess={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'The Wire' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /keep editing/i }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/^title/i)).toHaveValue('The Wire')
+    expect(onCancel).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^discard$/i }))
+    expect(onCancel).toHaveBeenCalled()
+  })
+})
+
 describe('FRONTEND-060-AC-04: unaffected by the TMDB-managed field lock (regression guard)', () => {
   it('leaves Year, Genres, Total Seasons, Total Episodes, and IMDb Rating fully enabled with no locked hint, regardless of typed values', () => {
     renderForm()

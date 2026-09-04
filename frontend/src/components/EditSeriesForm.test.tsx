@@ -556,6 +556,75 @@ describe('FRONTEND-060-AC-03: Title is always disabled in EditSeriesForm', () =>
   })
 })
 
+describe('FRONTEND-043-AC-07: EditSeriesForm gates Cancel when dirty', () => {
+  it('opens the confirm dialog instead of cancelling immediately', () => {
+    const onCancel = vi.fn()
+    const series = makeSeries()
+    render(
+      <EditSeriesForm
+        series={series}
+        onCancel={onCancel}
+        onSuccess={vi.fn()}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/^tags/i), {
+      target: { value: 'rewatch candidate' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-043-AC-08: no prompt when untouched', () => {
+  it('cancels immediately when nothing changed', () => {
+    const onCancel = vi.fn()
+    renderForm({ onCancel })
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    expect(onCancel).toHaveBeenCalled()
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-043-AC-09: Escape mirrors Cancel gating', () => {
+  it('opens the confirm dialog on Escape when dirty', () => {
+    const onCancel = vi.fn()
+    renderForm({ onCancel })
+    fireEvent.change(screen.getByLabelText(/^tags/i), {
+      target: { value: 'rewatch candidate' },
+    })
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-043-AC-10: confirm dialog outcomes', () => {
+  it('Discard calls onCancel; Keep Editing preserves the form', () => {
+    const onCancel = vi.fn()
+    renderForm({ onCancel })
+    fireEvent.change(screen.getByLabelText(/^tags/i), {
+      target: { value: 'rewatch candidate' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: /keep editing/i }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/^tags/i)).toHaveValue('rewatch candidate')
+    expect(onCancel).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^discard$/i }))
+    expect(onCancel).toHaveBeenCalled()
+  })
+})
+
 describe('FRONTEND-004-AC-38: no leaked data', () => {
   it('never logs form values to the console', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)

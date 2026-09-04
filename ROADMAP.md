@@ -105,13 +105,16 @@ corrected below.
 | Use My Series picker's year filter uses interval-overlap matching (`year`/`lastAirYear` span vs. query range), matching the backend's own `series_spec_039` semantics instead of a `year`-only point check | — | `frontend_spec_082` | ✅ Done |
 | `useEscapeToClose` hook — extracts the identical Escape-to-close handler duplicated across 9 dialogs in 7 components into one shared hook | — | `frontend_spec_083` | ✅ Done |
 | Use My Series picker's option text shows a series' full year range (via the shared `formatSeriesYear` utility), not just its first-air year | — | `frontend_spec_084` | ✅ Done |
+| Confirm before discarding unsaved changes on Cancel/Escape (`AddSeriesForm`/`EditSeriesForm`), via a new reusable `ConfirmDialog` component | — | `frontend_spec_043` | ✅ Done |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains:
-`frontend_spec_043→frontend_spec_045`, `series_spec_030→frontend_spec_044`, and
-`series_spec_038→frontend_spec_057`. Rows within a chain must build in the listed order; the chains
+`series_spec_030→frontend_spec_044` and
+`series_spec_038→frontend_spec_057`. `frontend_spec_045` still depends on `frontend_spec_043`,
+which shipped first (see "Delivered" above) — that chain's remaining half is a single row now, no
+longer a two-row chain. Rows within a chain must build in the listed order; the chains
 themselves (and the fully-standalone `frontend_spec_064`
 row) have no dependencies on each other
 *within this table* — and can be reordered freely as a block if priorities change — but re-check
@@ -123,14 +126,14 @@ open.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| Confirm before discarding unsaved changes on Cancel/Escape (AddSeriesForm/EditSeriesForm) | —                 | `frontend_spec_043` | —                                                                                                         | 🟨 P3 · ⬜ Not started |
-| EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (reuses its `ConfirmDialog` component)                                                | 🟨 P3 · ⬜ Not started |
+| EditSeriesForm gains "Look Up" (with overwrite confirmation)                              | —                 | `frontend_spec_045` | `frontend_spec_043` (delivered — reuses its `ConfirmDialog` component)                                    | 🟨 P3 · ⬜ Not started |
 | Explicit clear-to-null for optional series fields                                         | `series_spec_030` | `frontend_spec_044` | — (self-contained pair; `frontend_spec_044` itself depends on `series_spec_030` shipping first, same row) | 🟨 P3 · ⬜ Not started |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
 | `GenreIncludeExcludePicker` gains removable chips below its trigger + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | `frontend_spec_067` (standalone otherwise) | 🟨 P3 · ⬜ Not started |
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` (Requirement 1, still open); the "Use My Series" candidate picker half (Requirement 2) already shipped via `frontend_spec_081` | — | `frontend_spec_064` | — (standalone) | 🟩 P4 · ⬜ Not started |
+
 ## Internal / maintenance specs (not user-facing features)
 
 Pure internal refactors — tracked here rather than in the tables above since they have no

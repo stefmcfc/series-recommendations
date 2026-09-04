@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `AddSeriesForm`/`EditSeriesForm` now prompt with a new reusable `ConfirmDialog` component before discarding unsaved changes on Cancel or Escape — untouched forms still close immediately, unchanged from today (`frontend_spec_043`).
+
 ## [3.18.1] - 2026-09-04
 
 ### Changed

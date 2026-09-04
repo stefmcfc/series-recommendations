@@ -4,6 +4,8 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type { Series, UpdateSeriesRequest } from '../types/series'
+import { isFormDirty } from '../utils/formDirtyCheck'
+import { ConfirmDialog } from './ConfirmDialog'
 import { SeriesFormFields } from './SeriesFormFields'
 import {
   validateYear,
@@ -148,6 +150,11 @@ export function EditSeriesForm({
   onSuccess,
 }: EditSeriesFormProps) {
   const [form, setForm] = useState<FormState>(() => toFormState(series))
+  // FRONTEND-043: a second, never-updated snapshot of the form's initial
+  // state, captured once at mount -- the comparison baseline for the
+  // discard-unsaved-changes confirm dialog. Note the setter is never called.
+  const [initialForm] = useState(() => toFormState(series))
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   // FRONTEND-060-AC-01/02: series_spec_040 locks these fields from manual
   // PATCH edits once each is non-null -- mirror that here so the UI never
   // shows an editable control for something the API will silently ignore.
@@ -204,9 +211,20 @@ export function EditSeriesForm({
     }))
   }
 
+  // FRONTEND-043-AC-07/09: gates Cancel/Escape behind a confirm dialog when
+  // the form has unsaved changes; closes immediately (today's behavior) when
+  // it's unchanged from its initial state.
+  const handleCancelClick = () => {
+    if (isFormDirty(form, initialForm)) {
+      setShowDiscardConfirm(true)
+    } else {
+      onCancel()
+    }
+  }
+
   const handleKeyDown = useEscapeToClose(() => {
     if (!submitting) {
-      onCancel()
+      handleCancelClick()
     }
   })
 
@@ -347,7 +365,7 @@ export function EditSeriesForm({
             <button
               type="button"
               className={styles.cancelButton}
-              onClick={onCancel}
+              onClick={handleCancelClick}
               disabled={submitting}
             >
               Cancel
@@ -362,6 +380,15 @@ export function EditSeriesForm({
           </div>
         </form>
       </div>
+
+      {showDiscardConfirm && (
+        <ConfirmDialog
+          message="Discard these changes? Your edits will be lost."
+          confirmLabel="Discard"
+          onConfirm={onCancel}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
+      )}
     </div>
   )
 }
