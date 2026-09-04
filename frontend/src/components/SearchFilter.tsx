@@ -180,6 +180,13 @@ export function SearchFilter({
         aria-modal="true"
         aria-labelledby="my-series-filters-heading"
         onKeyDown={handleSheetKeyDown}
+        onClick={(e) => {
+          // FRONTEND-079-AC-03/04: only the overlay backdrop itself should
+          // close the sheet -- a click on the form or any of its descendants
+          // reports that descendant as e.target, not the overlay, so this
+          // guard naturally excludes clicks inside the sheet panel.
+          if (e.target === e.currentTarget) onClose()
+        }}
       >
         <form className={styles.sheet} onSubmit={handleSubmit}>
           <div className={styles.sheetHeader}>

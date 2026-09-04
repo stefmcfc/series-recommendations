@@ -3,7 +3,10 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+  /* FRONTEND-079-AC-06: auto-fill (not auto-fit) keeps empty tracks at their
+     minmax minimum instead of collapsing them, so a lone card keeps its
+     natural width instead of stretching to fill the row. */
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
   gap: 0.5rem;
 }
 

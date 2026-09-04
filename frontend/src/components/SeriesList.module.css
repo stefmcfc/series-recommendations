@@ -247,6 +247,40 @@
   background: #991b1b;
 }
 
+/* FRONTEND-079-AC-02: CSS-only tooltip for icon-only toolbar buttons --
+   `content: attr(data-tooltip)` mirrors the button's own aria-label (set in
+   SeriesList.tsx), so the visible text can't drift from the accessible
+   name. Shown on :hover AND :focus-visible (not hover-only) so keyboard
+   users get the same visible label a mouse user does. */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 0.375rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-h);
+  color: var(--bg);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+  z-index: 10;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
 @media (prefers-color-scheme: dark) {
   .retryButton {
     background: #dc2626;

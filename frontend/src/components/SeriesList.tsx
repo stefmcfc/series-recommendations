@@ -356,6 +356,9 @@ export function SeriesList({
               aria-label={
                 sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'
               }
+              data-tooltip={
+                sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'
+              }
               onClick={handleSortDirectionToggle}
             >
               {sortDirection === 'asc' ? '↑' : '↓'}
@@ -367,6 +370,7 @@ export function SeriesList({
               className={styles.viewModeButton}
               data-testid="view-mode-expanded-btn"
               aria-label="Expanded view"
+              data-tooltip="Expanded view"
               aria-pressed={viewMode === 'expanded'}
               onClick={() => setViewMode('expanded')}
             >
@@ -390,6 +394,7 @@ export function SeriesList({
               className={styles.viewModeButton}
               data-testid="view-mode-compact-btn"
               aria-label="Compact view"
+              data-tooltip="Compact view"
               aria-pressed={viewMode === 'compact'}
               onClick={() => setViewMode('compact')}
             >
@@ -413,6 +418,7 @@ export function SeriesList({
               className={styles.viewModeButton}
               data-testid="view-mode-poster-btn"
               aria-label="Poster-only view"
+              data-tooltip="Poster-only view"
               aria-pressed={viewMode === 'poster'}
               onClick={() => setViewMode('poster')}
             >
@@ -437,6 +443,7 @@ export function SeriesList({
               className={styles.filtersButton}
               data-testid="open-filters-btn"
               aria-label={hasActiveFilters ? 'Filters (active)' : 'Filters'}
+              data-tooltip={hasActiveFilters ? 'Filters (active)' : 'Filters'}
               aria-expanded={isFiltersOpen}
               onClick={() => onOpenFilters?.()}
             >

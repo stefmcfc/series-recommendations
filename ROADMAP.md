@@ -110,6 +110,7 @@ corrected below.
 | Explicit clear-to-null for optional series fields — `PATCH`'s new `clearedFields: string[]`, applied before every other field patch; `EditSeriesForm` gains a per-field Clear button on 12 of the 13 clearable fields (Personal Rating clears via its existing star-deselect gesture instead) | `series_spec_030` | `frontend_spec_044` | ✅ Done |
 | `GenreIncludeExcludePicker` gains removable chips below its trigger (both include/exclude and exclude-only modes) + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | ✅ Done |
 | Store/show every TMDB `origin_country` entry, not just the first (e.g. co-productions like "MobLand": GB + US) — widens `TmdbClient` parsing, `SeriesEntity`/DTOs, and fixes `RecommendationOutputFilterService`'s country filter to match on any of a candidate's countries | `series_spec_046` | `frontend_spec_085` | ✅ Done |
+| SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -127,7 +128,6 @@ dependency-derived anymore.
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
-| SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | — (build first — establishes the pattern units 2–4 reuse) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | `frontend_spec_086` | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` | 🟨 P3 · ⬜ Not started |

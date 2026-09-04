@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `SeriesList`'s icon-only toolbar buttons (sort direction, the three view-mode toggles, Filters) now show a visible tooltip label on hover and on keyboard focus, via a `data-tooltip` attribute mirroring each button's existing `aria-label` (`frontend_spec_079`).
+- Frontend: `SearchFilter`'s filter sheet now closes when the backdrop outside the sheet panel is clicked, matching most slide-out panels' behavior — clicking inside the sheet itself is unaffected (`frontend_spec_079`).
+
+### Fixed
+
+- Frontend: `SeriesCompactGrid`/`SeriesPosterGrid` no longer stretch a single card to fill the full row width when a filtered/tabbed view (e.g. the Rewatch tab) narrows the list to fewer series than fit one row — `grid-template-columns` now uses `auto-fill` instead of `auto-fit` (`frontend_spec_079`).
+
 ## [3.20.0] - 2026-09-04
 
 ### Added

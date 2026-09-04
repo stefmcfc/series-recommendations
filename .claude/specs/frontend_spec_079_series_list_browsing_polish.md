@@ -1,6 +1,6 @@
 # Frontend Spec 079: Series List Browsing Polish
 
-**Status**: Not started
+**Status**: Implemented — `components/SeriesList.tsx`/`components/SeriesList.module.css` (Requirement 1), `components/SearchFilter.tsx` (Requirement 2), `components/SeriesCompactGrid.module.css`/`components/SeriesPosterGrid.module.css` (Requirement 3). AC-02/AC-05/AC-06 (`[MANUAL]`) were verified in a real browser (Chrome, via `/my-series/rewatch` with its single flagged series): Compact and Poster views both render the lone card at natural width, not stretched full-row; the tooltip renders correctly on `:hover` and on genuine keyboard `:focus-visible` (confirmed via direct `element.focus()` + `matches(':focus-visible')`, not just click-then-hover).
 **Priority**: P3
 **Depends on**: none
 **Area**: Frontend (`components/SeriesList.tsx`, `components/SeriesList.module.css`, `components/SearchFilter.tsx`, `components/SeriesCompactGrid.module.css`, `components/SeriesPosterGrid.module.css`)
@@ -149,9 +149,9 @@ describe('FRONTEND-079-AC-04: clicking inside the sheet does not close it', () =
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-079-AC-01: Icon-only buttons carry a tooltip label
-- [ ] FRONTEND-079-AC-02: Tooltip is visible on hover and on keyboard focus
-- [ ] FRONTEND-079-AC-03: Clicking the sheet backdrop closes it
-- [ ] FRONTEND-079-AC-04: Clicking inside the sheet does not close it
-- [ ] FRONTEND-079-AC-05: Compact view keeps natural card width with few items
-- [ ] FRONTEND-079-AC-06: Poster view keeps natural card width with few items
+- [x] FRONTEND-079-AC-01: Icon-only buttons carry a tooltip label
+- [x] FRONTEND-079-AC-02: Tooltip is visible on hover and on keyboard focus — confirmed in a real browser: visible on mouse hover, and on genuine `:focus-visible` (verified via `element.focus()` + `matches(':focus-visible')`, not just a mouse click).
+- [x] FRONTEND-079-AC-03: Clicking the sheet backdrop closes it
+- [x] FRONTEND-079-AC-04: Clicking inside the sheet does not close it
+- [x] FRONTEND-079-AC-05: Compact view keeps natural card width with few items — confirmed in a real browser on `/my-series/rewatch` (single flagged series): card renders at natural width, not stretched.
+- [x] FRONTEND-079-AC-06: Poster view keeps natural card width with few items — confirmed in a real browser on `/my-series/rewatch`, same as AC-05.
