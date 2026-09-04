@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useTmdbLookup } from '../hooks/useTmdbLookup'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type {
   CreateSeriesRequest,
-  LookupTmdbCandidate,
   SeriesLookupResult,
   Series,
 } from '../types/series'
 import { formatCountryName } from '../utils/countryName'
 import { isFormDirty } from '../utils/formDirtyCheck'
+import { mergeCommonLookupFields } from '../utils/seriesLookupMerge'
 import { ConfirmDialog } from './ConfirmDialog'
 import { SeriesFormFields } from './SeriesFormFields'
 import {
@@ -162,18 +163,8 @@ function applyLookupResult(
   form: FormState,
   result: SeriesLookupResult,
 ): FormState {
-  const next: FormState = { ...form, title: result.title }
+  const next = mergeCommonLookupFields(form, result)
 
-  if (result.year != null) next.year = String(result.year)
-  if (result.genres != null) next.genres = result.genres
-  if (result.totalSeasons != null)
-    next.totalSeasons = String(result.totalSeasons)
-  if (result.totalEpisodes != null)
-    next.totalEpisodes = String(result.totalEpisodes)
-  if (result.imdbRating != null) next.imdbRating = String(result.imdbRating)
-  if (result.rottenTomatoesRating != null)
-    next.rottenTomatoesRating = String(result.rottenTomatoesRating)
-  if (result.posterUrl != null) next.posterUrl = result.posterUrl
   if (result.imdbId != null) next.imdbId = result.imdbId
   if (result.tmdbRating != null) next.tmdbRating = String(result.tmdbRating)
   if (result.tmdbVoteCount != null)
@@ -252,12 +243,6 @@ export function AddSeriesForm({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [lookingUp, setLookingUp] = useState(false)
-  const [lookupError, setLookupError] = useState<string | null>(null)
-  const [tmdbCandidates, setTmdbCandidates] = useState<LookupTmdbCandidate[]>(
-    [],
-  )
-  const [resolvingTmdbCandidate, setResolvingTmdbCandidate] = useState(false)
   const [posterPreviewError, setPosterPreviewError] = useState(false)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
@@ -303,65 +288,15 @@ export function AddSeriesForm({
     setPosterPreviewError(false)
   }
 
-  const handleLookup = async () => {
-    const title = form.title.trim()
-    if (title === '' || lookingUp) return
-
-    setLookupError(null)
-    setTmdbCandidates([])
-    setLookingUp(true)
-
-    try {
-      const results = await seriesApi.searchTmdb(title)
-
-      if (results.length === 0) {
-        setLookupError('No matches found for that title.')
-        return
-      }
-
-      if (results.length === 1) {
-        const [candidate] = results
-        const result = await seriesApi.resolveTmdbCandidate(candidate.tmdbId)
-        applyResolvedResult(result)
-        return
-      }
-
-      setTmdbCandidates(results)
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setLookupError(err.message)
-      } else {
-        setLookupError('An unexpected error occurred. Please try again.')
-      }
-    } finally {
-      setLookingUp(false)
-    }
-  }
-
-  const handleSelectTmdbCandidate = async (candidate: LookupTmdbCandidate) => {
-    if (resolvingTmdbCandidate) return
-
-    setLookupError(null)
-    setResolvingTmdbCandidate(true)
-
-    try {
-      const result = await seriesApi.resolveTmdbCandidate(candidate.tmdbId)
-      applyResolvedResult(result)
-      setTmdbCandidates([])
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setLookupError(err.message)
-      } else {
-        setLookupError('An unexpected error occurred. Please try again.')
-      }
-    } finally {
-      setResolvingTmdbCandidate(false)
-    }
-  }
-
-  const handleCancelTmdbCandidates = () => {
-    setTmdbCandidates([])
-  }
+  const {
+    lookingUp,
+    lookupError,
+    tmdbCandidates,
+    resolvingTmdbCandidate,
+    handleLookup,
+    handleSelectTmdbCandidate,
+    handleCancelTmdbCandidates,
+  } = useTmdbLookup(form.title, applyResolvedResult)
 
   // FRONTEND-043-AC-03/05: gates Cancel/Escape behind a confirm dialog when
   // the form has unsaved changes; closes immediately (today's behavior) when
