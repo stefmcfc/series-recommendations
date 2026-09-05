@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.22.1] - 2026-09-05
+
 ### Changed
 
 - Backend: `BulkImportService`'s `currentRun` field now uses `AtomicReference<Future<?>>` instead of a bare `volatile` field, and unused caught-exception variables in `BulkImportService`/`SeriesController` are replaced with unnamed patterns. No behavior change — SonarQube findings (`java:S3077`, `java:S7467`).
