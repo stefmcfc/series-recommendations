@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.service.stats;
 
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
+import uk.co.stefirby.seriestracker.model.SeriesStatus;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -51,6 +52,13 @@ public final class NameStatAggregator {
      * {@code Set<KeywordEntity>}), computes a {@link NameStat} per distinct name, applies the
      * AND-combined minimum-value filters, and sorts the result per {@code sortBy}/{@code
      * sortDirection}.
+     *
+     * <p>series_spec_051_stats_status_scope_filter.md (SERIES-051-AC-01/02/03): when {@code
+     * onlyCompleted} is {@link Boolean#TRUE}, {@code allSeries} is first restricted to series
+     * whose {@code getStatus() == SeriesStatus.COMPLETED} before the per-series grouping loop
+     * below -- series excluded this way contribute to no name's {@code seriesCount} or averages
+     * at all. {@code null} or {@link Boolean#FALSE} applies no restriction, matching today's
+     * behavior exactly.
      */
     public static List<NameStat> aggregate(
             List<SeriesEntity> allSeries,
@@ -59,9 +67,14 @@ public final class NameStatAggregator {
             String sortDirection,
             Integer minSeriesCount,
             BigDecimal minAveragePersonalRating,
-            BigDecimal minAverageBlendedRating) {
+            BigDecimal minAverageBlendedRating,
+            Boolean onlyCompleted) {
+        List<SeriesEntity> scopedSeries = Boolean.TRUE.equals(onlyCompleted)
+            ? allSeries.stream().filter(series -> series.getStatus() == SeriesStatus.COMPLETED).toList()
+            : allSeries;
+
         Map<String, List<SeriesEntity>> seriesByName = new LinkedHashMap<>();
-        for (SeriesEntity series : allSeries) {
+        for (SeriesEntity series : scopedSeries) {
             Set<String> names = new LinkedHashSet<>(namesExtractor.apply(series));
             for (String name : names) {
                 seriesByName.computeIfAbsent(name, n -> new ArrayList<>()).add(series);

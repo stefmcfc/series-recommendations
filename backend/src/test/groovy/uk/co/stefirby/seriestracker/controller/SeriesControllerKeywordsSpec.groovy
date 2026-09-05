@@ -8,6 +8,7 @@ import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
 import uk.co.stefirby.seriestracker.model.KeywordEntity
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
@@ -130,6 +131,33 @@ class SeriesControllerKeywordsSpec extends Specification {
             result.andExpect(status().isOk())
             result.andExpect(jsonPath('$.count').value(1))
             result.andExpect(jsonPath('$.data[0].name').value("spy"))
+    }
+
+    def "SERIES-051-AC-08: omitting onlyCompleted is unchanged from today's response"() {
+        given: "a mix of completed and non-completed series carrying keywords"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "A", status: SeriesStatus.COMPLETED, keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", status: SeriesStatus.WATCHING, keywords: [spy] as Set))
+
+        expect: "identical response with and without the new param explicitly false"
+            def withoutParam = mockMvc.perform(get("/api/v1/series/keywords"))
+            def explicitFalse = mockMvc.perform(get("/api/v1/series/keywords").param("onlyCompleted", "false"))
+            withoutParam.andReturn().response.contentAsString == explicitFalse.andReturn().response.contentAsString
+    }
+
+    def "SERIES-051-AC-06: GET /api/v1/series/keywords?onlyCompleted=true narrows results to COMPLETED series"() {
+        given: "'spy' on a COMPLETED series and a WATCHING series"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "A", status: SeriesStatus.COMPLETED, keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", status: SeriesStatus.WATCHING, keywords: [spy] as Set))
+
+        when: "requested with onlyCompleted=true"
+            def result = mockMvc.perform(get("/api/v1/series/keywords").param("onlyCompleted", "true"))
+
+        then: "only the completed series is counted toward 'spy'"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data[0].name').value("spy"))
+            result.andExpect(jsonPath('$.data[0].seriesCount').value(1))
     }
 
     def "SERIES-019-AC-20: GET /api/v1/series/search accepts a repeatable keyword query param"() {

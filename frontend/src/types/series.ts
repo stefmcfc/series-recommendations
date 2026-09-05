@@ -63,6 +63,9 @@ export interface KeywordStatsOptions {
   minSeriesCount?: number
   minAveragePersonalRating?: number
   minAverageBlendedRating?: number
+  // FRONTEND-095-AC-02/SERIES-051: restricts stats to COMPLETED series only --
+  // omitted or false is never sent (see buildKeywordStatsParams).
+  onlyCompleted?: boolean
 }
 
 // FRONTEND-088-AC-01: identical shape to KeywordStat -- genre stats mirror
@@ -83,6 +86,8 @@ export interface GenreStatsOptions {
   minSeriesCount?: number
   minAveragePersonalRating?: number
   minAverageBlendedRating?: number
+  // FRONTEND-095-AC-02/SERIES-051: mirrors KeywordStatsOptions.onlyCompleted.
+  onlyCompleted?: boolean
 }
 
 export interface RefreshResult {

@@ -25,6 +25,10 @@ export interface NameStatsOptions {
   minSeriesCount?: number
   minAveragePersonalRating?: number
   minAverageBlendedRating?: number
+  // FRONTEND-095-AC-01/SERIES-051: restricts the table to COMPLETED series
+  // only -- omitted (never sent as false) unless the "Completed Only" status
+  // scope option is selected and applied.
+  onlyCompleted?: boolean
 }
 
 export interface NameStatsTableProps {
@@ -50,16 +54,23 @@ const DEFAULT_SORT_DIRECTION: Record<NameStatsSortBy, NameStatsSortDirection> =
     name: 'asc',
   }
 
+// FRONTEND-095-AC-04: the status-scope select's two option values -- 'all'
+// is the default and maps to onlyCompleted being omitted entirely (never
+// sent as false); 'completed' maps to onlyCompleted: true.
+type StatusScope = 'all' | 'completed'
+
 interface FilterInputs {
   minSeriesCount: string
   minAveragePersonalRating: string
   minAverageBlendedRating: string
+  statusScope: StatusScope
 }
 
 const emptyFilterInputs: FilterInputs = {
   minSeriesCount: '',
   minAveragePersonalRating: '',
   minAverageBlendedRating: '',
+  statusScope: 'all',
 }
 
 function formatAverage(value: number | null): string {
@@ -86,6 +97,10 @@ function buildFetchOptions(
     options.minAverageBlendedRating = Number(
       appliedFilters.minAverageBlendedRating,
     )
+  // FRONTEND-095-AC-05/06: only included when explicitly 'completed' --
+  // 'all' (the default, and reverting back to it) omits onlyCompleted
+  // entirely rather than sending it as false.
+  if (appliedFilters.statusScope === 'completed') options.onlyCompleted = true
   return options
 }
 
@@ -162,10 +177,20 @@ export function NameStatsTable({
   }
 
   const handleFilterInputChange =
-    (field: keyof FilterInputs) =>
+    (field: keyof Omit<FilterInputs, 'statusScope'>) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setFilterInputs((prev) => ({ ...prev, [field]: event.target.value }))
     }
+
+  // FRONTEND-095-AC-04: separate from handleFilterInputChange above since the
+  // status scope control is a <select> (StatusScope union), not a free-text
+  // numeric <input> (string).
+  const handleStatusScopeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const statusScope = event.target.value as StatusScope
+    setFilterInputs((prev) => ({ ...prev, statusScope }))
+  }
 
   const handleApplyFilters = () => {
     setLoading(true)
@@ -226,6 +251,18 @@ export function NameStatsTable({
             value={filterInputs.minAverageBlendedRating}
             onChange={handleFilterInputChange('minAverageBlendedRating')}
           />
+        </div>
+
+        <div className={styles.filterField}>
+          <label htmlFor={`${idPrefix}-status-filter`}>Status</label>
+          <select
+            id={`${idPrefix}-status-filter`}
+            value={filterInputs.statusScope}
+            onChange={handleStatusScopeChange}
+          >
+            <option value="all">All Series</option>
+            <option value="completed">Completed Only</option>
+          </select>
         </div>
 
         <button

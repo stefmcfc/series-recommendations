@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
 @SpringBootTest
@@ -23,7 +24,7 @@ class GenreStatsServiceSpec extends Specification {
 
     def "SERIES-048-AC-06: no tracked series with genres yields an empty list"() {
         expect:
-            genreStatsService.getStats(null, null, null, null, null) == []
+            genreStatsService.getStats(null, null, null, null, null, null) == []
     }
 
     def "SERIES-048-AC-02/03: aggregates genres from the delimited column, de-duplicated per series"() {
@@ -31,8 +32,8 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "A", genres: "Drama,Sci-Fi"))
             seriesRepository.save(new SeriesEntity(title: "B", genres: "Drama,Drama"))
 
-        when: "getStats(null, null, null, null, null) is called"
-            def stats = genreStatsService.getStats(null, null, null, null, null)
+        when: "getStats(null, null, null, null, null, null) is called"
+            def stats = genreStatsService.getStats(null, null, null, null, null, null)
 
         then: "Drama has seriesCount 2 (not 3), Sci-Fi has seriesCount 1"
             stats.find { it.name() == "Drama" }.seriesCount() == 2
@@ -43,8 +44,8 @@ class GenreStatsServiceSpec extends Specification {
         given: "a series with extra whitespace and an empty trailing segment"
             seriesRepository.save(new SeriesEntity(title: "A", genres: " Drama , Sci-Fi ,"))
 
-        when: "getStats(null, null, null, null, null) is called"
-            def stats = genreStatsService.getStats(null, null, null, null, null)
+        when: "getStats(null, null, null, null, null, null) is called"
+            def stats = genreStatsService.getStats(null, null, null, null, null, null)
 
         then: "the genre names are trimmed and no empty-string genre is produced"
             stats*.name().sort() == ["Drama", "Sci-Fi"]
@@ -56,7 +57,7 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", genres: ""))
 
         expect:
-            genreStatsService.getStats(null, null, null, null, null) == []
+            genreStatsService.getStats(null, null, null, null, null, null) == []
     }
 
     def "SERIES-048-AC-04: averages exclude unrated/unblended series, mirroring keyword stats"() {
@@ -64,8 +65,8 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "A", genres: "Drama", personalRating: 4, imdbRating: 8.0G))
             seriesRepository.save(new SeriesEntity(title: "B", genres: "Drama"))
 
-        when: "getStats(null, null, null, null, null) is called"
-            def drama = genreStatsService.getStats(null, null, null, null, null).find { it.name() == "Drama" }
+        when: "getStats(null, null, null, null, null, null) is called"
+            def drama = genreStatsService.getStats(null, null, null, null, null, null).find { it.name() == "Drama" }
 
         then: "both averages reflect only the one qualifying series"
             drama.averagePersonalRating() == 4.0G
@@ -76,8 +77,8 @@ class GenreStatsServiceSpec extends Specification {
         given: "one Drama series, unrated and unblended"
             seriesRepository.save(new SeriesEntity(title: "A", genres: "Drama"))
 
-        when: "getStats(null, null, null, null, null) is called"
-            def drama = genreStatsService.getStats(null, null, null, null, null).find { it.name() == "Drama" }
+        when: "getStats(null, null, null, null, null, null) is called"
+            def drama = genreStatsService.getStats(null, null, null, null, null, null).find { it.name() == "Drama" }
 
         then: "both averages are null"
             drama.averagePersonalRating() == null
@@ -92,7 +93,7 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", genres: "Comedy"))
 
         expect:
-            genreStatsService.getStats(null, null, null, null, null)*.name() == ["Drama", "Comedy"]
+            genreStatsService.getStats(null, null, null, null, null, null)*.name() == ["Drama", "Comedy"]
     }
 
     def "SERIES-048-AC-05: sortBy=name sorts alphabetically, case-insensitively"() {
@@ -101,7 +102,7 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", genres: "drama"))
 
         expect:
-            genreStatsService.getStats('name', 'asc', null, null, null)*.name() == ['drama', 'Sci-Fi']
+            genreStatsService.getStats('name', 'asc', null, null, null, null)*.name() == ['drama', 'Sci-Fi']
     }
 
     def "SERIES-048-AC-05: sortBy=averageBlendedRating sorts descending by default, nulls last under both directions"() {
@@ -111,10 +112,10 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", genres: "Horror"))
 
         expect: "default (desc) sorts Drama, Comedy, Horror (null) last"
-            genreStatsService.getStats('averageBlendedRating', null, null, null, null)*.name() == ['Drama', 'Comedy', 'Horror']
+            genreStatsService.getStats('averageBlendedRating', null, null, null, null, null)*.name() == ['Drama', 'Comedy', 'Horror']
 
         and: "sortDirection=asc reverses the rated entries but still sorts the null-average entry last"
-            genreStatsService.getStats('averageBlendedRating', 'asc', null, null, null)*.name() == ['Comedy', 'Drama', 'Horror']
+            genreStatsService.getStats('averageBlendedRating', 'asc', null, null, null, null)*.name() == ['Comedy', 'Drama', 'Horror']
     }
 
     def "SERIES-048-AC-05: an unrecognized sortBy value soft-falls-back to the default (seriesCount)"() {
@@ -124,7 +125,7 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", genres: "Comedy"))
 
         expect:
-            genreStatsService.getStats('bogus', null, null, null, null)*.name() == ['Drama', 'Comedy']
+            genreStatsService.getStats('bogus', null, null, null, null, null)*.name() == ['Drama', 'Comedy']
     }
 
     def "SERIES-048-AC-05: minSeriesCount excludes genres below the threshold"() {
@@ -134,7 +135,7 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", genres: "Comedy"))
 
         expect: "only 'Drama' clears minSeriesCount=2"
-            genreStatsService.getStats(null, null, 2, null, null)*.name() == ['Drama']
+            genreStatsService.getStats(null, null, 2, null, null, null)*.name() == ['Drama']
     }
 
     def "SERIES-048-AC-05: minAveragePersonalRating excludes null averages even at threshold 0"() {
@@ -143,7 +144,7 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", genres: "Comedy", personalRating: 4))
 
         expect:
-            genreStatsService.getStats(null, null, null, 0 as BigDecimal, null)*.name() == ['Comedy']
+            genreStatsService.getStats(null, null, null, 0 as BigDecimal, null, null)*.name() == ['Comedy']
     }
 
     def "SERIES-048-AC-05: minAverageBlendedRating excludes null averages and applies >= threshold"() {
@@ -152,10 +153,10 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", genres: "Comedy"))
 
         expect: "only 'Drama' clears minAverageBlendedRating=7.0"
-            genreStatsService.getStats(null, null, null, null, 7.0 as BigDecimal)*.name() == ['Drama']
+            genreStatsService.getStats(null, null, null, null, 7.0 as BigDecimal, null)*.name() == ['Drama']
 
         and: "raising the threshold above 7.0 excludes it too"
-            genreStatsService.getStats(null, null, null, null, 7.1 as BigDecimal) == []
+            genreStatsService.getStats(null, null, null, null, 7.1 as BigDecimal, null) == []
     }
 
     def "SERIES-048-AC-05: multiple filters are AND-combined"() {
@@ -166,6 +167,18 @@ class GenreStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "D", genres: "Comedy"))
 
         expect: "only 'Drama' satisfies both minSeriesCount=2 and minAveragePersonalRating=3"
-            genreStatsService.getStats(null, null, 2, 3 as BigDecimal, null)*.name() == ['Drama']
+            genreStatsService.getStats(null, null, 2, 3 as BigDecimal, null, null)*.name() == ['Drama']
+    }
+
+    def "SERIES-051-AC-05: onlyCompleted is passed through to the aggregator"() {
+        given: "a COMPLETED and a BACKLOG series both carrying 'Drama'"
+            seriesRepository.save(new SeriesEntity(title: "A", status: SeriesStatus.COMPLETED, genres: "Drama"))
+            seriesRepository.save(new SeriesEntity(title: "B", status: SeriesStatus.BACKLOG, genres: "Drama"))
+
+        when: "getStats is called with onlyCompleted=true"
+            def dramaStat = genreStatsService.getStats(null, null, null, null, null, true).find { it.name() == "Drama" }
+
+        then: "only the completed series is counted"
+            dramaStat.seriesCount() == 1
     }
 }

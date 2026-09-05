@@ -907,6 +907,51 @@ describe('FRONTEND-088-AC-02: getGenreStats', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-095-AC-03: onlyCompleted only sent when true
+// ---------------------------------------------------------------------------
+describe('FRONTEND-095-AC-03: onlyCompleted only sent when true', () => {
+  it('includes onlyCompleted when true for getKeywordStats', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats({ onlyCompleted: true })
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', {
+      params: { onlyCompleted: true },
+    })
+  })
+
+  it('omits onlyCompleted when false or absent for getKeywordStats', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats({ onlyCompleted: false })
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', {
+      params: {},
+    })
+  })
+
+  it('includes onlyCompleted when true for getGenreStats', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getGenreStats({ onlyCompleted: true })
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: { onlyCompleted: true },
+    })
+  })
+
+  it('omits onlyCompleted when false or absent for getGenreStats', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getGenreStats({ onlyCompleted: false })
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-028-AC-09: getRecommendationKeywords(tmdbId)
 // ---------------------------------------------------------------------------
 describe('FRONTEND-028-AC-09: getRecommendationKeywords', () => {

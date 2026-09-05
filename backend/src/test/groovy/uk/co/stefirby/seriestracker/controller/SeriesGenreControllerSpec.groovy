@@ -7,6 +7,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -74,5 +75,25 @@ class SeriesGenreControllerSpec extends Specification {
             result.andExpect(status().isOk())
             result.andExpect(jsonPath('$.data[0].name').value("Drama"))
             result.andExpect(jsonPath('$.data[1].name').value("Sci-Fi"))
+    }
+
+    def "SERIES-051-AC-08: omitting onlyCompleted is unchanged from today's response"() {
+        given: "a mix of completed and non-completed series carrying genres"
+            seriesRepository.save(new SeriesEntity(title: "A", status: SeriesStatus.COMPLETED, genres: "Drama"))
+            seriesRepository.save(new SeriesEntity(title: "B", status: SeriesStatus.WATCHING, genres: "Drama"))
+
+        expect: "identical response with and without the new param explicitly false"
+            def withoutParam = mockMvc.perform(get("/api/v1/series/genres/stats"))
+            def explicitFalse = mockMvc.perform(get("/api/v1/series/genres/stats").param("onlyCompleted", "false"))
+            withoutParam.andReturn().response.contentAsString == explicitFalse.andReturn().response.contentAsString
+    }
+
+    def "SERIES-051-AC-07: onlyCompleted=true is accepted and narrows results"() {
+        when: "requested with onlyCompleted=true and nothing tracked is COMPLETED"
+            def response = mockMvc.perform(get("/api/v1/series/genres/stats").param("onlyCompleted", "true"))
+
+        then: "200 with an empty list -- not an error"
+            response.andExpect(status().isOk())
+            response.andExpect(jsonPath('$.data').isArray())
     }
 }

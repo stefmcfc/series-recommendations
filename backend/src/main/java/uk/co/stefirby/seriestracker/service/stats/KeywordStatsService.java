@@ -26,6 +26,10 @@ import java.util.List;
  *
  * <p>The actual grouping/sorting/filtering logic lives in {@link NameStatAggregator}, shared
  * with {@code GenreStatsService}.
+ *
+ * <p>series_spec_051_stats_status_scope_filter.md (SERIES-051-AC-04) adds an {@code
+ * onlyCompleted} pass-through, restricting aggregation to {@code SeriesStatus.COMPLETED} series
+ * -- the filter itself lives in {@link NameStatAggregator#aggregate}, not here.
  */
 @Service
 public class KeywordStatsService {
@@ -39,7 +43,7 @@ public class KeywordStatsService {
     /** Pre-series_spec_047 signature, kept for backward compatibility (SERIES-047-AC-12). */
     @Transactional(readOnly = true)
     public List<KeywordStatDto> getStats(String sortBy) {
-        return getStats(sortBy, null, null, null, null);
+        return getStats(sortBy, null, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -48,7 +52,8 @@ public class KeywordStatsService {
             String sortDirection,
             Integer minSeriesCount,
             BigDecimal minAveragePersonalRating,
-            BigDecimal minAverageBlendedRating) {
+            BigDecimal minAverageBlendedRating,
+            Boolean onlyCompleted) {
         List<NameStat> stats = NameStatAggregator.aggregate(
             seriesRepository.findAll(),
             series -> series.getKeywords().stream().map(KeywordEntity::getName).toList(),
@@ -56,7 +61,8 @@ public class KeywordStatsService {
             sortDirection,
             minSeriesCount,
             minAveragePersonalRating,
-            minAverageBlendedRating);
+            minAverageBlendedRating,
+            onlyCompleted);
 
         return stats.stream()
             .map(stat -> new KeywordStatDto(
