@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.27.0] - 2026-09-05
+
 ### Added
 
 - Frontend: new `Analysis` section (`/analysis/:tab`) with an internal sub-nav, hosting `KeywordsView` as its first tab — later specs add Genres/Country-of-Origin tabs into the same container (`frontend_spec_087`).
