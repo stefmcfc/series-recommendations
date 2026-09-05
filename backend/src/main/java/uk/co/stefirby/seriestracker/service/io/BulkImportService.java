@@ -4,6 +4,7 @@ import uk.co.stefirby.seriestracker.dto.ImportJobStatus;
 import uk.co.stefirby.seriestracker.dto.ImportRowError;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.exception.ConflictException;
+import uk.co.stefirby.seriestracker.service.AbstractPollingJobService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,17 +16,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Backs {@code POST}/{@code GET /api/v1/series/import} (series_spec_038_import.md) -- a single
  * in-process, in-memory job, no database table, mirroring {@code BulkRefreshService} exactly
- * (same single-threaded daemon executor, {@link AtomicReference}-backed status, {@code
- * synchronized} guarded {@link #start}, delay-between-items shape). Each row is created via the
- * existing {@link SeriesService#create(SeriesDto)} rather than a bespoke bulk-insert path, so
+ * (same {@link AbstractPollingJobService} plumbing: single-threaded daemon executor,
+ * {@link AtomicReference}-backed status, {@code synchronized} guarded {@link #start},
+ * delay-between-items shape). Each row is created via the existing
+ * {@link SeriesService#create(SeriesDto)} rather than a bespoke bulk-insert path, so
  * every existing guarantee (validation, duplicate-{@code imdbId} rejection, best-effort TMDB/
  * OMDb enrichment) applies to each imported row for free.
  *
@@ -35,14 +35,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * (SERIES-038-AC-03).
  */
 @Service
-public class BulkImportService {
+public class BulkImportService extends AbstractPollingJobService<ImportJobStatus> {
 
     private static final Logger log = LoggerFactory.getLogger(BulkImportService.class);
-
-    private static final String IDLE = "IDLE";
-    private static final String IN_PROGRESS = "IN_PROGRESS";
-    private static final String COMPLETED = "COMPLETED";
-    private static final String FAILED = "FAILED";
 
     // SERIES-038-AC-03: a badly-malformed large file could otherwise blow up the response body
     // with one error message per row -- capped, same rationale as any other "first N" summary.
@@ -51,10 +46,6 @@ public class BulkImportService {
     private final SeriesService seriesService;
     private final Clock clock;
     private final long importDelayMs;
-    private final ExecutorService executor;
-
-    private final AtomicReference<ImportJobStatus> currentJob =
-        new AtomicReference<>(new ImportJobStatus(IDLE, 0, 0, 0, 0, List.of(), null, null));
 
     // Test-only: lets BulkImportServiceSpec block deterministically until an async run finishes
     // instead of polling, since (unlike BulkRefreshServiceSpec's repository-backed batch) every
@@ -67,14 +58,10 @@ public class BulkImportService {
     public BulkImportService(SeriesService seriesService,
                               Clock clock,
                               @Value("${app.tmdb.refresh-delay-ms:250}") long importDelayMs) {
+        super(new ImportJobStatus(IDLE, 0, 0, 0, 0, List.of(), null, null), "bulk-import-worker");
         this.seriesService = seriesService;
         this.clock = clock;
         this.importDelayMs = importDelayMs;
-        this.executor = Executors.newSingleThreadExecutor(runnable -> {
-            Thread thread = new Thread(runnable, "bulk-import-worker");
-            thread.setDaemon(true);
-            return thread;
-        });
     }
 
     /**
@@ -85,10 +72,7 @@ public class BulkImportService {
      * @throws ConflictException if a job is already {@code IN_PROGRESS}
      */
     public synchronized ImportJobStatus start(List<SeriesDto> entries) {
-        ImportJobStatus existing = currentJob.get();
-        if (IN_PROGRESS.equals(existing.status())) {
-            throw new ConflictException("An import job is already in progress");
-        }
+        guardNotInProgress("An import job is already in progress");
 
         int totalCount = entries.size();
         ImportJobStatus started =
@@ -97,11 +81,6 @@ public class BulkImportService {
 
         currentRun.set(executor.submit(() -> runJob(started, entries)));
         return started;
-    }
-
-    /** The current (or, once one has run, the most recently finished) job's status. */
-    public ImportJobStatus status() {
-        return currentJob.get();
     }
 
     /**
@@ -149,7 +128,7 @@ public class BulkImportService {
                     errorCount, List.copyOf(errors), started.startedAt(), null));
 
                 if (importDelayMs > 0) {
-                    applyDelay();
+                    applyDelay(importDelayMs, "Bulk import job interrupted");
                 }
             }
             currentJob.set(new ImportJobStatus(COMPLETED, started.totalCount(), imported, skipped, errorCount,
@@ -177,16 +156,6 @@ public class BulkImportService {
                 errors.add(new ImportRowError(rowIndex, e.getMessage()));
             }
             return RowOutcome.ERROR;
-        }
-    }
-
-    /** Extracted so the loop in {@link #runJob} doesn't nest a try/catch inside its own try/catch (java:S1141). */
-    private void applyDelay() {
-        try {
-            Thread.sleep(importDelayMs);
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Bulk import job interrupted", ie);
         }
     }
 }
