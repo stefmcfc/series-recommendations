@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
@@ -74,6 +74,7 @@ export function SeriesDetail({
   // opening/closing it can't interfere with delete-confirmation, editing, or
   // the recommendations modal.
   const [posterLightboxOpen, setPosterLightboxOpen] = useState(false)
+  const posterCloseButtonRef = useRef<HTMLButtonElement>(null)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -119,6 +120,19 @@ export function SeriesDetail({
       cancelled = true
     }
   }, [id, refreshIndex])
+
+  // FRONTEND-078-AC-05: moves focus into the dialog as soon as it opens.
+  // Without this, focus stays on the poster thumbnail button -- a DOM
+  // sibling, not an ancestor, of this dialog -- so a real Escape keypress
+  // right after opening would never reach handleLightboxKeyDown at all.
+  // Programmatic .focus() here (not the JSX autoFocus prop, which
+  // jsx-a11y/no-autofocus disallows), matching SearchFilter.tsx's
+  // closeButtonRef/FRONTEND-071-AC-05 pattern.
+  useEffect(() => {
+    if (posterLightboxOpen) {
+      posterCloseButtonRef.current?.focus()
+    }
+  }, [posterLightboxOpen])
 
   const handleRetry = useCallback(() => {
     setLoading(true)
@@ -393,6 +407,7 @@ export function SeriesDetail({
                 onKeyDown={handleLightboxKeyDown}
               >
                 <button
+                  ref={posterCloseButtonRef}
                   type="button"
                   className={styles.posterCloseButton}
                   aria-label="Close"
