@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.stats
 
 import spock.lang.Specification
 import uk.co.stefirby.seriestracker.model.SeriesEntity

@@ -129,6 +129,27 @@ name a `genre`/`excludeGenre` search filter or a `genres` recommendation param c
 entry per TMDB alias (e.g. both `Action` and `Adventure` are listed separately even though they
 collapse onto the same TMDB genre id). Always `200`; no query params.
 
+---
+
+### `GET /api/v1/series/genres/stats?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=`
+
+Aggregate per-genre stats (`seriesCount`, `averagePersonalRating`, `averageBlendedRating`) across
+your tracked series (`series_spec_048_genre_stats.md`) — the same treatment `GET
+/api/v1/series/keywords` gives keywords, applied to the comma-delimited `genres` column instead of
+a normalized table: each series' `genres` string is split/trimmed with empty segments dropped
+(same logic as `RecommendationSourcingService.splitGenres`), de-duplicated per series (a series
+listing the same genre twice only contributes `1` to that genre's `seriesCount`), then aggregated.
+`averageBlendedRating` uses the same `RatingBlendUtil.blendedRating` unweighted-average-of-
+`imdbRating`/`tmdbRating` logic as the keyword-stats endpoint, excluding series with neither rating
+set (`null`, never `0`, when none of a genre's carrying series has one).
+
+The `sortBy`/`sortDirection` and three minimum-value filter params (`minSeriesCount`,
+`minAveragePersonalRating`, `minAverageBlendedRating`) behave identically to `GET
+/api/v1/series/keywords` — see that section above for the full soft-fallback/nulls-last/AND-combined
+semantics, copied here unchanged. Empty list, not an error, when nothing tracked has genres or
+nothing clears the provided filters. Envelope shape is `{ data, count }`, matching `GET
+/api/v1/series/keywords`/`GET /api/v1/series/genres`.
+
 ## Import
 
 ### `POST /api/v1/series/import`

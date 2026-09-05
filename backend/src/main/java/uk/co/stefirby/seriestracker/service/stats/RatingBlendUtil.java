@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.stats;
 
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 

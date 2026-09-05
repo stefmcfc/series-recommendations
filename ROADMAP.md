@@ -121,22 +121,23 @@ corrected below.
 | Recommendations page polish: left-hand grouping line on expanded filter disclosures, Custom Search Keywords becomes a "Browse all keywords" CTA, Exclude Keywords becomes a `KeywordPicker`, Min Vote Count validation | — | `frontend_spec_094` | ✅ Done |
 | "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | ✅ Done |
 | "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | ✅ Done |
+| "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | ✅ Done |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains, e.g.
-the 4-step Analysis/Trends chain
+the 5-step Analysis/Trends chain
 (`series_spec_047`+`frontend_spec_086`→`frontend_spec_087`→`series_spec_048`+`frontend_spec_088`→
-`series_spec_049`+`frontend_spec_089`). Rows within a chain must build in the listed order; the
-chains themselves have no dependencies on each other *within this table* — and can be reordered
-freely as a block if priorities change — but re-check priority order too when doing so, since this
-table's row order isn't just dependency-derived anymore.
+`series_spec_051`+`frontend_spec_095`→`series_spec_049`+`frontend_spec_089`). Rows within a chain
+must build in the listed order; the chains themselves have no dependencies on each other *within
+this table* — and can be reordered freely as a block if priorities change — but re-check priority
+order too when doing so, since this table's row order isn't just dependency-derived anymore.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` (✅ delivered) | 🟨 P3 · ⬜ Not started |
-| "Analysis/Trends" expansion, unit 4/4: Country-of-Origin stats (same treatment), added as a third `Analysis` tab | `series_spec_049` | `frontend_spec_089` | `series_spec_047`, `frontend_spec_088` | 🟨 P3 · ⬜ Not started |
+| Stats status scope filter ("Completed Only" / "All Series") added to `NameStatAggregator`/`NameStatsTable`, retrofitting Keywords and Genres and inherited automatically by the not-yet-built Country-of-Origin tab | `series_spec_051` | `frontend_spec_095` | `series_spec_047`, `series_spec_048` (✅ delivered) | 🟨 P3 · ⬜ Not started |
+| "Analysis/Trends" expansion, unit 4/4: Country-of-Origin stats (same treatment), added as a third `Analysis` tab | `series_spec_049` | `frontend_spec_089` | `series_spec_047`, `frontend_spec_088` (✅ delivered), `series_spec_051`/`frontend_spec_095` (build the status filter in from the start) | 🟨 P3 · ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 
