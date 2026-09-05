@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Backend: `BulkImportService`'s `currentRun` field now uses `AtomicReference<Future<?>>` instead of a bare `volatile` field, and unused caught-exception variables in `BulkImportService`/`SeriesController` are replaced with unnamed patterns. No behavior change — SonarQube findings (`java:S3077`, `java:S7467`).
+- Backend: `SeriesController`'s three-times-duplicated `"series"` JSON-field literal is extracted to a `SERIES_FIELD` constant. No behavior change — SonarQube finding (`java:S1192`).
+- Frontend: `ImportControls.buildSummaryText`'s nested ternary is extracted into a named `errorNoun` variable. No behavior change — SonarQube finding (`typescript:S3358`).
+- Docs: `API.md` now documents `GET /series/genres` and `GET /series/{id}/watch-providers` (previously undocumented entirely) and gives `GET /series/recommendations/{tmdbId}/keywords` its own heading instead of only prose references; `README.md`'s feature list now mentions bulk import, watch providers, keyword tracking, and series refresh; `RUNBOOK.md`'s Environment Variables table gains two previously-undocumented `app.*` properties (`app.recommendations.diversity-cap-mode`, `app.tmdb.default-min-vote-count`) — no code changes.
+- Backend: extracted `SeriesMapper` (entity↔DTO field-copy boilerplate out of `SeriesService`), a `buildCriteria` helper (removes duplicated `SeriesSearchCriteria` field-copying between `SeriesController.search`/`.export`), and a new `ImportFileParser` (moves JSON-parsing/validation logic that had been sitting directly in `SeriesController` into its own class, closing a "controllers stay thin" violation). No behavior change.
+- Backend: reorganized `service/` into `service.io` (`BulkImportService`, `SeriesExportService`, `ImportFileParser`), `service.tmdb` (`TmdbGenreTable`, `WatchProviderService`, `SeriesLookupService`), and `service.keyword` (`KeywordStatsService`, `KeywordSyncService`) subpackages, and brought `.claude/steering/structure.md` up to date with the real current package layout. No behavior change.
+- Backend: `BulkImportService`/`BulkRefreshService` now share their executor/status-holder/guard/delay plumbing via a new `AbstractPollingJobService` base class, removing duplicated copy-paste between the two. No behavior change.
+
 ## [3.22.0] - 2026-09-05
 
 ### Added
