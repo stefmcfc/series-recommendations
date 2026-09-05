@@ -126,6 +126,19 @@ rerun; the backend/frontend/CodeQL jobs were the expensive, genuinely redundant 
    now correctly reports `backend=false`, where naive path-matching would have said
    `true` for every single merge.
 
+**A real bug found while verifying (5) on PR #174**: the first version gated CodeQL's
+per-language skip with `matrix.language` in the `analyze` job's own `if:`. GitHub
+Actions doesn't resolve `matrix` context at job-level `if:` — it's only bound once
+the matrix has fanned out into concrete per-instance jobs, which happens *after* the
+job-level `if:` decides whether to fan out at all. Referencing it there doesn't just
+no-op: it makes the entire workflow file invalid, so `analyze` silently never ran on
+*any* trigger, PRs included — confirmed by fetching the actual run failure reason
+(`Unrecognized named-value: 'matrix'`) after the PR showed zero CodeQL checks at all.
+Fixed by keeping the job-level `if:` to `release_cut_only` only, and moving the
+per-language decision into a `gate` step plus per-step `if:` checks, where
+`matrix.language` *is* available. Confirmed fixed: PR #174 now shows both
+`analyze (java)` and `analyze (javascript-typescript)` running and passing.
+
 Net effect for the release-cut-only case: what used to be 4 full runs of
 backend+frontend+CodeQL is now 0 — only the fast `changes` job, `secrets-scan`, and
 (on the `push` side) `changelog-cut` execute. For an ordinary feature PR, CodeQL no
