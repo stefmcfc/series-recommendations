@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.25.0] - 2026-09-05
+
 ### Added
 
 - Frontend: expanded "Filter & sort my series" and "Recommendations Filters" sections now show a left-hand grouping line, visually tying the content back to the toggle it collapses under (`frontend_spec_094`).
