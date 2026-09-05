@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
-import uk.co.stefirby.seriestracker.service.SeriesLookupService
+import uk.co.stefirby.seriestracker.service.tmdb.SeriesLookupService
 import uk.co.stefirby.seriestracker.service.SeriesService
 import org.springframework.core.MethodParameter
 import org.springframework.validation.BeanPropertyBindingResult

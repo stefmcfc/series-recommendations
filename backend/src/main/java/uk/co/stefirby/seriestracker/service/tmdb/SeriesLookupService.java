@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.tmdb;
 
 import uk.co.stefirby.seriestracker.client.omdb.OmdbClient;
 import uk.co.stefirby.seriestracker.client.omdb.OmdbRatings;

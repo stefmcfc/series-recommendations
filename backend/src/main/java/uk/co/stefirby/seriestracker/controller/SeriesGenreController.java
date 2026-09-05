@@ -1,7 +1,7 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

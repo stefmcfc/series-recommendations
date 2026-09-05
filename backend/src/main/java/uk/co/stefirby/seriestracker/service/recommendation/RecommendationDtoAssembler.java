@@ -4,8 +4,8 @@ import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate;
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
-import uk.co.stefirby.seriestracker.service.WatchProviderService;
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable;
+import uk.co.stefirby.seriestracker.service.tmdb.WatchProviderService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

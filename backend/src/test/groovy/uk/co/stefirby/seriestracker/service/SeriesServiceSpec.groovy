@@ -12,6 +12,7 @@ import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
+import uk.co.stefirby.seriestracker.service.keyword.KeywordSyncService
 
 import java.time.Clock
 import java.time.Instant

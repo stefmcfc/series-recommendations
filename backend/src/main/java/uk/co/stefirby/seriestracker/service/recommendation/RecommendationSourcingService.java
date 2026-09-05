@@ -7,7 +7,7 @@ import uk.co.stefirby.seriestracker.dto.RecommendationCriteria;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable;
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.tmdb;
 
 import org.springframework.stereotype.Component;
 

@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.keyword
 
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired

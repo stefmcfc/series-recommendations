@@ -1,9 +1,10 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.io;
 
 import uk.co.stefirby.seriestracker.dto.ImportJobStatus;
 import uk.co.stefirby.seriestracker.dto.ImportRowError;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.exception.ConflictException;
+import uk.co.stefirby.seriestracker.service.SeriesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

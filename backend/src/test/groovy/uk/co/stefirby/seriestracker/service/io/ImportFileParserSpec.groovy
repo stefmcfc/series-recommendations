@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.io
 
 import org.springframework.mock.web.MockMultipartFile
 import spock.lang.Specification

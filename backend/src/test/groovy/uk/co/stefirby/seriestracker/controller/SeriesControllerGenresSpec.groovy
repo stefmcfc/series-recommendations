@@ -1,6 +1,6 @@
 package uk.co.stefirby.seriestracker.controller
 
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc

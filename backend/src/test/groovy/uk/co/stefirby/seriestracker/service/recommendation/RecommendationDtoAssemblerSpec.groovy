@@ -5,8 +5,8 @@ import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable
-import uk.co.stefirby.seriestracker.service.WatchProviderService
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable
+import uk.co.stefirby.seriestracker.service.tmdb.WatchProviderService
 import spock.lang.Specification
 
 import java.time.LocalDateTime

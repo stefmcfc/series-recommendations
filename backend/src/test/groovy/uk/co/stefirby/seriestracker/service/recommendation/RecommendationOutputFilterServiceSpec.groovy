@@ -5,7 +5,7 @@ import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable
 import spock.lang.Specification
 
 class RecommendationOutputFilterServiceSpec extends Specification {

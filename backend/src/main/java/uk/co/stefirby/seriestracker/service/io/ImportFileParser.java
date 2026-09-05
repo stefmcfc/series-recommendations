@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.io;
 
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import tools.jackson.core.JacksonException;
