@@ -11,6 +11,29 @@ import type { ControlsState } from './RecommendationControls'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import styles from './RecommendationControls.module.css'
 
+// FRONTEND-093-AC-02/03: counts every field this box reads/writes,
+// regardless of isCustomSearch -- several fields are hidden while
+// isCustomSearch is true, but their state values persist across mode
+// switches, so counting only currently-visible fields would make the
+// badge's number change confusingly as the user switches modes without
+// touching anything (this spec's Design Decisions).
+function countActiveFilters(state: ControlsState): number {
+  const stringFields = [
+    state.minTmdbRating,
+    state.minVoteCount,
+    state.yearMin,
+    state.yearMax,
+    state.excludeKeywordsText,
+    state.language,
+  ]
+  const arrayFields = [state.excludeGenresSelected, state.countriesSelected]
+
+  return (
+    stringFields.filter((value) => value.trim() !== '').length +
+    arrayFields.filter((value) => value.length > 0).length
+  )
+}
+
 interface RecommendationFiltersBoxProps {
   readonly state: ControlsState
   readonly updateState: (patch: Partial<ControlsState>) => void
@@ -34,6 +57,7 @@ export function RecommendationFiltersBox({
   genreOptions,
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const activeFilterCount = countActiveFilters(state)
 
   const updateField =
     (field: keyof ControlsState) =>
@@ -76,6 +100,14 @@ export function RecommendationFiltersBox({
         onClick={() => setFiltersOpen((open) => !open)}
       >
         Recommendations Filters
+        {activeFilterCount > 0 && (
+          <span
+            className={styles.filtersActiveBadge}
+            data-testid="filters-active-count"
+          >
+            {activeFilterCount}
+          </span>
+        )}
       </button>
 
       {filtersOpen && (

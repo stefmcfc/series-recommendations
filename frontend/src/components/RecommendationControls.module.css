@@ -280,6 +280,28 @@
   background: var(--social-bg);
 }
 
+/* FRONTEND-093-AC-02/03: small rounded badge/chip showing the active-filter
+   count on the collapsed toggle -- adapted from SeriesList.module.css's
+   .filtersActiveDot (same "active indicator" visual language, --accent
+   background), but sized/shaped to fit 1-2 digits of text rather than
+   render as an empty dot. */
+.filtersActiveBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  vertical-align: middle;
+}
+
 .filtersBody {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
@@ -305,6 +327,15 @@
 
 .resetButton:hover {
   background: var(--social-bg);
+}
+
+/* FRONTEND-093-AC-01: plain decorative divider between the "Filter & sort
+   my series" disclosure and the Series picker -- reuses --border, the same
+   custom property every other subtle separator in this app (e.g.
+   SeriesDetail.module.css's section-header underlines) already uses. */
+.sectionDivider {
+  border-top: 1px solid var(--border);
+  margin: 0.5rem 0;
 }
 
 .specificSeriesSection {

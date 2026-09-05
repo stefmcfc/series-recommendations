@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `UseMySeriesPanel` renders a visual divider between the "Filter & sort my series" disclosure and the "Series" picker below it, so the two no longer read as one continuous block (`frontend_spec_093`).
+- Frontend: `RecommendationFiltersBox`'s "Recommendations Filters" toggle now shows a count badge of active filters (across all 8 fields it renders, regardless of `isCustomSearch`) so a user can tell at a glance whether anything is set without reopening the panel (`frontend_spec_093`).
+
 ## [3.23.3] - 2026-09-05
 
 ### Fixed

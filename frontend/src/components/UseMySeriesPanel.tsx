@@ -437,6 +437,15 @@ export function UseMySeriesPanel({
                 )}
               </div>
 
+              {/* FRONTEND-093-AC-01: plain decorative divider separating the
+                  "Filter & sort my series" disclosure from the Series picker
+                  below -- previously ran directly into it with no visual
+                  break. */}
+              <div
+                className={styles.sectionDivider}
+                data-testid="specific-series-divider"
+              />
+
               <KeywordPicker
                 id="specific-series-picker"
                 label="Series"
