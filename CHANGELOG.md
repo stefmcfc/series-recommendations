@@ -13,6 +13,12 @@ versioned together as one app.
 - Frontend: `UseMySeriesPanel` renders a visual divider between the "Filter & sort my series" disclosure and the "Series" picker below it, so the two no longer read as one continuous block (`frontend_spec_093`).
 - Frontend: `RecommendationFiltersBox`'s "Recommendations Filters" toggle now shows a count badge of active filters (across all 8 fields it renders, regardless of `isCustomSearch`) so a user can tell at a glance whether anything is set without reopening the panel (`frontend_spec_093`).
 
+### Changed
+
+- Frontend: the main site header, My Series' status-tab row, and Recommendations' Use My Series/Discover tabs all stay pinned in view while scrolling instead of scrolling away with the page (`frontend_spec_092`).
+- Frontend: `SeriesRecommendationsModal` can now be dismissed by clicking outside the dialog, in addition to the existing "Done" button and Escape (`frontend_spec_092`).
+- Frontend: `SeriesRecommendationsModal`'s "Done" button now stays pinned to the bottom of the dialog while scrolling a long recommendations list (`frontend_spec_092`).
+
 ## [3.23.3] - 2026-09-05
 
 ### Fixed

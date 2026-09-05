@@ -1,6 +1,6 @@
 # Frontend Spec 092: Persistent Navigation While Scrolling + Recommendations Modal Dismissal
 
-**Status**: In progress
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `frontend_spec_090_series_detail_layout_adjustments.md` (established this app's `position: sticky` pattern — see Design Decisions), `frontend_spec_071_my_series_filter_sheet.md` / `frontend_spec_079` (the existing click-outside-to-close precedent this spec's Requirement 2 reuses)
 **Area**: Frontend (`App.tsx`, `App.module.css`, `components/RecommendationControls.tsx`, `components/RecommendationControls.module.css`, `components/SeriesRecommendationsModal.tsx`, `components/SeriesRecommendationsModal.module.css`)
@@ -154,11 +154,11 @@ describe('FRONTEND-092-AC-05: clicking inside the dialog does not close the moda
 
 ## Acceptance Criteria Summary
 
-Implemented, awaiting manual browser verification (see each AC's `[MANUAL]` tag and this spec's Design Decisions): AC-01, AC-02, AC-03, AC-06. Leave these unchecked until that verification confirms the sticky positioning actually renders/stacks correctly in a real browser — jsdom can't validate this.
+Manual browser verification complete for AC-01/02/03/06 (confirmed via `getComputedStyle`/`getBoundingClientRect` at an arbitrary mid-scroll position for each — header pinned at `top: 0`, My Series status tabs and Recommendations mode tabs both pinned at `top: var(--header-height)` with zero gap/overlap against the header's actual rendered height, "Done" pinned at `bottom: 0` — plus a visual check of click-outside-to-close).
 
-- [ ] FRONTEND-092-AC-01: Main header stays visible while scrolling
-- [ ] FRONTEND-092-AC-02: My Series status-tab row stays visible while scrolling, correctly stacked below the header
-- [ ] FRONTEND-092-AC-03: Recommendations' mode tabs stay visible while scrolling, correctly stacked below the header
+- [x] FRONTEND-092-AC-01: Main header stays visible while scrolling
+- [x] FRONTEND-092-AC-02: My Series status-tab row stays visible while scrolling, correctly stacked below the header
+- [x] FRONTEND-092-AC-03: Recommendations' mode tabs stay visible while scrolling, correctly stacked below the header
 - [x] FRONTEND-092-AC-04: Clicking the overlay backdrop closes the modal
 - [x] FRONTEND-092-AC-05: Clicking inside the dialog does not close the modal
-- [ ] FRONTEND-092-AC-06: "Done" button stays visible while scrolling the recommendations list
+- [x] FRONTEND-092-AC-06: "Done" button stays visible while scrolling the recommendations list
