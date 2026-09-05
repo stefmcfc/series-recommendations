@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.23.1] - 2026-09-05
+
 ### Changed
 
 - CI: `ci.yml` and `codeql.yml` each gain a `changes` job that detects a release-cut-only diff (just `CHANGELOG.md` + the two version-bump lines) and skips `backend`/`frontend`/CodeQL's `analyze` for it, since that diff has no code to check.
