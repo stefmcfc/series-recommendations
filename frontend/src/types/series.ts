@@ -90,6 +90,30 @@ export interface GenreStatsOptions {
   onlyCompleted?: boolean
 }
 
+// FRONTEND-089-AC-01: identical shape to KeywordStat/GenreStat -- `name` is
+// the raw ISO 3166-1 alpha-2 code (e.g. "GB"), not a resolved display name;
+// CountryStatsView resolves it to a display name for rendering only
+// (series_spec_049).
+export interface CountryStat {
+  name: string
+  seriesCount: number
+  averagePersonalRating: number | null
+  averageBlendedRating: number | null
+}
+
+// FRONTEND-089-AC-02: options object for seriesApi.getCountryStats -- mirrors
+// KeywordStatsOptions/GenreStatsOptions exactly (series_spec_049).
+export interface CountryStatsOptions {
+  sortBy?:
+    'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
+  sortDirection?: 'asc' | 'desc'
+  minSeriesCount?: number
+  minAveragePersonalRating?: number
+  minAverageBlendedRating?: number
+  // FRONTEND-089: mirrors KeywordStatsOptions/GenreStatsOptions.onlyCompleted.
+  onlyCompleted?: boolean
+}
+
 export interface RefreshResult {
   series: Series
   omdbRefreshed: boolean

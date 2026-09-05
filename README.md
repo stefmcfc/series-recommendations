@@ -11,7 +11,7 @@ A personal app for logging TV series you're watching, tracking your viewing prog
 - Export your data as JSON or CSV, and re-import it (or any file in the same shape) later
 - Refresh a series' metadata from TMDB/OMDb on demand, or in bulk across your whole collection, with new-content detection
 - Track normalized keywords per series, with keyword-based filtering
-- Analyze your collection in an Analysis section — Keyword and Genre stats tables with series-count/rating aggregates, minimum-value filtering, and sortable columns
+- Analyze your collection in an Analysis section — Keyword, Genre, and Country of Origin stats tables with series-count/rating aggregates, minimum-value filtering, and sortable columns
 - See streaming (watch-provider) availability for a series or a recommendation candidate
 - Get series recommendations sourced from TMDB, based on shows similar to what you've completed (or, with too little data yet, your most-watched genres), with a dismiss/ignore list so a rejected suggestion never resurfaces
 

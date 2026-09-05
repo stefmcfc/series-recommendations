@@ -907,6 +907,83 @@ describe('FRONTEND-088-AC-02: getGenreStats', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-089-AC-02: getCountryStats options object
+// ---------------------------------------------------------------------------
+describe('FRONTEND-089-AC-02: getCountryStats', () => {
+  it('fetches /series/origin-country/stats and unwraps the envelope', async () => {
+    client.get.mockResolvedValue({
+      data: {
+        data: [
+          {
+            name: 'GB',
+            seriesCount: 5,
+            averagePersonalRating: 4.2,
+            averageBlendedRating: 7.8,
+          },
+        ],
+        count: 1,
+      },
+    })
+
+    const result = await seriesApi.getCountryStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/origin-country/stats', {
+      params: {},
+    })
+    expect(result).toEqual([
+      {
+        name: 'GB',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+    ])
+  })
+
+  it('sends only the provided options as query params', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getCountryStats({ sortBy: 'name', minSeriesCount: 2 })
+
+    expect(client.get).toHaveBeenCalledWith('/series/origin-country/stats', {
+      params: { sortBy: 'name', minSeriesCount: 2 },
+    })
+  })
+
+  it('sends no params when called with no arguments', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getCountryStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/origin-country/stats', {
+      params: {},
+    })
+  })
+
+  it('sends sortDirection and all three min-value filters when provided', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getCountryStats({
+      sortBy: 'averageBlendedRating',
+      sortDirection: 'desc',
+      minSeriesCount: 2,
+      minAveragePersonalRating: 3,
+      minAverageBlendedRating: 6.5,
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/origin-country/stats', {
+      params: {
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 2,
+        minAveragePersonalRating: 3,
+        minAverageBlendedRating: 6.5,
+      },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-095-AC-03: onlyCompleted only sent when true
 // ---------------------------------------------------------------------------
 describe('FRONTEND-095-AC-03: onlyCompleted only sent when true', () => {
@@ -946,6 +1023,26 @@ describe('FRONTEND-095-AC-03: onlyCompleted only sent when true', () => {
     await seriesApi.getGenreStats({ onlyCompleted: false })
 
     expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: {},
+    })
+  })
+
+  it('includes onlyCompleted when true for getCountryStats', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getCountryStats({ onlyCompleted: true })
+
+    expect(client.get).toHaveBeenCalledWith('/series/origin-country/stats', {
+      params: { onlyCompleted: true },
+    })
+  })
+
+  it('omits onlyCompleted when false or absent for getCountryStats', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getCountryStats({ onlyCompleted: false })
+
+    expect(client.get).toHaveBeenCalledWith('/series/origin-country/stats', {
       params: {},
     })
   })

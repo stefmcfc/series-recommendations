@@ -1,6 +1,6 @@
 # Frontend Spec 089: Country-of-Origin Stats View
 
-**Status**: Not started
+**Status**: Done
 **Depends on**: Series Spec 049 (`series_spec_049_country_of_origin_stats.md`), Frontend Spec 088 (`frontend_spec_088_genre_stats_view.md`, the tab this is added alongside), Frontend Spec 087 (`frontend_spec_087_analysis_section_nav_restructure.md`, the `AnalysisView` container this adds a tab into)
 **Frontend Stage**: 89 of N
 
@@ -108,9 +108,9 @@ describe('FRONTEND-089-AC-06: Country of Origin tab', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-089-AC-01: `CountryStat` type
-- [ ] FRONTEND-089-AC-02: `seriesApi.getCountryStats` (options-object signature)
-- [ ] FRONTEND-089-AC-03: `CountryStatsView` table, filters, sort/direction toggle
-- [ ] FRONTEND-089-AC-04: raw code resolved to display name via `formatCountryName`
-- [ ] FRONTEND-089-AC-05: loading/error states match `KeywordsView`/`GenreStatsView`
-- [ ] FRONTEND-089-AC-06: `AnalysisView` gains a "Country of Origin" sub-nav tab
+- [x] FRONTEND-089-AC-01: `CountryStat` type
+- [x] FRONTEND-089-AC-02: `seriesApi.getCountryStats` (options-object signature)
+- [x] FRONTEND-089-AC-03: `CountryStatsView` table, filters, sort/direction toggle
+- [x] FRONTEND-089-AC-04: raw code resolved to display name via `formatCountryName`
+- [x] FRONTEND-089-AC-05: loading/error states match `KeywordsView`/`GenreStatsView`
+- [x] FRONTEND-089-AC-06: `AnalysisView` gains a "Country of Origin" sub-nav tab

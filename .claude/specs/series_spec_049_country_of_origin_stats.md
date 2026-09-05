@@ -1,6 +1,6 @@
 # Spec 049: Country-of-Origin Stats
 
-**Status**: Not started
+**Status**: Done (backend only — see `frontend_spec_089`, not yet implemented)
 **Priority**: P3 (analysis/quality-of-life feature — not core CRUD)
 **Depends on**: Series Spec 047 (`series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md`, the `sortBy`/`sortDirection`/min-filter contract and `RatingBlendUtil` this spec reuses), Series Spec 046 (`series_spec_046_multi_origin_country.md`, the comma-joined multi-value `originCountry` column this spec parses)
 **Backend Task**
@@ -41,6 +41,14 @@ their average blended (IMDb+TMDB) rating — same filter/sort contract as both s
 - **New endpoint and DTO shape mirror `series_spec_048`'s Genre stats exactly** — same `sortBy`/
   `sortDirection`/min-filter param contract, same null-handling for both averages, same
   `RatingBlendUtil` reuse — to keep this "the same treatment" across all three analyzed fields.
+
+**Note (implementation-time addition, not a new AC)**: by the time this spec was implemented,
+`series_spec_051_stats_status_scope_filter.md` had already been merged and added a 6th
+`onlyCompleted: Boolean` parameter to the shared `NameStatAggregator.aggregate(...)` method that
+`CountryStatsService`/`GenreStatsService`/`KeywordStatsService` all delegate to. `getStats` and the
+`GET /api/v1/series/origin-country/stats` endpoint both accept and pass through this parameter
+unchanged, exactly as `series_spec_051` retrofitted onto Keywords and Genres — this spec's own
+AC-02/AC-05 predate that change and so only list five params; the 6th is inherited, not a gap.
 
 ---
 
@@ -157,9 +165,9 @@ def "SERIES-049-AC-06: GET /api/v1/series/origin-country/stats returns the { dat
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-049-AC-01: `CountryStatDto` (`name` = raw ISO code; same shape as siblings)
-- [ ] SERIES-049-AC-02: `CountryStatsService.getStats(...)`, parses `originCountry` column
-- [ ] SERIES-049-AC-03: multi-country series counted once per country, not fractionally; null/blank excluded entirely
-- [ ] SERIES-049-AC-04: null-handling for both averages matches keyword/genre stats exactly
-- [ ] SERIES-049-AC-05: `GET /api/v1/series/origin-country/stats` with the shared param contract
-- [ ] SERIES-049-AC-06: `{ data, count }` envelope; empty state is not an error
+- [x] SERIES-049-AC-01: `CountryStatDto` (`name` = raw ISO code; same shape as siblings)
+- [x] SERIES-049-AC-02: `CountryStatsService.getStats(...)`, parses `originCountry` column
+- [x] SERIES-049-AC-03: multi-country series counted once per country, not fractionally; null/blank excluded entirely
+- [x] SERIES-049-AC-04: null-handling for both averages matches keyword/genre stats exactly
+- [x] SERIES-049-AC-05: `GET /api/v1/series/origin-country/stats` with the shared param contract
+- [x] SERIES-049-AC-06: `{ data, count }` envelope; empty state is not an error

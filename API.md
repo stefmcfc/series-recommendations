@@ -236,6 +236,37 @@ resolves an `imdbId`, `imdbRating`/`rottenTomatoesRating` are additionally merge
 (requires `app.omdb.api-key`) — any OMDb failure or absence just leaves those two fields `null`,
 never fails the request. Always `200` on success; `502` only for a genuine TMDB upstream failure.
 
+## Origin Country
+
+### `GET /api/v1/series/origin-country/stats?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=&onlyCompleted=`
+
+Aggregate per-country stats (`seriesCount`, `averagePersonalRating`, `averageBlendedRating`) across
+your tracked series (`series_spec_049_country_of_origin_stats.md`) — the same treatment `GET
+/api/v1/series/genres/stats` gives genres, applied to the comma-joined `originCountry` column
+(`series_spec_046_multi_origin_country.md`) instead: each series' `originCountry` string is split
+on `,` with **no per-segment trimming** (this column has never contained embedded whitespace,
+unlike `genres`), de-duplicated per series, then aggregated. A series listing more than one code
+(e.g. `"GB,US"`) contributes once to **each** listed code's `seriesCount` and rating averages — not
+split or fractional. A series with a `null`/blank `originCountry` contributes to no country's
+aggregate at all (no "Unknown" bucket). `averageBlendedRating` uses the same
+`RatingBlendUtil.blendedRating` unweighted-average-of-`imdbRating`/`tmdbRating` logic as the
+keyword/genre-stats endpoints, excluding series with neither rating set (`null`, never `0`, when
+none of a country's carrying series has one). Each `CountryStatDto`'s `name` is the raw ISO
+3166-1 alpha-2 code (e.g. `"GB"`), not a resolved display name — display-name resolution
+(`Intl.DisplayNames`) is frontend-only, so `sortBy=name` sorts alphabetically by raw code, not by
+the display name a user sees.
+
+The `sortBy`/`sortDirection` and three minimum-value filter params (`minSeriesCount`,
+`minAveragePersonalRating`, `minAverageBlendedRating`) behave identically to `GET
+/api/v1/series/keywords`/`GET /api/v1/series/genres/stats` — see the Keywords section above for the
+full soft-fallback/nulls-last/AND-combined semantics, copied here unchanged. Empty list, not an
+error, when nothing tracked has an origin country or nothing clears the provided filters. Envelope
+shape is `{ data, count }`, matching every other stats endpoint.
+
+Optional `onlyCompleted` (Boolean, `series_spec_051_stats_status_scope_filter.md`) restricts
+aggregation to series whose `status` is `COMPLETED` — a series excluded this way contributes to no
+country's `seriesCount` or averages at all. `null`/`false`/omitted apply no restriction.
+
 ## Recommendations
 
 ### `GET /api/v1/series/recommendations?limit=`
