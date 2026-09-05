@@ -43,11 +43,27 @@ public class KeywordStatsService {
     /** Pre-series_spec_047 signature, kept for backward compatibility (SERIES-047-AC-12). */
     @Transactional(readOnly = true)
     public List<KeywordStatDto> getStats(String sortBy) {
-        return getStats(sortBy, null, null, null, null, null);
+        return doGetStats(sortBy, null, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
     public List<KeywordStatDto> getStats(
+            String sortBy,
+            String sortDirection,
+            Integer minSeriesCount,
+            BigDecimal minAveragePersonalRating,
+            BigDecimal minAverageBlendedRating,
+            Boolean onlyCompleted) {
+        return doGetStats(
+            sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted);
+    }
+
+    // Sonar (java:S6809): @Transactional methods must be invoked through the Spring proxy, never
+    // via a same-class `this` call -- the getStats(String) overload above previously called the
+    // 6-arg getStats(...) directly, bypassing the proxy and its transaction advice. Both public
+    // overloads now share this plain, non-transactional helper instead; each stays covered by its
+    // own method-level @Transactional for the whole synchronous call, helper included.
+    private List<KeywordStatDto> doGetStats(
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,

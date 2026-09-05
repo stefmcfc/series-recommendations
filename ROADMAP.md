@@ -122,23 +122,23 @@ corrected below.
 | "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | ✅ Done |
 | "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | ✅ Done |
 | "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | ✅ Done |
-| Stats status scope filter ("Completed Only" / "All Series") added to `NameStatAggregator`/`NameStatsTable`, retrofitting Keywords and Genres and inherited automatically by the not-yet-built Country-of-Origin tab | `series_spec_051` | `frontend_spec_095` | ✅ Done |
+| Stats status scope filter ("Completed Only" / "All Series") added to `NameStatAggregator`/`NameStatsTable`, retrofitting Keywords and Genres and inherited automatically by the Country-of-Origin tab | `series_spec_051` | `frontend_spec_095` | ✅ Done |
+| "Analysis/Trends" expansion, unit 4/4 (final unit): Country-of-Origin stats (same treatment as Keywords/Genres), added as a third `Analysis` tab, with raw ISO code resolved to a display name for rendering only (sort/filter stay backend-driven by raw code) | `series_spec_049` | `frontend_spec_089` | ✅ Done |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
-then by suggested build order within a tier — grouped into independent dependency chains, e.g.
-the remaining step of the Analysis/Trends chain
-(`series_spec_047`+`frontend_spec_086`→`frontend_spec_087`→`series_spec_048`+`frontend_spec_088`→
-`series_spec_051`+`frontend_spec_095` (✅ delivered) →`series_spec_049`+`frontend_spec_089`). Rows
+then by suggested build order within a tier — grouped into independent dependency chains. Rows
 within a chain must build in the listed order; the chains themselves have no dependencies on each
 other *within this table* — and can be reordered freely as a block if priorities change — but
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore.
 
-| Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
-| ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| "Analysis/Trends" expansion, unit 4/4: Country-of-Origin stats (same treatment), added as a third `Analysis` tab | `series_spec_049` | `frontend_spec_089` | `series_spec_047`, `frontend_spec_088` (✅ delivered), `series_spec_051`/`frontend_spec_095` (✅ delivered — build the status filter in from the start) | 🟨 P3 · ⬜ Not started |
+The "Analysis/Trends" expansion (four units, `series_spec_047`/`048`/`049`/`051` +
+`frontend_spec_086`/`087`/`088`/`089`/`095`) is now fully delivered — see the "Delivered" table
+above — and no longer appears here.
+
+_No specs are currently pending implementation._
 
 ## Internal / maintenance specs (not user-facing features)
 

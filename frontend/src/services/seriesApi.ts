@@ -15,6 +15,8 @@ import type {
   KeywordStatsOptions,
   GenreStat,
   GenreStatsOptions,
+  CountryStat,
+  CountryStatsOptions,
   SortOptions,
   StreamingProvider,
   CandidateDetail,
@@ -168,6 +170,30 @@ function buildGenreStatsParams(
   return params
 }
 
+// FRONTEND-089-AC-02: mirrors buildKeywordStatsParams/buildGenreStatsParams
+// exactly -- country stats share the same options shape (series_spec_049).
+function buildCountryStatsParams(
+  options?: CountryStatsOptions,
+): Record<string, unknown> {
+  if (!options) return {}
+  const params: Record<string, unknown> = {}
+  addIfPresent(params, 'sortBy', options.sortBy)
+  addIfPresent(params, 'sortDirection', options.sortDirection)
+  addIfPresent(params, 'minSeriesCount', options.minSeriesCount)
+  addIfPresent(
+    params,
+    'minAveragePersonalRating',
+    options.minAveragePersonalRating,
+  )
+  addIfPresent(
+    params,
+    'minAverageBlendedRating',
+    options.minAverageBlendedRating,
+  )
+  if (options.onlyCompleted === true) params.onlyCompleted = true
+  return params
+}
+
 function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (!criteria) return {}
   const params: Record<string, unknown> = {}
@@ -264,6 +290,16 @@ export const seriesApi = {
     request<{ data: GenreStat[]; count: number }>(() =>
       client.get('/series/genres/stats', {
         params: buildGenreStatsParams(options),
+      }),
+    ).then((res) => res.data),
+
+  // FRONTEND-089-AC-02: mirrors getKeywordStats/getGenreStats's
+  // options-object signature exactly, pointed at the new
+  // origin-country-stats endpoint (series_spec_049).
+  getCountryStats: (options?: CountryStatsOptions): Promise<CountryStat[]> =>
+    request<{ data: CountryStat[]; count: number }>(() =>
+      client.get('/series/origin-country/stats', {
+        params: buildCountryStatsParams(options),
       }),
     ).then((res) => res.data),
 

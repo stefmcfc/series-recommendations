@@ -7,11 +7,13 @@ import { seriesApi } from '../services/seriesApi'
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 const mockGetGenreStats = vi.mocked(seriesApi.getGenreStats)
+const mockGetCountryStats = vi.mocked(seriesApi.getCountryStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetKeywordStats.mockResolvedValue([])
   mockGetGenreStats.mockResolvedValue([])
+  mockGetCountryStats.mockResolvedValue([])
 })
 
 // FRONTEND-087-AC-03/04: AnalysisView reads the `tab` param off the URL --
@@ -80,5 +82,33 @@ describe('FRONTEND-088-AC-05: Genres tab', () => {
 
     expect(await screen.findByTestId('genre-stats-view')).toBeInTheDocument()
     expect(window.location.pathname).toBe('/analysis/genres')
+  })
+})
+
+describe('FRONTEND-089-AC-06: Country of Origin tab', () => {
+  it('renders CountryStatsView when the country-of-origin tab is active', async () => {
+    renderAnalysisView('/analysis/country-of-origin')
+
+    expect(
+      screen.getByRole('link', { name: /^country of origin$/i }),
+    ).toBeInTheDocument()
+    expect(await screen.findByTestId('country-stats-view')).toBeInTheDocument()
+  })
+
+  it('still renders the Keywords and Genres sub-nav tabs when country-of-origin is active', async () => {
+    renderAnalysisView('/analysis/country-of-origin')
+
+    expect(
+      screen.getByRole('link', { name: /^keywords$/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^genres$/i })).toBeInTheDocument()
+    expect(await screen.findByTestId('country-stats-view')).toBeInTheDocument()
+  })
+
+  it('does not redirect away from the country-of-origin tab', async () => {
+    renderAnalysisView('/analysis/country-of-origin')
+
+    expect(await screen.findByTestId('country-stats-view')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/analysis/country-of-origin')
   })
 })

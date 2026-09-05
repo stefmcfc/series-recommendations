@@ -8,6 +8,22 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.30.0] - 2026-09-06
+
+### Added
+
+- Backend: new `CountryStatDto` record (`name`, `seriesCount`, `averagePersonalRating`, `averageBlendedRating`), the same shape as `KeywordStatDto`/`GenreStatDto`, backing the new origin-country-stats endpoint (`series_spec_049`).
+- Backend: new `CountryStatsService.getStats(sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted)`, a thin wrapper delegating to the shared `NameStatAggregator` — aggregates per-country stats over the comma-joined `originCountry` column, splitting on `,` with no per-segment trimming (this column has never contained embedded whitespace, unlike `genres`); a series listing more than one code contributes once to each listed code's `seriesCount`, not fractionally, and a series with a null/blank `originCountry` contributes to no country's aggregate (`series_spec_049`).
+- Backend: new `SeriesOriginCountryController` exposing `GET /api/v1/series/origin-country/stats`, accepting the exact same `sortBy`/`sortDirection`/`minSeriesCount`/`minAveragePersonalRating`/`minAverageBlendedRating`/`onlyCompleted` param contract already established for `GET /api/v1/series/keywords`/`GET /api/v1/series/genres/stats` (`series_spec_049`, `onlyCompleted` inherited from `series_spec_051`).
+- Frontend: new `CountryStat`/`CountryStatsOptions` types and `seriesApi.getCountryStats`, mirroring `GenreStat`/`GenreStatsOptions`/`seriesApi.getGenreStats` exactly and calling the new `GET /api/v1/series/origin-country/stats` (`frontend_spec_089`).
+- Frontend: new `CountryStatsView` component — a thin wrapper over the shared `NameStatsTable` (same table shape, three min-value filters plus the status-scope filter, "Apply Filters" button, sortable columns with ▲/▼ direction toggle, and matching loading/error states), added as a third `Analysis` tab ("Country of Origin") (`frontend_spec_089`).
+- Frontend: `CountryStatsView` resolves each row's raw ISO 3166-1 alpha-2 code to a display name via the existing `formatCountryName` util before handing rows to `NameStatsTable`, so only resolved names (e.g. "United Kingdom", never "GB") ever render — sort/filter stay driven by the backend's raw-code ordering, unaffected by this display-only mapping (`frontend_spec_089`).
+- Frontend: `AnalysisView` gains a third sub-nav tab, "Country of Origin" (`/analysis/country-of-origin`), rendering `CountryStatsView`; this is the final unit of the "Analysis/Trends" expansion (`frontend_spec_089`).
+
+### Fixed
+
+- Backend: `KeywordStatsService.getStats(String)` no longer calls the six-argument `getStats` overload via a same-class `this` call — a Spring self-invocation pattern that bypasses the `@Transactional` proxy and its transaction advice on that path (Sonar `java:S6809`). Both overloads now delegate to a shared, non-transactional private helper instead.
+
 ## [3.29.0] - 2026-09-05
 
 ### Added
