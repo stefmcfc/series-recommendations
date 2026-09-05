@@ -1,6 +1,6 @@
 # Frontend Spec 087: Analysis Section Nav Restructure
 
-**Status**: Not started
+**Status**: Done
 **Depends on**: Frontend Spec 086 (`frontend_spec_086_keyword_stats_filtering_sort_and_blended_rating.md`, the enhanced `KeywordsView` this restructure hosts as its first tab)
 **Frontend Stage**: 87 of N
 
@@ -112,7 +112,7 @@ describe('FRONTEND-087-AC-03/04: tab sub-nav and content', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-087-AC-01: top-level `Keywords` nav link replaced with `Analysis`
-- [ ] FRONTEND-087-AC-02: `/analysis` → redirect; `/analysis/:tab` → `AnalysisView`; old `/keywords` redirects
-- [ ] FRONTEND-087-AC-03: `AnalysisView` internal sub-nav with a `Keywords` tab
-- [ ] FRONTEND-087-AC-04: `keywords` tab renders `KeywordsView`; unrecognized tab redirects
+- [x] FRONTEND-087-AC-01: top-level `Keywords` nav link replaced with `Analysis`
+- [x] FRONTEND-087-AC-02: `/analysis` → redirect; `/analysis/:tab` → `AnalysisView`; old `/keywords` redirects
+- [x] FRONTEND-087-AC-03: `AnalysisView` internal sub-nav with a `Keywords` tab
+- [x] FRONTEND-087-AC-04: `keywords` tab renders `KeywordsView`; unrecognized tab redirects

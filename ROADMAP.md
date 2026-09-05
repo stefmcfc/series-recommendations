@@ -120,6 +120,7 @@ corrected below.
 | Persistent navigation while scrolling (main header, My Series status tabs, Recommendations mode tabs) + Recommendations modal click-outside-to-close and sticky "Done" button | — | `frontend_spec_092` | ✅ Done |
 | Recommendations page polish: left-hand grouping line on expanded filter disclosures, Custom Search Keywords becomes a "Browse all keywords" CTA, Exclude Keywords becomes a `KeywordPicker`, Min Vote Count validation | — | `frontend_spec_094` | ✅ Done |
 | "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | ✅ Done |
+| "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -134,8 +135,7 @@ table's row order isn't just dependency-derived anymore.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | `frontend_spec_086` (✅ delivered) | 🟨 P3 · ⬜ Not started |
-| "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` | 🟨 P3 · ⬜ Not started |
+| "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` (✅ delivered) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 4/4: Country-of-Origin stats (same treatment), added as a third `Analysis` tab | `series_spec_049` | `frontend_spec_089` | `series_spec_047`, `frontend_spec_088` | 🟨 P3 · ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)

@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.27.0] - 2026-09-05
+
+### Added
+
+- Frontend: new `Analysis` section (`/analysis/:tab`) with an internal sub-nav, hosting `KeywordsView` as its first tab — later specs add Genres/Country-of-Origin tabs into the same container (`frontend_spec_087`).
+
+### Changed
+
+- Frontend: the top-level `Keywords` nav link is now `Analysis`, linking to `/analysis` (which redirects to `/analysis/keywords`); the old `/keywords` path still works via redirect rather than being removed (`frontend_spec_087`).
+
 ## [3.26.0] - 2026-09-05
 
 ### Added
