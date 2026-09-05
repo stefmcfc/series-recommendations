@@ -1,0 +1,35 @@
+/* FRONTEND-087-AC-03: mirrors App.module.css's nav.navLinks/.navLink/
+   .navLinkActive rules for MySeriesView's status sub-nav -- AnalysisView's
+   own internal tab sub-nav plays the identical role (a sticky row of
+   NavLinks directly below the main header), so it reuses the same visual
+   treatment rather than inventing a new one. */
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: sticky;
+  top: var(--header-height);
+  z-index: 19;
+  background: var(--bg);
+}
+
+.navLink {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+}
+
+.navLink:hover {
+  color: var(--text-h);
+  background: var(--social-bg);
+}
+
+.navLinkActive {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}

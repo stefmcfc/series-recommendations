@@ -317,15 +317,15 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
   })
 })
 
-describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
-  it('renders KeywordsView when the Keywords toggle is clicked', async () => {
+describe('FRONTEND-024-AC-10/FRONTEND-087-AC-01: Analysis nav toggle', () => {
+  it('renders KeywordsView when the Analysis toggle is clicked', async () => {
     mockGetAll.mockResolvedValue([])
     window.history.pushState({}, '', '/my-series')
 
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
-    fireEvent.click(screen.getByRole('link', { name: /^keywords$/i }))
+    fireEvent.click(screen.getByRole('link', { name: /^analysis$/i }))
     expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
     expect(screen.queryByTestId('series-list')).not.toBeInTheDocument()
 
@@ -334,6 +334,37 @@ describe('FRONTEND-024-AC-10: Keywords nav toggle', () => {
     )
     await screen.findByTestId('series-list')
     expect(screen.queryByTestId('keywords-view')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-087-AC-01/02: Analysis nav and routing', () => {
+  it('shows an Analysis nav link instead of Keywords', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('add-series-btn')
+
+    expect(
+      screen.queryByRole('link', { name: /^keywords$/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /^analysis$/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('redirects the old /keywords path to /analysis/keywords', async () => {
+    window.history.pushState({}, '', '/keywords')
+    render(<App />)
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/analysis/keywords'),
+    )
+  })
+
+  it('redirects bare /analysis to /analysis/keywords', async () => {
+    window.history.pushState({}, '', '/analysis')
+    render(<App />)
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/analysis/keywords'),
+    )
   })
 })
 
@@ -370,7 +401,7 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
 })
 
 describe('FRONTEND-041-AC-01: nav items are links, not buttons', () => {
-  it('renders My Series/Recommendations/Keywords as links', async () => {
+  it('renders My Series/Recommendations/Analysis as links', async () => {
     mockGetAll.mockResolvedValue([])
     render(<App />)
     await screen.findByTestId('add-series-btn')
@@ -380,7 +411,7 @@ describe('FRONTEND-041-AC-01: nav items are links, not buttons', () => {
       screen.getByRole('link', { name: /recommendations/i }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('link', { name: /^keywords$/i }),
+      screen.getByRole('link', { name: /^analysis$/i }),
     ).toBeInTheDocument()
   })
 })
@@ -450,29 +481,30 @@ describe('FRONTEND-041-AC-07: /recommendations renders the recommendations view'
   })
 })
 
-describe('FRONTEND-041-AC-08: /keywords renders the keywords view', () => {
-  it('renders KeywordsView content at /keywords', async () => {
+describe('FRONTEND-041-AC-08/FRONTEND-087-AC-02: /keywords redirects to /analysis/keywords', () => {
+  it('renders KeywordsView content at /keywords via redirect', async () => {
     mockGetAll.mockResolvedValue([])
     window.history.pushState({}, '', '/keywords')
 
     render(<App />)
 
     expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/analysis/keywords')
   })
 })
 
-describe('FRONTEND-070-AC-01: Settings nav link renders after Keywords', () => {
-  it('renders a Settings link after Keywords in the nav', async () => {
+describe('FRONTEND-070-AC-01: Settings nav link renders after Analysis', () => {
+  it('renders a Settings link after Analysis in the nav', async () => {
     mockGetAll.mockResolvedValue([])
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
     const links = screen.getAllByRole('link').map((el) => el.textContent)
-    const keywordsIndex = links.findIndex((text) => text === 'Keywords')
+    const analysisIndex = links.findIndex((text) => text === 'Analysis')
     const settingsIndex = links.findIndex((text) => text === 'Settings')
 
-    expect(keywordsIndex).toBeGreaterThan(-1)
-    expect(settingsIndex).toBe(keywordsIndex + 1)
+    expect(analysisIndex).toBeGreaterThan(-1)
+    expect(settingsIndex).toBe(analysisIndex + 1)
   })
 })
 

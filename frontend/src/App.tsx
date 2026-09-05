@@ -16,7 +16,7 @@ import { SearchFilter } from './components/SearchFilter'
 import { useDebouncedValue } from './hooks/useDebouncedValue'
 import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
-import { KeywordsView } from './components/KeywordsView'
+import { AnalysisView } from './components/AnalysisView'
 import { SettingsPage } from './components/SettingsPage'
 import {
   SeriesStatus,
@@ -220,8 +220,8 @@ function App() {
                 <NavLink to="/recommendations" className={navLinkClassName}>
                   Recommendations
                 </NavLink>
-                <NavLink to="/keywords" className={navLinkClassName}>
-                  Keywords
+                <NavLink to="/analysis" className={navLinkClassName}>
+                  Analysis
                 </NavLink>
                 <NavLink to="/settings" className={navLinkClassName}>
                   Settings
@@ -274,7 +274,18 @@ function App() {
                   </>
                 }
               />
-              <Route path="/keywords" element={<KeywordsView />} />
+              <Route
+                path="/analysis"
+                element={<Navigate to="/analysis/keywords" replace />}
+              />
+              <Route path="/analysis/:tab" element={<AnalysisView />} />
+              {/* FRONTEND-087-AC-02: kept as a redirect rather than removed
+                  so no existing bookmark/link to the old top-level /keywords
+                  path breaks. */}
+              <Route
+                path="/keywords"
+                element={<Navigate to="/analysis/keywords" replace />}
+              />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/my-series" replace />} />
             </Routes>
