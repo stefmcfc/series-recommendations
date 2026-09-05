@@ -830,6 +830,83 @@ describe('FRONTEND-086-AC-02/03: getKeywordStats options object', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-088-AC-02: getGenreStats options object
+// ---------------------------------------------------------------------------
+describe('FRONTEND-088-AC-02: getGenreStats', () => {
+  it('fetches /series/genres/stats and unwraps the envelope', async () => {
+    client.get.mockResolvedValue({
+      data: {
+        data: [
+          {
+            name: 'Drama',
+            seriesCount: 5,
+            averagePersonalRating: 4.2,
+            averageBlendedRating: 7.8,
+          },
+        ],
+        count: 1,
+      },
+    })
+
+    const result = await seriesApi.getGenreStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: {},
+    })
+    expect(result).toEqual([
+      {
+        name: 'Drama',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+    ])
+  })
+
+  it('sends only the provided options as query params', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getGenreStats({ sortBy: 'name', minSeriesCount: 2 })
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: { sortBy: 'name', minSeriesCount: 2 },
+    })
+  })
+
+  it('sends no params when called with no arguments', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getGenreStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: {},
+    })
+  })
+
+  it('sends sortDirection and all three min-value filters when provided', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getGenreStats({
+      sortBy: 'averageBlendedRating',
+      sortDirection: 'desc',
+      minSeriesCount: 2,
+      minAveragePersonalRating: 3,
+      minAverageBlendedRating: 6.5,
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/genres/stats', {
+      params: {
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 2,
+        minAveragePersonalRating: 3,
+        minAverageBlendedRating: 6.5,
+      },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-028-AC-09: getRecommendationKeywords(tmdbId)
 // ---------------------------------------------------------------------------
 describe('FRONTEND-028-AC-09: getRecommendationKeywords', () => {

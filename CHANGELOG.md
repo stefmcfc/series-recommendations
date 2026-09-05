@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.28.0] - 2026-09-05
+
+### Added
+
+- Backend: new `GenreStatDto` record (`name`, `seriesCount`, `averagePersonalRating`, `averageBlendedRating`), the same shape as `KeywordStatDto`, backing the new genre-stats endpoint (`series_spec_048`).
+- Backend: new `GenreStatsService.getStats(sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating)`, aggregating per-genre stats in-memory over the comma-delimited `genres` column — same split/trim/filter-empty logic as `RecommendationSourcingService.splitGenres`, de-duplicated per series so a malformed duplicate genre entry only counts once toward that genre's `seriesCount` (`series_spec_048`).
+- Backend: `GET /api/v1/series/genres/stats`, added to the existing `SeriesGenreController` alongside the static-taxonomy `GET /api/v1/series/genres`, accepting the exact same `sortBy`/`sortDirection`/`minSeriesCount`/`minAveragePersonalRating`/`minAverageBlendedRating` param contract already established for `GET /api/v1/series/keywords` (`series_spec_048`).
+- Frontend: new `GenreStat`/`GenreStatsOptions` types and `seriesApi.getGenreStats`, mirroring `KeywordStat`/`KeywordStatsOptions`/`seriesApi.getKeywordStats` exactly and calling the new `GET /api/v1/series/genres/stats` (`frontend_spec_088`).
+- Frontend: new `GenreStatsView` component — a structural sibling of `KeywordsView` (same table shape, three min-value filters, "Apply Filters" button, sortable columns with ▲/▼ direction toggle, and matching loading/error states), added as a second `Analysis` tab ("Genres") (`frontend_spec_088`).
+
 ## [3.27.0] - 2026-09-05
 
 ### Added

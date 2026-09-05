@@ -6,10 +6,12 @@ import { seriesApi } from '../services/seriesApi'
 
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
+const mockGetGenreStats = vi.mocked(seriesApi.getGenreStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetKeywordStats.mockResolvedValue([])
+  mockGetGenreStats.mockResolvedValue([])
 })
 
 // FRONTEND-087-AC-03/04: AnalysisView reads the `tab` param off the URL --
@@ -53,5 +55,30 @@ describe('FRONTEND-087-AC-03/04: tab sub-nav and content', () => {
       expect(window.location.pathname).toBe('/analysis/keywords'),
     )
     expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-088-AC-05: Genres tab', () => {
+  it('renders the Genres sub-nav tab and GenreStatsView when the genres tab is active', async () => {
+    renderAnalysisView('/analysis/genres')
+
+    expect(screen.getByRole('link', { name: /^genres$/i })).toBeInTheDocument()
+    expect(await screen.findByTestId('genre-stats-view')).toBeInTheDocument()
+  })
+
+  it('still renders the Keywords sub-nav tab and content when genres is active', async () => {
+    renderAnalysisView('/analysis/genres')
+
+    expect(
+      screen.getByRole('link', { name: /^keywords$/i }),
+    ).toBeInTheDocument()
+    expect(await screen.findByTestId('genre-stats-view')).toBeInTheDocument()
+  })
+
+  it('does not redirect away from the genres tab', async () => {
+    renderAnalysisView('/analysis/genres')
+
+    expect(await screen.findByTestId('genre-stats-view')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/analysis/genres')
   })
 })

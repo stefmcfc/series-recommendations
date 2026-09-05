@@ -1,39 +1,31 @@
-package uk.co.stefirby.seriestracker.service.keyword;
+package uk.co.stefirby.seriestracker.service.stats;
 
-import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
-import uk.co.stefirby.seriestracker.model.KeywordEntity;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
-import uk.co.stefirby.seriestracker.repository.SeriesRepository;
-import uk.co.stefirby.seriestracker.service.RatingBlendUtil;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Backs {@code GET /api/v1/series/keywords} (Requirement 4, {@code
- * series_spec_019_keyword_tracking.md}): one {@link KeywordStatDto} per distinct keyword
- * actually present across the user's tracked series, computed via in-memory aggregation over
- * {@code seriesRepository.findAll()} -- matching {@code SeriesSearchService}'s own established
- * "fine at this app's scale" precedent (SERIES-019-AC-14) rather than a custom repository
- * query.
+ * Shared aggregation/sort/filter logic behind {@code KeywordStatsService} and {@code
+ * GenreStatsService}: both group the user's tracked series by a name extracted from each series
+ * (keyword name, genre name), compute per-name {@link NameStat} rows (series count, average
+ * personal rating, average blended rating), apply AND-combined minimum-value filters, and sort by
+ * the same {@code sortBy}/{@code sortDirection} contract. This class holds that logic once,
+ * parameterized by how each caller extracts its collection of names off a {@link SeriesEntity}.
  *
- * <p>series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md extends this with a
- * {@code name}/{@code averageBlendedRating} sort, an {@code asc}/{@code desc} direction toggle
- * applying to every {@code sortBy} field, and AND-combined minimum-value filters
- * (SERIES-047-AC-04 through AC-13) -- all applied in-memory, post-aggregation, for the same
- * "fine at this app's scale" reason.
+ * <p>Not instantiable -- every member is static.
  */
-@Service
-public class KeywordStatsService {
+public final class NameStatAggregator {
 
     private static final String SORT_BY_AVERAGE_RATING = "averagePersonalRating";
     private static final String SORT_BY_AVERAGE_BLENDED_RATING = "averageBlendedRating";
@@ -41,34 +33,43 @@ public class KeywordStatsService {
     private static final String SORT_DIRECTION_ASC = "asc";
     private static final String SORT_DIRECTION_DESC = "desc";
 
-    private final SeriesRepository seriesRepository;
-
-    public KeywordStatsService(SeriesRepository seriesRepository) {
-        this.seriesRepository = seriesRepository;
+    private NameStatAggregator() {
     }
 
-    /** Pre-series_spec_047 signature, kept for backward compatibility (SERIES-047-AC-12). */
-    @Transactional(readOnly = true)
-    public List<KeywordStatDto> getStats(String sortBy) {
-        return getStats(sortBy, null, null, null, null);
+    /** One aggregated row: a distinct name plus its series count and average ratings. */
+    public record NameStat(
+            String name,
+            Integer seriesCount,
+            BigDecimal averagePersonalRating,
+            BigDecimal averageBlendedRating) {
     }
 
-    @Transactional(readOnly = true)
-    public List<KeywordStatDto> getStats(
+    /**
+     * Groups {@code allSeries} by the names {@code namesExtractor} pulls off each series
+     * (de-duplicating per-series via a {@code LinkedHashSet} before grouping -- a no-op when the
+     * extractor already returns a unique collection, such as keyword names sourced from a
+     * {@code Set<KeywordEntity>}), computes a {@link NameStat} per distinct name, applies the
+     * AND-combined minimum-value filters, and sorts the result per {@code sortBy}/{@code
+     * sortDirection}.
+     */
+    public static List<NameStat> aggregate(
+            List<SeriesEntity> allSeries,
+            Function<SeriesEntity, Collection<String>> namesExtractor,
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,
             BigDecimal minAveragePersonalRating,
             BigDecimal minAverageBlendedRating) {
-        Map<String, List<SeriesEntity>> seriesByKeyword = new LinkedHashMap<>();
-        for (SeriesEntity series : seriesRepository.findAll()) {
-            for (KeywordEntity keyword : series.getKeywords()) {
-                seriesByKeyword.computeIfAbsent(keyword.getName(), k -> new ArrayList<>()).add(series);
+        Map<String, List<SeriesEntity>> seriesByName = new LinkedHashMap<>();
+        for (SeriesEntity series : allSeries) {
+            Set<String> names = new LinkedHashSet<>(namesExtractor.apply(series));
+            for (String name : names) {
+                seriesByName.computeIfAbsent(name, n -> new ArrayList<>()).add(series);
             }
         }
 
-        List<KeywordStatDto> stats = new ArrayList<>();
-        for (Map.Entry<String, List<SeriesEntity>> entry : seriesByKeyword.entrySet()) {
+        List<NameStat> stats = new ArrayList<>();
+        for (Map.Entry<String, List<SeriesEntity>> entry : seriesByName.entrySet()) {
             stats.add(toStat(entry.getKey(), entry.getValue()));
         }
 
@@ -77,8 +78,8 @@ public class KeywordStatsService {
         return stats;
     }
 
-    private boolean passesFilters(
-            KeywordStatDto stat,
+    private static boolean passesFilters(
+            NameStat stat,
             Integer minSeriesCount,
             BigDecimal minAveragePersonalRating,
             BigDecimal minAverageBlendedRating) {
@@ -95,7 +96,7 @@ public class KeywordStatsService {
                 && stat.averageBlendedRating().compareTo(minAverageBlendedRating) >= 0);
     }
 
-    private KeywordStatDto toStat(String name, List<SeriesEntity> carryingSeries) {
+    private static NameStat toStat(String name, List<SeriesEntity> carryingSeries) {
         List<Integer> ratings = carryingSeries.stream()
             .map(SeriesEntity::getPersonalRating)
             .filter(Objects::nonNull)
@@ -108,17 +109,17 @@ public class KeywordStatsService {
             .toList();
         BigDecimal averageBlendedRating = blendedRatings.isEmpty() ? null : averageOfDecimals(blendedRatings);
 
-        return new KeywordStatDto(name, carryingSeries.size(), averagePersonalRating, averageBlendedRating);
+        return new NameStat(name, carryingSeries.size(), averagePersonalRating, averageBlendedRating);
     }
 
-    private BigDecimal averageOfInts(List<Integer> ratings) {
+    private static BigDecimal averageOfInts(List<Integer> ratings) {
         BigDecimal sum = ratings.stream()
             .map(BigDecimal::valueOf)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         return sum.divide(BigDecimal.valueOf(ratings.size()), 1, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal averageOfDecimals(List<BigDecimal> ratings) {
+    private static BigDecimal averageOfDecimals(List<BigDecimal> ratings) {
         BigDecimal sum = ratings.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
         return sum.divide(BigDecimal.valueOf(ratings.size()), 1, RoundingMode.HALF_UP);
     }
@@ -133,28 +134,28 @@ public class KeywordStatsService {
     // reversed() just swaps the two compare() arguments, which also un-does nullsLast's null
     // placement), which would violate SERIES-047-AC-06's "nulls stay last under both asc and
     // desc" guarantee. seriesCount/name never contain nulls, so reversed() is safe for them.
-    private Comparator<KeywordStatDto> comparatorFor(String sortBy, String sortDirection) {
+    private static Comparator<NameStat> comparatorFor(String sortBy, String sortDirection) {
         if (SORT_BY_NAME.equals(sortBy)) {
-            Comparator<KeywordStatDto> byName = Comparator.comparing(stat -> stat.name().toLowerCase());
+            Comparator<NameStat> byName = Comparator.comparing(stat -> stat.name().toLowerCase());
             return isDescending(sortDirection, false) ? byName.reversed() : byName;
         }
         if (SORT_BY_AVERAGE_RATING.equals(sortBy)) {
-            return nullsLastComparator(KeywordStatDto::averagePersonalRating, isDescending(sortDirection, true));
+            return nullsLastComparator(NameStat::averagePersonalRating, isDescending(sortDirection, true));
         }
         if (SORT_BY_AVERAGE_BLENDED_RATING.equals(sortBy)) {
-            return nullsLastComparator(KeywordStatDto::averageBlendedRating, isDescending(sortDirection, true));
+            return nullsLastComparator(NameStat::averageBlendedRating, isDescending(sortDirection, true));
         }
-        Comparator<KeywordStatDto> bySeriesCount = Comparator.comparing(KeywordStatDto::seriesCount);
+        Comparator<NameStat> bySeriesCount = Comparator.comparing(NameStat::seriesCount);
         return isDescending(sortDirection, true) ? bySeriesCount.reversed() : bySeriesCount;
     }
 
-    private Comparator<KeywordStatDto> nullsLastComparator(
-            Function<KeywordStatDto, BigDecimal> extractor, boolean descending) {
+    private static Comparator<NameStat> nullsLastComparator(
+            Function<NameStat, BigDecimal> extractor, boolean descending) {
         Comparator<BigDecimal> naturalDirection = descending ? Comparator.reverseOrder() : Comparator.naturalOrder();
         return Comparator.comparing(extractor, Comparator.nullsLast(naturalDirection));
     }
 
-    private boolean isDescending(String sortDirection, boolean defaultDescending) {
+    private static boolean isDescending(String sortDirection, boolean defaultDescending) {
         if (SORT_DIRECTION_ASC.equalsIgnoreCase(sortDirection)) {
             return false;
         }

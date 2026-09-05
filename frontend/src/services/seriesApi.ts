@@ -13,6 +13,8 @@ import type {
   ImportJobStatus,
   KeywordStat,
   KeywordStatsOptions,
+  GenreStat,
+  GenreStatsOptions,
   SortOptions,
   StreamingProvider,
   CandidateDetail,
@@ -135,6 +137,29 @@ function buildKeywordStatsParams(
   return params
 }
 
+// FRONTEND-088-AC-02: mirrors buildKeywordStatsParams exactly -- genre stats
+// share the same options shape (series_spec_048).
+function buildGenreStatsParams(
+  options?: GenreStatsOptions,
+): Record<string, unknown> {
+  if (!options) return {}
+  const params: Record<string, unknown> = {}
+  addIfPresent(params, 'sortBy', options.sortBy)
+  addIfPresent(params, 'sortDirection', options.sortDirection)
+  addIfPresent(params, 'minSeriesCount', options.minSeriesCount)
+  addIfPresent(
+    params,
+    'minAveragePersonalRating',
+    options.minAveragePersonalRating,
+  )
+  addIfPresent(
+    params,
+    'minAverageBlendedRating',
+    options.minAverageBlendedRating,
+  )
+  return params
+}
+
 function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (!criteria) return {}
   const params: Record<string, unknown> = {}
@@ -222,6 +247,15 @@ export const seriesApi = {
     request<{ data: KeywordStat[]; count: number }>(() =>
       client.get('/series/keywords', {
         params: buildKeywordStatsParams(options),
+      }),
+    ).then((res) => res.data),
+
+  // FRONTEND-088-AC-02: mirrors getKeywordStats's options-object signature
+  // exactly, pointed at the new genre-stats endpoint (series_spec_048).
+  getGenreStats: (options?: GenreStatsOptions): Promise<GenreStat[]> =>
+    request<{ data: GenreStat[]; count: number }>(() =>
+      client.get('/series/genres/stats', {
+        params: buildGenreStatsParams(options),
       }),
     ).then((res) => res.data),
 

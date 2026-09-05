@@ -1,6 +1,6 @@
 # Spec 048: Genre Stats
 
-**Status**: Not started
+**Status**: Done
 **Priority**: P3 (analysis/quality-of-life feature — not core CRUD)
 **Depends on**: Series Spec 047 (`series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md`, the `sortBy`/`sortDirection`/min-filter contract and `RatingBlendUtil` this spec reuses), Series Spec 010 (`series_spec_010_genre_dropdown.md`, `SeriesEntity.genres` comma-delimited storage)
 **Backend Task**
@@ -156,9 +156,9 @@ def "SERIES-048-AC-05: sortBy/sortDirection/min-filter params behave identically
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-048-AC-01: `GenreStatDto` (same shape as `KeywordStatDto`)
-- [ ] SERIES-048-AC-02: `GenreStatsService.getStats(...)`, parses delimited `genres` column
-- [ ] SERIES-048-AC-03: duplicate genre entries within one series de-duplicated
-- [ ] SERIES-048-AC-04: null-handling for both averages matches keyword stats exactly
-- [ ] SERIES-048-AC-05: `GET /api/v1/series/genres/stats` with the shared param contract
-- [ ] SERIES-048-AC-06: `{ data, count }` envelope; empty state is not an error
+- [x] SERIES-048-AC-01: `GenreStatDto` (same shape as `KeywordStatDto`)
+- [x] SERIES-048-AC-02: `GenreStatsService.getStats(...)`, parses delimited `genres` column
+- [x] SERIES-048-AC-03: duplicate genre entries within one series de-duplicated
+- [x] SERIES-048-AC-04: null-handling for both averages matches keyword stats exactly
+- [x] SERIES-048-AC-05: `GET /api/v1/series/genres/stats` with the shared param contract
+- [x] SERIES-048-AC-06: `{ data, count }` envelope; empty state is not an error

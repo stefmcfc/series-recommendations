@@ -65,6 +65,26 @@ export interface KeywordStatsOptions {
   minAverageBlendedRating?: number
 }
 
+// FRONTEND-088-AC-01: identical shape to KeywordStat -- genre stats mirror
+// keyword stats one-for-one (series_spec_048).
+export interface GenreStat {
+  name: string
+  seriesCount: number
+  averagePersonalRating: number | null
+  averageBlendedRating: number | null
+}
+
+// FRONTEND-088-AC-02: options object for seriesApi.getGenreStats -- mirrors
+// KeywordStatsOptions exactly (series_spec_048).
+export interface GenreStatsOptions {
+  sortBy?:
+    'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
+  sortDirection?: 'asc' | 'desc'
+  minSeriesCount?: number
+  minAveragePersonalRating?: number
+  minAverageBlendedRating?: number
+}
+
 export interface RefreshResult {
   series: Series
   omdbRefreshed: boolean

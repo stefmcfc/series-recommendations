@@ -1,6 +1,6 @@
 # Frontend Spec 088: Genre Stats View
 
-**Status**: Not started
+**Status**: Done
 **Depends on**: Series Spec 048 (`series_spec_048_genre_stats.md`), Frontend Spec 087 (`frontend_spec_087_analysis_section_nav_restructure.md`, the `AnalysisView` container this adds a tab into), Frontend Spec 086 (`frontend_spec_086_keyword_stats_filtering_sort_and_blended_rating.md`, the UI pattern this mirrors)
 **Frontend Stage**: 88 of N
 
@@ -101,8 +101,8 @@ describe('FRONTEND-088-AC-05: Genres tab', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-088-AC-01: `GenreStat` type
-- [ ] FRONTEND-088-AC-02: `seriesApi.getGenreStats` (options-object signature)
-- [ ] FRONTEND-088-AC-03: `GenreStatsView` table, filters, sort/direction toggle
-- [ ] FRONTEND-088-AC-04: loading/error states match `KeywordsView`
-- [ ] FRONTEND-088-AC-05: `AnalysisView` gains a "Genres" sub-nav tab
+- [x] FRONTEND-088-AC-01: `GenreStat` type
+- [x] FRONTEND-088-AC-02: `seriesApi.getGenreStats` (options-object signature)
+- [x] FRONTEND-088-AC-03: `GenreStatsView` table, filters, sort/direction toggle
+- [x] FRONTEND-088-AC-04: loading/error states match `KeywordsView`
+- [x] FRONTEND-088-AC-05: `AnalysisView` gains a "Genres" sub-nav tab
