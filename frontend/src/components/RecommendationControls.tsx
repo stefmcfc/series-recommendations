@@ -144,7 +144,10 @@ export interface ControlsState {
   yearMin: string
   yearMax: string
   excludeGenresSelected: string[]
-  excludeKeywordsText: string
+  // FRONTEND-094-AC-05: renamed from `excludeKeywordsText: string` -- the
+  // Exclude Keywords field is now a KeywordPicker (chips), not a
+  // comma-separated free-text input (this spec's Design Decisions).
+  excludeKeywordsSelected: string[]
   language: string
   // FRONTEND-047-AC-04/05/06: mirrors genresSelected/keywordsSelected's
   // existing shape -- multi-select, OR-matched countries of origin.
@@ -201,18 +204,11 @@ export const initialState: ControlsState = {
   yearMin: '',
   yearMax: '',
   excludeGenresSelected: [],
-  excludeKeywordsText: '',
+  excludeKeywordsSelected: [],
   language: '',
   countriesSelected: [],
   sortBy: 'score',
   discoverSortBy: DISCOVER_SORT_BY_DEFAULTS.topRated,
-}
-
-function parseCommaList(value: string): string[] {
-  return value
-    .split(',')
-    .map((v) => v.trim())
-    .filter((v) => v !== '')
 }
 
 // FRONTEND-042: shared by both tab tiers' change handlers (top-level
@@ -349,13 +345,34 @@ function applySourceModeQuery(
   applyDiscoverSortByModeQuery(state, query)
 }
 
+// FRONTEND-094-AC-09/AC-11: shared validity predicate for Min Vote Count --
+// blank is valid (no filter applied), a non-negative whole number is valid,
+// anything else (negative, decimal, non-numeric) is not. Exported so
+// RecommendationFiltersBox's own inline error message enforces the exact
+// same rule as this query-builder backstop, rather than duplicating the
+// check in two places.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+export function isMinVoteCountValid(value: string): boolean {
+  const trimmed = value.trim()
+  if (trimmed === '') return true
+  const numeric = Number(trimmed)
+  return Number.isInteger(numeric) && numeric >= 0
+}
+
 function applyRatingAndRangeFilters(
   state: ControlsState,
   query: RecommendationQuery,
 ): void {
   if (state.minTmdbRating.trim() !== '')
     query.minTmdbRating = Number(state.minTmdbRating)
-  if (state.minVoteCount.trim() !== '')
+  // FRONTEND-094-AC-11: an invalid value (negative/decimal) is omitted from
+  // the request rather than forwarded -- a lightweight backstop behind the
+  // inline validation error in RecommendationFiltersBox, not a behavior
+  // change for any value that already passes it.
+  if (
+    state.minVoteCount.trim() !== '' &&
+    isMinVoteCountValid(state.minVoteCount)
+  )
     query.minVoteCount = Number(state.minVoteCount)
   if (state.yearMin.trim() !== '') query.yearMin = Number(state.yearMin)
   if (state.yearMax.trim() !== '') query.yearMax = Number(state.yearMax)
@@ -369,8 +386,12 @@ function applyExcludeAndMiscFilters(
     query.excludeGenres = state.excludeGenresSelected
   }
 
-  const excludeKeywords = parseCommaList(state.excludeKeywordsText)
-  if (excludeKeywords.length > 0) query.excludeKeywords = excludeKeywords
+  // FRONTEND-094-AC-06: excludeKeywordsSelected is already an array (the
+  // field's own KeywordPicker maintains it) -- no comma-parsing needed
+  // anymore, unlike the old excludeKeywordsText free-text field.
+  if (state.excludeKeywordsSelected.length > 0) {
+    query.excludeKeywords = state.excludeKeywordsSelected
+  }
 
   if (state.language.trim() !== '') query.language = state.language.trim()
 

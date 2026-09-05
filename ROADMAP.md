@@ -136,6 +136,7 @@ table's row order isn't just dependency-derived anymore.
 | "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | `frontend_spec_086` | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 4/4: Country-of-Origin stats (same treatment), added as a third `Analysis` tab | `series_spec_049` | `frontend_spec_089` | `series_spec_047`, `frontend_spec_088` | 🟨 P3 · ⬜ Not started |
+| Recommendations page polish: left-hand grouping line on expanded filter disclosures, Custom Search Keywords becomes a "Browse all keywords" CTA, Exclude Keywords becomes a `KeywordPicker`, Min Vote Count validation | — | `frontend_spec_094` | — | 🟨 P3 · ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 

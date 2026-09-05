@@ -132,6 +132,21 @@ function selectHighestRated() {
   fireEvent.click(screen.getByRole('tab', { name: /highest rated/i }))
 }
 
+// FRONTEND-094-AC-02/AC-04: Custom Search's Keywords field now hides its own
+// inline input (hideInput) -- typing a keyword (including free text with no
+// match in keywordOptions) goes through the new "Browse all keywords" modal
+// instead, mirrored from UseMySeriesPanel's own modal test helpers. Leaves
+// the modal open (matching this file's existing convention of not always
+// closing the GenreIncludeExcludePicker modal after every interaction) so
+// callers can make further assertions scoped to the dialog if needed.
+function addCustomSearchKeyword(value: string) {
+  fireEvent.click(screen.getByRole('button', { name: /browse all keywords/i }))
+  const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+  const input = within(dialog).getByLabelText('Keywords')
+  fireEvent.change(input, { target: { value } })
+  fireEvent.keyDown(input, { key: 'Enter' })
+}
+
 // FRONTEND-069-AC-04: "Filter by Genre" is now the shared
 // GenreIncludeExcludePicker (trigger button + modal), replacing the old
 // inline checkbox-per-genre fieldset -- opens the modal, toggles one genre
@@ -301,7 +316,11 @@ describe('FRONTEND-014-AC-03: degrades gracefully if getGenreOptions() rejects',
 
     selectCustomSearch()
     await waitFor(() => expect(mockGetGenreOptions).toHaveBeenCalled())
-    expect(screen.getByText(/^keywords/i)).toBeInTheDocument()
+    // FRONTEND-094-AC-02: the inline Keywords field now hides its own
+    // <label> text (hideInput) in favor of an aria-label on its container --
+    // getByLabelText still reaches it, matching CustomSearchPanel.test.tsx's
+    // own equivalent assertion.
+    expect(screen.getByLabelText('Keywords')).toBeInTheDocument()
   })
 })
 
@@ -375,9 +394,7 @@ describe('FRONTEND-014-AC-08: empty genresSelected omits genres from the query',
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'heist' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    addCustomSearchKeyword('heist')
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ genres: expect.anything() }),
@@ -837,9 +854,7 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'submarine' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    addCustomSearchKeyword('submarine')
     clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -852,9 +867,9 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'submarine' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    addCustomSearchKeyword('submarine')
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    const input = within(dialog).getByLabelText('Keywords')
     fireEvent.change(input, { target: { value: 'spy' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     clickApplyFilters()
@@ -890,10 +905,8 @@ describe('FRONTEND-032-AC-08: degrades silently on keyword stats fetch failure',
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'still works' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
-    expect(screen.getByText('still works')).toBeInTheDocument()
+    addCustomSearchKeyword('still works')
+    expect(screen.getAllByText('still works').length).toBeGreaterThan(0)
   })
 })
 
@@ -903,9 +916,7 @@ describe('FRONTEND-029-AC-12: mode switch still clears keywordsSelected', () => 
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     selectCustomSearch()
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'submarine' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    addCustomSearchKeyword('submarine')
     selectUseMySeries()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -923,9 +934,17 @@ describe('FRONTEND-029-AC-13: hint recomputed from keywordsSelected', () => {
       screen.getByText(/browse the most popular shows overall/i),
     ).toBeInTheDocument()
 
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'spy' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    addCustomSearchKeyword('spy')
+    // FRONTEND-094-AC-03/04: close the modal before checking the inline
+    // field's own chip -- while open, both the modal's and the inline
+    // field's KeywordPicker instances render a "Remove spy" chip button
+    // (they share the same selected state), which would otherwise be an
+    // ambiguous match.
+    fireEvent.click(
+      within(
+        screen.getByRole('dialog', { name: /browse keywords/i }),
+      ).getByRole('button', { name: /^done$/i }),
+    )
     expect(
       screen.queryByText(/browse the most popular shows overall/i),
     ).not.toBeInTheDocument()
@@ -942,9 +961,12 @@ describe('FRONTEND-029-AC-24/25: accessible names for the keyword picker embeddi
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     selectCustomSearch()
 
-    const input = screen.getByLabelText('Keywords')
-    fireEvent.change(input, { target: { value: 'spy' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    addCustomSearchKeyword('spy')
+    fireEvent.click(
+      within(
+        screen.getByRole('dialog', { name: /browse keywords/i }),
+      ).getByRole('button', { name: /^done$/i }),
+    )
 
     expect(
       screen.getByRole('button', { name: 'Remove spy' }),
@@ -953,16 +975,22 @@ describe('FRONTEND-029-AC-24/25: accessible names for the keyword picker embeddi
 })
 
 describe('FRONTEND-030-AC-03/04: Exclude Keywords filter field', () => {
-  it('populates excludeKeywords from comma-separated free text', () => {
+  // FRONTEND-094-AC-05/06: Exclude Keywords is now a KeywordPicker
+  // (allowFreeText, no hideInput) -- each keyword is typed and committed
+  // with Enter individually, replacing the old single comma-separated
+  // free-text value.
+  it('populates excludeKeywords from individually typed keywords', () => {
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
     fireEvent.click(
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
-    fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
-      target: { value: 'Zombie, Heist' },
-    })
+    const input = screen.getByLabelText('Exclude Keywords')
+    fireEvent.change(input, { target: { value: 'Zombie' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    fireEvent.change(input, { target: { value: 'Heist' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
     clickApplyFilters()
 
     expect(onQueryChange).toHaveBeenLastCalledWith(
@@ -993,13 +1021,15 @@ describe('FRONTEND-030-AC-05: Reset Filters clears Exclude Keywords', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
-    fireEvent.change(screen.getByLabelText(/exclude keywords/i), {
-      target: { value: 'Zombie' },
-    })
+    const input = screen.getByLabelText('Exclude Keywords')
+    fireEvent.change(input, { target: { value: 'Zombie' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByText('Zombie')).toBeInTheDocument()
+
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
     clickApplyFilters()
 
-    expect(screen.getByLabelText(/exclude keywords/i)).toHaveValue('')
+    expect(screen.queryByText('Zombie')).not.toBeInTheDocument()
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ excludeKeywords: expect.anything() }),
     )
@@ -2569,6 +2599,28 @@ describe('FRONTEND-068-AC-01: excludeGenresSelected drives query.excludeGenres',
   it('omits excludeGenres when the array is empty', () => {
     const query = buildQuery(initialState)
     expect(query.excludeGenres).toBeUndefined()
+  })
+})
+
+describe('FRONTEND-094-AC-06: excludeKeywordsSelected reaches the query', () => {
+  it('includes excludeKeywords in the built query', () => {
+    const query = buildQuery({
+      ...initialState,
+      excludeKeywordsSelected: ['spoilers', 'reality tv'],
+    })
+    expect(query.excludeKeywords).toEqual(['spoilers', 'reality tv'])
+  })
+})
+
+describe('FRONTEND-094-AC-11: valid Min Vote Count reaches the query', () => {
+  it('includes a valid minVoteCount in the built query', () => {
+    const query = buildQuery({ ...initialState, minVoteCount: '200' })
+    expect(query.minVoteCount).toBe(200)
+  })
+
+  it('omits an invalid (negative) minVoteCount from the built query', () => {
+    const query = buildQuery({ ...initialState, minVoteCount: '-5' })
+    expect(query.minVoteCount).toBeUndefined()
   })
 })
 

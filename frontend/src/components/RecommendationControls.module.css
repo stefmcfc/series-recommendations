@@ -307,6 +307,25 @@
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+  /* FRONTEND-094-AC-01: visually ties this expanded content back to the
+     toggle that opens/closes it -- shared by UseMySeriesPanel's "Filter &
+     sort my series" and RecommendationFiltersBox's "Recommendations
+     Filters", both of which render through this exact class. */
+  border-left: 2px solid var(--border);
+  padding-left: 1rem;
+}
+
+/* FRONTEND-094-AC-09/AC-10: mirrors EditSeriesForm.module.css's .fieldError
+   exactly (color/font-size only, no equivalent class existed here yet). */
+.fieldError {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fieldError {
+    color: #fca5a5;
+  }
 }
 
 .filtersActions {
