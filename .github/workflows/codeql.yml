@@ -1,14 +1,111 @@
 name: CodeQL
 
+# No `push: branches: [main]` trigger: a squash-merge lands the exact tree already
+# analyzed by this workflow's `pull_request` run, so a push-triggered rerun added
+# coverage only for drift between merges -- which the weekly schedule below already
+# exists to catch. See .claude/steering/ci_cd_pipeline.md.
 on:
-  push:
-    branches: [main]
   pull_request:
   schedule:
     - cron: '0 6 * * 1' # weekly, Monday 06:00 UTC
 
+# Cancel a PR's in-progress run when a new commit supersedes it. Scheduled runs get
+# their own group (no pull_request.number/ref to collide on) so they're never
+# cancelled by anything else.
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
+  # Same detection as ci.yml's `changes` job (kept in sync manually -- see there for
+  # the full rationale on why backend/frontend can't be plain path-matching). Applies
+  # equally to `schedule`: there's no PR/push diff to look at, so BASE stays empty,
+  # backend/frontend/release_cut_only keep their "run everything" defaults, and the
+  # weekly cron always analyzes the full matrix -- that's the point of having it.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      release_cut_only: ${{ steps.detect.outputs.release_cut_only }}
+      backend: ${{ steps.detect.outputs.backend }}
+      frontend: ${{ steps.detect.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Detect what changed
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          fi
+
+          backend=true
+          frontend=true
+          release_cut_only=false
+
+          if [ -n "$BASE" ] && [ "$BASE" != "0000000000000000000000000000000000000000" ]; then
+            files=$(git diff --name-only "$BASE" "$HEAD")
+
+            gradle_beyond_version=false
+            if echo "$files" | grep -qx "backend/build.gradle.kts" \
+               && git diff "$BASE" "$HEAD" -- backend/build.gradle.kts \
+                  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -qvE '^[+-]version = "[0-9.]+"$'; then
+              gradle_beyond_version=true
+            fi
+
+            package_json_beyond_version=false
+            if echo "$files" | grep -qx "frontend/package.json" \
+               && git diff "$BASE" "$HEAD" -- frontend/package.json \
+                  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -qvE '^[+-]  "version": "[0-9.]+",?$'; then
+              package_json_beyond_version=true
+            fi
+
+            workflow_changed=false
+            echo "$files" | grep -qx ".github/workflows/codeql.yml" && workflow_changed=true
+
+            other_backend=$(echo "$files" | grep -E '^backend/' | grep -vx 'backend/build.gradle.kts' || true)
+            other_frontend=$(echo "$files" | grep -E '^frontend/' | grep -vx 'frontend/package.json' || true)
+
+            if [ -n "$other_backend" ] || [ "$gradle_beyond_version" = true ] || [ "$workflow_changed" = true ]; then
+              backend=true
+            else
+              backend=false
+            fi
+
+            if [ -n "$other_frontend" ] || [ "$package_json_beyond_version" = true ] || [ "$workflow_changed" = true ]; then
+              frontend=true
+            else
+              frontend=false
+            fi
+
+            allowed=$'CHANGELOG.md\nbackend/build.gradle.kts\nfrontend/package.json'
+            if [ -n "$files" ] && [ -z "$(comm -23 <(echo "$files" | sort) <(echo "$allowed" | sort))" ] \
+               && [ "$gradle_beyond_version" = false ] && [ "$package_json_beyond_version" = false ]; then
+              release_cut_only=true
+            fi
+          fi
+
+          echo "Changed files: $files"
+          echo "backend=$backend frontend=$frontend release_cut_only=$release_cut_only"
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "release_cut_only=$release_cut_only" >> "$GITHUB_OUTPUT"
+
   analyze:
+    needs: changes
+    # `matrix` isn't resolved yet at job-level `if:` (it's only bound once the matrix
+    # has fanned out into per-instance jobs, which happens after this is evaluated) --
+    # referencing it here is an *invalid workflow*, not just a no-op: GitHub rejects
+    # the whole file and no run for this workflow fires at all, on any trigger,
+    # including `pull_request` (found by checking the run's actual failure reason
+    # after backend/frontend gating silently produced zero CodeQL runs on PR #174).
+    # So `release_cut_only` alone gates the job; matrix.language is only referenced in
+    # each step's own `if:`, where it *is* available, to skip the per-leg work instead.
+    if: needs.changes.outputs.release_cut_only != 'true'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -16,20 +113,31 @@ jobs:
       matrix:
         language: [javascript-typescript, java]
     steps:
-      - uses: actions/checkout@v7
-      - uses: github/codeql-action/init@v4
+      - name: Should this leg run?
+        id: gate
+        # Java only needs to run when backend changed; javascript-typescript only
+        # when frontend changed (see ci.yml's `changes` job for what those mean).
+        if: |
+          (matrix.language == 'java' && needs.changes.outputs.backend == 'true') ||
+          (matrix.language == 'javascript-typescript' && needs.changes.outputs.frontend == 'true')
+        run: echo "run=true" >> "$GITHUB_OUTPUT"
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v7
+      - if: steps.gate.outputs.run == 'true'
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-      - if: matrix.language == 'java'
+      - if: steps.gate.outputs.run == 'true' && matrix.language == 'java'
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
-      - if: matrix.language == 'java'
+      - if: steps.gate.outputs.run == 'true' && matrix.language == 'java'
         uses: gradle/actions/setup-gradle@v6
-      - if: matrix.language == 'java'
+      - if: steps.gate.outputs.run == 'true' && matrix.language == 'java'
         working-directory: backend
         run: gradle compileJava compileTestGroovy
-      - uses: github/codeql-action/analyze@v4
+      - if: steps.gate.outputs.run == 'true'
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"

@@ -5,8 +5,103 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel a PR's in-progress run when a new commit supersedes it (e.g. a quick fixup
+# pushed while the previous run is still going). Runs on main are never cancelled --
+# a push to main should always run to completion.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
+  # Computes three outputs so backend/frontend only run when there's something of
+  # theirs to check -- see the step below for why this can't be plain path-matching.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      release_cut_only: ${{ steps.detect.outputs.release_cut_only }}
+      backend: ${{ steps.detect.outputs.backend }}
+      frontend: ${{ steps.detect.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Detect what changed
+        id: detect
+        # Plain path-matching can't be used for backend/frontend here: almost every
+        # merge bumps backend/build.gradle.kts's and frontend/package.json's version
+        # line together as part of the release cut (CLAUDE.md's "Versioning &
+        # changelog" section), even for a frontend-only or backend-only feature. A
+        # naive "did anything under backend/** change" check would see that version
+        # bump and wrongly call it a backend change on every single merge. So a
+        # version-line-only diff to those two files doesn't count on its own -- only
+        # an additional real change elsewhere under backend/**/frontend/** does. When
+        # nothing else changed at all beyond CHANGELOG.md + those two version lines,
+        # `release_cut_only` also fires, matching a standalone release-cut commit
+        # (e.g. 385859e). Editing this workflow file always runs both.
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          fi
+
+          backend=true
+          frontend=true
+          release_cut_only=false
+
+          if [ -n "$BASE" ] && [ "$BASE" != "0000000000000000000000000000000000000000" ]; then
+            files=$(git diff --name-only "$BASE" "$HEAD")
+
+            gradle_beyond_version=false
+            if echo "$files" | grep -qx "backend/build.gradle.kts" \
+               && git diff "$BASE" "$HEAD" -- backend/build.gradle.kts \
+                  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -qvE '^[+-]version = "[0-9.]+"$'; then
+              gradle_beyond_version=true
+            fi
+
+            package_json_beyond_version=false
+            if echo "$files" | grep -qx "frontend/package.json" \
+               && git diff "$BASE" "$HEAD" -- frontend/package.json \
+                  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -qvE '^[+-]  "version": "[0-9.]+",?$'; then
+              package_json_beyond_version=true
+            fi
+
+            workflow_changed=false
+            echo "$files" | grep -qx ".github/workflows/ci.yml" && workflow_changed=true
+
+            other_backend=$(echo "$files" | grep -E '^backend/' | grep -vx 'backend/build.gradle.kts' || true)
+            other_frontend=$(echo "$files" | grep -E '^frontend/' | grep -vx 'frontend/package.json' || true)
+
+            if [ -n "$other_backend" ] || [ "$gradle_beyond_version" = true ] || [ "$workflow_changed" = true ]; then
+              backend=true
+            else
+              backend=false
+            fi
+
+            if [ -n "$other_frontend" ] || [ "$package_json_beyond_version" = true ] || [ "$workflow_changed" = true ]; then
+              frontend=true
+            else
+              frontend=false
+            fi
+
+            allowed=$'CHANGELOG.md\nbackend/build.gradle.kts\nfrontend/package.json'
+            if [ -n "$files" ] && [ -z "$(comm -23 <(echo "$files" | sort) <(echo "$allowed" | sort))" ] \
+               && [ "$gradle_beyond_version" = false ] && [ "$package_json_beyond_version" = false ]; then
+              release_cut_only=true
+            fi
+          fi
+
+          echo "Changed files: $files"
+          echo "backend=$backend frontend=$frontend release_cut_only=$release_cut_only"
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "release_cut_only=$release_cut_only" >> "$GITHUB_OUTPUT"
+
   backend:
+    needs: changes
+    if: needs.changes.outputs.release_cut_only != 'true' && needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,6 +129,8 @@ jobs:
         run: gradle build -x test
 
   frontend:
+    needs: changes
+    if: needs.changes.outputs.release_cut_only != 'true' && needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
