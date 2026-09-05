@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.23.0] - 2026-09-05
+
+### Added
+
+- Frontend: `SeriesDetail`'s poster thumbnail is now clickable, opening a full-size lightbox overlay (close icon, click-image-to-close, and Escape all dismiss it) (`frontend_spec_078`).
+
+### Changed
+
+- Frontend: `SeriesDetail`'s Genres field moved out of the "Details" section's grid to its own standalone field between "Check Streaming Availability" and "Keywords" (`frontend_spec_078`).
+- Frontend: `SeriesDetail`'s Status now renders in the heading row alongside the title/year/country, instead of buried in the "Details" grid (`frontend_spec_078`).
+
 ## [3.22.2] - 2026-09-05
 
 ### Fixed

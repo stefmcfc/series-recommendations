@@ -1,4 +1,10 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SeriesDetail } from './SeriesDetail'
 import { seriesApi } from '../services/seriesApi'
@@ -234,6 +240,156 @@ describe('FRONTEND-009-AC-18/19/20: poster on the detail view', () => {
 
     fireEvent.error(screen.getByAltText(''))
     expect(screen.queryByAltText('')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-01: clicking the poster opens the lightbox', () => {
+  it('opens a full-size poster overlay on click', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+
+    fireEvent.click(screen.getByRole('button', { name: /view larger poster/i }))
+
+    expect(screen.getByRole('dialog', { name: /poster/i })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-02: lightbox has a close button', () => {
+  it('renders a Close button inside the overlay', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+    fireEvent.click(screen.getByRole('button', { name: /view larger poster/i }))
+
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-03: close icon dismisses the lightbox', () => {
+  it('closes the overlay when Close is clicked', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+    fireEvent.click(screen.getByRole('button', { name: /view larger poster/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(
+      screen.queryByRole('dialog', { name: /poster/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-04: clicking the enlarged image dismisses the lightbox', () => {
+  it('closes the overlay when the enlarged poster is clicked', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+    fireEvent.click(screen.getByRole('button', { name: /view larger poster/i }))
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /close enlarged poster/i }),
+    )
+
+    expect(
+      screen.queryByRole('dialog', { name: /poster/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-05: Escape dismisses the lightbox', () => {
+  it('closes the overlay on Escape', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ posterUrl: 'https://example.com/poster.jpg' }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+    fireEvent.click(screen.getByRole('button', { name: /view larger poster/i }))
+    const dialog = screen.getByRole('dialog', { name: /poster/i })
+
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+
+    expect(
+      screen.queryByRole('dialog', { name: /poster/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-06: no lightbox trigger without a poster', () => {
+  it('does not render a poster button when posterUrl is null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ posterUrl: null }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+
+    expect(
+      screen.queryByRole('button', { name: /view larger poster/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-07: Genres renders between streaming availability and Keywords', () => {
+  it('places Genres after the streaming button and before Keywords in document order', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ genres: 'Drama, Crime' }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+
+    const streamingButton = screen.getByRole('button', {
+      name: /check streaming availability/i,
+    })
+    const genresTerm = screen.getByText('Genres')
+    const keywordsTerm = screen.getByText('Keywords')
+
+    expect(
+      streamingButton.compareDocumentPosition(genresTerm) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      genresTerm.compareDocumentPosition(keywordsTerm) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-078-AC-08: Genres removed from the Details grid', () => {
+  it('renders Genres exactly once', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ genres: 'Drama, Crime' }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+
+    expect(screen.getAllByText('Genres')).toHaveLength(1)
+  })
+})
+
+describe('FRONTEND-078-AC-09: Status renders in the heading row', () => {
+  it('renders the series status inside the heading row', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    const heading = await screen.findByRole('heading', { level: 2 })
+
+    const headingRow = heading.closest('[data-testid="heading-row"]')
+    expect(headingRow).not.toBeNull()
+    expect(
+      within(headingRow as HTMLElement).getByText('WATCHING'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-078-AC-10: Status removed from the Details grid', () => {
+  it('renders the status value exactly once', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ status: SeriesStatus.WATCHING }))
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+
+    expect(screen.getAllByText('WATCHING')).toHaveLength(1)
   })
 })
 

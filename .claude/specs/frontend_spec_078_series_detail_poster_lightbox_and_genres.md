@@ -1,6 +1,6 @@
 # Frontend Spec 078: Series Detail Poster Lightbox, Genres Reposition & Status in Heading
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: none
 **Area**: Frontend (`components/SeriesDetail.tsx`, `components/SeriesDetailFields.tsx`, `components/SeriesDetail.module.css`)
@@ -276,13 +276,13 @@ describe('FRONTEND-078-AC-10: Status removed from the Details grid', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-078-AC-01: Clicking the poster opens the lightbox
-- [ ] FRONTEND-078-AC-02: Lightbox has a visible close icon
-- [ ] FRONTEND-078-AC-03: Close icon dismisses the lightbox
-- [ ] FRONTEND-078-AC-04: Clicking the enlarged image also dismisses the lightbox
-- [ ] FRONTEND-078-AC-05: Escape dismisses the lightbox
-- [ ] FRONTEND-078-AC-06: No lightbox trigger when there's no poster to enlarge
-- [ ] FRONTEND-078-AC-07: Genres renders between streaming availability and Keywords
-- [ ] FRONTEND-078-AC-08: Genres no longer appears in the Details grid
-- [ ] FRONTEND-078-AC-09: Status renders in the heading row
-- [ ] FRONTEND-078-AC-10: Status no longer appears in the Details grid
+- [x] FRONTEND-078-AC-01: Clicking the poster opens the lightbox
+- [x] FRONTEND-078-AC-02: Lightbox has a visible close icon
+- [x] FRONTEND-078-AC-03: Close icon dismisses the lightbox
+- [x] FRONTEND-078-AC-04: Clicking the enlarged image also dismisses the lightbox
+- [x] FRONTEND-078-AC-05: Escape dismisses the lightbox
+- [x] FRONTEND-078-AC-06: No lightbox trigger when there's no poster to enlarge
+- [x] FRONTEND-078-AC-07: Genres renders between streaming availability and Keywords
+- [x] FRONTEND-078-AC-08: Genres no longer appears in the Details grid
+- [x] FRONTEND-078-AC-09: Status renders in the heading row
+- [x] FRONTEND-078-AC-10: Status no longer appears in the Details grid
