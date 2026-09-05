@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.22.0] - 2026-09-05
+
 ### Added
 
 - Backend: `POST /api/v1/series/import` (multipart JSON file upload) + `GET /api/v1/series/import/status` — a reverse-of-export bulk import, reusing `POST /series`'s per-row validation and duplicate-`imdbId` rejection, run as an async job mirroring the existing bulk-refresh job pattern (capped `errors` list of up to 20 rows) (`series_spec_038`).
