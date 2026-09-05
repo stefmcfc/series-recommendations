@@ -47,6 +47,22 @@ export interface KeywordStat {
   name: string
   seriesCount: number
   averagePersonalRating: number | null
+  // FRONTEND-086-AC-01/SERIES-047: blended IMDb/TMDB average across the
+  // keyword's series -- null when no series tagged with this keyword has
+  // either rating populated.
+  averageBlendedRating: number | null
+}
+
+// FRONTEND-086-AC-02: options object for seriesApi.getKeywordStats -- five
+// independent, all-optional params no longer fit cleanly as positional
+// arguments (series_spec_047).
+export interface KeywordStatsOptions {
+  sortBy?:
+    'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
+  sortDirection?: 'asc' | 'desc'
+  minSeriesCount?: number
+  minAveragePersonalRating?: number
+  minAverageBlendedRating?: number
 }
 
 export interface RefreshResult {

@@ -1,6 +1,6 @@
 # Frontend Spec 086: Keyword Stats — Filtering, Sort Direction Toggle & Blended Rating
 
-**Status**: Not started
+**Status**: Done
 **Depends on**: Series Spec 047 (`series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md`), Frontend Spec 024 (`frontend_spec_024_keyword_tracking.md` Requirement 3, `KeywordsView`)
 **Frontend Stage**: 86 of N
 
@@ -194,13 +194,13 @@ describe('FRONTEND-086-AC-08/09/10: name/blended-rating columns and direction to
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-086-AC-01: `KeywordStat.averageBlendedRating`
-- [ ] FRONTEND-086-AC-02: `getKeywordStats` options-object signature
-- [ ] FRONTEND-086-AC-03: only provided options sent as query params
-- [ ] FRONTEND-086-AC-04: three numeric filter inputs rendered
-- [ ] FRONTEND-086-AC-05: "Apply Filters" re-fetches with current values
-- [ ] FRONTEND-086-AC-06: blank filter fields omitted, not sent as `0`
-- [ ] FRONTEND-086-AC-07: loading/error states unchanged under filtering
-- [ ] FRONTEND-086-AC-08: "Keyword" header sortable (`name`); new "Avg. Blended Rating" column
-- [ ] FRONTEND-086-AC-09: click sorts by column; repeated click toggles direction
-- [ ] FRONTEND-086-AC-10: active column shows a ▲/▼ direction indicator
+- [x] FRONTEND-086-AC-01: `KeywordStat.averageBlendedRating`
+- [x] FRONTEND-086-AC-02: `getKeywordStats` options-object signature
+- [x] FRONTEND-086-AC-03: only provided options sent as query params
+- [x] FRONTEND-086-AC-04: three numeric filter inputs rendered
+- [x] FRONTEND-086-AC-05: "Apply Filters" re-fetches with current values
+- [x] FRONTEND-086-AC-06: blank filter fields omitted, not sent as `0`
+- [x] FRONTEND-086-AC-07: loading/error states unchanged under filtering
+- [x] FRONTEND-086-AC-08: "Keyword" header sortable (`name`); new "Avg. Blended Rating" column
+- [x] FRONTEND-086-AC-09: click sorts by column; repeated click toggles direction
+- [x] FRONTEND-086-AC-10: active column shows a ▲/▼ direction indicator

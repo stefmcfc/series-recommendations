@@ -60,6 +60,78 @@ class SeriesControllerKeywordsSpec extends Specification {
             result.andExpect(jsonPath('$.data[0].averagePersonalRating').value(5.0))
     }
 
+    def "SERIES-047-AC-02/03: GET /api/v1/series/keywords includes averageBlendedRating"() {
+        given: "a series carrying 'spy' with both imdbRating and tmdbRating set"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "Spooks", imdbRating: 8.0G, tmdbRating: 6.0G, keywords: [spy] as Set))
+
+        when: "GET /api/v1/series/keywords is requested"
+            def result = mockMvc.perform(get("/api/v1/series/keywords"))
+
+        then: "the blended rating is included in the response"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data[0].averageBlendedRating').value(7.0))
+    }
+
+    def "SERIES-047-AC-04: GET /api/v1/series/keywords?sortBy=name sorts alphabetically"() {
+        given: "keywords 'spy' and 'Drama'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def drama = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 18, name: "Drama"))
+            seriesRepository.save(new SeriesEntity(title: "A", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", keywords: [drama] as Set))
+
+        when: "GET /api/v1/series/keywords?sortBy=name is requested"
+            def result = mockMvc.perform(get("/api/v1/series/keywords").param("sortBy", "name"))
+
+        then: "'Drama' sorts before 'spy'"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data[0].name').value("Drama"))
+            result.andExpect(jsonPath('$.data[1].name').value("spy"))
+    }
+
+    def "SERIES-047-AC-06: GET /api/v1/series/keywords?sortDirection=asc reverses the default seriesCount order"() {
+        given: "'spy' on 2 series, 'drama' on 1"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def drama = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 18, name: "drama"))
+            seriesRepository.save(new SeriesEntity(title: "A", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "C", keywords: [drama] as Set))
+
+        when: "GET /api/v1/series/keywords?sortDirection=asc is requested"
+            def result = mockMvc.perform(get("/api/v1/series/keywords").param("sortDirection", "asc"))
+
+        then: "'drama' (count 1) sorts before 'spy' (count 2)"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data[0].name').value("drama"))
+            result.andExpect(jsonPath('$.data[1].name').value("spy"))
+    }
+
+    def "SERIES-047-AC-09/13: filtered response keeps the { data, count } envelope shape"() {
+        when: "GET /api/v1/series/keywords?minSeriesCount=5 is requested with nothing meeting it"
+            def result = mockMvc.perform(get("/api/v1/series/keywords").param("minSeriesCount", "5"))
+
+        then: "200 with an empty list, count 0 -- not an error"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data').isArray())
+            result.andExpect(jsonPath('$.count').value(0))
+    }
+
+    def "SERIES-047-AC-09/10: GET /api/v1/series/keywords?minAveragePersonalRating filters out lower/unrated keywords"() {
+        given: "'spy' rated 5, 'drama' unrated"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            def drama = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 18, name: "drama"))
+            seriesRepository.save(new SeriesEntity(title: "A", personalRating: 5, keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", keywords: [drama] as Set))
+
+        when: "GET /api/v1/series/keywords?minAveragePersonalRating=1 is requested"
+            def result = mockMvc.perform(get("/api/v1/series/keywords").param("minAveragePersonalRating", "1"))
+
+        then: "only 'spy' is returned"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.count').value(1))
+            result.andExpect(jsonPath('$.data[0].name').value("spy"))
+    }
+
     def "SERIES-019-AC-20: GET /api/v1/series/search accepts a repeatable keyword query param"() {
         given: "one series carrying 'spy', another carrying no keywords"
             def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))

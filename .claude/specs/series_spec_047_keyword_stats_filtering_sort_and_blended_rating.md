@@ -1,6 +1,6 @@
 # Spec 047: Keyword Stats — Filtering, Name Sort, Direction Toggle & Blended Rating
 
-**Status**: Not started
+**Status**: Done
 **Priority**: P3 (analysis/quality-of-life enhancement to an existing feature, not core CRUD)
 **Depends on**: Series Spec 019 (`series_spec_019_keyword_tracking.md` Requirement 4 — `GET /series/keywords`, `KeywordStatsService`, `KeywordStatDto`)
 **Backend Task**
@@ -243,16 +243,16 @@ def "SERIES-047-AC-13: filtered response keeps the { data, count } envelope shap
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-047-AC-01: `RatingBlendUtil.blendedRating(SeriesEntity)`
-- [ ] SERIES-047-AC-02: `KeywordStatDto.averageBlendedRating`
-- [ ] SERIES-047-AC-03: computed correctly, nulls excluded from the average
-- [ ] SERIES-047-AC-04: `sortBy=name`, case-insensitive alphabetical
-- [ ] SERIES-047-AC-05: `sortBy=averageBlendedRating`, nulls-last
-- [ ] SERIES-047-AC-06: `sortDirection` reverses ordering, nulls still sort last
-- [ ] SERIES-047-AC-07: omitted `sortDirection` preserves each field's existing default
-- [ ] SERIES-047-AC-08: unrecognized values soft-fall-back, not `400`
-- [ ] SERIES-047-AC-09: `minSeriesCount`/`minAveragePersonalRating`/`minAverageBlendedRating` params
-- [ ] SERIES-047-AC-10: `>=` threshold, AND-combined across provided filters
-- [ ] SERIES-047-AC-11: `null` average never satisfies a `minAverage*` filter
-- [ ] SERIES-047-AC-12: omitting all filters is fully backward-compatible
-- [ ] SERIES-047-AC-13: `{ data, count }` envelope unchanged; `count` reflects post-filter length
+- [x] SERIES-047-AC-01: `RatingBlendUtil.blendedRating(SeriesEntity)`
+- [x] SERIES-047-AC-02: `KeywordStatDto.averageBlendedRating`
+- [x] SERIES-047-AC-03: computed correctly, nulls excluded from the average
+- [x] SERIES-047-AC-04: `sortBy=name`, case-insensitive alphabetical
+- [x] SERIES-047-AC-05: `sortBy=averageBlendedRating`, nulls-last
+- [x] SERIES-047-AC-06: `sortDirection` reverses ordering, nulls still sort last
+- [x] SERIES-047-AC-07: omitted `sortDirection` preserves each field's existing default
+- [x] SERIES-047-AC-08: unrecognized values soft-fall-back, not `400`
+- [x] SERIES-047-AC-09: `minSeriesCount`/`minAveragePersonalRating`/`minAverageBlendedRating` params
+- [x] SERIES-047-AC-10: `>=` threshold, AND-combined across provided filters
+- [x] SERIES-047-AC-11: `null` average never satisfies a `minAverage*` filter
+- [x] SERIES-047-AC-12: omitting all filters is fully backward-compatible
+- [x] SERIES-047-AC-13: `{ data, count }` envelope unchanged; `count` reflects post-filter length

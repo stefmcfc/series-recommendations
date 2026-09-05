@@ -483,8 +483,18 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
   // unchanged.
   it('filters suggestions as text is typed in the browse modal, and includes a chosen keyword on Search', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
-      { name: 'heist', seriesCount: 2, averagePersonalRating: 3.1 },
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: null,
+      },
+      {
+        name: 'heist',
+        seriesCount: 2,
+        averagePersonalRating: 3.1,
+        averageBlendedRating: null,
+      },
     ])
     const onSearch = vi.fn()
     render(
@@ -530,7 +540,12 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
   // longer renders any suggestions UI, capped or not.
   it('renders no suggestions for the inline field regardless of typed text (hideInput)', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: null,
+      },
     ])
     render(
       <SearchFilter
@@ -552,7 +567,12 @@ describe('FRONTEND-029-AC-14/15/16: inline vocabulary-constrained picker', () =>
 
   it('omits keywords from criteria when nothing is selected', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: null,
+      },
     ])
     const onSearch = vi.fn()
     render(
@@ -598,7 +618,12 @@ describe('FRONTEND-029-AC-17: keyword fetch failure degrades gracefully', () => 
 describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
   it('opens a labelled dialog, focuses its input, and shares selection state with the inline picker', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: null,
+      },
     ])
     render(
       <SearchFilter
@@ -633,7 +658,12 @@ describe('FRONTEND-029-AC-18/19/20/21/22: browse-all-keywords modal', () => {
 
   it('closes on Escape without clearing selections', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: null,
+      },
     ])
     render(
       <SearchFilter
@@ -699,6 +729,7 @@ describe('FRONTEND-032-AC-10: "Browse all keywords" modal shows the full list wi
         name: `kw-${i}`,
         seriesCount: 15 - i,
         averagePersonalRating: null,
+        averageBlendedRating: null,
       })),
     )
     render(
@@ -743,7 +774,12 @@ describe('FRONTEND-029-AC-24/25: accessible names for the keyword picker', () =>
   // asserted on the inline picker, since that's where selected chips render.
   it('selecting a suggestion in the browse modal produces a named inline Remove button', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 4, averagePersonalRating: 4.2 },
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: null,
+      },
     ])
     render(
       <SearchFilter
