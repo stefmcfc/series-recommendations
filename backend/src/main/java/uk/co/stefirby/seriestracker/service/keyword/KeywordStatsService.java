@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.keyword;
 
 import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
 import uk.co.stefirby.seriestracker.model.KeywordEntity;

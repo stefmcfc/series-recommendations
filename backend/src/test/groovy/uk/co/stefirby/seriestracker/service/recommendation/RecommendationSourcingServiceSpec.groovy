@@ -7,7 +7,7 @@ import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable
 import spock.lang.Specification
 
 import java.time.Clock

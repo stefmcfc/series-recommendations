@@ -1,10 +1,12 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.io
 
 import spock.lang.Specification
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.ConflictException
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
+import uk.co.stefirby.seriestracker.service.SeriesService
+import uk.co.stefirby.seriestracker.service.keyword.KeywordSyncService
 
 import java.time.Clock
 

@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service;
+package uk.co.stefirby.seriestracker.service.keyword;
 
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient;
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbKeyword;

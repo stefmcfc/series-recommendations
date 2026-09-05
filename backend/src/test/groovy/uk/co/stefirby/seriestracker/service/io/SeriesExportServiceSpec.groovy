@@ -1,4 +1,4 @@
-package uk.co.stefirby.seriestracker.service
+package uk.co.stefirby.seriestracker.service.io
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -7,6 +7,7 @@ import spock.lang.Specification
 import tools.jackson.databind.ObjectMapper
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
+import uk.co.stefirby.seriestracker.service.SeriesService
 
 import java.time.LocalDateTime
 

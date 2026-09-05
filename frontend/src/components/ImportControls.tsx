@@ -13,10 +13,11 @@ interface ImportControlsProps {
 const IMPORT_POLL_INTERVAL_MS = 2500
 
 function buildSummaryText(status: ImportJobStatus): string {
-  const errorSuffix =
-    status.errorCount > 0
-      ? `, ${status.errorCount} error${status.errorCount === 1 ? '' : 's'}`
-      : ''
+  let errorSuffix = ''
+  if (status.errorCount > 0) {
+    const errorNoun = status.errorCount === 1 ? 'error' : 'errors'
+    errorSuffix = `, ${status.errorCount} ${errorNoun}`
+  }
   return `Imported ${status.importedCount}, skipped ${status.skippedCount}${errorSuffix}`
 }
 

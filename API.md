@@ -120,6 +120,15 @@ params are silently ignored (as with any other unknown query key on this endpoin
 
 Export as JSON or CSV.
 
+## Genres
+
+### `GET /api/v1/series/genres`
+
+The full set of genre alias names this app/OMDb's vocabulary accepts (`TmdbGenreTable`) — every
+name a `genre`/`excludeGenre` search filter or a `genres` recommendation param can resolve, one
+entry per TMDB alias (e.g. both `Action` and `Adventure` are listed separately even though they
+collapse onto the same TMDB genre id). Always `200`; no query params.
+
 ## Import
 
 ### `POST /api/v1/series/import`
@@ -292,6 +301,16 @@ lookup just yields an empty list for that one candidate, never a failed request.
 
 ---
 
+### `GET /api/v1/series/recommendations/{tmdbId}/keywords`
+
+On-demand TMDB keyword lookup for a single recommendation candidate, deliberately not folded into
+`GET /api/v1/series/recommendations` itself — fetching keywords for every card in a 10-20-result
+list would cost a TMDB call per card the user never asked to expand. A TMDB failure or an
+unresolvable `tmdbId` both yield an empty list (`200`), never an error — there's no persisted
+entity here for a "leave unchanged" posture to apply to.
+
+---
+
 ### `GET /api/v1/series/recommendations/{tmdbId}/details?imdbId=`
 
 On-demand lookup for a single recommendation candidate's season/episode counts and IMDb rating —
@@ -318,6 +337,17 @@ on their respective source's failure, never a `4xx`/`5xx` for this endpoint:
 
 Dismiss a recommendation (`{ imdbId, title, reason? }`) so it never resurfaces. Idempotent —
 re-ignoring the same `imdbId` returns `200` instead of `201`.
+
+## Watch Providers
+
+### `GET /api/v1/series/{id}/watch-providers`
+
+On-demand streaming (subscription/`flatrate`) availability for one tracked series, in
+`app.tmdb.watch-region` (default `GB`) — the same `streamingProviders` shape each
+`recommendations` result already carries inline, fetched live per request (never persisted).
+Requires `app.tmdb.api-key`, but never fails with `502` even when it's unset or the TMDB call
+fails: always `200` with an empty list in that case (`series_spec_020_watch_providers.md`,
+`series_spec_026_series_watch_providers.md`). `404` for an unknown series `id`.
 
 ## Refresh
 

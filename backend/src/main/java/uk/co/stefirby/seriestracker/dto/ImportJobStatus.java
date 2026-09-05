@@ -1,5 +1,7 @@
 package uk.co.stefirby.seriestracker.dto;
 
+import uk.co.stefirby.seriestracker.service.JobStatus;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,5 +19,5 @@ import java.util.List;
  */
 public record ImportJobStatus(String status, int totalCount, int importedCount, int skippedCount,
                                int errorCount, List<ImportRowError> errors,
-                               LocalDateTime startedAt, LocalDateTime completedAt) {
+                               LocalDateTime startedAt, LocalDateTime completedAt) implements JobStatus {
 }

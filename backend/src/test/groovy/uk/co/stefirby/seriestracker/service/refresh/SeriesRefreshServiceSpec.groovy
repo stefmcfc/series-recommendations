@@ -11,9 +11,9 @@ import uk.co.stefirby.seriestracker.model.ProductionStatus
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
-import uk.co.stefirby.seriestracker.service.KeywordSyncService
+import uk.co.stefirby.seriestracker.service.keyword.KeywordSyncService
 import uk.co.stefirby.seriestracker.service.SeriesService
-import uk.co.stefirby.seriestracker.service.TmdbGenreTable
+import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable
 
 import java.time.Clock
 import java.time.LocalDateTime

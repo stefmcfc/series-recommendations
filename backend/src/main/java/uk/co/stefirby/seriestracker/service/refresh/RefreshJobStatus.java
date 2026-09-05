@@ -1,5 +1,7 @@
 package uk.co.stefirby.seriestracker.service.refresh;
 
+import uk.co.stefirby.seriestracker.service.JobStatus;
+
 import java.time.LocalDateTime;
 
 /**
@@ -15,5 +17,5 @@ import java.time.LocalDateTime;
  * addition to {@code totalCount}.
  */
 public record RefreshJobStatus(String status, int totalCount, int completedCount, int skippedCount,
-                                LocalDateTime startedAt, LocalDateTime finishedAt) {
+                                LocalDateTime startedAt, LocalDateTime finishedAt) implements JobStatus {
 }

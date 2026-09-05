@@ -18,30 +18,71 @@ series-recommendation/
 ```
 
 ## Backend structure
+
+What actually exists today (post chore/sonar-cleanup package reorg, 2026-09-05):
 ```
 backend/
 ├── src/
 │   ├── main/
 │   │   ├── java/
 │   │   │   └── uk/co/stefirby/seriestracker/
-│   │   │       ├── controller/        # REST endpoints (@RestController) — SeriesController
-│   │   │       ├── service/           # Business logic (@Service) — SeriesService, SeriesSearchService, SeriesExportService
-│   │   │       ├── repository/        # Spring Data JPA (@Repository) — SeriesRepository
-│   │   │       ├── model/             # JPA entities (@Entity) — SeriesEntity, SeriesStatus, ValidSeries + SeriesValidator
-│   │   │       ├── dto/               # API contracts — SeriesDto, ApiResponse, SeriesSearchCriteria, SeriesExportResponse
-│   │   │       ├── exception/         # EntityNotFoundException, GlobalExceptionHandler
-│   │   │       ├── config/            # CorsConfig (WebMvcConfigurer — /api/** CORS allow-list)
+│   │   │       ├── controller/        # REST endpoints (@RestController), one per resource area:
+│   │   │       │                      #   SeriesController (CRUD/search/export/import/ignore),
+│   │   │       │                      #   SeriesGenreController, SeriesKeywordController,
+│   │   │       │                      #   SeriesLookupController, SeriesRecommendationController,
+│   │   │       │                      #   SeriesRefreshController, SeriesWatchProviderController
+│   │   │       │                      #   (TOOLING-002/TOOLING-003 split these out of one
+│   │   │       │                      #   original SeriesController), UuidPathPattern (shared
+│   │   │       │                      #   path-variable regex)
+│   │   │       ├── service/           # Business logic (@Service), plus 5 subpackages below —
+│   │   │       │                      #   SeriesService (+ package-private SeriesMapper for its
+│   │   │       │                      #   entity<->DTO field copy), SeriesSearchService,
+│   │   │       │                      #   SeriesSortResolver, IgnoredSeriesService, IgnoreOutcome
+│   │   │       │   ├── io/            # SeriesExportService, BulkImportService, ImportFileParser
+│   │   │       │   ├── tmdb/          # TmdbGenreTable, WatchProviderService, SeriesLookupService
+│   │   │       │   ├── keyword/       # KeywordStatsService, KeywordSyncService
+│   │   │       │   ├── recommendation/ # RecommendationService + its sourcing/ranking/dedup/
+│   │   │       │   │                  #   output-filter/DTO-assembly collaborators (TOOLING-003)
+│   │   │       │   └── refresh/       # SeriesRefreshService, BulkRefreshService, RefreshJobStatus,
+│   │   │       │                      #   RefreshResult
+│   │   │       ├── repository/        # Spring Data JPA (@Repository), no custom queries —
+│   │   │       │                      #   SeriesRepository, KeywordRepository, IgnoredSeriesRepository
+│   │   │       ├── model/             # JPA entities (@Entity) — SeriesEntity, SeriesStatus,
+│   │   │       │                      #   ProductionStatus, KeywordEntity, IgnoredSeriesEntity,
+│   │   │       │                      #   ValidSeries + SeriesValidator
+│   │   │       ├── dto/               # API contracts (13 classes) — SeriesDto, ApiResponse,
+│   │   │       │                      #   SeriesSearchCriteria, SeriesExportResponse,
+│   │   │       │                      #   RecommendationDto/Criteria, CandidateDetailDto,
+│   │   │       │                      #   ImportJobStatus, ImportRowError, KeywordStatDto,
+│   │   │       │                      #   SeriesLookupDto, TmdbLookupCandidateDto, IgnoredSeriesDto
+│   │   │       ├── client/            # Outbound HTTP clients — ExternalApiSupport (shared),
+│   │   │       │   ├── omdb/          #   OmdbClient, OmdbRatings
+│   │   │       │   └── tmdb/          #   TmdbClient, TmdbCandidate, TmdbSearchCandidate,
+│   │   │       │                      #   TmdbSeriesDetail, TmdbKeyword, TmdbWatchProvider,
+│   │   │       │                      #   DiscoverFilters
+│   │   │       ├── exception/         # ConflictException, EntityNotFoundException,
+│   │   │       │                      #   ExternalServiceException, GlobalExceptionHandler
+│   │   │       ├── config/            # ClockConfig (injectable Clock bean), CorsConfig
+│   │   │       │                      #   (WebMvcConfigurer — /api/** CORS allow-list)
 │   │   │       └── SeriesTrackerApplication.java  # Entry point
 │   │   └── resources/
 │   │       ├── application.yml        # Spring config (dev, SQLite)
 │   │       └── db/
-│   │           └── migration/         # SQL migration scripts (Flyway) — V001__create_series_table.sql
+│   │           └── migration/         # SQL migration scripts (Flyway), one per schema change
+│   │                                  #   since V001__create_series_table.sql
 │   └── test/
 │       ├── groovy/
 │       │   └── uk/co/stefirby/seriestracker/
-│       │       ├── controller/        # SeriesControllerSpec
+│       │       ├── controller/        # One *Spec.groovy per controller above
 │       │       ├── model/             # SeriesEntitySpec
-│       │       ├── service/           # SeriesServiceSpec, SeriesSearchServiceSpec, SeriesExportServiceSpec
+│       │       ├── service/           # SeriesServiceSpec, SeriesSearchServiceSpec, plus the
+│       │       │                      #   same io/tmdb/keyword/recommendation/refresh
+│       │       │   ├── io/            #   subpackages mirroring main, one *Spec.groovy per
+│       │       │   ├── tmdb/          #   class under test
+│       │       │   ├── keyword/
+│       │       │   ├── recommendation/
+│       │       │   └── refresh/
+│       │       ├── exception/         # GlobalExceptionHandlerSpec
 │       │       └── config/            # CorsConfigSpec
 │       └── resources/
 │           └── application.yml        # Test datasource config
@@ -52,7 +93,7 @@ backend/
 └── .gitignore
 ```
 
-A `config/` package now exists (`CorsConfig`, for CORS — see `tech.md`'s Notes section). `application-prod.yml` is still aspirational until a production deployment is actually set up.
+`application-prod.yml` is still aspirational until a production deployment is actually set up.
 
 ## Frontend structure
 
