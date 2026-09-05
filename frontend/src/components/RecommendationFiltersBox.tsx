@@ -49,6 +49,12 @@ interface RecommendationFiltersBoxProps {
   // for CustomSearchPanel/UseMySeriesPanel -- threaded one prop further so
   // this box's exclude-only picker can use the same list.
   readonly genreOptions: string[]
+  // FRONTEND-094 follow-up: same threading as genreOptions above, for the
+  // Exclude Keywords picker's suggestion list (frontend_spec_094's own
+  // CustomSearchPanel modal instance already combines options+allowFreeText
+  // this same way -- this field was missed when Exclude Keywords was first
+  // converted from free text).
+  readonly keywordOptions: string[]
 }
 
 // TOOLING-008-AC-05: the shared Filters disclosure box (toggle button, every
@@ -62,6 +68,7 @@ export function RecommendationFiltersBox({
   updateState,
   isCustomSearch,
   genreOptions,
+  keywordOptions,
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const activeFilterCount = countActiveFilters(state)
@@ -215,7 +222,12 @@ export function RecommendationFiltersBox({
               comma-separated free-text input -- allowFreeText (not
               hideInput) since this field excludes TMDB-wide candidates, not
               just the user's own tracked-series vocabulary (this spec's
-              Design Decisions). */}
+              Design Decisions). options=keywordOptions surfaces known
+              keywords as suggestions while typing -- a follow-up fix:
+              the original implementation set allowFreeText but never passed
+              options, leaving the field with zero suggestions at all,
+              unlike CustomSearchPanel's own modal instance which already
+              combines both. */}
           <div className={styles.field}>
             <KeywordPicker
               id="recommendation-exclude-keywords"
@@ -224,6 +236,7 @@ export function RecommendationFiltersBox({
               onChange={(next) =>
                 updateState({ excludeKeywordsSelected: next })
               }
+              options={keywordOptions}
               allowFreeText
             />
           </div>

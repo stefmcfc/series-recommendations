@@ -41,6 +41,7 @@ function renderBox(
       updateState={updateState}
       isCustomSearch={false}
       genreOptions={[]}
+      keywordOptions={[]}
       {...overrides}
     />,
   )
@@ -142,6 +143,7 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
         updateState={vi.fn()}
         isCustomSearch={false}
         genreOptions={['Comedy']}
+        keywordOptions={[]}
       />,
     )
     fireEvent.click(
@@ -159,6 +161,7 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
         updateState={vi.fn()}
         isCustomSearch={true}
         genreOptions={['Comedy']}
+        keywordOptions={[]}
       />,
     )
     fireEvent.click(
@@ -199,6 +202,7 @@ describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () =>
         updateState={updateState}
         isCustomSearch={false}
         genreOptions={['Comedy']}
+        keywordOptions={[]}
       />,
     )
     fireEvent.click(
@@ -228,6 +232,19 @@ describe('FRONTEND-094-AC-05: Exclude Keywords renders as a KeywordPicker', () =
     // as chips, not as raw input text), unlike the old comma-separated
     // free-text field this replaces.
     expect(screen.getByLabelText('Exclude Keywords')).toHaveValue('')
+  })
+})
+
+describe('FRONTEND-094 follow-up: Exclude Keywords offers known-keyword suggestions', () => {
+  it('shows known keywords as suggestions, not just free text', () => {
+    renderBox({ keywordOptions: ['spoilers', 'reality tv'] })
+    fireEvent.click(
+      screen.getByRole('button', { name: /recommendations filters/i }),
+    )
+    expect(screen.getByRole('button', { name: 'spoilers' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'reality tv' }),
+    ).toBeInTheDocument()
   })
 })
 

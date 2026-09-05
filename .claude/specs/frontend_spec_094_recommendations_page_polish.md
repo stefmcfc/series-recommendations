@@ -152,7 +152,9 @@ describe('FRONTEND-094-AC-05: Exclude Keywords renders as a KeywordPicker', () =
 })
 ```
 
-**Test Case (Green)**: replace the `<input>` with `<KeywordPicker id="recommendation-exclude-keywords" label="Exclude Keywords" selected={state.excludeKeywordsSelected} onChange={(next) => updateState({ excludeKeywordsSelected: next })} allowFreeText />`.
+**Test Case (Green)**: replace the `<input>` with `<KeywordPicker id="recommendation-exclude-keywords" label="Exclude Keywords" selected={state.excludeKeywordsSelected} onChange={(next) => updateState({ excludeKeywordsSelected: next })} options={keywordOptions} allowFreeText />`.
+
+**Follow-up correction (post-merge)**: the first implementation omitted `options={keywordOptions}`, leaving the field with `allowFreeText` but zero suggestions — a real gap surfaced by user feedback ("I was expecting to be able to look up keywords we already have knowledge of"). `CustomSearchPanel`'s own modal instance already combined `options`+`allowFreeText` together (Design Decisions); this AC's implementation should have matched that from the start. Fixed by threading a new `keywordOptions` prop through `RecommendationFiltersBoxProps` (mirroring how `genreOptions` already arrives) from `RecommendationControls.tsx`'s existing `keywordOptions` state (the same list `CustomSearchPanel`/`UseMySeriesPanel` already use). A regression test confirms known keywords now render as suggestion buttons.
 
 #### FRONTEND-094-AC-06 [AUTO]: Selecting an exclude keyword is sent in the recommendations query
 **Statement**: While `excludeKeywordsSelected` is non-empty, `buildQuery` shall include those values in `RecommendationQuery.excludeKeywords`.
