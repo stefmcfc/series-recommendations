@@ -8,20 +8,16 @@ import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
 import uk.co.stefirby.seriestracker.service.BulkImportService;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
+import uk.co.stefirby.seriestracker.service.ImportFileParser;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -42,14 +38,13 @@ import java.util.UUID;
 public class SeriesController {
 
     private static final DateTimeFormatter FILENAME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-    private static final String SERIES_FIELD = "series";
 
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
     private final IgnoredSeriesService ignoredSeriesService;
     private final BulkImportService importService;
-    private final ObjectMapper objectMapper;
+    private final ImportFileParser importFileParser;
     private final Clock clock;
 
     public SeriesController(SeriesService seriesService,
@@ -57,14 +52,14 @@ public class SeriesController {
                             SeriesExportService exportService,
                             IgnoredSeriesService ignoredSeriesService,
                             BulkImportService importService,
-                            ObjectMapper objectMapper,
+                            ImportFileParser importFileParser,
                             Clock clock) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
         this.ignoredSeriesService = ignoredSeriesService;
         this.importService = importService;
-        this.objectMapper = objectMapper;
+        this.importFileParser = importFileParser;
         this.clock = clock;
     }
 
@@ -121,17 +116,10 @@ public class SeriesController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
 
-        SeriesSearchCriteria c = new SeriesSearchCriteria();
-        c.setTitle(title);
-        c.setGenres(genre);
+        SeriesSearchCriteria c = buildCriteria(title, genre, status, minPersonalRating, minImdbRating,
+            minTmdbRating, yearMin, yearMax);
         c.setExcludeGenres(excludeGenre);
         c.setKeywords(keyword);
-        c.setStatus(status);
-        c.setMinPersonalRating(minPersonalRating);
-        c.setMinImdbRating(minImdbRating);
-        c.setMinTmdbRating(minTmdbRating);
-        c.setYearMin(yearMin);
-        c.setYearMax(yearMax);
         c.setFlaggedForRewatch(flaggedForRewatch);
         c.setSortBy(sortBy);
         c.setSortDirection(sortDirection);
@@ -156,15 +144,8 @@ public class SeriesController {
             return ResponseEntity.badRequest().body("Invalid format. Use 'json' or 'csv'.");
         }
 
-        SeriesSearchCriteria c = new SeriesSearchCriteria();
-        c.setTitle(title);
-        c.setGenres(genre);
-        c.setStatus(status);
-        c.setMinPersonalRating(minPersonalRating);
-        c.setMinImdbRating(minImdbRating);
-        c.setMinTmdbRating(minTmdbRating);
-        c.setYearMin(yearMin);
-        c.setYearMax(yearMax);
+        SeriesSearchCriteria c = buildCriteria(title, genre, status, minPersonalRating, minImdbRating,
+            minTmdbRating, yearMin, yearMax);
 
         List<SeriesDto> series = searchService.search(c);
         String ts = LocalDateTime.now(clock).format(FILENAME_FMT);
@@ -188,6 +169,27 @@ public class SeriesController {
             .body(content);
     }
 
+    /**
+     * The 8 {@link SeriesSearchCriteria} fields shared verbatim by {@link #search} and
+     * {@link #export} -- {@code search}'s 5 extra fields ({@code excludeGenres}, {@code
+     * keywords}, {@code flaggedForRewatch}, {@code sortBy}, {@code sortDirection}) are set by
+     * its own caller on the returned instance.
+     */
+    private SeriesSearchCriteria buildCriteria(String title, List<String> genre, String status,
+            Integer minPersonalRating, BigDecimal minImdbRating, BigDecimal minTmdbRating,
+            Integer yearMin, Integer yearMax) {
+        SeriesSearchCriteria c = new SeriesSearchCriteria();
+        c.setTitle(title);
+        c.setGenres(genre);
+        c.setStatus(status);
+        c.setMinPersonalRating(minPersonalRating);
+        c.setMinImdbRating(minImdbRating);
+        c.setMinTmdbRating(minTmdbRating);
+        c.setYearMin(yearMin);
+        c.setYearMax(yearMax);
+        return c;
+    }
+
     // series_spec_038_import.md (SERIES-038-AC-01/02): JSON only -- reads the same
     // { series: SeriesDto[] } shape SeriesExportService.exportAsJson produces, ignoring
     // exportDate/count if present so a re-uploaded, unmodified export file works unchanged.
@@ -195,7 +197,7 @@ public class SeriesController {
     // invalid upload is rejected with 400 without starting a job.
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ImportJobStatus>> importSeries(@RequestParam("file") MultipartFile file) {
-        List<SeriesDto> entries = parseImportFile(file);
+        List<SeriesDto> entries = importFileParser.parse(file);
         ImportJobStatus status = importService.start(entries);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(status));
     }
@@ -203,27 +205,5 @@ public class SeriesController {
     @GetMapping("/import/status")
     public ResponseEntity<ApiResponse<ImportJobStatus>> importStatus() {
         return ResponseEntity.ok(new ApiResponse<>(importService.status()));
-    }
-
-    private List<SeriesDto> parseImportFile(MultipartFile file) {
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException _) {
-            throw new IllegalArgumentException("Unable to read the uploaded file");
-        }
-
-        JsonNode root;
-        try {
-            root = objectMapper.readTree(bytes);
-        } catch (JacksonException _) {
-            throw new IllegalArgumentException("Uploaded file is not valid JSON");
-        }
-
-        if (root == null || !root.has(SERIES_FIELD) || !root.get(SERIES_FIELD).isArray()) {
-            throw new IllegalArgumentException("Uploaded file must contain a 'series' array");
-        }
-
-        return objectMapper.convertValue(root.get(SERIES_FIELD), new TypeReference<List<SeriesDto>>() { });
     }
 }
