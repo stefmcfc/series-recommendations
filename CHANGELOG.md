@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.23.2] - 2026-09-05
+
 ### Changed
 
 - Frontend: `SeriesDetail`'s "Total Seasons" and "Total Episodes" fields now share the "Details" section's row with "Production Status" instead of leaving it mostly empty (`frontend_spec_090`).
