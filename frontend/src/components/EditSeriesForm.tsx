@@ -120,8 +120,8 @@ function toFormState(series: Series): FormState {
 function validateCurrentSeason(form: FormState, errors: FieldErrors): void {
   if (form.currentSeason.trim() === '') return
   const currentSeason = Number(form.currentSeason)
-  if (Number.isNaN(currentSeason) || currentSeason < 1) {
-    errors.currentSeason = 'Current season must be at least 1'
+  if (!Number.isInteger(currentSeason) || currentSeason < 1) {
+    errors.currentSeason = 'Current season must be a whole number of at least 1'
   } else if (
     form.totalSeasons.trim() !== '' &&
     currentSeason > Number(form.totalSeasons)
@@ -133,8 +133,14 @@ function validateCurrentSeason(form: FormState, errors: FieldErrors): void {
 function validateCurrentEpisode(form: FormState, errors: FieldErrors): void {
   if (form.currentEpisode.trim() === '') return
   const currentEpisode = Number(form.currentEpisode)
-  if (Number.isNaN(currentEpisode) || currentEpisode < 1) {
-    errors.currentEpisode = 'Current episode must be at least 1'
+  if (!Number.isInteger(currentEpisode) || currentEpisode < 1) {
+    errors.currentEpisode =
+      'Current episode must be a whole number of at least 1'
+  } else if (
+    form.totalEpisodes.trim() !== '' &&
+    currentEpisode > Number(form.totalEpisodes)
+  ) {
+    errors.currentEpisode = 'Current episode cannot exceed total episodes'
   }
 }
 
@@ -434,12 +440,6 @@ export function EditSeriesForm({
           Edit Series
         </h2>
 
-        {submitError && (
-          <div className={styles.submitError} role="alert">
-            {submitError}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} noValidate>
           <div className={styles.field}>
             <label htmlFor="title">Title *</label>
@@ -552,6 +552,7 @@ export function EditSeriesForm({
                 <input
                   id="currentSeason"
                   type="number"
+                  step="1"
                   value={form.currentSeason}
                   onChange={updateField('currentSeason')}
                   aria-describedby={
@@ -583,6 +584,7 @@ export function EditSeriesForm({
                 <input
                   id="currentEpisode"
                   type="number"
+                  step="1"
                   value={form.currentEpisode}
                   onChange={updateField('currentEpisode')}
                   aria-describedby={
@@ -610,6 +612,18 @@ export function EditSeriesForm({
           </SeriesFormFields>
 
           <div className={styles.actions}>
+            {submitError && (
+              <div className={styles.submitError} role="alert">
+                {submitError}
+              </div>
+            )}
+
+            {Object.keys(fieldErrors).length > 0 && (
+              <p className={styles.validationSummary} role="alert">
+                Please review the highlighted fields above.
+              </p>
+            )}
+
             <button
               type="button"
               className={styles.cancelButton}

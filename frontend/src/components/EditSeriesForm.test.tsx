@@ -229,13 +229,42 @@ describe('FRONTEND-004-AC-25/26/27: currentSeason/currentEpisode validation', ()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(mockUpdate).not.toHaveBeenCalled()
   })
+})
 
-  it('does not cross-validate currentEpisode against totalEpisodes', async () => {
-    const series = makeSeries({ totalEpisodes: 5, currentEpisode: 50 })
-    mockUpdate.mockResolvedValue(series)
-    renderForm({ series })
+describe('FRONTEND-091-AC-01: currentEpisode cross-validated against totalEpisodes', () => {
+  it('blocks submit when currentEpisode exceeds totalEpisodes', () => {
+    renderForm({ series: makeSeries({ totalEpisodes: 5, currentEpisode: 50 }) })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1))
+    expect(
+      screen.getByText(/current episode cannot exceed total episodes/i),
+    ).toBeInTheDocument()
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-091-AC-06/07: currentSeason/currentEpisode reject non-integer values', () => {
+  it('blocks submit when currentSeason is not a whole number', () => {
+    renderForm({ series: makeSeries({ currentSeason: 2 }) })
+    fireEvent.change(screen.getByLabelText('Current Season'), {
+      target: { value: '2.5' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(
+      screen.getByText(/current season must be a whole number of at least 1/i),
+    ).toBeInTheDocument()
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  it('blocks submit when currentEpisode is not a whole number', () => {
+    renderForm({ series: makeSeries({ currentEpisode: 4 }) })
+    fireEvent.change(screen.getByLabelText('Current Episode'), {
+      target: { value: '4.5' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(
+      screen.getByText(/current episode must be a whole number of at least 1/i),
+    ).toBeInTheDocument()
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 })
 
@@ -925,6 +954,33 @@ describe('FRONTEND-045-AC-07: confirm dialog explains the overwrite', () => {
     // asserts the message itself names the overwrite.
     expect(
       await screen.findByText(/overwrite the fields below/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-091-AC-08: submit error renders next to the actions row', () => {
+  it('positions the submit-error banner adjacent to Save/Cancel, not near the heading', async () => {
+    mockUpdate.mockRejectedValue(new ApiError(500, 'Server error'))
+    renderForm({ series: makeSeries() })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    const error = await screen.findByText('Server error')
+    const actions = screen
+      .getByRole('button', { name: /^save$/i })
+      .closest('div')
+    expect(
+      error.compareDocumentPosition(actions as Element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeFalsy()
+  })
+})
+
+describe('FRONTEND-091-AC-09: a summary message appears when validation blocks submit', () => {
+  it('shows a summary message next to the actions row', () => {
+    renderForm({ series: makeSeries({ currentSeason: 0 }) })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(
+      screen.getByText(/please review the highlighted fields above/i),
     ).toBeInTheDocument()
   })
 })

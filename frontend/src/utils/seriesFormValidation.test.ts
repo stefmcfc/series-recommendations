@@ -25,13 +25,17 @@ describe('TOOLING-005-AC-01: shared series form validators', () => {
   it('validateTotalSeasons rejects less than 1', () => {
     const errors: { totalSeasons?: string } = {}
     validateTotalSeasons({ totalSeasons: '0' }, errors)
-    expect(errors.totalSeasons).toBe('Total seasons must be at least 1')
+    expect(errors.totalSeasons).toBe(
+      'Total seasons must be a whole number of at least 1',
+    )
   })
 
   it('validateTotalEpisodes rejects less than 1', () => {
     const errors: { totalEpisodes?: string } = {}
     validateTotalEpisodes({ totalEpisodes: '0' }, errors)
-    expect(errors.totalEpisodes).toBe('Total episodes must be at least 1')
+    expect(errors.totalEpisodes).toBe(
+      'Total episodes must be a whole number of at least 1',
+    )
   })
 
   it('validateImdbRating rejects out-of-range values', () => {
@@ -44,7 +48,7 @@ describe('TOOLING-005-AC-01: shared series form validators', () => {
     const errors: { rottenTomatoesRating?: string } = {}
     validateRottenTomatoesRating({ rottenTomatoesRating: '101' }, errors)
     expect(errors.rottenTomatoesRating).toBe(
-      'Rotten Tomatoes rating must be between 0 and 100',
+      'Rotten Tomatoes rating must be a whole number between 0 and 100',
     )
   })
 
@@ -55,7 +59,44 @@ describe('TOOLING-005-AC-01: shared series form validators', () => {
       errors,
     )
     expect(errors.rottenTomatoesPopcornmeter).toBe(
-      'Rotten Tomatoes rating must be between 0 and 100',
+      'Rotten Tomatoes rating must be a whole number between 0 and 100',
+    )
+  })
+})
+
+describe('FRONTEND-091-AC-02/03/04/05: whole-number fields reject a non-integer value', () => {
+  it('FRONTEND-091-AC-02: validateTotalSeasons rejects a non-integer value', () => {
+    const errors: { totalSeasons?: string } = {}
+    validateTotalSeasons({ totalSeasons: '3.5' }, errors)
+    expect(errors.totalSeasons).toBe(
+      'Total seasons must be a whole number of at least 1',
+    )
+  })
+
+  it('FRONTEND-091-AC-03: validateTotalEpisodes rejects a non-integer value', () => {
+    const errors: { totalEpisodes?: string } = {}
+    validateTotalEpisodes({ totalEpisodes: '12.5' }, errors)
+    expect(errors.totalEpisodes).toBe(
+      'Total episodes must be a whole number of at least 1',
+    )
+  })
+
+  it('FRONTEND-091-AC-04: validateRottenTomatoesRating rejects a non-integer value', () => {
+    const errors: { rottenTomatoesRating?: string } = {}
+    validateRottenTomatoesRating({ rottenTomatoesRating: '55.5' }, errors)
+    expect(errors.rottenTomatoesRating).toBe(
+      'Rotten Tomatoes rating must be a whole number between 0 and 100',
+    )
+  })
+
+  it('FRONTEND-091-AC-05: validateRottenTomatoesPopcornmeter rejects a non-integer value', () => {
+    const errors: { rottenTomatoesPopcornmeter?: string } = {}
+    validateRottenTomatoesPopcornmeter(
+      { rottenTomatoesPopcornmeter: '87.2' },
+      errors,
+    )
+    expect(errors.rottenTomatoesPopcornmeter).toBe(
+      'Rotten Tomatoes rating must be a whole number between 0 and 100',
     )
   })
 })

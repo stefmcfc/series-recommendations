@@ -225,6 +225,7 @@ export function SeriesFormFields({
             <input
               id="totalSeasons"
               type="number"
+              step="1"
               value={form.totalSeasons}
               onChange={updateField('totalSeasons')}
               disabled={lockedFields?.totalSeasons}
@@ -260,6 +261,7 @@ export function SeriesFormFields({
             <input
               id="totalEpisodes"
               type="number"
+              step="1"
               value={form.totalEpisodes}
               onChange={updateField('totalEpisodes')}
               disabled={lockedFields?.totalEpisodes}
@@ -351,6 +353,7 @@ export function SeriesFormFields({
             <input
               id="rottenTomatoesRating"
               type="number"
+              step="1"
               value={form.rottenTomatoesRating}
               onChange={updateField('rottenTomatoesRating')}
               aria-describedby={
@@ -383,6 +386,7 @@ export function SeriesFormFields({
             <input
               id="rottenTomatoesPopcornmeter"
               type="number"
+              step="1"
               value={form.rottenTomatoesPopcornmeter}
               onChange={updateField('rottenTomatoesPopcornmeter')}
               aria-describedby={

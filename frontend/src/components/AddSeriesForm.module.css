@@ -222,11 +222,43 @@
   color: var(--text-h);
 }
 
+/* FRONTEND-091-AC-13: sticky footer -- keeps Save/Cancel (and the AC-11/12
+   submit-error/validation-summary messages, both rendered as direct children
+   here so they participate in the same flex-wrap row-break trick below)
+   reachable without scrolling to the bottom of a long form. The "stays
+   pinned while scrolling" behavior itself is [MANUAL] -- jsdom doesn't run
+   layout (see root CLAUDE.md). */
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+}
+
+/* flex-basis: 100% forces each message onto its own full-width line, ahead
+   of the two buttons which then share the trailing line together. */
+.submitError,
+.validationSummary {
+  flex-basis: 100%;
+}
+
+.validationSummary {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+@media (prefers-color-scheme: dark) {
+  .validationSummary {
+    color: #fca5a5;
+  }
 }
 
 .cancelButton {

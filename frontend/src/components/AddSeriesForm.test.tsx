@@ -149,7 +149,7 @@ describe('FRONTEND-037-AC-02: Popcornmeter field on AddSeriesForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
 
     expect(
-      await screen.findByText(/must be between 0 and 100/i),
+      await screen.findByText(/must be a whole number between 0 and 100/i),
     ).toBeInTheDocument()
 
     fireEvent.change(
@@ -206,7 +206,7 @@ describe('FRONTEND-013..18: client-side validation', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(
-      screen.getByText(/total seasons must be at least 1/i),
+      screen.getByText(/total seasons must be a whole number of at least 1/i),
     ).toBeInTheDocument()
     expect(mockCreate).not.toHaveBeenCalled()
   })
@@ -221,7 +221,7 @@ describe('FRONTEND-013..18: client-side validation', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(
-      screen.getByText(/total episodes must be at least 1/i),
+      screen.getByText(/total episodes must be a whole number of at least 1/i),
     ).toBeInTheDocument()
     expect(mockCreate).not.toHaveBeenCalled()
   })
@@ -253,7 +253,9 @@ describe('FRONTEND-013..18: client-side validation', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(mockCreate).not.toHaveBeenCalled()
     expect(
-      screen.getByText(/rotten tomatoes rating must be between 0 and 100/i),
+      screen.getByText(
+        /rotten tomatoes rating must be a whole number between 0 and 100/i,
+      ),
     ).toBeInTheDocument()
   })
 })
@@ -1406,5 +1408,35 @@ describe('FRONTEND-060-AC-04: unaffected by the TMDB-managed field lock (regress
         screen.queryByTestId(`${field}-locked-hint`),
       ).not.toBeInTheDocument()
     }
+  })
+})
+
+describe('FRONTEND-091-AC-11: submit error renders next to the actions row', () => {
+  it('positions the submit-error banner adjacent to Save/Cancel, not near the heading', async () => {
+    mockCreate.mockRejectedValue(new ApiError(500, 'Server error'))
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^title/i), {
+      target: { value: 'Show' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    const error = await screen.findByText('Server error')
+    const actions = screen
+      .getByRole('button', { name: /^save$/i })
+      .closest('div')
+    expect(
+      error.compareDocumentPosition(actions as Element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeFalsy()
+  })
+})
+
+describe('FRONTEND-091-AC-12: a summary message appears when validation blocks submit', () => {
+  it('shows a summary message next to the actions row', () => {
+    renderForm()
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(
+      screen.getByText(/please review the highlighted fields above/i),
+    ).toBeInTheDocument()
   })
 })
