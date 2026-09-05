@@ -134,6 +134,11 @@ function buildKeywordStatsParams(
     'minAverageBlendedRating',
     options.minAverageBlendedRating,
   )
+  // FRONTEND-095-AC-03: onlyCompleted is sent only when explicitly true --
+  // addIfPresent's `!= null` check would let `false` through as
+  // `onlyCompleted=false`, which the backend contract treats as distinct
+  // from simply omitting it (series_spec_051), so this is checked directly.
+  if (options.onlyCompleted === true) params.onlyCompleted = true
   return params
 }
 
@@ -157,6 +162,9 @@ function buildGenreStatsParams(
     'minAverageBlendedRating',
     options.minAverageBlendedRating,
   )
+  // FRONTEND-095-AC-03: mirrors buildKeywordStatsParams's onlyCompleted
+  // handling exactly.
+  if (options.onlyCompleted === true) params.onlyCompleted = true
   return params
 }
 

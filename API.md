@@ -131,7 +131,7 @@ collapse onto the same TMDB genre id). Always `200`; no query params.
 
 ---
 
-### `GET /api/v1/series/genres/stats?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=`
+### `GET /api/v1/series/genres/stats?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=&onlyCompleted=`
 
 Aggregate per-genre stats (`seriesCount`, `averagePersonalRating`, `averageBlendedRating`) across
 your tracked series (`series_spec_048_genre_stats.md`) — the same treatment `GET
@@ -149,6 +149,11 @@ The `sortBy`/`sortDirection` and three minimum-value filter params (`minSeriesCo
 semantics, copied here unchanged. Empty list, not an error, when nothing tracked has genres or
 nothing clears the provided filters. Envelope shape is `{ data, count }`, matching `GET
 /api/v1/series/keywords`/`GET /api/v1/series/genres`.
+
+Optional `onlyCompleted` (Boolean, `series_spec_051_stats_status_scope_filter.md`) restricts
+aggregation to series whose `status` is `COMPLETED` — a series excluded this way contributes to no
+genre's `seriesCount` or averages at all. `null`/`false`/omitted apply no restriction (today's
+default, byte-identical to before this param existed).
 
 ## Import
 
@@ -182,7 +187,7 @@ starts.
 
 ## Keywords
 
-### `GET /api/v1/series/keywords?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=`
+### `GET /api/v1/series/keywords?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=&onlyCompleted=`
 
 Aggregate per-keyword stats (`seriesCount`, `averagePersonalRating`, `averageBlendedRating`)
 across your tracked series, from normalized TMDB keyword data. `averageBlendedRating`
@@ -207,6 +212,11 @@ threshold `0`. Omitting all three filters is fully backward-compatible with the 
 response. Empty list, not an error, when nothing tracked has keywords or nothing clears the
 provided filters. Envelope shape is unchanged (`{ data, count }`); `count` reflects the
 post-filter list length.
+
+Optional `onlyCompleted` (Boolean, `series_spec_051_stats_status_scope_filter.md`) restricts
+aggregation to series whose `status` is `COMPLETED` — a series excluded this way contributes to no
+keyword's `seriesCount` or averages at all. `null`/`false`/omitted apply no restriction, fully
+backward-compatible with the pre-`series_spec_051` response (byte-identical).
 
 ## Lookup
 

@@ -1,6 +1,6 @@
 # Spec 051: Stats Status Scope Filter (Completed Only / All Series)
 
-**Status**: Not started
+**Status**: Done
 **Priority**: P3 (analysis/quality-of-life enhancement to an existing feature, not core CRUD)
 **Depends on**: Series Spec 047 (`series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md`, the already-shipped `GET /series/keywords` contract this retrofits), Series Spec 048 (`series_spec_048_genre_stats.md`, `GET /series/genres/stats`), this session's `NameStatAggregator`/`NameStatsTable` extraction (a no-behavior-change refactor with no spec number of its own — see `backend/src/main/java/uk/co/stefirby/seriestracker/service/stats/NameStatAggregator.java`)
 **Backend Task**
@@ -187,11 +187,11 @@ def "SERIES-051-AC-06/07: onlyCompleted=true is accepted and narrows results"() 
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-051-AC-01: `NameStatAggregator.aggregate` gains `Boolean onlyCompleted` (last param)
-- [ ] SERIES-051-AC-02: `onlyCompleted=true` restricts aggregation to `SeriesStatus.COMPLETED`
-- [ ] SERIES-051-AC-03: `null`/`false` applies no restriction (unchanged default)
-- [ ] SERIES-051-AC-04: `KeywordStatsService.getStats` pass-through; single-arg overload unaffected
-- [ ] SERIES-051-AC-05: `GenreStatsService.getStats` pass-through
-- [ ] SERIES-051-AC-06: `GET /series/keywords` accepts `onlyCompleted`
-- [ ] SERIES-051-AC-07: `GET /series/genres/stats` accepts `onlyCompleted`
-- [ ] SERIES-051-AC-08: omitting the param is byte-identical to today (hard backward-compat)
+- [x] SERIES-051-AC-01: `NameStatAggregator.aggregate` gains `Boolean onlyCompleted` (last param)
+- [x] SERIES-051-AC-02: `onlyCompleted=true` restricts aggregation to `SeriesStatus.COMPLETED`
+- [x] SERIES-051-AC-03: `null`/`false` applies no restriction (unchanged default)
+- [x] SERIES-051-AC-04: `KeywordStatsService.getStats` pass-through; single-arg overload unaffected
+- [x] SERIES-051-AC-05: `GenreStatsService.getStats` pass-through
+- [x] SERIES-051-AC-06: `GET /series/keywords` accepts `onlyCompleted`
+- [x] SERIES-051-AC-07: `GET /series/genres/stats` accepts `onlyCompleted`
+- [x] SERIES-051-AC-08: omitting the param is byte-identical to today (hard backward-compat)

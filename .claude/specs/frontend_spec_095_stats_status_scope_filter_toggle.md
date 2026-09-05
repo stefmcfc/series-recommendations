@@ -1,6 +1,6 @@
 # Frontend Spec 095: Stats Status Scope Filter Toggle
 
-**Status**: Not started
+**Status**: Done
 **Depends on**: Series Spec 051 (`series_spec_051_stats_status_scope_filter.md`, the backend `onlyCompleted` contract this surfaces), Frontend Spec 086 (`frontend_spec_086_keyword_stats_filtering_sort_and_blended_rating.md`, the original `KeywordsView` filter UI), Frontend Spec 088 (`frontend_spec_088_genre_stats_view.md`, `GenreStatsView`), this session's `NameStatsTable` extraction (a no-behavior-change refactor with no spec number of its own — `frontend/src/components/NameStatsTable.tsx`)
 **Frontend Stage**: 95 of N
 
@@ -147,10 +147,10 @@ No new test cases required — FRONTEND-095-AC-07 is verified by these files (an
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-095-AC-01: `NameStatsOptions.onlyCompleted`
-- [ ] FRONTEND-095-AC-02: `KeywordStatsOptions`/`GenreStatsOptions` gain `onlyCompleted`
-- [ ] FRONTEND-095-AC-03: sent only when `true`, never as `false`
-- [ ] FRONTEND-095-AC-04: status-scope `<select>` rendered with a `<label>`
-- [ ] FRONTEND-095-AC-05: "Completed Only" + Apply sends `onlyCompleted: true`
-- [ ] FRONTEND-095-AC-06: "All Series" + Apply omits `onlyCompleted`
-- [ ] FRONTEND-095-AC-07: `KeywordsView`/`GenreStatsView` unmodified
+- [x] FRONTEND-095-AC-01: `NameStatsOptions.onlyCompleted`
+- [x] FRONTEND-095-AC-02: `KeywordStatsOptions`/`GenreStatsOptions` gain `onlyCompleted`
+- [x] FRONTEND-095-AC-03: sent only when `true`, never as `false`
+- [x] FRONTEND-095-AC-04: status-scope `<select>` rendered with a `<label>`
+- [x] FRONTEND-095-AC-05: "Completed Only" + Apply sends `onlyCompleted: true`
+- [x] FRONTEND-095-AC-06: "All Series" + Apply omits `onlyCompleted`
+- [x] FRONTEND-095-AC-07: `KeywordsView`/`GenreStatsView` unmodified

@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import uk.co.stefirby.seriestracker.model.KeywordEntity
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
@@ -112,7 +113,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", keywords: [spy] as Set))
 
         when: "getStats is called"
-            def spyStat = keywordStatsService.getStats(null, null, null, null, null).find { it.name() == "spy" }
+            def spyStat = keywordStatsService.getStats(null, null, null, null, null, null).find { it.name() == "spy" }
 
         then: "the average reflects only the rated series"
             spyStat.averageBlendedRating() == 7.0G
@@ -124,7 +125,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "A", keywords: [mi5] as Set))
 
         expect:
-            keywordStatsService.getStats(null, null, null, null, null).find { it.name() == "mi5" }.averageBlendedRating() == null
+            keywordStatsService.getStats(null, null, null, null, null, null).find { it.name() == "mi5" }.averageBlendedRating() == null
     }
 
     def "SERIES-047-AC-04: sortBy=name sorts alphabetically, case-insensitively"() {
@@ -135,7 +136,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", keywords: [drama] as Set))
 
         when: "getStats('name', 'asc', null, null, null) is called"
-            def stats = keywordStatsService.getStats('name', 'asc', null, null, null)
+            def stats = keywordStatsService.getStats('name', 'asc', null, null, null, null)
 
         then: "'Drama' sorts before 'spy'"
             stats*.name() == ['Drama', 'spy']
@@ -149,10 +150,10 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", keywords: [drama] as Set))
 
         expect: "default is ascending"
-            keywordStatsService.getStats('name', null, null, null, null)*.name() == ['Drama', 'spy']
+            keywordStatsService.getStats('name', null, null, null, null, null)*.name() == ['Drama', 'spy']
 
         and: "sortDirection=desc reverses it"
-            keywordStatsService.getStats('name', 'desc', null, null, null)*.name() == ['spy', 'Drama']
+            keywordStatsService.getStats('name', 'desc', null, null, null, null)*.name() == ['spy', 'Drama']
     }
 
     def "SERIES-047-AC-05/AC-06: sortBy=averageBlendedRating sorts descending by default, nulls last under both directions"() {
@@ -165,10 +166,10 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", keywords: [unrated] as Set))
 
         expect: "default (desc) sorts spy, drama, unrated (null) last"
-            keywordStatsService.getStats('averageBlendedRating', null, null, null, null)*.name() == ['spy', 'drama', 'unrated']
+            keywordStatsService.getStats('averageBlendedRating', null, null, null, null, null)*.name() == ['spy', 'drama', 'unrated']
 
         and: "sortDirection=asc reverses the rated entries but still sorts the null-average entry last"
-            keywordStatsService.getStats('averageBlendedRating', 'asc', null, null, null)*.name() == ['drama', 'spy', 'unrated']
+            keywordStatsService.getStats('averageBlendedRating', 'asc', null, null, null, null)*.name() == ['drama', 'spy', 'unrated']
     }
 
     def "SERIES-047-AC-06/07: sortDirection reverses seriesCount, defaults to desc when omitted"() {
@@ -181,10 +182,10 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "D", keywords: [drama] as Set))
 
         expect: "default (no sortDirection) is descending"
-            keywordStatsService.getStats('seriesCount', null, null, null, null)*.name() == ['spy', 'drama']
+            keywordStatsService.getStats('seriesCount', null, null, null, null, null)*.name() == ['spy', 'drama']
 
         and: "sortDirection=asc reverses it"
-            keywordStatsService.getStats('seriesCount', 'asc', null, null, null)*.name() == ['drama', 'spy']
+            keywordStatsService.getStats('seriesCount', 'asc', null, null, null, null)*.name() == ['drama', 'spy']
     }
 
     def "SERIES-047-AC-06/07: sortDirection reverses averagePersonalRating, nulls stay last under asc too"() {
@@ -195,10 +196,10 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", keywords: [drama] as Set))
 
         expect: "default (desc) is spy then drama (null last)"
-            keywordStatsService.getStats('averagePersonalRating', null, null, null, null)*.name() == ['spy', 'drama']
+            keywordStatsService.getStats('averagePersonalRating', null, null, null, null, null)*.name() == ['spy', 'drama']
 
         and: "sortDirection=asc still keeps the null-average 'drama' last"
-            keywordStatsService.getStats('averagePersonalRating', 'asc', null, null, null)*.name() == ['spy', 'drama']
+            keywordStatsService.getStats('averagePersonalRating', 'asc', null, null, null, null)*.name() == ['spy', 'drama']
     }
 
     def "SERIES-047-AC-08: an unrecognized sortDirection value soft-falls-back to the field's default direction"() {
@@ -210,7 +211,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", keywords: [drama] as Set))
 
         expect: "an unrecognized sortDirection behaves as if omitted (seriesCount desc)"
-            keywordStatsService.getStats('seriesCount', 'bogus', null, null, null)*.name() == ['spy', 'drama']
+            keywordStatsService.getStats('seriesCount', 'bogus', null, null, null, null)*.name() == ['spy', 'drama']
     }
 
     def "SERIES-047-AC-09/10: minSeriesCount excludes keywords below the threshold"() {
@@ -222,7 +223,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "C", keywords: [drama] as Set))
 
         expect: "only 'spy' clears minSeriesCount=2"
-            keywordStatsService.getStats(null, null, 2, null, null)*.name() == ['spy']
+            keywordStatsService.getStats(null, null, 2, null, null, null)*.name() == ['spy']
     }
 
     def "SERIES-047-AC-10/11: minAveragePersonalRating excludes null averages even at threshold 0"() {
@@ -233,7 +234,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", personalRating: 4, keywords: [drama] as Set))
 
         when: "getStats(null, null, null, 0, null) is called"
-            def stats = keywordStatsService.getStats(null, null, null, 0 as BigDecimal, null)
+            def stats = keywordStatsService.getStats(null, null, null, 0 as BigDecimal, null, null)
 
         then: "only 'drama' passes"
             stats*.name() == ['drama']
@@ -247,10 +248,10 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "B", keywords: [drama] as Set))
 
         expect: "only 'spy' clears minAverageBlendedRating=7.0"
-            keywordStatsService.getStats(null, null, null, null, 7.0 as BigDecimal)*.name() == ['spy']
+            keywordStatsService.getStats(null, null, null, null, 7.0 as BigDecimal, null)*.name() == ['spy']
 
         and: "raising the threshold above 7.0 excludes it too"
-            keywordStatsService.getStats(null, null, null, null, 7.1 as BigDecimal) == []
+            keywordStatsService.getStats(null, null, null, null, 7.1 as BigDecimal, null) == []
     }
 
     def "SERIES-047-AC-10: multiple filters are AND-combined"() {
@@ -263,7 +264,7 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "D", keywords: [drama] as Set))
 
         expect: "only 'spy' satisfies both minSeriesCount=2 and minAveragePersonalRating=3"
-            keywordStatsService.getStats(null, null, 2, 3 as BigDecimal, null)*.name() == ['spy']
+            keywordStatsService.getStats(null, null, 2, 3 as BigDecimal, null, null)*.name() == ['spy']
     }
 
     def "SERIES-047-AC-12: omitting all filters is unchanged from today's behavior"() {
@@ -272,6 +273,29 @@ class KeywordStatsServiceSpec extends Specification {
             seriesRepository.save(new SeriesEntity(title: "A", personalRating: 4, keywords: [spy] as Set))
 
         expect:
-            keywordStatsService.getStats(null, null, null, null, null).size() == keywordStatsService.getStats(null).size()
+            keywordStatsService.getStats(null, null, null, null, null, null).size() == keywordStatsService.getStats(null).size()
+    }
+
+    def "SERIES-051-AC-04: onlyCompleted is passed through to the aggregator"() {
+        given: "a COMPLETED and a BACKLOG series both carrying keyword 'spy'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "A", status: SeriesStatus.COMPLETED, keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", status: SeriesStatus.BACKLOG, keywords: [spy] as Set))
+
+        when: "getStats is called with onlyCompleted=true"
+            def spyStat = keywordStatsService.getStats(null, null, null, null, null, true).find { it.name() == "spy" }
+
+        then: "only the completed series is counted"
+            spyStat.seriesCount() == 1
+    }
+
+    def "SERIES-051-AC-04: single-arg legacy getStats overload still delegates with onlyCompleted=null (unaffected)"() {
+        given: "a COMPLETED and a BACKLOG series both carrying keyword 'spy'"
+            def spy = keywordRepository.save(new KeywordEntity(tmdbKeywordId: 470, name: "spy"))
+            seriesRepository.save(new SeriesEntity(title: "A", status: SeriesStatus.COMPLETED, keywords: [spy] as Set))
+            seriesRepository.save(new SeriesEntity(title: "B", status: SeriesStatus.BACKLOG, keywords: [spy] as Set))
+
+        expect: "the legacy single-arg overload still sees both series (no status restriction)"
+            keywordStatsService.getStats(null).find { it.name() == "spy" }.seriesCount() == 2
     }
 }

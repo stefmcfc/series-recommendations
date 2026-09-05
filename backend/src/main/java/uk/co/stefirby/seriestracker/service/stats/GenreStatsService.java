@@ -23,6 +23,10 @@ import java.util.List;
  * the nulls-last-under-both-directions handling), and null-averaging semantics live in {@link
  * NameStatAggregator}, shared unchanged with {@code KeywordStatsService}, per SERIES-048-AC-04/
  * AC-05.
+ *
+ * <p>series_spec_051_stats_status_scope_filter.md (SERIES-051-AC-05) adds an {@code
+ * onlyCompleted} pass-through, restricting aggregation to {@code SeriesStatus.COMPLETED} series
+ * -- the filter itself lives in {@link NameStatAggregator#aggregate}, not here.
  */
 @Service
 public class GenreStatsService {
@@ -39,7 +43,8 @@ public class GenreStatsService {
             String sortDirection,
             Integer minSeriesCount,
             BigDecimal minAveragePersonalRating,
-            BigDecimal minAverageBlendedRating) {
+            BigDecimal minAverageBlendedRating,
+            Boolean onlyCompleted) {
         // SERIES-048-AC-03: a series listing the same genre more than once (a malformed
         // duplicate entry in the delimited string) contributes to that genre's seriesCount only
         // once -- de-duplicated per series inside NameStatAggregator itself, unlike keywords
@@ -51,7 +56,8 @@ public class GenreStatsService {
             sortDirection,
             minSeriesCount,
             minAveragePersonalRating,
-            minAverageBlendedRating);
+            minAverageBlendedRating,
+            onlyCompleted);
 
         return stats.stream()
             .map(stat -> new GenreStatDto(

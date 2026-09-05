@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `NameStatAggregator.aggregate` (the shared logic behind keyword/genre stats) accepts a new `onlyCompleted` param, restricting aggregation to `SeriesStatus.COMPLETED` series when `true` — `null`/`false`/omitted keep today's unrestricted behavior unchanged (`series_spec_051`).
+- Backend: `GET /api/v1/series/keywords` and `GET /api/v1/series/genres/stats` both accept the new optional `onlyCompleted` param, passed through `KeywordStatsService`/`GenreStatsService` to the shared aggregator; omitting it produces a response byte-identical to before this param existed (`series_spec_051`).
+- Frontend: `NameStatsTable` gains a "Status" scope `<select>` ("All Series" / "Completed Only") alongside its existing minimum-value filters, committed via the same "Apply Filters" button; selecting "Completed Only" sends `onlyCompleted: true` to `seriesApi.getKeywordStats`/`getGenreStats`, and "All Series" omits it entirely (never sent as `false`) (`frontend_spec_095`).
+- Frontend: because `KeywordsView`/`GenreStatsView` are thin wrappers over `NameStatsTable`, both the Keywords and Genres analysis tabs gain the new status-scope filter with no changes of their own — and the not-yet-built Country-of-Origin tab will inherit it automatically too (`frontend_spec_095`).
+
 ## [3.28.0] - 2026-09-05
 
 ### Added

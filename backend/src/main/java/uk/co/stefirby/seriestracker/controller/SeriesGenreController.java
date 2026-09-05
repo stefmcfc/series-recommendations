@@ -20,6 +20,10 @@ import java.util.List;
  * alongside the existing static-taxonomy {@code /genres} endpoint rather than a new controller
  * class -- genre-related endpoints are still small enough to share one, per the spec's Design
  * Decisions.
+ *
+ * <p>series_spec_051_stats_status_scope_filter.md (SERIES-051-AC-07/AC-08): {@code
+ * onlyCompleted} is likewise optional and passed through unchanged -- omitting it produces a
+ * response byte-identical to before this param existed.
  */
 @RestController
 @RequestMapping("/api/v1/series")
@@ -45,9 +49,10 @@ public class SeriesGenreController {
             @RequestParam(required = false) String sortDirection,
             @RequestParam(required = false) Integer minSeriesCount,
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
-            @RequestParam(required = false) BigDecimal minAverageBlendedRating) {
+            @RequestParam(required = false) BigDecimal minAverageBlendedRating,
+            @RequestParam(required = false) Boolean onlyCompleted) {
         List<GenreStatDto> stats = genreStatsService.getStats(
-            sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating);
+            sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted);
         return ResponseEntity.ok(new ApiResponse<>(stats, stats.size()));
     }
 }
