@@ -81,7 +81,7 @@ export function SeriesDetailActionsPanel({
     <div className={styles.actions}>
       <div className={styles.actionsGroup}>
         <div className={styles.actionsRow}>
-          <div className={styles.actionsLeft}>
+          <div className={styles.actionsLeft} data-testid="actions-left">
             <button
               type="button"
               className={styles.editButton}
@@ -107,6 +107,8 @@ export function SeriesDetailActionsPanel({
             >
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+          </div>
+          <div className={styles.actionsRight} data-testid="actions-right">
             <button
               type="button"
               className={styles.recommendationsButton}
@@ -121,8 +123,6 @@ export function SeriesDetailActionsPanel({
             >
               Recommendations
             </button>
-          </div>
-          <div className={styles.actionsRight}>
             {series.status === SeriesStatus.COMPLETED && (
               <button
                 type="button"
