@@ -9,6 +9,7 @@ import {
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
+import { isMinVoteCountValid } from './RecommendationControls'
 import styles from './RecommendationControls.module.css'
 
 // FRONTEND-093-AC-02/03: counts every field this box reads/writes,
@@ -23,10 +24,16 @@ function countActiveFilters(state: ControlsState): number {
     state.minVoteCount,
     state.yearMin,
     state.yearMax,
-    state.excludeKeywordsText,
     state.language,
   ]
-  const arrayFields = [state.excludeGenresSelected, state.countriesSelected]
+  // FRONTEND-094-AC-08: excludeKeywordsSelected moved here from
+  // stringFields above -- it's now an array (KeywordPicker), checked via
+  // `.length > 0` like every other array-typed field, not `.trim() !== ''`.
+  const arrayFields = [
+    state.excludeGenresSelected,
+    state.excludeKeywordsSelected,
+    state.countriesSelected,
+  ]
 
   return (
     stringFields.filter((value) => value.trim() !== '').length +
@@ -58,6 +65,14 @@ export function RecommendationFiltersBox({
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const activeFilterCount = countActiveFilters(state)
+  // FRONTEND-094-AC-09/AC-10: advisory-only inline error (Design Decisions --
+  // "Get Recommendations" isn't gated on this, matching how no field in this
+  // component already gates it), shares its validity rule with the
+  // query-builder's own backstop via isMinVoteCountValid.
+  const minVoteCountError =
+    state.minVoteCount.trim() !== '' && !isMinVoteCountValid(state.minVoteCount)
+      ? 'Min vote count must be a whole number of at least 0'
+      : null
 
   const updateField =
     (field: keyof ControlsState) =>
@@ -82,7 +97,7 @@ export function RecommendationFiltersBox({
       yearMin: '',
       yearMax: '',
       excludeGenresSelected: [],
-      excludeKeywordsText: '',
+      excludeKeywordsSelected: [],
       language: '',
       countriesSelected: [],
     })
@@ -136,9 +151,14 @@ export function RecommendationFiltersBox({
             <input
               id="recommendation-min-vote-count"
               type="number"
+              min="0"
+              step="1"
               value={state.minVoteCount}
               onChange={handleMinVoteCountChange}
             />
+            {minVoteCountError && (
+              <span className={styles.fieldError}>{minVoteCountError}</span>
+            )}
           </div>
 
           {!isCustomSearch && (
@@ -191,15 +211,20 @@ export function RecommendationFiltersBox({
             </div>
           )}
 
+          {/* FRONTEND-094-AC-05: KeywordPicker replaces the former
+              comma-separated free-text input -- allowFreeText (not
+              hideInput) since this field excludes TMDB-wide candidates, not
+              just the user's own tracked-series vocabulary (this spec's
+              Design Decisions). */}
           <div className={styles.field}>
-            <label htmlFor="recommendation-exclude-keywords">
-              Exclude Keywords
-            </label>
-            <input
+            <KeywordPicker
               id="recommendation-exclude-keywords"
-              type="text"
-              value={state.excludeKeywordsText}
-              onChange={updateField('excludeKeywordsText')}
+              label="Exclude Keywords"
+              selected={state.excludeKeywordsSelected}
+              onChange={(next) =>
+                updateState({ excludeKeywordsSelected: next })
+              }
+              allowFreeText
             />
           </div>
 

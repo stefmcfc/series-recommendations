@@ -17,22 +17,13 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-04 ("Share filter/sort logic..." candidate closed — resolved into
-`frontend_spec_082`/`frontend_spec_083`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-09-05 ("Exclude Keywords" filter candidate closed — spec'd as part of
+`frontend_spec_094_recommendations_page_polish.md`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 ---
 
 ## Candidates
-
-### "Exclude Keywords" filter — `KeywordPicker` instead of free text
-
-Currently also a plain comma-separated text input (`excludeKeywordsText`). The include-Keywords
-field already uses `KeywordPicker` (chips + type-to-search). Unlike Exclude Genres above, this
-needs **no extraction work** — `KeywordPicker` is already fully generic and reusable; this is
-just a second `<KeywordPicker>` instance pointed at a different state slot
-(`excludeKeywordsSelected`) and a different `RecommendationQuery` field (`excludeKeywords`,
-already exists on the backend).
 
 ### Weight recommendation scoring and/or output filters by keyword popularity/average personal rating
 

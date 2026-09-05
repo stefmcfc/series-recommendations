@@ -22,7 +22,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     yearMin: '',
     yearMax: '',
     excludeGenresSelected: [],
-    excludeKeywordsText: '',
+    excludeKeywordsSelected: [],
     language: '',
     countriesSelected: [],
     sortBy: 'score',
@@ -127,7 +127,7 @@ describe('RecommendationFiltersBox', () => {
       yearMin: '',
       yearMax: '',
       excludeGenresSelected: [],
-      excludeKeywordsText: '',
+      excludeKeywordsSelected: [],
       language: '',
       countriesSelected: [],
     })
@@ -211,5 +211,87 @@ describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () =>
     expect(updateState).toHaveBeenCalledWith(
       expect.objectContaining({ excludeGenresSelected: [] }),
     )
+  })
+})
+
+describe('FRONTEND-094-AC-05: Exclude Keywords renders as a KeywordPicker', () => {
+  it('renders a Keywords chip picker, not a plain text input', () => {
+    renderBox({ state: makeState({ excludeKeywordsSelected: ['spoilers'] }) })
+    fireEvent.click(
+      screen.getByRole('button', { name: /recommendations filters/i }),
+    )
+    expect(screen.getByText('spoilers')).toBeInTheDocument()
+    // Design Decisions: Exclude Keywords deliberately keeps its inline input
+    // (no `hideInput`), so the field stays reachable via
+    // getByLabelText('Exclude Keywords') -- the meaningful "not a plain text
+    // input" check is that the input's own value is empty (selections render
+    // as chips, not as raw input text), unlike the old comma-separated
+    // free-text field this replaces.
+    expect(screen.getByLabelText('Exclude Keywords')).toHaveValue('')
+  })
+})
+
+describe('FRONTEND-094-AC-07: Reset Filters clears excludeKeywordsSelected', () => {
+  it('calls updateState with excludeKeywordsSelected: []', () => {
+    const updateState = vi.fn()
+    renderBox({
+      state: makeState({ excludeKeywordsSelected: ['spoilers'] }),
+      updateState,
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+    expect(updateState).toHaveBeenCalledWith(
+      expect.objectContaining({ excludeKeywordsSelected: [] }),
+    )
+  })
+})
+
+describe('FRONTEND-094-AC-08: active-filter count reflects excludeKeywordsSelected', () => {
+  it('counts a non-empty excludeKeywordsSelected as one active filter', () => {
+    renderBox({ state: makeState({ excludeKeywordsSelected: ['spoilers'] }) })
+    expect(screen.getByTestId('filters-active-count')).toHaveTextContent('1')
+  })
+})
+
+describe('FRONTEND-094-AC-09: negative Min Vote Count shows an inline error', () => {
+  it('shows an error for a negative value', () => {
+    // RecommendationFiltersBox's `state` is a controlled prop (updateState
+    // is mocked, not wired back into a real re-render here) -- passed
+    // directly via makeState, matching this file's own established pattern
+    // for FRONTEND-094-AC-11's "shows no error" case below, rather than
+    // simulating a change event the mock harness can't reflect back.
+    renderBox({ state: makeState({ minVoteCount: '-5' }) })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    expect(
+      screen.getByText(/min vote count must be a whole number of at least 0/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-094-AC-10: decimal Min Vote Count shows an inline error', () => {
+  it('shows an error for a decimal value', () => {
+    renderBox({ state: makeState({ minVoteCount: '5.5' }) })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    expect(
+      screen.getByText(/min vote count must be a whole number of at least 0/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-094-AC-11: valid Min Vote Count has no error', () => {
+  it('shows no error for a valid non-negative integer', () => {
+    renderBox({ state: makeState({ minVoteCount: '200' }) })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    expect(
+      screen.queryByText(/min vote count must be a whole number/i),
+    ).not.toBeInTheDocument()
   })
 })

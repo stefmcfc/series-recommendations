@@ -22,7 +22,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     yearMin: '',
     yearMax: '',
     excludeGenresSelected: [],
-    excludeKeywordsText: '',
+    excludeKeywordsSelected: [],
     language: '',
     countriesSelected: [],
     sortBy: 'score',

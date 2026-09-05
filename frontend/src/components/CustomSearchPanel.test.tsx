@@ -23,7 +23,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     yearMin: '',
     yearMax: '',
     excludeGenresSelected: [],
-    excludeKeywordsText: '',
+    excludeKeywordsSelected: [],
     language: '',
     countriesSelected: [],
     sortBy: 'score',
@@ -124,6 +124,65 @@ describe('CustomSearchPanel', () => {
 
     expect(screen.getByLabelText(/countries/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^language/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-094-AC-02: inline Keywords field has no text input', () => {
+  it('does not render a typeable Keywords input', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.queryByRole('textbox', { name: 'Keywords' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-094-AC-03: Browse all keywords opens a modal', () => {
+  it('opens a dialog when the browse button is clicked', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={['heist']}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    expect(
+      screen.getByRole('dialog', { name: /browse keywords/i }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-094-AC-04: modal keyword picker accepts free text', () => {
+  it('accepts a typed keyword with no match in keywordOptions', () => {
+    const updateState = vi.fn()
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={updateState}
+        genreOptions={[]}
+        keywordOptions={['heist']}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const input = screen.getByRole('textbox', { name: 'Keywords' })
+    fireEvent.change(input, { target: { value: 'time travel' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(updateState).toHaveBeenCalledWith({
+      keywordsSelected: ['time travel'],
+    })
   })
 })
 

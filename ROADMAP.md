@@ -118,6 +118,7 @@ corrected below.
 | Series form hardening: `currentEpisode` bound + Rotten Tomatoes range validation (backend), whole-number field validation, and persistent Save/Cancel + error visibility on `AddSeriesForm`/`EditSeriesForm` (frontend) | `series_spec_050` | `frontend_spec_091` | ✅ Done |
 | Use My Series gains a divider before the series picker; Recommendation Filters toggle shows an active-filter count badge | — | `frontend_spec_093` | ✅ Done |
 | Persistent navigation while scrolling (main header, My Series status tabs, Recommendations mode tabs) + Recommendations modal click-outside-to-close and sticky "Done" button | — | `frontend_spec_092` | ✅ Done |
+| Recommendations page polish: left-hand grouping line on expanded filter disclosures, Custom Search Keywords becomes a "Browse all keywords" CTA, Exclude Keywords becomes a `KeywordPicker`, Min Vote Count validation | — | `frontend_spec_094` | ✅ Done |
 
 ## Specced, coming soon
 
