@@ -1,3 +1,15 @@
+/* FRONTEND-092: a global (non-CSS-Modules-scoped) custom property -- :root
+   and element-type selectors pass through css-modules unhashed, unlike
+   class selectors, so this is visible from other .module.css files
+   (RecommendationControls.module.css's .tablist) the same way --accent-bg/
+   --social-bg/etc. already are. Needed because the header and the second
+   sticky bar below it (My Series' status tabs, Recommendations' mode tabs)
+   are true DOM siblings, not nested -- there's no ancestor to scope a
+   locally-defined variable on that would reach both. */
+:root {
+  --header-height: 3.25rem;
+}
+
 .nav {
   display: flex;
   align-items: center;
@@ -5,6 +17,12 @@
   padding: 0.75rem 1.5rem;
   background: var(--code-bg);
   border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--header-height);
+  min-height: var(--header-height);
+  box-sizing: border-box;
 }
 
 .logo {
@@ -24,6 +42,18 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* FRONTEND-092-AC-02: this class name is reused for two different elements
+   -- the header's own link row (a <div>, styled generically above) and
+   MySeriesView's status-tab row (a <nav>, see App.tsx). The element-type
+   qualifier below targets only the <nav> instance, so the header's <div>
+   is unaffected. */
+nav.navLinks {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 19;
+  background: var(--bg);
 }
 
 .navLink {

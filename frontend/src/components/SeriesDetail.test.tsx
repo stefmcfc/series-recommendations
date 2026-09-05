@@ -1323,3 +1323,37 @@ describe('FRONTEND-052-AC-08: does not interfere with other SeriesDetail state',
     expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-092-AC-04: clicking the overlay backdrop closes the modal', () => {
+  it('closes the recommendations modal when the backdrop is clicked', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ title: 'Ludwig' }))
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    fireEvent.click(await screen.findByTestId('recommendations-btn'))
+    const dialog = await screen.findByRole('dialog', {
+      name: /recommendations for ludwig/i,
+    })
+
+    fireEvent.click(dialog.parentElement as HTMLElement)
+
+    expect(
+      screen.queryByRole('dialog', { name: /recommendations for ludwig/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-092-AC-05: clicking inside the dialog does not close the modal', () => {
+  it('keeps the modal open when its heading is clicked', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ title: 'Ludwig' }))
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    fireEvent.click(await screen.findByTestId('recommendations-btn'))
+    await screen.findByRole('dialog', { name: /recommendations for ludwig/i })
+
+    fireEvent.click(screen.getByText('Recommendations for Ludwig'))
+
+    expect(
+      screen.getByRole('dialog', { name: /recommendations for ludwig/i }),
+    ).toBeInTheDocument()
+  })
+})

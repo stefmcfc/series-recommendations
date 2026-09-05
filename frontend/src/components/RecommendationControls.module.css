@@ -75,12 +75,21 @@
   gap: 1rem;
 }
 
+/* FRONTEND-092-AC-03: reuses the global --header-height custom property
+   App.module.css defines on :root, the same way this file's other shared
+   values (--accent-bg/--social-bg/etc.) already cross file boundaries --
+   sticky needs the same offset since this tablist sits below the same main
+   header, just inside a different route's content. */
 .tablist {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.5rem;
+  position: sticky;
+  top: var(--header-height);
+  z-index: 19;
+  background: var(--bg);
 }
 
 .tablistNested {
