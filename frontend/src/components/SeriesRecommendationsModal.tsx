@@ -121,7 +121,13 @@ export function SeriesRecommendationsModal({
   }
 
   return (
-    <div className={styles.overlay}>
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- FRONTEND-092-AC-04/05: backdrop click-to-close mirrors SearchFilter.tsx's identical pattern (FRONTEND-079-AC-03/04). This outer div is a non-interactive backdrop, not the dialog itself (that's the nested role="dialog" element below, which already handles Escape via onKeyDown) -- a keyboard-equivalent dismissal already exists via Escape and the "Done" button, so no keyboard handler is added here.
+    <div
+      className={styles.overlay}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       {/* A native <dialog> needs showModal()/close() lifecycle management
           (focus trap, native backdrop) to behave correctly, not just a tag
           swap -- deliberately not converted here, mirroring SearchFilter.tsx's

@@ -116,6 +116,8 @@ corrected below.
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | ✅ Done |
 | `SeriesDetail` layout polish: Total Seasons/Episodes join Production Status's row, back-to-list control persists while scrolling, Recommendations CTA moves to the right-hand actions group | — | `frontend_spec_090` | ✅ Done |
 | Series form hardening: `currentEpisode` bound + Rotten Tomatoes range validation (backend), whole-number field validation, and persistent Save/Cancel + error visibility on `AddSeriesForm`/`EditSeriesForm` (frontend) | `series_spec_050` | `frontend_spec_091` | ✅ Done |
+| Use My Series gains a divider before the series picker; Recommendation Filters toggle shows an active-filter count badge | — | `frontend_spec_093` | ✅ Done |
+| Persistent navigation while scrolling (main header, My Series status tabs, Recommendations mode tabs) + Recommendations modal click-outside-to-close and sticky "Done" button | — | `frontend_spec_092` | ✅ Done |
 
 ## Specced, coming soon
 

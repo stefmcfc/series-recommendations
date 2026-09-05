@@ -170,6 +170,26 @@ describe('FRONTEND-068-AC-04: exclude-only picker relocation', () => {
   })
 })
 
+describe('FRONTEND-093-AC-02: toggle shows a count badge when filters are active', () => {
+  it('shows the count of active filters on the toggle', () => {
+    renderBox({
+      state: makeState({
+        minTmdbRating: '7',
+        yearMin: '2010',
+        countriesSelected: ['US'],
+      }),
+    })
+    expect(screen.getByTestId('filters-active-count')).toHaveTextContent('3')
+  })
+})
+
+describe('FRONTEND-093-AC-03: no badge when no filters are active', () => {
+  it('renders no count badge for the default state', () => {
+    renderBox()
+    expect(screen.queryByTestId('filters-active-count')).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () => {
   it('calls updateState with excludeGenresSelected: []', () => {
     const updateState = vi.fn()
@@ -182,7 +202,10 @@ describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () =>
       />,
     )
     fireEvent.click(
-      screen.getByRole('button', { name: 'Recommendations Filters' }),
+      // FRONTEND-093-AC-02: excludeGenresSelected: ['Comedy'] makes the
+      // toggle's accessible name "Recommendations Filters1" (count badge
+      // appended) -- exact match no longer applies once a filter is active.
+      screen.getByRole('button', { name: /^recommendations filters/i }),
     )
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
     expect(updateState).toHaveBeenCalledWith(

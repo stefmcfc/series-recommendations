@@ -87,6 +87,36 @@ describe('FRONTEND-076-AC-05: other include/exclude usages are renamed', () => {
   })
 })
 
+describe('FRONTEND-093-AC-01: divider renders between filter section and Series picker', () => {
+  it('places a divider after the filters body and before the Series picker', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const filtersBody = screen.getByTestId('specific-series-filters-body')
+    // FRONTEND-093-AC-01: the inline Series picker renders `hideInput`, so
+    // "Series" is only exposed as an aria-label on its container div (no
+    // visible <label> text) -- getByLabelText matches that directly, unlike
+    // getByText which only finds visible text content.
+    const seriesLabel = screen.getByLabelText('Series')
+    const divider = screen.getByTestId('specific-series-divider')
+
+    expect(
+      filtersBody.compareDocumentPosition(divider) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      divider.compareDocumentPosition(seriesLabel) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
 describe('UseMySeriesPanel', () => {
   it('shows the "no series" hint when allSeries is empty', () => {
     render(

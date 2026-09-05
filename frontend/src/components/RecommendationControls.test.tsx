@@ -822,7 +822,10 @@ describe('FRONTEND-027-AC-06: no additional control for Highest Rated beyond min
     expect(screen.queryByLabelText(/^day$/i)).not.toBeInTheDocument()
 
     fireEvent.click(
-      screen.getByRole('button', { name: /^recommendations filters$/i }),
+      // FRONTEND-093-AC-02: Highest Rated defaults minVoteCount to '200'
+      // (untouched), which makes the toggle's accessible name
+      // "Recommendations Filters1" (count badge appended).
+      screen.getByRole('button', { name: /^recommendations filters/i }),
     )
     expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
   })
@@ -2149,7 +2152,11 @@ describe('FRONTEND-046-AC-03: other modes are unaffected', () => {
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
     selectMode()
     fireEvent.click(
-      screen.getByRole('button', { name: /^recommendations filters$/i }),
+      // FRONTEND-093-AC-02: Highest Rated defaults minVoteCount to '200'
+      // (untouched), which makes the toggle's accessible name
+      // "Recommendations Filters1" (count badge appended) -- drop the
+      // trailing anchor so this still matches regardless of mode.
+      screen.getByRole('button', { name: /^recommendations filters/i }),
     )
 
     expect(screen.getByLabelText(/^min tmdb rating$/i)).toBeInTheDocument()

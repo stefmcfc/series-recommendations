@@ -29,9 +29,20 @@
   margin: 0;
 }
 
+/* FRONTEND-092-AC-06: sticky footer, mirroring EditSeriesForm.module.css's/
+   AddSeriesForm.module.css's .actions treatment (frontend_spec_091) exactly
+   -- the actual scrolling container is .overlay (overflow-y: auto), and
+   .dialog itself has no max-height/overflow of its own, the identical shape
+   those forms had before that fix. Only one button here (no message+buttons
+   combo), so the flex-wrap trick those use isn't needed. */
 .dialogActions {
   display: flex;
   justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
 }
 
 .doneButton {
