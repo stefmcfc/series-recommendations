@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: expanded "Filter & sort my series" and "Recommendations Filters" sections now show a left-hand grouping line, visually tying the content back to the toggle it collapses under (`frontend_spec_094`).
+- Frontend: `RecommendationFiltersBox`'s "Exclude Keywords" field is now a `KeywordPicker` (chips, still free-typeable) instead of a comma-separated text input (`frontend_spec_094`).
+- Frontend: Min Vote Count now shows an inline error for a negative or decimal value, instead of silently accepting it (`frontend_spec_094`).
+
+### Changed
+
+- Frontend: Custom Search's Keywords field now declutters into a "Browse all keywords" CTA (matching `UseMySeriesPanel`'s existing pattern) instead of an inline typeable box — free-text keyword discovery is preserved in the modal it opens (`frontend_spec_094`).
+
 ## [3.24.0] - 2026-09-05
 
 ### Added

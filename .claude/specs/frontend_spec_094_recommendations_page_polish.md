@@ -1,6 +1,6 @@
 # Frontend Spec 094: Recommendations Page Polish — Disclosure Grouping, Keyword Pickers, Vote Count Validation
 
-**Status**: In progress
+**Status**: Complete
 **Priority**: P3
 **Depends on**: none
 **Area**: Frontend (`components/RecommendationControls.tsx`, `components/RecommendationControls.module.css`, `components/RecommendationFiltersBox.tsx`, `components/CustomSearchPanel.tsx`, `components/UseMySeriesPanel.tsx` (test helper only), `components/KeywordPicker.tsx` (no change, reused))
@@ -299,7 +299,9 @@ describe('FRONTEND-094-AC-11: valid Min Vote Count has no error', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-094-AC-01: Expanded filter sections show a left-hand grouping line
+AC-01's `[MANUAL]` verification is complete — confirmed via `getComputedStyle` on both `.filtersBody` instances (`border-left: 2px solid`, `padding-left: 18px`) plus a visual check on both "Filter & sort my series" and "Recommendations Filters".
+
+- [x] FRONTEND-094-AC-01: Expanded filter sections show a left-hand grouping line
 - [x] FRONTEND-094-AC-02: Inline Keywords field no longer renders a text input
 - [x] FRONTEND-094-AC-03: A "Browse all keywords" button opens a modal
 - [x] FRONTEND-094-AC-04: The modal's picker still accepts a free-typed keyword
