@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.29.0] - 2026-09-05
+
 ### Added
 
 - Backend: `NameStatAggregator.aggregate` (the shared logic behind keyword/genre stats) accepts a new `onlyCompleted` param, restricting aggregation to `SeriesStatus.COMPLETED` series when `true` — `null`/`false`/omitted keep today's unrestricted behavior unchanged (`series_spec_051`).
