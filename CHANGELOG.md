@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.25.1] - 2026-09-05
+
+### Fixed
+
+- Frontend: `RecommendationFiltersBox`'s "Exclude Keywords" field now suggests known keywords while typing (or immediately, before typing) instead of being pure free text with no suggestions at all — a gap in `frontend_spec_094`'s original implementation, caught by user feedback (`frontend_spec_094`).
+
 ## [3.25.0] - 2026-09-05
 
 ### Added

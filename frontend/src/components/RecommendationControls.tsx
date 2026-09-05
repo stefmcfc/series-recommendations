@@ -1002,6 +1002,7 @@ export function RecommendationControls({
         updateState={updateState}
         isCustomSearch={isCustomSearch}
         genreOptions={genreOptions}
+        keywordOptions={keywordOptions}
       />
 
       {!hideSortBy && (
