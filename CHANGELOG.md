@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.23.3] - 2026-09-05
+
 ### Fixed
 
 - Backend: `SeriesService.update` now rejects a `currentEpisode` that exceeds the series' `totalEpisodes`, mirroring the existing `currentSeason`/`totalSeasons` check (`series_spec_050`).
