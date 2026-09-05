@@ -42,6 +42,7 @@ import java.util.UUID;
 public class SeriesController {
 
     private static final DateTimeFormatter FILENAME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final String SERIES_FIELD = "series";
 
     private final SeriesService seriesService;
     private final SeriesSearchService searchService;
@@ -208,21 +209,21 @@ public class SeriesController {
         byte[] bytes;
         try {
             bytes = file.getBytes();
-        } catch (IOException e) {
+        } catch (IOException _) {
             throw new IllegalArgumentException("Unable to read the uploaded file");
         }
 
         JsonNode root;
         try {
             root = objectMapper.readTree(bytes);
-        } catch (JacksonException e) {
+        } catch (JacksonException _) {
             throw new IllegalArgumentException("Uploaded file is not valid JSON");
         }
 
-        if (root == null || !root.has("series") || !root.get("series").isArray()) {
+        if (root == null || !root.has(SERIES_FIELD) || !root.get(SERIES_FIELD).isArray()) {
             throw new IllegalArgumentException("Uploaded file must contain a 'series' array");
         }
 
-        return objectMapper.convertValue(root.get("series"), new TypeReference<List<SeriesDto>>() { });
+        return objectMapper.convertValue(root.get(SERIES_FIELD), new TypeReference<List<SeriesDto>>() { });
     }
 }

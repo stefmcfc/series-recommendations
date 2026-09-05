@@ -59,7 +59,7 @@ public class BulkImportService {
     // instead of polling, since (unlike BulkRefreshServiceSpec's repository-backed batch) every
     // row here is driven by an in-memory list handed to start() rather than a mockable
     // repository call the test can stall on indefinitely.
-    private volatile Future<?> currentRun;
+    private final AtomicReference<Future<?>> currentRun = new AtomicReference<>();
 
     private enum RowOutcome { IMPORTED, SKIPPED, ERROR }
 
@@ -94,7 +94,7 @@ public class BulkImportService {
             new ImportJobStatus(IN_PROGRESS, totalCount, 0, 0, 0, List.of(), LocalDateTime.now(clock), null);
         currentJob.set(started);
 
-        currentRun = executor.submit(() -> runJob(started, entries));
+        currentRun.set(executor.submit(() -> runJob(started, entries)));
         return started;
     }
 
@@ -108,13 +108,13 @@ public class BulkImportService {
      * so specs can assert on the final status deterministically instead of polling.
      */
     public void awaitCompletionForTest() {
-        Future<?> run = currentRun;
+        Future<?> run = currentRun.get();
         if (run == null) {
             return;
         }
         try {
             run.get();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
             log.warn("Bulk import job's background task completed exceptionally", e);
