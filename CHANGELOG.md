@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.24.0] - 2026-09-05
+
 ### Added
 
 - Frontend: `UseMySeriesPanel` renders a visual divider between the "Filter & sort my series" disclosure and the "Series" picker below it, so the two no longer read as one continuous block (`frontend_spec_093`).
