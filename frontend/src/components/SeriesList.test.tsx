@@ -888,7 +888,7 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
     ])
   })
 
-  it.each(['tmdbRating', 'title', 'year', 'imdbRating'])(
+  it.each(['tmdbRating', 'year', 'imdbRating'])(
     're-fetches with sortBy=%s when that option is selected',
     async (sortBy) => {
       mockGetAll.mockResolvedValue([])
@@ -907,6 +907,72 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
       )
     },
   )
+
+  it('re-fetches with sortBy=title and sortDirection=asc when Title is selected', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText(/sort by/i), {
+      target: { value: 'title' },
+    })
+
+    await waitFor(() =>
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        sortBy: 'title',
+        sortDirection: 'asc',
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-064-AC-01/02/03: sort direction defaults per newly-selected field', () => {
+  it('sets sortDirection to desc when switching to Personal Rating', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.click(screen.getByLabelText('Sort descending')) // start from asc, to prove the reset
+    expect(screen.getByLabelText('Sort ascending')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'personalRating' },
+    })
+
+    expect(screen.getByLabelText('Sort descending')).toBeInTheDocument()
+  })
+
+  it('sets sortDirection to asc when switching to Title from a descending field', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'year' },
+    })
+    expect(screen.getByLabelText('Sort descending')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'title' },
+    })
+    expect(screen.getByLabelText('Sort ascending')).toBeInTheDocument()
+  })
+
+  it('keeps a manual direction toggle for the same field across re-renders', async () => {
+    mockGetAll.mockResolvedValue([])
+    const { rerender } = render(<SeriesList />)
+    await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
+
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'year' },
+    })
+    fireEvent.click(screen.getByLabelText('Sort descending')) // toggle to asc
+    expect(screen.getByLabelText('Sort ascending')).toBeInTheDocument()
+
+    rerender(<SeriesList />)
+
+    expect(screen.getByLabelText('Sort ascending')).toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {

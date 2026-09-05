@@ -237,7 +237,9 @@ export function SeriesList({
   }
 
   const handleSortByChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(event.target.value as SortByOption)
+    const newSortBy = event.target.value as SortByOption
+    setSortBy(newSortBy)
+    setSortDirection(newSortBy === 'title' ? 'asc' : 'desc')
   }
 
   const handleSortDirectionToggle = () => {

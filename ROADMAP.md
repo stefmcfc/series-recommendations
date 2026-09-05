@@ -112,6 +112,7 @@ corrected below.
 | Store/show every TMDB `origin_country` entry, not just the first (e.g. co-productions like "MobLand": GB + US) — widens `TmdbClient` parsing, `SeriesEntity`/DTOs, and fixes `RecommendationOutputFilterService`'s country filter to match on any of a candidate's countries | `series_spec_046` | `frontend_spec_085` | ✅ Done |
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | ✅ Done |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | ✅ Done |
+| Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` (Requirement 1) and `UseMySeriesPanel`'s candidate picker (Requirement 2, shipped earlier via `frontend_spec_081`) | — | `frontend_spec_064` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -120,10 +121,9 @@ then by suggested build order within a tier — grouped into independent depende
 the 4-step Analysis/Trends chain
 (`series_spec_047`+`frontend_spec_086`→`frontend_spec_087`→`series_spec_048`+`frontend_spec_088`→
 `series_spec_049`+`frontend_spec_089`). Rows within a chain must build in the listed order; the
-chains themselves (and the fully-standalone `frontend_spec_064` row) have no dependencies on each
-other *within this table* — and can be reordered freely as a block if priorities change — but
-re-check priority order too when doing so, since this table's row order isn't just
-dependency-derived anymore.
+chains themselves have no dependencies on each other *within this table* — and can be reordered
+freely as a block if priorities change — but re-check priority order too when doing so, since this
+table's row order isn't just dependency-derived anymore.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |

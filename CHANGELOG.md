@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.22.2] - 2026-09-05
+
+### Fixed
+
+- Frontend: `SeriesList`'s sort direction now resets to a sensible default (descending, or ascending for Title) the first time a new sort field is selected, instead of keeping whichever direction was last left; a manual toggle for the current field is still preserved until the field changes again (`frontend_spec_064`).
+
 ## [3.22.1] - 2026-09-05
 
 ### Changed
