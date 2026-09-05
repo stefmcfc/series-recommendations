@@ -360,12 +360,6 @@ export function AddSeriesForm({
           Add Series
         </h2>
 
-        {submitError && (
-          <div className={styles.submitError} role="alert">
-            {submitError}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} noValidate>
           <div className={styles.field}>
             <label htmlFor="title">Title *</label>
@@ -464,6 +458,18 @@ export function AddSeriesForm({
           />
 
           <div className={styles.actions}>
+            {submitError && (
+              <div className={styles.submitError} role="alert">
+                {submitError}
+              </div>
+            )}
+
+            {Object.keys(fieldErrors).length > 0 && (
+              <p className={styles.validationSummary} role="alert">
+                Please review the highlighted fields above.
+              </p>
+            )}
+
             <button
               type="button"
               className={styles.cancelButton}

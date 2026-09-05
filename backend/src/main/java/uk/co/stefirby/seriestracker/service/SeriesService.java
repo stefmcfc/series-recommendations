@@ -141,7 +141,28 @@ public class SeriesService {
             }
         }
 
+        validateRottenTomatoesBounds(dto);
         validateYearRange(dto.getYear());
+    }
+
+    /**
+     * series_spec_050_currentepisode_and_rotten_tomatoes_bounds.md (SERIES-050-AC-03/04/05/06):
+     * neither rottenTomatoesRating nor rottenTomatoesPopcornmeter had any bounds validation
+     * anywhere in the service before this -- a direct API call could silently persist a value
+     * like 500. Each field is independently null-safe (only validated when provided), and both
+     * create (validateCreate) and update (applyRatingAndPersonalUpdates) call this same shared
+     * helper, since neither field is TMDB-managed/locked and both are freely re-editable on
+     * every update.
+     */
+    private void validateRottenTomatoesBounds(SeriesDto dto) {
+        Integer rating = dto.getRottenTomatoesRating();
+        if (rating != null && (rating < 0 || rating > 100)) {
+            throw new IllegalArgumentException("Rotten Tomatoes rating must be between 0 and 100");
+        }
+        Integer popcornmeter = dto.getRottenTomatoesPopcornmeter();
+        if (popcornmeter != null && (popcornmeter < 0 || popcornmeter > 100)) {
+            throw new IllegalArgumentException("Rotten Tomatoes popcornmeter must be between 0 and 100");
+        }
     }
 
     /**
@@ -252,9 +273,11 @@ public class SeriesService {
      * Each independent group of field patches is its own method (java:S3776) -- this method's
      * own job is just to run them all in order. Two real order dependencies are preserved:
      * {@code applyClearedFields} (series_spec_030_clear_optional_fields.md, SERIES-030-AC-05)
-     * must run first, since a cleared {@code totalSeasons} has to land on the entity before
-     * {@code applyCurrentSeason} reads it; and {@code applyMetadataUpdates} (which may patch
-     * {@code totalSeasons}) must run before {@code applyCurrentSeason} for the same reason.
+     * must run first, since a cleared {@code totalSeasons}/{@code totalEpisodes} has to land on
+     * the entity before {@code applyCurrentSeason}/{@code applyCurrentEpisode} read them; and
+     * {@code applyMetadataUpdates} (which may patch {@code totalSeasons}/{@code totalEpisodes})
+     * must run before {@code applyCurrentSeason}/{@code applyCurrentEpisode} for the same reason
+     * (series_spec_050_currentepisode_and_rotten_tomatoes_bounds.md, SERIES-050-AC-01/02).
      */
     @Transactional
     public SeriesDto update(UUID id, SeriesDto dto) {
@@ -266,6 +289,7 @@ public class SeriesService {
         applyMetadataUpdates(entity, dto);
         applyRatingAndPersonalUpdates(entity, dto);
         applyCurrentSeason(entity, dto);
+        applyCurrentEpisode(entity, dto);
         applyStatusUpdate(entity, dto);
 
         entity = repository.save(entity);
@@ -329,9 +353,6 @@ public class SeriesService {
         if (dto.getTotalEpisodes() != null && entity.getTotalEpisodes() == null) {
             entity.setTotalEpisodes(dto.getTotalEpisodes());
         }
-        if (dto.getCurrentEpisode() != null) {
-            entity.setCurrentEpisode(dto.getCurrentEpisode());
-        }
         if (dto.getPosterUrl() != null) {
             entity.setPosterUrl(dto.getPosterUrl());
         }
@@ -350,6 +371,7 @@ public class SeriesService {
         if (dto.getImdbRating() != null && entity.getImdbRating() == null) {
             entity.setImdbRating(dto.getImdbRating());
         }
+        validateRottenTomatoesBounds(dto);
         if (dto.getRottenTomatoesRating() != null) {
             entity.setRottenTomatoesRating(dto.getRottenTomatoesRating());
         }
@@ -381,6 +403,25 @@ public class SeriesService {
                 "currentSeason (" + newCurrentSeason + ") cannot exceed totalSeasons (" + totalSeasons + ")");
         }
         entity.setCurrentSeason(newCurrentSeason);
+    }
+
+    /**
+     * series_spec_050_currentepisode_and_rotten_tomatoes_bounds.md (SERIES-050-AC-01/02):
+     * mirrors {@link #applyCurrentSeason} exactly, closing the asymmetry where {@code
+     * currentEpisode} was set unconditionally (with no bound check against {@code
+     * totalEpisodes}) inside {@code applyMetadataUpdates}.
+     */
+    private void applyCurrentEpisode(SeriesEntity entity, SeriesDto dto) {
+        if (dto.getCurrentEpisode() == null) {
+            return;
+        }
+        Integer newCurrentEpisode = dto.getCurrentEpisode();
+        Integer totalEpisodes = entity.getTotalEpisodes();
+        if (totalEpisodes != null && newCurrentEpisode > totalEpisodes) {
+            throw new IllegalArgumentException(
+                "currentEpisode (" + newCurrentEpisode + ") cannot exceed totalEpisodes (" + totalEpisodes + ")");
+        }
+        entity.setCurrentEpisode(newCurrentEpisode);
     }
 
     private void applyStatusUpdate(SeriesEntity entity, SeriesDto dto) {

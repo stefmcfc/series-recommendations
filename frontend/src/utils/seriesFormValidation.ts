@@ -26,8 +26,8 @@ export function validateTotalSeasons(
 ): void {
   if (form.totalSeasons.trim() === '') return
   const totalSeasons = Number(form.totalSeasons)
-  if (Number.isNaN(totalSeasons) || totalSeasons < 1) {
-    errors.totalSeasons = 'Total seasons must be at least 1'
+  if (!Number.isInteger(totalSeasons) || totalSeasons < 1) {
+    errors.totalSeasons = 'Total seasons must be a whole number of at least 1'
   }
 }
 
@@ -37,8 +37,8 @@ export function validateTotalEpisodes(
 ): void {
   if (form.totalEpisodes.trim() === '') return
   const totalEpisodes = Number(form.totalEpisodes)
-  if (Number.isNaN(totalEpisodes) || totalEpisodes < 1) {
-    errors.totalEpisodes = 'Total episodes must be at least 1'
+  if (!Number.isInteger(totalEpisodes) || totalEpisodes < 1) {
+    errors.totalEpisodes = 'Total episodes must be a whole number of at least 1'
   }
 }
 
@@ -60,12 +60,12 @@ export function validateRottenTomatoesRating(
   if (form.rottenTomatoesRating.trim() === '') return
   const rottenTomatoesRating = Number(form.rottenTomatoesRating)
   if (
-    Number.isNaN(rottenTomatoesRating) ||
+    !Number.isInteger(rottenTomatoesRating) ||
     rottenTomatoesRating < 0 ||
     rottenTomatoesRating > 100
   ) {
     errors.rottenTomatoesRating =
-      'Rotten Tomatoes rating must be between 0 and 100'
+      'Rotten Tomatoes rating must be a whole number between 0 and 100'
   }
 }
 
@@ -76,11 +76,11 @@ export function validateRottenTomatoesPopcornmeter(
   if (form.rottenTomatoesPopcornmeter.trim() === '') return
   const rottenTomatoesPopcornmeter = Number(form.rottenTomatoesPopcornmeter)
   if (
-    Number.isNaN(rottenTomatoesPopcornmeter) ||
+    !Number.isInteger(rottenTomatoesPopcornmeter) ||
     rottenTomatoesPopcornmeter < 0 ||
     rottenTomatoesPopcornmeter > 100
   ) {
     errors.rottenTomatoesPopcornmeter =
-      'Rotten Tomatoes rating must be between 0 and 100'
+      'Rotten Tomatoes rating must be a whole number between 0 and 100'
   }
 }

@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.23.3] - 2026-09-05
+
+### Fixed
+
+- Backend: `SeriesService.update` now rejects a `currentEpisode` that exceeds the series' `totalEpisodes`, mirroring the existing `currentSeason`/`totalSeasons` check (`series_spec_050`).
+- Backend: `rottenTomatoesRating` and `rottenTomatoesPopcornmeter` are now validated as 0-100 by `SeriesService` itself on both `create` and `update`, before ever reaching the database — an out-of-range value was already rejected by an existing entity-level constraint, but as a raw `ConstraintViolationException`/`TransactionSystemException` rather than the same clean 400 every other validation failure produces (`series_spec_050`).
+- Frontend: `EditSeriesForm` now cross-validates `currentEpisode` against `totalEpisodes`, blocking submit with "Current episode cannot exceed total episodes" the same way it already does for `currentSeason`/`totalSeasons` — closes the gap left by `series_spec_050`'s matching backend check (`frontend_spec_091`).
+- Frontend: `totalSeasons`, `totalEpisodes`, `rottenTomatoesRating`, `rottenTomatoesPopcornmeter`, and `EditSeriesForm`'s own `currentSeason`/`currentEpisode` now reject a decimal value (e.g. `"3.5"`) instead of silently accepting one — each field's `<input>` also gains `step="1"` (`frontend_spec_091`).
+- Frontend: `AddSeriesForm`/`EditSeriesForm` now render their Save/Cancel actions in a sticky footer that stays visible while scrolling a long form, with the submit-error banner and a new "Please review the highlighted fields above." validation summary both moved into that same footer instead of the top of the dialog and inline-only, respectively (`frontend_spec_091`).
+
 ## [3.23.2] - 2026-09-05
 
 ### Changed
