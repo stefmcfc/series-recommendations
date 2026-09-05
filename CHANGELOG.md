@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.26.0] - 2026-09-05
+
 ### Added
 
 - Backend: `GET /api/v1/series/keywords` now returns `averageBlendedRating`, the unweighted average of a carrying series' `imdbRating`/`tmdbRating` (excluding series with neither set), alongside the existing `averagePersonalRating` (`series_spec_047`).
