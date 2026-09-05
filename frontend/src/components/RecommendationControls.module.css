@@ -311,7 +311,7 @@
      toggle that opens/closes it -- shared by UseMySeriesPanel's "Filter &
      sort my series" and RecommendationFiltersBox's "Recommendations
      Filters", both of which render through this exact class. */
-  border-left: 2px solid var(--border);
+  border-left: 4px solid var(--border);
   padding-left: 1rem;
 }
 

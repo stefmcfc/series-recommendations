@@ -37,7 +37,7 @@ Four unrelated Recommendations-page items raised together, bundled into one spec
 **References**:
 - CSS: `components/RecommendationControls.module.css`'s `.filtersBody` (currently `display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; margin-top: 1rem;`, no border)
 
-**Test Case (Green)**: add `border-left: 2px solid var(--border); padding-left: 1rem;` to `.filtersBody`.
+**Test Case (Green)**: add `border-left: 4px solid var(--border); padding-left: 1rem;` to `.filtersBody` (widened from an initial `2px` to `4px` after a live-review pass — `2px` read as too subtle to register as an intentional grouping cue).
 
 ### Requirement 2: Custom Search Keywords becomes a "Browse all keywords" CTA
 
@@ -299,7 +299,7 @@ describe('FRONTEND-094-AC-11: valid Min Vote Count has no error', () => {
 
 ## Acceptance Criteria Summary
 
-AC-01's `[MANUAL]` verification is complete — confirmed via `getComputedStyle` on both `.filtersBody` instances (`border-left: 2px solid`, `padding-left: 18px`) plus a visual check on both "Filter & sort my series" and "Recommendations Filters".
+AC-01's `[MANUAL]` verification is complete — confirmed via `getComputedStyle` on both `.filtersBody` instances (`border-left: 4px solid`, `padding-left: 18px`, widened from `2px` after a live-review pass) plus a visual check on both "Filter & sort my series" and "Recommendations Filters". Also re-confirmed AC-05 (Exclude Keywords) via direct DOM interaction in a fresh tab — typing a value and pressing Enter produces a real `<li class="_chip...">` element, not the old raw-text behavior; a user-reported "still see the old text box" turned out to be a stale browser tab, not a code issue.
 
 - [x] FRONTEND-094-AC-01: Expanded filter sections show a left-hand grouping line
 - [x] FRONTEND-094-AC-02: Inline Keywords field no longer renders a text input
