@@ -113,6 +113,7 @@ corrected below.
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | ✅ Done |
 | Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | ✅ Done |
 | Sort direction defaults per newly-selected field (desc except Title/series-name, which defaults asc) — `SeriesList` (Requirement 1) and `UseMySeriesPanel`'s candidate picker (Requirement 2, shipped earlier via `frontend_spec_081`) | — | `frontend_spec_064` | ✅ Done |
+| SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -127,7 +128,6 @@ table's row order isn't just dependency-derived anymore.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | — (build first — establishes the pattern units 2–4 reuse) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | `frontend_spec_086` | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | `series_spec_047`, `frontend_spec_087` | 🟨 P3 · ⬜ Not started |

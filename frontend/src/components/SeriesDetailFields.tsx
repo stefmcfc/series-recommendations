@@ -88,6 +88,15 @@ export function SeriesDetailFields({
       <dl className={styles.fieldGroup}>
         <div className={styles.fieldRow}>
           <div className={styles.field}>
+            <dt>Genres</dt>
+            <dd>{formatValue(series.genres)}</dd>
+          </div>
+        </div>
+      </dl>
+
+      <dl className={styles.fieldGroup}>
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
             <dt>Keywords</dt>
             <dd>
               {(series.keywords ?? []).length === 0
@@ -109,16 +118,8 @@ export function SeriesDetailFields({
         <dl className={styles.fieldGroup}>
           <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
             <div className={styles.field}>
-              <dt>Genres</dt>
-              <dd>{formatValue(series.genres)}</dd>
-            </div>
-            <div className={styles.field}>
               <dt>Production Status</dt>
               <dd>{formatProductionStatus(series.productionStatus)}</dd>
-            </div>
-            <div className={styles.field}>
-              <dt>Status</dt>
-              <dd>{series.status}</dd>
             </div>
           </div>
 

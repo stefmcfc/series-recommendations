@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { Series, StreamingProvider } from '../types/series'
@@ -69,6 +70,10 @@ export function SeriesDetail({
   // guard).
   const [recommendationsModalOpen, setRecommendationsModalOpen] =
     useState(false)
+  // FRONTEND-078-AC-01: independent of every other overlay's state above, so
+  // opening/closing it can't interfere with delete-confirmation, editing, or
+  // the recommendations modal.
+  const [posterLightboxOpen, setPosterLightboxOpen] = useState(false)
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -87,6 +92,7 @@ export function SeriesDetail({
     setStreamingCheckError(null)
     setStreamingCheckResult(null)
     setRecommendationsModalOpen(false)
+    setPosterLightboxOpen(false)
   }
 
   useEffect(() => {
@@ -248,6 +254,16 @@ export function SeriesDetail({
     setRecommendationsModalOpen(false)
   }
 
+  const handlePosterClick = () => {
+    setPosterLightboxOpen(true)
+  }
+
+  const handlePosterLightboxClose = () => {
+    setPosterLightboxOpen(false)
+  }
+
+  const handleLightboxKeyDown = useEscapeToClose(handlePosterLightboxClose)
+
   const backButton = (
     <button
       type="button"
@@ -292,28 +308,38 @@ export function SeriesDetail({
 
       {!loading && !notFound && !error && series && (
         <div className={styles.detail}>
-          <div className={styles.headingRow}>
-            <h2 className={styles.heading}>
-              {yearLabel === ''
-                ? series.title
-                : `${series.title} (${yearLabel})`}
-            </h2>
-            {series.originCountry != null && (
-              <span className={styles.country}>
-                {' | '}
-                {formatCountryNames(series.originCountry)}
-              </span>
-            )}
+          <div className={styles.headingRow} data-testid="heading-row">
+            <div className={styles.headingLeft}>
+              <h2 className={styles.heading}>
+                {yearLabel === ''
+                  ? series.title
+                  : `${series.title} (${yearLabel})`}
+              </h2>
+              {series.originCountry != null && (
+                <span className={styles.country}>
+                  {' | '}
+                  {formatCountryNames(series.originCountry)}
+                </span>
+              )}
+            </div>
+            <span className={styles.statusHeading}>{series.status}</span>
           </div>
 
           <div className={styles.content}>
             {series.posterUrl !== null && !posterError && (
-              <img
-                src={series.posterUrl}
-                alt=""
-                className={styles.poster}
-                onError={() => setPosterError(true)}
-              />
+              <button
+                type="button"
+                className={styles.posterButton}
+                aria-label={`View larger poster of ${series.title}`}
+                onClick={handlePosterClick}
+              >
+                <img
+                  src={series.posterUrl}
+                  alt=""
+                  className={styles.poster}
+                  onError={() => setPosterError(true)}
+                />
+              </button>
             )}
 
             <SeriesDetailFields
@@ -348,6 +374,46 @@ export function SeriesDetail({
               series={series}
               onClose={handleRecommendationsClose}
             />
+          )}
+
+          {posterLightboxOpen && series.posterUrl !== null && (
+            <div className={styles.posterOverlay}>
+              {/* A native <dialog> needs showModal()/close() lifecycle
+                  management (focus trap, native backdrop) to behave
+                  correctly, not just a tag swap -- deliberately not
+                  converted here, mirroring SeriesRecommendationsModal.tsx
+                  and SearchFilter.tsx's "Browse Keywords" modal (jsdom's
+                  <dialog> support has known gaps). */}
+              {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-dismiss is standard dialog behavior, matching every other hand-rolled dialog in this codebase; the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`). */}
+              <div // NOSONAR: typescript:S6819, see comment above
+                className={styles.posterDialog}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Poster"
+                onKeyDown={handleLightboxKeyDown}
+              >
+                <button
+                  type="button"
+                  className={styles.posterCloseButton}
+                  aria-label="Close"
+                  onClick={handlePosterLightboxClose}
+                >
+                  ×
+                </button>
+                <button
+                  type="button"
+                  className={styles.posterEnlargedButton}
+                  aria-label="Close enlarged poster"
+                  onClick={handlePosterLightboxClose}
+                >
+                  <img
+                    src={series.posterUrl}
+                    alt=""
+                    className={styles.posterEnlarged}
+                  />
+                </button>
+              </div>
+            </div>
           )}
 
           {rewatchError && (
