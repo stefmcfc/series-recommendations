@@ -11,7 +11,7 @@ versioned together as one app.
 ### Fixed
 
 - Backend: `SeriesService.update` now rejects a `currentEpisode` that exceeds the series' `totalEpisodes`, mirroring the existing `currentSeason`/`totalSeasons` check (`series_spec_050`).
-- Backend: `rottenTomatoesRating` and `rottenTomatoesPopcornmeter` are now validated as 0-100 on both `create` and `update`, closing a gap where an out-of-range value sent directly to the API bypassed the frontend form's own range check (`series_spec_050`).
+- Backend: `rottenTomatoesRating` and `rottenTomatoesPopcornmeter` are now validated as 0-100 by `SeriesService` itself on both `create` and `update`, before ever reaching the database — an out-of-range value was already rejected by an existing entity-level constraint, but as a raw `ConstraintViolationException`/`TransactionSystemException` rather than the same clean 400 every other validation failure produces (`series_spec_050`).
 
 ## [3.23.2] - 2026-09-05
 
