@@ -4,6 +4,7 @@ import { ApiError } from '../types/api'
 import type { RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { ExportControls } from './ExportControls'
+import { ImportControls } from './ImportControls'
 import styles from './SettingsPage.module.css'
 
 // Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
@@ -108,12 +109,19 @@ export function SettingsPage() {
       })
   }
 
+  // FRONTEND-057-AC-04: SettingsPage is mounted at a standalone route (see
+  // App.tsx's <Route path="/settings" ...>) with no key-bump refresh
+  // callback threaded down to it, unlike AddSeriesForm/EditSeriesForm --
+  // and there's no existing precedent for one, since Refresh All's own
+  // success above doesn't trigger a live SeriesList refresh either. Both
+  // rely on SeriesList remounting (and re-fetching) naturally when the user
+  // navigates back to /my-series, so this is intentionally a no-op rather
+  // than new App.tsx-level plumbing built solely for this one callback.
+  const handleImported = () => {}
+
   return (
     <div className={styles.container} data-testid="settings-view">
       <h2 className={styles.heading}>Settings</h2>
-      <p className={styles.placeholder}>
-        No settings are available yet — check back soon.
-      </p>
 
       <div className={styles.section}>
         <button
@@ -145,6 +153,10 @@ export function SettingsPage() {
 
       <div className={styles.section}>
         <ExportControls />
+      </div>
+
+      <div className={styles.section}>
+        <ImportControls onImported={handleImported} />
       </div>
     </div>
   )

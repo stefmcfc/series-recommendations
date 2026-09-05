@@ -1,6 +1,14 @@
 # Frontend Spec 057: Import UI
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/ImportControls.tsx` (+
+`ImportControls.module.css`, `ImportControls.test.tsx`), `frontend/src/services/seriesApi.ts`
+(`importSeries`/`getImportStatus`), `frontend/src/types/series.ts` (`ImportJobStatus`/
+`ImportRowError`), `frontend/src/components/SettingsPage.tsx` (+ `SettingsPage.test.tsx`). Verified
+end-to-end in a real browser (Chrome, against a live backend): file upload → `202` → polling →
+"Imported 1, skipped 0" summary, confirming the multipart `FormData` upload's manually-set
+`Content-Type: multipart/form-data` header (no boundary specified explicitly) works correctly in
+practice, not just in the mocked Vitest tests. The imported test rows were deleted afterward — this
+was verified against the real personal dataset, not a disposable fixture.
 **Priority**: P3 (paired UI half of `series_spec_038`)
 **Depends on**: Series Spec 038 (`series_spec_038_import.md`, owns `POST /api/v1/series/import` +
 `GET /api/v1/series/import/status`) ✅ required, Frontend Spec 007
@@ -129,6 +137,18 @@ Add/Edit success.
 **Test Case (Green)**: `onImported` called once inside the polling loop's completion branch, only
 when `importedCount > 0` (no pointless refresh when nothing was actually imported).
 
+**Implementation note (deviation from the literal Statement wording)**: `SettingsPage` is mounted
+at its own route (`App.tsx`'s `<Route path="/settings" ...>`) with no `key`-bump callback threaded
+down to it today, unlike `AddSeriesForm`/`EditSeriesForm` which receive one directly from `App.tsx`.
+Checking the actual precedent on that same page first: Refresh All's own completion (already on
+`SettingsPage`, `frontend_spec_072`) doesn't trigger a live cross-route `SeriesList` refresh either
+— it relies on `SeriesList` naturally remounting/re-fetching when the user navigates back to
+`/my-series`. `ImportControls`' `onImported` follows that same precedent: it fires correctly (fully
+covered by this AC's test), but `SettingsPage` currently wires it to a documented no-op rather than
+new `App.tsx`-level state plumbing built solely for this one callback. If a live in-place refresh is
+wanted later, it would need the same kind of route-level state lifting `MySeriesView` already does
+for `criteria`/`seriesListKey` — out of scope for this spec.
+
 ---
 
 ### FRONTEND-057-AC-05 [AUTO]
@@ -165,8 +185,8 @@ div after the `ExportControls` section; delete the placeholder `<p>`.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-057-AC-01: Import button disabled until a file is selected
-- [ ] FRONTEND-057-AC-02: upload + poll until completion, showing progress
-- [ ] FRONTEND-057-AC-03: per-row errors shown when present
-- [ ] FRONTEND-057-AC-04: `onImported` triggers a `SeriesList` refresh
-- [ ] FRONTEND-057-AC-05: `SettingsPage` renders Import after Export; stale placeholder removed
+- [x] FRONTEND-057-AC-01: Import button disabled until a file is selected
+- [x] FRONTEND-057-AC-02: upload + poll until completion, showing progress
+- [x] FRONTEND-057-AC-03: per-row errors shown when present
+- [x] FRONTEND-057-AC-04: `onImported` triggers a `SeriesList` refresh
+- [x] FRONTEND-057-AC-05: `SettingsPage` renders Import after Export; stale placeholder removed

@@ -21,15 +21,25 @@ beforeEach(() => {
   })
 })
 
-describe('FRONTEND-070-AC-03: SettingsPage renders placeholder content', () => {
-  it('renders a heading and placeholder copy', () => {
+describe('FRONTEND-070-AC-03: SettingsPage renders its heading', () => {
+  it('renders a heading', () => {
     render(<SettingsPage />)
 
     expect(screen.getByTestId('settings-view')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Settings' }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/no settings/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-057-AC-05: Settings renders Import after Export, no stale placeholder', () => {
+  it('renders the Import controls and drops the old placeholder copy', () => {
+    render(<SettingsPage />)
+
+    expect(screen.getByTestId('import-file-input')).toBeInTheDocument()
+    expect(
+      screen.queryByText(/no settings are available yet/i),
+    ).not.toBeInTheDocument()
   })
 })
 

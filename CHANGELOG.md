@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `POST /api/v1/series/import` (multipart JSON file upload) + `GET /api/v1/series/import/status` — a reverse-of-export bulk import, reusing `POST /series`'s per-row validation and duplicate-`imdbId` rejection, run as an async job mirroring the existing bulk-refresh job pattern (capped `errors` list of up to 20 rows) (`series_spec_038`).
+- Frontend: new `ImportControls` component on the Settings page (its own section, after Export) — a JSON-only file picker, an Import button, and status polling mirroring `SeriesList`'s existing bulk-refresh polling, ending in a plain-language summary ("Imported 8, skipped 2...") with per-row errors shown when present (`frontend_spec_057`).
+
 ## [3.21.0] - 2026-09-05
 
 ### Added

@@ -10,6 +10,7 @@ import type {
   RecommendationQuery,
   RefreshResult,
   RefreshJobStatus,
+  ImportJobStatus,
   KeywordStat,
   SortOptions,
   StreamingProvider,
@@ -260,6 +261,25 @@ export const seriesApi = {
         ...(reason !== undefined ? { reason } : {}),
       }),
     ).then(() => undefined),
+
+  // FRONTEND-057/SERIES-038-AC-01: multipart POST, matching the backend's
+  // @RequestParam("file") field name -- the only multipart upload in this
+  // client, so there's no prior sibling pattern to mirror beyond FormData +
+  // the existing axios instance.
+  importSeries: (file: File): Promise<ImportJobStatus> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request<{ data: ImportJobStatus }>(() =>
+      client.post('/series/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+    ).then((res) => res.data)
+  },
+
+  getImportStatus: (): Promise<ImportJobStatus> =>
+    request<{ data: ImportJobStatus }>(() =>
+      client.get('/series/import/status'),
+    ).then((res) => res.data),
 
   export: async (
     format: 'json' | 'csv',

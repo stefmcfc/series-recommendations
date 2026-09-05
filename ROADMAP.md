@@ -111,12 +111,13 @@ corrected below.
 | `GenreIncludeExcludePicker` gains removable chips below its trigger (both include/exclude and exclude-only modes) + renamed to "Include / Exclude Genres" on its 3 include/exclude usages | — | `frontend_spec_076` | ✅ Done |
 | Store/show every TMDB `origin_country` entry, not just the first (e.g. co-productions like "MobLand": GB + US) — widens `TmdbClient` parsing, `SeriesEntity`/DTOs, and fixes `RecommendationOutputFilterService`'s country filter to match on any of a candidate's countries | `series_spec_046` | `frontend_spec_085` | ✅ Done |
 | SeriesList/SearchFilter browsing polish: visible tooltips on icon-only toolbar buttons, click-outside closes the filter sheet, fixes Compact/Poster grid stretching a single card full-width | — | `frontend_spec_079` | ✅ Done |
+| Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | ✅ Done |
 
 ## Specced, coming soon
 
 Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
 then by suggested build order within a tier — grouped into independent dependency chains, e.g.
-`series_spec_038→frontend_spec_057` and the 4-step Analysis/Trends chain
+the 4-step Analysis/Trends chain
 (`series_spec_047`+`frontend_spec_086`→`frontend_spec_087`→`series_spec_048`+`frontend_spec_088`→
 `series_spec_049`+`frontend_spec_089`). Rows within a chain must build in the listed order; the
 chains themselves (and the fully-standalone `frontend_spec_064` row) have no dependencies on each
@@ -126,7 +127,6 @@ dependency-derived anymore.
 
 | Feature                                                                                   | Backend Spec      | Frontend Spec       | Depends On                                                                                                | Status         |
 | ----------------------------------------------------------------------------------------- | ----------------- | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------- |
-| Import (JSON only) — reverse of export, reuses `POST /series` + duplicate-`imdbId` rejection per row, async job mirroring bulk refresh | `series_spec_038` | `frontend_spec_057` | — (build first — `frontend_spec_057` is its UI) | 🟨 P3 · ⬜ Not started |
 | SeriesDetail poster click opens a full-size lightbox (close icon + click-image-to-close); Genres field moves between streaming availability and Keywords; Status moves to the heading row | — | `frontend_spec_078` | — (standalone) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 1/4: Keyword stats gain min-value filtering, alphabetical name sort, asc/desc direction toggle, and a new blended IMDb+TMDB rating column | `series_spec_047` | `frontend_spec_086` | — (build first — establishes the pattern units 2–4 reuse) | 🟨 P3 · ⬜ Not started |
 | "Analysis/Trends" expansion, unit 2/4: flat `Keywords` nav link becomes an `Analysis` section with a sub-tab set (frontend-only) | — | `frontend_spec_087` | `frontend_spec_086` | 🟨 P3 · ⬜ Not started |
