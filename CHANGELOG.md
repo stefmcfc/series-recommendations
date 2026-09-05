@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Backend: `SeriesService.update` now rejects a `currentEpisode` that exceeds the series' `totalEpisodes`, mirroring the existing `currentSeason`/`totalSeasons` check (`series_spec_050`).
+- Backend: `rottenTomatoesRating` and `rottenTomatoesPopcornmeter` are now validated as 0-100 on both `create` and `update`, closing a gap where an out-of-range value sent directly to the API bypassed the frontend form's own range check (`series_spec_050`).
+
 ## [3.23.2] - 2026-09-05
 
 ### Changed

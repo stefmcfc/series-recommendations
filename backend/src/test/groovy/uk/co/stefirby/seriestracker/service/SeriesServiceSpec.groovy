@@ -669,6 +669,84 @@ class SeriesServiceSpec extends Specification {
         thrown(IllegalArgumentException)
   }
 
+  def "SERIES-050-AC-01: rejects update with currentEpisode beyond totalEpisodes"() {
+    given: "a series has been created with a total episode count"
+        def created = seriesService.create(new SeriesDto(
+          title: "Show",
+          totalEpisodes: 10
+        ))
+
+    and: "an update DTO with a currentEpisode beyond the total"
+        def updateDto = new SeriesDto(currentEpisode: 20)
+
+    when: "the series is updated"
+        seriesService.update(created.id, updateDto)
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-050-AC-02: accepts currentEpisode within totalEpisodes"() {
+    given: "a series has been created with a total episode count"
+        def created = seriesService.create(new SeriesDto(
+          title: "Show",
+          totalEpisodes: 10
+        ))
+
+    when: "the series is updated with a currentEpisode within range"
+        def result = seriesService.update(created.id, new SeriesDto(currentEpisode: 5))
+
+    then: "the update succeeds"
+        result.currentEpisode == 5
+  }
+
+  def "SERIES-050-AC-03: rejects create with rottenTomatoesRating out of range"() {
+    when: "a series is created with an out-of-range rottenTomatoesRating"
+        seriesService.create(new SeriesDto(title: "Show", rottenTomatoesRating: 150))
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-050-AC-04: rejects update with rottenTomatoesRating out of range"() {
+    given: "a series has been created"
+        def created = seriesService.create(new SeriesDto(title: "Show"))
+
+    when: "the series is updated with an out-of-range rottenTomatoesRating"
+        seriesService.update(created.id, new SeriesDto(rottenTomatoesRating: -5))
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-050-AC-05: rejects out-of-range rottenTomatoesPopcornmeter on create and update"() {
+    when: "a series is created with an out-of-range rottenTomatoesPopcornmeter"
+        seriesService.create(new SeriesDto(title: "Show", rottenTomatoesPopcornmeter: 101))
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+
+    when: "an existing series is updated with an out-of-range rottenTomatoesPopcornmeter"
+        def created = seriesService.create(new SeriesDto(title: "Show 2"))
+        seriesService.update(created.id, new SeriesDto(rottenTomatoesPopcornmeter: -1))
+
+    then: "an IllegalArgumentException is thrown"
+        thrown(IllegalArgumentException)
+  }
+
+  def "SERIES-050-AC-06: accepts boundary values 0 and 100 for Rotten Tomatoes fields"() {
+    when: "a series is created with boundary Rotten Tomatoes values"
+        def result = seriesService.create(new SeriesDto(
+          title: "Show",
+          rottenTomatoesRating: 0,
+          rottenTomatoesPopcornmeter: 100
+        ))
+
+    then: "both values are persisted unchanged"
+        result.rottenTomatoesRating == 0
+        result.rottenTomatoesPopcornmeter == 100
+  }
+
   def "should set dateCompleted when status changed to COMPLETED"() {
     given: "a series has been created"
         def created = seriesService.create(new SeriesDto(title: "Show"))
