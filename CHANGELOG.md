@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.23.0] - 2026-09-05
+
 ### Added
 
 - Frontend: `SeriesDetail`'s poster thumbnail is now clickable, opening a full-size lightbox overlay (close icon, click-image-to-close, and Escape all dismiss it) (`frontend_spec_078`).
