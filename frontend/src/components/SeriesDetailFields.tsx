@@ -121,9 +121,6 @@ export function SeriesDetailFields({
               <dt>Production Status</dt>
               <dd>{formatProductionStatus(series.productionStatus)}</dd>
             </div>
-          </div>
-
-          <div className={`${styles.fieldRow} ${styles.threeColRow}`}>
             <div className={styles.field}>
               <dt>Total Seasons</dt>
               <dd>{formatValue(series.totalSeasons)}</dd>

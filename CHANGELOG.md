@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: `SeriesDetail`'s "Total Seasons" and "Total Episodes" fields now share the "Details" section's row with "Production Status" instead of leaving it mostly empty (`frontend_spec_090`).
+- Frontend: `SeriesDetail`'s "Back to series list" button now stays pinned to the top of the viewport while scrolling, instead of only being reachable at the very top of the page (`frontend_spec_090`).
+- Frontend: `SeriesDetail`'s "Recommendations" button moved from the left-hand actions group (Edit/Delete/Refresh) to the right-hand group (alongside the rewatch toggle), separating it as a navigation action rather than a record-mutating one (`frontend_spec_090`).
+
 ## [3.23.1] - 2026-09-05
 
 ### Changed

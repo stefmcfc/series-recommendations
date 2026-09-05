@@ -393,6 +393,65 @@ describe('FRONTEND-078-AC-10: Status removed from the Details grid', () => {
   })
 })
 
+describe('FRONTEND-090-AC-01: Production Status, Total Seasons, Total Episodes share one row', () => {
+  it('renders all three fields as siblings within the same row', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        productionStatus: 'RETURNING_SERIES',
+        totalSeasons: 5,
+        totalEpisodes: 100,
+      }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByRole('heading', { level: 2 })
+
+    const prodStatusRow = screen
+      .getByText('Production Status')
+      .closest('dl > div')
+    const totalSeasonsRow = screen
+      .getByText('Total Seasons')
+      .closest('dl > div')
+    const totalEpisodesRow = screen
+      .getByText('Total Episodes')
+      .closest('dl > div')
+
+    expect(totalSeasonsRow).toBe(prodStatusRow)
+    expect(totalEpisodesRow).toBe(prodStatusRow)
+  })
+})
+
+describe('FRONTEND-090-AC-03: Recommendations renders in the right-hand actions group', () => {
+  it('places the Recommendations button inside actions-right', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ excludeFromRecommendations: false }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    const recommendationsButton = await screen.findByTestId(
+      'recommendations-btn',
+    )
+
+    expect(
+      recommendationsButton.closest('[data-testid="actions-right"]'),
+    ).not.toBeNull()
+  })
+})
+
+describe('FRONTEND-090-AC-04: Recommendations no longer renders in actions-left', () => {
+  it('does not place the Recommendations button inside actions-left', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({ excludeFromRecommendations: false }),
+    )
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    const recommendationsButton = await screen.findByTestId(
+      'recommendations-btn',
+    )
+
+    expect(
+      recommendationsButton.closest('[data-testid="actions-left"]'),
+    ).toBeNull()
+  })
+})
+
 describe('FRONTEND-005-AC-11: not-found state', () => {
   it('shows "Series not found." and no Retry on 404', async () => {
     mockGetById.mockRejectedValue(new ApiError(404, 'Series not found'))
