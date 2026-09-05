@@ -887,7 +887,12 @@ describe('FRONTEND-029-AC-09/10: free-text keyword picker replaces the checkbox 
 describe('FRONTEND-032-AC-07: fetches keyword stats and offers them as suggestions', () => {
   it('fetches on mount and renders a fetched keyword as a clickable suggestion', async () => {
     mockGetKeywordStats.mockResolvedValue([
-      { name: 'spy', seriesCount: 3, averagePersonalRating: 4 },
+      {
+        name: 'spy',
+        seriesCount: 3,
+        averagePersonalRating: 4,
+        averageBlendedRating: null,
+      },
     ])
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     selectCustomSearch()

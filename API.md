@@ -161,12 +161,31 @@ starts.
 
 ## Keywords
 
-### `GET /api/v1/series/keywords?sortBy=`
+### `GET /api/v1/series/keywords?sortBy=&sortDirection=&minSeriesCount=&minAveragePersonalRating=&minAverageBlendedRating=`
 
-Aggregate per-keyword stats (`seriesCount`, `averagePersonalRating`) across your tracked series,
-from normalized TMDB keyword data. `sortBy` is `seriesCount` (default) or
-`averagePersonalRating`, both descending, null averages last; an unrecognized value falls back to
-the default rather than `400`. Empty list, not an error, when nothing tracked has keywords.
+Aggregate per-keyword stats (`seriesCount`, `averagePersonalRating`, `averageBlendedRating`)
+across your tracked series, from normalized TMDB keyword data. `averageBlendedRating`
+(`series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md`) is the unweighted average
+of a carrying series' `imdbRating`/`tmdbRating` (whichever are present; both on the same 0-10
+scale already, no normalization needed), itself averaged across the keyword's carrying series,
+excluding any with neither rating set — `null`, never `0`, when no carrying series has one.
+
+`sortBy` is `seriesCount` (default), `averagePersonalRating`, `averageBlendedRating`, or `name`
+(case-insensitive alphabetical); an unrecognized value falls back to the default rather than
+`400`. `sortDirection` (`asc`|`desc`, optional) reverses the active field's ordering — when
+omitted, each field keeps its own established default: `seriesCount`/`averagePersonalRating`/
+`averageBlendedRating` default descending, `name` defaults ascending. An unrecognized
+`sortDirection` value falls back to that default rather than `400`. Null averages
+(`averagePersonalRating`, `averageBlendedRating`) always sort last, under both directions.
+
+Three optional minimum-value filters, AND-combined when more than one is provided:
+`minSeriesCount` (Integer), `minAveragePersonalRating` (BigDecimal), `minAverageBlendedRating`
+(BigDecimal). Each excludes any stat whose corresponding field is `null` or strictly less than
+the threshold (`>=` passes) — a `null` average never satisfies a `minAverage*` filter, even at
+threshold `0`. Omitting all three filters is fully backward-compatible with the pre-`series_spec_047`
+response. Empty list, not an error, when nothing tracked has keywords or nothing clears the
+provided filters. Envelope shape is unchanged (`{ data, count }`); `count` reflects the
+post-filter list length.
 
 ## Lookup
 

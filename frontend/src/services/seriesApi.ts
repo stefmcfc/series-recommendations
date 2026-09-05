@@ -12,6 +12,7 @@ import type {
   RefreshJobStatus,
   ImportJobStatus,
   KeywordStat,
+  KeywordStatsOptions,
   SortOptions,
   StreamingProvider,
   CandidateDetail,
@@ -110,6 +111,30 @@ function buildSortParams(sort?: SortOptions): Record<string, unknown> {
   return params
 }
 
+// FRONTEND-086-AC-03: only options actually provided (non-undefined) are
+// included -- an empty/undefined options object sends no params at all,
+// unchanged from the pre-086 no-argument call shape.
+function buildKeywordStatsParams(
+  options?: KeywordStatsOptions,
+): Record<string, unknown> {
+  if (!options) return {}
+  const params: Record<string, unknown> = {}
+  addIfPresent(params, 'sortBy', options.sortBy)
+  addIfPresent(params, 'sortDirection', options.sortDirection)
+  addIfPresent(params, 'minSeriesCount', options.minSeriesCount)
+  addIfPresent(
+    params,
+    'minAveragePersonalRating',
+    options.minAveragePersonalRating,
+  )
+  addIfPresent(
+    params,
+    'minAverageBlendedRating',
+    options.minAverageBlendedRating,
+  )
+  return params
+}
+
 function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (!criteria) return {}
   const params: Record<string, unknown> = {}
@@ -189,12 +214,14 @@ export const seriesApi = {
       client.get('/series/genres'),
     ).then((res) => res.data),
 
-  getKeywordStats: (
-    sortBy?: 'seriesCount' | 'averagePersonalRating',
-  ): Promise<KeywordStat[]> =>
+  // FRONTEND-086-AC-02/03: options object (sortBy/sortDirection plus three
+  // min-value filters), replacing the single positional sortBy argument --
+  // KeywordsView is the only call site, so this is a contained signature
+  // change (series_spec_047).
+  getKeywordStats: (options?: KeywordStatsOptions): Promise<KeywordStat[]> =>
     request<{ data: KeywordStat[]; count: number }>(() =>
       client.get('/series/keywords', {
-        params: sortBy !== undefined ? { sortBy } : {},
+        params: buildKeywordStatsParams(options),
       }),
     ).then((res) => res.data),
 

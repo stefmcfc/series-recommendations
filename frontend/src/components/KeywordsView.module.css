@@ -9,6 +9,29 @@
   color: var(--text-h);
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filterField input {
+  width: 8rem;
+}
+
+.applyButton {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
 .loading {
   display: flex;
   align-items: center;

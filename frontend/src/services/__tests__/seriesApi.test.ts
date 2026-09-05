@@ -776,10 +776,55 @@ describe('FRONTEND-024-AC-04: getKeywordStats', () => {
   it('passes sortBy as a query param when provided', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
 
-    await seriesApi.getKeywordStats('averagePersonalRating')
+    await seriesApi.getKeywordStats({ sortBy: 'averagePersonalRating' })
 
     expect(client.get).toHaveBeenCalledWith('/series/keywords', {
       params: { sortBy: 'averagePersonalRating' },
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-086-AC-02/03: getKeywordStats options object
+// ---------------------------------------------------------------------------
+describe('FRONTEND-086-AC-02/03: getKeywordStats options object', () => {
+  it('sends only the provided options as query params', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats({ sortBy: 'name', minSeriesCount: 2 })
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', {
+      params: { sortBy: 'name', minSeriesCount: 2 },
+    })
+  })
+
+  it('sends no params when called with no arguments', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats()
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', { params: {} })
+  })
+
+  it('sends sortDirection and all three min-value filters when provided', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getKeywordStats({
+      sortBy: 'averageBlendedRating',
+      sortDirection: 'desc',
+      minSeriesCount: 2,
+      minAveragePersonalRating: 3,
+      minAverageBlendedRating: 6.5,
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/keywords', {
+      params: {
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 2,
+        minAveragePersonalRating: 3,
+        minAverageBlendedRating: 6.5,
+      },
     })
   })
 })

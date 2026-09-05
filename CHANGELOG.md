@@ -8,6 +8,19 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `GET /api/v1/series/keywords` now returns `averageBlendedRating`, the unweighted average of a carrying series' `imdbRating`/`tmdbRating` (excluding series with neither set), alongside the existing `averagePersonalRating` (`series_spec_047`).
+- Backend: `GET /api/v1/series/keywords` accepts `sortBy=name` (case-insensitive alphabetical) and `sortBy=averageBlendedRating`, plus a new `sortDirection` (`asc`|`desc`) param that reverses any `sortBy` field's ordering, including the two that already existed (`series_spec_047`).
+- Backend: `GET /api/v1/series/keywords` accepts three new optional minimum-value filters — `minSeriesCount`, `minAveragePersonalRating`, `minAverageBlendedRating` — AND-combined when more than one is provided, so a keyword's `null` average never satisfies a `minAverage*` filter (`series_spec_047`).
+- Frontend: `KeywordsView` gains three "Min Series Count"/"Min Avg Personal Rating"/"Min Avg Blended Rating" filter inputs above the table, applied via an explicit "Apply Filters" button (`frontend_spec_086`).
+- Frontend: `KeywordsView`'s "Keyword" column header is now sortable (alphabetical), and a new sortable "Avg. Blended Rating" column renders the backend's new blended-rating average (`—` when `null`) (`frontend_spec_086`).
+- Frontend: every sortable column header in `KeywordsView` now shows a ▲/▼ direction indicator and toggles between ascending/descending on repeated clicks, instead of only re-fetching with a fixed direction (`frontend_spec_086`).
+
+### Changed
+
+- Frontend: `seriesApi.getKeywordStats` now takes a single optional options object (`sortBy`/`sortDirection`/the three new min-value filters) instead of a positional `sortBy` argument — a contained breaking change, since `KeywordsView` is its only call site (`frontend_spec_086`).
+
 ## [3.25.1] - 2026-09-05
 
 ### Fixed
