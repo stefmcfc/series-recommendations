@@ -64,6 +64,29 @@ export interface RefreshJobStatus {
   finishedAt: string | null
 }
 
+// FRONTEND-057/SERIES-038: mirrors the backend's ImportRowError record
+// field-for-field. errors on the parent ImportJobStatus is capped at 20
+// entries server-side; rowIndex is zero-based into the uploaded file's
+// series array.
+export interface ImportRowError {
+  rowIndex: number
+  message: string
+}
+
+// FRONTEND-057/SERIES-038: mirrors the backend's ImportJobStatus record
+// field-for-field. status is the same string-union convention as
+// RefreshJobStatus.status above.
+export interface ImportJobStatus {
+  status: 'IDLE' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED'
+  totalCount: number
+  importedCount: number
+  skippedCount: number
+  errorCount: number
+  errors: ImportRowError[]
+  startedAt: string | null
+  completedAt: string | null
+}
+
 export interface CreateSeriesRequest {
   title: string
   year?: number

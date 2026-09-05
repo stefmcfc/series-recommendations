@@ -2,18 +2,26 @@ package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.IgnoredSeriesDto;
+import uk.co.stefirby.seriestracker.dto.ImportJobStatus;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria;
+import uk.co.stefirby.seriestracker.service.BulkImportService;
 import uk.co.stefirby.seriestracker.service.IgnoreOutcome;
 import uk.co.stefirby.seriestracker.service.IgnoredSeriesService;
 import uk.co.stefirby.seriestracker.service.SeriesExportService;
 import uk.co.stefirby.seriestracker.service.SeriesSearchService;
 import uk.co.stefirby.seriestracker.service.SeriesService;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -21,6 +29,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Backs {@code POST}/{@code GET /api/v1/series/import} (series_spec_038_import.md) in addition
+ * to this controller's existing CRUD/search/export/ignore endpoints -- a new controller wasn't
+ * warranted purely for two routes sharing this class' resource base path and dependencies, the
+ * same "one thing backing many endpoints" posture as {@code SeriesRefreshController}'s own wide
+ * constructor.
+ */
+@SuppressWarnings("java:S107")
 @RestController
 @RequestMapping("/api/v1/series")
 public class SeriesController {
@@ -31,17 +47,23 @@ public class SeriesController {
     private final SeriesSearchService searchService;
     private final SeriesExportService exportService;
     private final IgnoredSeriesService ignoredSeriesService;
+    private final BulkImportService importService;
+    private final ObjectMapper objectMapper;
     private final Clock clock;
 
     public SeriesController(SeriesService seriesService,
                             SeriesSearchService searchService,
                             SeriesExportService exportService,
                             IgnoredSeriesService ignoredSeriesService,
+                            BulkImportService importService,
+                            ObjectMapper objectMapper,
                             Clock clock) {
         this.seriesService = seriesService;
         this.searchService = searchService;
         this.exportService = exportService;
         this.ignoredSeriesService = ignoredSeriesService;
+        this.importService = importService;
+        this.objectMapper = objectMapper;
         this.clock = clock;
     }
 
@@ -163,5 +185,44 @@ public class SeriesController {
             .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
             .contentType(MediaType.parseMediaType(contentType))
             .body(content);
+    }
+
+    // series_spec_038_import.md (SERIES-038-AC-01/02): JSON only -- reads the same
+    // { series: SeriesDto[] } shape SeriesExportService.exportAsJson produces, ignoring
+    // exportDate/count if present so a re-uploaded, unmodified export file works unchanged.
+    // Parsed/validated here, before importService.start is ever called, so a structurally
+    // invalid upload is rejected with 400 without starting a job.
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ImportJobStatus>> importSeries(@RequestParam("file") MultipartFile file) {
+        List<SeriesDto> entries = parseImportFile(file);
+        ImportJobStatus status = importService.start(entries);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(status));
+    }
+
+    @GetMapping("/import/status")
+    public ResponseEntity<ApiResponse<ImportJobStatus>> importStatus() {
+        return ResponseEntity.ok(new ApiResponse<>(importService.status()));
+    }
+
+    private List<SeriesDto> parseImportFile(MultipartFile file) {
+        byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to read the uploaded file");
+        }
+
+        JsonNode root;
+        try {
+            root = objectMapper.readTree(bytes);
+        } catch (JacksonException e) {
+            throw new IllegalArgumentException("Uploaded file is not valid JSON");
+        }
+
+        if (root == null || !root.has("series") || !root.get("series").isArray()) {
+            throw new IllegalArgumentException("Uploaded file must contain a 'series' array");
+        }
+
+        return objectMapper.convertValue(root.get("series"), new TypeReference<List<SeriesDto>>() { });
     }
 }

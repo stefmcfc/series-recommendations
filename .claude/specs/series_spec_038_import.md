@@ -1,6 +1,10 @@
 # Series Spec 038: Import (Reverse of Export)
 
-**Status**: Not started
+**Status**: Implemented (backend) — `service/BulkImportService.java`,
+`dto/ImportJobStatus.java`, `dto/ImportRowError.java`, `controller/SeriesController.java`
+(`POST /api/v1/series/import`, `GET /api/v1/series/import/status`); tests in
+`service/BulkImportServiceSpec.groovy` and `controller/SeriesControllerImportSpec.groovy`.
+Frontend (`frontend_spec_057_import_ui.md`) not yet built.
 **Priority**: P3 (`series_spec_004_export.md`'s own "Future Enhancements" list, now picked up)
 **Depends on**: Series Spec 004 (`series_spec_004_export.md`, owns the JSON export shape this spec
 reads back) ✅, Series Spec 002 (`series_spec_002_crud.md`, owns `POST /api/v1/series` this spec
@@ -179,7 +183,7 @@ implementation and its controller endpoint exactly.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-038-AC-01: a valid export file starts an import job, `202 Accepted`
-- [ ] SERIES-038-AC-02: a malformed file is rejected with `400` before any job starts
-- [ ] SERIES-038-AC-03: duplicates are skipped, other failures tracked as errors, both non-fatal
-- [ ] SERIES-038-AC-04: `GET .../import/status` returns the job's current status
+- [x] SERIES-038-AC-01: a valid export file starts an import job, `202 Accepted`
+- [x] SERIES-038-AC-02: a malformed file is rejected with `400` before any job starts
+- [x] SERIES-038-AC-03: duplicates are skipped, other failures tracked as errors, both non-fatal
+- [x] SERIES-038-AC-04: `GET .../import/status` returns the job's current status

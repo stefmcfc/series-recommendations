@@ -120,6 +120,36 @@ params are silently ignored (as with any other unknown query key on this endpoin
 
 Export as JSON or CSV.
 
+## Import
+
+### `POST /api/v1/series/import`
+
+Start an async job re-importing a previously exported JSON file (`series_spec_038_import.md`).
+Multipart file upload (`file` field), **JSON only** — CSV import is out of scope. The uploaded file
+must be parseable JSON containing a `series` array of `SeriesDto` objects; `exportDate`/`count` are
+ignored if present, so a re-uploaded, unmodified `GET /api/v1/series/export?format=json` file works
+unchanged. `400` if the file isn't valid JSON or is missing the `series` array — rejected before any
+job starts. Otherwise creates each entry sequentially via the same path as `POST /api/v1/series`
+(full validation, best-effort TMDB/OMDb enrichment when `imdbId` is present), with a fixed delay
+between items (`app.tmdb.refresh-delay-ms`, reused from bulk refresh — no separate import-delay
+property) to stay within TMDB's rate limit. A duplicate `imdbId` (`409` from `POST /api/v1/series`,
+`series_spec_028_prevent_duplicate_series.md`) is caught and counted toward `skippedCount`, not a
+job failure; any other per-row failure (e.g. a validation error) is counted toward `errorCount` with
+a per-row message appended to `errors` (capped at 20 entries). `202` with the job's initial state;
+`409` if a job is already running (bulk refresh and bulk import are tracked independently — one
+running doesn't block the other).
+
+---
+
+### `GET /api/v1/series/import/status`
+
+Poll the current (or most recently finished) bulk import job's `{ status, totalCount,
+importedCount, skippedCount, errorCount, errors, startedAt, completedAt }`, where each `errors`
+entry is `{ rowIndex, message }` (`rowIndex` is the zero-based position in the uploaded `series`
+array, not a series id). `status` is `IDLE` before any job has ever run, then
+`IN_PROGRESS`/`COMPLETED`/`FAILED` — a completed run's result stays visible here until a new job
+starts.
+
 ## Keywords
 
 ### `GET /api/v1/series/keywords?sortBy=`
