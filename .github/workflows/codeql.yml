@@ -97,12 +97,15 @@ jobs:
 
   analyze:
     needs: changes
-    if: |
-      needs.changes.outputs.release_cut_only != 'true' &&
-      (
-        (matrix.language == 'java' && needs.changes.outputs.backend == 'true') ||
-        (matrix.language == 'javascript-typescript' && needs.changes.outputs.frontend == 'true')
-      )
+    # `matrix` isn't resolved yet at job-level `if:` (it's only bound once the matrix
+    # has fanned out into per-instance jobs, which happens after this is evaluated) --
+    # referencing it here is an *invalid workflow*, not just a no-op: GitHub rejects
+    # the whole file and no run for this workflow fires at all, on any trigger,
+    # including `pull_request` (found by checking the run's actual failure reason
+    # after backend/frontend gating silently produced zero CodeQL runs on PR #174).
+    # So `release_cut_only` alone gates the job; matrix.language is only referenced in
+    # each step's own `if:`, where it *is* available, to skip the per-leg work instead.
+    if: needs.changes.outputs.release_cut_only != 'true'
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -110,20 +113,31 @@ jobs:
       matrix:
         language: [javascript-typescript, java]
     steps:
-      - uses: actions/checkout@v7
-      - uses: github/codeql-action/init@v4
+      - name: Should this leg run?
+        id: gate
+        # Java only needs to run when backend changed; javascript-typescript only
+        # when frontend changed (see ci.yml's `changes` job for what those mean).
+        if: |
+          (matrix.language == 'java' && needs.changes.outputs.backend == 'true') ||
+          (matrix.language == 'javascript-typescript' && needs.changes.outputs.frontend == 'true')
+        run: echo "run=true" >> "$GITHUB_OUTPUT"
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v7
+      - if: steps.gate.outputs.run == 'true'
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
-      - if: matrix.language == 'java'
+      - if: steps.gate.outputs.run == 'true' && matrix.language == 'java'
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
-      - if: matrix.language == 'java'
+      - if: steps.gate.outputs.run == 'true' && matrix.language == 'java'
         uses: gradle/actions/setup-gradle@v6
-      - if: matrix.language == 'java'
+      - if: steps.gate.outputs.run == 'true' && matrix.language == 'java'
         working-directory: backend
         run: gradle compileJava compileTestGroovy
-      - uses: github/codeql-action/analyze@v4
+      - if: steps.gate.outputs.run == 'true'
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
