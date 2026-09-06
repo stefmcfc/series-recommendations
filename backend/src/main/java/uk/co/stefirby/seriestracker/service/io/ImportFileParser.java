@@ -49,6 +49,7 @@ public class ImportFileParser {
             throw new IllegalArgumentException("Uploaded file must contain a 'series' array");
         }
 
-        return objectMapper.convertValue(root.get(SERIES_FIELD), new TypeReference<List<SeriesDto>>() { });
+        return objectMapper.convertValue(root.get(SERIES_FIELD), new TypeReference<>() {
+        });
     }
 }

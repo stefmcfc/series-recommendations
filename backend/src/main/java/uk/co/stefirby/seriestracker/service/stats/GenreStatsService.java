@@ -1,6 +1,6 @@
 package uk.co.stefirby.seriestracker.service.stats;
 
-import uk.co.stefirby.seriestracker.dto.GenreStatDto;
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import uk.co.stefirby.seriestracker.service.stats.NameStatAggregator.NameStat;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Backs {@code GET /api/v1/series/genres/stats} (series_spec_048_genre_stats.md, Requirement 1):
- * one {@link GenreStatDto} per distinct genre name actually present across the user's tracked
+ * one {@link NameStatDto} per distinct genre name actually present across the user's tracked
  * series, computed via in-memory aggregation over {@code seriesRepository.findAll()} -- the same
  * "fine at this app's scale" precedent {@link uk.co.stefirby.seriestracker.service.stats.KeywordStatsService}
  * already establishes for keywords (SERIES-019-AC-14), applied here to the delimited {@code
@@ -38,7 +38,7 @@ public class GenreStatsService {
     }
 
     @Transactional(readOnly = true)
-    public List<GenreStatDto> getStats(
+    public List<NameStatDto> getStats(
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,
@@ -52,17 +52,10 @@ public class GenreStatsService {
         List<NameStat> stats = NameStatAggregator.aggregate(
             seriesRepository.findAll(),
             series -> splitGenres(series.getGenres()),
-            sortBy,
-            sortDirection,
-            minSeriesCount,
-            minAveragePersonalRating,
-            minAverageBlendedRating,
-            onlyCompleted);
+            new NameStatAggregator.NameStatQuery(
+                sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted));
 
-        return stats.stream()
-            .map(stat -> new GenreStatDto(
-                stat.name(), stat.seriesCount(), stat.averagePersonalRating(), stat.averageBlendedRating()))
-            .toList();
+        return NameStatAggregator.toDtos(stats);
     }
 
     // Mirrors RecommendationSourcingService.splitGenres exactly (SERIES-048-AC-02): comma-

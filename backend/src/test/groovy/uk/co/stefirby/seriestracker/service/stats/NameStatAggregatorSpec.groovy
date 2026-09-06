@@ -20,7 +20,7 @@ class NameStatAggregatorSpec extends Specification {
 
         when:
             def stats = NameStatAggregator.aggregate(
-                [series], { s -> ["spy", "spy"] }, null, null, null, null, null, null)
+                [series], { s -> ["spy", "spy"] }, new NameStatAggregator.NameStatQuery(null, null, null, null, null, null))
 
         then: "the series is only counted once toward 'spy'"
             stats.size() == 1
@@ -35,7 +35,7 @@ class NameStatAggregatorSpec extends Specification {
 
         when:
             def stats = NameStatAggregator.aggregate(
-                [a, b], { s -> ["spy"] }, null, null, null, null, null, null)
+                [a, b], { s -> ["spy"] }, new NameStatAggregator.NameStatQuery(null, null, null, null, null, null))
 
         then:
             stats.size() == 1
@@ -50,7 +50,7 @@ class NameStatAggregatorSpec extends Specification {
 
         when:
             def stats = NameStatAggregator.aggregate(
-                [a, b], { s -> s.title == "A" ? ["spy"] : ["Drama"] }, "name", "asc", null, null, null, null)
+                [a, b], { s -> s.title == "A" ? ["spy"] : ["Drama"] }, new NameStatAggregator.NameStatQuery("name", "asc", null, null, null, null))
 
         then:
             stats*.name() == ["Drama", "spy"]
@@ -66,7 +66,7 @@ class NameStatAggregatorSpec extends Specification {
             def stats = NameStatAggregator.aggregate(
                 [a, b, c],
                 { s -> s.title == "C" ? ["drama"] : ["spy"] },
-                "bogus", null, null, null, null, null)
+                new NameStatAggregator.NameStatQuery("bogus", null, null, null, null, null))
 
         then:
             stats*.name() == ["spy", "drama"]
@@ -82,7 +82,7 @@ class NameStatAggregatorSpec extends Specification {
             def stats = NameStatAggregator.aggregate(
                 [a, b, c],
                 { s -> s.title == "C" ? ["drama"] : ["spy"] },
-                null, null, 2, null, null, null)
+                new NameStatAggregator.NameStatQuery(null, null, 2, null, null, null))
 
         then:
             stats*.name() == ["spy"]
@@ -97,13 +97,13 @@ class NameStatAggregatorSpec extends Specification {
             def descStats = NameStatAggregator.aggregate(
                 [spySeries, dramaSeries],
                 { s -> s.title == "A" ? ["spy"] : ["drama"] },
-                "averageBlendedRating", null, null, null, null, null)
+                new NameStatAggregator.NameStatQuery("averageBlendedRating", null, null, null, null, null))
 
         and: "explicit ascending"
             def ascStats = NameStatAggregator.aggregate(
                 [spySeries, dramaSeries],
                 { s -> s.title == "A" ? ["spy"] : ["drama"] },
-                "averageBlendedRating", "asc", null, null, null, null)
+                new NameStatAggregator.NameStatQuery("averageBlendedRating", "asc", null, null, null, null))
 
         then: "'drama' (null average) sorts last regardless of direction"
             descStats*.name() == ["spy", "drama"]
@@ -117,7 +117,7 @@ class NameStatAggregatorSpec extends Specification {
 
         when: "aggregate is called with onlyCompleted=true"
             def stats = NameStatAggregator.aggregate(
-                [completed, watching], { s -> ["drama"] }, null, null, null, null, null, true)
+                [completed, watching], { s -> ["drama"] }, new NameStatAggregator.NameStatQuery(null, null, null, null, null, true))
 
         then: "only the COMPLETED series is counted"
             stats[0].seriesCount() == 1
@@ -130,7 +130,7 @@ class NameStatAggregatorSpec extends Specification {
             def watching = new SeriesEntity(title: "B", status: SeriesStatus.WATCHING)
 
         expect: "both are counted whether onlyCompleted is omitted (null) or explicitly false"
-            NameStatAggregator.aggregate([completed, watching], { s -> ["drama"] }, null, null, null, null, null, null)[0].seriesCount() == 2
-            NameStatAggregator.aggregate([completed, watching], { s -> ["drama"] }, null, null, null, null, null, false)[0].seriesCount() == 2
+            NameStatAggregator.aggregate([completed, watching], { s -> ["drama"] }, new NameStatAggregator.NameStatQuery(null, null, null, null, null, null))[0].seriesCount() == 2
+            NameStatAggregator.aggregate([completed, watching], { s -> ["drama"] }, new NameStatAggregator.NameStatQuery(null, null, null, null, null, false))[0].seriesCount() == 2
     }
 }

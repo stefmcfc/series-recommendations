@@ -506,13 +506,12 @@ public class TmdbClient {
      * field is absent or empty, mirroring {@link #toIntegerList(Object)}'s existing
      * empty-list-not-null convention for the sibling {@code genre_ids} parser.
      */
-    @SuppressWarnings("unchecked")
     private static List<String> originCountries(Object value) {
         if (!(value instanceof List<?> list)) {
             return List.of();
         }
         List<String> countries = new ArrayList<>();
-        for (Object o : (List<Object>) list) {
+        for (Object o : list) {
             String country = ExternalApiSupport.str(o);
             if (country != null) {
                 countries.add(country);

@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Backend: `TmdbClient.originCountries` no longer needs an unchecked cast/`@SuppressWarnings("unchecked")` — the pattern-matched `List<?>` is now iterated directly (SonarLint suggestion).
+- Backend: `ImportFileParser.parseSeries` uses the diamond operator on its anonymous `TypeReference` instead of a redundant explicit type argument (SonarLint suggestion).
+- Backend: `NameStatAggregator.aggregate`'s six sort/filter/scope params are now grouped into a new `NameStatQuery` record, reducing its parameter count from 8 to 3 (Sonar `java:S107`).
+- Backend: `KeywordStatDto`/`GenreStatDto`/`CountryStatDto` — identical shapes — are consolidated into one shared `NameStatDto`, with `KeywordStatsService`/`GenreStatsService`/`CountryStatsService` and their controllers updated accordingly; the three services' now-identical `NameStat`-to-DTO mapping is consolidated into a new `NameStatAggregator.toDtos` helper.
+- Frontend: `NameStatsTableProps` fields are now marked `readonly` (Sonar `typescript:S6759`).
+- Frontend: `RecommendationFiltersBox`'s two duplicate `./RecommendationControls` imports are merged into one (Sonar `typescript:S3863`).
+- Frontend: `KeywordStatsOptions`/`GenreStatsOptions`/`CountryStatsOptions` — identical shapes — are consolidated into one shared `NameStatsOptions` type, and their repeated `sortBy` union into `NameStatsSortBy` (Sonar `typescript:S4323`).
+- Frontend: `seriesApi`'s three identical `buildKeywordStatsParams`/`buildGenreStatsParams`/`buildCountryStatsParams` functions are consolidated into one `buildNameStatsParams` (Sonar `typescript:S4144`).
+
 ## [3.30.0] - 2026-09-06
 
 ### Added

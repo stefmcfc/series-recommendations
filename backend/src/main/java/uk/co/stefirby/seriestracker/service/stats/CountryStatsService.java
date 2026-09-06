@@ -1,6 +1,6 @@
 package uk.co.stefirby.seriestracker.service.stats;
 
-import uk.co.stefirby.seriestracker.dto.CountryStatDto;
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import uk.co.stefirby.seriestracker.service.stats.NameStatAggregator.NameStat;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Backs {@code GET /api/v1/series/origin-country/stats} (series_spec_049_country_of_origin_stats.md,
- * Requirement 1): one {@link CountryStatDto} per distinct ISO 3166-1 alpha-2 origin-country code
+ * Requirement 1): one {@link NameStatDto} per distinct ISO 3166-1 alpha-2 origin-country code
  * actually present across the user's tracked series, computed via in-memory aggregation over
  * {@code seriesRepository.findAll()} -- the same precedent {@link GenreStatsService} and {@link
  * KeywordStatsService} already establish, applied here to the comma-joined {@code originCountry}
@@ -39,7 +39,7 @@ public class CountryStatsService {
     }
 
     @Transactional(readOnly = true)
-    public List<CountryStatDto> getStats(
+    public List<NameStatDto> getStats(
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,
@@ -52,17 +52,10 @@ public class CountryStatsService {
         List<NameStat> stats = NameStatAggregator.aggregate(
             seriesRepository.findAll(),
             series -> splitOriginCountry(series.getOriginCountry()),
-            sortBy,
-            sortDirection,
-            minSeriesCount,
-            minAveragePersonalRating,
-            minAverageBlendedRating,
-            onlyCompleted);
+            new NameStatAggregator.NameStatQuery(
+                sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted));
 
-        return stats.stream()
-            .map(stat -> new CountryStatDto(
-                stat.name(), stat.seriesCount(), stat.averagePersonalRating(), stat.averageBlendedRating()))
-            .toList();
+        return NameStatAggregator.toDtos(stats);
     }
 
     // SERIES-049-AC-02: a bare comma split, no per-segment trimming -- originCountry has never

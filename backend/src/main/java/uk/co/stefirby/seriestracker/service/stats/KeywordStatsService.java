@@ -1,6 +1,6 @@
 package uk.co.stefirby.seriestracker.service.stats;
 
-import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.model.KeywordEntity;
 import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import uk.co.stefirby.seriestracker.service.stats.NameStatAggregator.NameStat;
@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Backs {@code GET /api/v1/series/keywords} (Requirement 4, {@code
- * series_spec_019_keyword_tracking.md}): one {@link KeywordStatDto} per distinct keyword
+ * series_spec_019_keyword_tracking.md}): one {@link NameStatDto} per distinct keyword
  * actually present across the user's tracked series, computed via in-memory aggregation over
  * {@code seriesRepository.findAll()} -- matching {@code SeriesSearchService}'s own established
  * "fine at this app's scale" precedent (SERIES-019-AC-14) rather than a custom repository
@@ -42,12 +42,12 @@ public class KeywordStatsService {
 
     /** Pre-series_spec_047 signature, kept for backward compatibility (SERIES-047-AC-12). */
     @Transactional(readOnly = true)
-    public List<KeywordStatDto> getStats(String sortBy) {
+    public List<NameStatDto> getStats(String sortBy) {
         return doGetStats(sortBy, null, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
-    public List<KeywordStatDto> getStats(
+    public List<NameStatDto> getStats(
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,
@@ -63,7 +63,7 @@ public class KeywordStatsService {
     // 6-arg getStats(...) directly, bypassing the proxy and its transaction advice. Both public
     // overloads now share this plain, non-transactional helper instead; each stays covered by its
     // own method-level @Transactional for the whole synchronous call, helper included.
-    private List<KeywordStatDto> doGetStats(
+    private List<NameStatDto> doGetStats(
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,
@@ -73,16 +73,9 @@ public class KeywordStatsService {
         List<NameStat> stats = NameStatAggregator.aggregate(
             seriesRepository.findAll(),
             series -> series.getKeywords().stream().map(KeywordEntity::getName).toList(),
-            sortBy,
-            sortDirection,
-            minSeriesCount,
-            minAveragePersonalRating,
-            minAverageBlendedRating,
-            onlyCompleted);
+            new NameStatAggregator.NameStatQuery(
+                sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted));
 
-        return stats.stream()
-            .map(stat -> new KeywordStatDto(
-                stat.name(), stat.seriesCount(), stat.averagePersonalRating(), stat.averageBlendedRating()))
-            .toList();
+        return NameStatAggregator.toDtos(stats);
     }
 }
