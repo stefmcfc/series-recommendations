@@ -1,7 +1,7 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
-import uk.co.stefirby.seriestracker.dto.GenreStatDto;
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.service.stats.GenreStatsService;
 import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable;
 import org.springframework.http.ResponseEntity;
@@ -44,14 +44,14 @@ public class SeriesGenreController {
     }
 
     @GetMapping("/genres/stats")
-    public ResponseEntity<ApiResponse<List<GenreStatDto>>> genreStats(
+    public ResponseEntity<ApiResponse<List<NameStatDto>>> genreStats(
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection,
             @RequestParam(required = false) Integer minSeriesCount,
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @RequestParam(required = false) Boolean onlyCompleted) {
-        List<GenreStatDto> stats = genreStatsService.getStats(
+        List<NameStatDto> stats = genreStatsService.getStats(
             sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted);
         return ResponseEntity.ok(new ApiResponse<>(stats, stats.size()));
     }

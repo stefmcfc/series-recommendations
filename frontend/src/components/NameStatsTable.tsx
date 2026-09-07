@@ -32,13 +32,13 @@ export interface NameStatsOptions {
 }
 
 export interface NameStatsTableProps {
-  testId: string
-  heading: string
-  idPrefix: string
-  nameColumnLabel: string
-  loadingLabel: string
-  errorLabel: string
-  fetchStats: (options: NameStatsOptions) => Promise<NameStat[]>
+  readonly testId: string
+  readonly heading: string
+  readonly idPrefix: string
+  readonly nameColumnLabel: string
+  readonly loadingLabel: string
+  readonly errorLabel: string
+  readonly fetchStats: (options: NameStatsOptions) => Promise<NameStat[]>
 }
 
 // FRONTEND-086-AC-09/10/SERIES-047-AC-07: each sortable field's established

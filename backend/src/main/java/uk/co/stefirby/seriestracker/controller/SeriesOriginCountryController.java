@@ -1,7 +1,7 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
-import uk.co.stefirby.seriestracker.dto.CountryStatDto;
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.service.stats.CountryStatsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,14 +32,14 @@ public class SeriesOriginCountryController {
     }
 
     @GetMapping("/origin-country/stats")
-    public ResponseEntity<ApiResponse<List<CountryStatDto>>> originCountryStats(
+    public ResponseEntity<ApiResponse<List<NameStatDto>>> originCountryStats(
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection,
             @RequestParam(required = false) Integer minSeriesCount,
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @RequestParam(required = false) Boolean onlyCompleted) {
-        List<CountryStatDto> stats = countryStatsService.getStats(
+        List<NameStatDto> stats = countryStatsService.getStats(
             sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted);
         return ResponseEntity.ok(new ApiResponse<>(stats, stats.size()));
     }

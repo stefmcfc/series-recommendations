@@ -56,17 +56,25 @@ export interface KeywordStat {
 // FRONTEND-086-AC-02: options object for seriesApi.getKeywordStats -- five
 // independent, all-optional params no longer fit cleanly as positional
 // arguments (series_spec_047).
-export interface KeywordStatsOptions {
-  sortBy?:
-    'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
+// typescript:S4323 -- KeywordStatsOptions/GenreStatsOptions/CountryStatsOptions
+// are structurally identical (as their own comments already noted); their
+// shared sortBy union and options shape are named once here and aliased
+// three ways below so every existing import/call site is unaffected.
+export type NameStatsSortBy =
+  'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
+
+export interface NameStatsOptions {
+  sortBy?: NameStatsSortBy
   sortDirection?: 'asc' | 'desc'
   minSeriesCount?: number
   minAveragePersonalRating?: number
   minAverageBlendedRating?: number
   // FRONTEND-095-AC-02/SERIES-051: restricts stats to COMPLETED series only --
-  // omitted or false is never sent (see buildKeywordStatsParams).
+  // omitted or false is never sent (see buildNameStatsParams).
   onlyCompleted?: boolean
 }
+
+export type KeywordStatsOptions = NameStatsOptions
 
 // FRONTEND-088-AC-01: identical shape to KeywordStat -- genre stats mirror
 // keyword stats one-for-one (series_spec_048).
@@ -79,16 +87,7 @@ export interface GenreStat {
 
 // FRONTEND-088-AC-02: options object for seriesApi.getGenreStats -- mirrors
 // KeywordStatsOptions exactly (series_spec_048).
-export interface GenreStatsOptions {
-  sortBy?:
-    'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
-  sortDirection?: 'asc' | 'desc'
-  minSeriesCount?: number
-  minAveragePersonalRating?: number
-  minAverageBlendedRating?: number
-  // FRONTEND-095-AC-02/SERIES-051: mirrors KeywordStatsOptions.onlyCompleted.
-  onlyCompleted?: boolean
-}
+export type GenreStatsOptions = NameStatsOptions
 
 // FRONTEND-089-AC-01: identical shape to KeywordStat/GenreStat -- `name` is
 // the raw ISO 3166-1 alpha-2 code (e.g. "GB"), not a resolved display name;
@@ -103,16 +102,7 @@ export interface CountryStat {
 
 // FRONTEND-089-AC-02: options object for seriesApi.getCountryStats -- mirrors
 // KeywordStatsOptions/GenreStatsOptions exactly (series_spec_049).
-export interface CountryStatsOptions {
-  sortBy?:
-    'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
-  sortDirection?: 'asc' | 'desc'
-  minSeriesCount?: number
-  minAveragePersonalRating?: number
-  minAverageBlendedRating?: number
-  // FRONTEND-089: mirrors KeywordStatsOptions/GenreStatsOptions.onlyCompleted.
-  onlyCompleted?: boolean
-}
+export type CountryStatsOptions = NameStatsOptions
 
 export interface RefreshResult {
   series: Series

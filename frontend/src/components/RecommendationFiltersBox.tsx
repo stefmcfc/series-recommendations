@@ -6,10 +6,10 @@ import {
   COUNTRY_PINNED_OPTIONS,
   LANGUAGE_OPTIONS,
   LANGUAGE_PINNED_CODES,
+  isMinVoteCountValid,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
-import { isMinVoteCountValid } from './RecommendationControls'
 import styles from './RecommendationControls.module.css'
 
 // FRONTEND-093-AC-02/03: counts every field this box reads/writes,

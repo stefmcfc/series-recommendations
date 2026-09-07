@@ -1,7 +1,7 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
-import uk.co.stefirby.seriestracker.dto.KeywordStatDto;
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.service.stats.KeywordStatsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,14 +36,14 @@ public class SeriesKeywordController {
     }
 
     @GetMapping("/keywords")
-    public ResponseEntity<ApiResponse<List<KeywordStatDto>>> keywords(
+    public ResponseEntity<ApiResponse<List<NameStatDto>>> keywords(
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection,
             @RequestParam(required = false) Integer minSeriesCount,
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @RequestParam(required = false) Boolean onlyCompleted) {
-        List<KeywordStatDto> stats = keywordStatsService.getStats(
+        List<NameStatDto> stats = keywordStatsService.getStats(
             sortBy, sortDirection, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating, onlyCompleted);
         return ResponseEntity.ok(new ApiResponse<>(stats, stats.size()));
     }

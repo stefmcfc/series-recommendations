@@ -17,6 +17,7 @@ import type {
   GenreStatsOptions,
   CountryStat,
   CountryStatsOptions,
+  NameStatsOptions,
   SortOptions,
   StreamingProvider,
   CandidateDetail,
@@ -118,8 +119,12 @@ function buildSortParams(sort?: SortOptions): Record<string, unknown> {
 // FRONTEND-086-AC-03: only options actually provided (non-undefined) are
 // included -- an empty/undefined options object sends no params at all,
 // unchanged from the pre-086 no-argument call shape.
-function buildKeywordStatsParams(
-  options?: KeywordStatsOptions,
+//
+// typescript:S4144 -- keyword/genre/country stats options share one shape
+// (NameStatsOptions), so this one function backs all three seriesApi
+// getXStats methods instead of three identical per-resource copies.
+function buildNameStatsParams(
+  options?: NameStatsOptions,
 ): Record<string, unknown> {
   if (!options) return {}
   const params: Record<string, unknown> = {}
@@ -140,56 +145,6 @@ function buildKeywordStatsParams(
   // addIfPresent's `!= null` check would let `false` through as
   // `onlyCompleted=false`, which the backend contract treats as distinct
   // from simply omitting it (series_spec_051), so this is checked directly.
-  if (options.onlyCompleted === true) params.onlyCompleted = true
-  return params
-}
-
-// FRONTEND-088-AC-02: mirrors buildKeywordStatsParams exactly -- genre stats
-// share the same options shape (series_spec_048).
-function buildGenreStatsParams(
-  options?: GenreStatsOptions,
-): Record<string, unknown> {
-  if (!options) return {}
-  const params: Record<string, unknown> = {}
-  addIfPresent(params, 'sortBy', options.sortBy)
-  addIfPresent(params, 'sortDirection', options.sortDirection)
-  addIfPresent(params, 'minSeriesCount', options.minSeriesCount)
-  addIfPresent(
-    params,
-    'minAveragePersonalRating',
-    options.minAveragePersonalRating,
-  )
-  addIfPresent(
-    params,
-    'minAverageBlendedRating',
-    options.minAverageBlendedRating,
-  )
-  // FRONTEND-095-AC-03: mirrors buildKeywordStatsParams's onlyCompleted
-  // handling exactly.
-  if (options.onlyCompleted === true) params.onlyCompleted = true
-  return params
-}
-
-// FRONTEND-089-AC-02: mirrors buildKeywordStatsParams/buildGenreStatsParams
-// exactly -- country stats share the same options shape (series_spec_049).
-function buildCountryStatsParams(
-  options?: CountryStatsOptions,
-): Record<string, unknown> {
-  if (!options) return {}
-  const params: Record<string, unknown> = {}
-  addIfPresent(params, 'sortBy', options.sortBy)
-  addIfPresent(params, 'sortDirection', options.sortDirection)
-  addIfPresent(params, 'minSeriesCount', options.minSeriesCount)
-  addIfPresent(
-    params,
-    'minAveragePersonalRating',
-    options.minAveragePersonalRating,
-  )
-  addIfPresent(
-    params,
-    'minAverageBlendedRating',
-    options.minAverageBlendedRating,
-  )
   if (options.onlyCompleted === true) params.onlyCompleted = true
   return params
 }
@@ -280,7 +235,7 @@ export const seriesApi = {
   getKeywordStats: (options?: KeywordStatsOptions): Promise<KeywordStat[]> =>
     request<{ data: KeywordStat[]; count: number }>(() =>
       client.get('/series/keywords', {
-        params: buildKeywordStatsParams(options),
+        params: buildNameStatsParams(options),
       }),
     ).then((res) => res.data),
 
@@ -289,7 +244,7 @@ export const seriesApi = {
   getGenreStats: (options?: GenreStatsOptions): Promise<GenreStat[]> =>
     request<{ data: GenreStat[]; count: number }>(() =>
       client.get('/series/genres/stats', {
-        params: buildGenreStatsParams(options),
+        params: buildNameStatsParams(options),
       }),
     ).then((res) => res.data),
 
@@ -299,7 +254,7 @@ export const seriesApi = {
   getCountryStats: (options?: CountryStatsOptions): Promise<CountryStat[]> =>
     request<{ data: CountryStat[]; count: number }>(() =>
       client.get('/series/origin-country/stats', {
-        params: buildCountryStatsParams(options),
+        params: buildNameStatsParams(options),
       }),
     ).then((res) => res.data),
 

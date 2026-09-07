@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.service.stats;
 
+import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import uk.co.stefirby.seriestracker.model.SeriesEntity;
 import uk.co.stefirby.seriestracker.model.SeriesStatus;
 
@@ -46,30 +47,39 @@ public final class NameStatAggregator {
     }
 
     /**
-     * Groups {@code allSeries} by the names {@code namesExtractor} pulls off each series
-     * (de-duplicating per-series via a {@code LinkedHashSet} before grouping -- a no-op when the
-     * extractor already returns a unique collection, such as keyword names sourced from a
-     * {@code Set<KeywordEntity>}), computes a {@link NameStat} per distinct name, applies the
-     * AND-combined minimum-value filters, and sorts the result per {@code sortBy}/{@code
-     * sortDirection}.
-     *
-     * <p>series_spec_051_stats_status_scope_filter.md (SERIES-051-AC-01/02/03): when {@code
-     * onlyCompleted} is {@link Boolean#TRUE}, {@code allSeries} is first restricted to series
-     * whose {@code getStatus() == SeriesStatus.COMPLETED} before the per-series grouping loop
-     * below -- series excluded this way contribute to no name's {@code seriesCount} or averages
-     * at all. {@code null} or {@link Boolean#FALSE} applies no restriction, matching today's
-     * behavior exactly.
+     * The sort/filter/scope contract shared by every {@code aggregate} caller -- grouped into one
+     * record (java:S107 -- {@code aggregate} previously took these six as flat parameters) since
+     * they're always supplied together and never independently.
      */
-    public static List<NameStat> aggregate(
-            List<SeriesEntity> allSeries,
-            Function<SeriesEntity, Collection<String>> namesExtractor,
+    public record NameStatQuery(
             String sortBy,
             String sortDirection,
             Integer minSeriesCount,
             BigDecimal minAveragePersonalRating,
             BigDecimal minAverageBlendedRating,
             Boolean onlyCompleted) {
-        List<SeriesEntity> scopedSeries = Boolean.TRUE.equals(onlyCompleted)
+    }
+
+    /**
+     * Groups {@code allSeries} by the names {@code namesExtractor} pulls off each series
+     * (de-duplicating per-series via a {@code LinkedHashSet} before grouping -- a no-op when the
+     * extractor already returns a unique collection, such as keyword names sourced from a
+     * {@code Set<KeywordEntity>}), computes a {@link NameStat} per distinct name, applies the
+     * AND-combined minimum-value filters, and sorts the result per {@code query.sortBy()}/{@code
+     * query.sortDirection()}.
+     *
+     * <p>series_spec_051_stats_status_scope_filter.md (SERIES-051-AC-01/02/03): when {@code
+     * query.onlyCompleted()} is {@link Boolean#TRUE}, {@code allSeries} is first restricted to
+     * series whose {@code getStatus() == SeriesStatus.COMPLETED} before the per-series grouping
+     * loop below -- series excluded this way contribute to no name's {@code seriesCount} or
+     * averages at all. {@code null} or {@link Boolean#FALSE} applies no restriction, matching
+     * today's behavior exactly.
+     */
+    public static List<NameStat> aggregate(
+            List<SeriesEntity> allSeries,
+            Function<SeriesEntity, Collection<String>> namesExtractor,
+            NameStatQuery query) {
+        List<SeriesEntity> scopedSeries = Boolean.TRUE.equals(query.onlyCompleted())
             ? allSeries.stream().filter(series -> series.getStatus() == SeriesStatus.COMPLETED).toList()
             : allSeries;
 
@@ -86,9 +96,23 @@ public final class NameStatAggregator {
             stats.add(toStat(entry.getKey(), entry.getValue()));
         }
 
-        stats.removeIf(stat -> !passesFilters(stat, minSeriesCount, minAveragePersonalRating, minAverageBlendedRating));
-        stats.sort(comparatorFor(sortBy, sortDirection));
+        stats.removeIf(stat -> !passesFilters(
+            stat, query.minSeriesCount(), query.minAveragePersonalRating(), query.minAverageBlendedRating()));
+        stats.sort(comparatorFor(query.sortBy(), query.sortDirection()));
         return stats;
+    }
+
+    /**
+     * Maps aggregated {@link NameStat} rows to the API-facing {@link NameStatDto} shape -- shared
+     * by KeywordStatsService/GenreStatsService/CountryStatsService, which otherwise each repeated
+     * this identical mapping (typescript/java:S4144's backend counterpart, spotted while
+     * consolidating the three formerly-separate per-resource DTOs into one).
+     */
+    public static List<NameStatDto> toDtos(List<NameStat> stats) {
+        return stats.stream()
+            .map(stat -> new NameStatDto(
+                stat.name(), stat.seriesCount(), stat.averagePersonalRating(), stat.averageBlendedRating()))
+            .toList();
     }
 
     private static boolean passesFilters(
