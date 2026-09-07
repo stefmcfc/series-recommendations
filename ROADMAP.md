@@ -127,6 +127,7 @@ corrected below.
 | Analysis filters consistency (centered heading/labels, inconsistent table column widths, unstyled Apply Filters button) and cross-tab persistence of filters/sort/panel-open state on `/analysis` | — | `frontend_spec_096` | ✅ Done |
 | Refresh skip-threshold per-run override + visibility (`RefreshJobStatus.skipThresholdMinutesUsed`), plus a new `SettingsSection` wrapper component | `series_spec_052` | `frontend_spec_097` | ✅ Done |
 | Country/Language "favourites" for Custom Search's pinned chips, editable on `/settings`; introduces the shared `useLocalStorage` hook and migrates `SeriesList`'s view-mode toggle onto it | — | `frontend_spec_098` | ✅ Done |
+| Drag-and-drop + keyboard-accessible reordering of `KeywordPicker`'s selected chips (opt-in `reorderable` prop), adopted by the Country/Language Favourites editors so a favourite's pinned position is user-controlled, not just its membership | — | `frontend_spec_100` | ✅ Done |
 
 ## Specced, coming soon
 

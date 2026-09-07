@@ -269,6 +269,51 @@ describe('FRONTEND-098-AC-07/08: country/language favourites default and read fr
   })
 })
 
+describe('FRONTEND-100-AC-09: reordered favourites render in the new order', () => {
+  // Deviation from the spec's TDD sketch: the sketch expected pinned
+  // country suggestions to render as resolved full names ("United
+  // Kingdom"/"United States"), but CustomSearchPanel's Countries picker
+  // passes `options={COUNTRY_OPTIONS}`, which deliberately excludes US/GB
+  // (see countryOptions.ts) -- so pinnedOptions falls back to each pinned
+  // entry's own raw id/label ("GB"/"US" bare codes), matching this file's
+  // pre-existing default-pinned-countries tests just above. This test
+  // confirms order, not resolved text, since that's what AC-09 is actually
+  // about (the order set on Settings driving the order shown here).
+  it('shows pinned country chips in the stored order', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['GB', 'US']))
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const countriesContainer = screen.getByText('Countries').closest('div')
+    const suggestionButtons = within(
+      countriesContainer as HTMLElement,
+    ).getAllByRole('button', { name: /^(US|GB)$/ })
+    expect(suggestionButtons.map((el) => el.textContent)).toEqual(['GB', 'US'])
+  })
+
+  it('shows pinned country chips in the default (unreordered) order for contrast', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['US', 'GB']))
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const countriesContainer = screen.getByText('Countries').closest('div')
+    const suggestionButtons = within(
+      countriesContainer as HTMLElement,
+    ).getAllByRole('button', { name: /^(US|GB)$/ })
+    expect(suggestionButtons.map((el) => el.textContent)).toEqual(['US', 'GB'])
+  })
+})
+
 describe('FRONTEND-068-AC-02: CustomSearchPanel renders the combined picker', () => {
   it('renders a Genres picker trigger, not the old checkbox fieldset', () => {
     render(

@@ -13,6 +13,8 @@ versioned together as one app.
 - Frontend: new shared `hooks/useLocalStorage.ts` — a generic, JSON-serializing `localStorage` read/write hook that reads once on mount (falling back to a caller-supplied default on a missing key, a parse failure, or an `isValid` rejection) and writes on every change, silently swallowing any read/write failure rather than throwing (`frontend_spec_098` FRONTEND-098-AC-01/02).
 - Frontend: `utils/countryOptions.ts` gains `ALL_COUNTRY_OPTIONS` — `COUNTRY_OPTIONS` plus `US`/`GB` (20 entries) — used by the new Country Favourites editor and its stored-value validator; the existing `COUNTRY_OPTIONS` export is unchanged (`frontend_spec_098` FRONTEND-098-AC-05).
 - Frontend: `/settings` gains a "Recommendation Favourites" section with Country Favourites and Language Favourites `KeywordPicker`s, editable directly (no Save button) and backed by `useLocalStorage` (`frontend_spec_098` FRONTEND-098-AC-10/11).
+- Frontend: `KeywordPicker` gains an opt-in `reorderable` prop — while `true`, each selected chip renders keyboard-accessible "Move earlier"/"Move later" (`‹`/`›`) buttons (disabled at the list's boundaries) and becomes an HTML5 drag-and-drop source/target, so a caller can let users reorder `selected` without changing membership; omitted (the default), a chip renders identically to before this prop existed (`frontend_spec_100` FRONTEND-100-AC-01/02/03/04/05).
+- Frontend: `/settings`' Country Favourites and Language Favourites `KeywordPicker`s now pass `reorderable`, so a user can control which favourite shows up first as a pinned suggestion in the live Custom Search/Recommendations Filters pickers, not just which ones are favourited (`frontend_spec_100` FRONTEND-100-AC-07/08/09).
 
 ### Changed
 

@@ -629,3 +629,146 @@ describe('FRONTEND-047-AC-01 (PickerOption[] options): pinned codes resolve to f
     ).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-100-AC-01: reorderable is opt-in', () => {
+  it('renders no Move buttons when reorderable is omitted', () => {
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b']}
+        onChange={vi.fn()}
+      />,
+    )
+    // Matches "move" as a standalone word only -- a naive /move/i would also
+    // match the always-present "Remove a"/"Remove b" chip-delete buttons,
+    // since "Remove" contains "move" as a substring.
+    expect(
+      screen.queryByRole('button', { name: /\bmove\b/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders no draggable attribute on chips when reorderable is omitted', () => {
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b']}
+        onChange={vi.fn()}
+      />,
+    )
+    const chipA = screen.getByText('a').closest('li')!
+    expect(chipA).not.toHaveAttribute('draggable')
+  })
+})
+
+describe('FRONTEND-100-AC-02/03: Move buttons render with correct disabled boundaries', () => {
+  it('disables Move earlier on the first chip and Move later on the last', () => {
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b', 'c']}
+        onChange={vi.fn()}
+        reorderable
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: /move a earlier/i }),
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: /move c later/i })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /move b earlier/i }),
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: /move b later/i })).toBeEnabled()
+  })
+
+  it('resolves the Move button aria-label through options, like the chip text', () => {
+    render(
+      <KeywordPicker
+        id="countries"
+        label="Countries"
+        selected={['US']}
+        onChange={vi.fn()}
+        options={[{ id: 'US', label: 'United States' }]}
+        reorderable
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Move United States earlier' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Move United States later' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-100-AC-04: Move buttons reorder without changing membership', () => {
+  it('swaps a chip with its predecessor on Move earlier', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b', 'c']}
+        onChange={onChange}
+        reorderable
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /move c earlier/i }))
+    expect(onChange).toHaveBeenCalledWith(['a', 'c', 'b'])
+  })
+
+  it('swaps a chip with its successor on Move later', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b', 'c']}
+        onChange={onChange}
+        reorderable
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /move a later/i }))
+    expect(onChange).toHaveBeenCalledWith(['b', 'a', 'c'])
+  })
+})
+
+describe('FRONTEND-100-AC-05: drag-and-drop reorders on drop', () => {
+  it('moves the dragged chip to the drop target position', () => {
+    const onChange = vi.fn()
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b', 'c']}
+        onChange={onChange}
+        reorderable
+      />,
+    )
+    const chipA = screen.getByText('a').closest('li')!
+    const chipC = screen.getByText('c').closest('li')!
+    const dataTransfer = { getData: vi.fn(), setData: vi.fn() }
+
+    fireEvent.dragStart(chipA, { dataTransfer })
+    fireEvent.dragOver(chipC, { dataTransfer })
+    fireEvent.drop(chipC, { dataTransfer })
+
+    expect(onChange).toHaveBeenCalledWith(['b', 'c', 'a'])
+  })
+
+  it('marks each chip draggable when reorderable is true', () => {
+    render(
+      <KeywordPicker
+        id="t"
+        label="T"
+        selected={['a', 'b']}
+        onChange={vi.fn()}
+        reorderable
+      />,
+    )
+    const chipA = screen.getByText('a').closest('li')!
+    expect(chipA).toHaveAttribute('draggable', 'true')
+  })
+})

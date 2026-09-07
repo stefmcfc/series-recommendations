@@ -461,3 +461,51 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
     expect(screen.getByText('Germany')).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
+  // Deviation from the spec's TDD sketch: the sketch's button-name matcher
+  // (`/move us later/i`) assumed the raw stored code ("US") appeared in the
+  // aria-label, but FRONTEND-100-AC-02 resolves Move button aria-labels
+  // through `options` the same way chip text already does (ALL_COUNTRY_OPTIONS
+  // resolves 'US' to "United States" via Intl.DisplayNames) -- so the actual
+  // accessible name is "Move United States later", not "Move US later".
+  it('writes the reordered favourites through useLocalStorage on Move later', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['US', 'GB']))
+    render(<SettingsPage />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Move United States later' }),
+    )
+
+    expect(JSON.parse(localStorage.getItem('countryFavourites')!)).toEqual([
+      'GB',
+      'US',
+    ])
+  })
+
+  it('writes the reordered favourites through useLocalStorage on Move earlier', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['US', 'GB']))
+    render(<SettingsPage />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Move United Kingdom earlier' }),
+    )
+
+    expect(JSON.parse(localStorage.getItem('countryFavourites')!)).toEqual([
+      'GB',
+      'US',
+    ])
+  })
+
+  it('reorders language favourites through useLocalStorage', () => {
+    localStorage.setItem('languageFavourites', JSON.stringify(['it', 'zh']))
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move Italian later' }))
+
+    expect(JSON.parse(localStorage.getItem('languageFavourites')!)).toEqual([
+      'zh',
+      'it',
+    ])
+  })
+})

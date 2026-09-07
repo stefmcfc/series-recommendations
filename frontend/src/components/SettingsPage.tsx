@@ -236,6 +236,7 @@ export function SettingsPage() {
           selected={countryFavourites}
           onChange={setCountryFavourites}
           options={ALL_COUNTRY_OPTIONS}
+          reorderable
         />
         <KeywordPicker
           id="settings-language-favourites"
@@ -243,6 +244,7 @@ export function SettingsPage() {
           selected={languageFavourites}
           onChange={setLanguageFavourites}
           options={LANGUAGE_OPTIONS}
+          reorderable
         />
       </SettingsSection>
     </div>
