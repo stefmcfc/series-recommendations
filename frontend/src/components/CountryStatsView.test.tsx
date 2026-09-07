@@ -3,12 +3,39 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { CountryStatsView } from './CountryStatsView'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import { useNameStatsFilters } from '../hooks/useNameStatsFilters'
 
 vi.mock('../services/seriesApi')
 const mockGetCountryStats = vi.mocked(seriesApi.getCountryStats)
 
+// FRONTEND-096-AC-14: CountryStatsView now requires a `filters` prop,
+// forwarded unchanged from AnalysisView's single shared
+// useNameStatsFilters() instance -- this Harness wraps it with a real
+// instance of that hook so every existing behavioral test below (Apply
+// Filters, sort, etc.) keeps exercising the same end-to-end flow it did
+// before this prop was added.
+function CountryStatsViewHarness() {
+  const filters = useNameStatsFilters()
+  return <CountryStatsView filters={filters} />
+}
+
+// FRONTEND-096-AC-04: filter fields now sit collapsed behind the "Analysis
+// Filters" toggle by default -- tests that read/change a filter field open
+// it first.
+function openFilters() {
+  fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+})
+
+describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {
+  it('passes the filters prop straight through to NameStatsTable', async () => {
+    mockGetCountryStats.mockResolvedValue([])
+    render(<CountryStatsViewHarness />)
+    expect(await screen.findByTestId('country-stats-view')).toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-089-AC-03/04: renders country stats table with resolved names', () => {
@@ -21,7 +48,7 @@ describe('FRONTEND-089-AC-03/04: renders country stats table with resolved names
         averageBlendedRating: 7.8,
       },
     ])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
 
     expect(await screen.findByText('United Kingdom')).toBeInTheDocument()
     expect(screen.queryByText('GB')).not.toBeInTheDocument()
@@ -39,7 +66,7 @@ describe('FRONTEND-089-AC-03/04: renders country stats table with resolved names
         averageBlendedRating: null,
       },
     ])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
 
     expect(await screen.findByText('United States')).toBeInTheDocument()
     expect(screen.getAllByText('—')).toHaveLength(2)
@@ -54,7 +81,7 @@ describe('FRONTEND-089-AC-03/04: renders country stats table with resolved names
         averageBlendedRating: null,
       },
     ])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
 
     expect(await screen.findByText('ZZ')).toBeInTheDocument()
   })
@@ -63,7 +90,7 @@ describe('FRONTEND-089-AC-03/04: renders country stats table with resolved names
 describe('FRONTEND-089-AC-03: sortable column headers re-fetch with sortBy', () => {
   it('re-fetches with sortBy=name on header click, without re-sorting client-side', async () => {
     mockGetCountryStats.mockResolvedValue([])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     await waitFor(() => expect(mockGetCountryStats).toHaveBeenCalledWith({}))
 
     fireEvent.click(screen.getByRole('columnheader', { name: /country/i }))
@@ -77,7 +104,7 @@ describe('FRONTEND-089-AC-03: sortable column headers re-fetch with sortBy', () 
 
   it('re-fetches with sortBy=seriesCount on header click', async () => {
     mockGetCountryStats.mockResolvedValue([])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     await waitFor(() => expect(mockGetCountryStats).toHaveBeenCalledWith({}))
 
     fireEvent.click(screen.getByRole('columnheader', { name: /series count/i }))
@@ -91,7 +118,7 @@ describe('FRONTEND-089-AC-03: sortable column headers re-fetch with sortBy', () 
 
   it('toggles direction on repeated clicks of the same header', async () => {
     mockGetCountryStats.mockResolvedValue([])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     await waitFor(() => expect(mockGetCountryStats).toHaveBeenCalled())
 
     fireEvent.click(screen.getByRole('columnheader', { name: /country/i }))
@@ -116,7 +143,7 @@ describe('FRONTEND-089-AC-03: sortable column headers re-fetch with sortBy', () 
 describe('FRONTEND-089-AC-05: loading and error states', () => {
   it('shows a loading state while the fetch is in flight', () => {
     mockGetCountryStats.mockReturnValue(new Promise(() => {}))
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
@@ -124,7 +151,7 @@ describe('FRONTEND-089-AC-05: loading and error states', () => {
     mockGetCountryStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })
@@ -132,8 +159,9 @@ describe('FRONTEND-089-AC-05: loading and error states', () => {
 describe('FRONTEND-089-AC-03: minimum-value filters', () => {
   it('renders three labelled numeric filter inputs and an Apply Filters button', async () => {
     mockGetCountryStats.mockResolvedValue([])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     await waitFor(() => expect(mockGetCountryStats).toHaveBeenCalled())
+    openFilters()
 
     expect(screen.getByLabelText(/min series count/i)).toBeInTheDocument()
     expect(
@@ -147,8 +175,9 @@ describe('FRONTEND-089-AC-03: minimum-value filters', () => {
 
   it('applies only the filled-in filters on Apply, omitting blank ones', async () => {
     mockGetCountryStats.mockResolvedValue([])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     await waitFor(() => expect(mockGetCountryStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.change(screen.getByLabelText(/min series count/i), {
       target: { value: '3' },
@@ -166,7 +195,7 @@ describe('FRONTEND-089-AC-03: minimum-value filters', () => {
 describe('CountryStatsView test id', () => {
   it('renders with data-testid="country-stats-view"', async () => {
     mockGetCountryStats.mockResolvedValue([])
-    render(<CountryStatsView />)
+    render(<CountryStatsViewHarness />)
     expect(await screen.findByTestId('country-stats-view')).toBeInTheDocument()
   })
 })

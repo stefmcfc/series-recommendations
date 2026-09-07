@@ -3,12 +3,38 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { KeywordsView } from './KeywordsView'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import { useNameStatsFilters } from '../hooks/useNameStatsFilters'
 
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
+// FRONTEND-096-AC-14: KeywordsView now requires a `filters` prop, forwarded
+// unchanged from AnalysisView's single shared useNameStatsFilters()
+// instance -- this Harness wraps it with a real instance of that hook so
+// every existing behavioral test below (Apply Filters, sort, etc.) keeps
+// exercising the same end-to-end flow it did before this prop was added.
+function KeywordsViewHarness() {
+  const filters = useNameStatsFilters()
+  return <KeywordsView filters={filters} />
+}
+
+// FRONTEND-096-AC-04: filter fields now sit collapsed behind the "Analysis
+// Filters" toggle by default -- tests that read/change a filter field open
+// it first.
+function openFilters() {
+  fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+})
+
+describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {
+  it('passes the filters prop straight through to NameStatsTable', async () => {
+    mockGetKeywordStats.mockResolvedValue([])
+    render(<KeywordsViewHarness />)
+    expect(await screen.findByTestId('keywords-view')).toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-024-AC-08: renders keyword stats table', () => {
@@ -27,7 +53,7 @@ describe('FRONTEND-024-AC-08: renders keyword stats table', () => {
         averageBlendedRating: null,
       },
     ])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
 
     expect(await screen.findByText('spy')).toBeInTheDocument()
     expect(screen.getByText('4.2')).toBeInTheDocument()
@@ -39,7 +65,7 @@ describe('FRONTEND-024-AC-08: renders keyword stats table', () => {
 describe('FRONTEND-024-AC-09/FRONTEND-086-AC-09: sortable column headers re-fetch with sortBy', () => {
   it('re-fetches with sortBy=averagePersonalRating on header click', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalledWith({}))
 
     fireEvent.click(
@@ -55,7 +81,7 @@ describe('FRONTEND-024-AC-09/FRONTEND-086-AC-09: sortable column headers re-fetc
 
   it('re-fetches with sortBy=seriesCount on header click', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalledWith({}))
 
     fireEvent.click(screen.getByRole('columnheader', { name: /series count/i }))
@@ -71,7 +97,7 @@ describe('FRONTEND-024-AC-09/FRONTEND-086-AC-09: sortable column headers re-fetc
 describe('FRONTEND-024-AC-11: loading and error states', () => {
   it('shows a loading state while the fetch is in flight', () => {
     mockGetKeywordStats.mockReturnValue(new Promise(() => {}))
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
@@ -79,7 +105,7 @@ describe('FRONTEND-024-AC-11: loading and error states', () => {
     mockGetKeywordStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })
@@ -87,8 +113,9 @@ describe('FRONTEND-024-AC-11: loading and error states', () => {
 describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
   it('renders three labelled numeric filter inputs and an Apply Filters button', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     expect(screen.getByLabelText(/min series count/i)).toBeInTheDocument()
     expect(
@@ -102,8 +129,9 @@ describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
 
   it('applies only the filled-in filters on Apply, omitting blank ones', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.change(screen.getByLabelText(/min series count/i), {
       target: { value: '3' },
@@ -125,8 +153,9 @@ describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
 
   it('sends all three filters when filled in, parsed to numbers', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.change(screen.getByLabelText(/min series count/i), {
       target: { value: '2' },
@@ -150,8 +179,9 @@ describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
 
   it('leaving all three filters blank and clicking Apply behaves like the unfiltered view', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalledWith({}))
+    openFilters()
 
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
@@ -164,8 +194,9 @@ describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
 describe('FRONTEND-086-AC-07: loading/error states apply identically under filtering', () => {
   it('shows the loading state again while a filtered fetch is in flight', async () => {
     mockGetKeywordStats.mockResolvedValueOnce([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     mockGetKeywordStats.mockReturnValue(new Promise(() => {}))
     fireEvent.change(screen.getByLabelText(/min series count/i), {
@@ -178,8 +209,9 @@ describe('FRONTEND-086-AC-07: loading/error states apply identically under filte
 
   it('shows an error alert when a filtered fetch rejects', async () => {
     mockGetKeywordStats.mockResolvedValueOnce([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    openFilters()
 
     mockGetKeywordStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
@@ -193,7 +225,7 @@ describe('FRONTEND-086-AC-07: loading/error states apply identically under filte
 describe('FRONTEND-086-AC-08/09/10: name/blended-rating columns and direction toggle', () => {
   it('sorts by name on first click, toggles direction on repeated clicks', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
 
     fireEvent.click(screen.getByRole('columnheader', { name: /keyword/i }))
@@ -223,7 +255,7 @@ describe('FRONTEND-086-AC-08/09/10: name/blended-rating columns and direction to
         averageBlendedRating: null,
       },
     ])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
 
     expect(await screen.findByText('Avg. Blended Rating')).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
@@ -231,7 +263,7 @@ describe('FRONTEND-086-AC-08/09/10: name/blended-rating columns and direction to
 
   it('inactive sortable headers show no direction indicator', async () => {
     mockGetKeywordStats.mockResolvedValue([])
-    render(<KeywordsView />)
+    render(<KeywordsViewHarness />)
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
 
     expect(

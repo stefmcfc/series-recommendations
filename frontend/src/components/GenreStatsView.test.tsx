@@ -3,12 +3,38 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { GenreStatsView } from './GenreStatsView'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import { useNameStatsFilters } from '../hooks/useNameStatsFilters'
 
 vi.mock('../services/seriesApi')
 const mockGetGenreStats = vi.mocked(seriesApi.getGenreStats)
 
+// FRONTEND-096-AC-14: GenreStatsView now requires a `filters` prop, forwarded
+// unchanged from AnalysisView's single shared useNameStatsFilters()
+// instance -- this Harness wraps it with a real instance of that hook so
+// every existing behavioral test below (Apply Filters, sort, etc.) keeps
+// exercising the same end-to-end flow it did before this prop was added.
+function GenreStatsViewHarness() {
+  const filters = useNameStatsFilters()
+  return <GenreStatsView filters={filters} />
+}
+
+// FRONTEND-096-AC-04: filter fields now sit collapsed behind the "Analysis
+// Filters" toggle by default -- tests that read/change a filter field open
+// it first.
+function openFilters() {
+  fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+})
+
+describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {
+  it('passes the filters prop straight through to NameStatsTable', async () => {
+    mockGetGenreStats.mockResolvedValue([])
+    render(<GenreStatsViewHarness />)
+    expect(await screen.findByTestId('genre-stats-view')).toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-088-AC-03: renders genre stats table', () => {
@@ -21,7 +47,7 @@ describe('FRONTEND-088-AC-03: renders genre stats table', () => {
         averageBlendedRating: 7.8,
       },
     ])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
 
     expect(await screen.findByText('Drama')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
@@ -38,7 +64,7 @@ describe('FRONTEND-088-AC-03: renders genre stats table', () => {
         averageBlendedRating: null,
       },
     ])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
 
     expect(await screen.findByText('Comedy')).toBeInTheDocument()
     expect(screen.getAllByText('—')).toHaveLength(2)
@@ -48,7 +74,7 @@ describe('FRONTEND-088-AC-03: renders genre stats table', () => {
 describe('FRONTEND-088-AC-03: sortable column headers re-fetch with sortBy', () => {
   it('re-fetches with sortBy=averagePersonalRating on header click', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalledWith({}))
 
     fireEvent.click(
@@ -64,7 +90,7 @@ describe('FRONTEND-088-AC-03: sortable column headers re-fetch with sortBy', () 
 
   it('re-fetches with sortBy=seriesCount on header click', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalledWith({}))
 
     fireEvent.click(screen.getByRole('columnheader', { name: /series count/i }))
@@ -78,7 +104,7 @@ describe('FRONTEND-088-AC-03: sortable column headers re-fetch with sortBy', () 
 
   it('sorts by name on first click, toggles direction on repeated clicks', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
 
     fireEvent.click(screen.getByRole('columnheader', { name: /genre/i }))
@@ -101,7 +127,7 @@ describe('FRONTEND-088-AC-03: sortable column headers re-fetch with sortBy', () 
 
   it('inactive sortable headers show no direction indicator', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
 
     expect(
@@ -117,7 +143,7 @@ describe('FRONTEND-088-AC-03: sortable column headers re-fetch with sortBy', () 
 describe('FRONTEND-088-AC-04: loading and error states', () => {
   it('shows a loading state while the fetch is in flight', () => {
     mockGetGenreStats.mockReturnValue(new Promise(() => {}))
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
@@ -125,7 +151,7 @@ describe('FRONTEND-088-AC-04: loading and error states', () => {
     mockGetGenreStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),
     )
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 })
@@ -133,8 +159,9 @@ describe('FRONTEND-088-AC-04: loading and error states', () => {
 describe('FRONTEND-088-AC-03: minimum-value filters', () => {
   it('renders three labelled numeric filter inputs and an Apply Filters button', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
+    openFilters()
 
     expect(screen.getByLabelText(/min series count/i)).toBeInTheDocument()
     expect(
@@ -148,8 +175,9 @@ describe('FRONTEND-088-AC-03: minimum-value filters', () => {
 
   it('applies only the filled-in filters on Apply, omitting blank ones', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.change(screen.getByLabelText(/min series count/i), {
       target: { value: '3' },
@@ -171,8 +199,9 @@ describe('FRONTEND-088-AC-03: minimum-value filters', () => {
 
   it('sends all three filters when filled in, parsed to numbers', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
+    openFilters()
 
     fireEvent.change(screen.getByLabelText(/min series count/i), {
       target: { value: '2' },
@@ -196,8 +225,9 @@ describe('FRONTEND-088-AC-03: minimum-value filters', () => {
 
   it('leaving all three filters blank and clicking Apply behaves like the unfiltered view', async () => {
     mockGetGenreStats.mockResolvedValue([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalledWith({}))
+    openFilters()
 
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
@@ -208,8 +238,9 @@ describe('FRONTEND-088-AC-03: minimum-value filters', () => {
 describe('FRONTEND-088-AC-04: loading/error states apply identically under filtering', () => {
   it('shows the loading state again while a filtered fetch is in flight', async () => {
     mockGetGenreStats.mockResolvedValueOnce([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
+    openFilters()
 
     mockGetGenreStats.mockReturnValue(new Promise(() => {}))
     fireEvent.change(screen.getByLabelText(/min series count/i), {
@@ -222,8 +253,9 @@ describe('FRONTEND-088-AC-04: loading/error states apply identically under filte
 
   it('shows an error alert when a filtered fetch rejects', async () => {
     mockGetGenreStats.mockResolvedValueOnce([])
-    render(<GenreStatsView />)
+    render(<GenreStatsViewHarness />)
     await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
+    openFilters()
 
     mockGetGenreStats.mockRejectedValue(
       new ApiError(500, 'Internal server error'),

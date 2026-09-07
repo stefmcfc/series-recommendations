@@ -124,6 +124,7 @@ corrected below.
 | "Analysis/Trends" expansion, unit 3/4: Genre stats (same aggregation/filter/sort treatment as Keywords), added as a second `Analysis` tab | `series_spec_048` | `frontend_spec_088` | ✅ Done |
 | Stats status scope filter ("Completed Only" / "All Series") added to `NameStatAggregator`/`NameStatsTable`, retrofitting Keywords and Genres and inherited automatically by the Country-of-Origin tab | `series_spec_051` | `frontend_spec_095` | ✅ Done |
 | "Analysis/Trends" expansion, unit 4/4 (final unit): Country-of-Origin stats (same treatment as Keywords/Genres), added as a third `Analysis` tab, with raw ISO code resolved to a display name for rendering only (sort/filter stay backend-driven by raw code) | `series_spec_049` | `frontend_spec_089` | ✅ Done |
+| Analysis filters consistency (centered heading/labels, inconsistent table column widths, unstyled Apply Filters button) and cross-tab persistence of filters/sort/panel-open state on `/analysis` | — | `frontend_spec_096` | ✅ Done |
 
 ## Specced, coming soon
 

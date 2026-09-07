@@ -222,6 +222,8 @@ it('FRONTEND-091-AC-09: shows a summary message when validation blocks submit', 
 
 **Test Case (Green)**: give the `.actions` div (now also containing the AC-08/AC-09 messages) `position: sticky; bottom: 0; background: var(--bg);` plus enough top padding/border to visually separate it from the scrolling content above.
 
+**Correction (2026-09-07)**: the original implementation put the 2rem breathing-room padding on `.overlay` (the scrolling container) itself — `padding: 2rem 1rem`. Sticky offsets are computed against the scrolling container's *padding box*, so `.actions`'s `bottom: 0` only ever reached the inside edge of that padding, leaving a permanent ~2rem gap between the sticky bar and the true viewport edge — through which the backdrop (and the page behind it) stayed visible even while scrolled, defeating the point of this AC. Fix: moved the bottom breathing room off `.overlay` (`padding: 2rem 1rem 0`) and onto `.dialog` as `margin-bottom: 2rem` instead — margin outside the sticky element's containing block doesn't constrain how far `bottom: 0` can travel, so the sticky bar now reaches the actual viewport bottom while scrolling, and the 2rem gap only reappears once scroll passes the dialog's true end. Applied identically to `AddSeriesForm.module.css` (AC-13).
+
 ### Requirement 4: Persistent Save/Cancel and error visibility — `AddSeriesForm`
 
 **User Story**: As a user filling in a long add-series form, I want the same reachable Save/Cancel and error visibility `EditSeriesForm` gets, since both forms share the identical gap today.

@@ -553,6 +553,7 @@ export function EditSeriesForm({
                   id="currentSeason"
                   type="number"
                   step="1"
+                  min="1"
                   value={form.currentSeason}
                   onChange={updateField('currentSeason')}
                   aria-describedby={
@@ -585,6 +586,7 @@ export function EditSeriesForm({
                   id="currentEpisode"
                   type="number"
                   step="1"
+                  min="1"
                   value={form.currentEpisode}
                   onChange={updateField('currentEpisode')}
                   aria-describedby={
