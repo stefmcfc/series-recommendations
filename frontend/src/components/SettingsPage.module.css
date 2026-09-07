@@ -64,6 +64,7 @@
 }
 
 .refreshAllButton {
+  margin-left: auto;
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
@@ -84,6 +85,7 @@
 
 .refreshProgress,
 .lastFullRefresh {
+  flex-basis: 100%;
   font-size: 0.8125rem;
   color: var(--text);
   opacity: 0.75;

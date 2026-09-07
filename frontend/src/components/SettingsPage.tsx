@@ -255,15 +255,6 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
 
       <SettingsSection title="Refresh All" icon={<RefreshIcon />}>
         <div className={styles.refreshRow}>
-          <button
-            type="button"
-            className={styles.refreshAllButton}
-            data-testid="refresh-all-btn"
-            disabled={refreshAllInProgress}
-            onClick={handleRefreshAllClick}
-          >
-            Refresh All
-          </button>
           <div className={styles.overrideField}>
             <label htmlFor="refresh-skip-threshold-override">
               Skip Threshold Override
@@ -294,6 +285,15 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
               <option value="months">Months</option>
             </select>
           </div>
+          <button
+            type="button"
+            className={styles.refreshAllButton}
+            data-testid="refresh-all-btn"
+            disabled={refreshAllInProgress}
+            onClick={handleRefreshAllClick}
+          >
+            Refresh All
+          </button>
           {refreshAllInProgress && jobStatus && (
             <span className={styles.refreshProgress}>
               {buildRefreshProgressText(jobStatus)}

@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.35.0] - 2026-09-07
+
 ### Added
 
 - Frontend: new `utils/skipThresholdUnits.ts` — `toMinutes(value, unit)` converts a Days/Weeks/Months skip-threshold override to total minutes (`1 day = 1440 min`, `1 week = 10080 min`, `1 month = 43200 min`, flat 30-day approximation), and `formatThreshold(minutes)` formats a raw minutes value back to the largest whole unit that divides it evenly, falling back to plain minutes (`frontend_spec_101` FRONTEND-101-AC-02/04).
@@ -19,6 +21,7 @@ versioned together as one app.
 
 - Frontend: `SettingsSection`'s wrapper now renders as a bordered, padded card (`border`/`border-radius`/`box-shadow`/`background`), reusing the same token values already used by `AddSeriesForm`/`EditSeriesForm`'s modal `.dialog` rather than introducing a new visual pattern; all five `/settings` sections adopt this styling with no change to their content, controls, or behavior (`frontend_spec_101` FRONTEND-101-AC-06/07).
 - Frontend: `buildRefreshProgressText`/`buildLastFullRefreshText` now display `skipThresholdMinutesUsed` via `formatThreshold` (e.g. "threshold: 3 days") instead of the raw minutes count, matching whichever unit the override was most recently set in (`frontend_spec_101` FRONTEND-101-AC-04).
+- Frontend: `/settings`' Refresh All row reordered so the skip-threshold override controls sit on the left and the "Refresh All" button on the right (previously the reverse); Import's native "Choose File" button is now styled via `::file-selector-button` to match the app's other buttons, and the "Import" button is right-aligned.
 
 ## [3.34.1] - 2026-09-07
 
