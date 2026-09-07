@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { AnalysisView } from './AnalysisView'
@@ -110,5 +110,63 @@ describe('FRONTEND-089-AC-06: Country of Origin tab', () => {
 
     expect(await screen.findByTestId('country-stats-view')).toBeInTheDocument()
     expect(window.location.pathname).toBe('/analysis/country-of-origin')
+  })
+})
+
+describe('FRONTEND-096-AC-11/12/13: filter/sort/panel state persists across tab switches', () => {
+  it('keeps an applied filter value visible after switching from Keywords to Genres', async () => {
+    renderAnalysisView('/analysis/keywords')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+    fireEvent.change(screen.getByLabelText('Min Series Count'), {
+      target: { value: '5' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenLastCalledWith(
+        expect.objectContaining({ minSeriesCount: 5 }),
+      ),
+    )
+
+    fireEvent.click(screen.getByRole('link', { name: /^genres$/i }))
+
+    await waitFor(() =>
+      expect(mockGetGenreStats).toHaveBeenLastCalledWith(
+        expect.objectContaining({ minSeriesCount: 5 }),
+      ),
+    )
+    expect(screen.getByLabelText('Min Series Count')).toHaveValue(5)
+  })
+
+  it('keeps the sort column/direction after switching tabs', async () => {
+    renderAnalysisView('/analysis/keywords')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('columnheader', { name: /series count/i }))
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sortBy: 'seriesCount' }),
+      ),
+    )
+
+    fireEvent.click(screen.getByRole('link', { name: /country of origin/i }))
+
+    await waitFor(() =>
+      expect(mockGetCountryStats).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sortBy: 'seriesCount' }),
+      ),
+    )
+  })
+
+  it('keeps the filters panel open after switching tabs', async () => {
+    renderAnalysisView('/analysis/keywords')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+
+    fireEvent.click(screen.getByRole('link', { name: /^genres$/i }))
+
+    await waitFor(() => expect(mockGetGenreStats).toHaveBeenCalled())
+    expect(
+      screen.getByRole('button', { name: /analysis filters/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
   })
 })

@@ -3,6 +3,7 @@ import { formatCountryName } from '../utils/countryName'
 import { NameStatsTable } from './NameStatsTable'
 import type { NameStat, NameStatsOptions } from './NameStatsTable'
 import type { CountryStat } from '../types/series'
+import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
 
 // FRONTEND-089-AC-04: NameStatsTable has no hook for transforming a row's
 // `name` for display, and per this session's "no premature abstraction"
@@ -28,11 +29,19 @@ function fetchCountryStats(options: NameStatsOptions): Promise<NameStat[]> {
   return seriesApi.getCountryStats(options).then(mapToDisplayNames)
 }
 
+interface CountryStatsViewProps {
+  readonly filters: NameStatsFiltersState
+}
+
 // FRONTEND-089: thin wrapper over the shared NameStatsTable (see
 // KeywordsView/GenreStatsView), differing only in the labels/testId/fetch
 // method -- plus the display-name mapping above, the one genuine difference
 // this view has from its two siblings.
-export function CountryStatsView() {
+//
+// FRONTEND-096-AC-14: `filters` is forwarded unchanged from AnalysisView's
+// single shared useNameStatsFilters() instance -- this is the only change
+// this component makes for that spec.
+export function CountryStatsView({ filters }: CountryStatsViewProps) {
   return (
     <NameStatsTable
       testId="country-stats-view"
@@ -42,6 +51,7 @@ export function CountryStatsView() {
       loadingLabel="Loading country stats..."
       errorLabel="Failed to load country stats. Please try again."
       fetchStats={fetchCountryStats}
+      filters={filters}
     />
   )
 }

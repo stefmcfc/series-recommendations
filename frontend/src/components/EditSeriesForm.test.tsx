@@ -229,6 +229,12 @@ describe('FRONTEND-004-AC-25/26/27: currentSeason/currentEpisode validation', ()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(mockUpdate).not.toHaveBeenCalled()
   })
+
+  it('sets min="1" on currentSeason/currentEpisode so the native spinner cannot go negative', () => {
+    renderForm({ series: makeSeries() })
+    expect(screen.getByLabelText('Current Season')).toHaveAttribute('min', '1')
+    expect(screen.getByLabelText('Current Episode')).toHaveAttribute('min', '1')
+  })
 })
 
 describe('FRONTEND-091-AC-01: currentEpisode cross-validated against totalEpisodes', () => {

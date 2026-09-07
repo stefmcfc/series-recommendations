@@ -1,35 +1,20 @@
+/* FRONTEND-096-AC-01: text-align: left added -- index.css sets
+   #root { text-align: center } globally, and every other page's container
+   (SeriesList.module.css, RecommendationControls.module.css) already
+   overrides it explicitly. This container never did, so the <h2> heading
+   inherited the centered default (confirmed by live browser check; jsdom
+   doesn't run inherited computed style the way a real browser does, see
+   frontend_spec_091's identical precedent for CSS-only fixes). */
 .container {
   max-width: 960px;
   margin: 0 auto;
   padding: 1.5rem;
+  text-align: left;
 }
 
 .heading {
   margin: 0 0 1.5rem;
   color: var(--text-h);
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.filterField {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.filterField input {
-  width: 8rem;
-}
-
-.applyButton {
-  padding: 0.5rem 1rem;
-  cursor: pointer;
 }
 
 .loading {
@@ -56,8 +41,17 @@
   }
 }
 
+/* FRONTEND-096-AC-02: table-layout: fixed plus explicit per-column widths --
+   without this, each column auto-sizes to its own tab's longest value (e.g.
+   Genres' longest genre name vs. Keywords' longest keyword), shifting the
+   Series Count/Avg. Personal Rating/Avg. Blended Rating columns between
+   tabs (confirmed visually: Genres' "Series Count" rendered ~70px left of
+   where it sits on Keywords). Fixed widths make all four columns land in
+   the same place regardless of which tab -- or that tab's own data -- is
+   active. */
 .table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -66,6 +60,30 @@
   text-align: left;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
+}
+
+/* Truncation only applies to data cells (e.g. a long keyword/genre name) --
+   header labels ("Avg. Personal Rating") wrap onto a second line instead of
+   ellipsizing, since at these fixed column widths several headers are wider
+   than their column and unreadable when clipped. */
+.table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table th:nth-child(1),
+.table td:nth-child(1) {
+  width: 40%;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2),
+.table th:nth-child(3),
+.table td:nth-child(3),
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  width: 20%;
 }
 
 .sortableHeader {

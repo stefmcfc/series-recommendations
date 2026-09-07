@@ -8,6 +8,24 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.31.0] - 2026-09-07
+
+### Added
+
+- Frontend: new `hooks/useNameStatsFilters.ts` hook owning `NameStatsTable`'s filter/sort/panel-open state (previously local to that component) — `AnalysisView` now calls it once and shares the result across all three `/analysis` sub-tabs (Keywords/Genres/Country of Origin), so applied filters, sort column/direction, and whether the filters panel is open all now survive a tab switch instead of being discarded on remount (`frontend_spec_096`).
+
+### Changed
+
+- Frontend: `NameStatsTable`'s filter fields are now collapsed by default behind an "Analysis Filters" toggle (reusing `RecommendationControls.module.css`'s `.filtersSection`/`.filtersToggle`/`.filtersBody` disclosure-box pattern already shared by `RecommendationFiltersBox`/`UseMySeriesPanel`), with an active-filter-count badge and a new "Reset Filters" button that clears and immediately re-fetches without a separate Apply click (`frontend_spec_096`).
+- Frontend: the "Apply Filters" button on `/analysis` now uses the shared, correctly `--accent`-styled `.applyButton` class from `RecommendationControls.module.css` instead of `NameStatsTable.module.css`'s own unstyled equivalent (`frontend_spec_096`).
+
+### Fixed
+
+- Frontend: `NameStatsTable.module.css`'s `.container` now sets `text-align: left`, fixing the Analysis page heading and (now-collapsible) filter labels inheriting `index.css`'s global centered `#root` default — every other page's container already overrode this (`frontend_spec_096` FRONTEND-096-AC-01).
+- Frontend: `NameStatsTable`'s table columns now render at fixed, consistent widths (`table-layout: fixed` plus explicit per-column widths) so the Name/Series Count/Avg. Personal Rating/Avg. Blended Rating columns line up identically across the Keywords/Genres/Country of Origin tabs, instead of each auto-sizing to that tab's own longest value (`frontend_spec_096` FRONTEND-096-AC-02).
+- Frontend: `EditSeriesForm`/`AddSeriesForm`'s sticky Save/Cancel footer now reaches the true bottom of the viewport while scrolling a long form — the breathing-room padding was previously on `.overlay` (the scrolling container), which sits *outside* the sticky element's reach, leaving a permanent gap where the backdrop stayed visible underneath (`frontend_spec_091` FRONTEND-091-AC-10/AC-13).
+- Frontend: `EditSeriesForm`'s Current Season/Current Episode number inputs now have `min="1"`, so the native spinner can no longer decrement into negative numbers (existing on-submit validation already rejected non-whole-number/less-than-1 values before this, so no save-time behavior change).
+
 ## [3.30.1] - 2026-09-07
 
 ### Fixed

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
 import styles from './NameStatsTable.module.css'
+import sharedStyles from './RecommendationControls.module.css'
 
 // FRONTEND-088: shared table/filter/sort UI extracted from KeywordsView
 // (frontend_spec_086) and GenreStatsView (frontend_spec_088), which had
@@ -7,6 +9,18 @@ import styles from './NameStatsTable.module.css'
 // labels, id prefixes, data-testid, and which seriesApi method to call.
 // KeywordsView/GenreStatsView are now thin wrappers passing that config in
 // via props -- see each file's own top-level comment.
+//
+// FRONTEND-096: filter/sort/panel-open state (previously local useState
+// here) now lives in the shared `hooks/useNameStatsFilters.ts` hook,
+// instantiated once by AnalysisView and passed down as the `filters` prop --
+// this is what lets that state survive a tab switch instead of being
+// discarded on unmount. This component still owns its own stats/loading/
+// error state and fetch effect (genuinely per-tab, not shared). The filters
+// UI itself is now a collapsed-by-default disclosure box reusing
+// RecommendationControls.module.css's `.filtersSection`/`.filtersToggle`/
+// `.filtersBody`/`.field`/`.filtersActions`/`.applyButton`/`.resetButton`
+// classes (already shared by RecommendationFiltersBox/UseMySeriesPanel)
+// rather than this component's own previously-unstyled equivalents.
 
 export type NameStatsSortBy =
   'seriesCount' | 'averagePersonalRating' | 'averageBlendedRating' | 'name'
@@ -39,69 +53,14 @@ export interface NameStatsTableProps {
   readonly loadingLabel: string
   readonly errorLabel: string
   readonly fetchStats: (options: NameStatsOptions) => Promise<NameStat[]>
-}
-
-// FRONTEND-086-AC-09/10/SERIES-047-AC-07: each sortable field's established
-// default direction when sortDirection is omitted -- used here purely to
-// compute the toggle's starting point and the direction indicator, not sent
-// to the backend unless the user has actually toggled (see buildFetchOptions
-// below, which only includes sortDirection once it's explicitly set).
-const DEFAULT_SORT_DIRECTION: Record<NameStatsSortBy, NameStatsSortDirection> =
-  {
-    seriesCount: 'desc',
-    averagePersonalRating: 'desc',
-    averageBlendedRating: 'desc',
-    name: 'asc',
-  }
-
-// FRONTEND-095-AC-04: the status-scope select's two option values -- 'all'
-// is the default and maps to onlyCompleted being omitted entirely (never
-// sent as false); 'completed' maps to onlyCompleted: true.
-type StatusScope = 'all' | 'completed'
-
-interface FilterInputs {
-  minSeriesCount: string
-  minAveragePersonalRating: string
-  minAverageBlendedRating: string
-  statusScope: StatusScope
-}
-
-const emptyFilterInputs: FilterInputs = {
-  minSeriesCount: '',
-  minAveragePersonalRating: '',
-  minAverageBlendedRating: '',
-  statusScope: 'all',
+  // FRONTEND-096-AC-10: supplied by AnalysisView via a single
+  // useNameStatsFilters() instance shared across all three /analysis
+  // sub-tabs.
+  readonly filters: NameStatsFiltersState
 }
 
 function formatAverage(value: number | null): string {
   return value === null ? '—' : String(value)
-}
-
-// FRONTEND-086-AC-06: a blank filter field is omitted entirely (not sent as
-// 0) -- leaving all three blank reduces this to {}.
-function buildFetchOptions(
-  sortBy: NameStatsSortBy | undefined,
-  sortDirection: NameStatsSortDirection | undefined,
-  appliedFilters: FilterInputs,
-): NameStatsOptions {
-  const options: NameStatsOptions = {}
-  if (sortBy !== undefined) options.sortBy = sortBy
-  if (sortDirection !== undefined) options.sortDirection = sortDirection
-  if (appliedFilters.minSeriesCount.trim() !== '')
-    options.minSeriesCount = Number(appliedFilters.minSeriesCount)
-  if (appliedFilters.minAveragePersonalRating.trim() !== '')
-    options.minAveragePersonalRating = Number(
-      appliedFilters.minAveragePersonalRating,
-    )
-  if (appliedFilters.minAverageBlendedRating.trim() !== '')
-    options.minAverageBlendedRating = Number(
-      appliedFilters.minAverageBlendedRating,
-    )
-  // FRONTEND-095-AC-05/06: only included when explicitly 'completed' --
-  // 'all' (the default, and reverting back to it) omits onlyCompleted
-  // entirely rather than sending it as false.
-  if (appliedFilters.statusScope === 'completed') options.onlyCompleted = true
-  return options
 }
 
 export function NameStatsTable({
@@ -112,35 +71,30 @@ export function NameStatsTable({
   loadingLabel,
   errorLabel,
   fetchStats,
+  filters,
 }: NameStatsTableProps) {
   const [stats, setStats] = useState<NameStat[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<NameStatsSortBy | undefined>(undefined)
-  const [sortDirection, setSortDirection] = useState<
-    NameStatsSortDirection | undefined
-  >(undefined)
-
-  // FRONTEND-086-AC-05: uncommitted field values the user is currently
-  // typing -- distinct from appliedFilters below, which only changes when
-  // Apply Filters is clicked (explicit-submit convention, matching
-  // SearchFilter).
-  const [filterInputs, setFilterInputs] =
-    useState<FilterInputs>(emptyFilterInputs)
-  const [appliedFilters, setAppliedFilters] =
-    useState<FilterInputs>(emptyFilterInputs)
-  // FRONTEND-086-AC-05: Apply Filters must always re-fetch, even when the
-  // filter values are unchanged from what's already applied (e.g. re-typing
-  // the same value, or clicking Apply again with nothing changed) -- an
-  // identical appliedFilters object reference wouldn't otherwise trigger the
-  // effect below, so a click bumps this counter unconditionally.
-  const [applyVersion, setApplyVersion] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    const options = buildFetchOptions(sortBy, sortDirection, appliedFilters)
+    // FRONTEND-096: previously this setLoading(true)/setError(null) pair
+    // lived in the click handlers themselves (handleSortChange/
+    // handleApplyFilters), which owned this state directly. Now that
+    // filter/sort state has moved into useNameStatsFilters (shared across
+    // tabs, see that hook's own comments), those handlers no longer own
+    // loading/error -- setting them here, at the top of every re-run of this
+    // fetch effect, reproduces the same "loading again on every new
+    // sort/filter" behavior. Same standard React "fetch on dependency
+    // change" shape already established at RecommendationsList.tsx's
+    // identical fetch effect (see that file's own comment for the full
+    // rationale for why this can't be avoided without a bigger refactor).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
+    setLoading(true)
+    setError(null)
 
-    fetchStats(options)
+    fetchStats(filters.options)
       .then((data) => {
         if (cancelled) return
         setStats(data)
@@ -155,123 +109,110 @@ export function NameStatsTable({
     return () => {
       cancelled = true
     }
-  }, [
-    sortBy,
-    sortDirection,
-    appliedFilters,
-    applyVersion,
-    fetchStats,
-    errorLabel,
-  ])
-
-  const handleSortChange = (column: NameStatsSortBy) => {
-    setLoading(true)
-    setError(null)
-    if (sortBy === column) {
-      const currentDirection = sortDirection ?? DEFAULT_SORT_DIRECTION[column]
-      setSortDirection(currentDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(column)
-      setSortDirection(undefined)
-    }
-  }
-
-  const handleFilterInputChange =
-    (field: keyof Omit<FilterInputs, 'statusScope'>) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFilterInputs((prev) => ({ ...prev, [field]: event.target.value }))
-    }
-
-  // FRONTEND-095-AC-04: separate from handleFilterInputChange above since the
-  // status scope control is a <select> (StatusScope union), not a free-text
-  // numeric <input> (string).
-  const handleStatusScopeChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const statusScope = event.target.value as StatusScope
-    setFilterInputs((prev) => ({ ...prev, statusScope }))
-  }
-
-  const handleApplyFilters = () => {
-    setLoading(true)
-    setError(null)
-    setAppliedFilters(filterInputs)
-    setApplyVersion((v) => v + 1)
-  }
-
-  const sortIndicator = (column: NameStatsSortBy): string => {
-    if (sortBy !== column) return ''
-    const direction = sortDirection ?? DEFAULT_SORT_DIRECTION[column]
-    return direction === 'asc' ? ' ▲' : ' ▼'
-  }
+  }, [filters.options, filters.applyVersion, fetchStats, errorLabel])
 
   return (
     <div className={styles.container} data-testid={testId}>
       <h2 className={styles.heading}>{heading}</h2>
 
-      <div className={styles.filters}>
-        <div className={styles.filterField}>
-          <label htmlFor={`${idPrefix}-min-series-count`}>
-            Min Series Count
-          </label>
-          <input
-            id={`${idPrefix}-min-series-count`}
-            type="number"
-            min="0"
-            value={filterInputs.minSeriesCount}
-            onChange={handleFilterInputChange('minSeriesCount')}
-          />
-        </div>
-
-        <div className={styles.filterField}>
-          <label htmlFor={`${idPrefix}-min-avg-personal-rating`}>
-            Min Avg Personal Rating
-          </label>
-          <input
-            id={`${idPrefix}-min-avg-personal-rating`}
-            type="number"
-            min="0"
-            max="5"
-            step="0.1"
-            value={filterInputs.minAveragePersonalRating}
-            onChange={handleFilterInputChange('minAveragePersonalRating')}
-          />
-        </div>
-
-        <div className={styles.filterField}>
-          <label htmlFor={`${idPrefix}-min-avg-blended-rating`}>
-            Min Avg Blended Rating
-          </label>
-          <input
-            id={`${idPrefix}-min-avg-blended-rating`}
-            type="number"
-            min="0"
-            max="10"
-            step="0.1"
-            value={filterInputs.minAverageBlendedRating}
-            onChange={handleFilterInputChange('minAverageBlendedRating')}
-          />
-        </div>
-
-        <div className={styles.filterField}>
-          <label htmlFor={`${idPrefix}-status-filter`}>Status</label>
-          <select
-            id={`${idPrefix}-status-filter`}
-            value={filterInputs.statusScope}
-            onChange={handleStatusScopeChange}
-          >
-            <option value="all">All Series</option>
-            <option value="completed">Completed Only</option>
-          </select>
-        </div>
-
+      <div className={sharedStyles.filtersSection}>
         <button
           type="button"
-          className={styles.applyButton}
-          onClick={handleApplyFilters}
+          className={sharedStyles.filtersToggle}
+          aria-expanded={filters.filtersOpen}
+          onClick={filters.handleToggleFiltersOpen}
         >
-          Apply Filters
+          Analysis Filters
+          {filters.activeFilterCount > 0 && (
+            <span
+              className={sharedStyles.filtersActiveBadge}
+              data-testid="filters-active-count"
+            >
+              {filters.activeFilterCount}
+            </span>
+          )}
         </button>
+
+        {filters.filtersOpen && (
+          <div className={sharedStyles.filtersBody} data-testid="filters-body">
+            <div className={sharedStyles.field}>
+              <label htmlFor={`${idPrefix}-min-series-count`}>
+                Min Series Count
+              </label>
+              <input
+                id={`${idPrefix}-min-series-count`}
+                type="number"
+                min="0"
+                value={filters.filterInputs.minSeriesCount}
+                onChange={filters.handleFilterInputChange('minSeriesCount')}
+              />
+            </div>
+
+            <div className={sharedStyles.field}>
+              <label htmlFor={`${idPrefix}-min-avg-personal-rating`}>
+                Min Avg Personal Rating
+              </label>
+              <input
+                id={`${idPrefix}-min-avg-personal-rating`}
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                value={filters.filterInputs.minAveragePersonalRating}
+                onChange={filters.handleFilterInputChange(
+                  'minAveragePersonalRating',
+                )}
+              />
+            </div>
+
+            <div className={sharedStyles.field}>
+              <label htmlFor={`${idPrefix}-min-avg-blended-rating`}>
+                Min Avg Blended Rating
+              </label>
+              <input
+                id={`${idPrefix}-min-avg-blended-rating`}
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={filters.filterInputs.minAverageBlendedRating}
+                onChange={filters.handleFilterInputChange(
+                  'minAverageBlendedRating',
+                )}
+              />
+            </div>
+
+            <div className={sharedStyles.field}>
+              <label htmlFor={`${idPrefix}-status-filter`}>Status</label>
+              <select
+                id={`${idPrefix}-status-filter`}
+                value={filters.filterInputs.statusScope}
+                onChange={filters.handleStatusScopeChange}
+              >
+                <option value="all">All Series</option>
+                <option value="completed">Completed Only</option>
+              </select>
+            </div>
+
+            <div className={sharedStyles.filtersActions}>
+              <button
+                type="button"
+                className={sharedStyles.resetButton}
+                data-testid="reset-filters-btn"
+                onClick={filters.handleResetFilters}
+              >
+                Reset Filters
+              </button>
+              <button
+                type="button"
+                className={sharedStyles.applyButton}
+                onClick={filters.handleApplyFilters}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {loading && (
@@ -293,30 +234,32 @@ export function NameStatsTable({
               <th
                 scope="col"
                 className={styles.sortableHeader}
-                onClick={() => handleSortChange('name')}
+                onClick={() => filters.handleSortChange('name')}
               >
-                {`${nameColumnLabel}${sortIndicator('name')}`}
+                {`${nameColumnLabel}${filters.sortIndicator('name')}`}
               </th>
               <th
                 scope="col"
                 className={styles.sortableHeader}
-                onClick={() => handleSortChange('seriesCount')}
+                onClick={() => filters.handleSortChange('seriesCount')}
               >
-                {`Series Count${sortIndicator('seriesCount')}`}
+                {`Series Count${filters.sortIndicator('seriesCount')}`}
               </th>
               <th
                 scope="col"
                 className={styles.sortableHeader}
-                onClick={() => handleSortChange('averagePersonalRating')}
+                onClick={() =>
+                  filters.handleSortChange('averagePersonalRating')
+                }
               >
-                {`Avg. Personal Rating${sortIndicator('averagePersonalRating')}`}
+                {`Avg. Personal Rating${filters.sortIndicator('averagePersonalRating')}`}
               </th>
               <th
                 scope="col"
                 className={styles.sortableHeader}
-                onClick={() => handleSortChange('averageBlendedRating')}
+                onClick={() => filters.handleSortChange('averageBlendedRating')}
               >
-                {`Avg. Blended Rating${sortIndicator('averageBlendedRating')}`}
+                {`Avg. Blended Rating${filters.sortIndicator('averageBlendedRating')}`}
               </th>
             </tr>
           </thead>
