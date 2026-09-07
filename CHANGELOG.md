@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.34.0] - 2026-09-07
+
 ### Added
 
 - Frontend: new `types/theme.ts` — `Theme` (`'light' | 'dark' | 'system'`) and its `isTheme` type guard, consumed by `App.tsx`'s `useLocalStorage('theme', ...)` call and threaded to `SettingsPage` as props (`frontend_spec_099` FRONTEND-099-AC-01).
