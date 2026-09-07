@@ -1,7 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { vi, describe, it, expect } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationFiltersBox } from './RecommendationFiltersBox'
 import type { ControlsState } from './RecommendationControls'
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 // TOOLING-008-AC-05: dedicated, isolated coverage for the panel extracted
 // from RecommendationControls.tsx's former `styles.filtersSection` block --
@@ -47,6 +51,36 @@ function renderBox(
   )
   return { ...utils, updateState }
 }
+
+describe('FRONTEND-098-AC-07/08: country/language favourites default and read from localStorage', () => {
+  it('uses the default US/GB pinned countries when nothing is stored', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByText('US')).toBeInTheDocument()
+    expect(screen.getByText('GB')).toBeInTheDocument()
+  })
+
+  it('uses a previously stored country favourites list instead of the default', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['FR', 'DE']))
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByText('France')).toBeInTheDocument()
+    expect(screen.queryByText('US')).not.toBeInTheDocument()
+  })
+
+  it('uses the default pinned languages when nothing is stored', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByText('English')).toBeInTheDocument()
+    expect(screen.getByText('Korean')).toBeInTheDocument()
+  })
+})
 
 describe('FRONTEND-076-AC-06: exclude-only usage keeps its own label', () => {
   it('still renders "Exclude Genres", not the renamed label', () => {

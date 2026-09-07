@@ -41,6 +41,12 @@ interface KeywordPickerProps {
   // search/typing elsewhere on the same panel, where the inline input would
   // otherwise duplicate it.
   readonly hideInput?: boolean
+  // FRONTEND-100-AC-01: opt-in chip reordering (drag-and-drop plus
+  // keyboard-accessible Move earlier/later buttons). Defaults to false so
+  // the ~dozen existing call sites where selection order carries no meaning
+  // (Genre/Keyword filters, etc.) render identically to before this prop
+  // existed -- only Settings' Country/Language favourites editors pass it.
+  readonly reorderable?: boolean
 }
 
 function isSameKeyword(a: string, b: string): boolean {
@@ -100,8 +106,10 @@ export function KeywordPicker({
   allowFreeText = false,
   maxSuggestionsWhenEmpty,
   hideInput = false,
+  reorderable = false,
 }: KeywordPickerProps) {
   const [inputValue, setInputValue] = useState('')
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -179,6 +187,52 @@ export function KeywordPicker({
     onChange(selected.filter((k) => k !== keyword))
   }
 
+  // FRONTEND-100-AC-04: moves one entry from `fromIndex` to `toIndex`,
+  // shifting entries in between accordingly -- the single reorder primitive
+  // both the Move earlier/later buttons (always an adjacent swap, i.e.
+  // toIndex === fromIndex +/- 1) and drag-and-drop (an arbitrary
+  // move-to-position) drive, so `selected.length` and its set of ids are
+  // invariant across either path -- only order ever changes.
+  const reorder = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
+    const next = [...selected]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    onChange(next)
+  }
+
+  const moveEarlier = (index: number) => {
+    if (index <= 0) return
+    reorder(index, index - 1)
+  }
+
+  const moveLater = (index: number) => {
+    if (index >= selected.length - 1) return
+    reorder(index, index + 1)
+  }
+
+  const handleChipDragStart =
+    (index: number) => (event: React.DragEvent<HTMLLIElement>) => {
+      setDragIndex(index)
+      event.dataTransfer.setData('text/plain', String(index))
+      event.dataTransfer.effectAllowed = 'move'
+    }
+
+  const handleChipDragOver = (event: React.DragEvent<HTMLLIElement>) => {
+    event.preventDefault()
+  }
+
+  const handleChipDrop =
+    (index: number) => (event: React.DragEvent<HTMLLIElement>) => {
+      event.preventDefault()
+      if (dragIndex !== null) reorder(dragIndex, index)
+      setDragIndex(null)
+    }
+
+  const handleChipDragEnd = () => {
+    setDragIndex(null)
+  }
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault()
@@ -248,13 +302,56 @@ export function KeywordPicker({
 
       {selected.length > 0 && (
         <ul className={styles.chips}>
-          {selected.map((keyword) => {
+          {selected.map((keyword, index) => {
             const match = normalizedOptions.find(
               (option) => option.id === keyword,
             )
+            // FRONTEND-100-AC-02: Move button aria-labels resolve through
+            // normalizedOptions the same way the chip's own visible text
+            // does just below -- but via `match?.label` rather than
+            // `match?.display`, since `display` is a purely visual
+            // (possibly non-string ReactNode) override and `label` is the
+            // documented plain-text source of truth for an option's
+            // flattened accessible name (see the PickerOption.display
+            // comment above).
+            const chipLabel = match?.label ?? keyword
             return (
-              <li key={keyword} className={styles.chip}>
+              <li
+                key={keyword}
+                className={styles.chip}
+                {...(reorderable
+                  ? {
+                      draggable: true,
+                      onDragStart: handleChipDragStart(index),
+                      onDragOver: handleChipDragOver,
+                      onDrop: handleChipDrop(index),
+                      onDragEnd: handleChipDragEnd,
+                    }
+                  : {})}
+              >
+                {reorderable && (
+                  <button
+                    type="button"
+                    aria-label={`Move ${chipLabel} earlier`}
+                    className={styles.chipMove}
+                    onClick={() => moveEarlier(index)}
+                    disabled={index === 0}
+                  >
+                    &lsaquo;
+                  </button>
+                )}
                 <span>{match?.display ?? match?.label ?? keyword}</span>
+                {reorderable && (
+                  <button
+                    type="button"
+                    aria-label={`Move ${chipLabel} later`}
+                    className={styles.chipMove}
+                    onClick={() => moveLater(index)}
+                    disabled={index === selected.length - 1}
+                  >
+                    &rsaquo;
+                  </button>
+                )}
                 <button
                   type="button"
                   aria-label={`Remove ${keyword}`}

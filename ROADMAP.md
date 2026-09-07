@@ -126,6 +126,8 @@ corrected below.
 | "Analysis/Trends" expansion, unit 4/4 (final unit): Country-of-Origin stats (same treatment as Keywords/Genres), added as a third `Analysis` tab, with raw ISO code resolved to a display name for rendering only (sort/filter stay backend-driven by raw code) | `series_spec_049` | `frontend_spec_089` | ✅ Done |
 | Analysis filters consistency (centered heading/labels, inconsistent table column widths, unstyled Apply Filters button) and cross-tab persistence of filters/sort/panel-open state on `/analysis` | — | `frontend_spec_096` | ✅ Done |
 | Refresh skip-threshold per-run override + visibility (`RefreshJobStatus.skipThresholdMinutesUsed`), plus a new `SettingsSection` wrapper component | `series_spec_052` | `frontend_spec_097` | ✅ Done |
+| Country/Language "favourites" for Custom Search's pinned chips, editable on `/settings`; introduces the shared `useLocalStorage` hook and migrates `SeriesList`'s view-mode toggle onto it | — | `frontend_spec_098` | ✅ Done |
+| Drag-and-drop + keyboard-accessible reordering of `KeywordPicker`'s selected chips (opt-in `reorderable` prop), adopted by the Country/Language Favourites editors so a favourite's pinned position is user-controlled, not just its membership | — | `frontend_spec_100` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -144,12 +146,11 @@ above — and no longer appears here.
 2026-09-07) — three independent specs, sequenced by which touches the backend first, then by which
 introduces shared frontend infrastructure the next one consumes. Chain 2 (Country/Language
 favourites) must build before Chain 3 (light/dark toggle), since Chain 3 consumes the
-`useLocalStorage` hook Chain 2 introduces. Chain 1 (`frontend_spec_097`) is now fully delivered —
-see the "Delivered" table above — and no longer appears here.
+`useLocalStorage` hook Chain 2 introduces. Chains 1 (`frontend_spec_097`) and 2 (`frontend_spec_098`)
+are now fully delivered — see the "Delivered" table above — and no longer appear here.
 
 | Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Country/Language "favourites" for Custom Search's pinned chips, editable on `/settings`; introduces the shared `useLocalStorage` hook and migrates `SeriesList`'s view-mode toggle onto it | —                                    | `frontend_spec_098`                            | ⬜ Not started                                                                                    |
 | Light/dark/match-system mode toggle on `/settings`, consuming `useLocalStorage`                                                                                     | —                                    | `frontend_spec_099`                            | ⬜ Not started                                                                                    |
 
 ## Internal / maintenance specs (not user-facing features)

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series, SortOptions } from '../types/series'
 import type { PickerOption } from './KeywordPicker'
+import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { formatCountryNames } from '../utils/countryName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
@@ -11,17 +12,6 @@ import { TrendingPanel } from './TrendingPanel'
 import { HighestRatedPanel } from './HighestRatedPanel'
 import { RecommendationFiltersBox } from './RecommendationFiltersBox'
 import styles from './RecommendationControls.module.css'
-
-// FRONTEND-047: Country reuses KeywordPicker's own pinned-option support
-// (US/GB one click away) with its searchable "rest" coming from the static
-// COUNTRY_OPTIONS list -- deliberately not derived from the user's own
-// tracked series (Discover modes don't touch tracked data, see this spec's
-// Design Decisions).
-// TOOLING-008: exported so UseMySeriesPanel/CustomSearchPanel/
-// RecommendationFiltersBox (which render the Country picker) can reuse the
-// same pinned codes without duplicating this judgment call.
-// eslint-disable-next-line react-refresh/only-export-components -- this file intentionally exports shared module-level data/helpers alongside the RecommendationControls component per tooling_spec_008's Design Decisions (helpers stay module-level here rather than moving into the new panel files); Fast Refresh state loss on an edit here is an acceptable, deliberate tradeoff.
-export const COUNTRY_PINNED_OPTIONS = ['US', 'GB']
 
 // FRONTEND-047-AC-08/09/12 (revised 2026-08-28): Language keeps a hardcoded,
 // locally-scoped option list (not extracted to utils/ -- exactly one
@@ -52,14 +42,21 @@ function formatLanguageName(code: string): string {
   }
 }
 
-// FRONTEND-047-AC-08: pinned quick-select codes -- English, Spanish, French,
-// German, Japanese, Korean, a judgment call on "most commonly wanted TV
-// languages" (see this spec's Design Decisions).
-// TOOLING-008: exported for the same reason as COUNTRY_PINNED_OPTIONS above.
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
-export const LANGUAGE_PINNED_CODES = ['en', 'es', 'fr', 'de', 'ja', 'ko']
+// FRONTEND-098-AC-06: an independent static array of all 14 codes --
+// identical membership to the old spread-from-LANGUAGE_PINNED_CODES-derived
+// list, just no longer derived from it. See this spec's Design Decisions:
+// deriving LANGUAGE_OPTION_CODES from the pinned list coupled the full
+// searchable catalog to whatever happened to be pinned, so un-pinning a
+// language would have silently removed it from the entire searchable list
+// too, once LANGUAGE_PINNED_CODES became a runtime (rather than module-level)
+// value.
 const LANGUAGE_OPTION_CODES = [
-  ...LANGUAGE_PINNED_CODES,
+  'en',
+  'es',
+  'fr',
+  'de',
+  'ja',
+  'ko',
   'it',
   'zh',
   'pt',
@@ -69,13 +66,49 @@ const LANGUAGE_OPTION_CODES = [
   'no',
   'nl',
 ]
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- this file intentionally exports shared module-level data/helpers alongside the RecommendationControls component per tooling_spec_008's Design Decisions (helpers stay module-level here rather than moving into the new panel files); Fast Refresh state loss on an edit here is an acceptable, deliberate tradeoff.
 export const LANGUAGE_OPTIONS: PickerOption[] = LANGUAGE_OPTION_CODES.map(
   (code) => ({
     id: code,
     label: formatLanguageName(code),
   }),
 )
+
+// FRONTEND-098-AC-07/08: Country/Language Favourites are now a user-editable,
+// localStorage-backed pinned list (Settings > Recommendation Favourites)
+// instead of the old module-level COUNTRY_PINNED_OPTIONS/LANGUAGE_PINNED_CODES
+// constants -- these defaults are identical to those constants' old values,
+// so a user who's never opened Settings sees unchanged behavior.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export const DEFAULT_COUNTRY_FAVOURITES = ['US', 'GB']
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export const DEFAULT_LANGUAGE_FAVOURITES = ['en', 'es', 'fr', 'de', 'ja', 'ko']
+
+// FRONTEND-098-AC-09: rejects anything that isn't an array of strings each
+// present in ALL_COUNTRY_OPTIONS/LANGUAGE_OPTION_CODES -- a stale/corrupted
+// stored value can never inject an unrecognized chip into either picker.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isCountryFavourites(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        typeof entry === 'string' &&
+        ALL_COUNTRY_OPTIONS.some((option) => option.id === entry),
+    )
+  )
+}
+
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isLanguageFavourites(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (entry) =>
+        typeof entry === 'string' && LANGUAGE_OPTION_CODES.includes(entry),
+    )
+  )
+}
 
 // FRONTEND-042: two-tier source selector -- 'mode' picks the top-level tab
 // ("Use My Series" merges the former "Automatic"/"Specific Series" -- see
@@ -173,7 +206,7 @@ const DISCOVER_SORT_BY_DEFAULTS: Record<
 // SORT_BY_OPTIONS -- only the field set and labels are reused here, the sort
 // itself stays entirely client-side (buildSpecificSeriesCandidatePool below),
 // unlike SeriesList's which is a request parameter.
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export const SPECIFIC_SERIES_SORT_BY_OPTIONS: {
   value: SpecificSeriesSortBy
   label: string
@@ -190,7 +223,7 @@ export const SPECIFIC_SERIES_SORT_BY_OPTIONS: {
 // behavior (excludeGenresSelected -> query.excludeGenres, no comma-parsing)
 // is directly testable, mirroring COUNTRY_PINNED_OPTIONS/
 // buildSpecificSeriesCandidatePool's existing module-level-export rationale.
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export const initialState: ControlsState = {
   mode: 'useMySeries',
   discoverMode: 'customSearch',
@@ -351,7 +384,7 @@ function applySourceModeQuery(
 // RecommendationFiltersBox's own inline error message enforces the exact
 // same rule as this query-builder backstop, rather than duplicating the
 // check in two places.
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function isMinVoteCountValid(value: string): boolean {
   const trimmed = value.trim()
   if (trimmed === '') return true
@@ -415,7 +448,7 @@ function applyExcludeAndMiscFilters(
 // the pool can contain a mix of statuses -- once specificSeriesStatusFilter
 // narrows it to one value (or two, for "Completed or Watching"), every
 // suggestion would repeat the same text, so it's omitted in that case.
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function seriesPickerLabel(
   series: Series,
   statusFilter: SpecificSeriesStatusFilter,
@@ -430,7 +463,7 @@ export function seriesPickerLabel(
   return `${series.title}${yearPart}${countryPart}${statusPart}`
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function seriesPickerDisplay(
   series: Series,
   statusFilter: SpecificSeriesStatusFilter,
@@ -698,7 +731,7 @@ export interface SpecificSeriesFilters {
 // excludes anything in `selected` from its suggestion list. This step
 // operates generically on whatever the filter chain excluded, so it already
 // covers the five new FRONTEND-081 predicates with no change of its own.
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function buildSpecificSeriesCandidatePool(
   allSeries: Series[],
   filters: SpecificSeriesFilters,
@@ -740,7 +773,7 @@ export function buildSpecificSeriesCandidatePool(
   return [...sorted, ...missingSelected]
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on COUNTRY_PINNED_OPTIONS above for rationale.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function buildQuery(state: ControlsState): RecommendationQuery {
   const query: RecommendationQuery = {}
   applySourceModeQuery(state, query)

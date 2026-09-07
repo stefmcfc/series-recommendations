@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { KeywordPicker } from './KeywordPicker'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
-  COUNTRY_PINNED_OPTIONS,
+  DEFAULT_COUNTRY_FAVOURITES,
+  DEFAULT_LANGUAGE_FAVOURITES,
   LANGUAGE_OPTIONS,
-  LANGUAGE_PINNED_CODES,
+  isCountryFavourites,
+  isLanguageFavourites,
   isMinVoteCountValid,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
@@ -72,6 +75,19 @@ export function RecommendationFiltersBox({
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const activeFilterCount = countActiveFilters(state)
+  // FRONTEND-098-AC-07/08: same localStorage-backed favourites as
+  // CustomSearchPanel's own instance (this spec's Design Decisions: no
+  // cross-tab sync needed, each mounted consumer just reads its own copy).
+  const [countryFavourites] = useLocalStorage(
+    'countryFavourites',
+    DEFAULT_COUNTRY_FAVOURITES,
+    isCountryFavourites,
+  )
+  const [languageFavourites] = useLocalStorage(
+    'languageFavourites',
+    DEFAULT_LANGUAGE_FAVOURITES,
+    isLanguageFavourites,
+  )
   // FRONTEND-094-AC-09/AC-10: advisory-only inline error (Design Decisions --
   // "Get Recommendations" isn't gated on this, matching how no field in this
   // component already gates it), shares its validity rule with the
@@ -255,7 +271,7 @@ export function RecommendationFiltersBox({
                   selected={state.countriesSelected}
                   onChange={(next) => updateState({ countriesSelected: next })}
                   options={COUNTRY_OPTIONS}
-                  pinnedOptions={COUNTRY_PINNED_OPTIONS}
+                  pinnedOptions={countryFavourites}
                 />
               </div>
 
@@ -268,7 +284,7 @@ export function RecommendationFiltersBox({
                     updateState({ language: next.at(-1) ?? '' })
                   }
                   options={LANGUAGE_OPTIONS}
-                  pinnedOptions={LANGUAGE_PINNED_CODES}
+                  pinnedOptions={languageFavourites}
                 />
               </div>
             </>
