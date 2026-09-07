@@ -4,6 +4,7 @@ import { ApiError } from '../types/api'
 import type { RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import type { Theme } from '../types/theme'
 import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
 import {
   DEFAULT_COUNTRY_FAVOURITES,
@@ -53,7 +54,16 @@ export function buildLastFullRefreshText(status: RefreshJobStatus): string {
   return `Last full refresh: ${formatRelativeTime(finishedAt)}${skippedSuffix}`
 }
 
-export function SettingsPage() {
+interface SettingsPageProps {
+  readonly theme: Theme
+  readonly setTheme: (theme: Theme) => void
+}
+
+// FRONTEND-099-AC-03: theme/setTheme are received as props from App.tsx (via
+// the /settings route element) rather than owned here -- see
+// frontend_spec_099's Design Decisions for why this state can't live in
+// SettingsPage itself.
+export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
   // FRONTEND-097-AC-05/06/07: plain string state so a blank field is
@@ -178,6 +188,45 @@ export function SettingsPage() {
   return (
     <div className={styles.container} data-testid="settings-view">
       <h2 className={styles.heading}>Settings</h2>
+
+      <SettingsSection title="Appearance">
+        <div
+          className={styles.themeOptions}
+          role="radiogroup"
+          aria-label="Appearance"
+        >
+          <label className={styles.themeOption}>
+            <input
+              type="radio"
+              name="theme"
+              value="light"
+              checked={theme === 'light'}
+              onChange={() => setTheme('light')}
+            />
+            Light
+          </label>
+          <label className={styles.themeOption}>
+            <input
+              type="radio"
+              name="theme"
+              value="dark"
+              checked={theme === 'dark'}
+              onChange={() => setTheme('dark')}
+            />
+            Dark
+          </label>
+          <label className={styles.themeOption}>
+            <input
+              type="radio"
+              name="theme"
+              value="system"
+              checked={theme === 'system'}
+              onChange={() => setTheme('system')}
+            />
+            Match System
+          </label>
+        </div>
+      </SettingsSection>
 
       <SettingsSection title="Refresh All">
         <div className={styles.refreshRow}>

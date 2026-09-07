@@ -1,6 +1,6 @@
 # Frontend Spec 099: Light/Dark/Match-System Theme Toggle
 
-**Status**: Not started
+**Status**: Done — all ACs verified. AC-06 confirmed via live browser pass (2026-09-07, OS/browser `prefers-color-scheme: dark`): "Match System" (default) rendered dark, matching the OS preference unchanged from before this spec; selecting "Light" switched the entire app to light instantly despite the dark OS setting (confirming the attribute-selector override genuinely outranks the `@media` block, not just visually similar by coincidence); a full page reload on a different route (`/my-series`, not `/settings`) with `light` already stored applied the theme immediately with no flash and no prior visit to Settings required — confirming the `App.tsx`-level state placement was the correct call.
 **Priority**: P3
 **Depends on**: `frontend_spec_098_settings_country_language_favourites.md` (the `useLocalStorage` hook this spec consumes as-is), `frontend_spec_097_refresh_skip_threshold_override_ui.md` (`SettingsSection`, this spec's control renders through it)
 **Area**: Frontend (`App.tsx`, `components/SettingsPage.tsx`, `index.css`, and each affected file's tests)
@@ -180,11 +180,11 @@ Light/Dark/Match System choice, 2×3 combinations).
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-099-AC-01: `App.tsx` owns `theme`/`setTheme` via `useLocalStorage`
-- [ ] FRONTEND-099-AC-02: effect applies/removes the `data-theme` attribute on `<html>`
-- [ ] FRONTEND-099-AC-03: `theme`/`setTheme` threaded to `SettingsPage` via the route element
-- [ ] FRONTEND-099-AC-04: `:root[data-theme="dark"]` mirrors the existing dark media-query values
-- [ ] FRONTEND-099-AC-05: `:root[data-theme="light"]` mirrors the existing base light values
-- [ ] FRONTEND-099-AC-06: "Match System" is pixel-identical to today's behavior
-- [ ] FRONTEND-099-AC-07: `SettingsPage` renders the three-way Appearance control
-- [ ] FRONTEND-099-AC-08: selecting an option applies immediately, no Save step
+- [x] FRONTEND-099-AC-01: `App.tsx` owns `theme`/`setTheme` via `useLocalStorage`
+- [x] FRONTEND-099-AC-02: effect applies/removes the `data-theme` attribute on `<html>`
+- [x] FRONTEND-099-AC-03: `theme`/`setTheme` threaded to `SettingsPage` via the route element
+- [x] FRONTEND-099-AC-04: `:root[data-theme="dark"]` mirrors the existing dark media-query values
+- [x] FRONTEND-099-AC-05: `:root[data-theme="light"]` mirrors the existing base light values
+- [x] FRONTEND-099-AC-06 [MANUAL]: "Match System" is pixel-identical to today's behavior — verified 2026-09-07
+- [x] FRONTEND-099-AC-07: `SettingsPage` renders the three-way Appearance control
+- [x] FRONTEND-099-AC-08: selecting an option applies immediately, no Save step

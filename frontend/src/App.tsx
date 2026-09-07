@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   BrowserRouter,
   Routes,
@@ -18,12 +18,14 @@ import { RecommendationsList } from './components/RecommendationsList'
 import { RecommendationControls } from './components/RecommendationControls'
 import { AnalysisView } from './components/AnalysisView'
 import { SettingsPage } from './components/SettingsPage'
+import { useLocalStorage } from './hooks/useLocalStorage'
 import {
   SeriesStatus,
   type Series,
   type SearchCriteria,
   type RecommendationQuery,
 } from './types/series'
+import { isTheme, type Theme } from './types/theme'
 import styles from './App.module.css'
 
 const navLinkClassName = ({ isActive }: NavLinkRenderProps) =>
@@ -176,6 +178,24 @@ function App() {
   // upward so RecommendationControls can lock itself while a request it
   // triggered (directly via mode change, or via Apply Filters) is in flight.
   const [recommendationsLoading, setRecommendationsLoading] = useState(false)
+  // FRONTEND-099-AC-01: owned here, not in SettingsPage -- see this spec's
+  // Design Decisions. App.tsx is always mounted, so the data-theme attribute
+  // this drives (via the effect below) applies from first paint regardless
+  // of which route the user lands on, and updates live across the whole app
+  // the instant the Settings control changes it.
+  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'system', isTheme)
+
+  // FRONTEND-099-AC-02: applies/removes the data-theme attribute on <html>
+  // (document.documentElement) whenever theme changes -- 'system' removes it
+  // entirely so the existing prefers-color-scheme media query keeps driving
+  // appearance unopposed, exactly as it did before this spec.
+  useEffect(() => {
+    if (theme === 'system') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+  }, [theme])
 
   const handleAddSuccess = () => {
     setIsAddFormOpen(false)
@@ -286,7 +306,10 @@ function App() {
                 path="/keywords"
                 element={<Navigate to="/analysis/keywords" replace />}
               />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/settings"
+                element={<SettingsPage theme={theme} setTheme={setTheme} />}
+              />
               <Route path="*" element={<Navigate to="/my-series" replace />} />
             </Routes>
           </>

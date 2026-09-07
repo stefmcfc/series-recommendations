@@ -128,6 +128,7 @@ corrected below.
 | Refresh skip-threshold per-run override + visibility (`RefreshJobStatus.skipThresholdMinutesUsed`), plus a new `SettingsSection` wrapper component | `series_spec_052` | `frontend_spec_097` | ✅ Done |
 | Country/Language "favourites" for Custom Search's pinned chips, editable on `/settings`; introduces the shared `useLocalStorage` hook and migrates `SeriesList`'s view-mode toggle onto it | — | `frontend_spec_098` | ✅ Done |
 | Drag-and-drop + keyboard-accessible reordering of `KeywordPicker`'s selected chips (opt-in `reorderable` prop), adopted by the Country/Language Favourites editors so a favourite's pinned position is user-controlled, not just its membership | — | `frontend_spec_100` | ✅ Done |
+| Light/dark/match-system mode toggle on `/settings`, consuming `useLocalStorage`; `App.tsx` owns theme state and applies it app-wide via a `data-theme` attribute on `<html>` | — | `frontend_spec_099` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -144,14 +145,9 @@ above — and no longer appears here.
 
 **Settings-area batch** (`.claude/ideas/future_ideas.md`'s Configuration section, planned
 2026-09-07) — three independent specs, sequenced by which touches the backend first, then by which
-introduces shared frontend infrastructure the next one consumes. Chain 2 (Country/Language
-favourites) must build before Chain 3 (light/dark toggle), since Chain 3 consumes the
-`useLocalStorage` hook Chain 2 introduces. Chains 1 (`frontend_spec_097`) and 2 (`frontend_spec_098`)
-are now fully delivered — see the "Delivered" table above — and no longer appear here.
-
-| Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Light/dark/match-system mode toggle on `/settings`, consuming `useLocalStorage`                                                                                     | —                                    | `frontend_spec_099`                            | ⬜ Not started                                                                                    |
+introduces shared frontend infrastructure the next one consumes. Chains 1 (`frontend_spec_097`), 2
+(`frontend_spec_098`), and 3 (`frontend_spec_099`) are now fully delivered — see the "Delivered"
+table above — and no longer appear here.
 
 ## Internal / maintenance specs (not user-facing features)
 
