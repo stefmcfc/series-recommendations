@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.31.0] - 2026-09-07
+
 ### Added
 
 - Frontend: new `hooks/useNameStatsFilters.ts` hook owning `NameStatsTable`'s filter/sort/panel-open state (previously local to that component) — `AnalysisView` now calls it once and shares the result across all three `/analysis` sub-tabs (Keywords/Genres/Country of Origin), so applied filters, sort column/direction, and whether the filters panel is open all now survive a tab switch instead of being discarded on remount (`frontend_spec_096`).
