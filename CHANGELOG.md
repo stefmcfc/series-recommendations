@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.32.0] - 2026-09-07
+
 ### Added
 
 - Backend: `POST /api/v1/series/refresh-all` now accepts an optional `{ "skipThresholdMinutesOverride": <int> }` body, overriding `app.tmdb.refresh-skip-threshold-minutes` for that one run only without changing the configured default for future runs (`series_spec_052` SERIES-052-AC-01/02/03/04/06/07).
