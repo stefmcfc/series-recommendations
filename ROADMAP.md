@@ -129,6 +129,7 @@ corrected below.
 | Country/Language "favourites" for Custom Search's pinned chips, editable on `/settings`; introduces the shared `useLocalStorage` hook and migrates `SeriesList`'s view-mode toggle onto it | — | `frontend_spec_098` | ✅ Done |
 | Drag-and-drop + keyboard-accessible reordering of `KeywordPicker`'s selected chips (opt-in `reorderable` prop), adopted by the Country/Language Favourites editors so a favourite's pinned position is user-controlled, not just its membership | — | `frontend_spec_100` | ✅ Done |
 | Light/dark/match-system mode toggle on `/settings`, consuming `useLocalStorage`; `App.tsx` owns theme state and applies it app-wide via a `data-theme` attribute on `<html>` | — | `frontend_spec_099` | ✅ Done |
+| Skip-threshold override gains Days/Weeks/Months units; `SettingsPage` sections become bordered/shadowed cards with icons ("modern but accessible" redesign) | — | `frontend_spec_101` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -152,10 +153,11 @@ table above — and no longer appear here.
 **Settings follow-up batch** (planned 2026-09-07, after the above shipped) — two independent
 specs/pairs; `frontend_spec_102` should build after `frontend_spec_101` since both touch
 `SettingsPage.tsx` and 101's card/icon treatment is what 102's new section adopts.
+`frontend_spec_101` is now fully delivered — see the "Delivered" table above — and no longer
+appears here.
 
 | Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Skip-threshold override gains Days/Weeks/Months units; `SettingsPage` sections become bordered/shadowed cards with icons ("modern but accessible" redesign)         | —                                    | `frontend_spec_101`                            | ⬜ Not started                                                                                    |
 | Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053`                    | `frontend_spec_102`                            | ⬜ Not started                                                                                    |
 
 ## Internal / maintenance specs (not user-facing features)

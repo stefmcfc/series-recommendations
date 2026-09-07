@@ -332,7 +332,7 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
     await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(undefined))
   })
 
-  it('sends the override value when the field is filled in', async () => {
+  it('sends the override value in minutes (Days is the default unit)', async () => {
     mockRefreshAll.mockResolvedValue({
       status: 'IDLE',
       totalCount: 0,
@@ -349,7 +349,101 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
     })
     fireEvent.click(screen.getByTestId('refresh-all-btn'))
 
-    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(10))
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(14400))
+  })
+})
+
+describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
+  it('converts a Days override to minutes on Refresh All', async () => {
+    mockRefreshAll.mockResolvedValue({
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
+      startedAt: null,
+      finishedAt: null,
+    })
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
+      target: { value: '3' },
+    })
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(4320))
+  })
+
+  it('converts a Weeks override to minutes on Refresh All', async () => {
+    mockRefreshAll.mockResolvedValue({
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
+      startedAt: null,
+      finishedAt: null,
+    })
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
+      target: { value: '3' },
+    })
+    fireEvent.change(screen.getByRole('combobox', { name: /unit/i }), {
+      target: { value: 'weeks' },
+    })
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(30240))
+  })
+
+  it('converts a Months override to minutes on Refresh All', async () => {
+    mockRefreshAll.mockResolvedValue({
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
+      startedAt: null,
+      finishedAt: null,
+    })
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByRole('combobox', { name: /unit/i }), {
+      target: { value: 'months' },
+    })
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(86400))
+  })
+
+  it('sends no override when the numeric field is blank, regardless of unit', async () => {
+    mockRefreshAll.mockResolvedValue({
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
+      startedAt: null,
+      finishedAt: null,
+    })
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    fireEvent.change(screen.getByRole('combobox', { name: /unit/i }), {
+      target: { value: 'weeks' },
+    })
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(undefined))
+  })
+
+  it('defaults the unit select to Days', () => {
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    expect(screen.getByRole('combobox', { name: /unit/i })).toHaveValue('days')
   })
 })
 
@@ -378,6 +472,47 @@ describe('FRONTEND-097-AC-08: progress/last-refresh text mentions the threshold 
       skipThresholdMinutesUsed: 10,
     })
     expect(text).toContain('threshold: 10')
+  })
+})
+
+describe('FRONTEND-101-AC-04: threshold display formats back to the friendliest unit', () => {
+  it('formats a whole-days threshold as days in the progress text', () => {
+    const text = buildRefreshProgressText({
+      status: 'IN_PROGRESS',
+      totalCount: 5,
+      completedCount: 2,
+      skippedCount: 3,
+      startedAt: '2026-09-07T10:00:00',
+      finishedAt: null,
+      skipThresholdMinutesUsed: 4320,
+    })
+    expect(text).toContain('threshold: 3 days')
+  })
+
+  it('formats a whole-weeks threshold as weeks in the last-refresh text', () => {
+    const text = buildLastFullRefreshText({
+      status: 'COMPLETED',
+      totalCount: 5,
+      completedCount: 5,
+      skippedCount: 3,
+      startedAt: '2026-09-07T10:00:00',
+      finishedAt: '2026-09-07T10:00:05',
+      skipThresholdMinutesUsed: 10080,
+    })
+    expect(text).toContain('threshold: 1 week')
+  })
+
+  it('formats a whole-months threshold as months', () => {
+    const text = buildRefreshProgressText({
+      status: 'IN_PROGRESS',
+      totalCount: 5,
+      completedCount: 2,
+      skippedCount: 3,
+      startedAt: '2026-09-07T10:00:00',
+      finishedAt: null,
+      skipThresholdMinutesUsed: 43200,
+    })
+    expect(text).toContain('threshold: 1 month')
   })
 })
 

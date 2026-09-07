@@ -1,6 +1,6 @@
 # Frontend Spec 101: Skip-Threshold Time Units & Settings Card Styling
 
-**Status**: Not started
+**Status**: Delivered
 **Priority**: P3
 **Depends on**: `frontend_spec_097_refresh_skip_threshold_override_ui.md` (`SettingsSection`, the skip-threshold override input this restyles), `frontend_spec_098`/`099` (the other three sections this same redesign applies to)
 **Area**: Frontend (`components/SettingsPage.tsx`, `SettingsPage.module.css`, `components/SettingsSection.tsx`, `SettingsSection.module.css`, and each affected file's tests)
@@ -173,11 +173,11 @@ styling until the specs above pass.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-101-AC-01: override control is number + Days/Weeks/Months unit select
-- [ ] FRONTEND-101-AC-02: conversion to minutes happens before the API call
-- [ ] FRONTEND-101-AC-03: blank field sends no override, any unit
-- [ ] FRONTEND-101-AC-04: threshold display formats back to the friendliest unit
-- [ ] FRONTEND-101-AC-05: `SettingsSection` accepts an optional decorative `icon`
-- [ ] FRONTEND-101-AC-06: sections render as bordered/shadowed cards reusing existing tokens
-- [ ] FRONTEND-101-AC-07: all five sections pass a matching icon, no other changes
-- [ ] FRONTEND-101-AC-08: icons are `aria-hidden`, accessible name is the title alone
+- [x] FRONTEND-101-AC-01: override control is number + Days/Weeks/Months unit select
+- [x] FRONTEND-101-AC-02: conversion to minutes happens before the API call
+- [x] FRONTEND-101-AC-03: blank field sends no override, any unit
+- [x] FRONTEND-101-AC-04: threshold display formats back to the friendliest unit
+- [x] FRONTEND-101-AC-05: `SettingsSection` accepts an optional decorative `icon`
+- [x] FRONTEND-101-AC-06: sections render as bordered/shadowed cards reusing existing tokens
+- [x] FRONTEND-101-AC-07: all five sections pass a matching icon, no other changes
+- [x] FRONTEND-101-AC-08: icons are `aria-hidden`, accessible name is the title alone
