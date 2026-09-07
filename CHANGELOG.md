@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.30.1] - 2026-09-07
+
 ### Fixed
 
 - Backend: `TmdbClient.originCountries` no longer needs an unchecked cast/`@SuppressWarnings("unchecked")` — the pattern-matched `List<?>` is now iterated directly (SonarLint suggestion).
