@@ -17,6 +17,18 @@ import { ExportControls } from './ExportControls'
 import { ImportControls } from './ImportControls'
 import { KeywordPicker } from './KeywordPicker'
 import { SettingsSection } from './SettingsSection'
+import {
+  AppearanceIcon,
+  RefreshIcon,
+  ExportIcon,
+  ImportIcon,
+  FavouritesIcon,
+} from './SettingsIcons'
+import {
+  toMinutes,
+  formatThreshold,
+  type SkipThresholdUnit,
+} from '../utils/skipThresholdUnits'
 import styles from './SettingsPage.module.css'
 
 // Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
@@ -29,7 +41,7 @@ const REFRESH_POLL_INTERVAL_MS = 2500
 // context that produced it.
 function buildThresholdSuffix(status: RefreshJobStatus): string {
   return status.skippedCount > 0
-    ? `, threshold: ${status.skipThresholdMinutesUsed} min`
+    ? `, threshold: ${formatThreshold(status.skipThresholdMinutesUsed)}`
     : ''
 }
 
@@ -70,6 +82,12 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
   // unambiguous (vs. a number field defaulting to 0) -- parsed to a number
   // only at click time, and omitted from the call entirely when blank.
   const [skipThresholdOverride, setSkipThresholdOverride] = useState('')
+  // FRONTEND-101-AC-01: Days/Weeks/Months unit paired with the numeric
+  // field above -- default Days (no Hours/Minutes, see this spec's Design
+  // Decisions: a single-series refresh already bypasses the threshold
+  // entirely, so sub-day thresholds have no real use case).
+  const [skipThresholdUnit, setSkipThresholdUnit] =
+    useState<SkipThresholdUnit>('days')
 
   // FRONTEND-098-AC-10/11: the Settings editor instances -- no pinnedOptions
   // prop, this instance *is* the editor that produces the pinned list
@@ -140,9 +158,13 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
     // FRONTEND-097-AC-06/07: a blank field sends no override at all --
     // seriesApi.refreshAll() omits skipThresholdMinutesOverride from the
     // request body entirely rather than sending null/0/undefined.
+    // FRONTEND-101-AC-02/03: when non-blank, convert to total minutes per
+    // the selected unit before calling the API.
     const trimmedOverride = skipThresholdOverride.trim()
     const overrideValue =
-      trimmedOverride === '' ? undefined : Number(trimmedOverride)
+      trimmedOverride === ''
+        ? undefined
+        : toMinutes(Number(trimmedOverride), skipThresholdUnit)
 
     seriesApi
       .refreshAll(overrideValue)
@@ -189,7 +211,7 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
     <div className={styles.container} data-testid="settings-view">
       <h2 className={styles.heading}>Settings</h2>
 
-      <SettingsSection title="Appearance">
+      <SettingsSection title="Appearance" icon={<AppearanceIcon />}>
         <div
           className={styles.themeOptions}
           role="radiogroup"
@@ -231,7 +253,7 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Refresh All">
+      <SettingsSection title="Refresh All" icon={<RefreshIcon />}>
         <div className={styles.refreshRow}>
           <button
             type="button"
@@ -244,7 +266,7 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
           </button>
           <div className={styles.overrideField}>
             <label htmlFor="refresh-skip-threshold-override">
-              Skip Threshold Override (minutes)
+              Skip Threshold Override
             </label>
             <input
               id="refresh-skip-threshold-override"
@@ -253,6 +275,24 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
               value={skipThresholdOverride}
               onChange={(event) => setSkipThresholdOverride(event.target.value)}
             />
+            {/* FRONTEND-101-AC-01: Days/Weeks/Months unit select, default
+                Days -- no Hours/Minutes, see this file's Design Decisions
+                notes above handleRefreshAllClick. aria-label (rather than a
+                visible <label>) keeps this compact inline with the numeric
+                field -- "Skip Threshold Override" above already names the
+                control pairing. */}
+            <select
+              id="refresh-skip-threshold-unit"
+              aria-label="Unit"
+              value={skipThresholdUnit}
+              onChange={(event) =>
+                setSkipThresholdUnit(event.target.value as SkipThresholdUnit)
+              }
+            >
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
           </div>
           {refreshAllInProgress && jobStatus && (
             <span className={styles.refreshProgress}>
@@ -273,15 +313,18 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
         </div>
       )}
 
-      <SettingsSection title="Export">
+      <SettingsSection title="Export" icon={<ExportIcon />}>
         <ExportControls />
       </SettingsSection>
 
-      <SettingsSection title="Import">
+      <SettingsSection title="Import" icon={<ImportIcon />}>
         <ImportControls onImported={handleImported} />
       </SettingsSection>
 
-      <SettingsSection title="Recommendation Favourites">
+      <SettingsSection
+        title="Recommendation Favourites"
+        icon={<FavouritesIcon />}
+      >
         <KeywordPicker
           id="settings-country-favourites"
           label="Country Favourites"
