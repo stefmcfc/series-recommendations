@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.34.1] - 2026-09-07
+
 ### Fixed
 
 - Frontend: `App.tsx`'s `data-theme` attribute is now set/removed via `document.documentElement.dataset.theme` instead of `setAttribute`/`removeAttribute` (typescript:S7761), no behavior change.
