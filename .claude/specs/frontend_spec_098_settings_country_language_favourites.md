@@ -1,6 +1,6 @@
 # Frontend Spec 098: Country/Language Favourites & Shared `useLocalStorage` Hook
 
-**Status**: Not started
+**Status**: Done
 **Priority**: P3
 **Depends on**: `frontend_spec_097_refresh_skip_threshold_override_ui.md` (introduces `SettingsSection`, consumed here), `frontend_spec_054_series_list_compact_view.md` (the `localStorage` read/write/silent-degradation pattern this spec generalizes into a shared hook), `frontend_spec_047` (the original hardcoded `COUNTRY_PINNED_OPTIONS`/`LANGUAGE_PINNED_CODES` this spec makes user-editable)
 **Area**: Frontend (`hooks/useLocalStorage.ts` (new), `components/SeriesList.tsx`, `components/RecommendationControls.tsx`, `components/CustomSearchPanel.tsx`, `components/RecommendationFiltersBox.tsx`, `components/SettingsPage.tsx`, `utils/countryOptions.ts`, and each affected file's tests)
@@ -275,14 +275,14 @@ and the Settings editor until the specs above pass.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-098-AC-01: `useLocalStorage` reads/parses/validates on mount
-- [ ] FRONTEND-098-AC-02: `useLocalStorage` writes JSON on change, degrades silently
-- [ ] FRONTEND-098-AC-03: `SeriesList.tsx` migrated onto the shared hook
-- [ ] FRONTEND-098-AC-04: existing view-mode persistence behavior unchanged, tests updated to JSON
-- [ ] FRONTEND-098-AC-05: `ALL_COUNTRY_OPTIONS` exported (20 entries)
-- [ ] FRONTEND-098-AC-06: `LANGUAGE_OPTION_CODES` decoupled from `LANGUAGE_PINNED_CODES`
-- [ ] FRONTEND-098-AC-07: favourites read via `useLocalStorage` in both Discover consumers
-- [ ] FRONTEND-098-AC-08: defaults match today's hardcoded values exactly
-- [ ] FRONTEND-098-AC-09: invalid/unrecognized stored favourites fall back to defaults
-- [ ] FRONTEND-098-AC-10: Settings editor renders both favourites pickers
-- [ ] FRONTEND-098-AC-11: editing a favourite writes through immediately, no Save button
+- [x] FRONTEND-098-AC-01: `useLocalStorage` reads/parses/validates on mount
+- [x] FRONTEND-098-AC-02: `useLocalStorage` writes JSON on change, degrades silently
+- [x] FRONTEND-098-AC-03: `SeriesList.tsx` migrated onto the shared hook
+- [x] FRONTEND-098-AC-04: existing view-mode persistence behavior unchanged, tests updated to JSON
+- [x] FRONTEND-098-AC-05: `ALL_COUNTRY_OPTIONS` exported (20 entries)
+- [x] FRONTEND-098-AC-06: `LANGUAGE_OPTION_CODES` decoupled from `LANGUAGE_PINNED_CODES`
+- [x] FRONTEND-098-AC-07: favourites read via `useLocalStorage` in both Discover consumers
+- [x] FRONTEND-098-AC-08: defaults match today's hardcoded values exactly
+- [x] FRONTEND-098-AC-09: invalid/unrecognized stored favourites fall back to defaults
+- [x] FRONTEND-098-AC-10: Settings editor renders both favourites pickers
+- [x] FRONTEND-098-AC-11: editing a favourite writes through immediately, no Save button

@@ -3,8 +3,18 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
+import { useLocalStorage } from '../hooks/useLocalStorage'
+import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
+import {
+  DEFAULT_COUNTRY_FAVOURITES,
+  DEFAULT_LANGUAGE_FAVOURITES,
+  LANGUAGE_OPTIONS,
+  isCountryFavourites,
+  isLanguageFavourites,
+} from './RecommendationControls'
 import { ExportControls } from './ExportControls'
 import { ImportControls } from './ImportControls'
+import { KeywordPicker } from './KeywordPicker'
 import { SettingsSection } from './SettingsSection'
 import styles from './SettingsPage.module.css'
 
@@ -50,6 +60,22 @@ export function SettingsPage() {
   // unambiguous (vs. a number field defaulting to 0) -- parsed to a number
   // only at click time, and omitted from the call entirely when blank.
   const [skipThresholdOverride, setSkipThresholdOverride] = useState('')
+
+  // FRONTEND-098-AC-10/11: the Settings editor instances -- no pinnedOptions
+  // prop, this instance *is* the editor that produces the pinned list
+  // CustomSearchPanel/RecommendationFiltersBox read elsewhere. Writes
+  // through to localStorage immediately on every change (via the shared
+  // hook's write-on-change behavior), no separate Save button.
+  const [countryFavourites, setCountryFavourites] = useLocalStorage(
+    'countryFavourites',
+    DEFAULT_COUNTRY_FAVOURITES,
+    isCountryFavourites,
+  )
+  const [languageFavourites, setLanguageFavourites] = useLocalStorage(
+    'languageFavourites',
+    DEFAULT_LANGUAGE_FAVOURITES,
+    isLanguageFavourites,
+  )
 
   const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
 
@@ -201,6 +227,23 @@ export function SettingsPage() {
 
       <SettingsSection title="Import">
         <ImportControls onImported={handleImported} />
+      </SettingsSection>
+
+      <SettingsSection title="Recommendation Favourites">
+        <KeywordPicker
+          id="settings-country-favourites"
+          label="Country Favourites"
+          selected={countryFavourites}
+          onChange={setCountryFavourites}
+          options={ALL_COUNTRY_OPTIONS}
+        />
+        <KeywordPicker
+          id="settings-language-favourites"
+          label="Language Favourites"
+          selected={languageFavourites}
+          onChange={setLanguageFavourites}
+          options={LANGUAGE_OPTIONS}
+        />
       </SettingsSection>
     </div>
   )

@@ -8,6 +8,18 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: new shared `hooks/useLocalStorage.ts` — a generic, JSON-serializing `localStorage` read/write hook that reads once on mount (falling back to a caller-supplied default on a missing key, a parse failure, or an `isValid` rejection) and writes on every change, silently swallowing any read/write failure rather than throwing (`frontend_spec_098` FRONTEND-098-AC-01/02).
+- Frontend: `utils/countryOptions.ts` gains `ALL_COUNTRY_OPTIONS` — `COUNTRY_OPTIONS` plus `US`/`GB` (20 entries) — used by the new Country Favourites editor and its stored-value validator; the existing `COUNTRY_OPTIONS` export is unchanged (`frontend_spec_098` FRONTEND-098-AC-05).
+- Frontend: `/settings` gains a "Recommendation Favourites" section with Country Favourites and Language Favourites `KeywordPicker`s, editable directly (no Save button) and backed by `useLocalStorage` (`frontend_spec_098` FRONTEND-098-AC-10/11).
+
+### Changed
+
+- Frontend: `SeriesList.tsx`'s view-mode toggle now sources its state from the shared `useLocalStorage` hook instead of its own bespoke read/write pair — the on-disk format for `seriesListViewMode` changes from a bare string (`compact`) to JSON (`"compact"`); any pre-existing stored value degrades once, safely, back to the default (`frontend_spec_098` FRONTEND-098-AC-03/04).
+- Frontend: Custom Search's pinned Country/Language chips (previously hardcoded `COUNTRY_PINNED_OPTIONS`/`LANGUAGE_PINNED_CODES` in `RecommendationControls.tsx`) are now user-editable "favourites" read via `useLocalStorage` from `CustomSearchPanel.tsx`/`RecommendationFiltersBox.tsx`, defaulting to the same `['US', 'GB']`/`['en', 'es', 'fr', 'de', 'ja', 'ko']` values as before so existing behavior is unchanged for anyone who hasn't opened Settings; a stored favourites value that isn't a recognized array of codes falls back to the default (`frontend_spec_098` FRONTEND-098-AC-07/08/09).
+- Frontend: `RecommendationControls.tsx`'s `LANGUAGE_OPTION_CODES` (backing the full searchable `LANGUAGE_OPTIONS` list) is now its own independent static array of all 14 codes, no longer derived via spread from the pinned-languages list — fixes a coupling bug where un-pinning a language would have silently removed it from the entire searchable list too (`frontend_spec_098` FRONTEND-098-AC-06).
+
 ## [3.32.0] - 2026-09-07
 
 ### Added

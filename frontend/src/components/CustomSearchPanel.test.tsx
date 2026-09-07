@@ -1,8 +1,12 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { vi, describe, it, expect } from 'vitest'
+import { render, screen, fireEvent, within } from '@testing-library/react'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { CustomSearchPanel } from './CustomSearchPanel'
 import { initialState } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 // TOOLING-008-AC-03: dedicated, isolated coverage for the panel extracted
 // from RecommendationControls.tsx's former `state.discoverMode ===
@@ -183,6 +187,85 @@ describe('FRONTEND-094-AC-04: modal keyword picker accepts free text', () => {
     expect(updateState).toHaveBeenCalledWith({
       keywordsSelected: ['time travel'],
     })
+  })
+})
+
+describe('FRONTEND-098-AC-07/08: country/language favourites default and read from localStorage', () => {
+  it('uses the default US/GB pinned countries when nothing is stored', () => {
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByText('US')).toBeInTheDocument()
+    expect(screen.getByText('GB')).toBeInTheDocument()
+  })
+
+  it('uses a previously stored country favourites list instead of the default', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['FR', 'DE']))
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByText('France')).toBeInTheDocument()
+    expect(screen.queryByText('US')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the default country favourites when the stored value is invalid', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['FR', 'ZZ']))
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByText('US')).toBeInTheDocument()
+    expect(screen.getByText('GB')).toBeInTheDocument()
+  })
+
+  it('uses the default pinned languages when nothing is stored', () => {
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByText('English')).toBeInTheDocument()
+    expect(screen.getByText('Korean')).toBeInTheDocument()
+  })
+
+  it('uses a previously stored language favourites list instead of the default', () => {
+    // FRONTEND-098-AC-07/08: unlike Country, Language's full catalog
+    // (LANGUAGE_OPTIONS) already includes every pinnable code -- so a
+    // non-favourited language like English still appears as an ordinary
+    // (non-pinned) suggestion regardless of favourites (this spec's Design
+    // Decisions). What changes is which codes lead the suggestion list.
+    localStorage.setItem('languageFavourites', JSON.stringify(['it', 'zh']))
+    render(
+      <CustomSearchPanel
+        state={initialState}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const languageContainer = screen.getByText('Language').closest('div')
+    const suggestionButtons = within(
+      languageContainer as HTMLElement,
+    ).getAllByRole('button')
+    expect(suggestionButtons[0]).toHaveTextContent('Italian')
+    expect(suggestionButtons[1]).toHaveTextContent('Chinese')
   })
 })
 

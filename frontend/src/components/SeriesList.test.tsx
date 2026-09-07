@@ -1116,9 +1116,9 @@ describe('FRONTEND-054-AC-02: switching view mode does not refetch', () => {
   })
 })
 
-describe('FRONTEND-054-AC-03: view mode persistence', () => {
+describe('FRONTEND-054-AC-03/FRONTEND-098-AC-04: view mode persistence via useLocalStorage', () => {
   it('persists and restores the view mode via localStorage', async () => {
-    localStorage.setItem('seriesListViewMode', 'compact')
+    localStorage.setItem('seriesListViewMode', JSON.stringify('compact'))
     mockGetAll.mockResolvedValue([])
     render(<SeriesList {...defaultProps} />)
     expect(await screen.findByTestId('view-mode-compact-btn')).toHaveAttribute(
@@ -1127,7 +1127,9 @@ describe('FRONTEND-054-AC-03: view mode persistence', () => {
     )
 
     fireEvent.click(screen.getByTestId('view-mode-expanded-btn'))
-    expect(localStorage.getItem('seriesListViewMode')).toBe('expanded')
+    expect(localStorage.getItem('seriesListViewMode')).toBe(
+      JSON.stringify('expanded'),
+    )
   })
 
   it('a localStorage read failure defaults to expanded without throwing', async () => {
@@ -1142,7 +1144,10 @@ describe('FRONTEND-054-AC-03: view mode persistence', () => {
   })
 
   it('falls back to expanded for an unrecognized stored value', async () => {
-    localStorage.setItem('seriesListViewMode', 'not-a-real-mode')
+    localStorage.setItem(
+      'seriesListViewMode',
+      JSON.stringify('not-a-real-mode'),
+    )
     mockGetAll.mockResolvedValue([])
     render(<SeriesList {...defaultProps} />)
     expect(await screen.findByTestId('view-mode-expanded-btn')).toHaveAttribute(

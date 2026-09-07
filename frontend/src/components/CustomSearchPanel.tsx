@@ -4,10 +4,13 @@ import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
-  COUNTRY_PINNED_OPTIONS,
+  DEFAULT_COUNTRY_FAVOURITES,
+  DEFAULT_LANGUAGE_FAVOURITES,
   LANGUAGE_OPTIONS,
-  LANGUAGE_PINNED_CODES,
+  isCountryFavourites,
+  isLanguageFavourites,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
@@ -39,6 +42,21 @@ export function CustomSearchPanel({
   const [keywordsBrowseModalOpen, setKeywordsBrowseModalOpen] = useState(false)
   const handleKeywordsModalKeyDown = useEscapeToClose(() =>
     setKeywordsBrowseModalOpen(false),
+  )
+
+  // FRONTEND-098-AC-07/08: Country/Language Favourites are now read from
+  // localStorage (editable via Settings > Recommendation Favourites) instead
+  // of the old hardcoded COUNTRY_PINNED_OPTIONS/LANGUAGE_PINNED_CODES module
+  // constants -- defaults match those constants' old values exactly.
+  const [countryFavourites] = useLocalStorage(
+    'countryFavourites',
+    DEFAULT_COUNTRY_FAVOURITES,
+    isCountryFavourites,
+  )
+  const [languageFavourites] = useLocalStorage(
+    'languageFavourites',
+    DEFAULT_LANGUAGE_FAVOURITES,
+    isLanguageFavourites,
   )
 
   const updateField =
@@ -179,7 +197,7 @@ export function CustomSearchPanel({
               selected={state.countriesSelected}
               onChange={(next) => updateState({ countriesSelected: next })}
               options={COUNTRY_OPTIONS}
-              pinnedOptions={COUNTRY_PINNED_OPTIONS}
+              pinnedOptions={countryFavourites}
             />
           </div>
 
@@ -190,7 +208,7 @@ export function CustomSearchPanel({
               selected={state.language ? [state.language] : []}
               onChange={(next) => updateState({ language: next.at(-1) ?? '' })}
               options={LANGUAGE_OPTIONS}
-              pinnedOptions={LANGUAGE_PINNED_CODES}
+              pinnedOptions={languageFavourites}
             />
           </div>
         </div>

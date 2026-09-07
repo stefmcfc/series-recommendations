@@ -6,6 +6,7 @@ import { formatCountryNames } from '../utils/countryName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import { StarRating } from './StarRating'
 import { SeriesCompactGrid } from './SeriesCompactGrid'
 import { SeriesPosterGrid } from './SeriesPosterGrid'
@@ -85,21 +86,14 @@ const VIEW_MODE_STORAGE_KEY = 'seriesListViewMode'
 const DEFAULT_VIEW_MODE: ViewMode = 'expanded'
 const VIEW_MODES: readonly ViewMode[] = ['expanded', 'compact', 'poster']
 
-function isViewMode(value: string | null): value is ViewMode {
-  return value != null && (VIEW_MODES as readonly string[]).includes(value)
-}
-
-// FRONTEND-054-AC-03: read once on mount, degrading silently to the default
-// on a read failure (private browsing, quota, storage disabled) or an
-// unrecognized stored value -- this app's first localStorage-persisted UI
-// preference.
-function readStoredViewMode(): ViewMode {
-  try {
-    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY)
-    return isViewMode(stored) ? stored : DEFAULT_VIEW_MODE
-  } catch {
-    return DEFAULT_VIEW_MODE
-  }
+// FRONTEND-098-AC-03: signature widened from `(value: string | null)` to
+// `(value: unknown)` to satisfy useLocalStorage's isValid contract -- same
+// body/behavior, just a wider guarded input type.
+function isViewMode(value: unknown): value is ViewMode {
+  return (
+    typeof value === 'string' &&
+    (VIEW_MODES as readonly string[]).includes(value)
+  )
 }
 
 function hasActiveCriteria(criteria?: SearchCriteria): boolean {
@@ -144,21 +138,18 @@ export function SeriesList({
   const [sortDirection, setSortDirection] = useState<SortDirection>(
     DEFAULT_SORT_DIRECTION,
   )
-  // FRONTEND-054-AC-01/02/03: view mode is local, purely-rendering state --
-  // switching it never triggers a new seriesApi call.
-  const [viewMode, setViewMode] = useState<ViewMode>(() => readStoredViewMode())
+  // FRONTEND-054-AC-01/02/03/FRONTEND-098-AC-03: view mode is local,
+  // purely-rendering state -- switching it never triggers a new seriesApi
+  // call. Sourced from the shared useLocalStorage hook (read once on mount,
+  // written on every change, degrading silently to DEFAULT_VIEW_MODE on any
+  // read/write failure or unrecognized stored value).
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>(
+    VIEW_MODE_STORAGE_KEY,
+    DEFAULT_VIEW_MODE,
+    isViewMode,
+  )
 
   const criteriaActive = hasActiveCriteria(criteria)
-
-  // FRONTEND-054-AC-03: written on every change; a write failure (private
-  // browsing, quota, storage disabled) degrades silently.
-  useEffect(() => {
-    try {
-      localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode)
-    } catch {
-      // Silently ignore -- persistence is a nice-to-have, not a requirement.
-    }
-  }, [viewMode])
 
   useEffect(() => {
     let cancelled = false

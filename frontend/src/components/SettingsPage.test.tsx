@@ -15,6 +15,7 @@ const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   mockGetRefreshStatus.mockResolvedValue({
     status: 'IDLE',
     totalCount: 0,
@@ -418,5 +419,45 @@ describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThres
     await waitFor(() =>
       expect(screen.getByTestId('refresh-all-btn')).toBeDisabled(),
     )
+  })
+})
+
+describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
+  it('renders a Recommendation Favourites section with both favourites pickers', () => {
+    render(<SettingsPage />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Recommendation Favourites' }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText(/country favourites/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/language favourites/i)).toBeInTheDocument()
+  })
+
+  it('selecting a country favourite writes through to localStorage immediately', () => {
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'France' }))
+
+    expect(JSON.parse(localStorage.getItem('countryFavourites')!)).toContain(
+      'FR',
+    )
+  })
+
+  it('selecting a language favourite writes through to localStorage immediately', () => {
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Italian' }))
+
+    expect(JSON.parse(localStorage.getItem('languageFavourites')!)).toContain(
+      'it',
+    )
+  })
+
+  it('pre-populates each picker with the current favourites', () => {
+    localStorage.setItem('countryFavourites', JSON.stringify(['FR', 'DE']))
+    render(<SettingsPage />)
+
+    expect(screen.getByText('France')).toBeInTheDocument()
+    expect(screen.getByText('Germany')).toBeInTheDocument()
   })
 })
