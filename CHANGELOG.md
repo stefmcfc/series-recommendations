@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.33.0] - 2026-09-07
+
 ### Added
 
 - Frontend: new shared `hooks/useLocalStorage.ts` — a generic, JSON-serializing `localStorage` read/write hook that reads once on mount (falling back to a caller-supplied default on a missing key, a parse failure, or an `isValid` rejection) and writes on every change, silently swallowing any read/write failure rather than throwing (`frontend_spec_098` FRONTEND-098-AC-01/02).
