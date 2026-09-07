@@ -465,19 +465,27 @@ refresh already made. `404` for an unknown id; otherwise `200` with the updated 
 
 Start an async job refreshing every tracked series sequentially (same logic as the single-series
 refresh above, including new-content detection/reactivation), with a fixed delay between items
-(`app.tmdb.refresh-delay-ms`) to stay within TMDB's rate limit. A series refreshed within
-`app.tmdb.refresh-skip-threshold-minutes` (default 60; `0` disables skipping) is skipped rather
-than re-fetched, but still counted toward `completedCount`. `202` with the job's initial state;
-`409` if a job is already running.
+(`app.tmdb.refresh-delay-ms`) to stay within TMDB's rate limit. A series refreshed within the
+effective skip threshold is skipped rather than re-fetched, but still counted toward
+`completedCount`. `202` with the job's initial state; `409` if a job is already running.
+
+Optional JSON body: `{ "skipThresholdMinutesOverride": <int> }` — overrides
+`app.tmdb.refresh-skip-threshold-minutes` (default 60) for this one run only, without changing the
+configured default for any future run. `0` or negative disables skipping entirely for that run,
+same convention as the default. Omitting the body, or the field within it (`{}`), behaves exactly
+as before — the configured default governs (`series_spec_052_refresh_skip_threshold_override.md`).
 
 ---
 
 ### `GET /api/v1/series/refresh-all/status`
 
 Poll the current (or most recently finished) bulk refresh job's `{ status, totalCount,
-completedCount, skippedCount, startedAt, finishedAt }`. `status` is `IDLE` before any job has ever
-run, then `IN_PROGRESS`/`COMPLETED`/`FAILED` — a completed run's result stays visible here until a
-new job starts.
+completedCount, skippedCount, startedAt, finishedAt, skipThresholdMinutesUsed }`. `status` is
+`IDLE` before any job has ever run, then `IN_PROGRESS`/`COMPLETED`/`FAILED` — a completed run's
+result stays visible here until a new job starts. `skipThresholdMinutesUsed` reports the
+*effective* threshold that governed the run this status describes — the override if one was
+passed to `POST /refresh-all`, otherwise the configured default — so a run whose `skippedCount`
+looks surprising can be explained without guessing.
 
 ## Sorting
 

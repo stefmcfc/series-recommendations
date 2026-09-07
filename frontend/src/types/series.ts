@@ -117,6 +117,10 @@ export interface RefreshJobStatus {
   skippedCount: number
   startedAt: string | null
   finishedAt: string | null
+  // FRONTEND-097-AC-01/series_spec_052: the skip-threshold (minutes) that
+  // actually governed this run -- always present on the wire, never
+  // optional/nullable, even when skippedCount is 0.
+  skipThresholdMinutesUsed: number
 }
 
 // FRONTEND-057/SERIES-038: mirrors the backend's ImportRowError record

@@ -34,6 +34,7 @@ beforeEach(() => {
     totalCount: 0,
     completedCount: 0,
     skippedCount: 0,
+    skipThresholdMinutesUsed: 0,
     startedAt: null,
     finishedAt: null,
   })

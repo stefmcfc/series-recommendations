@@ -392,6 +392,27 @@ describe('FRONTEND-023-AC-03: refreshAll', () => {
     expect(client.post).toHaveBeenCalledWith('/series/refresh-all')
     expect(result).toEqual(mockStatus)
   })
+
+  // FRONTEND-097-AC-02
+  it('should include skipThresholdMinutesOverride in the body when passed', async () => {
+    const mockStatus = {
+      status: 'IN_PROGRESS',
+      totalCount: 10,
+      completedCount: 0,
+      skippedCount: 0,
+      startedAt: '2026-01-01T00:00:00Z',
+      finishedAt: null,
+      skipThresholdMinutesUsed: 10,
+    }
+    client.post.mockResolvedValue({ data: { data: mockStatus } })
+
+    const result = await seriesApi.refreshAll(10)
+
+    expect(client.post).toHaveBeenCalledWith('/series/refresh-all', {
+      skipThresholdMinutesOverride: 10,
+    })
+    expect(result).toEqual(mockStatus)
+  })
 })
 
 describe('FRONTEND-023-AC-03: getRefreshStatus', () => {

@@ -21,6 +21,10 @@ Last updated: 2026-09-05 ("Exclude Keywords" filter candidate closed — spec'd 
 `frontend_spec_094_recommendations_page_polish.md`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
+Last full review against the codebase: 2026-09-07 — all 5 candidates below re-checked against the
+current code (scoring service, recommendation controllers/services, `frontend/src/components/`);
+none has been delivered or spec'd since the last update, no changes needed.
+
 ---
 
 ## Candidates

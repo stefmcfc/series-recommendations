@@ -1,6 +1,7 @@
 package uk.co.stefirby.seriestracker.controller;
 
 import uk.co.stefirby.seriestracker.dto.ApiResponse;
+import uk.co.stefirby.seriestracker.dto.RefreshAllOptions;
 import uk.co.stefirby.seriestracker.dto.SeriesDto;
 import uk.co.stefirby.seriestracker.service.refresh.BulkRefreshService;
 import uk.co.stefirby.seriestracker.service.refresh.RefreshJobStatus;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,8 +44,9 @@ public class SeriesRefreshController {
     }
 
     @PostMapping("/refresh-all")
-    public ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll() {
-        RefreshJobStatus status = bulkRefreshService.start();
+    public ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll(@RequestBody(required = false) RefreshAllOptions options) {
+        Integer skipThresholdOverride = options != null ? options.skipThresholdMinutesOverride() : null;
+        RefreshJobStatus status = bulkRefreshService.start(skipThresholdOverride);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(new ApiResponse<>(status));
     }
 

@@ -26,7 +26,14 @@ being updated, and two others whose referenced classes had been renamed/split by
 - **Not specced** — retain full detail: what's actually required, why, and any relevant
   constraints or prior discussion. This is the only case where this file carries real content.
 
-Last full review against the codebase: 2026-08-29.
+Last full review against the codebase: 2026-09-07 (this review found one item — "Use My Series"
+filter/sort parity — almost entirely delivered by `frontend_spec_081` without this file being
+updated; trimmed to its one remaining gap, the "Select Series" relabel. Every other item confirmed
+still accurate against the current code, no other changes needed). Same-day follow-up: the
+Configuration section's Settings-area items (skip-threshold surfacing, Country/Language
+favourites, light/dark toggle) were specced (`series_spec_052`, `frontend_spec_097`/`098`/`099`) and
+removed/trimmed here accordingly — only saved filter/algorithm profiles remains open in that
+section now.
 
 ---
 
@@ -60,44 +67,24 @@ candidate detail modal once that ships).
 worth revisiting once the candidate detail modal (`frontend_spec_053`) actually ships and there's a
 concrete UI home for the resulting action.
 
-### "Use My Series" source-series picker gains filter/sort parity with My Series, plus a "Select Series" relabel
+### "Use My Series" source-series picker — "Select Series" relabel
 
-Raised 2026-09-01. Original state, confirmed by reading the code at the time: `UseMySeriesPanel.tsx`
-only offered "Filter by Genre" (checkbox), "Filter by Status" (radio), and a local "Sort by" — all
-narrowing which of the user's own series become recommendation-sourcing candidates. This is a
-separate, independently-implemented filter set from `SearchFilter`'s (My Series list), not shared
-logic.
+Raised 2026-09-01 as a two-part idea: filter/sort parity for `UseMySeriesPanel.tsx`'s source-series
+picker (include-Keywords, Min Personal/IMDb/TMDB Rating, Year Min/Max, all narrowing the *source
+pool* of the user's own series, distinct from `RecommendationFiltersBox`'s own same-named fields
+which filter the TMDB recommendation *output*), plus relabeling the area above the picker to
+"Select Series."
 
-**Update (2026-09-01, later same day)**: the Exclude Genre(s) piece of this idea — also originally
-proposed here — was pulled out into its own real spec, `frontend_spec_069_use_my_series_exclude_genres.md`,
-as part of a 2026-09-01 exclude-genres consolidation across the whole app, and has since shipped
-(`ROADMAP.md`'s Delivered table). As part of that, the former "Filter by Genre" checkbox fieldset was
-replaced entirely by the shared `GenreIncludeExcludePicker` (`frontend_spec_067`) — so the "existing
-'Filter by Genre' checkbox is kept as-is content-wise" note two paragraphs below is now stale; it's a
-picker, not a checkbox list, though the genre *vocabulary* it offers is unchanged (still the same
-"Trim the Genres checkbox list" question below).
+**Update (2026-09-07 review)**: confirmed via reading the current code — the filter-parity half
+shipped as `frontend_spec_081`'s "Filter & sort my series" section: `GenreIncludeExcludePicker`,
+an include-only `KeywordPicker` (no free text — narrows to a tracked series' actual keywords),
+Min Personal/IMDb/TMDB Rating, and Year Min/Max are all there, and the original "naming collision"
+risk this idea flagged was resolved with a "(My Series)" label suffix disambiguating from
+`RecommendationFiltersBox`'s own same-named fields. Only the relabel half remains: the picker
+section's heading is still plain "Series" (`UseMySeriesPanel.tsx`), not "Select Series."
 
-Remaining, still-unspecced scope: an include-Keywords filter (mirroring `SearchFilter`'s
-`KeywordPicker`), Min Personal/IMDb/TMDB Rating, and Year Min/Max — all narrowing the *source pool*
-of the user's own series — plus the "Select Series" relabel proposed below. These fields are
-explicitly distinct from `RecommendationFiltersBox`'s existing Min TMDB Rating/Year Min-Max/Exclude
-Genres/Exclude Keywords fields, which filter the TMDB recommendation *output* instead and would be
-unaffected by this idea. **Naming collision risk to design around**: two different "Min Rating"/"Year
-Range" concepts would exist in the same tab for two different purposes — labeling needs to make the
-distinction obvious to avoid user confusion.
-
-Also proposes relabeling the area above the series picker to "Select Series," styled differently
-from My Series' own filter panel even while sharing underlying filter logic where practical. See the
-separate, explicitly-undecided "Trim the Genres checkbox list" idea below for whether the genre
-vocabulary itself should later change.
-
-**What's required**: extending `UseMySeriesPanel.tsx`'s local filter state with the new fields above,
-plus a UI relabel — see cross-reference below for the larger shared-logic question this touches.
-
-**Status**: Not specced. **Cross-reference**: this is exactly the concrete detail
-`.claude/SPEC_CANDIDATES.md`'s "Share filter/sort logic between `SeriesList`/`SearchFilter` ... and
-`RecommendationControls`' 'Use My Series' mode" candidate said it was waiting for ("once 'Use My
-Series' filtering itself stabilizes") — review this entry when that candidate is actually scoped.
+**Status**: Not specced. Narrow remaining scope — a single label change, `UseMySeriesPanel.tsx`'s
+`label="Series"` → `"Select Series"` (two occurrences, the picker and its "Browse..." modal).
 
 ### Trim the Genres checkbox list (My Series + Recs) to only genres present in the user's tracked series — explicitly undecided
 
@@ -211,34 +198,6 @@ color) was explicitly out of scope for it and deferred here.
 **Status**: Not specced. No design direction chosen yet — purely a placeholder-now,
 design-properly-later split.
 
-### Light/dark mode toggle — currently OS-only, no manual override
-
-Raised 2026-08-28, prompted by the new menu bar (`frontend_spec_041`) being a natural home for a
-toggle control. Confirmed via reading `frontend/src/index.css`: theming is entirely
-`prefers-color-scheme`-driven — `:root` sets `color-scheme: light dark` plus a base (light) set of
-custom properties (`--text`/`--bg`/`--border`/`--accent`/etc.), and a `@media (prefers-color-scheme:
-dark)` block overrides them for dark. Confirmed via grep (`theme`/`dark mode`/`light mode`/
-`data-theme`, case-insensitive, across `frontend/src`) that there is no manual override mechanism
-anywhere in the app today — no toggle UI, no `data-theme` attribute, no persisted preference. A user
-whose OS is set to dark always sees dark, and vice versa, with no in-app way to differ from that.
-
-**What's required**: a toggle (in the new menu bar is the obvious placement) that sets a
-`data-theme="light"`/`"dark"` attribute on `<html>` or `:root`, with CSS rules overriding the
-`prefers-color-scheme` media queries when that attribute is present (a plain CSS specificity
-addition, no new dependency) — plus persisting the choice (`localStorage` is sufficient for a
-single-user local app; no backend involvement needed). A third "Match System" option, reverting to
-today's pure OS-driven behavior, is the obvious default state so nobody's forced to pick if they're
-happy with the current behavior.
-
-**Status**: Not specced. Cross-references the "No settings menu" idea (Configuration section)
-loosely, not as a hard dependency — unlike settings that genuinely need persistence/config
-infrastructure, a theme toggle is small enough to ship standalone (`localStorage`, no backend), but
-if a real settings screen gets built later, this would naturally live there too rather than staying
-a one-off menu-bar control. **Note (2026-08-29)**: `frontend_spec_054_series_list_compact_view.md`
-became this app's actual first `localStorage`-persisted UI preference (a `SeriesList` view-mode
-toggle) — whoever specs this theme toggle should follow that spec's read/write/silent-degradation
-pattern rather than re-deriving one.
-
 ### No shareable URL for a specific series (`SeriesDetail`)
 
 Updated 2026-08-28: `frontend_spec_041` added `react-router-dom` app-wide and gave the three
@@ -281,71 +240,32 @@ Decisions for the full reasoning.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
 
-### Move Export JSON/CSV into a dropdown menu, once a site/user config UI exists
-
-Raised 2026-08-29. Confirmed (2026-08-29): `ExportControls.tsx` renders "Export JSON" and "Export
-CSV" as two always-visible, separate buttons (`data-testid="export-json-btn"`/`"export-csv-btn"`)
-— idea is to consolidate them into a single "Export" dropdown/menu control, deferred specifically
-until there's a real site/user config UI to place it in or pattern it after (rather than building a
-one-off dropdown component just for this).
-
-**Status**: Partially specced (2026-09-01). `frontend_spec_072_settings_export_and_refresh.md`
-relocates `ExportControls` wholesale into the now-real Settings page (also making it an unfiltered,
-whole-library export instead of respecting My Series' active filters) — but as the same two
-always-visible buttons, not consolidated into a single dropdown/menu control. The dropdown-
-consolidation idea itself is still open, now layered on top of Settings rather than waiting for it
-to exist.
-
 ---
 
 ## Configuration
 
-### No settings menu — every tunable is an `application.yml`/env-var value, not a live in-app setting
+### No settings menu — saved filter/algorithm profiles are the one remaining gap
 
-Confirmed still true (2026-08-26 re-check — no settings/config UI exists anywhere in the
-frontend). Existing precedent (`app.tmdb.refresh-delay-ms`,
-`app.tmdb.refresh-skip-threshold-minutes`) is edited by a developer and requires a restart, not
-something a user changes from the UI.
+Originally raised as a broader "every tunable is an `application.yml`/env-var value, not a live
+in-app setting" observation; the settings shell and its content have since landed incrementally
+(`frontend_spec_070` shipped the shell/nav entry; `frontend_spec_072` moved Export/Refresh All onto
+it; `frontend_spec_097`/`098`/`099`, planned 2026-09-07, add skip-threshold override + visibility, a
+`SettingsSection` wrapper component, Country/Language favourites, and a light/dark/match-system
+theme toggle — the last two both built on a new shared `useLocalStorage` hook, confirmed sufficient
+since this app has zero settings/preference persistence anywhere backend-side and no
+auth/multi-user concept to need one).
 
-A concrete case has since shipped (`frontend_spec_047`, delivered 2026-08-28): the Custom Search
-Country/Language filter pickers pin a hardcoded "popular" chip list (US/GB for country; English/
-Spanish/French/German/Japanese/Korean for language) exactly as this note anticipated — that list
-would ideally be user-configurable once a settings system exists, e.g. "Favourite country of
-origin = {United Kingdom, United States}", surfaced via a dropdown backed by the same ISO
-3166-1/639-1 data the filter chips themselves already use. Still hardcoded today.
+**The one item this entry originally flagged that's still unspecced: saved filter/algorithm
+profiles** — `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation algorithm" candidate's own
+item #11. That candidate's own text is explicit this needs designing *together* with its 10 sibling
+scoring-formula sub-items, not pulled out alone — still blocked on that larger candidate being
+scoped, not on any settings-infrastructure question (that question is now answered: `localStorage`
+suffices for everything else in this app's settings surface; whether saved *profiles* specifically
+need something richer, given they're structured multi-field data rather than a flat preference, is
+part of what that candidate still needs to resolve).
 
-A second concrete case (2026-08-28): `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
-'algorithm'..." candidate wants **saved filter/algorithm profiles** (its item #11) — its own note
-is explicit that "this app has no user-preference persistence precedent today at all... likely its
-own foundational piece of work... before the scoring changes themselves." Two independent features
-now want the same missing foundation.
-
-A third concrete case (2026-08-29): confirmed live — `SeriesList`'s "Refresh All" button
-(`data-testid="refresh-all-btn"`) is blocked from doing anything useful on a second click within
-`app.tmdb.refresh-skip-threshold-minutes` (default 60) of the last bulk refresh, by design
-(`series_spec_018`) — every series gets skipped, not re-fetched, since each one's `lastRefreshedAt`
-is still within the threshold. Hit directly in practice: a user re-clicked "Refresh All" ~2 minutes
-after the first run and got a no-op. There's no way today to see that threshold, override it for
-one run, or even know *why* the second click did nothing — it just silently skips everything.
-Idea: once a settings/config menu exists, move "Refresh All" itself into it (out of the main
-`SeriesList` page, alongside surfacing the skip-threshold as an actual visible/adjustable setting
-rather than an invisible env var) — it's a maintenance/admin action, not a core browsing action, so
-it doesn't need to live on the primary list view at all.
-
-**Status**: Shell implemented (2026-09-01), first real content specced the same day.
-`frontend_spec_070_settings_menu.md` shipped the entry point and page shell — a "Settings" nav item
-after "Keywords", routing to a `/settings` page. `frontend_spec_072_settings_export_and_refresh.md`
-gives it its first real content: Export (now unfiltered/whole-library) and Refresh All, both
-relocated off the My Series page verbatim. The skip-threshold-surfacing half of the third concrete
-case above is **not** part of `frontend_spec_072`'s scope — only the button/progress UI moved, the
-`app.tmdb.refresh-skip-threshold-minutes` value itself is still an invisible env var. The
-Country/Language favourites list and saved filter/algorithm profiles still need their own future
-specs against this shell, including whatever persistence decision each one actually needs (still
-undecided — a new `AppSettings` table? `localStorage`?).
-
-Loosely related (2026-08-28): the Navigation section's "Light/dark mode toggle" idea is small
-enough to ship standalone (`localStorage`, no backend) rather than waiting on this, but would
-naturally move into the real settings screen (`frontend_spec_070`'s shell) if it's built after that.
+**Status**: Not specced — blocked on `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
+algorithm" candidate.
 
 ---
 

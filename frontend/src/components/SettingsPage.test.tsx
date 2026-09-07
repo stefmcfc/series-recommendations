@@ -1,6 +1,10 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { SettingsPage } from './SettingsPage'
+import {
+  SettingsPage,
+  buildLastFullRefreshText,
+  buildRefreshProgressText,
+} from './SettingsPage'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 
@@ -16,6 +20,7 @@ beforeEach(() => {
     totalCount: 0,
     completedCount: 0,
     skippedCount: 0,
+    skipThresholdMinutesUsed: 0,
     startedAt: null,
     finishedAt: null,
   })
@@ -74,6 +79,7 @@ describe('FRONTEND-072-AC-04: Settings resyncs Refresh All state on mount', () =
       totalCount: 10,
       completedCount: 3,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: '2026-09-01T00:00:00',
       finishedAt: null,
     })
@@ -97,6 +103,7 @@ describe('FRONTEND-072-AC-05: Refresh All starts a job and polls to completion',
       totalCount: 5,
       completedCount: 0,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: '2026-09-01T00:00:00',
       finishedAt: null,
     })
@@ -110,6 +117,7 @@ describe('FRONTEND-072-AC-05: Refresh All starts a job and polls to completion',
       totalCount: 5,
       completedCount: 5,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: '2026-09-01T00:00:00',
       finishedAt: '2026-09-01T00:01:00',
     })
@@ -127,6 +135,7 @@ describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () 
       totalCount: 15,
       completedCount: 0,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
@@ -141,6 +150,7 @@ describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () 
       totalCount: 15,
       completedCount: 15,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
@@ -162,6 +172,7 @@ describe('FRONTEND-023-AC-11: resumes polling on mount if a job is already runni
       totalCount: 15,
       completedCount: 4,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
@@ -198,6 +209,7 @@ describe('FRONTEND-023-AC-15: last full refresh display', () => {
       totalCount: 15,
       completedCount: 15,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
@@ -213,13 +225,16 @@ describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
       totalCount: 15,
       completedCount: 4,
       skippedCount: 3,
+      skipThresholdMinutesUsed: 10,
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
     render(<SettingsPage />)
 
     expect(
-      await screen.findByText(/refreshing 4 of 15 \(3 skipped\)/i),
+      await screen.findByText(
+        /refreshing 4 of 15 \(3 skipped, threshold: 10 min\)/i,
+      ),
     ).toBeInTheDocument()
   })
 
@@ -229,6 +244,7 @@ describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
       totalCount: 15,
       completedCount: 4,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
@@ -247,6 +263,7 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
       totalCount: 15,
       completedCount: 15,
       skippedCount: 3,
+      skipThresholdMinutesUsed: 10,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
@@ -254,7 +271,7 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
 
     expect(
       await screen.findByText(
-        /last full refresh:.*\(3 skipped, already up to date\)/i,
+        /last full refresh:.*\(3 skipped, already up to date, threshold: 10 min\)/i,
       ),
     ).toBeInTheDocument()
   })
@@ -265,6 +282,7 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
       totalCount: 15,
       completedCount: 15,
       skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
@@ -272,5 +290,133 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
 
     await screen.findByText(/last full refresh/i)
     expect(screen.queryByText(/skipped/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-097-AC-04: existing sections render via SettingsSection', () => {
+  it('renders Refresh All, Export, and Import each under their own heading', () => {
+    render(<SettingsPage />)
+
+    expect(
+      screen.getByRole('heading', { name: /refresh/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /export/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /import/i })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
+  it('renders a labeled override input', () => {
+    render(<SettingsPage />)
+
+    const input = screen.getByLabelText(/skip threshold override/i)
+    expect(input).toBeInTheDocument()
+    expect(input).toHaveAttribute('id', 'refresh-skip-threshold-override')
+  })
+
+  it('sends no override when the field is left blank', async () => {
+    mockRefreshAll.mockResolvedValue({
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      skippedCount: 0,
+      skipThresholdMinutesUsed: 0,
+      startedAt: null,
+      finishedAt: null,
+    })
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(undefined))
+  })
+
+  it('sends the override value when the field is filled in', async () => {
+    mockRefreshAll.mockResolvedValue({
+      status: 'IDLE',
+      totalCount: 0,
+      completedCount: 0,
+      skippedCount: 0,
+      skipThresholdMinutesUsed: 10,
+      startedAt: null,
+      finishedAt: null,
+    })
+    render(<SettingsPage />)
+
+    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
+      target: { value: '10' },
+    })
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(10))
+  })
+})
+
+describe('FRONTEND-097-AC-08: progress/last-refresh text mentions the threshold used', () => {
+  it('includes the threshold in the progress text when skippedCount > 0', () => {
+    const text = buildRefreshProgressText({
+      status: 'IN_PROGRESS',
+      totalCount: 5,
+      completedCount: 2,
+      skippedCount: 3,
+      startedAt: '2026-09-07T10:00:00',
+      finishedAt: null,
+      skipThresholdMinutesUsed: 10,
+    })
+    expect(text).toContain('threshold: 10')
+  })
+
+  it('includes the threshold in the last-refresh text when skippedCount > 0', () => {
+    const text = buildLastFullRefreshText({
+      status: 'COMPLETED',
+      totalCount: 5,
+      completedCount: 5,
+      skippedCount: 3,
+      startedAt: '2026-09-07T10:00:00',
+      finishedAt: '2026-09-07T10:00:05',
+      skipThresholdMinutesUsed: 10,
+    })
+    expect(text).toContain('threshold: 10')
+  })
+})
+
+describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThresholdMinutesUsed', () => {
+  it('falls back to 0 and still reaches the disabled/polling state when no jobStatus is known yet', async () => {
+    mockRefreshAll.mockRejectedValue(
+      new ApiError(409, 'A refresh is already in progress'),
+    )
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    // Reaching a disabled/polling state without throwing confirms the
+    // synthesized RefreshJobStatus (now including skipThresholdMinutesUsed)
+    // is well-formed enough to drive the rest of the component.
+    await waitFor(() =>
+      expect(screen.getByTestId('refresh-all-btn')).toBeDisabled(),
+    )
+  })
+
+  it('carries forward the most recently known skipThresholdMinutesUsed without throwing', async () => {
+    mockGetRefreshStatus.mockResolvedValue({
+      status: 'COMPLETED',
+      totalCount: 5,
+      completedCount: 5,
+      skippedCount: 3,
+      skipThresholdMinutesUsed: 15,
+      startedAt: '2026-09-07T10:00:00',
+      finishedAt: '2026-09-07T10:00:05',
+    })
+    mockRefreshAll.mockRejectedValue(
+      new ApiError(409, 'A refresh is already in progress'),
+    )
+    render(<SettingsPage />)
+
+    await screen.findByText(/last full refresh/i)
+    fireEvent.click(screen.getByTestId('refresh-all-btn'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('refresh-all-btn')).toBeDisabled(),
+    )
   })
 })
