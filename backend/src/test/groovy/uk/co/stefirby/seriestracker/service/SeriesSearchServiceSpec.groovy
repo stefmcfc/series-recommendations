@@ -8,6 +8,7 @@ import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.dto.SeriesSearchCriteria
 import uk.co.stefirby.seriestracker.model.KeywordEntity
 import uk.co.stefirby.seriestracker.model.SeriesEntity
+import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.KeywordRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 
@@ -445,7 +446,7 @@ class SeriesSearchServiceSpec extends Specification {
     def "SERIES-037-AC-01: maxPersonalRating/maxImdbRating/startedNotFinished no longer filter results"() {
         given: "a series with personalRating=5, imdbRating=9.5, status=WATCHING"
             seriesRepository.save(new SeriesEntity(title: "Show", personalRating: 5, imdbRating: new BigDecimal("9.5"),
-                status: uk.co.stefirby.seriestracker.model.SeriesStatus.WATCHING, currentSeason: 1))
+                status: SeriesStatus.WATCHING, currentSeason: 1))
 
         when: "search is called with only minPersonalRating set (no max, no startedNotFinished)"
             def criteria = new SeriesSearchCriteria(minPersonalRating: 3)

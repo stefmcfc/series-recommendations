@@ -149,6 +149,15 @@ introduces shared frontend infrastructure the next one consumes. Chains 1 (`fron
 (`frontend_spec_098`), and 3 (`frontend_spec_099`) are now fully delivered — see the "Delivered"
 table above — and no longer appear here.
 
+**Settings follow-up batch** (planned 2026-09-07, after the above shipped) — two independent
+specs/pairs; `frontend_spec_102` should build after `frontend_spec_101` since both touch
+`SettingsPage.tsx` and 101's card/icon treatment is what 102's new section adopts.
+
+| Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Skip-threshold override gains Days/Weeks/Months units; `SettingsPage` sections become bordered/shadowed cards with icons ("modern but accessible" redesign)         | —                                    | `frontend_spec_101`                            | ⬜ Not started                                                                                    |
+| Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053`                    | `frontend_spec_102`                            | ⬜ Not started                                                                                    |
+
 ## Internal / maintenance specs (not user-facing features)
 
 Pure internal refactors — tracked here rather than in the tables above since they have no

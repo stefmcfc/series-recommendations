@@ -267,6 +267,32 @@ part of what that candidate still needs to resolve).
 **Status**: Not specced — blocked on `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
 algorithm" candidate.
 
+### Auto-refresh "Refresh All" on a schedule
+
+Raised 2026-09-07 during Settings-batch follow-up planning. Today, `POST /api/v1/series/refresh-all`
+(`series_spec_018`/`series_spec_052`) only ever runs when a user clicks the button on `/settings` —
+there's no background/scheduled trigger. Idea: let a user opt into periodic auto-refresh (e.g.
+"every N days") without having to remember to click it themselves.
+
+**Why this is a real architectural fork, not just another Settings control**: every Settings
+feature shipped so far (skip-threshold override, Country/Language favourites, theme) got away with
+either a per-request override or plain frontend `localStorage`, precisely because none of them
+needed the *backend* to remember anything across restarts. A scheduled job does — "is auto-refresh
+on, and how often" has to be read by a `@Scheduled` trigger running independently of any browser
+tab being open, which means it has to live in the backend, persisted, which this app has never
+needed before.
+
+**What's required, not yet designed**: a `@Scheduled` trigger calling `BulkRefreshService.start()`
+on its own; somewhere to persist the enabled/interval configuration (recommendation, when this gets
+picked up: a small, purpose-built persistence just for this one feature — e.g. a single settings
+row/table scoped to refresh scheduling — rather than a generic "app settings" table sized
+speculatively for hypothetical future needs the rest of this batch never actually required); and a
+Settings UI control for it once the persistence shape is decided.
+
+**Status**: Not specced. Deliberately deferred rather than bundled into the current skip-threshold-
+units/styling spec, which needs no new backend persistence at all — this one does, and that's a
+big enough decision to warrant its own spec once picked up.
+
 ---
 
 ## Test Coverage Gaps

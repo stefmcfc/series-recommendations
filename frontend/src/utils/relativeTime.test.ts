@@ -20,14 +20,14 @@ describe('FRONTEND-023-AC-04: formatRelativeTime', () => {
 
   it('uses singular units for a value of 1', () => {
     const now = Date.now()
-    expect(formatRelativeTime(new Date(now - 1 * 60_000).toISOString())).toBe(
+    expect(formatRelativeTime(new Date(now - 60_000).toISOString())).toBe(
       '1 minute ago',
     )
-    expect(
-      formatRelativeTime(new Date(now - 1 * 3_600_000).toISOString()),
-    ).toBe('1 hour ago')
-    expect(
-      formatRelativeTime(new Date(now - 1 * 86_400_000).toISOString()),
-    ).toBe('1 day ago')
+    expect(formatRelativeTime(new Date(now - 3_600_000).toISOString())).toBe(
+      '1 hour ago',
+    )
+    expect(formatRelativeTime(new Date(now - 86_400_000).toISOString())).toBe(
+      '1 day ago',
+    )
   })
 })

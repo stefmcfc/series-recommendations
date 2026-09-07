@@ -195,36 +195,39 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
           role="radiogroup"
           aria-label="Appearance"
         >
-          <label className={styles.themeOption}>
+          <div className={styles.themeOption}>
             <input
+              id="theme-light"
               type="radio"
               name="theme"
               value="light"
               checked={theme === 'light'}
               onChange={() => setTheme('light')}
             />
-            Light
-          </label>
-          <label className={styles.themeOption}>
+            <label htmlFor="theme-light">Light</label>
+          </div>
+          <div className={styles.themeOption}>
             <input
+              id="theme-dark"
               type="radio"
               name="theme"
               value="dark"
               checked={theme === 'dark'}
               onChange={() => setTheme('dark')}
             />
-            Dark
-          </label>
-          <label className={styles.themeOption}>
+            <label htmlFor="theme-dark">Dark</label>
+          </div>
+          <div className={styles.themeOption}>
             <input
+              id="theme-system"
               type="radio"
               name="theme"
               value="system"
               checked={theme === 'system'}
               onChange={() => setTheme('system')}
             />
-            Match System
-          </label>
+            <label htmlFor="theme-system">Match System</label>
+          </div>
         </div>
       </SettingsSection>
 

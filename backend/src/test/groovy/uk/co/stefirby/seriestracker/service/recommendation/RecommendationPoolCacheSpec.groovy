@@ -77,7 +77,7 @@ class RecommendationPoolCacheSpec extends Specification {
             cache.getOrCompute(key, Mock(Supplier) { 1 * get() >> [oldCandidate] })
 
         when: "getOrCompute is called again 11 minutes later"
-            clock.instant = start.plus(Duration.ofMinutes(11))
+            clock.instant = start + Duration.ofMinutes(11)
             def result = cache.getOrCompute(key, Mock(Supplier) { 1 * get() >> [freshCandidate] })
 
         then: "the loader is called again and the fresh value is returned"

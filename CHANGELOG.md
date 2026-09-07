@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Frontend: `App.tsx`'s `data-theme` attribute is now set/removed via `document.documentElement.dataset.theme` instead of `setAttribute`/`removeAttribute` (typescript:S7761), no behavior change.
+- Frontend: `SettingsPage.tsx`'s Appearance radio group restructured from `<label><input/>Text</label>` to separate `<input id="..."/>`/`<label htmlFor="...">` siblings (typescript:S6772, ambiguous JSX whitespace), matching the radio-button pattern already used elsewhere in this codebase (e.g. `UseMySeriesPanel`).
+- Frontend: `countryOptions.test.ts` uses `toHaveLength(...)` instead of a generic `.length` assertion (typescript:S5906) for both `ALL_COUNTRY_OPTIONS` length checks.
+- Backend/tests: `SeriesControllerSpec.groovy`/`SeriesSearchServiceSpec.groovy` use imported `Matchers`/`SeriesStatus` instead of their fully-qualified names now that the imports exist.
+- Backend/tests: `RecommendationPoolCacheSpec.groovy` uses Groovy's `+` operator instead of `Instant.plus(Duration)`.
+- Frontend/tests: `relativeTime.test.ts` drops a redundant `1 *` multiplier in three duration literals.
+
 ## [3.34.0] - 2026-09-07
 
 ### Added

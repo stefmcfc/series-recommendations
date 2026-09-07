@@ -191,9 +191,9 @@ function App() {
   // appearance unopposed, exactly as it did before this spec.
   useEffect(() => {
     if (theme === 'system') {
-      document.documentElement.removeAttribute('data-theme')
+      delete document.documentElement.dataset.theme
     } else {
-      document.documentElement.setAttribute('data-theme', theme)
+      document.documentElement.dataset.theme = theme
     }
   }, [theme])
 
