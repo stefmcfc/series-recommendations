@@ -294,9 +294,17 @@ export const seriesApi = {
       client.post('/series/' + id + '/refresh'),
     ).then((res) => res.data),
 
-  refreshAll: (): Promise<RefreshJobStatus> =>
+  // FRONTEND-097-AC-02: skipThresholdMinutesOverride is included in the POST
+  // body only when the caller passes a value -- never sent as
+  // null/undefined, matching this app's "absent means no filter" convention
+  // (see ignoreSeries's reason param above for the same pattern).
+  refreshAll: (
+    skipThresholdMinutesOverride?: number,
+  ): Promise<RefreshJobStatus> =>
     request<{ data: RefreshJobStatus }>(() =>
-      client.post('/series/refresh-all'),
+      skipThresholdMinutesOverride !== undefined
+        ? client.post('/series/refresh-all', { skipThresholdMinutesOverride })
+        : client.post('/series/refresh-all'),
     ).then((res) => res.data),
 
   getRefreshStatus: (): Promise<RefreshJobStatus> =>

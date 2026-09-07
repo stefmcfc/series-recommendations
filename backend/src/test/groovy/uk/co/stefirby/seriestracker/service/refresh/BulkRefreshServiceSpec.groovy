@@ -36,6 +36,11 @@ class BulkRefreshServiceSpec extends Specification {
             status.finishedAt() == null
     }
 
+    def "SERIES-052-AC-09: before any job has run, status reports the injected default as skipThresholdMinutesUsed"() {
+        expect:
+            bulkRefreshService.status().skipThresholdMinutesUsed() == 60
+    }
+
     def "SERIES-018-AC-13: starting a job returns its initial IN_PROGRESS state"() {
         given: "three series exist"
             def ids = [UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()]
@@ -43,7 +48,7 @@ class BulkRefreshServiceSpec extends Specification {
             repository.findAll() >> ids.collect { series(it) }
 
         when: "start is called"
-            def started = bulkRefreshService.start()
+            def started = bulkRefreshService.start(null)
 
         then: "the initial state reflects IN_PROGRESS"
             started.status() == "IN_PROGRESS"
@@ -62,10 +67,10 @@ class BulkRefreshServiceSpec extends Specification {
             repository.count() >> 2L
             repository.findAll() >> ids.collect { series(it) }
             refreshService.refresh(_) >> { UUID id -> Thread.sleep(500); null }
-            bulkRefreshService.start()
+            bulkRefreshService.start(null)
 
         when: "a second start is requested immediately"
-            bulkRefreshService.start()
+            bulkRefreshService.start(null)
 
         then: "a ConflictException is thrown, and no second job is started"
             thrown(ConflictException)
@@ -84,7 +89,7 @@ class BulkRefreshServiceSpec extends Specification {
 
         when: "start is called"
             def before = System.currentTimeMillis()
-            bulkRefreshService.start()
+            bulkRefreshService.start(null)
             def elapsed = System.currentTimeMillis() - before
 
         then: "the call returns immediately, well before three items x delay could have elapsed"
@@ -108,7 +113,7 @@ class BulkRefreshServiceSpec extends Specification {
             refreshService.refresh(ids[2]) >> null
 
         when: "the bulk job runs to completion"
-            bulkRefreshService.start()
+            bulkRefreshService.start(null)
 
         then: "the job completes, and completedCount is 3, not 1"
             conditions.eventually {
@@ -126,7 +131,7 @@ class BulkRefreshServiceSpec extends Specification {
             repository.findAll() >> ids.collect { series(it) }
 
         when: "a job runs to completion"
-            bulkRefreshService.start()
+            bulkRefreshService.start(null)
 
         then: "status eventually reports COMPLETED with a finishedAt timestamp"
             conditions.eventually {
@@ -146,7 +151,7 @@ class BulkRefreshServiceSpec extends Specification {
             repository.findAll() >> { throw new RuntimeException("DB connection lost") }
 
         when: "start is called"
-            bulkRefreshService.start()
+            bulkRefreshService.start(null)
 
         then: "the job eventually reports FAILED with a finishedAt timestamp, without propagating"
             conditions.eventually {
@@ -174,7 +179,7 @@ class BulkRefreshServiceSpec extends Specification {
             def thresholdService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 60)
 
         when: "the bulk job runs to completion"
-            thresholdService.start()
+            thresholdService.start(null)
 
         then: "only the 2-hours-old series was actually refreshed, skippedCount is 2, completedCount is 3"
             conditions.eventually {
@@ -197,7 +202,7 @@ class BulkRefreshServiceSpec extends Specification {
             def thresholdService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 60)
 
         when: "the bulk job runs to completion"
-            thresholdService.start()
+            thresholdService.start(null)
 
         then: "the series is refreshed, not skipped"
             conditions.eventually {
@@ -219,13 +224,73 @@ class BulkRefreshServiceSpec extends Specification {
             def zeroThresholdService = new BulkRefreshService(repository, refreshService, Clock.systemDefaultZone(), 5L, 0)
 
         when: "the bulk job runs to completion"
-            zeroThresholdService.start()
+            zeroThresholdService.start(null)
 
         then: "the series is refreshed, not skipped"
             conditions.eventually {
                 def status = zeroThresholdService.status()
                 status.status() == "COMPLETED"
                 status.skippedCount() == 0
+                refreshedIds == [id]
+            }
+    }
+
+    def "SERIES-052-AC-04/05: an override resolves the effective threshold for the whole run"() {
+        given: "a series refreshed 30 minutes ago, and the injected default threshold is 60"
+            def id = UUID.randomUUID()
+            def refreshedIds = Collections.synchronizedList([])
+            repository.count() >> 1L
+            repository.findAll() >> [series(id, LocalDateTime.now().minusMinutes(30))]
+            refreshService.refresh(_) >> { UUID i -> refreshedIds << i; null }
+
+        when: "a run is started with an override of 10 minutes"
+            bulkRefreshService.start(10)
+
+        then: "the series is NOT skipped -- 30 minutes is outside the 10-minute override"
+            conditions.eventually {
+                def status = bulkRefreshService.status()
+                status.status() == "COMPLETED"
+                status.skippedCount() == 0
+                status.skipThresholdMinutesUsed() == 10
+                refreshedIds == [id]
+            }
+    }
+
+    def "SERIES-052-AC-06: an override on one run does not change the injected default for the next"() {
+        given: "a run started with an override of 5"
+            repository.count() >> 0L
+            repository.findAll() >> []
+            bulkRefreshService.start(5)
+            conditions.eventually { bulkRefreshService.status().status() == "COMPLETED" }
+
+        when: "a second run is started with no override"
+            bulkRefreshService.start(null)
+
+        then: "the second run's skipThresholdMinutesUsed reflects the injected default (60), not the prior override"
+            conditions.eventually {
+                def status = bulkRefreshService.status()
+                status.status() == "COMPLETED"
+                status.skipThresholdMinutesUsed() == 60
+            }
+    }
+
+    def "SERIES-052-AC-07: an override of 0 disables skipping entirely for that run"() {
+        given: "a series refreshed 1 minute ago"
+            def id = UUID.randomUUID()
+            def refreshedIds = Collections.synchronizedList([])
+            repository.count() >> 1L
+            repository.findAll() >> [series(id, LocalDateTime.now().minusMinutes(1))]
+            refreshService.refresh(_) >> { UUID i -> refreshedIds << i; null }
+
+        when: "a run is started with an override of 0"
+            bulkRefreshService.start(0)
+
+        then: "the series is refreshed, not skipped"
+            conditions.eventually {
+                def status = bulkRefreshService.status()
+                status.status() == "COMPLETED"
+                status.skippedCount() == 0
+                status.skipThresholdMinutesUsed() == 0
                 refreshedIds == [id]
             }
     }

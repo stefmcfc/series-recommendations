@@ -129,6 +129,45 @@ class SeriesControllerRefreshSpec extends Specification {
             result.andExpect(jsonPath('$.data.totalCount').value(1))
     }
 
+    def "SERIES-052-AC-02/03: refresh-all with no body behaves identically to today"() {
+        given: "one series exists"
+            seriesService.create(new SeriesDto(title: "Show"))
+
+        when: "POST /refresh-all is requested with no body"
+            def result = mockMvc.perform(post("/api/v1/series/refresh-all"))
+
+        then: "the response is 202 Accepted"
+            result.andExpect(status().isAccepted())
+
+        and: "the run is governed by the injected default threshold (60)"
+            conditions.eventually {
+                def statusResult = mockMvc.perform(get("/api/v1/series/refresh-all/status"))
+                statusResult.andExpect(jsonPath('$.data.status').value("COMPLETED"))
+                statusResult.andExpect(jsonPath('$.data.skipThresholdMinutesUsed').value(60))
+            }
+    }
+
+    def "SERIES-052-AC-02: refresh-all with a body forwards the override"() {
+        given: "one series exists"
+            seriesService.create(new SeriesDto(title: "Show"))
+
+        when: "POST /refresh-all is requested with a skipThresholdMinutesOverride of 10"
+            def result = mockMvc.perform(post("/api/v1/series/refresh-all")
+                .contentType("application/json")
+                .content('{"skipThresholdMinutesOverride": 10}'))
+
+        then: "the response is 202 Accepted, with the initial status already reflecting the override"
+            result.andExpect(status().isAccepted())
+            result.andExpect(jsonPath('$.data.skipThresholdMinutesUsed').value(10))
+
+        and: "the run completes governed by the overridden threshold, not the injected default"
+            conditions.eventually {
+                def statusResult = mockMvc.perform(get("/api/v1/series/refresh-all/status"))
+                statusResult.andExpect(jsonPath('$.data.status').value("COMPLETED"))
+                statusResult.andExpect(jsonPath('$.data.skipThresholdMinutesUsed').value(10))
+            }
+    }
+
     def "SERIES-018-AC-18/21: GET /refresh-all/status reports COMPLETED with counts/timestamps once the job finishes"() {
         given: "two series exist"
             (1..2).each { seriesService.create(new SeriesDto(title: "Show ${it}")) }

@@ -19,7 +19,7 @@ import java.util.UUID;
  * {@code series_spec_018_series_refresh.md}. A single in-process, in-memory job, no database
  * table: a personal, single-instance app has no need for job state to survive a restart or be
  * visible across instances (see the spec's Design Decisions). Guarded so only one job runs at
- * a time; a second {@link #start()} while one is already {@code IN_PROGRESS} throws {@link
+ * a time; a second {@link #start} while one is already {@code IN_PROGRESS} throws {@link
  * ConflictException} (SERIES-018-AC-14) rather than queuing or running two batches
  * concurrently against the same rate-limited upstream APIs.
  *
@@ -43,7 +43,7 @@ public class BulkRefreshService extends AbstractPollingJobService<RefreshJobStat
                                Clock clock,
                                @Value("${app.tmdb.refresh-delay-ms:250}") long refreshDelayMs,
                                @Value("${app.tmdb.refresh-skip-threshold-minutes:60}") int refreshSkipThresholdMinutes) {
-        super(new RefreshJobStatus(IDLE, 0, 0, 0, null, null), "bulk-refresh-worker");
+        super(new RefreshJobStatus(IDLE, 0, 0, 0, null, null, refreshSkipThresholdMinutes), "bulk-refresh-worker");
         this.repository = repository;
         this.refreshService = refreshService;
         this.clock = clock;
@@ -57,16 +57,25 @@ public class BulkRefreshService extends AbstractPollingJobService<RefreshJobStat
      * asynchronously (SERIES-018-AC-16) on a dedicated background thread, so this method never
      * blocks waiting for it.
      *
+     * <p>{@code skipThresholdOverride} (series_spec_052_refresh_skip_threshold_override.md,
+     * SERIES-052-AC-04) is resolved to an effective threshold once, here, at job start --
+     * {@code skipThresholdOverride != null ? skipThresholdOverride : refreshSkipThresholdMinutes}
+     * -- and that resolved value is threaded through the entire run ({@link #runJob}/
+     * {@link #shouldSkip}) rather than re-read per series. The injected {@code
+     * refreshSkipThresholdMinutes} field itself is never mutated by an override
+     * (SERIES-052-AC-06): it is read fresh, unmodified, on every call.
+     *
      * @throws ConflictException if a job is already {@code IN_PROGRESS} (SERIES-018-AC-14)
      */
-    public synchronized RefreshJobStatus start() {
+    public synchronized RefreshJobStatus start(Integer skipThresholdOverride) {
         guardNotInProgress("A bulk refresh job is already in progress");
 
         int totalCount = (int) repository.count();
-        RefreshJobStatus started = new RefreshJobStatus(IN_PROGRESS, totalCount, 0, 0, LocalDateTime.now(clock), null);
+        int effectiveThreshold = skipThresholdOverride != null ? skipThresholdOverride : refreshSkipThresholdMinutes;
+        RefreshJobStatus started = new RefreshJobStatus(IN_PROGRESS, totalCount, 0, 0, LocalDateTime.now(clock), null, effectiveThreshold);
         currentJob.set(started);
 
-        executor.submit(() -> runJob(started));
+        executor.submit(() -> runJob(started, effectiveThreshold));
         return started;
     }
 
@@ -82,32 +91,32 @@ public class BulkRefreshService extends AbstractPollingJobService<RefreshJobStat
      * status to {@code FAILED} rather than letting it propagate -- there is no caller waiting on
      * this async task (SERIES-018-AC-22).
      */
-    private void runJob(RefreshJobStatus started) {
+    private void runJob(RefreshJobStatus started, int effectiveThreshold) {
         try {
             List<SeriesEntity> entities = repository.findAll();
             int completed = 0;
             int skipped = 0;
             for (SeriesEntity entity : entities) {
-                if (shouldSkip(entity)) {
+                if (shouldSkip(entity, effectiveThreshold)) {
                     skipped++;
                     completed++;
-                    currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null));
+                    currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null, effectiveThreshold));
                     continue;
                 }
 
                 refreshOneEntity(entity);
                 completed++;
-                currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null));
+                currentJob.set(new RefreshJobStatus(IN_PROGRESS, started.totalCount(), completed, skipped, started.startedAt(), null, effectiveThreshold));
 
                 if (refreshDelayMs > 0) {
                     applyDelay(refreshDelayMs, "Bulk refresh job interrupted");
                 }
             }
-            currentJob.set(new RefreshJobStatus(COMPLETED, started.totalCount(), completed, skipped, started.startedAt(), LocalDateTime.now(clock)));
+            currentJob.set(new RefreshJobStatus(COMPLETED, started.totalCount(), completed, skipped, started.startedAt(), LocalDateTime.now(clock), effectiveThreshold));
         } catch (RuntimeException e) {
             log.error("Bulk refresh job failed unexpectedly", e);
             RefreshJobStatus current = currentJob.get();
-            currentJob.set(new RefreshJobStatus(FAILED, started.totalCount(), current.completedCount(), current.skippedCount(), started.startedAt(), LocalDateTime.now(clock)));
+            currentJob.set(new RefreshJobStatus(FAILED, started.totalCount(), current.completedCount(), current.skippedCount(), started.startedAt(), LocalDateTime.now(clock), effectiveThreshold));
         }
     }
 
@@ -121,21 +130,23 @@ public class BulkRefreshService extends AbstractPollingJobService<RefreshJobStat
     }
 
     /**
-     * SERIES-018-AC-30/31/34: a series is skipped only when {@code
-     * app.tmdb.refresh-skip-threshold-minutes} is positive (0 disables skipping entirely, same
-     * "0 disables the filter" convention as {@code minVoteCount}, {@code
-     * series_spec_007_recommendation_sourcing.md} SERIES-007-AC-25) and its {@code
-     * lastRefreshedAt} is both non-null and within that many minutes of now.
+     * SERIES-018-AC-30/31/34: a series is skipped only when {@code effectiveThreshold} (the
+     * per-run resolved value {@link #start} computed -- an override if one was passed, otherwise
+     * {@code refreshSkipThresholdMinutes}, SERIES-052-AC-05) is positive (0 disables skipping
+     * entirely, same "0 disables the filter" convention as {@code minVoteCount}, {@code
+     * series_spec_007_recommendation_sourcing.md} SERIES-007-AC-25, and extended unchanged to a
+     * non-positive override by SERIES-052-AC-07) and its {@code lastRefreshedAt} is both
+     * non-null and within that many minutes of now.
      */
-    private boolean shouldSkip(SeriesEntity entity) {
-        if (refreshSkipThresholdMinutes <= 0) {
+    private boolean shouldSkip(SeriesEntity entity, int effectiveThreshold) {
+        if (effectiveThreshold <= 0) {
             return false;
         }
         LocalDateTime lastRefreshedAt = entity.getLastRefreshedAt();
         if (lastRefreshedAt == null) {
             return false;
         }
-        LocalDateTime cutoff = LocalDateTime.now(clock).minusMinutes(refreshSkipThresholdMinutes);
+        LocalDateTime cutoff = LocalDateTime.now(clock).minusMinutes(effectiveThreshold);
         return lastRefreshedAt.isAfter(cutoff);
     }
 }

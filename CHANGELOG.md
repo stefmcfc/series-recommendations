@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `POST /api/v1/series/refresh-all` now accepts an optional `{ "skipThresholdMinutesOverride": <int> }` body, overriding `app.tmdb.refresh-skip-threshold-minutes` for that one run only without changing the configured default for future runs (`series_spec_052` SERIES-052-AC-01/02/03/04/06/07).
+- Backend: `RefreshJobStatus` (`GET /api/v1/series/refresh-all/status`) gains `skipThresholdMinutesUsed`, reporting the effective threshold (override or configured default) that actually governed a given run (`series_spec_052` SERIES-052-AC-08/09/10).
+- Frontend: new `components/SettingsSection.tsx` — a minimal `{ title, children }` wrapper rendering a heading followed by its content; `SettingsPage.tsx`'s Refresh All/Export/Import sections now render through it instead of bare `<div>`s, so the page reads as organized categories as more controls land on it (`frontend_spec_097` FRONTEND-097-AC-03/04).
+- Frontend: `/settings`' Refresh All section gains a labeled "Skip Threshold Override (minutes)" number input — a non-blank value is sent as `skipThresholdMinutesOverride` on the next `Refresh All` click, a blank field sends no override at all, matching this app's established "absent means no filter" convention (`frontend_spec_097` FRONTEND-097-AC-05/06/07).
+- Frontend: the Refresh All progress text and "Last full refresh" summary now mention the threshold (`skipThresholdMinutesUsed`) that actually governed a run whenever anything was skipped, so a skip is never reported without the context that produced it (`frontend_spec_097` FRONTEND-097-AC-08).
+
 ## [3.31.0] - 2026-09-07
 
 ### Added

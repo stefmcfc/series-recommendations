@@ -5,6 +5,7 @@ import type { RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { ExportControls } from './ExportControls'
 import { ImportControls } from './ImportControls'
+import { SettingsSection } from './SettingsSection'
 import styles from './SettingsPage.module.css'
 
 // Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
@@ -12,17 +13,32 @@ import styles from './SettingsPage.module.css'
 // to hammer the status endpoint.
 const REFRESH_POLL_INTERVAL_MS = 2500
 
-function buildRefreshProgressText(status: RefreshJobStatus): string {
+// FRONTEND-097-AC-08: mention the threshold that actually governed the run
+// whenever anything was skipped, so a skip is never reported without the
+// context that produced it.
+function buildThresholdSuffix(status: RefreshJobStatus): string {
+  return status.skippedCount > 0
+    ? `, threshold: ${status.skipThresholdMinutesUsed} min`
+    : ''
+}
+
+// Exported for direct unit coverage of FRONTEND-097-AC-08 (see
+// SettingsPage.test.tsx) -- not used outside this module otherwise.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on RecommendationControls.tsx's COUNTRY_PINNED_OPTIONS for rationale; Fast Refresh state loss on an edit here is an acceptable, deliberate tradeoff in exchange for these being directly unit-testable.
+export function buildRefreshProgressText(status: RefreshJobStatus): string {
   const skippedSuffix =
-    status.skippedCount > 0 ? ` (${status.skippedCount} skipped)` : ''
+    status.skippedCount > 0
+      ? ` (${status.skippedCount} skipped${buildThresholdSuffix(status)})`
+      : ''
   return `Refreshing ${status.completedCount} of ${status.totalCount}${skippedSuffix}...`
 }
 
-function buildLastFullRefreshText(status: RefreshJobStatus): string {
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on buildRefreshProgressText above for rationale.
+export function buildLastFullRefreshText(status: RefreshJobStatus): string {
   const finishedAt = status.finishedAt as string
   const skippedSuffix =
     status.skippedCount > 0
-      ? ` (${status.skippedCount} skipped, already up to date)`
+      ? ` (${status.skippedCount} skipped, already up to date${buildThresholdSuffix(status)})`
       : ''
   return `Last full refresh: ${formatRelativeTime(finishedAt)}${skippedSuffix}`
 }
@@ -30,6 +46,10 @@ function buildLastFullRefreshText(status: RefreshJobStatus): string {
 export function SettingsPage() {
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
+  // FRONTEND-097-AC-05/06/07: plain string state so a blank field is
+  // unambiguous (vs. a number field defaulting to 0) -- parsed to a number
+  // only at click time, and omitted from the call entirely when blank.
+  const [skipThresholdOverride, setSkipThresholdOverride] = useState('')
 
   const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
 
@@ -81,8 +101,15 @@ export function SettingsPage() {
   const handleRefreshAllClick = () => {
     setRefreshAllError(null)
 
+    // FRONTEND-097-AC-06/07: a blank field sends no override at all --
+    // seriesApi.refreshAll() omits skipThresholdMinutesOverride from the
+    // request body entirely rather than sending null/0/undefined.
+    const trimmedOverride = skipThresholdOverride.trim()
+    const overrideValue =
+      trimmedOverride === '' ? undefined : Number(trimmedOverride)
+
     seriesApi
-      .refreshAll()
+      .refreshAll(overrideValue)
       .then((status) => {
         setJobStatus(status)
       })
@@ -98,6 +125,9 @@ export function SettingsPage() {
             skippedCount: 0,
             startedAt: null,
             finishedAt: null,
+            // FRONTEND-097-AC-09: carry forward the most recently known
+            // value rather than fabricating one -- 0 if none is known yet.
+            skipThresholdMinutesUsed: jobStatus?.skipThresholdMinutesUsed ?? 0,
           })
           return
         }
@@ -123,27 +153,41 @@ export function SettingsPage() {
     <div className={styles.container} data-testid="settings-view">
       <h2 className={styles.heading}>Settings</h2>
 
-      <div className={styles.section}>
-        <button
-          type="button"
-          className={styles.refreshAllButton}
-          data-testid="refresh-all-btn"
-          disabled={refreshAllInProgress}
-          onClick={handleRefreshAllClick}
-        >
-          Refresh All
-        </button>
-        {refreshAllInProgress && jobStatus && (
-          <span className={styles.refreshProgress}>
-            {buildRefreshProgressText(jobStatus)}
-          </span>
-        )}
-        {jobStatus?.finishedAt != null && (
-          <span className={styles.lastFullRefresh}>
-            {buildLastFullRefreshText(jobStatus)}
-          </span>
-        )}
-      </div>
+      <SettingsSection title="Refresh All">
+        <div className={styles.refreshRow}>
+          <button
+            type="button"
+            className={styles.refreshAllButton}
+            data-testid="refresh-all-btn"
+            disabled={refreshAllInProgress}
+            onClick={handleRefreshAllClick}
+          >
+            Refresh All
+          </button>
+          <div className={styles.overrideField}>
+            <label htmlFor="refresh-skip-threshold-override">
+              Skip Threshold Override (minutes)
+            </label>
+            <input
+              id="refresh-skip-threshold-override"
+              type="number"
+              min={0}
+              value={skipThresholdOverride}
+              onChange={(event) => setSkipThresholdOverride(event.target.value)}
+            />
+          </div>
+          {refreshAllInProgress && jobStatus && (
+            <span className={styles.refreshProgress}>
+              {buildRefreshProgressText(jobStatus)}
+            </span>
+          )}
+          {jobStatus?.finishedAt != null && (
+            <span className={styles.lastFullRefresh}>
+              {buildLastFullRefreshText(jobStatus)}
+            </span>
+          )}
+        </div>
+      </SettingsSection>
 
       {refreshAllError && (
         <div className={styles.error} role="alert">
@@ -151,13 +195,13 @@ export function SettingsPage() {
         </div>
       )}
 
-      <div className={styles.section}>
+      <SettingsSection title="Export">
         <ExportControls />
-      </div>
+      </SettingsSection>
 
-      <div className={styles.section}>
+      <SettingsSection title="Import">
         <ImportControls onImported={handleImported} />
-      </div>
+      </SettingsSection>
     </div>
   )
 }
