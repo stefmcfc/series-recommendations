@@ -50,6 +50,44 @@
   }
 }
 
+/* FRONTEND-099-AC-04: manual "Dark" override -- identical values to the
+   prefers-color-scheme dark block above (kept in sync deliberately, do not
+   let these drift), applied regardless of the OS setting via a data-theme
+   attribute App.tsx sets on <html>. The attribute selector's higher
+   specificity wins over the bare :root the media query above wraps, with no
+   !important needed. */
+:root[data-theme='dark'] {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #16171d;
+  --border: #2e303a;
+  --code-bg: #1f2028;
+  --accent: #c084fc;
+  --accent-bg: rgba(192, 132, 252, 0.15);
+  --accent-border: rgba(192, 132, 252, 0.5);
+  --social-bg: rgba(47, 48, 58, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+}
+
+/* FRONTEND-099-AC-05: manual "Light" override -- identical values to the
+   base :root block's light values above -- takes effect when the OS is dark
+   but the user has explicitly chosen "Light," overriding the
+   prefers-color-scheme dark block the same way the dark override above does. */
+:root[data-theme='light'] {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;

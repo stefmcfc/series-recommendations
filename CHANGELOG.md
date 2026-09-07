@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.34.0] - 2026-09-07
+
+### Added
+
+- Frontend: new `types/theme.ts` — `Theme` (`'light' | 'dark' | 'system'`) and its `isTheme` type guard, consumed by `App.tsx`'s `useLocalStorage('theme', ...)` call and threaded to `SettingsPage` as props (`frontend_spec_099` FRONTEND-099-AC-01).
+- Frontend: `App.tsx` now applies the user's chosen theme app-wide via a `data-theme` attribute on `<html>`, set/removed in a `useEffect` keyed on `theme` — `'system'` removes the attribute entirely, leaving the existing `prefers-color-scheme` behavior untouched (`frontend_spec_099` FRONTEND-099-AC-02).
+- Frontend: `/settings` gains an "Appearance" section with a Light/Dark/Match System radio control that calls `setTheme` immediately on selection, no Save step (`frontend_spec_099` FRONTEND-099-AC-03/07/08).
+- Frontend: `index.css` gains `:root[data-theme="dark"]`/`:root[data-theme="light"]` rules mirroring the existing `prefers-color-scheme` dark values and the base light values respectively, so a manual choice overrides the OS setting via plain CSS specificity (`frontend_spec_099` FRONTEND-099-AC-04/05).
+
 ## [3.33.0] - 2026-09-07
 
 ### Added

@@ -23,6 +23,10 @@ const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // FRONTEND-099: theme is persisted via useLocalStorage under the 'theme'
+  // key -- cleared here so a value set by one theme test doesn't leak into
+  // an unrelated test elsewhere in this file.
+  localStorage.clear()
   // FRONTEND-041: <BrowserRouter> lives inside App itself, so tests seed the
   // starting route via window.history.pushState. Default to /my-series here
   // so tests that don't care about routing (most of the pre-existing suite)
@@ -827,5 +831,36 @@ describe('FRONTEND-073-AC-06: active-filter dot ignores live title', () => {
     })
 
     expect(screen.queryByTestId('filters-active-dot')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', () => {
+  it('defaults to no data-theme attribute (system) when nothing is stored', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  })
+
+  it('applies data-theme="dark" when a stored theme is dark', async () => {
+    localStorage.setItem('theme', JSON.stringify('dark'))
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  })
+
+  it('removes the attribute when switching back to Match System', async () => {
+    localStorage.setItem('theme', JSON.stringify('dark'))
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByRole('link', { name: /settings/i }))
+    fireEvent.click(await screen.findByRole('radio', { name: /match system/i }))
+
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   })
 })

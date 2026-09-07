@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe('FRONTEND-070-AC-03: SettingsPage renders its heading', () => {
   it('renders a heading', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(screen.getByTestId('settings-view')).toBeInTheDocument()
     expect(
@@ -40,7 +40,7 @@ describe('FRONTEND-070-AC-03: SettingsPage renders its heading', () => {
 
 describe('FRONTEND-057-AC-05: Settings renders Import after Export, no stale placeholder', () => {
   it('renders the Import controls and drops the old placeholder copy', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(screen.getByTestId('import-file-input')).toBeInTheDocument()
     expect(
@@ -52,7 +52,7 @@ describe('FRONTEND-057-AC-05: Settings renders Import after Export, no stale pla
 describe('FRONTEND-072-AC-02: Settings renders unfiltered Export controls', () => {
   it('calls seriesApi.export with no criteria when Export JSON is clicked', async () => {
     mockExport.mockResolvedValue({ blob: new Blob(), filename: 'series.json' })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByTestId('export-json-btn'))
 
@@ -63,7 +63,7 @@ describe('FRONTEND-072-AC-02: Settings renders unfiltered Export controls', () =
 
   it('calls seriesApi.export with no criteria when Export CSV is clicked', async () => {
     mockExport.mockResolvedValue({ blob: new Blob(), filename: 'series.csv' })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByTestId('export-csv-btn'))
 
@@ -84,7 +84,7 @@ describe('FRONTEND-072-AC-04: Settings resyncs Refresh All state on mount', () =
       startedAt: '2026-09-01T00:00:00',
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(await screen.findByText(/Refreshing 3 of 10/)).toBeInTheDocument()
     expect(screen.getByTestId('refresh-all-btn')).toBeDisabled()
@@ -108,7 +108,7 @@ describe('FRONTEND-072-AC-05: Refresh All starts a job and polls to completion',
       startedAt: '2026-09-01T00:00:00',
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(await screen.findByTestId('refresh-all-btn'))
     expect(await screen.findByText(/refreshing 0 of 5/i)).toBeInTheDocument()
@@ -140,7 +140,7 @@ describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () 
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: /refresh all/i }))
     expect(await screen.findByText(/refreshing 0 of 15/i)).toBeInTheDocument()
@@ -178,7 +178,7 @@ describe('FRONTEND-023-AC-11: resumes polling on mount if a job is already runni
       finishedAt: null,
     })
 
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(await screen.findByText(/refreshing 4 of 15/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /refresh all/i })).toBeDisabled()
@@ -190,7 +190,7 @@ describe('FRONTEND-023-AC-14: 409 on click is treated as already-in-progress, no
     mockRefreshAll.mockRejectedValue(
       new ApiError(409, 'A refresh is already in progress'),
     )
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: /refresh all/i }))
 
@@ -214,7 +214,7 @@ describe('FRONTEND-023-AC-15: last full refresh display', () => {
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
     expect(await screen.findByText(/last full refresh/i)).toBeInTheDocument()
   })
 })
@@ -230,7 +230,7 @@ describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(
       await screen.findByText(
@@ -249,7 +249,7 @@ describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
       startedAt: new Date().toISOString(),
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(
       await screen.findByText(/refreshing 4 of 15\.\.\./i),
@@ -268,7 +268,7 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(
       await screen.findByText(
@@ -287,7 +287,7 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     await screen.findByText(/last full refresh/i)
     expect(screen.queryByText(/skipped/i)).not.toBeInTheDocument()
@@ -296,7 +296,7 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
 
 describe('FRONTEND-097-AC-04: existing sections render via SettingsSection', () => {
   it('renders Refresh All, Export, and Import each under their own heading', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(
       screen.getByRole('heading', { name: /refresh/i }),
@@ -308,7 +308,7 @@ describe('FRONTEND-097-AC-04: existing sections render via SettingsSection', () 
 
 describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
   it('renders a labeled override input', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     const input = screen.getByLabelText(/skip threshold override/i)
     expect(input).toBeInTheDocument()
@@ -325,7 +325,7 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
       startedAt: null,
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByTestId('refresh-all-btn'))
 
@@ -342,7 +342,7 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
       startedAt: null,
       finishedAt: null,
     })
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
       target: { value: '10' },
@@ -386,7 +386,7 @@ describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThres
     mockRefreshAll.mockRejectedValue(
       new ApiError(409, 'A refresh is already in progress'),
     )
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByTestId('refresh-all-btn'))
 
@@ -411,7 +411,7 @@ describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThres
     mockRefreshAll.mockRejectedValue(
       new ApiError(409, 'A refresh is already in progress'),
     )
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     await screen.findByText(/last full refresh/i)
     fireEvent.click(screen.getByTestId('refresh-all-btn'))
@@ -424,7 +424,7 @@ describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThres
 
 describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
   it('renders a Recommendation Favourites section with both favourites pickers', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(
       screen.getByRole('heading', { name: 'Recommendation Favourites' }),
@@ -434,7 +434,7 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
   })
 
   it('selecting a country favourite writes through to localStorage immediately', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'France' }))
 
@@ -444,7 +444,7 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
   })
 
   it('selecting a language favourite writes through to localStorage immediately', () => {
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Italian' }))
 
@@ -455,7 +455,7 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
 
   it('pre-populates each picker with the current favourites', () => {
     localStorage.setItem('countryFavourites', JSON.stringify(['FR', 'DE']))
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     expect(screen.getByText('France')).toBeInTheDocument()
     expect(screen.getByText('Germany')).toBeInTheDocument()
@@ -471,7 +471,7 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
   // accessible name is "Move United States later", not "Move US later".
   it('writes the reordered favourites through useLocalStorage on Move later', () => {
     localStorage.setItem('countryFavourites', JSON.stringify(['US', 'GB']))
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Move United States later' }),
@@ -485,7 +485,7 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
 
   it('writes the reordered favourites through useLocalStorage on Move earlier', () => {
     localStorage.setItem('countryFavourites', JSON.stringify(['US', 'GB']))
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Move United Kingdom earlier' }),
@@ -499,7 +499,7 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
 
   it('reorders language favourites through useLocalStorage', () => {
     localStorage.setItem('languageFavourites', JSON.stringify(['it', 'zh']))
-    render(<SettingsPage />)
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Move Italian later' }))
 
@@ -507,5 +507,51 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
       'zh',
       'it',
     ])
+  })
+})
+
+describe('FRONTEND-099-AC-07/08: Appearance section', () => {
+  it('renders the three theme options with Match System selected by default', () => {
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Appearance' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /match system/i })).toBeChecked()
+    expect(screen.getByRole('radio', { name: /^light$/i })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: /^dark$/i })).not.toBeChecked()
+  })
+
+  it('reflects theme="dark" as the checked option', () => {
+    render(<SettingsPage theme="dark" setTheme={vi.fn()} />)
+
+    expect(screen.getByRole('radio', { name: /^dark$/i })).toBeChecked()
+  })
+
+  it('calls setTheme immediately when Dark is selected', () => {
+    const setTheme = vi.fn()
+    render(<SettingsPage theme="system" setTheme={setTheme} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: /^dark$/i }))
+
+    expect(setTheme).toHaveBeenCalledWith('dark')
+  })
+
+  it('calls setTheme immediately when Light is selected', () => {
+    const setTheme = vi.fn()
+    render(<SettingsPage theme="system" setTheme={setTheme} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: /^light$/i }))
+
+    expect(setTheme).toHaveBeenCalledWith('light')
+  })
+
+  it('calls setTheme immediately when Match System is selected', () => {
+    const setTheme = vi.fn()
+    render(<SettingsPage theme="dark" setTheme={setTheme} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: /match system/i }))
+
+    expect(setTheme).toHaveBeenCalledWith('system')
   })
 })
