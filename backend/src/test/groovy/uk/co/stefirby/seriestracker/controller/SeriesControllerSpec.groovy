@@ -1,5 +1,6 @@
 package uk.co.stefirby.seriestracker.controller
 
+import org.hamcrest.Matchers
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -478,7 +479,7 @@ class SeriesControllerSpec extends Specification {
 
     then: "the response is 200 and excludes the Comedy series"
         result.andExpect(status().isOk())
-        result.andExpect(jsonPath('$.data[*].title').value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("Funny Show"))))
-        result.andExpect(jsonPath('$.data[*].title').value(org.hamcrest.Matchers.hasItem("Serious Show")))
+        result.andExpect(jsonPath('$.data[*].title').value(Matchers.not(Matchers.hasItem("Funny Show"))))
+        result.andExpect(jsonPath('$.data[*].title').value(Matchers.hasItem("Serious Show")))
   }
 }

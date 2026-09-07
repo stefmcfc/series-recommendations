@@ -23,8 +23,8 @@ describe('FRONTEND-047-AC-07: COUNTRY_OPTIONS is a static, hardcoded list', () =
 
 describe('FRONTEND-098-AC-05: ALL_COUNTRY_OPTIONS is COUNTRY_OPTIONS plus US/GB', () => {
   it('has 20 entries -- the 18 of COUNTRY_OPTIONS plus US and GB', () => {
-    expect(ALL_COUNTRY_OPTIONS.length).toBe(COUNTRY_OPTIONS.length + 2)
-    expect(ALL_COUNTRY_OPTIONS.length).toBe(20)
+    expect(ALL_COUNTRY_OPTIONS).toHaveLength(COUNTRY_OPTIONS.length + 2)
+    expect(ALL_COUNTRY_OPTIONS).toHaveLength(20)
   })
 
   it('includes US and GB with human-readable labels', () => {
