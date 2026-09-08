@@ -19,12 +19,16 @@
   gap: 0.75rem;
 }
 
+/* FRONTEND-105-AC-13: composes the shared surface primitive (surfaces.module.css)
+   in SeriesList.tsx -- its own padding here, sized for a slim control bar
+   rather than copied from .row's content-row padding. */
 .headerToolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+  padding: 0.75rem 1rem;
 }
 
 .heading {
@@ -253,13 +257,14 @@
   gap: 0.5rem;
 }
 
+/* FRONTEND-105-AC-04: border/radius now come from the shared surface
+   primitive (surfaces.module.css), composed in SeriesList.tsx as
+   `${styles.row} ${surface.card}` -- .row keeps only its own padding/layout. */
 .row {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
   transition: background-color 0.15s ease;
 }
 

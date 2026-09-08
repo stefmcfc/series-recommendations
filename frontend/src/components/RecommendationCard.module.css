@@ -1,9 +1,10 @@
+/* FRONTEND-105-AC-07: border/radius now come from the shared surface
+   primitive (surfaces.module.css), composed in RecommendationCard.tsx as
+   `${styles.card} ${surface.card}` -- .card keeps only its own padding/layout. */
 .card {
   display: flex;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
 }
 
 .thumbnail {

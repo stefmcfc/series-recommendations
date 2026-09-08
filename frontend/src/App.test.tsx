@@ -864,3 +864,23 @@ describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', ()
     expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   })
 })
+
+describe('FRONTEND-105-AC-09/10: status tabs render decorative icons', () => {
+  it('each status tab renders an aria-hidden icon before its label', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    const watchingTab = await screen.findByRole('link', { name: 'Watching' })
+    expect(watchingTab.querySelector('[aria-hidden="true"] svg')).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-105-AC-11: header nav links are unaffected', () => {
+  it('the header My Series/Recommendations/Analysis/Settings links carry no icon', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    const recsLink = screen.getByRole('link', { name: 'Recommendations' })
+    expect(recsLink.querySelector('[aria-hidden="true"]')).toBeFalsy()
+  })
+})

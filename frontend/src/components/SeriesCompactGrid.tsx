@@ -2,6 +2,7 @@ import type { Series } from '../types/series'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { StarRating } from './StarRating'
 import styles from './SeriesCompactGrid.module.css'
+import surface from '../styles/surfaces.module.css'
 
 interface SeriesCompactGridProps {
   readonly series: readonly Series[]
@@ -33,7 +34,7 @@ export function SeriesCompactGrid({
           <li key={s.id} className={styles.item}>
             <button
               type="button"
-              className={styles.card}
+              className={`${styles.card} ${surface.card}`}
               data-testid="compact-series-card"
               aria-label={`View details for ${titleYear}`}
               onClick={() => onCardClick(s.id)}

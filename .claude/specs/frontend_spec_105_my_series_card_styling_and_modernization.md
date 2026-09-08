@@ -1,6 +1,6 @@
 # Frontend Spec 105: My Series Card Styling & Page Modernization
 
-**Status**: Not started
+**Status**: Delivered
 **Priority**: P3
 **Depends on**: `frontend_spec_101_settings_units_and_card_styling.md` (the bordered/shadowed card
 pattern and hand-rolled-icon convention this spec extends beyond `/settings`), `frontend_spec_103_button_styling_consistency.md`
@@ -369,20 +369,20 @@ describe('FRONTEND-105-AC-15/16: filter sections are individually carded, no div
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-105-AC-01: new `surfaces.module.css` exports `.card` (border/radius/shadow/background only)
-- [ ] FRONTEND-105-AC-02: `SettingsSection` migrates to compose the shared primitive
-- [ ] FRONTEND-105-AC-03: existing `SettingsSection` tests pass unmodified
-- [ ] FRONTEND-105-AC-04: `SeriesList`'s `.row` composes the shared primitive
-- [ ] FRONTEND-105-AC-05: `SeriesCompactGrid`'s `.card` composes the shared primitive
-- [ ] FRONTEND-105-AC-06: `SeriesPosterGrid` is unchanged (explicitly out of scope)
-- [ ] FRONTEND-105-AC-07: `RecommendationCard`'s `.card` composes the shared primitive
-- [ ] FRONTEND-105-AC-08: status-tab bar gets pill styling via `nav.navLinks` compound selectors, header nav untouched
-- [ ] FRONTEND-105-AC-09: new `StatusTabIcons.tsx` with six decorative icons
-- [ ] FRONTEND-105-AC-10: each status tab renders its icon, `aria-hidden`
-- [ ] FRONTEND-105-AC-11: header nav links unaffected (no icon, unchanged accessible name)
-- [ ] FRONTEND-105-AC-12: manual visual check — status-tab pill styling in both themes, header nav unchanged
-- [ ] FRONTEND-105-AC-13: `.headerToolbar` composes the shared primitive with its own padding
-- [ ] FRONTEND-105-AC-14: manual visual check — toolbar reads as a distinct bar, no control layout shift
-- [ ] FRONTEND-105-AC-15: `.sectionDivider` removed from `SearchFilter`
-- [ ] FRONTEND-105-AC-16: each `.filterSection` composes the shared primitive
-- [ ] FRONTEND-105-AC-17: manual visual check — Filters sheet groups read as distinct cards, no field misalignment
+- [x] FRONTEND-105-AC-01: new `surfaces.module.css` exports `.card` (border/radius/shadow/background only)
+- [x] FRONTEND-105-AC-02: `SettingsSection` migrates to compose the shared primitive
+- [x] FRONTEND-105-AC-03: existing `SettingsSection` tests pass unmodified
+- [x] FRONTEND-105-AC-04: `SeriesList`'s `.row` composes the shared primitive
+- [x] FRONTEND-105-AC-05: `SeriesCompactGrid`'s `.card` composes the shared primitive
+- [x] FRONTEND-105-AC-06: `SeriesPosterGrid` is unchanged (explicitly out of scope)
+- [x] FRONTEND-105-AC-07: `RecommendationCard`'s `.card` composes the shared primitive
+- [x] FRONTEND-105-AC-08: status-tab bar gets pill styling via `nav.navLinks` compound selectors, header nav untouched
+- [x] FRONTEND-105-AC-09: new `StatusTabIcons.tsx` with six decorative icons
+- [x] FRONTEND-105-AC-10: each status tab renders its icon, `aria-hidden`
+- [x] FRONTEND-105-AC-11: header nav links unaffected (no icon, unchanged accessible name)
+- [x] FRONTEND-105-AC-12: manual visual check — status-tab pill styling in both themes, header nav unchanged
+- [x] FRONTEND-105-AC-13: `.headerToolbar` composes the shared primitive with its own padding
+- [x] FRONTEND-105-AC-14: manual visual check — toolbar reads as a distinct bar, no control layout shift
+- [x] FRONTEND-105-AC-15: `.sectionDivider` removed from `SearchFilter`
+- [x] FRONTEND-105-AC-16: each `.filterSection` composes the shared primitive
+- [x] FRONTEND-105-AC-17: manual visual check — Filters sheet groups read as distinct cards, no field misalignment

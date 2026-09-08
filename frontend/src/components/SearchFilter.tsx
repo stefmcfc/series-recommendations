@@ -8,6 +8,7 @@ import { StarRating } from './StarRating'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import styles from './SearchFilter.module.css'
 import btn from '../styles/buttons.module.css'
+import surface from '../styles/surfaces.module.css'
 
 interface SearchFilterProps {
   // FRONTEND-071-AC-04/05: the sheet's open/closed state is now owned by
@@ -206,7 +207,7 @@ export function SearchFilter({
           </div>
 
           <div className={styles.filtersBody} data-testid="filters-body">
-            <section className={styles.filterSection}>
+            <section className={`${styles.filterSection} ${surface.card}`}>
               <h3 className={styles.filterSectionHeading}>Genres & Keywords</h3>
 
               <div className={styles.field}>
@@ -254,9 +255,7 @@ export function SearchFilter({
               </div>
             </section>
 
-            <section
-              className={`${styles.filterSection} ${styles.sectionDivider}`}
-            >
+            <section className={`${styles.filterSection} ${surface.card}`}>
               <h3 className={styles.filterSectionHeading}>Ratings</h3>
 
               <div className={styles.field}>
@@ -294,9 +293,7 @@ export function SearchFilter({
               </div>
             </section>
 
-            <section
-              className={`${styles.filterSection} ${styles.sectionDivider}`}
-            >
+            <section className={`${styles.filterSection} ${surface.card}`}>
               <h3 className={styles.filterSectionHeading}>Years</h3>
 
               <div className={styles.field}>

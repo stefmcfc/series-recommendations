@@ -26,6 +26,14 @@ import {
   type RecommendationQuery,
 } from './types/series'
 import { isTheme, type Theme } from './types/theme'
+import {
+  AllIcon,
+  WatchingIcon,
+  CompletedIcon,
+  BacklogIcon,
+  DroppedIcon,
+  RewatchIcon,
+} from './components/StatusTabIcons'
 import styles from './App.module.css'
 
 const navLinkClassName = ({ isActive }: NavLinkRenderProps) =>
@@ -124,21 +132,39 @@ function MySeriesView({
     <>
       <nav className={styles.navLinks} aria-label="Status">
         <NavLink to="/my-series" end className={navLinkClassName}>
+          <span aria-hidden="true">
+            <AllIcon />
+          </span>
           All
         </NavLink>
         <NavLink to="/my-series/watching" className={navLinkClassName}>
+          <span aria-hidden="true">
+            <WatchingIcon />
+          </span>
           Watching
         </NavLink>
         <NavLink to="/my-series/completed" className={navLinkClassName}>
+          <span aria-hidden="true">
+            <CompletedIcon />
+          </span>
           Completed
         </NavLink>
         <NavLink to="/my-series/backlog" className={navLinkClassName}>
+          <span aria-hidden="true">
+            <BacklogIcon />
+          </span>
           Backlog
         </NavLink>
         <NavLink to="/my-series/dropped" className={navLinkClassName}>
+          <span aria-hidden="true">
+            <DroppedIcon />
+          </span>
           Dropped
         </NavLink>
         <NavLink to="/my-series/rewatch" className={navLinkClassName}>
+          <span aria-hidden="true">
+            <RewatchIcon />
+          </span>
           Rewatch
         </NavLink>
       </nav>

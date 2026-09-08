@@ -9,6 +9,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SearchFilter } from './SearchFilter'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
+import surface from '../styles/surfaces.module.css'
 
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
@@ -893,8 +894,8 @@ describe('FRONTEND-075-AC-03: Years section', () => {
   })
 })
 
-describe('FRONTEND-075-AC-04: dividers between sections', () => {
-  it('applies a divider class to sections after the first', () => {
+describe('FRONTEND-105-AC-15/16: filter sections are individually carded, no divider class', () => {
+  it('each filter section composes surface.card and sectionDivider is gone', () => {
     render(
       <SearchFilter
         isOpen={true}
@@ -904,17 +905,18 @@ describe('FRONTEND-075-AC-04: dividers between sections', () => {
       />,
     )
 
-    const ratingsSection = screen
-      .getByRole('heading', { name: 'Ratings' })
+    const ratingsHeading = screen.getByRole('heading', { name: /ratings/i })
+    expect(ratingsHeading.closest(`.${surface.card}`)).toBeTruthy()
+
+    const genresSection = screen
+      .getByRole('heading', { name: 'Genres & Keywords' })
       .closest('section')!
     const yearsSection = screen
       .getByRole('heading', { name: 'Years' })
       .closest('section')!
-    const genresSection = screen
-      .getByRole('heading', { name: 'Genres & Keywords' })
-      .closest('section')!
-    expect(ratingsSection.className).toMatch(/sectionDivider/)
-    expect(yearsSection.className).toMatch(/sectionDivider/)
+    expect(genresSection.className).toContain(surface.card)
+    expect(yearsSection.className).toContain(surface.card)
+
     expect(genresSection.className).not.toMatch(/sectionDivider/)
   })
 })

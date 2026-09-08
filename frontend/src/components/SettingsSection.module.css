@@ -1,14 +1,10 @@
-/* FRONTEND-101-AC-06: card styling reusing the same border/radius/shadow
-   tokens this app's modal dialogs already use (see AddSeriesForm.module.css
-   / EditSeriesForm.module.css's .dialog) rather than inventing a new visual
-   pattern. */
+/* FRONTEND-105-AC-02: card styling (border/radius/shadow/background) now
+   lives in the shared styles/surfaces.module.css primitive, composed in
+   SettingsSection.tsx as `${styles.section} ${surface.card}` -- .section
+   keeps only its own padding/margin-top. */
 .section {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow);
 }
 
 .section:first-child {
