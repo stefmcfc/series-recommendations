@@ -12,6 +12,7 @@ import { TrendingPanel } from './TrendingPanel'
 import { HighestRatedPanel } from './HighestRatedPanel'
 import { RecommendationFiltersBox } from './RecommendationFiltersBox'
 import styles from './RecommendationControls.module.css'
+import btn from '../styles/buttons.module.css'
 
 // FRONTEND-047-AC-08/09/12 (revised 2026-08-28): Language keeps a hardcoded,
 // locally-scoped option list (not extracted to utils/ -- exactly one
@@ -1050,7 +1051,7 @@ export function RecommendationControls({
           convention. FRONTEND-065-AC-02: relabeled from "Apply Filters". */}
       <button
         type="button"
-        className={styles.applyButton}
+        className={`${styles.applyButton} ${btn.btnPrimary}`}
         onClick={handleApplyFilters}
         disabled={loading}
       >

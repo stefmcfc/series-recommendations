@@ -135,6 +135,11 @@ implemented as one.
 10. Restrict/expand how many raw candidates a single source can contribute — either an explicit
     app-side cap, or requesting additional TMDB pages (pagination) for heavily-weighted sources,
     rather than being silently bound by TMDB's own first-page size.
+    **Update (2026-09-08)**: `series_spec_054_recommendation_discover_backfill_pagination.md`
+    (specced, not yet built) adds this same kind of TMDB-page backfill, but only for the three
+    direct-TMDB-discover sourcing modes (trending/topRated/Custom Search) — "Use My Series"
+    (`sourceFromPool`, the mode this item #10 is actually about) is explicitly untouched by that
+    spec, deferred here for the reasons already stated above. This item stays fully open.
 11. **Saved filter/algorithm profiles.** Confirmed during this discussion: the user wants some way
     to save a chosen combination of weights/filters/source settings rather than re-entering it
     every session. Once there are this many tunable knobs, that stops being optional. This app has
@@ -211,6 +216,13 @@ controls fix; this session's icon-button `aria-label`/contrast/target-size addit
 `frontend_spec_054`) — this candidate is a deliberate, holistic pass rather than more one-off fixes
 as they're individually noticed.
 
+**Update (2026-09-08)**: `frontend_spec_103_button_styling_consistency.md` (specced, not yet built)
+addresses one specific facet of the "color contrast across every component" bullet below — the
+outline/secondary button tier's border failing WCAG 1.4.11's 3:1 non-text-contrast minimum in both
+themes — with a new `--control-border` token. It does not touch any other component's contrast, and
+doesn't cover keyboard nav, screen readers, or focus management below; this candidate's remaining
+scope is unchanged.
+
 **Confirmed scope this candidate would need to cover, not yet audited systematically**:
 - Keyboard-only navigation through complete multi-step flows (not just individual components) —
   e.g. Add Series end-to-end, editing and saving a series, completing a recommendation's Add-to-List
@@ -257,3 +269,36 @@ as they're individually noticed.
    keep the current ad hoc "fix what's found" posture.
 3. Whether the no-focus-trap dialog pattern above should be revisited as part of this audit or
    treated as an accepted, already-decided tradeoff each dialog's own spec already signed off on.
+
+### Number input (`type="number"`) spinner styling — unstyled, inconsistent across browsers
+
+Raised 2026-09-08, spotted during the manual browser verification pass for `frontend_spec_103`/
+`104` (button styling consistency and sticky action bars) — not caused by either spec (confirmed:
+no diff on any `type="number"` field on that branch), just noticed alongside it.
+
+Confirmed via grep across `frontend/src`: no CSS anywhere in this codebase targets a number input's
+spinner (`::-webkit-inner-spin-button`/`::-webkit-outer-spin-button`, or Firefox's
+`-moz-appearance`) — every numeric field renders 100% native, unstyled browser UI for its up/down
+control. Affected fields span `CustomSearchPanel.tsx`, `EditSeriesForm.tsx`, `NameStatsTable.tsx`,
+`RecommendationFiltersBox.tsx`, `SearchFilter.tsx`, `SeriesFormFields.tsx`, `SettingsPage.tsx`, and
+`UseMySeriesPanel.tsx` (e.g. Min IMDb/TMDB Rating, Year Min/Max, Skip Threshold Override).
+
+Because it's unstyled, the two browsers render it very differently: Chrome hides the spinner
+entirely until the field is hovered or focused, and even then its appearance can be influenced by
+the OS's own native-control theming (Windows dark/light mode for form controls) independent of this
+app's own light/dark theme toggle; Firefox always shows the spinner, with different sizing/coloring
+than Chrome's. Confirmed live in both browsers, both app themes — purely a native-UA rendering gap,
+not an app bug or theme-token issue.
+
+**Open questions for whoever scopes this**:
+1. Suppress the native spinner (`appearance: textfield` + the two `-webkit-*-spin-button`
+   pseudo-elements) and build a custom up/down control themed consistently in both light/dark —
+   real work, but the only way to get actual cross-browser visual parity.
+2. Alternatively, leave the native control but decide whether it's worth even lightly influencing
+   (there's limited styling surface for `-moz-appearance` spinners in Firefox), vs. accepting this
+   as a low-severity cosmetic gap not worth the custom-control effort.
+3. Whether every numeric field listed above needs this treatment uniformly, or only the ones where
+   the spinner's increment/decrement is actually a meaningful interaction (rating/year fields with a
+   real `step`) rather than a rarely-used affordance.
+
+**Status**: Spec candidate, not yet designed.

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect } from 'vitest'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
+import buttonStyles from '../styles/buttons.module.css'
 
 describe('FRONTEND-067-AC-01: closed by default', () => {
   it('renders the trigger button with no dialog present', () => {
@@ -294,5 +295,89 @@ describe('FRONTEND-076-AC-03: no chips when nothing is selected', () => {
       />,
     )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-103-AC-10/12/13: tier-2 trigger/clear migrate, tier-4 chips/toggles stay bespoke', () => {
+  it('the trigger button carries both its own class and btnSecondary', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Comedy']}
+        included={[]}
+        excluded={[]}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Genres' }).className).toContain(
+      buttonStyles.btnSecondary,
+    )
+  })
+
+  it('the Clear button carries both its own class and btnSecondary', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Comedy']}
+        included={['Comedy']}
+        excluded={[]}
+        onChange={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Genres/ }))
+    expect(
+      screen.getByTestId('test-genre-picker-clear-btn').className,
+    ).toContain(buttonStyles.btnSecondary)
+  })
+
+  it('the Done button carries both its own class and btnPrimary (ordinary tier button in the same file)', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Comedy']}
+        included={[]}
+        excluded={[]}
+        onChange={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Genres' }))
+    expect(screen.getByRole('button', { name: 'Done' }).className).toContain(
+      buttonStyles.btnPrimary,
+    )
+  })
+
+  it('an excluded genre chip does NOT carry a shared btn* class', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Comedy', 'Horror']}
+        included={[]}
+        excluded={['Horror']}
+        onChange={vi.fn()}
+      />,
+    )
+    const chip = screen.getByText('Horror').closest('li')
+    expect(chip).not.toBeNull()
+    expect(chip?.className).not.toContain(buttonStyles.btnDestructive)
+  })
+
+  it('an excluded genre toggle in the dialog does NOT carry a shared btn* class', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Horror']}
+        included={[]}
+        excluded={['Horror']}
+        onChange={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Genres/ }))
+    const toggle = screen.getByRole('button', { name: 'Horror: exclude' })
+    expect(toggle.className).not.toContain(buttonStyles.btnDestructive)
   })
 })

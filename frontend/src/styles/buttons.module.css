@@ -1,0 +1,54 @@
+/* FRONTEND-103: shared button-tier styles, the single source of truth for
+   color/border/hover across the app's three general-purpose button tiers.
+   These classes carry only tier-defining color/border/cursor/hover rules --
+   geometry (padding, font-size, border-radius, min-width/min-height) stays
+   on each consuming component's own class, since that already varies
+   deliberately by context. Consumed via plain template-literal class-list
+   composition, e.g. `${styles.addButton} ${btn.btnPrimary}` -- see
+   frontend_spec_103_button_styling_consistency.md. */
+
+.btnPrimary {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  cursor: pointer;
+}
+
+.btnPrimary:hover {
+  filter: brightness(0.9);
+}
+
+/* FRONTEND-103-AC-07: the one intentional visual change in this spec --
+   border-color is `--control-border` (WCAG-passing) instead of `--border`
+   (fails SC 1.4.11 for this transparent-fill tier). */
+.btnSecondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--control-border);
+  cursor: pointer;
+}
+
+.btnSecondary:hover {
+  background: var(--social-bg);
+}
+
+.btnDestructive {
+  background: #b91c1c;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.btnDestructive:hover {
+  background: #991b1b;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btnDestructive {
+    background: #dc2626;
+  }
+
+  .btnDestructive:hover {
+    background: #b91c1c;
+  }
+}

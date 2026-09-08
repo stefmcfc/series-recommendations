@@ -15,6 +15,7 @@ import {
 import type { ControlsState } from './RecommendationControls'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import styles from './RecommendationControls.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface CustomSearchPanelProps {
   readonly state: ControlsState
@@ -252,7 +253,7 @@ export function CustomSearchPanel({
             <div className={styles.dialogActions}>
               <button
                 type="button"
-                className={styles.doneButton}
+                className={`${styles.doneButton} ${btn.btnPrimary}`}
                 onClick={() => setKeywordsBrowseModalOpen(false)}
               >
                 Done

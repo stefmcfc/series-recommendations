@@ -30,6 +30,7 @@ import {
   type SkipThresholdUnit,
 } from '../utils/skipThresholdUnits'
 import styles from './SettingsPage.module.css'
+import btn from '../styles/buttons.module.css'
 
 // Within the 2-3s poll cadence called for by FRONTEND-023-AC-12 -- frequent
 // enough that a short bulk job's progress feels live, infrequent enough not
@@ -287,7 +288,7 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
           </div>
           <button
             type="button"
-            className={styles.refreshAllButton}
+            className={`${styles.refreshAllButton} ${btn.btnSecondary}`}
             data-testid="refresh-all-btn"
             disabled={refreshAllInProgress}
             onClick={handleRefreshAllClick}

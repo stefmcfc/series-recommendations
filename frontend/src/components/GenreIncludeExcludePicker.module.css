@@ -1,17 +1,17 @@
+/* FRONTEND-103-AC-10: background/border/hover come from the composed
+   btn.btnSecondary class. `color` stays here (rather than being removed
+   entirely) because this button's pre-existing color (`--text-h`) differs
+   from the tier's most-common value (`--text`) -- this spec makes no visual
+   change beyond AC-07's border-color fix, so the original color is
+   preserved. See the import-order comment in GenreIncludeExcludePicker.tsx
+   for how this wins the cascade over btnSecondary's own `color`. */
 .triggerButton {
   align-self: flex-start;
-  background: transparent;
   color: var(--text-h);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.375rem 0.625rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
-}
-
-.triggerButton:hover {
-  background: var(--social-bg);
 }
 
 .chips {
@@ -133,31 +133,15 @@
 }
 
 .clearButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.clearButton:hover {
-  background: var(--social-bg);
 }
 
 .doneButton {
-  background: var(--accent);
-  color: #000;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.doneButton:hover {
-  filter: brightness(0.9);
 }
 
 @media (prefers-color-scheme: dark) {

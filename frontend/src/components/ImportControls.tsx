@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { ImportJobStatus } from '../types/series'
 import styles from './ImportControls.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface ImportControlsProps {
   readonly onImported: () => void
@@ -114,7 +115,7 @@ export function ImportControls({ onImported }: ImportControlsProps) {
         <button
           type="button"
           data-testid="import-btn"
-          className={styles.button}
+          className={`${styles.button} ${btn.btnSecondary}`}
           disabled={!selectedFile || importInProgress}
           onClick={handleImportClick}
         >

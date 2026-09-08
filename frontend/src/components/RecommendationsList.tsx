@@ -10,6 +10,7 @@ import type {
 import { AddSeriesForm } from './AddSeriesForm'
 import { RecommendationCard } from './RecommendationCard'
 import styles from './RecommendationsList.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface PendingAdd {
   recommendation: Recommendation
@@ -211,7 +212,7 @@ export function RecommendationsList({
           <p>{error}</p>
           <button
             type="button"
-            className={styles.retryButton}
+            className={`${styles.retryButton} ${btn.btnDestructive}`}
             onClick={handleRetry}
           >
             Retry

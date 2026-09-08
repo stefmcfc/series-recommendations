@@ -4,22 +4,23 @@
   padding: 1.5rem;
 }
 
+/* FRONTEND-103-AC-10: color/border/hover come from the composed
+   btn.btnSecondary class -- EXCEPT `background`, which stays `var(--bg)`
+   here rather than btnSecondary's `transparent`. This button is
+   `position: sticky; top: 0;`, so it needs an opaque backdrop to hide page
+   content scrolling underneath it once stuck; `transparent` would defeat
+   that. SeriesDetail.tsx imports `btn` *before* its own module so this
+   file's later `background` declaration wins the same-specificity cascade
+   against btnSecondary's. */
 .backButton {
   background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  cursor: pointer;
   margin-bottom: 1.5rem;
   position: sticky;
   top: 0;
   z-index: 10;
-}
-
-.backButton:hover {
-  background: var(--social-bg);
 }
 
 .loading {
@@ -57,26 +58,8 @@
 }
 
 .retryButton {
-  background: #b91c1c;
-  color: #fff;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-
-.retryButton:hover {
-  background: #991b1b;
-}
-
-@media (prefers-color-scheme: dark) {
-  .retryButton {
-    background: #dc2626;
-  }
-
-  .retryButton:hover {
-    background: #b91c1c;
-  }
 }
 
 .headingRow {
@@ -344,36 +327,27 @@
   gap: 0.5rem;
 }
 
+.actionsSticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
 .editButton,
 .cancelDeleteButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.editButton:hover,
-.cancelDeleteButton:hover:not(:disabled) {
-  background: var(--social-bg);
 }
 
 .deleteButton,
 .confirmDeleteButton {
-  background: #b91c1c;
-  color: #fff;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.deleteButton:hover,
-.confirmDeleteButton:hover:not(:disabled) {
-  background: #991b1b;
 }
 
 .confirmDeleteButton:disabled,
@@ -388,33 +362,15 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .deleteButton,
-  .confirmDeleteButton {
-    background: #dc2626;
-  }
-
-  .deleteButton:hover,
-  .confirmDeleteButton:hover:not(:disabled) {
-    background: #b91c1c;
-  }
-
   .deleteError {
     color: #fca5a5;
   }
 }
 
 .refreshButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.refreshButton:hover:not(:disabled) {
-  background: var(--social-bg);
 }
 
 .refreshButton:disabled {
@@ -423,17 +379,9 @@
 }
 
 .recommendationsButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.recommendationsButton:hover:not(:disabled) {
-  background: var(--social-bg);
 }
 
 .recommendationsButton:disabled {
@@ -464,17 +412,9 @@
 }
 
 .dismissNewContentButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.dismissNewContentButton:hover:not(:disabled) {
-  background: var(--social-bg);
 }
 
 .dismissNewContentButton:disabled {
@@ -496,14 +436,11 @@
   background: var(--social-bg);
 }
 
-.rewatchToggleActive {
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-}
-
+/* FRONTEND-103-AC-09: color/border now come from the composed btn.btnPrimary
+   class. This hover rule is NOT a duplicate of btnPrimary's -- see the
+   identical comment in SeriesList.module.css for why it's needed to win the
+   cascade against .rewatchToggle:hover's `background: var(--social-bg)`. */
 .rewatchToggleActive:hover {
-  filter: brightness(0.9);
   background: var(--accent);
 }
 

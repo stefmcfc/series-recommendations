@@ -33,19 +33,18 @@
 }
 
 .cancelButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
 }
 
-.cancelButton:hover {
-  background: var(--social-bg);
-}
-
+/* FRONTEND-103-AC-11: composes btn.btnDestructive (see ConfirmDialog.tsx's
+   import-order comment) for tier identification, but keeps its own full
+   background/color/hover/dark-override declarations -- this button's
+   dark-mode palette (#7f1d1d/#fef2f2, not btnDestructive's #dc2626/#fff) and
+   filter-based hover (not a hardcoded darker hex) are a deliberate,
+   pre-existing deviation from the tier's most-common rule, and this spec
+   makes no visual-redesign changes. */
 .confirmButton {
   background: #b91c1c;
   color: #fff;

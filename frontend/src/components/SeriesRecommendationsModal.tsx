@@ -7,6 +7,7 @@ import type { Recommendation, Series } from '../types/series'
 import { AddSeriesForm } from './AddSeriesForm'
 import { RecommendationCard } from './RecommendationCard'
 import styles from './SeriesRecommendationsModal.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface PendingAdd {
   recommendation: Recommendation
@@ -207,7 +208,11 @@ export function SeriesRecommendationsModal({
         )}
 
         <div className={styles.dialogActions}>
-          <button type="button" className={styles.doneButton} onClick={onClose}>
+          <button
+            type="button"
+            className={`${styles.doneButton} ${btn.btnPrimary}`}
+            onClick={onClose}
+          >
             Done
           </button>
         </div>

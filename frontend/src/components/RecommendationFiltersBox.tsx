@@ -14,6 +14,7 @@ import {
 import type { ControlsState } from './RecommendationControls'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import styles from './RecommendationControls.module.css'
+import btn from '../styles/buttons.module.css'
 
 // FRONTEND-093-AC-02/03: counts every field this box reads/writes,
 // regardless of isCustomSearch -- several fields are hidden while
@@ -293,7 +294,7 @@ export function RecommendationFiltersBox({
           <div className={styles.filtersActions}>
             <button
               type="button"
-              className={styles.resetButton}
+              className={`${styles.resetButton} ${btn.btnSecondary}`}
               data-testid="reset-filters-btn"
               onClick={handleResetFilters}
             >
