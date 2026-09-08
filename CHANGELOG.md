@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.36.0] - 2026-09-08
+
 ### Added
 
 - Frontend: new `--control-border` CSS custom property (added to all four `index.css` theme blocks) fixes a WCAG 2.1 SC 1.4.11 non-text-contrast failure on outline/secondary buttons' border, which previously relied on `--border` — a token tuned for subtle structural dividers, not interactive-control boundaries (`frontend_spec_103` FRONTEND-103-AC-01/02/03/04/05).
