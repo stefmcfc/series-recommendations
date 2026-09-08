@@ -5,6 +5,7 @@ import { formatCountryNames } from '../utils/countryName'
 import { RecommendationDetailModal } from './RecommendationDetailModal'
 import styles from './RecommendationCard.module.css'
 import btn from '../styles/buttons.module.css'
+import surface from '../styles/surfaces.module.css'
 
 interface RecommendationCardProps {
   readonly recommendation: Recommendation
@@ -46,7 +47,10 @@ export function RecommendationCard({
   const r = recommendation
 
   return (
-    <li className={styles.card} data-testid="recommendation-card">
+    <li
+      className={`${styles.card} ${surface.card}`}
+      data-testid="recommendation-card"
+    >
       <div className={styles.thumbnail}>
         {r.posterUrl !== null && !posterError && (
           <img

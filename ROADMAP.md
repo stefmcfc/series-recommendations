@@ -132,6 +132,7 @@ corrected below.
 | Skip-threshold override gains Days/Weeks/Months units; `SettingsPage` sections become bordered/shadowed cards with icons ("modern but accessible" redesign) | — | `frontend_spec_101` | ✅ Done |
 | Button styling consistency & contrast fix (new `--control-border` token, shared `buttons.module.css` tiers) | — | `frontend_spec_103` | ✅ Done |
 | Sticky action bars (Recommendations modal footer gap fix + `SeriesDetail` bottom actions bar) | — | `frontend_spec_104` | ✅ Done |
+| My Series/Recommendations card styling + modernization (shared shadowed-card primitive, pill status tabs with icons, toolbar/Filters grouping) — extends `frontend_spec_101`'s Settings redesign beyond `/settings` | — | `frontend_spec_105` | ✅ Done |
 | Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054` | — | ✅ Done |
 
 ## Specced, coming soon
@@ -160,8 +161,8 @@ specs/pairs; `frontend_spec_102` should build after `frontend_spec_101` since bo
 appears here.
 
 **UI polish + backfill batch** (planned 2026-09-08, from a user pass over the live app) — three
-independent specs, no build-order dependency between them. `frontend_spec_103`/`104` are now fully
-delivered — see the "Delivered" table above — and no longer appear here.
+independent specs, no build-order dependency between them. `frontend_spec_103`/`104`/`105` are now
+fully delivered — see the "Delivered" table above — and no longer appear here.
 
 | Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |

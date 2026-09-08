@@ -12,6 +12,7 @@ import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type { Series } from '../types/series'
 import buttonStyles from '../styles/buttons.module.css'
+import surface from '../styles/surfaces.module.css'
 
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
@@ -1475,5 +1476,23 @@ describe('FRONTEND-103-AC-09/10/11/13: buttons compose shared tier classes', () 
     render(<SeriesList />)
     const retryButton = await screen.findByRole('button', { name: /retry/i })
     expect(retryButton.className).toContain(buttonStyles.btnDestructive)
+  })
+})
+
+describe('FRONTEND-105-AC-04: series rows compose the shared surface primitive', () => {
+  it('applies surface.card to each row', async () => {
+    mockGetAll.mockResolvedValue([makeSeries({ title: 'The Wire' })])
+    render(<SeriesList />)
+    const row = (await screen.findByText('The Wire')).closest('li')
+    expect(row?.className).toContain(surface.card)
+  })
+})
+
+describe('FRONTEND-105-AC-13: the toolbar composes the shared surface primitive', () => {
+  it('applies surface.card to the toolbar wrapper', () => {
+    render(<SeriesList />)
+    expect(
+      screen.getByLabelText(/sort by/i).closest(`.${surface.card}`),
+    ).toBeTruthy()
   })
 })

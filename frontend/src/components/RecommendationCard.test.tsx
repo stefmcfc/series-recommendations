@@ -3,6 +3,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationCard } from './RecommendationCard'
 import { seriesApi } from '../services/seriesApi'
 import type { Recommendation } from '../types/series'
+import surface from '../styles/surfaces.module.css'
 
 vi.mock('../services/seriesApi')
 const mockGetRecommendationKeywords = vi.mocked(
@@ -232,5 +233,19 @@ describe('FRONTEND-085-AC-06: RecommendationCard/RecommendationDetailModal show 
     expect(
       within(dialog).getByText(/United Kingdom, United States/),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-105-AC-07: recommendation cards compose the shared surface primitive', () => {
+  it('applies surface.card to the card wrapper', () => {
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({ title: 'Fargo' })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Fargo').closest(`.${surface.card}`)).toBeTruthy()
   })
 })

@@ -1,0 +1,12 @@
+/* FRONTEND-105-AC-01: shared "bordered, shadowed card" surface primitive --
+   border/radius/shadow/background only, never padding/margin/layout (see
+   this spec's Design Decisions: every consumer keeps its own geometry).
+   Composed via plain template-literal className joins (no clsx/classnames
+   dependency), mirroring buttons.module.css's tier classes
+   (frontend_spec_103). */
+.card {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  background: var(--bg);
+}

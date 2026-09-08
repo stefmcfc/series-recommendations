@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { SettingsSection } from './SettingsSection'
+import surface from '../styles/surfaces.module.css'
 
 describe('FRONTEND-097-AC-03: SettingsSection renders a title and its children', () => {
   it('renders the title as a heading and renders children', () => {
@@ -39,5 +40,15 @@ describe('FRONTEND-101-AC-05/08: optional icon is decorative', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'No Icon' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-105-AC-02: SettingsSection composes the shared surface primitive', () => {
+  it('applies surface.card alongside its own section class', () => {
+    render(<SettingsSection title="Example">content</SettingsSection>)
+    const section = screen
+      .getByRole('heading', { name: 'Example' })
+      .closest('section')
+    expect(section?.className).toContain(surface.card)
   })
 })

@@ -12,6 +12,7 @@ import { SeriesCompactGrid } from './SeriesCompactGrid'
 import { SeriesPosterGrid } from './SeriesPosterGrid'
 import styles from './SeriesList.module.css'
 import btn from '../styles/buttons.module.css'
+import surface from '../styles/surfaces.module.css'
 
 interface SeriesListProps {
   readonly onSeriesClick?: (id: string) => void
@@ -326,7 +327,7 @@ export function SeriesList({
             )}
           </div>
         </div>
-        <div className={styles.headerToolbar}>
+        <div className={`${styles.headerToolbar} ${surface.card}`}>
           <div className={styles.sortControl}>
             <label htmlFor="series-sort-by" className={styles.sortLabel}>
               Sort by
@@ -553,7 +554,7 @@ export function SeriesList({
               // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-cancels-delete-confirmation (frontend_spec_008.md FRONTEND-008-AC-06) relies on the keydown bubbling up from whichever Confirm/Cancel button currently has focus; the <li> itself is intentionally non-interactive (no role/tabIndex — see frontend_spec_008.md) and isn't a keyboard-interaction target on its own.
               <li
                 key={s.id}
-                className={styles.row}
+                className={`${styles.row} ${surface.card}`}
                 data-testid="series-row"
                 onKeyDown={(e) => handleRowKeyDown(e, s.id)}
               >

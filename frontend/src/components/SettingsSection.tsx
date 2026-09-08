@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import styles from './SettingsSection.module.css'
+import surface from '../styles/surfaces.module.css'
 
 interface SettingsSectionProps {
   readonly title: string
@@ -21,7 +22,7 @@ export function SettingsSection({
   children,
 }: SettingsSectionProps) {
   return (
-    <section className={styles.section}>
+    <section className={`${styles.section} ${surface.card}`}>
       <h3 className={styles.title}>
         {icon && (
           <span className={styles.icon} aria-hidden="true">

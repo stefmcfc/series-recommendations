@@ -8,6 +8,21 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.38.0] - 2026-09-08
+
+### Added
+
+- Frontend: new `src/styles/surfaces.module.css` — a shared "bordered, shadowed card" primitive (`.card`: border/radius/shadow/background only, no padding/layout), following the same shared-class-via-template-literal composition pattern `frontend_spec_103`'s `buttons.module.css` established (`frontend_spec_105` FRONTEND-105-AC-01).
+- Frontend: new `src/components/StatusTabIcons.tsx` — six hand-rolled decorative icons (All/Watching/Completed/Backlog/Dropped/Rewatch) for My Series' status-tab bar, matching `SettingsIcons.tsx`'s existing style (`frontend_spec_105` FRONTEND-105-AC-09).
+
+### Changed
+
+- Frontend: `SettingsSection` migrates onto the new shared `surfaces.module.css` primitive instead of its own separately-maintained copy of the same border/radius/shadow/background declarations — a pure visual no-op (`frontend_spec_105` FRONTEND-105-AC-02/03).
+- Frontend: My Series' list rows and compact-grid cards, plus Recommendation cards (everywhere `RecommendationCard` renders), now adopt the same bordered/shadowed card look already used on `/settings`, unifying border-radius to `0.75rem`; the dense poster-wall view is deliberately left unchanged (`frontend_spec_105` FRONTEND-105-AC-04/05/06/07).
+- Frontend: My Series' status-tab bar (All/Watching/Completed/Backlog/Dropped/Rewatch) is now a pill/segmented control with a decorative icon on each tab, scoped via a new `nav.navLinks` compound selector in `App.module.css` so the main header nav is unaffected (`frontend_spec_105` FRONTEND-105-AC-08/10/11).
+- Frontend: My Series' toolbar (Sort by / sort-direction button / view-mode toggle / Filters button) is now visually grouped as its own card, with padding sized for a control bar rather than reusing a list row's (`frontend_spec_105` FRONTEND-105-AC-13).
+- Frontend: the Filters sheet's three groups (Genres & Keywords / Ratings / Years) are now individually carded, replacing the previous top-border-only divider between them (`frontend_spec_105` FRONTEND-105-AC-15/16).
+
 ## [3.37.0] - 2026-09-08
 
 ### Fixed
