@@ -6,6 +6,7 @@ import type { CandidateDetail, Recommendation } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
 import { formatCountryNames } from '../utils/countryName'
 import styles from './RecommendationDetailModal.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface RecommendationDetailModalProps {
   readonly recommendation: Recommendation
@@ -189,7 +190,11 @@ export function RecommendationDetailModal({
         </div>
 
         <div className={styles.dialogActions}>
-          <button type="button" className={styles.doneButton} onClick={onClose}>
+          <button
+            type="button"
+            className={`${styles.doneButton} ${btn.btnPrimary}`}
+            onClick={onClose}
+          >
             Done
           </button>
         </div>

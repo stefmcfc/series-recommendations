@@ -7,6 +7,7 @@ import { KeywordPicker } from './KeywordPicker'
 import { StarRating } from './StarRating'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import styles from './SearchFilter.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface SearchFilterProps {
   // FRONTEND-071-AC-04/05: the sheet's open/closed state is now owned by
@@ -327,13 +328,16 @@ export function SearchFilter({
           <div className={styles.actions}>
             <button
               type="button"
-              className={styles.clearButton}
+              className={`${styles.clearButton} ${btn.btnSecondary}`}
               data-testid="clear-filters-btn"
               onClick={handleClear}
             >
               Clear Filters
             </button>
-            <button type="submit" className={styles.searchButton}>
+            <button
+              type="submit"
+              className={`${styles.searchButton} ${btn.btnPrimary}`}
+            >
               Search
             </button>
           </div>
@@ -372,7 +376,7 @@ export function SearchFilter({
             <div className={styles.dialogActions}>
               <button
                 type="button"
-                className={styles.doneButton}
+                className={`${styles.doneButton} ${btn.btnPrimary}`}
                 onClick={() => setBrowseModalOpen(false)}
               >
                 Done

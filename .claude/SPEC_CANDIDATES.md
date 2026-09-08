@@ -269,3 +269,36 @@ scope is unchanged.
    keep the current ad hoc "fix what's found" posture.
 3. Whether the no-focus-trap dialog pattern above should be revisited as part of this audit or
    treated as an accepted, already-decided tradeoff each dialog's own spec already signed off on.
+
+### Number input (`type="number"`) spinner styling — unstyled, inconsistent across browsers
+
+Raised 2026-09-08, spotted during the manual browser verification pass for `frontend_spec_103`/
+`104` (button styling consistency and sticky action bars) — not caused by either spec (confirmed:
+no diff on any `type="number"` field on that branch), just noticed alongside it.
+
+Confirmed via grep across `frontend/src`: no CSS anywhere in this codebase targets a number input's
+spinner (`::-webkit-inner-spin-button`/`::-webkit-outer-spin-button`, or Firefox's
+`-moz-appearance`) — every numeric field renders 100% native, unstyled browser UI for its up/down
+control. Affected fields span `CustomSearchPanel.tsx`, `EditSeriesForm.tsx`, `NameStatsTable.tsx`,
+`RecommendationFiltersBox.tsx`, `SearchFilter.tsx`, `SeriesFormFields.tsx`, `SettingsPage.tsx`, and
+`UseMySeriesPanel.tsx` (e.g. Min IMDb/TMDB Rating, Year Min/Max, Skip Threshold Override).
+
+Because it's unstyled, the two browsers render it very differently: Chrome hides the spinner
+entirely until the field is hovered or focused, and even then its appearance can be influenced by
+the OS's own native-control theming (Windows dark/light mode for form controls) independent of this
+app's own light/dark theme toggle; Firefox always shows the spinner, with different sizing/coloring
+than Chrome's. Confirmed live in both browsers, both app themes — purely a native-UA rendering gap,
+not an app bug or theme-token issue.
+
+**Open questions for whoever scopes this**:
+1. Suppress the native spinner (`appearance: textfield` + the two `-webkit-*-spin-button`
+   pseudo-elements) and build a custom up/down control themed consistently in both light/dark —
+   real work, but the only way to get actual cross-browser visual parity.
+2. Alternatively, leave the native control but decide whether it's worth even lightly influencing
+   (there's limited styling surface for `-moz-appearance` spinners in Firefox), vs. accepting this
+   as a low-severity cosmetic gap not worth the custom-control effort.
+3. Whether every numeric field listed above needs this treatment uniformly, or only the ones where
+   the spinner's increment/decrement is actually a meaningful interaction (rating/year fields with a
+   real `step`) rather than a rarely-used affordance.
+
+**Status**: Spec candidate, not yet designed.

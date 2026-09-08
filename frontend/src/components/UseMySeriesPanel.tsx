@@ -20,6 +20,7 @@ import type {
   SpecificSeriesSortDirection,
 } from './RecommendationControls'
 import styles from './RecommendationControls.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface UseMySeriesPanelProps {
   readonly state: ControlsState
@@ -531,7 +532,7 @@ export function UseMySeriesPanel({
             <div className={styles.dialogActions}>
               <button
                 type="button"
-                className={styles.doneButton}
+                className={`${styles.doneButton} ${btn.btnPrimary}`}
                 onClick={() => setSpecificSeriesBrowseModalOpen(false)}
               >
                 Done
@@ -579,7 +580,7 @@ export function UseMySeriesPanel({
             <div className={styles.dialogActions}>
               <button
                 type="button"
-                className={styles.doneButton}
+                className={`${styles.doneButton} ${btn.btnPrimary}`}
                 onClick={() => setSpecificSeriesKeywordsBrowseModalOpen(false)}
               >
                 Done

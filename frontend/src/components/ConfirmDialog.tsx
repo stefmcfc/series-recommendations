@@ -1,3 +1,10 @@
+// FRONTEND-103: `btn` is imported *before* this component's own module so
+// `.confirmButton`'s residual color/hover overrides (see the CSS file --
+// this button's pre-existing dark-mode palette and filter-based hover are
+// deliberately different from btnDestructive's, and this spec makes no
+// visual-redesign changes) win the same-specificity cascade against
+// btnDestructive's own declarations.
+import btn from '../styles/buttons.module.css'
 import styles from './ConfirmDialog.module.css'
 
 interface ConfirmDialogProps {
@@ -47,14 +54,14 @@ export function ConfirmDialog({
         <div className={styles.actions}>
           <button
             type="button"
-            className={styles.cancelButton}
+            className={`${styles.cancelButton} ${btn.btnSecondary}`}
             onClick={onCancel}
           >
             {cancelLabel}
           </button>
           <button
             type="button"
-            className={styles.confirmButton}
+            className={`${styles.confirmButton} ${btn.btnDestructive}`}
             onClick={onConfirm}
           >
             {confirmLabel}

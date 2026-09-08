@@ -2,6 +2,7 @@ import { SeriesStatus } from '../types/series'
 import type { Series } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import styles from './SeriesDetail.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface SeriesDetailActionsPanelProps {
   readonly confirmingDelete: boolean
@@ -49,7 +50,10 @@ export function SeriesDetailActionsPanel({
 }: SeriesDetailActionsPanelProps) {
   if (confirmingDelete) {
     return (
-      <div className={styles.actions}>
+      <div
+        className={`${styles.actions} ${styles.actionsSticky}`}
+        data-testid="sticky-actions-bar"
+      >
         {deleteError && (
           <span className={styles.deleteError} role="alert">
             {deleteError}
@@ -57,7 +61,7 @@ export function SeriesDetailActionsPanel({
         )}
         <button
           type="button"
-          className={styles.confirmDeleteButton}
+          className={`${styles.confirmDeleteButton} ${btn.btnDestructive}`}
           data-testid="confirm-delete-btn"
           disabled={deleting}
           onClick={onConfirmDelete}
@@ -66,7 +70,7 @@ export function SeriesDetailActionsPanel({
         </button>
         <button
           type="button"
-          className={styles.cancelDeleteButton}
+          className={`${styles.cancelDeleteButton} ${btn.btnSecondary}`}
           data-testid="cancel-delete-btn"
           disabled={deleting}
           onClick={onCancelDelete}
@@ -80,11 +84,49 @@ export function SeriesDetailActionsPanel({
   return (
     <div className={styles.actions}>
       <div className={styles.actionsGroup}>
-        <div className={styles.actionsRow}>
+        {/* FRONTEND-104-AC-02: rendered before actionsRow so the sticky bar
+            below is the last flow child of actionsGroup -- see Design
+            Decisions in frontend_spec_104_sticky_action_bars.md for why the
+            reverse order would visually collide with the stuck bar once
+            scrolled to the page's end. */}
+        {(series.lastRefreshedAt !== null ||
+          series.newContentDetectedAt !== null) && (
+          <div className={styles.actionsInfo} data-testid="actions-info">
+            {series.lastRefreshedAt !== null && (
+              <span className={styles.lastRefreshed}>
+                Last refreshed {formatRelativeTime(series.lastRefreshedAt)}
+              </span>
+            )}
+            {series.newContentDetectedAt !== null && (
+              <>
+                <span
+                  className={styles.newContentBadge}
+                  data-testid="new-content-badge"
+                >
+                  New content
+                </span>
+                <button
+                  type="button"
+                  className={`${styles.dismissNewContentButton} ${btn.btnSecondary}`}
+                  data-testid="dismiss-new-content-btn"
+                  disabled={acknowledging}
+                  onClick={onDismissNewContentClick}
+                >
+                  {acknowledging ? 'Dismissing...' : 'Dismiss'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        <div
+          className={`${styles.actionsRow} ${styles.actionsSticky}`}
+          data-testid="sticky-actions-bar"
+        >
           <div className={styles.actionsLeft} data-testid="actions-left">
             <button
               type="button"
-              className={styles.editButton}
+              className={`${styles.editButton} ${btn.btnSecondary}`}
               data-testid="edit-series-btn"
               onClick={onEditClick}
             >
@@ -92,7 +134,7 @@ export function SeriesDetailActionsPanel({
             </button>
             <button
               type="button"
-              className={styles.deleteButton}
+              className={`${styles.deleteButton} ${btn.btnDestructive}`}
               data-testid="delete-series-btn"
               onClick={onDeleteClick}
             >
@@ -100,7 +142,7 @@ export function SeriesDetailActionsPanel({
             </button>
             <button
               type="button"
-              className={styles.refreshButton}
+              className={`${styles.refreshButton} ${btn.btnSecondary}`}
               data-testid="refresh-series-btn"
               disabled={refreshing}
               onClick={onRefreshClick}
@@ -111,7 +153,7 @@ export function SeriesDetailActionsPanel({
           <div className={styles.actionsRight} data-testid="actions-right">
             <button
               type="button"
-              className={styles.recommendationsButton}
+              className={`${styles.recommendationsButton} ${btn.btnSecondary}`}
               data-testid="recommendations-btn"
               disabled={recommendationsDisabled}
               aria-label={
@@ -127,7 +169,9 @@ export function SeriesDetailActionsPanel({
               <button
                 type="button"
                 className={`${styles.rewatchToggle} ${
-                  series.flaggedForRewatch ? styles.rewatchToggleActive : ''
+                  series.flaggedForRewatch
+                    ? `${styles.rewatchToggleActive} ${btn.btnPrimary}`
+                    : ''
                 }`}
                 aria-label={
                   series.flaggedForRewatch
@@ -144,36 +188,6 @@ export function SeriesDetailActionsPanel({
             )}
           </div>
         </div>
-
-        {(series.lastRefreshedAt !== null ||
-          series.newContentDetectedAt !== null) && (
-          <div className={styles.actionsInfo}>
-            {series.lastRefreshedAt !== null && (
-              <span className={styles.lastRefreshed}>
-                Last refreshed {formatRelativeTime(series.lastRefreshedAt)}
-              </span>
-            )}
-            {series.newContentDetectedAt !== null && (
-              <>
-                <span
-                  className={styles.newContentBadge}
-                  data-testid="new-content-badge"
-                >
-                  New content
-                </span>
-                <button
-                  type="button"
-                  className={styles.dismissNewContentButton}
-                  data-testid="dismiss-new-content-btn"
-                  disabled={acknowledging}
-                  onClick={onDismissNewContentClick}
-                >
-                  {acknowledging ? 'Dismissing...' : 'Dismiss'}
-                </button>
-              </>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )

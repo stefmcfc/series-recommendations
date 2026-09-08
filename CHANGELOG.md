@@ -8,6 +8,20 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: new `--control-border` CSS custom property (added to all four `index.css` theme blocks) fixes a WCAG 2.1 SC 1.4.11 non-text-contrast failure on outline/secondary buttons' border, which previously relied on `--border` — a token tuned for subtle structural dividers, not interactive-control boundaries (`frontend_spec_103` FRONTEND-103-AC-01/02/03/04/05).
+- Frontend: new `src/styles/buttons.module.css` — this codebase's first shared, centralized button-tier stylesheet (`.btnPrimary`/`.btnSecondary`/`.btnDestructive`), the single source of truth for the three general-purpose button tiers' color/border/hover, consumed by every affected component via plain template-literal class-list composition (no new dependency) (`frontend_spec_103` FRONTEND-103-AC-06/07/08).
+
+### Changed
+
+- Frontend: every existing tier-1 (primary/accent-fill), tier-2 (secondary/outline), and tier-3 (destructive) button across the app now composes the new shared `buttons.module.css` classes instead of redeclaring its own copy of the same color rules; tier-2's border also now uses the new WCAG-passing `--control-border` token instead of `--border` — the only pixel-level visual change anywhere in this pass. Tier-4 (genre include/exclude chips/toggles) is deliberately left untouched, as it encodes inclusion/exclusion semantics rather than a generic tier (`frontend_spec_103` FRONTEND-103-AC-09/10/11/12/13).
+
+### Fixed
+
+- Frontend: `SeriesRecommendationsModal`'s sticky "Done" footer no longer leaves a visible gap of dimmed backdrop beneath it at the bottom of the viewport — its `.overlay`/`.dialog` now receive the same overlay-padding/dialog-margin correction already applied to `EditSeriesForm`/`AddSeriesForm` (`frontend_spec_104` FRONTEND-104-AC-01).
+- Frontend: `SeriesDetail`'s Edit/Delete/Refresh/Recommendations action row (or Confirm/Cancel during delete confirmation) is now a sticky bottom bar, mirroring the page's existing sticky-top "Back to series list" button, so it stays reachable without scrolling to the page's end; the adjacent last-refreshed/new-content informational text is deliberately excluded from the sticky area (`frontend_spec_104` FRONTEND-104-AC-02/03/04/05/06/07).
+
 ## [3.35.0] - 2026-09-07
 
 ### Added

@@ -13,18 +13,10 @@
 
 .applyButton {
   align-self: flex-end;
-  background: var(--accent);
-  color: #000;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1.25rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  cursor: pointer;
-}
-
-.applyButton:hover:not(:disabled) {
-  filter: brightness(0.9);
 }
 
 .applyButton:disabled {
@@ -336,17 +328,9 @@
 }
 
 .resetButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.resetButton:hover {
-  background: var(--social-bg);
 }
 
 /* FRONTEND-093-AC-01: plain decorative divider between the "Filter & sort
@@ -496,15 +480,7 @@
 }
 
 .doneButton {
-  background: var(--accent);
-  color: #000;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.doneButton:hover {
-  filter: brightness(0.9);
 }

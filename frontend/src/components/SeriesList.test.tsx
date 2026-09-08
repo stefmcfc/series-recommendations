@@ -11,6 +11,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type { Series } from '../types/series'
+import buttonStyles from '../styles/buttons.module.css'
 
 vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
@@ -1447,5 +1448,32 @@ describe('FRONTEND-079-AC-01: icon buttons carry a tooltip label', () => {
 
     const filtersButton = screen.getByRole('button', { name: 'Filters' })
     expect(filtersButton).toHaveAttribute('data-tooltip', 'Filters')
+  })
+})
+
+describe('FRONTEND-103-AC-09/10/11/13: buttons compose shared tier classes', () => {
+  it('the Add button carries both its own class and btnPrimary', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    const addButton = await screen.findByRole('button', {
+      name: /add new series/i,
+    })
+    expect(addButton.className).toContain(buttonStyles.btnPrimary)
+  })
+
+  it('the Filters trigger carries both its own class and btnSecondary', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<SeriesList />)
+    const filtersButton = await screen.findByRole('button', {
+      name: /filters/i,
+    })
+    expect(filtersButton.className).toContain(buttonStyles.btnSecondary)
+  })
+
+  it('the retry button (error state) carries both its own class and btnDestructive', async () => {
+    mockGetAll.mockRejectedValue(new ApiError(500, 'boom'))
+    render(<SeriesList />)
+    const retryButton = await screen.findByRole('button', { name: /retry/i })
+    expect(retryButton.className).toContain(buttonStyles.btnDestructive)
   })
 })

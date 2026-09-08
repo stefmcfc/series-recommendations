@@ -166,17 +166,9 @@
 }
 
 .doneButton {
-  background: var(--accent);
-  color: #000;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.doneButton:hover {
-  filter: brightness(0.9);
 }
 
 .keywordError {
@@ -204,29 +196,13 @@
 }
 
 .clearButton {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.clearButton:hover {
-  background: var(--social-bg);
 }
 
 .searchButton {
-  background: var(--accent);
-  color: #000;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.searchButton:hover {
-  filter: brightness(0.9);
 }

@@ -11,6 +11,7 @@ import { StarRating } from './StarRating'
 import { SeriesCompactGrid } from './SeriesCompactGrid'
 import { SeriesPosterGrid } from './SeriesPosterGrid'
 import styles from './SeriesList.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface SeriesListProps {
   readonly onSeriesClick?: (id: string) => void
@@ -345,7 +346,7 @@ export function SeriesList({
             </select>
             <button
               type="button"
-              className={styles.sortDirectionButton}
+              className={`${styles.sortDirectionButton} ${btn.btnSecondary}`}
               aria-label={
                 sortDirection === 'asc' ? 'Sort ascending' : 'Sort descending'
               }
@@ -360,7 +361,9 @@ export function SeriesList({
           <div className={styles.viewModeToggle}>
             <button
               type="button"
-              className={styles.viewModeButton}
+              className={`${styles.viewModeButton} ${
+                viewMode === 'expanded' ? btn.btnPrimary : btn.btnSecondary
+              }`}
               data-testid="view-mode-expanded-btn"
               aria-label="Expanded view"
               data-tooltip="Expanded view"
@@ -384,7 +387,9 @@ export function SeriesList({
             </button>
             <button
               type="button"
-              className={styles.viewModeButton}
+              className={`${styles.viewModeButton} ${
+                viewMode === 'compact' ? btn.btnPrimary : btn.btnSecondary
+              }`}
               data-testid="view-mode-compact-btn"
               aria-label="Compact view"
               data-tooltip="Compact view"
@@ -408,7 +413,9 @@ export function SeriesList({
             </button>
             <button
               type="button"
-              className={styles.viewModeButton}
+              className={`${styles.viewModeButton} ${
+                viewMode === 'poster' ? btn.btnPrimary : btn.btnSecondary
+              }`}
               data-testid="view-mode-poster-btn"
               aria-label="Poster-only view"
               data-tooltip="Poster-only view"
@@ -433,7 +440,7 @@ export function SeriesList({
           <div className={styles.filtersTrigger}>
             <button
               type="button"
-              className={styles.filtersButton}
+              className={`${styles.filtersButton} ${btn.btnSecondary}`}
               data-testid="open-filters-btn"
               aria-label={hasActiveFilters ? 'Filters (active)' : 'Filters'}
               data-tooltip={hasActiveFilters ? 'Filters (active)' : 'Filters'}
@@ -464,7 +471,7 @@ export function SeriesList({
           <div className={styles.headerActions}>
             <button
               type="button"
-              className={styles.addButton}
+              className={`${styles.addButton} ${btn.btnPrimary}`}
               data-testid="add-series-btn"
               aria-label="Add new series"
               onClick={() => onAddClick?.()}
@@ -509,7 +516,7 @@ export function SeriesList({
           <p>{error}</p>
           <button
             type="button"
-            className={styles.retryButton}
+            className={`${styles.retryButton} ${btn.btnDestructive}`}
             onClick={handleRetry}
           >
             Retry
@@ -527,7 +534,7 @@ export function SeriesList({
           {!criteriaActive && (
             <button
               type="button"
-              className={styles.addButton}
+              className={`${styles.addButton} ${btn.btnPrimary}`}
               data-testid="add-series-btn"
               aria-label="Add new series"
               onClick={() => onAddClick?.()}
@@ -597,7 +604,7 @@ export function SeriesList({
                       )}
                       <button
                         type="button"
-                        className={styles.confirmDeleteButton}
+                        className={`${styles.confirmDeleteButton} ${btn.btnDestructive}`}
                         data-testid="confirm-delete-btn"
                         disabled={deleting}
                         onClick={(e) => handleConfirmDelete(e, s.id)}
@@ -606,7 +613,7 @@ export function SeriesList({
                       </button>
                       <button
                         type="button"
-                        className={styles.cancelDeleteButton}
+                        className={`${styles.cancelDeleteButton} ${btn.btnSecondary}`}
                         data-testid="cancel-delete-btn"
                         disabled={deleting}
                         onClick={handleCancelDelete}
@@ -618,7 +625,7 @@ export function SeriesList({
                     <div className={styles.rowActions}>
                       <button
                         type="button"
-                        className={styles.editButton}
+                        className={`${styles.editButton} ${btn.btnSecondary}`}
                         data-testid="edit-series-btn"
                         aria-label={`Edit ${s.title}`}
                         onClick={(e) => handleEditClick(e, s)}
@@ -627,7 +634,7 @@ export function SeriesList({
                       </button>
                       <button
                         type="button"
-                        className={styles.deleteButton}
+                        className={`${styles.deleteButton} ${btn.btnDestructive}`}
                         data-testid="delete-series-btn"
                         aria-label={`Delete ${s.title}`}
                         onClick={(e) => handleDeleteClick(e, s.id)}
@@ -669,7 +676,9 @@ export function SeriesList({
                       <button
                         type="button"
                         className={`${styles.rewatchToggle} ${
-                          s.flaggedForRewatch ? styles.rewatchToggleActive : ''
+                          s.flaggedForRewatch
+                            ? `${styles.rewatchToggleActive} ${btn.btnPrimary}`
+                            : ''
                         }`}
                         aria-label={
                           s.flaggedForRewatch

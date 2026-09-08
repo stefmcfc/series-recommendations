@@ -4,7 +4,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 0;
   background: rgba(0, 0, 0, 0.5);
   overflow-y: auto;
   z-index: 100;
@@ -13,6 +13,7 @@
 .dialog {
   width: 100%;
   max-width: 40rem;
+  margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -46,17 +47,9 @@
 }
 
 .doneButton {
-  background: var(--accent);
-  color: #000;
-  border: none;
   border-radius: 0.375rem;
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
-  cursor: pointer;
-}
-
-.doneButton:hover {
-  filter: brightness(0.9);
 }
 
 .list {

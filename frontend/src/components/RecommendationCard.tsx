@@ -4,6 +4,7 @@ import { StreamingProviders } from './StreamingProviders'
 import { formatCountryNames } from '../utils/countryName'
 import { RecommendationDetailModal } from './RecommendationDetailModal'
 import styles from './RecommendationCard.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface RecommendationCardProps {
   readonly recommendation: Recommendation
@@ -88,21 +89,21 @@ export function RecommendationCard({
         <div className={styles.cardActions}>
           <button
             type="button"
-            className={styles.markWatchedButton}
+            className={`${styles.markWatchedButton} ${btn.btnPrimary}`}
             onClick={() => onMarkWatched(r)}
           >
             Mark as Watched
           </button>
           <button
             type="button"
-            className={styles.addToListButton}
+            className={`${styles.addToListButton} ${btn.btnSecondary}`}
             onClick={() => onAddToList(r)}
           >
             Add to List
           </button>
           <button
             type="button"
-            className={styles.ignoreButton}
+            className={`${styles.ignoreButton} ${btn.btnSecondary}`}
             data-testid="ignore-btn"
             disabled={ignoring}
             onClick={() => onIgnore(r)}
@@ -111,7 +112,7 @@ export function RecommendationCard({
           </button>
           <button
             type="button"
-            className={styles.viewDetailsButton}
+            className={`${styles.viewDetailsButton} ${btn.btnSecondary}`}
             data-testid="view-details-btn"
             onClick={() => setDetailModalOpen(true)}
           >

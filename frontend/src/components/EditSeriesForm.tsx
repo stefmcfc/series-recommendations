@@ -23,6 +23,7 @@ import {
   validateRottenTomatoesPopcornmeter,
 } from '../utils/seriesFormValidation'
 import styles from './EditSeriesForm.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface EditSeriesFormProps {
   readonly series: Series
@@ -628,7 +629,7 @@ export function EditSeriesForm({
 
             <button
               type="button"
-              className={styles.cancelButton}
+              className={`${styles.cancelButton} ${btn.btnSecondary}`}
               onClick={handleCancelClick}
               disabled={submitting}
             >
@@ -636,7 +637,7 @@ export function EditSeriesForm({
             </button>
             <button
               type="submit"
-              className={styles.saveButton}
+              className={`${styles.saveButton} ${btn.btnPrimary}`}
               disabled={submitting}
             >
               {submitting ? 'Saving...' : 'Save'}

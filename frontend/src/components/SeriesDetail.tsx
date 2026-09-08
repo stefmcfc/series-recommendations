@@ -10,6 +10,11 @@ import { submitDelete } from '../utils/deleteSeries'
 import { SeriesDetailFields } from './SeriesDetailFields'
 import { SeriesDetailActionsPanel } from './SeriesDetailActionsPanel'
 import { SeriesRecommendationsModal } from './SeriesRecommendationsModal'
+// FRONTEND-103: `btn` is imported *before* this component's own module so
+// `.backButton`'s residual `background: var(--bg)` override (see the CSS
+// file -- needed for its sticky-top opaque backdrop) wins the
+// same-specificity cascade against `.btnSecondary`'s `background`.
+import btn from '../styles/buttons.module.css'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailProps {
@@ -281,7 +286,7 @@ export function SeriesDetail({
   const backButton = (
     <button
       type="button"
-      className={styles.backButton}
+      className={`${styles.backButton} ${btn.btnSecondary}`}
       data-testid="back-btn"
       onClick={onBack}
     >
@@ -312,7 +317,7 @@ export function SeriesDetail({
           <p>{error}</p>
           <button
             type="button"
-            className={styles.retryButton}
+            className={`${styles.retryButton} ${btn.btnDestructive}`}
             onClick={handleRetry}
           >
             Retry

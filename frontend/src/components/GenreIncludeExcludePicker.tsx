@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+// FRONTEND-103: `btn` is imported *before* this component's own module so
+// `.triggerButton`'s residual `color: var(--text-h)` override (see the CSS
+// file -- this button's pre-existing color differs from the tier's
+// most-common `var(--text)`, and this spec makes no visual-redesign changes)
+// wins the same-specificity cascade against `.btnSecondary`'s `color`.
+import btn from '../styles/buttons.module.css'
 import styles from './GenreIncludeExcludePicker.module.css'
 
 export type GenreIncludeExcludeMode = 'includeExclude' | 'excludeOnly'
@@ -108,7 +114,7 @@ export function GenreIncludeExcludePicker({
     <>
       <button
         type="button"
-        className={styles.triggerButton}
+        className={`${styles.triggerButton} ${btn.btnSecondary}`}
         onClick={() => setOpen(true)}
       >
         {buildTriggerSummary(label, included, excluded)}
@@ -192,14 +198,14 @@ export function GenreIncludeExcludePicker({
               <button
                 type="button"
                 data-testid={`${idPrefix}-genre-picker-clear-btn`}
-                className={styles.clearButton}
+                className={`${styles.clearButton} ${btn.btnSecondary}`}
                 onClick={handleClear}
               >
                 Clear
               </button>
               <button
                 type="button"
-                className={styles.doneButton}
+                className={`${styles.doneButton} ${btn.btnPrimary}`}
                 onClick={handleDone}
               >
                 Done

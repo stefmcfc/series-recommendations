@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { SearchCriteria } from '../types/series'
 import styles from './ExportControls.module.css'
+import btn from '../styles/buttons.module.css'
 
 interface ExportControlsProps {
   readonly criteria?: SearchCriteria
@@ -56,7 +57,7 @@ export function ExportControls({ criteria }: ExportControlsProps) {
         <button
           type="button"
           data-testid="export-json-btn"
-          className={styles.button}
+          className={`${styles.button} ${btn.btnSecondary}`}
           disabled={disabled}
           onClick={() => handleExport('json')}
         >
@@ -65,7 +66,7 @@ export function ExportControls({ criteria }: ExportControlsProps) {
         <button
           type="button"
           data-testid="export-csv-btn"
-          className={styles.button}
+          className={`${styles.button} ${btn.btnSecondary}`}
           disabled={disabled}
           onClick={() => handleExport('csv')}
         >

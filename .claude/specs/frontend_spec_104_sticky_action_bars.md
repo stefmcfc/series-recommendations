@@ -184,10 +184,10 @@ describe('FRONTEND-104-AC-05: actionsInfo is never sticky', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-104-AC-01: No visible gap beneath the sticky "Done" footer (`SeriesRecommendationsModal`)
-- [ ] FRONTEND-104-AC-02: `actionsInfo` precedes `actionsRow` in document order
-- [ ] FRONTEND-104-AC-03: `actionsRow` carries the sticky class in the normal render state
-- [ ] FRONTEND-104-AC-04: The outer `.actions` wrapper carries the sticky class during delete confirmation
-- [ ] FRONTEND-104-AC-05: `actionsInfo` never carries the sticky class
-- [ ] FRONTEND-104-AC-06: The normal-state actions row stays visible while scrolling
-- [ ] FRONTEND-104-AC-07: The delete-confirmation actions row stays visible while scrolling
+- [x] FRONTEND-104-AC-01: No visible gap beneath the sticky "Done" footer (`SeriesRecommendationsModal`) [MANUAL]
+- [x] FRONTEND-104-AC-02: `actionsInfo` precedes `actionsRow` in document order
+- [x] FRONTEND-104-AC-03: `actionsRow` carries the sticky class in the normal render state
+- [x] FRONTEND-104-AC-04: The outer `.actions` wrapper carries the sticky class during delete confirmation
+- [x] FRONTEND-104-AC-05: `actionsInfo` never carries the sticky class
+- [x] FRONTEND-104-AC-06: The normal-state actions row stays visible while scrolling [MANUAL]
+- [x] FRONTEND-104-AC-07: The delete-confirmation actions row stays visible while scrolling [MANUAL]

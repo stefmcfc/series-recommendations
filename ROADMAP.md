@@ -130,6 +130,8 @@ corrected below.
 | Drag-and-drop + keyboard-accessible reordering of `KeywordPicker`'s selected chips (opt-in `reorderable` prop), adopted by the Country/Language Favourites editors so a favourite's pinned position is user-controlled, not just its membership | — | `frontend_spec_100` | ✅ Done |
 | Light/dark/match-system mode toggle on `/settings`, consuming `useLocalStorage`; `App.tsx` owns theme state and applies it app-wide via a `data-theme` attribute on `<html>` | — | `frontend_spec_099` | ✅ Done |
 | Skip-threshold override gains Days/Weeks/Months units; `SettingsPage` sections become bordered/shadowed cards with icons ("modern but accessible" redesign) | — | `frontend_spec_101` | ✅ Done |
+| Button styling consistency & contrast fix (new `--control-border` token, shared `buttons.module.css` tiers) | — | `frontend_spec_103` | ✅ Done |
+| Sticky action bars (Recommendations modal footer gap fix + `SeriesDetail` bottom actions bar) | — | `frontend_spec_104` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -157,13 +159,12 @@ specs/pairs; `frontend_spec_102` should build after `frontend_spec_101` since bo
 appears here.
 
 **UI polish + backfill batch** (planned 2026-09-08, from a user pass over the live app) — three
-independent specs, no build-order dependency between them.
+independent specs, no build-order dependency between them. `frontend_spec_103`/`104` are now fully
+delivered — see the "Delivered" table above — and no longer appear here.
 
 | Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053`                    | `frontend_spec_102`                            | ⬜ Not started                                                                                    |
-| Button styling consistency & contrast fix (new `--control-border` token, shared `buttons.module.css` tiers) | —                                     | `frontend_spec_103`                            | ⬜ Not started                                                                                    |
-| Sticky action bars (Recommendations modal footer gap fix + `SeriesDetail` bottom actions bar) | —                                     | `frontend_spec_104`                            | ⬜ Not started                                                                                    |
 | Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054`                    | —                                               | ⬜ Not started                                                                                    |
 
 ## Internal / maintenance specs (not user-facing features)

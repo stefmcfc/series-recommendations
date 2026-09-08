@@ -389,18 +389,18 @@ describe('FRONTEND-103-AC-12: tier-4 include/exclude chips stay bespoke', () => 
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-103-AC-01: `--control-border: #86808f` defined in `:root` (light default)
-- [ ] FRONTEND-103-AC-02: `--control-border: #6b7280` in dark-mode blocks, `#86808f` in the light-override block
-- [ ] FRONTEND-103-AC-03: light `--control-border` vs `--bg` contrast ≥ 3:1 (≈3.82:1)
-- [ ] FRONTEND-103-AC-04: dark `--control-border` vs `--bg` contrast ≥ 3:1 (≈3.70:1)
-- [ ] FRONTEND-103-AC-05: `--border` values unchanged (`#e5e4e7` / `#2e303a`)
-- [ ] FRONTEND-103-AC-06: `buttons.module.css` exports `.btnPrimary`/`.btnSecondary`/`.btnDestructive` matching pre-migration colors verbatim
-- [ ] FRONTEND-103-AC-07: `.btnSecondary`'s `border-color` is `var(--control-border)`
-- [ ] FRONTEND-103-AC-08: consuming components use the existing template-literal join pattern, no new dependency
-- [ ] FRONTEND-103-AC-09: every tier-1 button migrated to `.btnPrimary`
-- [ ] FRONTEND-103-AC-10: every tier-2 button migrated to `.btnSecondary`
-- [ ] FRONTEND-103-AC-11: every tier-3 button migrated to `.btnDestructive`
-- [ ] FRONTEND-103-AC-12: tier-4 genre include/exclude styling stays bespoke and unmigrated
-- [ ] FRONTEND-103-AC-13: migrated elements carry both their own class and the shared tier class
-- [ ] FRONTEND-103-AC-14: automated contrast-ratio regression test against `index.css`'s literal values
-- [ ] FRONTEND-103-AC-15: manual real-browser visual check in both themes (border visibility, no tier-1/3 change, no layout shift)
+- [x] FRONTEND-103-AC-01: `--control-border: #86808f` defined in `:root` (light default)
+- [x] FRONTEND-103-AC-02: `--control-border: #6b7280` in dark-mode blocks, `#86808f` in the light-override block
+- [x] FRONTEND-103-AC-03: light `--control-border` vs `--bg` contrast ≥ 3:1 (≈3.82:1)
+- [x] FRONTEND-103-AC-04: dark `--control-border` vs `--bg` contrast ≥ 3:1 (≈3.70:1)
+- [x] FRONTEND-103-AC-05: `--border` values unchanged (`#e5e4e7` / `#2e303a`)
+- [x] FRONTEND-103-AC-06: `buttons.module.css` exports `.btnPrimary`/`.btnSecondary`/`.btnDestructive` matching pre-migration colors verbatim
+- [x] FRONTEND-103-AC-07: `.btnSecondary`'s `border-color` is `var(--control-border)`
+- [x] FRONTEND-103-AC-08: consuming components use the existing template-literal join pattern, no new dependency
+- [x] FRONTEND-103-AC-09: every tier-1 button migrated to `.btnPrimary`
+- [x] FRONTEND-103-AC-10: every tier-2 button migrated to `.btnSecondary`
+- [x] FRONTEND-103-AC-11: every tier-3 button migrated to `.btnDestructive`
+- [x] FRONTEND-103-AC-12: tier-4 genre include/exclude styling stays bespoke and unmigrated
+- [x] FRONTEND-103-AC-13: migrated elements carry both their own class and the shared tier class
+- [x] FRONTEND-103-AC-14: automated contrast-ratio regression test against `index.css`'s literal values
+- [x] FRONTEND-103-AC-15: manual real-browser visual check in both themes (border visibility, no tier-1/3 change, no layout shift)
