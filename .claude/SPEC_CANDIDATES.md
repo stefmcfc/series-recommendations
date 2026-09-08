@@ -135,6 +135,11 @@ implemented as one.
 10. Restrict/expand how many raw candidates a single source can contribute — either an explicit
     app-side cap, or requesting additional TMDB pages (pagination) for heavily-weighted sources,
     rather than being silently bound by TMDB's own first-page size.
+    **Update (2026-09-08)**: `series_spec_054_recommendation_discover_backfill_pagination.md`
+    (specced, not yet built) adds this same kind of TMDB-page backfill, but only for the three
+    direct-TMDB-discover sourcing modes (trending/topRated/Custom Search) — "Use My Series"
+    (`sourceFromPool`, the mode this item #10 is actually about) is explicitly untouched by that
+    spec, deferred here for the reasons already stated above. This item stays fully open.
 11. **Saved filter/algorithm profiles.** Confirmed during this discussion: the user wants some way
     to save a chosen combination of weights/filters/source settings rather than re-entering it
     every session. Once there are this many tunable knobs, that stops being optional. This app has
@@ -210,6 +215,13 @@ Individual specs have addressed specific gaps as found (`frontend_spec_008`'s ne
 controls fix; this session's icon-button `aria-label`/contrast/target-size additions to
 `frontend_spec_054`) — this candidate is a deliberate, holistic pass rather than more one-off fixes
 as they're individually noticed.
+
+**Update (2026-09-08)**: `frontend_spec_103_button_styling_consistency.md` (specced, not yet built)
+addresses one specific facet of the "color contrast across every component" bullet below — the
+outline/secondary button tier's border failing WCAG 1.4.11's 3:1 non-text-contrast minimum in both
+themes — with a new `--control-border` token. It does not touch any other component's contrast, and
+doesn't cover keyboard nav, screen readers, or focus management below; this candidate's remaining
+scope is unchanged.
 
 **Confirmed scope this candidate would need to cover, not yet audited systematically**:
 - Keyboard-only navigation through complete multi-step flows (not just individual components) —
