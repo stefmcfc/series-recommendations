@@ -48,9 +48,26 @@ public class RecommendationService {
     private final RecommendationRankingService rankingService;
 
     /**
-     * Upper bound on the combined raw candidate pool before {@code external_ids} is resolved
-     * for each one (SERIES-007-AC-02, superseding the previously hardcoded {@code
-     * TMDB_MAX_CANDIDATES = 50}).
+     * Upper bound on the candidate pool {@code external_ids} gets resolved for / that feeds
+     * ranking (SERIES-007-AC-02, superseding the previously hardcoded {@code
+     * TMDB_MAX_CANDIDATES = 50}) -- applied at a different pipeline stage depending on {@code
+     * sourceMode}, per the post-{@code series_spec_054} fix below.
+     *
+     * <p>For {@code sourceFromPool} ("Use My Series"): still applied to the *raw*, pre-dedup
+     * candidate list, exactly as originally designed -- this mode's raw pool (aggregated across
+     * many source series) is never independently resolved/filtered before reaching {@code
+     * doRecommend}, so capping it before {@code dedupeAndExclude} genuinely bounds {@code
+     * external_ids} call volume, and existing tests assert on that (0 calls beyond the cap).
+     *
+     * <p>For {@code sourceTrending}/{@code sourceTopRated}/{@code sourceByGenreOrKeyword}:
+     * applied *after* {@link RecommendationOutputFilterService#applyOutputFilters} instead.
+     * Capping their raw list pre-dedup was a silent correctness bug once {@code
+     * series_spec_054}'s backfill pagination could source up to {@code maxDiscoverPages * ~20}
+     * raw candidates: truncating in TMDB's own page order, before dedup/filtering ever ran,
+     * discarded whichever candidates happened to land past position 50 -- including ones that
+     * would have passed every filter -- for no real {@code external_ids}-call savings (these
+     * three modes' own backfill loop already dedupes/filters the full accumulated pool on every
+     * page as its stopping check, so the calls happen regardless of where this cap sits).
      */
     private final int maxCandidates;
 
@@ -112,9 +129,9 @@ public class RecommendationService {
 
         List<RawCandidate> raw;
         if (trendingMode) {
-            raw = sourcingService.sourceTrending(criteria);
+            raw = sourcingService.sourceTrending(criteria, limit);
         } else if (topRatedMode) {
-            raw = sourcingService.sourceTopRated(criteria);
+            raw = sourcingService.sourceTopRated(criteria, limit);
         } else if (useMySeriesMode) {
             raw = sourcingService.sourceFromPool(criteria, limit);
         } else {
@@ -123,15 +140,28 @@ public class RecommendationService {
             // "Use My Series" -- including a request with nothing set at all, which TmdbClient
             // .discover() already turns into an unfiltered discover/tv call (no with_genres/
             // with_keywords params) rather than silently falling back to pool-based sourcing.
-            raw = sourcingService.sourceByGenreOrKeyword(criteria);
+            raw = sourcingService.sourceByGenreOrKeyword(criteria, limit);
         }
 
-        List<RawCandidate> capped = raw.size() > maxCandidates
-            ? raw.subList(0, maxCandidates)
-            : raw;
-
-        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
-        List<DedupedCandidate> filtered = outputFilterService.applyOutputFilters(deduped, criteria);
+        List<DedupedCandidate> filtered;
+        if (useMySeriesMode) {
+            // See maxCandidates' javadoc: this mode's raw pool is never independently
+            // resolved/filtered before here, so the cap genuinely bounds external_ids call
+            // volume applied pre-dedup, as originally designed.
+            List<RawCandidate> capped = raw.size() > maxCandidates ? raw.subList(0, maxCandidates) : raw;
+            List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
+            filtered = outputFilterService.applyOutputFilters(deduped, criteria);
+        } else {
+            // See maxCandidates' javadoc: these three modes' own backfill loop already
+            // dedupes/filters the full raw pool as its stopping check, so a pre-dedup cap here
+            // saves nothing and only risks discarding candidates that would have passed
+            // filtering -- applied post-filter instead.
+            List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(raw);
+            List<DedupedCandidate> outputFiltered = outputFilterService.applyOutputFilters(deduped, criteria);
+            filtered = outputFiltered.size() > maxCandidates
+                ? outputFiltered.subList(0, maxCandidates)
+                : outputFiltered;
+        }
 
         if (!useMySeriesMode) {
             // SERIES-022-AC-08 (trending), generalized by SERIES-025-AC-07 to topRated and

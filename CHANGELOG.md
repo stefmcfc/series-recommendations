@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.37.0] - 2026-09-08
+
+### Fixed
+
+- Backend: `sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword` now backfill up to `app.tmdb.max-discover-pages` (default 6) additional TMDB pages when a single page's results still leave a recommendations request short of the requested `limit` after dedup/output-filtering, instead of silently returning fewer results than asked for from TMDB's own single ~20-result first page (`series_spec_054` SERIES-054-AC-01..15).
+- Backend: fixed a bug in the above where `maxCandidates` (default 50) was still capping the *raw*, pre-filter candidate list in TMDB's page order for those same three modes, silently discarding backfilled pages' worth of candidates before they were ever checked against dedup/output filters — undermining backfill pagination's own purpose once a multi-page pool exceeded 50 raw candidates. The cap now applies after filtering instead (`sourceFromPool`/"Use My Series" is unaffected, keeping its original pre-dedup cap) (`series_spec_054` Correction, 2026-09-08).
+
 ## [3.36.0] - 2026-09-08
 
 ### Added

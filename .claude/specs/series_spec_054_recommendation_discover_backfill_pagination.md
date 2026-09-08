@@ -1,6 +1,6 @@
 # Spec 054: Recommendation Discover-Mode Backfill Pagination
 
-**Status**: Not started
+**Status**: Delivered
 **Priority**: P2 (correctness fix to core recommendation output quality — today's single-page
 sourcing can silently return far fewer results than requested, not a new user-facing feature)
 **Depends on**: `series_spec_007_recommendation_sourcing.md` (`RecommendationSourcingService`,
@@ -207,6 +207,39 @@ shaped into the response.
   final `.limit(limit)` logic shall be otherwise unchanged — the (possibly multi-page-sourced) raw
   candidate list Requirement 2 returns flows through the exact same downstream code as before this
   spec.
+
+**Correction (2026-09-08)**: "otherwise unchanged" above turned out to be the bug. `maxCandidates`
+(default 50) was applied to the *raw* candidate list, before dedup/output-filtering, in TMDB's own
+page order — harmless pre-spec, when raw was always ≤1 page (~20, well under 50), but silently
+wrong once Requirement 2's backfill could source up to `maxDiscoverPages * ~20` raw candidates
+(120 at the default cap of 3, more at a higher override). Confirmed live via a manual trace
+(`max-discover-pages: 6`, Discover → Highest Rated, several output filters active): 6 pages
+sourced 120 raw candidates, of which the full pool would yield 11 survivors after dedup/filtering
+— but `doRecommend` truncated to `raw.subList(0, 50)` *before* filtering, keeping only pages 1–2.5
+in TMDB's return order and discarding the rest un-checked, so only 5 of the 11 real survivors ever
+reached the response. This wasn't even saving TMDB call volume: the backfill loop's own stopping
+check (`countAfterDedupAndFilter`, Requirement 2) already dedupes/filters the *entire* accumulated
+pool on every page just to decide whether to keep going, so `external_ids` had already been
+resolved for every raw candidate regardless of where a later cap sat.
+
+**Fix**: `maxCandidates` now applies *after* `applyOutputFilters` instead of before `dedup`, but
+only for the three modes this spec's backfill loop covers (`sourceTrending`/`sourceTopRated`/
+`sourceByGenreOrKeyword`) — since those raw pools already get fully dedup/filter-resolved during
+sourcing regardless, capping later costs nothing and stops discarding un-checked candidates.
+`sourceFromPool` ("Use My Series", Requirement 5's AC-15 below) is explicitly **not** part of this
+fix and keeps the original pre-dedup raw cap: that mode's pool is never independently resolved
+before `doRecommend`, so capping before `dedupeAndExclude` still genuinely bounds `external_ids`
+call volume there, exactly as originally designed — moving it would have added real TMDB cost with
+no offsetting benefit. See `RecommendationService.maxCandidates`'s javadoc for the split, and
+`RecommendationServiceSpec.groovy`'s two `Correction:`-prefixed tests for the regression coverage
+(one confirming a beyond-position-50 candidate now survives for `trending` mode, one confirming
+`sourceFromPool` is unaffected).
+
+A proper redesign — dedupe/filter each page's *new* candidates incrementally against a running
+accumulator, instead of re-deriving the whole pool from scratch on every page and then a third time
+in `doRecommend` — is tracked separately in `.claude/SPEC_CANDIDATES.md` rather than folded into
+this fix; it revises this spec's own "deliberate simplicity-over-efficiency" trade-off (Design
+Decisions) and deserves its own spec, not a patch.
 - **SERIES-054-AC-15** [AUTO]: When `sourceMode` selects "Use My Series" (`sourceFromPool`), this
   spec's pagination mechanism shall not apply — `sourceFromPool`'s existing per-source, single-page
   behavior is unchanged (see Design Decisions).
@@ -356,18 +389,18 @@ specs above pass.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-054-AC-01: `TmdbClient.trending(timeWindow, page)` sends `page` only when `page > 1`
-- [ ] SERIES-054-AC-02: `TmdbClient.discoverTopRated(minVoteCount, sortBy, page)` sends `page` only when `page > 1`
-- [ ] SERIES-054-AC-03: `TmdbClient.discover(genreIds, keywordIds, sortBy, filters, page)` sends `page` only when `page > 1`
-- [ ] SERIES-054-AC-04: every existing call site of the three no-page overloads is unaffected
-- [ ] SERIES-054-AC-05: `sourceTrending` gains an `int limit` parameter
-- [ ] SERIES-054-AC-06: `sourceTopRated` gains an `int limit` parameter
-- [ ] SERIES-054-AC-07: `sourceByGenreOrKeyword` gains an `int limit` parameter
-- [ ] SERIES-054-AC-08: `doRecommend` passes `limit` through to whichever sourcing method it calls
-- [ ] SERIES-054-AC-09: a short post-dedup/post-filter count triggers fetching and merging the next page
-- [ ] SERIES-054-AC-10: `application.yml` gains `app.tmdb.max-discover-pages` (default `3`)
-- [ ] SERIES-054-AC-11: paging stops once the post-dedup/post-filter count reaches `limit`
-- [ ] SERIES-054-AC-12: paging stops at `max-discover-pages` without erroring, even if still short
-- [ ] SERIES-054-AC-13: paging stops immediately on an empty page's `results[]`
-- [ ] SERIES-054-AC-14: the existing downstream cap/dedup/filter/ranking/limit pipeline is unchanged
-- [ ] SERIES-054-AC-15: "Use My Series" (`sourceFromPool`) is unaffected by this spec
+- [x] SERIES-054-AC-01: `TmdbClient.trending(timeWindow, page)` sends `page` only when `page > 1`
+- [x] SERIES-054-AC-02: `TmdbClient.discoverTopRated(minVoteCount, sortBy, page)` sends `page` only when `page > 1`
+- [x] SERIES-054-AC-03: `TmdbClient.discover(genreIds, keywordIds, sortBy, filters, page)` sends `page` only when `page > 1`
+- [x] SERIES-054-AC-04: every existing call site of the three no-page overloads is unaffected
+- [x] SERIES-054-AC-05: `sourceTrending` gains an `int limit` parameter
+- [x] SERIES-054-AC-06: `sourceTopRated` gains an `int limit` parameter
+- [x] SERIES-054-AC-07: `sourceByGenreOrKeyword` gains an `int limit` parameter
+- [x] SERIES-054-AC-08: `doRecommend` passes `limit` through to whichever sourcing method it calls
+- [x] SERIES-054-AC-09: a short post-dedup/post-filter count triggers fetching and merging the next page
+- [x] SERIES-054-AC-10: `application.yml` gains `app.tmdb.max-discover-pages` (default `3`)
+- [x] SERIES-054-AC-11: paging stops once the post-dedup/post-filter count reaches `limit`
+- [x] SERIES-054-AC-12: paging stops at `max-discover-pages` without erroring, even if still short
+- [x] SERIES-054-AC-13: paging stops immediately on an empty page's `results[]`
+- [x] SERIES-054-AC-14: the existing downstream cap/dedup/filter/ranking/limit pipeline is unchanged
+- [x] SERIES-054-AC-15: "Use My Series" (`sourceFromPool`) is unaffected by this spec

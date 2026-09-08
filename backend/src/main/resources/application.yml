@@ -69,6 +69,17 @@ app:
     # / APP_TMDB_MAX_CANDIDATES without a code change.
     max-source-series: 20
     max-candidates: 50
+    # series_spec_054_recommendation_discover_backfill_pagination.md (SERIES-054-AC-10): upper
+    # bound on how many extra TMDB pages sourceTrending/sourceTopRated/sourceByGenreOrKeyword's
+    # backfill-pagination loop may fetch for a single recommendations request, once a page's
+    # results still leave that mode short of the requested limit after dedup/output-filtering.
+    # The spec's own conservative starting default was 3 (TMDB's ~20-result page size x 3
+    # already approaches max-candidates=50 in the worst case); raised to 6 after live use with
+    # several active output filters (exclude-genres, language, minVoteCount) showed 3 pages
+    # often wasn't enough raw pool for the post-filter survivor count to reach a typical
+    # limit=20 -- see series_spec_054's Correction (2026-09-08) for the trace that prompted this.
+    # Overridable via APP_TMDB_MAX_DISCOVER_PAGES without a code change.
+    max-discover-pages: 6
     # series_spec_029_configurable_min_vote_count_and_genre_floor.md (SERIES-029-AC-01/02/04):
     # default minimum-vote-count floor used both by RecommendationOutputFilterService's
     # post-hoc minVoteCount filter (for every sourceMode other than "topRated", which has its

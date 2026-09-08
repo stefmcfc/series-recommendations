@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -56,45 +57,62 @@ public class RecommendationSourcingService {
 
     private final RecommendationPoolCache poolCache;
 
+    private final RecommendationDeduplicationService deduplicationService;
+    private final RecommendationOutputFilterService outputFilterService;
+
+    /**
+     * Upper bound on how many extra TMDB pages {@link #sourceTrending}/{@link #sourceTopRated}/
+     * {@link #sourceByGenreOrKeyword}'s backfill-pagination loop (SERIES-054-AC-09) may fetch
+     * for a single call, so a request can never spiral into an unbounded number of upstream
+     * calls (SERIES-054-AC-10, SERIES-054-AC-12). Overridable via
+     * {@code APP_TMDB_MAX_DISCOVER_PAGES} without a code change.
+     */
+    private final int maxDiscoverPages;
+
     public RecommendationSourcingService(SeriesRepository seriesRepository,
                                           TmdbClient tmdbClient,
                                           TmdbGenreTable genreTable,
                                           @Value("${app.tmdb.max-source-series:20}") int maxSourceSeries,
                                           @Value("${app.tmdb.default-min-vote-count:200}") int defaultMinVoteCount,
-                                          RecommendationPoolCache poolCache) {
+                                          RecommendationPoolCache poolCache,
+                                          RecommendationDeduplicationService deduplicationService,
+                                          RecommendationOutputFilterService outputFilterService,
+                                          @Value("${app.tmdb.max-discover-pages:3}") int maxDiscoverPages) {
         this.seriesRepository = seriesRepository;
         this.tmdbClient = tmdbClient;
         this.genreTable = genreTable;
         this.maxSourceSeries = maxSourceSeries;
         this.defaultMinVoteCount = defaultMinVoteCount;
         this.poolCache = poolCache;
+        this.deduplicationService = deduplicationService;
+        this.outputFilterService = outputFilterService;
+        this.maxDiscoverPages = maxDiscoverPages;
     }
 
     // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
 
-    List<RawCandidate> sourceTrending(RecommendationCriteria c) {
+    List<RawCandidate> sourceTrending(RecommendationCriteria c, int limit) {
         String window = c.getTrendingWindow() != null && !c.getTrendingWindow().isBlank()
             ? c.getTrendingWindow() : "week";
-        return tmdbClient.trending(window).stream()
-            .map(candidate -> new RawCandidate(candidate, null))
-            .toList();
+        return sourceWithBackfill(c, limit,
+            page -> page == 1 ? tmdbClient.trending(window) : tmdbClient.trending(window, page));
     }
 
     // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
 
-    List<RawCandidate> sourceTopRated(RecommendationCriteria c) {
+    List<RawCandidate> sourceTopRated(RecommendationCriteria c, int limit) {
         // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
         // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
         String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_TOP_RATED_SORT_BY);
-        return tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy).stream()
-            .map(candidate -> new RawCandidate(candidate, null))
-            .toList();
+        return sourceWithBackfill(c, limit, page -> page == 1
+            ? tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy)
+            : tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy, page));
     }
 
     // -- Requirement 5: directed sourcing by genre/keyword, bypassing the watched pool entirely --
 
-    List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c) {
+    List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c, int limit) {
         List<Integer> genreIds = resolveGenreIds(c.getGenres());
         List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
         // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
@@ -112,9 +130,45 @@ public class RecommendationSourcingService {
         List<Integer> excludeGenreIds = resolveGenreIds(c.getExcludeGenres());
         DiscoverFilters filters = new DiscoverFilters(effectiveMinVoteCount, c.getMinTmdbRating(), c.getYearMin(),
             c.getYearMax(), c.getLanguage(), c.getCountries(), excludeGenreIds);
-        return tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters).stream()
-            .map(candidate -> new RawCandidate(candidate, null))
-            .toList();
+        return sourceWithBackfill(c, limit, page -> page == 1
+            ? tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters)
+            : tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters, page));
+    }
+
+    /**
+     * SERIES-054-AC-09/11/12/13: shared backfill-pagination loop for {@link #sourceTrending}/
+     * {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword} -- the three direct-TMDB-discover
+     * sourcing modes (deliberately excluding {@link #sourceFromPool}, "Use My Series"; see
+     * {@code series_spec_054_recommendation_discover_backfill_pagination.md}'s Design
+     * Decisions). Fetches page 1 via {@code pageFetcher}, then keeps fetching subsequent pages
+     * -- merging each page's raw candidates into the same accumulated set -- until whichever
+     * comes first: the post-dedup/post-output-filter candidate count reaches {@code limit}
+     * (AC-11), {@link #maxDiscoverPages} pages have been fetched (AC-12, never an error -- a
+     * shortfall is a valid outcome), or a fetched page's results come back empty, TMDB's own
+     * end-of-results signal (AC-13). The evaluate-against-dedup/filter step is skipped on the
+     * final page under the cap, since its result can never change whether another page is
+     * fetched.
+     */
+    private List<RawCandidate> sourceWithBackfill(RecommendationCriteria c, int limit,
+                                                    IntFunction<List<TmdbCandidate>> pageFetcher) {
+        List<RawCandidate> accumulated = new ArrayList<>();
+        boolean done = false;
+        for (int page = 1; page <= maxDiscoverPages && !done; page++) {
+            List<TmdbCandidate> pageResults = pageFetcher.apply(page);
+            if (pageResults.isEmpty()) {
+                done = true;
+            } else {
+                pageResults.forEach(candidate -> accumulated.add(new RawCandidate(candidate, null)));
+                done = page == maxDiscoverPages || countAfterDedupAndFilter(accumulated, c) >= limit;
+            }
+        }
+        return accumulated;
+    }
+
+    /** SERIES-054-AC-09: evaluates the accumulated raw candidates through the same dedup/output-filter pipeline {@code RecommendationService.doRecommend} runs downstream, purely to decide whether another page is worth fetching. */
+    private int countAfterDedupAndFilter(List<RawCandidate> accumulated, RecommendationCriteria c) {
+        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(accumulated);
+        return outputFilterService.applyOutputFilters(deduped, c).size();
     }
 
     /** Shared by {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword}: an explicit, non-blank {@code discoverSortBy} wins; otherwise the mode's own default. */

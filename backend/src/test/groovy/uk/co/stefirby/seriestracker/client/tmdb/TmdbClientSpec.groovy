@@ -1185,6 +1185,131 @@ class TmdbClientSpec extends Specification {
             result[0].tmdbId() == 238754
     }
 
+    // -- SERIES-054: page-aware overloads for backfill-pagination (AC-01/02/03/04) --
+
+    def "SERIES-054-AC-01: trending(timeWindow, page) sends the page param when page > 1"() {
+        given: "a mocked TMDB server expecting GET /trending/tv/week?page=2"
+            mockServer.expect(requestTo(Matchers.containsString("trending/tv/week")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("page", "2"))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.trending('week', 2) is called"
+            client().trending("week", 2)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-01/AC-04: trending(timeWindow, 1) sends no page param at all"() {
+        given: "a mocked TMDB server expecting no page query param"
+            mockServer.expect(requestTo(Matchers.allOf(Matchers.containsString("trending/tv/week"),
+                Matchers.not(Matchers.containsString("page=")))))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.trending('week', 1) is called"
+            client().trending("week", 1)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-04: the existing trending(timeWindow) overload still sends no page param"() {
+        given: "a mocked TMDB server expecting no page query param"
+            mockServer.expect(requestTo(Matchers.allOf(Matchers.containsString("trending/tv/week"),
+                Matchers.not(Matchers.containsString("page=")))))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.trending('week') is called"
+            client().trending("week")
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-02: discoverTopRated(minVoteCount, sortBy, page) sends the page param when page > 1"() {
+        given: "a mocked TMDB server expecting GET /discover/tv?sort_by=...&vote_count.gte=...&page=3"
+            mockServer.expect(requestTo(Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("sort_by", "vote_average.desc"))
+                .andExpect(queryParam("vote_count.gte", "100"))
+                .andExpect(queryParam("page", "3"))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discoverTopRated(100, 'vote_average.desc', 3) is called"
+            client().discoverTopRated(100, "vote_average.desc", 3)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-02/AC-04: discoverTopRated(minVoteCount, sortBy, 1) sends no page param at all"() {
+        given: "a mocked TMDB server expecting no page query param"
+            mockServer.expect(requestTo(Matchers.allOf(Matchers.containsString("discover/tv"),
+                Matchers.not(Matchers.containsString("page=")))))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discoverTopRated(100, 'vote_average.desc', 1) is called"
+            client().discoverTopRated(100, "vote_average.desc", 1)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-04: the existing discoverTopRated(minVoteCount, sortBy) overload still sends no page param"() {
+        given: "a mocked TMDB server expecting no page query param"
+            mockServer.expect(requestTo(Matchers.allOf(Matchers.containsString("discover/tv"),
+                Matchers.not(Matchers.containsString("page=")))))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discoverTopRated(100, 'vote_average.desc') is called"
+            client().discoverTopRated(100, "vote_average.desc")
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-03: discover(genreIds, keywordIds, sortBy, filters, page) sends the page param when page > 1"() {
+        given: "a mocked TMDB server expecting GET /discover/tv?with_genres=18&page=2"
+            mockServer.expect(requestTo(Matchers.containsString("discover/tv")))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(queryParam("with_genres", "18"))
+                .andExpect(queryParam("page", "2"))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discover([18], [], 'popularity.desc', DiscoverFilters.NONE, 2) is called"
+            client().discover([18], [], "popularity.desc", DiscoverFilters.NONE, 2)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-03/AC-04: discover(genreIds, keywordIds, sortBy, filters, 1) sends no page param at all"() {
+        given: "a mocked TMDB server expecting no page query param"
+            mockServer.expect(requestTo(Matchers.allOf(Matchers.containsString("discover/tv"),
+                Matchers.not(Matchers.containsString("page=")))))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discover([18], [], 'popularity.desc', DiscoverFilters.NONE, 1) is called"
+            client().discover([18], [], "popularity.desc", DiscoverFilters.NONE, 1)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
+    def "SERIES-054-AC-04: the existing discover(genreIds, keywordIds, sortBy, filters) overload still sends no page param"() {
+        given: "a mocked TMDB server expecting no page query param"
+            mockServer.expect(requestTo(Matchers.allOf(Matchers.containsString("discover/tv"),
+                Matchers.not(Matchers.containsString("page=")))))
+                .andRespond(withSuccess('{"results":[]}', MediaType.APPLICATION_JSON))
+
+        when: "TmdbClient.discover([18], [], 'popularity.desc', DiscoverFilters.NONE) is called"
+            client().discover([18], [], "popularity.desc", DiscoverFilters.NONE)
+
+        then: "no exception -- the mocked request above matched"
+            noExceptionThrown()
+    }
+
     // -- SERIES-020: watchProviders() --
 
     def "SERIES-020-AC-01: extracts flatrate providers for the given region"() {

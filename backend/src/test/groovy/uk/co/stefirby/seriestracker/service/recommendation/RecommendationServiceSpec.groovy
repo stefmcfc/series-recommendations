@@ -31,7 +31,7 @@ class RecommendationServiceSpec extends Specification {
 
     RecommendationService recommendationService =
         new RecommendationService(tmdbClient, omdbClient,
-            new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
+            new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), 3), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -243,7 +243,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-02: max-candidates cap is configurable via constructor"() {
         given: "a service configured with maxCandidates=3, one source series recommending 5 candidates"
-            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
+            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), 3), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
             def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -262,7 +262,7 @@ class RecommendationServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: maxPerSource is configurable via the constructor's app.tmdb.max-per-source default"() {
         given: "a service configured with maxPerSource=2, and one source series producing 5 raw candidates"
-            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
+            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), 3), new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient), new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200), new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"), new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 2)
             def source = completedSeries("Breaking Bad", "tt1234567", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
@@ -341,6 +341,10 @@ class RecommendationServiceSpec extends Specification {
         and: "TMDB trending returns candidates in a fixed order, higher-rated candidate second"
             tmdbClient.trending("week") >> [candidate(10, "Second Place", 2020, new BigDecimal("9.9")),
                                              candidate(20, "First Place", 2020, new BigDecimal("1.0"))]
+            // SERIES-054-AC-13: page 1's 2 candidates are short of the requested limit (20), so
+            // the backfill loop requests page 2; an empty page 2 is TMDB's own end-of-results
+            // signal, stopping the loop without changing this test's own assertions.
+            tmdbClient.trending("week", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId(_) >> false
@@ -366,6 +370,10 @@ class RecommendationServiceSpec extends Specification {
                 candidate(10, "Low Votes", 2020, new BigDecimal("8.0"), [18], 5),
                 candidate(20, "High Votes", 2020, new BigDecimal("8.0"), [18], 250)
             ]
+            // SERIES-054-AC-13: only 1 of the 2 candidates survives output filtering, short of
+            // the requested limit (20), so the backfill loop requests page 2; an empty page 2
+            // stops it without changing this test's own assertions.
+            tmdbClient.trending("week", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId(_) >> false
@@ -383,6 +391,10 @@ class RecommendationServiceSpec extends Specification {
         given: "trending returns two candidates, one already tracked and one already ignored"
             def criteria = new RecommendationCriteria(sourceMode: "trending")
             tmdbClient.trending("week") >> [candidate(10, "Tracked"), candidate(20, "Ignored"), candidate(30, "New")]
+            // SERIES-054-AC-13: only 1 of the 3 candidates survives dedup, short of the
+            // requested limit (20), so the backfill loop requests page 2; an empty page 2 stops
+            // it without changing this test's own assertions.
+            tmdbClient.trending("week", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             tmdbClient.externalIds(30) >> Optional.of("tt1000030")
@@ -406,6 +418,10 @@ class RecommendationServiceSpec extends Specification {
         given: "discoverTopRated returns one candidate"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
             tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(10, "Acclaimed Show", 2020, new BigDecimal("8.0"), [18], 300)]
+            // SERIES-054-AC-13: 1 candidate is short of the requested limit (20), so the
+            // backfill loop requests page 2; an empty page 2 stops it without changing this
+            // test's own assertions.
+            tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             seriesRepository.existsByImdbId(_) >> false
             ignoredSeriesRepository.existsByImdbId(_) >> false
@@ -425,6 +441,10 @@ class RecommendationServiceSpec extends Specification {
                 candidate(10, "Tracked", 2020, new BigDecimal("8.0"), [18], 300),
                 candidate(20, "New", 2020, new BigDecimal("8.0"), [18], 300)
             ]
+            // SERIES-054-AC-13: only 1 of the 2 candidates survives dedup, short of the
+            // requested limit (20), so the backfill loop requests page 2; an empty page 2 stops
+            // it without changing this test's own assertions.
+            tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId("tt1000010") >> true
@@ -447,6 +467,10 @@ class RecommendationServiceSpec extends Specification {
                 candidate(20, "Highest Rated", 2020, new BigDecimal("9.0"), [18], 300),
                 candidate(30, "High Rated", 2020, new BigDecimal("7.5"), [18], 300)
             ]
+            // SERIES-054-AC-13: 3 candidates are short of the requested limit (20), so the
+            // backfill loop requests page 2; an empty page 2 stops it without changing this
+            // test's own assertions.
+            tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             tmdbClient.externalIds(30) >> Optional.of("tt1000030")
@@ -520,6 +544,10 @@ class RecommendationServiceSpec extends Specification {
                 candidate(10, "Low Rated", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "High Rated", 2020, new BigDecimal("9.0"), [18], 300)
             ]
+            // SERIES-054-AC-13: 2 candidates are short of the requested limit (10), so the
+            // backfill loop requests page 2; an empty page 2 stops it without changing this
+            // test's own assertions.
+            tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, []), 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId(_) >> false
@@ -539,6 +567,10 @@ class RecommendationServiceSpec extends Specification {
                 candidate(10, "A", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "B", 2020, new BigDecimal("9.0"), [18], 300)
             ]
+            // SERIES-054-AC-13: 2 candidates are short of the requested limit (10), so the
+            // backfill loop requests page 2; an empty page 2 stops it without changing this
+            // test's own assertions.
+            tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId(_) >> false
@@ -560,6 +592,10 @@ class RecommendationServiceSpec extends Specification {
                 candidate(10, "A", 2020, new BigDecimal("6.0"), [18], 300),
                 candidate(20, "B", 2020, new BigDecimal("9.0"), [18], 300)
             ]
+            // SERIES-054-AC-13: 2 candidates are short of the requested limit (10), so the
+            // backfill loop requests page 2; an empty page 2 stops it without changing this
+            // test's own assertions.
+            tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, []), 2) >> []
             tmdbClient.externalIds(10) >> Optional.of("tt1000010")
             tmdbClient.externalIds(20) >> Optional.of("tt1000020")
             seriesRepository.existsByImdbId(_) >> false
@@ -585,7 +621,7 @@ class RecommendationServiceSpec extends Specification {
 
         then: "sourceFromPool sourcing ran (not sourceByGenreOrKeyword)"
             1 * sourcingService.sourceFromPool(criteria, 20) >> []
-            0 * sourcingService.sourceByGenreOrKeyword(_)
+            0 * sourcingService.sourceByGenreOrKeyword(_, _)
     }
 
     def "SERIES-033-AC-05: seriesIds alone routes to pool-based sourcing"() {
@@ -599,7 +635,7 @@ class RecommendationServiceSpec extends Specification {
 
         then: "sourceFromPool sourcing ran"
             1 * sourcingService.sourceFromPool(criteria, 20) >> []
-            0 * sourcingService.sourceByGenreOrKeyword(_)
+            0 * sourcingService.sourceByGenreOrKeyword(_, _)
     }
 
     def "SERIES-033-AC-06: a fully empty request routes to Custom Search, not the automatic pool"() {
@@ -612,7 +648,7 @@ class RecommendationServiceSpec extends Specification {
             service.recommend(20, criteria)
 
         then: "sourceByGenreOrKeyword sourcing ran, not sourceFromPool"
-            1 * sourcingService.sourceByGenreOrKeyword(criteria) >> []
+            1 * sourcingService.sourceByGenreOrKeyword(criteria, 20) >> []
             0 * sourcingService.sourceFromPool(_, _)
     }
 
@@ -626,7 +662,111 @@ class RecommendationServiceSpec extends Specification {
             service.recommend(20, criteria)
 
         then: "sourceByGenreOrKeyword ran (which itself sends vote_average.gte -- series_spec_031-AC-01/05)"
-            1 * sourcingService.sourceByGenreOrKeyword(criteria) >> []
+            1 * sourcingService.sourceByGenreOrKeyword(criteria, 20) >> []
             0 * sourcingService.sourceFromPool(_, _)
+    }
+
+    // -- Spec 054, Requirement 2/5 (SERIES-054-AC-08/14): doRecommend passes limit through, downstream pipeline is unchanged --
+
+    def "SERIES-054-AC-08: doRecommend passes its own limit through to sourceTrending"() {
+        given: "criteria routed to trending mode"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend(15, criteria) is called"
+            service.recommend(15, criteria)
+
+        then: "sourcingService.sourceTrending receives limit=15"
+            1 * sourcingService.sourceTrending(criteria, 15) >> []
+    }
+
+    def "SERIES-054-AC-08: doRecommend passes its own limit through to sourceTopRated"() {
+        given: "criteria routed to topRated mode"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend(12, criteria) is called"
+            service.recommend(12, criteria)
+
+        then: "sourcingService.sourceTopRated receives limit=12"
+            1 * sourcingService.sourceTopRated(criteria, 12) >> []
+    }
+
+    def "SERIES-054-AC-08: doRecommend passes its own limit through to sourceByGenreOrKeyword"() {
+        given: "criteria with nothing set, routing to Custom Search (the default/fallback branch)"
+            def criteria = new RecommendationCriteria()
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+
+        when: "recommend(7, criteria) is called"
+            service.recommend(7, criteria)
+
+        then: "sourcingService.sourceByGenreOrKeyword receives limit=7"
+            1 * sourcingService.sourceByGenreOrKeyword(criteria, 7) >> []
+    }
+
+    def "SERIES-054-AC-14: the final response is built by the same unchanged downstream pipeline"() {
+        given: "sourceTrending returns a multi-page-merged raw candidate list, standing in for the sourcing service's own internal pagination"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+            def sourcingService = Mock(RecommendationSourcingService)
+            def deduplicationServiceMock = Mock(RecommendationDeduplicationService)
+            def outputFilterServiceMock = Mock(RecommendationOutputFilterService)
+            def service = new RecommendationService(tmdbClient, omdbClient,
+                new RecommendationCriteriaValidator(Clock.systemDefaultZone()), sourcingService,
+                deduplicationServiceMock, outputFilterServiceMock,
+                new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"),
+                new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
+            def multiPageMerged = [new RawCandidate(candidate(10), null), new RawCandidate(candidate(20), null),
+                                    new RawCandidate(candidate(30), null)]
+
+        when: "recommend is called"
+            service.recommend(20, criteria)
+
+        then: "deduplicationService/outputFilterService are invoked exactly as before this spec, once each, over the whole (possibly multi-page-sourced) raw list"
+            1 * sourcingService.sourceTrending(criteria, 20) >> multiPageMerged
+            1 * deduplicationServiceMock.dedupeAndExclude(multiPageMerged) >> []
+            1 * outputFilterServiceMock.applyOutputFilters(_, criteria) >> []
+    }
+
+    // -- Post-SERIES-054 correction (2026-09-08): maxCandidates must not discard raw candidates
+    // before dedup/filtering for the three backfill-enabled modes -- see series_spec_054's
+    // Correction note.
+
+    def "Correction: a raw candidate beyond maxCandidates' position still gets a chance to survive dedup/filtering for trending mode"() {
+        given: "trending mode sources 51 raw candidates (raw.size() > maxCandidates=50); the first 50 fail the language filter, the 51st (a real, on-topic candidate) doesn't"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", language: "en")
+            def sourcingService = Mock(RecommendationSourcingService)
+            def service = serviceWithMockSourcing(sourcingService)
+            def nonEnglish = (1..50).collect { candidate(it, "Candidate ${it}", 2020, new BigDecimal("8.0"), [18], 300, "ko") }
+            def survivor = candidate(51, "Survivor", 2020, new BigDecimal("8.0"), [18], 300, "en")
+            def rawList = (nonEnglish + [survivor]).collect { new RawCandidate(it, null) }
+            sourcingService.sourceTrending(criteria, 20) >> rawList
+            (1..51).each { i -> tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0')) }
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            def results = service.recommend(20, criteria)
+
+        then: "the 51st candidate -- beyond position 50 in raw/TMDB-page order -- still reaches the output filters and survives, instead of being silently discarded by a pre-filter raw cap"
+            results.size() == 1
+            results[0].title == "Survivor"
+    }
+
+    def "Correction: sourceFromPool ('Use My Series') keeps the original pre-dedup raw cap, unaffected by the trending/topRated/Custom Search fix"() {
+        given: "Use My Series mode sources 51 raw candidates -- unlike the three backfill-enabled modes, this mode's raw pool is still capped before dedup, as originally designed"
+            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
+            seriesRepository.findAll() >> [source]
+            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
+            tmdbClient.recommendations(1) >> (1..51).collect { candidate(it) }
+            tmdbClient.externalIds(_) >> Optional.empty()
+
+        when: "recommend(20) is called with sourceMode=useMySeries"
+            recommendationService.recommend(20, new RecommendationCriteria(sourceMode: "useMySeries"))
+
+        then: "external_ids is never resolved for the 51st raw candidate -- the pre-dedup cap (maxCandidates=50 on this instance) still applies"
+            0 * tmdbClient.externalIds(51)
     }
 }

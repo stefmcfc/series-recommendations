@@ -132,6 +132,7 @@ corrected below.
 | Skip-threshold override gains Days/Weeks/Months units; `SettingsPage` sections become bordered/shadowed cards with icons ("modern but accessible" redesign) | — | `frontend_spec_101` | ✅ Done |
 | Button styling consistency & contrast fix (new `--control-border` token, shared `buttons.module.css` tiers) | — | `frontend_spec_103` | ✅ Done |
 | Sticky action bars (Recommendations modal footer gap fix + `SeriesDetail` bottom actions bar) | — | `frontend_spec_104` | ✅ Done |
+| Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054` | — | ✅ Done |
 
 ## Specced, coming soon
 
@@ -165,7 +166,6 @@ delivered — see the "Delivered" table above — and no longer appear here.
 | Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053`                    | `frontend_spec_102`                            | ⬜ Not started                                                                                    |
-| Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054`                    | —                                               | ⬜ Not started                                                                                    |
 
 ## Internal / maintenance specs (not user-facing features)
 

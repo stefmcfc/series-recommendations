@@ -305,6 +305,14 @@ Sourcing mode is selected via `sourceMode` (`trending`|`topRated`|`useMySeries`)
   instead, so those filters are correctly applied pre-fetch rather than being silently bypassed
   (`series_spec_033`).
 
+`trending`, `topRated`, and Custom Search each source from TMDB across up to
+`app.tmdb.max-discover-pages` pages (default `6`) when a single page's results still leave the
+response short of the requested `limit` after dedup/output-filtering — TMDB's own single page
+(~20 results) is no longer the hard ceiling on how many results these three modes can return
+(`series_spec_054`). This does not apply to `sourceMode=useMySeries`/`seriesIds` sourcing, which
+already fans out across many source series' own single-page calls instead. A response can still
+come up short of `limit` if TMDB genuinely has fewer matching results — this is never an error.
+
 `trending`/`topRated`/`sourceMode=useMySeries` are mutually exclusive with `seriesIds`/`genres`/
 `keywords` (`400` if combined, or if `sourceMode` isn't one of the three recognized values), with
 the one deliberate exception of `sourceMode=useMySeries` + `seriesIds` described above.
@@ -321,9 +329,10 @@ directed modes still exclude anything already added or ignored.
 `minTmdbRating`/`yearMin`/`yearMax` are applied as post-fetch output filters across every
 sourcing mode. For Custom Search sourcing specifically, they're **additionally** sent to TMDB
 itself as real `discover/tv` params (`vote_average.gte`/`air_date.gte`/`air_date.lte`) rather than
-relying solely on the post-fetch check — TMDB only ever returns one ~20-result unpaginated page,
-so a restrictive combination could otherwise silently return few/zero results even when TMDB had
-real matches it was never asked for. **This also changes the year field's semantics for Custom
+relying solely on the post-fetch check — even with the bounded page-backfill described above, a
+restrictive combination could otherwise silently return few/zero results within
+`app.tmdb.max-discover-pages` pages even when TMDB had real matches it was never asked for.
+**This also changes the year field's semantics for Custom
 Search only**: `yearMin`/`yearMax` there filter on a candidate's *episode* air date (TMDB's
 `air_date.gte`/`.lte`), not its first-air date, so a still-running older show (e.g. one airing
 continuously since 1989) can match a recent year range. Every other mode (`trending`, `topRated`,
