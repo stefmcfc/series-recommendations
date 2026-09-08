@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "uk.co.stefirby"
-version = "3.36.0"
+version = "3.37.0"
 
 // Centralized here (kotlin:S6624) rather than inline in the dependencies block below --
 // single place to bump each, and easier for dependabot's version-bump PRs to reason about.
@@ -53,6 +53,13 @@ dependencies {
     // and without it migrations silently never run (no error, no log output).
     implementation("org.springframework.boot:spring-boot-flyway")
     implementation("org.flywaydb:flyway-core")
+
+    // Dev-only: automatic context restart on classpath changes (fast, in-process --
+    // not a full JVM/Gradle-daemon relaunch). `developmentOnly` is excluded from the
+    // built jar by Spring Boot's Gradle plugin automatically, so this never ships.
+    // Pair with `gradlew.bat bootRun --continuous` (RUNBOOK.md) -- Gradle watches
+    // source files and recompiles, which this then detects and restarts against.
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     // Test - Groovy 5 supports Java 25 class files
     testImplementation("org.springframework.boot:spring-boot-starter-test")

@@ -17,10 +17,12 @@ class RecommendationSourcingServiceSpec extends Specification {
 
     SeriesRepository seriesRepository = Mock()
     TmdbClient tmdbClient = Mock()
+    RecommendationDeduplicationService deduplicationService = Mock()
+    RecommendationOutputFilterService outputFilterService = Mock()
 
     RecommendationSourcingService sourcingService =
         new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
-            new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
+            new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), deduplicationService, outputFilterService, 3)
 
     private static SeriesEntity completedSeries(String title, String imdbId, LocalDateTime dateCompleted,
                                                  String genres = null, Integer personalRating = null) {
@@ -39,6 +41,11 @@ class RecommendationSourcingServiceSpec extends Specification {
                                             BigDecimal voteAverage = new BigDecimal("8.0"), List<Integer> genreIds = [18],
                                             Integer voteCount = 100, String originalLanguage = "en") {
         new TmdbCandidate(tmdbId, title, year, "overview", "/poster.jpg", voteAverage, genreIds, voteCount, originalLanguage, [])
+    }
+
+    /** SERIES-054: a placeholder post-dedup/post-filter result of exactly {@code count} entries, for stubbing {@code outputFilterService.applyOutputFilters}'s return in the backfill-pagination stopping-condition specs below -- content is irrelevant, only {@code size()} is. */
+    private static List<DedupedCandidate> dedupedOfSize(int count) {
+        (1..count).collect { new DedupedCandidate(candidate(it), [], "tt${it}") }
     }
 
     // -- Automatic pool sourcing (SERIES-006-AC-14/15/16/17/20, SERIES-008-AC-04/05) --
@@ -250,7 +257,7 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-007-AC-01: max-source-series cap is configurable via constructor"() {
         given: "a sourcing service configured with maxSourceSeries=2, and 3 eligible COMPLETED series"
             def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 2, 200,
-                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), deduplicationService, outputFilterService, 3)
             def now = LocalDateTime.now()
             def sources = (1..3).collect {
                 completedSeries("Show ${it}", "tt${it.toString().padLeft(7, '0')}", now.minusDays(it))
@@ -330,7 +337,7 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-007-AC-11: an explicit seriesIds pool larger than max-source-series is ordered and truncated"() {
         given: "a sourcing service configured with maxSourceSeries=1, and two selected series with different personalRatings"
             def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 1, 200,
-                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), deduplicationService, outputFilterService, 3)
             def low = completedSeries("Low", "tt0000001", LocalDateTime.now(), null, 2)
             low.id = UUID.randomUUID()
             def high = completedSeries("High", "tt0000002", LocalDateTime.now(), null, 5)
@@ -404,10 +411,15 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Drama", "Spy"])
 
         when: "sourceByGenreOrKeyword is called"
-            def result = sourcingService.sourceByGenreOrKeyword(criteria)
+            def result = sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover() is called with Drama's id (18) only -- Spy has no genre mapping"
             1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> [candidate(50, "Drama Show")]
+            // SERIES-054-AC-11: stub the backfill loop's own internal dedup/filter stopping
+            // check to already reach the requested limit (20), so the loop stops after page 1
+            // -- this test cares about routing/genre-mapping, not pagination.
+            1 * deduplicationService.dedupeAndExclude(_) >> dedupedOfSize(20)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
 
         and: "the candidate has no linked source series"
             result.size() == 1
@@ -421,7 +433,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Drama"], excludeGenres: ["Comedy"])
 
         when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with with_genres resolving Drama (18) and without_genres resolving Comedy (35)"
             1 * tmdbClient.discover([18], [], _, { DiscoverFilters f -> f.excludeGenreIds() == [35] }) >> []
@@ -432,7 +444,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(excludeGenres: ["NotARealGenre"])
 
         when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with an empty excludeGenreIds, not an error"
             1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.excludeGenreIds().isEmpty() }) >> []
@@ -443,7 +455,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Drama"])
 
         when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with an empty excludeGenreIds"
             1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.excludeGenreIds().isEmpty() }) >> []
@@ -454,7 +466,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Drama"], keywords: ["Spy"])
 
         when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "searchKeyword resolves Spy, and discover is called with both resolved ids"
             1 * tmdbClient.searchKeyword("Spy") >> Optional.of(9720)
@@ -466,7 +478,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(keywords: ["nonexistent"])
 
         when: "sourceByGenreOrKeyword is called"
-            def result = sourcingService.sourceByGenreOrKeyword(criteria)
+            def result = sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with an empty keyword id list, and no exception is thrown"
             1 * tmdbClient.searchKeyword("nonexistent") >> Optional.empty()
@@ -481,7 +493,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "trending")
 
         when: "sourceTrending is called"
-            sourcingService.sourceTrending(criteria)
+            sourcingService.sourceTrending(criteria, 20)
 
         then: "TmdbClient.trending is called with 'week'"
             1 * tmdbClient.trending("week") >> []
@@ -492,7 +504,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "trending", trendingWindow: "day")
 
         when: "sourceTrending is called"
-            sourcingService.sourceTrending(criteria)
+            sourcingService.sourceTrending(criteria, 20)
 
         then: "TmdbClient.trending is called with 'day'"
             1 * tmdbClient.trending("day") >> []
@@ -505,7 +517,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
 
         when: "sourceTopRated is called"
-            sourcingService.sourceTopRated(criteria)
+            sourcingService.sourceTopRated(criteria, 20)
 
         then: "discoverTopRated is called with 200, not 20"
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> []
@@ -516,7 +528,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "topRated", minVoteCount: 100)
 
         when: "sourceTopRated is called"
-            sourcingService.sourceTopRated(criteria)
+            sourcingService.sourceTopRated(criteria, 20)
 
         then: "discoverTopRated is called with the explicit 100, not the 200 default"
             1 * tmdbClient.discoverTopRated(100, "vote_average.desc") >> []
@@ -529,7 +541,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
 
         when: "sourceTopRated is called"
-            sourcingService.sourceTopRated(criteria)
+            sourcingService.sourceTopRated(criteria, 20)
 
         then: "discoverTopRated is called with vote_average.desc"
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> []
@@ -540,7 +552,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "topRated", discoverSortBy: "popularity.desc")
 
         when: "sourceTopRated is called"
-            sourcingService.sourceTopRated(criteria)
+            sourcingService.sourceTopRated(criteria, 20)
 
         then: "discoverTopRated is called with popularity.desc"
             1 * tmdbClient.discoverTopRated(200, "popularity.desc") >> []
@@ -551,7 +563,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Drama"])
 
         when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with popularity.desc"
             1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
@@ -562,7 +574,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Drama"], discoverSortBy: "vote_count.desc")
 
         when: "sourceByGenreOrKeyword is called"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with vote_count.desc"
             1 * tmdbClient.discover([18], [], "vote_count.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
@@ -573,11 +585,11 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-029-AC-07: sourceByGenreOrKeyword sources via discover with the configured 200 default when minVoteCount is unset"() {
         given: "a sourcing service with defaultMinVoteCount=200"
             def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
-                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), deduplicationService, outputFilterService, 3)
             def criteria = new RecommendationCriteria(genres: ["Crime"])
 
         when: "sourceByGenreOrKeyword is called with genres=['Crime'], no minVoteCount"
-            svc.sourceByGenreOrKeyword(criteria)
+            svc.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with minVoteCount=200"
             1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.minVoteCount() == 200 }) >> []
@@ -586,11 +598,11 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-029-AC-07/SERIES-029-AC-09: an explicit minVoteCount overrides the 200 default"() {
         given: "a sourcing service with defaultMinVoteCount=200"
             def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
-                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50))
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), deduplicationService, outputFilterService, 3)
             def criteria = new RecommendationCriteria(genres: ["Crime"], minVoteCount: 5)
 
         when: "sourceByGenreOrKeyword is called with genres=['Crime'], minVoteCount=5"
-            svc.sourceByGenreOrKeyword(criteria)
+            svc.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover is called with the explicit value, not the 200 default"
             1 * tmdbClient.discover(_, _, _, { DiscoverFilters f -> f.minVoteCount() == 5 }) >> []
@@ -616,7 +628,7 @@ class RecommendationSourcingServiceSpec extends Specification {
                 yearMin: 2020, yearMax: 2024)
 
         when: "sourceByGenreOrKeyword runs"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "TmdbClient.discover was called with a DiscoverFilters carrying the same values"
             1 * tmdbClient.discover(_, _, _, { DiscoverFilters f ->
@@ -643,7 +655,7 @@ class RecommendationSourcingServiceSpec extends Specification {
                 minTmdbRating: new BigDecimal("8.0"), yearMin: 2020)
 
         when: "sourceTopRated runs"
-            sourcingService.sourceTopRated(criteria)
+            sourcingService.sourceTopRated(criteria, 20)
 
         then: "discoverTopRated was called with its existing two-arg signature, unchanged"
             1 * tmdbClient.discoverTopRated(_, _) >> []
@@ -656,7 +668,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(genres: ["Comedy"], language: "en", countries: ["US", "GB"])
 
         when: "sourceByGenreOrKeyword runs"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "TmdbClient.discover was called with a DiscoverFilters carrying the same values"
             1 * tmdbClient.discover(_, _, _, { DiscoverFilters f ->
@@ -682,7 +694,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria(sourceMode: "topRated", language: "en", countries: ["US"])
 
         when: "sourceTopRated runs"
-            sourcingService.sourceTopRated(criteria)
+            sourcingService.sourceTopRated(criteria, 20)
 
         then: "discoverTopRated was called with its existing two-arg signature, unchanged"
             1 * tmdbClient.discoverTopRated(_, _) >> []
@@ -695,7 +707,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             def criteria = new RecommendationCriteria()
 
         when: "sourceByGenreOrKeyword runs"
-            sourcingService.sourceByGenreOrKeyword(criteria)
+            sourcingService.sourceByGenreOrKeyword(criteria, 20)
 
         then: "discover was called with empty genre/keyword lists and DiscoverFilters carrying only the sourcing-time minVoteCount default"
             1 * tmdbClient.discover([], [], "popularity.desc", { DiscoverFilters f ->
@@ -708,7 +720,7 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-035-AC-06: sourceFromPool resolves its result through the pool cache"() {
         given: "a real pool cache and one eligible COMPLETED series"
             def poolCache = new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)
-            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache)
+            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache, deduplicationService, outputFilterService, 3)
             def source = completedSeries("Breaking Bad", "tt0903747", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
@@ -725,7 +737,7 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-035-AC-07: a sortBy-only change is a cache hit, not a re-fetch"() {
         given: "a real pool cache and one eligible COMPLETED series"
             def poolCache = new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)
-            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache)
+            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache, deduplicationService, outputFilterService, 3)
             def source = completedSeries("Breaking Bad", "tt0903747", LocalDateTime.now())
             seriesRepository.findAll() >> [source]
             tmdbClient.findTvIdByImdbId("tt0903747") >> Optional.of(1396)
@@ -742,14 +754,215 @@ class RecommendationSourcingServiceSpec extends Specification {
     def "SERIES-035-AC-08: trending/topRated/genre-directed sourcing remain uncached (regression guard)"() {
         given: "a real pool cache shared with the sourcing service under test"
             def poolCache = new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50)
-            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache)
+            def sourcing = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200, poolCache, deduplicationService, outputFilterService, 3)
             def criteria = new RecommendationCriteria(genres: ["Drama"])
 
         when: "sourceByGenreOrKeyword is called twice with identical criteria"
-            sourcing.sourceByGenreOrKeyword(criteria)
-            sourcing.sourceByGenreOrKeyword(criteria)
+            sourcing.sourceByGenreOrKeyword(criteria, 20)
+            sourcing.sourceByGenreOrKeyword(criteria, 20)
 
         then: "TMDB is consulted on every call -- no caching leaked into this path"
             2 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
+    }
+
+    // -- Spec 054, Requirement 2/4 (SERIES-054-AC-09/11/12/13): backfill-pagination stopping conditions -- sourceTrending --
+
+    def "SERIES-054-AC-09/11: sourceTrending stops paging once dedup/filter yields enough"() {
+        given: "page 1's post-dedup/filter count already reaches the requested limit of 15"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        when: "sourceTrending is called with limit=15"
+            sourcingService.sourceTrending(criteria, 15)
+
+        then: "only page 1 is fetched"
+            1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
+            0 * tmdbClient.trending("week", 2)
+    }
+
+    def "SERIES-054-AC-09: sourceTrending fetches page 2 and merges its candidates when page 1's post-dedup/filter count is short"() {
+        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's reaches 20"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        when: "sourceTrending is called with limit=20"
+            def result = sourcingService.sourceTrending(criteria, 20)
+
+        then: "page 1 and page 2 are both fetched and merged, no page 3"
+            1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
+            1 * tmdbClient.trending("week", 2) >> [candidate(21)]
+            0 * tmdbClient.trending("week", 3)
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(5)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
+            result.size() == 21
+    }
+
+    def "SERIES-054-AC-12: sourceTrending stops at max-discover-pages even if still short, without erroring"() {
+        given: "every page's post-dedup/filter count stays short of limit=100"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        when: "sourceTrending is called with limit=100"
+            sourcingService.sourceTrending(criteria, 100)
+
+        then: "exactly 3 pages (the default max-discover-pages) are fetched, no error is thrown"
+            1 * tmdbClient.trending("week") >> [candidate(1)]
+            1 * tmdbClient.trending("week", 2) >> [candidate(2)]
+            1 * tmdbClient.trending("week", 3) >> [candidate(3)]
+            0 * tmdbClient.trending("week", 4)
+            deduplicationService.dedupeAndExclude(_) >> []
+            outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
+            notThrown(Exception)
+    }
+
+    def "SERIES-054-AC-13: sourceTrending stops immediately on an empty page, before max-discover-pages"() {
+        given: "page 2 returns an empty results array"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        when: "sourceTrending is called with limit=100"
+            sourcingService.sourceTrending(criteria, 100)
+
+        then: "no page 3 is ever requested"
+            1 * tmdbClient.trending("week") >> [candidate(1)]
+            1 * tmdbClient.trending("week", 2) >> []
+            0 * tmdbClient.trending("week", 3)
+            deduplicationService.dedupeAndExclude(_) >> []
+            outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
+    }
+
+    // -- Spec 054: backfill-pagination stopping conditions -- sourceTopRated (analogous to sourceTrending above) --
+
+    def "SERIES-054-AC-09/11: sourceTopRated stops paging once dedup/filter yields enough"() {
+        given: "page 1's post-dedup/filter count already reaches the requested limit of 15"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+
+        when: "sourceTopRated is called with limit=15"
+            sourcingService.sourceTopRated(criteria, 15)
+
+        then: "only page 1 is fetched"
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> (1..20).collect { candidate(it) }
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
+            0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2)
+    }
+
+    def "SERIES-054-AC-09: sourceTopRated fetches page 2 and merges its candidates when page 1's post-dedup/filter count is short"() {
+        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's reaches 20"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+
+        when: "sourceTopRated is called with limit=20"
+            def result = sourcingService.sourceTopRated(criteria, 20)
+
+        then: "page 1 and page 2 are both fetched and merged, no page 3"
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> (1..20).collect { candidate(it) }
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> [candidate(21)]
+            0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3)
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(5)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
+            result.size() == 21
+    }
+
+    def "SERIES-054-AC-12: sourceTopRated stops at max-discover-pages even if still short, without erroring"() {
+        given: "every page's post-dedup/filter count stays short of limit=100"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+
+        when: "sourceTopRated is called with limit=100"
+            sourcingService.sourceTopRated(criteria, 100)
+
+        then: "exactly 3 pages (the default max-discover-pages) are fetched, no error is thrown"
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(1)]
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> [candidate(2)]
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3) >> [candidate(3)]
+            0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 4)
+            deduplicationService.dedupeAndExclude(_) >> []
+            outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
+            notThrown(Exception)
+    }
+
+    def "SERIES-054-AC-13: sourceTopRated stops immediately on an empty page, before max-discover-pages"() {
+        given: "page 2 returns an empty results array"
+            def criteria = new RecommendationCriteria(sourceMode: "topRated")
+
+        when: "sourceTopRated is called with limit=100"
+            sourcingService.sourceTopRated(criteria, 100)
+
+        then: "no page 3 is ever requested"
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(1)]
+            1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
+            0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3)
+            deduplicationService.dedupeAndExclude(_) >> []
+            outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
+    }
+
+    // -- Spec 054: backfill-pagination stopping conditions -- sourceByGenreOrKeyword (analogous to sourceTrending above) --
+
+    private static final DiscoverFilters EMPTY_REQUEST_FILTERS =
+        new DiscoverFilters(200, null, null, null, null, null, [])
+
+    def "SERIES-054-AC-09/11: sourceByGenreOrKeyword stops paging once dedup/filter yields enough"() {
+        given: "page 1's post-dedup/filter count already reaches the requested limit of 15"
+            def criteria = new RecommendationCriteria()
+
+        when: "sourceByGenreOrKeyword is called with limit=15"
+            sourcingService.sourceByGenreOrKeyword(criteria, 15)
+
+        then: "only page 1 is fetched"
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> (1..20).collect { candidate(it) }
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
+            0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2)
+    }
+
+    def "SERIES-054-AC-09: sourceByGenreOrKeyword fetches page 2 and merges its candidates when page 1's post-dedup/filter count is short"() {
+        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's reaches 20"
+            def criteria = new RecommendationCriteria()
+
+        when: "sourceByGenreOrKeyword is called with limit=20"
+            def result = sourcingService.sourceByGenreOrKeyword(criteria, 20)
+
+        then: "page 1 and page 2 are both fetched and merged, no page 3"
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> (1..20).collect { candidate(it) }
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> [candidate(21)]
+            0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3)
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(5)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
+            result.size() == 21
+    }
+
+    def "SERIES-054-AC-12: sourceByGenreOrKeyword stops at max-discover-pages even if still short, without erroring"() {
+        given: "every page's post-dedup/filter count stays short of limit=100"
+            def criteria = new RecommendationCriteria()
+
+        when: "sourceByGenreOrKeyword is called with limit=100"
+            sourcingService.sourceByGenreOrKeyword(criteria, 100)
+
+        then: "exactly 3 pages (the default max-discover-pages) are fetched, no error is thrown"
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> [candidate(1)]
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> [candidate(2)]
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3) >> [candidate(3)]
+            0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 4)
+            deduplicationService.dedupeAndExclude(_) >> []
+            outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
+            notThrown(Exception)
+    }
+
+    def "SERIES-054-AC-13: sourceByGenreOrKeyword stops immediately on an empty page, before max-discover-pages"() {
+        given: "page 2 returns an empty results array"
+            def criteria = new RecommendationCriteria()
+
+        when: "sourceByGenreOrKeyword is called with limit=100"
+            sourcingService.sourceByGenreOrKeyword(criteria, 100)
+
+        then: "no page 3 is ever requested"
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> [candidate(1)]
+            1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> []
+            0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3)
+            deduplicationService.dedupeAndExclude(_) >> []
+            outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
     }
 }

@@ -158,6 +158,23 @@ public class TmdbClient {
      *                                  any other reason
      */
     public List<TmdbCandidate> discover(List<Integer> genreIds, List<Integer> keywordIds, String sortBy, DiscoverFilters filters) {
+        return discover(genreIds, keywordIds, sortBy, filters, 1);
+    }
+
+    /**
+     * SERIES-054-AC-03: page-aware overload of {@link #discover(List, List, String,
+     * DiscoverFilters)}, used by {@code RecommendationSourcingService}'s backfill-pagination
+     * loop (SERIES-054-AC-09) to fetch page 2+ of a discover/tv query once dedup/output-
+     * filtering has left a sourcing mode short of the requested {@code limit}. {@code page} is
+     * sent as TMDB's own {@code page} query param only when greater than 1
+     * (SERIES-054-AC-03/06 -- omitted entirely for page 1), so {@link #discover(List, List,
+     * String, DiscoverFilters)} itself, and every one of its existing call sites, remain
+     * byte-identical (SERIES-054-AC-04).
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> discover(List<Integer> genreIds, List<Integer> keywordIds, String sortBy, DiscoverFilters filters, int page) {
         Map<String, Object> body = fetch(uriBuilder -> {
             UriBuilder b = uriBuilder.path("discover/tv").queryParam("sort_by", sortBy);
             if (genreIds != null && !genreIds.isEmpty()) {
@@ -167,9 +184,19 @@ public class TmdbClient {
                 b = b.queryParam("with_keywords", joinIds(keywordIds));
             }
             b = applyDiscoverFilters(b, filters);
+            b = applyPage(b, page);
             return b;
         });
         return mapResults(body);
+    }
+
+    /**
+     * Sends TMDB's own {@code page} query param only when {@code page > 1} (SERIES-054-AC-01/
+     * 02/03) -- shared by every page-aware overload so page-1 requests stay byte-identical to
+     * their pre-SERIES-054 no-page counterparts.
+     */
+    private static UriBuilder applyPage(UriBuilder b, int page) {
+        return page > 1 ? b.queryParam("page", page) : b;
     }
 
     private static String joinIds(List<Integer> ids) {
@@ -227,10 +254,27 @@ public class TmdbClient {
      *                                  any other reason
      */
     public List<TmdbCandidate> trending(String timeWindow) {
+        return trending(timeWindow, 1);
+    }
+
+    /**
+     * SERIES-054-AC-01: page-aware overload of {@link #trending(String)}, used by {@code
+     * RecommendationSourcingService}'s backfill-pagination loop (SERIES-054-AC-09) to fetch
+     * page 2+ once dedup/output-filtering has left {@code sourceTrending} short of the
+     * requested {@code limit}. {@code page} is sent as TMDB's own {@code page} query param
+     * only when greater than 1, so {@link #trending(String)} itself, and every one of its
+     * existing call sites, remain byte-identical (SERIES-054-AC-04).
+     *
+     * @throws IllegalArgumentException if {@code timeWindow} is not {@code "day"} or {@code
+     *                                  "week"} -- checked before any TMDB call is attempted
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> trending(String timeWindow, int page) {
         if (timeWindow == null || !VALID_TIME_WINDOWS.contains(timeWindow)) {
             throw new IllegalArgumentException("timeWindow must be 'day' or 'week'");
         }
-        Map<String, Object> body = fetch(uriBuilder -> uriBuilder.path("trending/tv/" + timeWindow));
+        Map<String, Object> body = fetch(uriBuilder -> applyPage(uriBuilder.path("trending/tv/" + timeWindow), page));
         return mapResults(body);
     }
 
@@ -249,10 +293,25 @@ public class TmdbClient {
      *                                  any other reason
      */
     public List<TmdbCandidate> discoverTopRated(int minVoteCount, String sortBy) {
-        Map<String, Object> body = fetch(uriBuilder -> uriBuilder
+        return discoverTopRated(minVoteCount, sortBy, 1);
+    }
+
+    /**
+     * SERIES-054-AC-02: page-aware overload of {@link #discoverTopRated(int, String)}, used
+     * by {@code RecommendationSourcingService}'s backfill-pagination loop (SERIES-054-AC-09)
+     * to fetch page 2+ once dedup/output-filtering has left {@code sourceTopRated} short of
+     * the requested {@code limit}. {@code page} is sent as TMDB's own {@code page} query param
+     * only when greater than 1, so {@link #discoverTopRated(int, String)} itself, and every
+     * one of its existing call sites, remain byte-identical (SERIES-054-AC-04).
+     *
+     * @throws ExternalServiceException if the TMDB API key is unset, or the call fails for
+     *                                  any other reason
+     */
+    public List<TmdbCandidate> discoverTopRated(int minVoteCount, String sortBy, int page) {
+        Map<String, Object> body = fetch(uriBuilder -> applyPage(uriBuilder
             .path("discover/tv")
             .queryParam("sort_by", sortBy)
-            .queryParam("vote_count.gte", minVoteCount));
+            .queryParam("vote_count.gte", minVoteCount), page));
         return mapResults(body);
     }
 

@@ -136,10 +136,24 @@ implemented as one.
     app-side cap, or requesting additional TMDB pages (pagination) for heavily-weighted sources,
     rather than being silently bound by TMDB's own first-page size.
     **Update (2026-09-08)**: `series_spec_054_recommendation_discover_backfill_pagination.md`
-    (specced, not yet built) adds this same kind of TMDB-page backfill, but only for the three
-    direct-TMDB-discover sourcing modes (trending/topRated/Custom Search) — "Use My Series"
-    (`sourceFromPool`, the mode this item #10 is actually about) is explicitly untouched by that
-    spec, deferred here for the reasons already stated above. This item stays fully open.
+    (delivered) added this same kind of TMDB-page backfill, but only for the three direct-TMDB-
+    discover sourcing modes (trending/topRated/Custom Search) — "Use My Series" (`sourceFromPool`,
+    the mode this item #10 is actually about) is explicitly untouched by that spec, deferred here
+    for the reasons already stated above. This item stays fully open.
+    **Update (2026-09-08, continued)**: confirmed live (post-delivery) that `SeriesDetail`'s
+    "Recommendations" button — the single-series recommendations modal reached by clicking a
+    series and then "Recommendations" — is itself a `sourceFromPool` call
+    (`sourceMode: 'useMySeries'`, `seriesIds: [series.id]`, `SeriesRecommendationsModal.tsx`),
+    just with exactly one source series selected rather than the full pool. That makes it the
+    narrowest, sharpest-edge instance of this item: a single-source `sourceFromPool` call has no
+    other sources to dilute a shortfall across (the exact mitigation cited above for why
+    `sourceFromPool` was deferred in the first place), so it's arguably the case most likely to
+    visibly come up short from an unpaginated `/recommendations`+`/similar` call — and the one a
+    user is most likely to notice, since it's reached from a prominent per-series button rather
+    than a mode picker. Whoever eventually designs the `sourceFromPool` side of this item should
+    treat "does a single-source call get backfilled the same way multi-source does, or does it
+    need its own simpler path" as one of the first things to resolve, not an edge case to handle
+    last.
 11. **Saved filter/algorithm profiles.** Confirmed during this discussion: the user wants some way
     to save a chosen combination of weights/filters/source settings rather than re-entering it
     every session. Once there are this many tunable knobs, that stops being optional. This app has
@@ -300,5 +314,57 @@ not an app bug or theme-token issue.
 3. Whether every numeric field listed above needs this treatment uniformly, or only the ones where
    the spinner's increment/decrement is actually a meaningful interaction (rating/year fields with a
    real `step`) rather than a rarely-used affordance.
+
+**Status**: Spec candidate, not yet designed.
+
+### Incremental dedup/output-filtering for `RecommendationSourcingService`'s backfill loop
+
+Raised 2026-09-08, discovered while investigating why raising `app.tmdb.max-discover-pages`
+(`series_spec_054_recommendation_discover_backfill_pagination.md`) didn't proportionally increase
+recommendation counts under several active output filters — that turned out to be a real bug
+(`maxCandidates` capping the raw pool *before* filtering, in TMDB page order), now fixed as a
+Correction on `series_spec_054` itself (see that spec's Requirement 5 / SERIES-054-AC-14). This
+candidate is the *separate*, larger issue the bug investigation surfaced along the way: the
+backfill loop's own architecture is wasteful, independent of the now-fixed capping bug.
+
+**Confirmed via live trace** (manual diagnostic logging, since reverted — not left in the
+codebase): `RecommendationSourcingService.sourceWithBackfill`'s stopping check
+(`countAfterDedupAndFilter`) re-runs `RecommendationDeduplicationService.dedupeAndExclude` and
+`RecommendationOutputFilterService.applyOutputFilters` over the *entire accumulated raw pool*
+on every single page fetched — not just the newly-fetched page — purely to get a `.size()` count
+for the "have I found enough yet?" decision, then throws the computed result away. A 6-page
+backfill (`max-discover-pages: 6`) means the accumulated pool is fully re-deduped/re-filtered 6
+times (once at 20 candidates, again at 40, 60, 80, 100, 120), and `RecommendationDeduplication
+Service.dedupeAndExclude` calls `TmdbClient.externalIds` once per raw candidate — so an early
+page's candidates get their `external_ids` re-resolved via TMDB on every subsequent page's check.
+`RecommendationService.doRecommend` then runs dedup/filtering a further, final time over
+whatever raw list the loop returns. Net effect for a 6-page backfill: roughly 7 total
+dedup/filter passes over overlapping data, several of them wholly redundant, for one API request.
+
+**Ideas to design against** (not resolved here):
+1. Dedupe/filter only each *newly-fetched* page's candidates once, folding the result into a
+   running `List<DedupedCandidate>` accumulator, rather than re-deriving the whole pool from
+   scratch every iteration — turns the loop's own cost from roughly O(pages²) dedup/filter work
+   into O(pages).
+2. Have `sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword` return that already-filtered
+   accumulator directly (a `List<DedupedCandidate>`, not `List<RawCandidate>`), eliminating
+   `doRecommend`'s current third, fully-redundant dedup/filter pass entirely. This is a real
+   interface change to `RecommendationSourcingService`'s three backfill-enabled methods (and
+   likely `RawCandidate`'s role in this path), so needs care around what stays unchanged for
+   `sourceFromPool` ("Use My Series", which this candidate doesn't touch — see `series_spec_054`'s
+   own Design Decisions for why that mode was deliberately excluded from the backfill mechanism
+   in the first place).
+3. Whether `RecommendationDeduplicationService.dedupeAndExclude`'s `TmdbClient.externalIds`
+   resolution should itself be memoized per request (a simple per-call cache keyed by `tmdbId`),
+   independent of the incremental-accumulator redesign above — would remove the repeated-
+   resolution cost even if the rest of the loop's shape stays as-is, and is a much smaller change
+   if the bigger interface rework above turns out not to be worth it on its own.
+4. This candidate explicitly **revises** `series_spec_054`'s own "deliberate simplicity-over-
+   efficiency trade-off" Design Decision (dedup-resolving a candidate more than once was
+   accepted there as "revisit only if this proves to actually matter in practice") — it just did,
+   for a personal single-user app, at `max-discover-pages: 6` with several active output filters.
+   Whoever scopes this should read that Design Decision's original reasoning first, since the
+   trade-off wasn't wrong when made (single-page sourcing, no backfill) — it just didn't
+   anticipate this spec's own later change to how large the pool could get.
 
 **Status**: Spec candidate, not yet designed.
