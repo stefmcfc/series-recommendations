@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.39.0] - 2026-09-09
+
 ### Added
 
 - Backend: `GET /api/v1/series/{id}/watch-providers` and `GET /api/v1/series/recommendations` accept an optional `region` query param overriding `app.tmdb.watch-region` for that request's streaming-availability lookups; omitting it behaves identically to before (`series_spec_053` SERIES-053-AC-01..08).
