@@ -870,6 +870,37 @@ describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', ()
   })
 })
 
+describe('FRONTEND-110-AC-01/02: accentColor applies a data-accent attribute', () => {
+  it('defaults to no data-accent attribute (purple) when nothing is stored', async () => {
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(document.documentElement.getAttribute('data-accent')).toBeNull()
+  })
+
+  it('applies data-accent="blue" when a stored accentColor is blue', async () => {
+    localStorage.setItem('accentColor', JSON.stringify('blue'))
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(document.documentElement.getAttribute('data-accent')).toBe('blue')
+  })
+
+  it('removes the attribute when switching back to Purple', async () => {
+    localStorage.setItem('accentColor', JSON.stringify('green'))
+    mockGetAll.mockResolvedValue([])
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByRole('link', { name: /settings/i }))
+    fireEvent.click(await screen.findByRole('radio', { name: /^purple$/i }))
+
+    expect(document.documentElement.getAttribute('data-accent')).toBeNull()
+  })
+})
+
 describe('FRONTEND-105-AC-09/10: status tabs render decorative icons', () => {
   it('each status tab renders an aria-hidden icon before its label', async () => {
     mockGetAll.mockResolvedValue([])

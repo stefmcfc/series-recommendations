@@ -26,6 +26,7 @@ import {
   type RecommendationQuery,
 } from './types/series'
 import { isTheme, type Theme } from './types/theme'
+import { isAccentColor, type AccentColor } from './types/accentColor'
 import {
   AllIcon,
   WatchingIcon,
@@ -210,6 +211,16 @@ function App() {
   // of which route the user lands on, and updates live across the whole app
   // the instant the Settings control changes it.
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'system', isTheme)
+  // FRONTEND-110-AC-01: a second, independent Appearance axis, owned here for
+  // the same reason theme is -- see this spec's Design Decisions. Defaults
+  // to 'purple' (today's only color), which applies no data-accent attribute
+  // at all (see the effect below), so anyone who never opens the new control
+  // sees zero change.
+  const [accentColor, setAccentColor] = useLocalStorage<AccentColor>(
+    'accentColor',
+    'purple',
+    isAccentColor,
+  )
 
   // FRONTEND-099-AC-02: applies/removes the data-theme attribute on <html>
   // (document.documentElement) whenever theme changes -- 'system' removes it
@@ -222,6 +233,18 @@ function App() {
       document.documentElement.dataset.theme = theme
     }
   }, [theme])
+
+  // FRONTEND-110-AC-02: applies/removes the data-accent attribute on <html>
+  // the same way the theme effect above does -- 'purple' removes it entirely
+  // so index.css's unmodified base/dark rules keep driving --accent
+  // unopposed, exactly as they did before this spec.
+  useEffect(() => {
+    if (accentColor === 'purple') {
+      delete document.documentElement.dataset.accent
+    } else {
+      document.documentElement.dataset.accent = accentColor
+    }
+  }, [accentColor])
 
   const handleAddSuccess = () => {
     setIsAddFormOpen(false)
@@ -334,7 +357,14 @@ function App() {
               />
               <Route
                 path="/settings"
-                element={<SettingsPage theme={theme} setTheme={setTheme} />}
+                element={
+                  <SettingsPage
+                    theme={theme}
+                    setTheme={setTheme}
+                    accentColor={accentColor}
+                    setAccentColor={setAccentColor}
+                  />
+                }
               />
               <Route path="*" element={<Navigate to="/my-series" replace />} />
             </Routes>

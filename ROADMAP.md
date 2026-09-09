@@ -8,7 +8,15 @@ tracks feature/spec status, `CHANGELOG.md` tracks version-dated technical change
 was already written — a new spec adds a row here under "Specced, coming soon"; completing a spec
 (every AC checked) moves its row into "Delivered". This absorbs `.claude/OUTSTANDING_SPECS.md`'s
 old tracking role, which is now retired (its content — `frontend_spec_034`/`035`,
-`tooling_spec_004`/`006` — lives on in the tables below).
+`tooling_spec_004`/`006` — lives on in the tables below). **When every spec in a "Specced, coming
+soon" batch paragraph is delivered, delete the paragraph itself, not just its table row** — the
+paragraph's own narrative (why the batch was planned, build order) has no remaining reader once
+nothing in it is still outstanding, and `CHANGELOG.md` already carries the dated, shipped-version
+record of what actually happened. A 2026-09-09 cleanup found seven such paragraphs (Analysis/Trends
+expansion, three Settings batches, two filter-profile batches, filter-profile polish) had
+accumulated with "now fully delivered, see Delivered table above" trailer sentences going back to
+2026-08-27 — narrating fully-shipped work that was already correctly reflected in the Delivered
+table below and in `CHANGELOG.md`, adding nothing.
 
 Last full audit against `.claude/specs/`: 2026-08-27. That audit found three stale statuses
 (Frontend 013, 022, 026 were marked "Not started" despite every acceptance criterion being
@@ -140,6 +148,7 @@ corrected below.
 | Filter profile name validation (255-char bound, reject line breaks/tabs, trim-on-write) — data hygiene only, not a security fix (SQL injection already impossible here) | `series_spec_056` | — | ✅ Done |
 | Filter profile management (Settings section: view/rename/delete-with-confirm per area), save modal with suggested name replacing the inline name input, delete confirmation added to the inline picker | — | `frontend_spec_108` | ✅ Done |
 | Filter profile polish (labeling, Settings-only delete, Save repositioning, rename UX, look-and-feel alignment across both the inline picker and Settings management section) | — | `frontend_spec_109` | ✅ Done |
+| Appearance accent color schemes (Purple/Blue/Green/Orange/Teal, independent of light/dark) + Recommendation Favourites divider | — | `frontend_spec_110` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -150,46 +159,30 @@ other *within this table* — and can be reordered freely as a block if prioriti
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore.
 
-The "Analysis/Trends" expansion (four units, `series_spec_047`/`048`/`049`/`051` +
-`frontend_spec_086`/`087`/`088`/`089`/`095`) is now fully delivered — see the "Delivered" table
-above — and no longer appears here.
+**Settings & Discover ideas batch** (planned 2026-09-09, from a live-app pass covering Settings and
+Recommendations/Discover) — `frontend_spec_110` (Appearance accent color schemes + Recommendation
+Favourites divider) is now fully delivered, see the "Delivered" table above. `frontend_spec_111`
+(each Discover sub-tab — Custom Search/Popular Right Now/Highest Rated — gains a one-line
+description, matching "Use My Series"' existing precedent line; also adds Highest Rated's
+first-ever dedicated tabpanel wrapper, a real structural gap found while grounding the spec) is
+still outstanding. The broadened Settings info/disclosure-box candidate remains logged in
+`.claude/SPEC_CANDIDATES.md`, not yet spec'd.
 
-**Settings-area batch** (`.claude/ideas/future_ideas.md`'s Configuration section, planned
-2026-09-07) — three independent specs, sequenced by which touches the backend first, then by which
-introduces shared frontend infrastructure the next one consumes. Chains 1 (`frontend_spec_097`), 2
-(`frontend_spec_098`), and 3 (`frontend_spec_099`) are now fully delivered — see the "Delivered"
-table above — and no longer appear here.
+| Feature                                                                       | Backend Spec | Frontend Spec        | Status         |
+| ------------------------------------------------------------------------------ | ------------- | --------------------- | -------------- |
+| Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated) | —         | `frontend_spec_111`  | ⬜ Not started |
 
-**Settings follow-up batch** (planned 2026-09-07, after the above shipped) — two independent
-specs/pairs; `frontend_spec_102` built after `frontend_spec_101` since both touch
-`SettingsPage.tsx` and 101's card/icon treatment is what 102's new section adopts.
-`frontend_spec_101`/`series_spec_053`/`frontend_spec_102` are now fully delivered — see the
-"Delivered" table above — and no longer appear here.
+**Saved filter profiles — Custom Search & Analysis extension** (planned 2026-09-09, from the same
+live-app pass) — two specs, backend first: `series_spec_057` (two new `FilterProfileArea` enum
+values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS` — no migration needed, the `area` column was already an
+unconstrained `VARCHAR`) lands before `frontend_spec_112` (wires both new areas into
+`CustomSearchPanel.tsx` and a single shared picker in `AnalysisView.tsx`, resolving Custom Search's
+original field-slot-sharing exclusion from `frontend_spec_107` by giving it a fully independent
+saved-profile area rather than reusing Recommendation Filters' own).
 
-**UI polish + backfill batch** (planned 2026-09-08, from a user pass over the live app) — three
-independent specs, no build-order dependency between them. `frontend_spec_103`/`104`/`105` are now
-fully delivered — see the "Delivered" table above — and no longer appear here.
-
-**Saved filter profiles batch** (planned 2026-09-09, from `.claude/SPEC_CANDIDATES.md` item 11) —
-three specs, strictly sequenced: `frontend_spec_106` (sticky Discover-mode tab), `series_spec_055`
-(backend filter-profile CRUD), `frontend_spec_107` (the profile-picker UI). All three are now
-fully delivered — see the "Delivered" table above — and no longer appear here.
-
-**Filter profile follow-up** (planned 2026-09-09, after a live-app pass) — two specs, backend
-first: `series_spec_056` (name validation hardening — length bound, control-character rejection,
-trim-on-write) lands before `frontend_spec_108` (Settings management section, save modal with
-suggested name, delete confirmation, rename), since the frontend's client-side length check needs
-to match this spec's declared bound. `series_spec_056`/`frontend_spec_108` are now fully delivered
-— see the "Delivered" table above — and no longer appear here.
-
-**Filter profile polish** (planned 2026-09-09, second live-app pass) — `frontend_spec_109`:
-"Saved Filters" labeling, delete removed from the inline picker (Settings-only now), Save
-repositioned to the end of each filter view, rename replaces the name field instead of sitting
-alongside it, and a look-and-feel alignment pass (chip styling, card styling, modal
-radius/shadow/z-index, and — added during live-app review after the initial pass — button geometry
-fixes on both the inline picker's Save/Update CTAs and the Settings management section's
-Rename/Delete/Save/Cancel/Confirm row actions). `frontend_spec_109` is now fully delivered — see
-the "Delivered" table above — and no longer appears here.
+| Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
+| ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
+| Saved filter profiles for Custom Search + Analysis filters                     | `series_spec_057`   | `frontend_spec_112`  | ⬜ Not started |
 
 ## Internal / maintenance specs (not user-facing features)
 

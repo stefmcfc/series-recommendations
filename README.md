@@ -1,19 +1,21 @@
 # TV Series Tracker
 
-A personal app for logging TV series you're watching, tracking your viewing progress, and storing ratings from multiple sources (IMDb, Metacritic, Rotten Tomatoes).
+A personal app for logging TV series you're watching, tracking your viewing progress, and storing ratings from multiple sources (IMDb, TMDB, Rotten Tomatoes).
 
 ## What it does
 
-- Add series with metadata (title, year, genre, episode count)
-- Track viewing progress at season/episode level
-- Store ratings from IMDb, Metacritic, and Rotten Tomatoes alongside personal ratings and notes
-- Search and filter by genre, keyword, rating range, and completion status
+- Add series with metadata (title, year, genre, episode count), looked up from TMDB
+- Track viewing progress at season/episode level, with status (Backlog/Watching/Completed/Dropped) and a separate rewatch flag/tab
+- Store ratings from IMDb, TMDB, and Rotten Tomatoes (Popcornmeter) alongside personal ratings and notes
+- Filter and sort your list by genre, keyword, rating, and year, with live title search and status tabs
 - Export your data as JSON or CSV, and re-import it (or any file in the same shape) later
 - Refresh a series' metadata from TMDB/OMDb on demand, or in bulk across your whole collection, with new-content detection
 - Track normalized keywords per series, with keyword-based filtering
 - Analyze your collection in an Analysis section — Keyword, Genre, and Country of Origin stats tables with series-count/rating aggregates, minimum-value filtering, and sortable columns
 - See streaming (watch-provider) availability for a series or a recommendation candidate
-- Get series recommendations sourced from TMDB, based on shows similar to what you've completed (or, with too little data yet, your most-watched genres), with a dismiss/ignore list so a rejected suggestion never resurfaces
+- Get recommendations two ways: "Use My Series" (sourced from shows similar to what you've completed) or "Discover" (Custom Search by your own genre/keyword/rating/year/country/language criteria, Popular Right Now trending, or Highest Rated overall) — with a dismiss/ignore list so a rejected suggestion never resurfaces
+- Save named filter presets across My Series, Recommendations, and Analysis so you don't have to re-enter the same criteria every session
+- Customize Settings — light/dark/match-system theme, default watch region, country/language favourites, and refresh-scheduling overrides
 
 ## Tech Stack
 
@@ -21,10 +23,10 @@ A personal app for logging TV series you're watching, tracking your viewing prog
 |-------|-----------|
 | Backend | Java 25 toolchain, Spring Boot 4.1.0 |
 | Frontend | TypeScript ~6.0, React 19.2, Vite 8.2 |
-| Database | SQLite (local dev) → PostgreSQL (production) |
+| Database | SQLite (local dev); PostgreSQL planned for production, no code changes needed (Spring Data JPA) |
 | ORM | Spring Data JPA + Hibernate |
 | Migrations | Flyway |
-| Build (backend) | Gradle (wrapper included) |
+| Build (backend) | Gradle (Windows `gradlew.bat` wrapper only) |
 | Build (frontend) | Vite, npm |
 | Tests (backend) | Spock Framework (Groovy) |
 | Tests (frontend) | Vitest, React Testing Library |
@@ -35,7 +37,7 @@ A personal app for logging TV series you're watching, tracking your viewing prog
 series-recommendation/
 ├── .claude/
 │   ├── agents/            # Claude Code subagents (backend-dev, frontend-dev, spec-writer)
-│   ├── skills/             # Claude Code skills (ears-spec)
+│   ├── skills/             # Claude Code skills (ears-spec, verify)
 │   ├── steering/           # AI assistant context files
 │   └── specs/               # Feature specs and requirements
 ├── backend/               # Spring Boot application

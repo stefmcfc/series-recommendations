@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.46.0] - 2026-09-10
+
+### Added
+
+- Frontend: Settings' Appearance section gains a second, independent "Accent Color" choice (Purple/Blue/Green/Orange/Teal) alongside the existing light/dark/match-system theme toggle, applied instantly and persisted across reloads (`frontend_spec_110`).
+
+### Fixed
+
+- Frontend: Settings' "Recommendation Favourites" section now renders a visual divider between Country Favourites and Language Favourites, so they read as two distinct fields rather than one continuous list (`frontend_spec_110`).
+
 ## [3.45.0] - 2026-09-09
 
 ### Added
