@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.38.1] - 2026-09-09
+
+### Fixed
+
+- Frontend: `App.tsx`'s status-tab `NavLink`s make the space between each icon and its text label explicit with `{' '}` instead of relying on JSX whitespace-collapse across a newline (Sonar "Ambiguous spacing after previous element", 6 instances), matching the existing pattern already used in `SeriesList.tsx`. No behavior change.
+
 ## [3.38.0] - 2026-09-08
 
 ### Added
