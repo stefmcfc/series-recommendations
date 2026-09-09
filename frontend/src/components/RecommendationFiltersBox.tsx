@@ -12,7 +12,9 @@ import {
   isMinVoteCountValid,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
+import type { RecommendationFiltersCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
+import { FilterProfileSelector } from './FilterProfileSelector'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -124,6 +126,30 @@ export function RecommendationFiltersBox({
       excludeKeywordsSelected: [],
       language: '',
       countriesSelected: [],
+    })
+  }
+
+  // FRONTEND-107-AC-11: the named 8-field slice of ControlsState this area's
+  // saved profiles cover -- never minVoteCountTouched (bookkeeping-only, see
+  // handleApplyProfile below).
+  const currentRecommendationFiltersCriteria: RecommendationFiltersCriteria = {
+    minVoteCount: state.minVoteCount,
+    excludeGenresSelected: state.excludeGenresSelected,
+    excludeKeywordsSelected: state.excludeKeywordsSelected,
+    minTmdbRating: state.minTmdbRating,
+    yearMin: state.yearMin,
+    yearMax: state.yearMax,
+    language: state.language,
+    countriesSelected: state.countriesSelected,
+  }
+
+  // FRONTEND-107-AC-12: mirrors handleMinVoteCountChange/handleResetFilters's
+  // existing pattern exactly -- always keeps minVoteCountTouched in sync
+  // with minVoteCount in the same updateState call.
+  const handleApplyProfile = (criteria: RecommendationFiltersCriteria) => {
+    updateState({
+      ...criteria,
+      minVoteCountTouched: criteria.minVoteCount !== '',
     })
   }
 
@@ -290,6 +316,15 @@ export function RecommendationFiltersBox({
               </div>
             </>
           )}
+
+          <div className={styles.filterFullWidthRow}>
+            <FilterProfileSelector<RecommendationFiltersCriteria>
+              area="RECOMMENDATION_FILTERS"
+              currentCriteria={currentRecommendationFiltersCriteria}
+              onApply={handleApplyProfile}
+              disabled={isCustomSearch}
+            />
+          </div>
 
           <div className={styles.filtersActions}>
             <button

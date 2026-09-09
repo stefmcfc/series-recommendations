@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.43.0] - 2026-09-09
+
+### Added
+
+- Frontend: named, saved filter profiles — save/apply/update/delete a filter combination under a name, in My Series' filter sheet, Recommendations' "Use My Series" panel, and Recommendations' shared "Filters" box (excluded while Custom Search is active, since it shares underlying field slots with the other Discover modes) (`frontend_spec_107`).
+
 ## [3.42.0] - 2026-09-09
 
 ### Added

@@ -1337,3 +1337,77 @@ describe('SN-009: No production logging', () => {
     consoleSpy.mockRestore()
   })
 })
+
+// ---------------------------------------------------------------------------
+// FRONTEND-107-AC-02: filter-profile seriesApi methods
+// ---------------------------------------------------------------------------
+describe('FRONTEND-107-AC-02: filter-profile seriesApi methods', () => {
+  it('listFilterProfiles calls GET with the area param', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.listFilterProfiles('MY_SERIES')
+    expect(client.get).toHaveBeenCalledWith('/filter-profiles', {
+      params: { area: 'MY_SERIES' },
+    })
+  })
+
+  it('createFilterProfile POSTs area/name/criteria and returns the created profile', async () => {
+    const created = {
+      id: '1',
+      area: 'MY_SERIES',
+      name: 'Weeknight',
+      criteria: {},
+      createdAt: '',
+      updatedAt: '',
+    }
+    client.post.mockResolvedValue({ data: { data: created } })
+    const result = await seriesApi.createFilterProfile(
+      'MY_SERIES',
+      'Weeknight',
+      {},
+    )
+    expect(client.post).toHaveBeenCalledWith('/filter-profiles', {
+      area: 'MY_SERIES',
+      name: 'Weeknight',
+      criteria: {},
+    })
+    expect(result).toEqual(created)
+  })
+
+  it('updateFilterProfile PATCHes the given id with the patch body', async () => {
+    const updated = {
+      id: '1',
+      area: 'MY_SERIES',
+      name: 'Weeknight',
+      criteria: { genres: ['Drama'] },
+      createdAt: '',
+      updatedAt: '',
+    }
+    client.patch.mockResolvedValue({ data: { data: updated } })
+    const result = await seriesApi.updateFilterProfile('1', {
+      criteria: { genres: ['Drama'] },
+    })
+    expect(client.patch).toHaveBeenCalledWith('/filter-profiles/1', {
+      criteria: { genres: ['Drama'] },
+    })
+    expect(result).toEqual(updated)
+  })
+
+  it('a 409 conflict surfaces as ApiError', async () => {
+    client.post.mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: { error: 'A filter profile named X already exists' },
+      },
+    })
+    await expect(
+      seriesApi.createFilterProfile('MY_SERIES', 'X', {}),
+    ).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('deleteFilterProfile DELETEs by id', async () => {
+    client.delete.mockResolvedValue({ data: null })
+    await seriesApi.deleteFilterProfile('1')
+    expect(client.delete).toHaveBeenCalledWith('/filter-profiles/1')
+  })
+})

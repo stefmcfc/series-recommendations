@@ -24,6 +24,10 @@ vi.mock('../services/seriesApi')
 const mockGetAll = vi.mocked(seriesApi.getAll)
 const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
+// FRONTEND-107-AC-11: RecommendationFiltersBox/UseMySeriesPanel now render a
+// FilterProfileSelector that fetches on mount -- mocked here (not previously
+// needed by this file) so every pre-existing test sees no behavior change.
+const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
@@ -67,6 +71,7 @@ beforeEach(() => {
   mockGetAll.mockResolvedValue([])
   mockGetGenreOptions.mockResolvedValue([])
   mockGetKeywordStats.mockResolvedValue([])
+  mockListFilterProfiles.mockResolvedValue([])
 })
 
 // FRONTEND-081: buildSpecificSeriesCandidatePool's filter criteria moved

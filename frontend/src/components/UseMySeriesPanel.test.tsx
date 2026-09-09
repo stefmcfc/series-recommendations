@@ -1,9 +1,20 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
-import { vi, describe, it, expect } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
 import { initialState } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import type { Series } from '../types/series'
+import { seriesApi } from '../services/seriesApi'
+
+// FRONTEND-107-AC-10: UseMySeriesPanel now renders a FilterProfileSelector
+// (area USE_MY_SERIES) that fetches on mount -- mocked here (not previously
+// needed by this file) so every pre-existing test sees no behavior change.
+vi.mock('../services/seriesApi')
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
+})
 
 // TOOLING-008-AC-02: dedicated, isolated coverage for the panel extracted
 // from RecommendationControls.tsx's former `state.mode === 'useMySeries'`
@@ -809,5 +820,43 @@ describe('FRONTEND-064-AC-05: picker sort defaults to ascending for Title', () =
     expect(
       screen.getByRole('button', { name: 'Sort ascending' }),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
+  it('updates each local filter/sort field from the applied profile', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([
+      {
+        id: '1',
+        area: 'USE_MY_SERIES',
+        name: 'Comedies',
+        criteria: {
+          genreFilter: ['Comedy'],
+          excludeGenreFilter: [],
+          statusFilter: 'completedOnly',
+          keywordsFilter: [],
+          minPersonalRating: null,
+          minImdbRating: '',
+          minTmdbRating: '',
+          yearMin: '',
+          yearMax: '',
+          sortBy: 'title',
+          sortDirection: 'asc',
+        },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Comedy']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(await screen.findByText('Comedies'))
+    expect(screen.getByLabelText('Completed Only')).toBeChecked()
   })
 })

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import type { Series } from '../types/series'
+import type { UseMySeriesFilterCriteria } from '../types/filterProfile'
 import { KeywordPicker } from './KeywordPicker'
 import type { PickerOption } from './KeywordPicker'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { StarRating } from './StarRating'
+import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   buildSpecificSeriesCandidatePool,
@@ -96,6 +98,42 @@ export function UseMySeriesPanel({
 
   const handleSpecificSeriesSelectionChange = (next: string[]) => {
     updateState({ selectedSeriesIds: next })
+  }
+
+  // FRONTEND-107-AC-10: assembled from this panel's own ~10 local useState
+  // values -- there's no single ControlsState/reducer slice for these, so
+  // this is a small adapter rather than a straight prop pass-through.
+  const currentUseMySeriesCriteria: UseMySeriesFilterCriteria = {
+    genreFilter: specificSeriesGenreFilter,
+    excludeGenreFilter: specificSeriesExcludeGenreFilter,
+    statusFilter: specificSeriesStatusFilter,
+    keywordsFilter: specificSeriesKeywordsFilter,
+    minPersonalRating: specificSeriesMinPersonalRating,
+    minImdbRating: specificSeriesMinImdbRating,
+    minTmdbRating: specificSeriesMinTmdbRating,
+    yearMin: specificSeriesYearMin,
+    yearMax: specificSeriesYearMax,
+    sortBy: specificSeriesSortBy,
+    sortDirection: specificSeriesSortDirection,
+  }
+
+  // FRONTEND-107-AC-10: there's no reducer to patch here, so applying a
+  // saved profile calls each individual setter in sequence (this spec's
+  // Design Decisions).
+  const applyUseMySeriesFilterCriteria = (
+    criteria: UseMySeriesFilterCriteria,
+  ) => {
+    setSpecificSeriesGenreFilter(criteria.genreFilter)
+    setSpecificSeriesExcludeGenreFilter(criteria.excludeGenreFilter)
+    setSpecificSeriesStatusFilter(criteria.statusFilter)
+    setSpecificSeriesKeywordsFilter(criteria.keywordsFilter)
+    setSpecificSeriesMinPersonalRating(criteria.minPersonalRating)
+    setSpecificSeriesMinImdbRating(criteria.minImdbRating)
+    setSpecificSeriesMinTmdbRating(criteria.minTmdbRating)
+    setSpecificSeriesYearMin(criteria.yearMin)
+    setSpecificSeriesYearMax(criteria.yearMax)
+    setSpecificSeriesSortBy(criteria.sortBy)
+    setSpecificSeriesSortDirection(criteria.sortDirection)
   }
 
   // FRONTEND-064-AC-04/AC-05: selecting a new sort field also resets the
@@ -195,6 +233,14 @@ export function UseMySeriesPanel({
                     className={styles.filtersBody}
                     data-testid="specific-series-filters-body"
                   >
+                    <div className={styles.filterFullWidthRow}>
+                      <FilterProfileSelector<UseMySeriesFilterCriteria>
+                        area="USE_MY_SERIES"
+                        currentCriteria={currentUseMySeriesCriteria}
+                        onApply={applyUseMySeriesFilterCriteria}
+                      />
+                    </div>
+
                     {/* FRONTEND-081 (2026-09-03 live-review amendment): Status
                         and Sort by are now their own full-width rows
                         (previously stacked together in a shared right-hand

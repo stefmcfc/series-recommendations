@@ -2,9 +2,18 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationFiltersBox } from './RecommendationFiltersBox'
 import type { ControlsState } from './RecommendationControls'
+import { seriesApi } from '../services/seriesApi'
+
+// FRONTEND-107-AC-11: RecommendationFiltersBox now renders a
+// FilterProfileSelector (area RECOMMENDATION_FILTERS) that fetches on mount
+// while enabled -- mocked here (not previously needed by this file) so every
+// pre-existing test sees no behavior change.
+vi.mock('../services/seriesApi')
 
 beforeEach(() => {
   localStorage.clear()
+  vi.clearAllMocks()
+  vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
 })
 
 // TOOLING-008-AC-05: dedicated, isolated coverage for the panel extracted
@@ -344,5 +353,60 @@ describe('FRONTEND-094-AC-11: valid Min Vote Count has no error', () => {
     expect(
       screen.queryByText(/min vote count must be a whole number/i),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-107-AC-11: RecommendationFiltersBox selector wiring', () => {
+  it('is disabled while isCustomSearch', () => {
+    renderBox({ isCustomSearch: true })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    expect(seriesApi.listFilterProfiles).not.toHaveBeenCalled()
+  })
+
+  it('renders and fetches when not Custom Search', () => {
+    renderBox({ isCustomSearch: false })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    expect(seriesApi.listFilterProfiles).toHaveBeenCalledWith(
+      'RECOMMENDATION_FILTERS',
+    )
+  })
+})
+
+describe('FRONTEND-107-AC-12: applying a profile sets minVoteCountTouched', () => {
+  it('sets minVoteCountTouched true when the applied profile has a minVoteCount value', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([
+      {
+        id: '1',
+        area: 'RECOMMENDATION_FILTERS',
+        name: 'Popular',
+        criteria: {
+          minVoteCount: '200',
+          excludeGenresSelected: [],
+          excludeKeywordsSelected: [],
+          minTmdbRating: '',
+          yearMin: '',
+          yearMax: '',
+          language: '',
+          countriesSelected: [],
+        },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    const { updateState } = renderBox({ isCustomSearch: false })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    fireEvent.click(await screen.findByText('Popular'))
+    expect(updateState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        minVoteCount: '200',
+        minVoteCountTouched: true,
+      }),
+    )
   })
 })

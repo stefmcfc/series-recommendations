@@ -20,6 +20,10 @@ const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
+// FRONTEND-107-AC-09: SearchFilter now renders a FilterProfileSelector
+// (area MY_SERIES) that fetches on mount -- mocked here (not previously
+// needed by this file) so every pre-existing test sees no behavior change.
+const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -44,6 +48,7 @@ beforeEach(() => {
   })
   mockGetKeywordStats.mockResolvedValue([])
   mockGetGenreOptions.mockResolvedValue([])
+  mockListFilterProfiles.mockResolvedValue([])
 })
 
 describe('FRONTEND-003-AC-27/28: opening the form', () => {
