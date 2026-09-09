@@ -5,6 +5,7 @@ import type { RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { Theme } from '../types/theme'
+import type { AccentColor } from '../types/accentColor'
 import {
   ALL_COUNTRY_OPTIONS,
   DEFAULT_WATCH_REGION,
@@ -77,13 +78,22 @@ export function buildLastFullRefreshText(status: RefreshJobStatus): string {
 interface SettingsPageProps {
   readonly theme: Theme
   readonly setTheme: (theme: Theme) => void
+  readonly accentColor: AccentColor
+  readonly setAccentColor: (accentColor: AccentColor) => void
 }
 
-// FRONTEND-099-AC-03: theme/setTheme are received as props from App.tsx (via
-// the /settings route element) rather than owned here -- see
+// FRONTEND-099-AC-03/FRONTEND-110-AC-03: theme/setTheme and
+// accentColor/setAccentColor are received as props from App.tsx (via the
+// /settings route element) rather than owned here -- see
 // frontend_spec_099's Design Decisions for why this state can't live in
-// SettingsPage itself.
-export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
+// SettingsPage itself; frontend_spec_110 reuses the same reasoning for the
+// second, independent accentColor axis.
+export function SettingsPage({
+  theme,
+  setTheme,
+  accentColor,
+  setAccentColor,
+}: SettingsPageProps) {
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
   // FRONTEND-097-AC-05/06/07: plain string state so a blank field is
@@ -267,6 +277,73 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
             <label htmlFor="theme-system">Match System</label>
           </div>
         </div>
+
+        {/* FRONTEND-110-AC-07/08: a second, independent radiogroup beneath
+            the theme one -- accentColor is its own axis from theme (see
+            frontend_spec_110's Design Decisions), not folded into a
+            combined enum, so it gets its own group rather than extending
+            the one above. */}
+        <div
+          className={styles.themeOptions}
+          role="radiogroup"
+          aria-label="Accent Color"
+        >
+          <div className={styles.themeOption}>
+            <input
+              id="accent-color-purple"
+              type="radio"
+              name="accent-color"
+              value="purple"
+              checked={accentColor === 'purple'}
+              onChange={() => setAccentColor('purple')}
+            />
+            <label htmlFor="accent-color-purple">Purple</label>
+          </div>
+          <div className={styles.themeOption}>
+            <input
+              id="accent-color-blue"
+              type="radio"
+              name="accent-color"
+              value="blue"
+              checked={accentColor === 'blue'}
+              onChange={() => setAccentColor('blue')}
+            />
+            <label htmlFor="accent-color-blue">Blue</label>
+          </div>
+          <div className={styles.themeOption}>
+            <input
+              id="accent-color-green"
+              type="radio"
+              name="accent-color"
+              value="green"
+              checked={accentColor === 'green'}
+              onChange={() => setAccentColor('green')}
+            />
+            <label htmlFor="accent-color-green">Green</label>
+          </div>
+          <div className={styles.themeOption}>
+            <input
+              id="accent-color-orange"
+              type="radio"
+              name="accent-color"
+              value="orange"
+              checked={accentColor === 'orange'}
+              onChange={() => setAccentColor('orange')}
+            />
+            <label htmlFor="accent-color-orange">Orange</label>
+          </div>
+          <div className={styles.themeOption}>
+            <input
+              id="accent-color-teal"
+              type="radio"
+              name="accent-color"
+              value="teal"
+              checked={accentColor === 'teal'}
+              onChange={() => setAccentColor('teal')}
+            />
+            <label htmlFor="accent-color-teal">Teal</label>
+          </div>
+        </div>
       </SettingsSection>
 
       <SettingsSection title="Refresh All" icon={<RefreshIcon />}>
@@ -348,6 +425,14 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
           onChange={setCountryFavourites}
           options={ALL_COUNTRY_OPTIONS}
           reorderable
+        />
+        {/* FRONTEND-110-AC-09: a visual divider so Country/Language
+            Favourites read as two distinct fields rather than one
+            continuous list -- SettingsSection's .section wrapper applies no
+            gap between children at all. */}
+        <div
+          className={styles.favouritesDivider}
+          data-testid="favourites-divider"
         />
         <KeywordPicker
           id="settings-language-favourites"

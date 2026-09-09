@@ -25,6 +25,28 @@ Last full review against the codebase: 2026-09-07 — all 5 candidates below re-
 current code (scoring service, recommendation controllers/services, `frontend/src/components/`);
 none has been delivered or spec'd since the last update, no changes needed.
 
+2026-09-09 update: broadened the existing "Info/disclosure boxes" candidate to cover three
+Settings fields (Skip Threshold Override, Filter Profiles, Watch Region), and added four new
+candidates from a live-app pass — Recommendation Favourites divider gap, additional Appearance
+color schemes, extending saved filter profiles to Custom Search + Analysis filters, and a
+per-mode description line for each Discover sub-tab. A fifth item from the same pass ("Custom
+Search/Popular Right Now/Highest Rated should also be sticky") was confirmed already fully
+delivered — `frontend_spec_106_sticky_discover_mode.md` — no candidate needed.
+
+2026-09-09 update (same day, later): the Appearance color-schemes and Discover-description-line
+candidates above were spec'd — `frontend_spec_110_appearance_color_schemes.md` and
+`frontend_spec_111_discover_mode_description_lines.md`, both tracked in `ROADMAP.md`'s "Specced,
+coming soon" table now — and removed from this file per this file's own maintenance rule.
+
+2026-09-09 update (same day, later still): the Recommendation Favourites divider-gap candidate was
+folded into `frontend_spec_110` as a small extra AC (Requirement 4) rather than getting its own
+spec, since that spec already touches the same `SettingsPage.tsx`/`.module.css` files — also
+removed from this file. The "extending saved filter profiles" candidate was spec'd as a pair —
+`series_spec_057_filter_profile_new_areas.md` (backend, two new `FilterProfileArea` enum values)
+and `frontend_spec_112_filter_profiles_custom_search_and_analysis.md` (frontend, wiring both new
+areas) — both now tracked in `ROADMAP.md`, removed from here. Only the broadened Settings
+info/disclosure-box candidate remains open in this file.
+
 ---
 
 ## Candidates
@@ -168,7 +190,7 @@ keyword popularity/average personal rating" candidate above — both touch
 `RecommendationRankingService`'s scoring formula directly and should likely be designed together
 rather than layered on separately, per that candidate's own note about the same risk.
 
-### Info/disclosure boxes explaining Max Per Source, Max Sources Shown, and Sort By options
+### Info/disclosure boxes explaining non-obvious controls (Settings + Sort By) — possibly a global, reusable pattern
 
 Confirmed via search: no tooltip/info/help component exists anywhere in this codebase today —
 this is a first-of-its-kind UI primitive, not a reuse. **Recommended shape** (resolved
@@ -190,6 +212,19 @@ outside test files; both remain live backend request params with defaults, just 
 the UI to set them). This candidate's scope for those two fields is now moot — nothing left to
 attach a disclosure box to. Only "Sort By" (the Best Match/Most Recommended radio pair) is still a
 live candidate for this treatment.
+
+**Update (2026-09-09)**: broadened by the user to cover three specific `/settings` fields, raised
+during a live-app pass — confirmed none of the three currently has any explanatory text at all:
+"Skip Threshold Override" (`SettingsPage.tsx` line ~276, a plain labeled number input + unit
+dropdown, no description of what it does or why you'd set it), "Filter Profiles" (the Settings
+management section from `frontend_spec_108`, no explanation that these are named, reusable
+saved-criteria snapshots per filter area), and "Watch Region" (`SettingsPage.tsx` line ~370, no
+explanation that this affects streaming-availability results). The user also flagged this "might
+be pretty global" — i.e. the eventual disclosure-box primitive built for these should likely be a
+shared component from the start (e.g. `InfoDisclosure`/`FieldHint`), reused across both this
+Settings scope and the still-open "Sort By" scope above, rather than two independent
+implementations of the same idiom. Whoever scopes this should treat "one shared component, many
+call sites" as the default shape, not an optimization to consider later.
 
 ### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
 

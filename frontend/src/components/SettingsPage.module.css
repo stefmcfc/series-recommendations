@@ -29,6 +29,14 @@
   cursor: pointer;
 }
 
+/* FRONTEND-110-AC-09: mirrors FilterProfileAreaGroup.module.css's .summary
+   divider convention -- same token, same one-line-border shape -- rather
+   than inventing a new visual treatment. */
+.favouritesDivider {
+  border-top: 1px solid var(--control-border);
+  margin: 1rem 0;
+}
+
 .refreshRow {
   display: flex;
   align-items: center;
