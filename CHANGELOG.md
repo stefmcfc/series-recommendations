@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.40.0] - 2026-09-09
+
 ### Added
 
 - Tooling: new `scripts/start-dev.sh`/`stop-dev.sh`/`restart-dev.sh` (git bash) to start/stop/restart the local backend and frontend dev servers in the background, with health-check polling, per-run log files, and a safety check that refuses to kill any PID whose process image doesn't match what's expected (`tooling_spec_009`).
