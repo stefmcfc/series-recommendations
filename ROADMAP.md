@@ -138,6 +138,7 @@ corrected below.
 | Sticky Discover-mode tab (Custom Search/Popular Right Now/Highest Rated remembered across page loads and restored when re-entering Discover) | — | `frontend_spec_106` | ✅ Done |
 | Named, saved filter profiles (save/apply/update/delete) across three areas: My Series filters, Use My Series filters, Recommendation filters (Custom Search excluded) | `series_spec_055` | `frontend_spec_107` | ✅ Done |
 | Filter profile name validation (255-char bound, reject line breaks/tabs, trim-on-write) — data hygiene only, not a security fix (SQL injection already impossible here) | `series_spec_056` | — | ✅ Done |
+| Filter profile management (Settings section: view/rename/delete-with-confirm per area), save modal with suggested name replacing the inline name input, delete confirmation added to the inline picker | — | `frontend_spec_108` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -177,9 +178,8 @@ fully delivered — see the "Delivered" table above — and no longer appear her
 first: `series_spec_056` (name validation hardening — length bound, control-character rejection,
 trim-on-write) lands before `frontend_spec_108` (Settings management section, save modal with
 suggested name, delete confirmation, rename), since the frontend's client-side length check needs
-to match this spec's declared bound. `series_spec_056` is now fully delivered — see the
-"Delivered" table above — and no longer appears here. `frontend_spec_108` (not yet written) is the
-remaining piece.
+to match this spec's declared bound. `series_spec_056`/`frontend_spec_108` are now fully delivered
+— see the "Delivered" table above — and no longer appear here.
 
 ## Internal / maintenance specs (not user-facing features)
 

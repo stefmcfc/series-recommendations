@@ -80,3 +80,19 @@ export function WatchRegionIcon() {
     </svg>
   )
 }
+
+// FRONTEND-108-AC-09: sliders/filter icon for the new "Filter Profiles"
+// section, same decorative/aria-hidden treatment as the other six (see the
+// file-level comment above).
+export function FilterProfilesIcon() {
+  return (
+    <svg {...SVG_PROPS}>
+      <line x1="4" y1="6" x2="20" y2="6" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="18" x2="20" y2="18" />
+      <circle cx="9" cy="6" r="2" />
+      <circle cx="16" cy="12" r="2" />
+      <circle cx="11" cy="18" r="2" />
+    </svg>
+  )
+}

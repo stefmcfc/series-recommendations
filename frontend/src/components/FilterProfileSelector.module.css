@@ -59,10 +59,6 @@
   flex-wrap: wrap;
 }
 
-.saveRow input {
-  flex: 1 1 10rem;
-}
-
 /* FRONTEND-107-AC-05: mirrors RecommendationControls.module.css's
    .fieldError exactly (color/font-size only) -- the inline save/update
    conflict-error convention this component matches. */
