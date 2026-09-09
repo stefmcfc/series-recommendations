@@ -1038,3 +1038,22 @@ describe('FRONTEND-107-AC-09: SearchFilter applies a saved profile to pending fo
     expect(onSearch).not.toHaveBeenCalled()
   })
 })
+
+describe('FRONTEND-109-AC-03: Save appears after the filter fields in SearchFilter', () => {
+  it('renders the profile selector after the Years section and before the action buttons', async () => {
+    render(
+      <SearchFilter
+        isOpen
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    const body = screen.getByTestId('filters-body')
+    const selector = await screen.findByTestId('filter-profile-selector')
+    // selector should now be a sibling AFTER filters-body, not a child before it
+    expect(
+      body.compareDocumentPosition(selector) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})

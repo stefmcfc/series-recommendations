@@ -529,6 +529,28 @@ describe('FRONTEND-081-AC-08: Year Min/Max (My Series) filters narrow the picker
   })
 })
 
+describe('FRONTEND-109-AC-12: Use My Series gains a Clear Filters button', () => {
+  it('resets all local filter/sort fields to defaults', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
+      target: { value: '2020' },
+    })
+    fireEvent.click(screen.getByTestId('reset-specific-series-filters-btn'))
+
+    expect(screen.getByLabelText(/year min \(my series\)/i)).toHaveValue(null)
+    expect(screen.getByLabelText('Any Status')).toBeChecked()
+  })
+})
+
 describe('FRONTEND-082-AC-01: interval-overlap year matching includes a series via lastAirYear', () => {
   it('includes a series whose year is below yearMin but lastAirYear reaches it', () => {
     const series = [
@@ -858,5 +880,29 @@ describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
     )
     fireEvent.click(await screen.findByText('Comedies'))
     expect(screen.getByLabelText('Completed Only')).toBeChecked()
+  })
+})
+
+describe('FRONTEND-109-AC-04: Save appears after the filter fields in UseMySeriesPanel', () => {
+  it('renders the profile selector after the year fields, not before Status', async () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const body = screen.getByTestId('specific-series-filters-body')
+    const yearMax = screen.getByLabelText(/year max \(my series\)/i)
+    const selector = await screen.findByTestId('filter-profile-selector')
+    expect(
+      yearMax.compareDocumentPosition(selector) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      body.lastElementChild?.contains(selector) || body.contains(selector),
+    ).toBe(true)
   })
 })

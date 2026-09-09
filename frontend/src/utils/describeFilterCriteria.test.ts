@@ -53,6 +53,24 @@ describe('FRONTEND-108-AC-01: describeFilterCriteria', () => {
     expect(entries.find((e) => e.label === 'Status')).toBeUndefined()
   })
 
+  it('does not produce Sort By/Sort Direction entries at their defaults (title/asc)', () => {
+    const entries = describeFilterCriteria('USE_MY_SERIES', {
+      sortBy: 'title',
+      sortDirection: 'asc',
+    } as Partial<UseMySeriesFilterCriteria>)
+    expect(entries).toHaveLength(0)
+  })
+
+  it('produces a Sort By entry once it differs from the default', () => {
+    const entries = describeFilterCriteria('USE_MY_SERIES', {
+      sortBy: 'imdbRating',
+      sortDirection: 'asc',
+    } as Partial<UseMySeriesFilterCriteria>)
+    expect(entries.find((e) => e.label === 'Sort By')?.value).toBe(
+      'IMDb Rating',
+    )
+  })
+
   it('resolves a language code to its readable name for Area C', () => {
     const entries = describeFilterCriteria('RECOMMENDATION_FILTERS', {
       language: 'en',

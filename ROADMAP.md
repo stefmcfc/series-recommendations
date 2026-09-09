@@ -139,6 +139,7 @@ corrected below.
 | Named, saved filter profiles (save/apply/update/delete) across three areas: My Series filters, Use My Series filters, Recommendation filters (Custom Search excluded) | `series_spec_055` | `frontend_spec_107` | ✅ Done |
 | Filter profile name validation (255-char bound, reject line breaks/tabs, trim-on-write) — data hygiene only, not a security fix (SQL injection already impossible here) | `series_spec_056` | — | ✅ Done |
 | Filter profile management (Settings section: view/rename/delete-with-confirm per area), save modal with suggested name replacing the inline name input, delete confirmation added to the inline picker | — | `frontend_spec_108` | ✅ Done |
+| Filter profile polish (labeling, Settings-only delete, Save repositioning, rename UX, look-and-feel alignment across both the inline picker and Settings management section) | — | `frontend_spec_109` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -180,6 +181,15 @@ trim-on-write) lands before `frontend_spec_108` (Settings management section, sa
 suggested name, delete confirmation, rename), since the frontend's client-side length check needs
 to match this spec's declared bound. `series_spec_056`/`frontend_spec_108` are now fully delivered
 — see the "Delivered" table above — and no longer appear here.
+
+**Filter profile polish** (planned 2026-09-09, second live-app pass) — `frontend_spec_109`:
+"Saved Filters" labeling, delete removed from the inline picker (Settings-only now), Save
+repositioned to the end of each filter view, rename replaces the name field instead of sitting
+alongside it, and a look-and-feel alignment pass (chip styling, card styling, modal
+radius/shadow/z-index, and — added during live-app review after the initial pass — button geometry
+fixes on both the inline picker's Save/Update CTAs and the Settings management section's
+Rename/Delete/Save/Cancel/Confirm row actions). `frontend_spec_109` is now fully delivered — see
+the "Delivered" table above — and no longer appears here.
 
 ## Internal / maintenance specs (not user-facing features)
 

@@ -8,6 +8,29 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.45.0] - 2026-09-09
+
+### Added
+
+- Frontend: the inline filter-profile picker now labels its list "Saved Filters" (a `<fieldset>`/`<legend>`, matching the existing "Filter by Status" pattern), shown only once at least one profile is saved (`frontend_spec_109`).
+- Frontend: "Use My Series" gains its own "Clear Filters" button, resetting its local filter/sort fields to defaults — previously the only area with no way to clear (`frontend_spec_109`).
+- Frontend: reclicking an already-applied saved-filter chip now clears it back to defaults instead of re-applying the same criteria (`frontend_spec_109`).
+
+### Changed
+
+- Frontend: deleting a saved filter profile is now Settings-only — the delete control has been removed from the inline picker embedded in each filter view (`frontend_spec_109`).
+- Frontend: the inline filter-profile picker now renders at the end of each filter view's fields (next to Search/Clear Filters), not at the top (`frontend_spec_109`).
+- Frontend: renaming a saved profile in Settings now replaces the name display in place, instead of showing the rename input alongside the original name (`frontend_spec_109`).
+- Frontend: the inline picker's Save button is now labeled "Save Filters" (Update: "Update Filters") and is disabled whenever the current filters are all at their defaults, with a tooltip explaining why (`frontend_spec_109`).
+
+### Fixed
+
+- Frontend: the inline picker's Save/Update buttons and Settings' Rename/Delete/Confirm/Cancel/Save/Cancel row-action buttons now render with correct padding, corner radius, and font size — they were missing a local geometry class (`buttons.module.css`'s tier classes deliberately carry only color/border/hover), so they rendered as near-flat, barely-padded rectangles (`frontend_spec_109`).
+- Frontend: saved filter names in the inline picker now render as pill-shaped chips matching the genre/keyword/country chip style used elsewhere in the app, instead of a bespoke rectangular button (`frontend_spec_109`).
+- Frontend: the save-filter-profile modal now matches this app's established modal styling (corner radius, shadow) and sits above an already-open filter sheet instead of behind it (`frontend_spec_109`).
+- Frontend: Settings' filter-profile rows now use the shared bordered/shadowed card style used elsewhere in the app, instead of a bespoke border (`frontend_spec_109`).
+- Frontend: fixed a bug where "Use My Series"' Save button could never become disabled at default filters, since its sort-by/sort-direction fields were compared against "is it set" rather than "is it at its default" (`frontend_spec_109`).
+
 ## [3.44.0] - 2026-09-09
 
 ### Added

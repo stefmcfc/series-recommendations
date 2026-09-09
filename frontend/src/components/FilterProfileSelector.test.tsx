@@ -15,6 +15,68 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+describe('FRONTEND-109-AC-01: "Saved Filters" label', () => {
+  it('shows the Saved Filters legend when profiles exist', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: {},
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    expect(await screen.findByText('Saved Filters')).toBeInTheDocument()
+  })
+
+  it('shows no legend when there are no saved profiles', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    await waitFor(() => expect(seriesApi.listFilterProfiles).toHaveBeenCalled())
+    expect(screen.queryByText('Saved Filters')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-109-AC-02: no delete control in the inline picker', () => {
+  it('renders no delete button anywhere in the profile list', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: {},
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    await screen.findByText('Weeknight')
+    expect(
+      screen.queryByRole('button', { name: /delete/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-107-AC-03: profile list renders on mount', () => {
   it('fetches and displays saved profiles for the given area', async () => {
     vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
@@ -64,18 +126,87 @@ describe('FRONTEND-107-AC-04: selecting a profile applies it immediately', () =>
   })
 })
 
+describe('FRONTEND-109-AC-10: reclicking an applied chip clears instead of re-applying', () => {
+  it('calls onClear and deselects when the already-applied chip is clicked again', async () => {
+    const onApply = vi.fn()
+    const onClear = vi.fn()
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: { genres: ['Comedy'] },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={onApply}
+        onClear={onClear}
+      />,
+    )
+    const chip = await screen.findByText('Weeknight')
+    fireEvent.click(chip)
+    expect(onApply).toHaveBeenCalledTimes(1)
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(chip)
+    expect(onClear).toHaveBeenCalledTimes(1)
+    expect(onApply).toHaveBeenCalledTimes(1)
+    expect(chip).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('clicking a different chip still applies immediately, no clear', async () => {
+    const onApply = vi.fn()
+    const onClear = vi.fn()
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'A',
+        criteria: { genres: ['Comedy'] },
+        createdAt: '',
+        updatedAt: '',
+      },
+      {
+        id: '2',
+        area: 'MY_SERIES',
+        name: 'B',
+        criteria: { genres: ['Drama'] },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={onApply}
+        onClear={onClear}
+      />,
+    )
+    fireEvent.click(await screen.findByText('A'))
+    fireEvent.click(screen.getByText('B'))
+    expect(onApply).toHaveBeenCalledTimes(2)
+    expect(onClear).not.toHaveBeenCalled()
+  })
+})
+
 describe('FRONTEND-108-AC-07: Save opens the modal, not an inline input', () => {
   it('has no bare name input, and clicking Save opens the modal', async () => {
     vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
     render(
       <FilterProfileSelector
         area="MY_SERIES"
-        currentCriteria={{}}
+        currentCriteria={{ genres: ['Comedy'] }}
         onApply={vi.fn()}
       />,
     )
     expect(screen.queryByLabelText(/profile name/i)).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save filters/i }))
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
 
@@ -85,18 +216,18 @@ describe('FRONTEND-108-AC-07: Save opens the modal, not an inline input', () => 
       id: '2',
       area: 'MY_SERIES',
       name: 'New',
-      criteria: {},
+      criteria: { genres: ['Comedy'] },
       createdAt: '',
       updatedAt: '',
     })
     render(
       <FilterProfileSelector
         area="MY_SERIES"
-        currentCriteria={{}}
+        currentCriteria={{ genres: ['Comedy'] }}
         onApply={vi.fn()}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save filters/i }))
     const dialog = await screen.findByRole('dialog')
     fireEvent.change(screen.getByLabelText(/profile name/i), {
       target: { value: 'New' },
@@ -107,9 +238,65 @@ describe('FRONTEND-108-AC-07: Save opens the modal, not an inline input', () => 
     expect(seriesApi.createFilterProfile).toHaveBeenCalledWith(
       'MY_SERIES',
       'New',
-      {},
+      { genres: ['Comedy'] },
     )
     expect(dialog).not.toBeInTheDocument()
+  })
+})
+
+describe("FRONTEND-109-AC-13: Save Filters is disabled when there's nothing to save", () => {
+  it('disables Save Filters when currentCriteria is empty', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    expect(
+      await screen.findByRole('button', { name: /save filters/i }),
+    ).toBeDisabled()
+  })
+
+  it('enables Save Filters once at least one field is set', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{ genres: ['Comedy'] }}
+        onApply={vi.fn()}
+      />,
+    )
+    expect(
+      await screen.findByRole('button', { name: /save filters/i }),
+    ).toBeEnabled()
+  })
+
+  it('disables Save Filters for Area B at its true defaults (sortBy/sortDirection are never actually unset)', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
+    render(
+      <FilterProfileSelector
+        area="USE_MY_SERIES"
+        currentCriteria={{
+          genreFilter: [],
+          excludeGenreFilter: [],
+          statusFilter: 'any',
+          keywordsFilter: [],
+          minPersonalRating: null,
+          minImdbRating: '',
+          minTmdbRating: '',
+          yearMin: '',
+          yearMax: '',
+          sortBy: 'title',
+          sortDirection: 'asc',
+        }}
+        onApply={vi.fn()}
+      />,
+    )
+    expect(
+      await screen.findByRole('button', { name: /save filters/i }),
+    ).toBeDisabled()
   })
 })
 
@@ -147,116 +334,6 @@ describe('FRONTEND-107-AC-06: update overwrites the selected profile', () => {
     expect(updateSpy).toHaveBeenCalledWith('1', {
       criteria: { genres: ['Drama'] },
     })
-  })
-})
-
-describe('FRONTEND-108-AC-08: delete requires confirmation', () => {
-  it('a single click on Delete does not delete', async () => {
-    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
-      {
-        id: '1',
-        area: 'MY_SERIES',
-        name: 'Weeknight',
-        criteria: {},
-        createdAt: '',
-        updatedAt: '',
-      },
-    ])
-    const deleteSpy = vi.spyOn(seriesApi, 'deleteFilterProfile')
-    render(
-      <FilterProfileSelector
-        area="MY_SERIES"
-        currentCriteria={{}}
-        onApply={vi.fn()}
-      />,
-    )
-    fireEvent.click(await screen.findByLabelText(/delete weeknight/i))
-    expect(deleteSpy).not.toHaveBeenCalled()
-    expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
-  })
-
-  it('Confirm deletes, Cancel does not', async () => {
-    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
-      {
-        id: '1',
-        area: 'MY_SERIES',
-        name: 'Weeknight',
-        criteria: {},
-        createdAt: '',
-        updatedAt: '',
-      },
-    ])
-    vi.spyOn(seriesApi, 'deleteFilterProfile').mockResolvedValue(undefined)
-    render(
-      <FilterProfileSelector
-        area="MY_SERIES"
-        currentCriteria={{}}
-        onApply={vi.fn()}
-      />,
-    )
-    fireEvent.click(await screen.findByLabelText(/delete weeknight/i))
-    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
-    await waitFor(() =>
-      expect(screen.queryByText('Weeknight')).not.toBeInTheDocument(),
-    )
-  })
-
-  it('Cancel reverts without deleting', async () => {
-    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
-      {
-        id: '1',
-        area: 'MY_SERIES',
-        name: 'Weeknight',
-        criteria: {},
-        createdAt: '',
-        updatedAt: '',
-      },
-    ])
-    const deleteSpy = vi.spyOn(seriesApi, 'deleteFilterProfile')
-    render(
-      <FilterProfileSelector
-        area="MY_SERIES"
-        currentCriteria={{}}
-        onApply={vi.fn()}
-      />,
-    )
-    fireEvent.click(await screen.findByLabelText(/delete weeknight/i))
-    fireEvent.click(screen.getByTestId('cancel-delete-btn'))
-    expect(deleteSpy).not.toHaveBeenCalled()
-    expect(screen.getByText('Weeknight')).toBeInTheDocument()
-    expect(screen.queryByTestId('confirm-delete-btn')).not.toBeInTheDocument()
-  })
-
-  it('clears the selection if the deleted profile was selected', async () => {
-    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
-      {
-        id: '1',
-        area: 'MY_SERIES',
-        name: 'Weeknight',
-        criteria: {},
-        createdAt: '',
-        updatedAt: '',
-      },
-    ])
-    vi.spyOn(seriesApi, 'deleteFilterProfile').mockResolvedValue(undefined)
-    render(
-      <FilterProfileSelector
-        area="MY_SERIES"
-        currentCriteria={{}}
-        onApply={vi.fn()}
-      />,
-    )
-    fireEvent.click(await screen.findByText('Weeknight'))
-    expect(
-      screen.getByRole('button', { name: /^update$/i }),
-    ).toBeInTheDocument()
-    fireEvent.click(screen.getByLabelText(/delete weeknight/i))
-    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('button', { name: /^update$/i }),
-      ).not.toBeInTheDocument(),
-    )
   })
 })
 
