@@ -14,11 +14,17 @@ import surface from '../styles/surfaces.module.css'
 vi.mock('../services/seriesApi')
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
+const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockGetKeywordStats.mockResolvedValue([])
   mockGetGenreOptions.mockResolvedValue([])
+  // FRONTEND-107-AC-09: SearchFilter now renders a FilterProfileSelector
+  // (area MY_SERIES) that fetches on mount -- default to an empty list so
+  // pre-existing tests in this file, which don't care about saved profiles,
+  // see no behavior change.
+  mockListFilterProfiles.mockResolvedValue([])
 })
 
 // FRONTEND-071-AC-04/05: SearchFilter is now an externally-controlled sheet
@@ -999,5 +1005,36 @@ describe('FRONTEND-077-AC-04: SearchFilter inline Keywords hides its input', () 
     expect(
       screen.getByPlaceholderText('Type to filter tracked keywords'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-107-AC-09: SearchFilter applies a saved profile to pending form state', () => {
+  it('updates the form without auto-submitting', async () => {
+    mockListFilterProfiles.mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: { genres: ['Comedy'], yearMin: 2020 },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    const onSearch = vi.fn()
+    render(
+      <SearchFilter
+        isOpen
+        onClose={vi.fn()}
+        onSearch={onSearch}
+        onClear={vi.fn()}
+      />,
+    )
+    fireEvent.click(await screen.findByText('Weeknight'))
+
+    expect(
+      screen.getByLabelText('Remove Comedy from included'),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Min Year')).toHaveValue(2020)
+    expect(onSearch).not.toHaveBeenCalled()
   })
 })

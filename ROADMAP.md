@@ -136,7 +136,7 @@ corrected below.
 | Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054` | — | ✅ Done |
 | Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053` | `frontend_spec_102` | ✅ Done |
 | Sticky Discover-mode tab (Custom Search/Popular Right Now/Highest Rated remembered across page loads and restored when re-entering Discover) | — | `frontend_spec_106` | ✅ Done |
-| Filter profiles backend (named, saved filter/criteria snapshots across three areas: My Series filters, Use My Series filters, Recommendation filters) — no UI yet, see `frontend_spec_107` in "Specced, coming soon" | `series_spec_055` | — | ✅ Done |
+| Named, saved filter profiles (save/apply/update/delete) across three areas: My Series filters, Use My Series filters, Recommendation filters (Custom Search excluded) | `series_spec_055` | `frontend_spec_107` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -168,12 +168,9 @@ independent specs, no build-order dependency between them. `frontend_spec_103`/`
 fully delivered — see the "Delivered" table above — and no longer appear here.
 
 **Saved filter profiles batch** (planned 2026-09-09, from `.claude/SPEC_CANDIDATES.md` item 11) —
-three specs, strictly sequenced: `frontend_spec_106` (sticky Discover-mode tab) ships first,
-independently, no backend dependency; `series_spec_055` (backend filter-profile CRUD) next;
-`frontend_spec_107` (the profile-picker UI, consuming `series_spec_055`'s endpoints) last.
-`frontend_spec_106`/`series_spec_055` are now fully delivered — see the "Delivered" table above —
-and no longer appear here. `frontend_spec_107` (not yet written) is the remaining piece: without it
-these endpoints have no UI consumer yet.
+three specs, strictly sequenced: `frontend_spec_106` (sticky Discover-mode tab), `series_spec_055`
+(backend filter-profile CRUD), `frontend_spec_107` (the profile-picker UI). All three are now
+fully delivered — see the "Delivered" table above — and no longer appear here.
 
 ## Internal / maintenance specs (not user-facing features)
 

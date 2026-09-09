@@ -22,6 +22,7 @@ import type {
   StreamingProvider,
   CandidateDetail,
 } from '../types/series'
+import type { FilterProfile, FilterProfileArea } from '../types/filterProfile'
 import { ApiError } from '../types/api'
 
 const API_BASE =
@@ -406,6 +407,39 @@ export const seriesApi = {
       throw err
     }
   },
+
+  // FRONTEND-107-AC-02: filter-profiles CRUD -- follows the existing
+  // request<T>(fn).then(...) wrapper pattern exactly (matching
+  // getById/create/update/delete above), no bespoke error handling; a 409
+  // conflict surfaces as ApiError(409, ...) through the existing wrapper.
+  listFilterProfiles: <TCriteria>(
+    area: FilterProfileArea,
+  ): Promise<FilterProfile<TCriteria>[]> =>
+    request<{ data: FilterProfile<TCriteria>[]; count: number }>(() =>
+      client.get('/filter-profiles', { params: { area } }),
+    ).then((res) => res.data),
+
+  createFilterProfile: <TCriteria>(
+    area: FilterProfileArea,
+    name: string,
+    criteria: TCriteria,
+  ): Promise<FilterProfile<TCriteria>> =>
+    request<{ data: FilterProfile<TCriteria> }>(() =>
+      client.post('/filter-profiles', { area, name, criteria }),
+    ).then((res) => res.data),
+
+  updateFilterProfile: <TCriteria>(
+    id: string,
+    patch: { name?: string; criteria?: TCriteria },
+  ): Promise<FilterProfile<TCriteria>> =>
+    request<{ data: FilterProfile<TCriteria> }>(() =>
+      client.patch('/filter-profiles/' + id, patch),
+    ).then((res) => res.data),
+
+  deleteFilterProfile: (id: string): Promise<void> =>
+    request<null>(() => client.delete('/filter-profiles/' + id)).then(
+      () => undefined,
+    ),
 }
 
 function parseFilename(contentDisposition: string | undefined): string | null {

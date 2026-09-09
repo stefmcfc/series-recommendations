@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { seriesApi } from '../services/seriesApi'
 import type { SearchCriteria } from '../types/series'
+import type { MySeriesFilterCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { KeywordPicker } from './KeywordPicker'
 import { StarRating } from './StarRating'
+import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import styles from './SearchFilter.module.css'
 import btn from '../styles/buttons.module.css'
@@ -69,6 +71,38 @@ function buildCriteria(form: FormState): SearchCriteria {
   if (form.yearMax.trim() !== '') criteria.yearMax = Number(form.yearMax)
 
   return criteria
+}
+
+// FRONTEND-107-AC-09: Area A's apply is a full replace, not a patch --
+// buildCriteria above only ever emits non-empty fields, so reversing a saved
+// profile back into FormState starts from initialFormState and overwrites
+// only the fields present in the saved criteria (this spec's Design
+// Decisions).
+function formStateFromCriteria(criteria: MySeriesFilterCriteria): FormState {
+  return {
+    genresSelected: criteria.genres ?? initialFormState.genresSelected,
+    excludeGenresSelected:
+      criteria.excludeGenres ?? initialFormState.excludeGenresSelected,
+    keywordsSelected: criteria.keywords ?? initialFormState.keywordsSelected,
+    minPersonalRating:
+      criteria.minPersonalRating ?? initialFormState.minPersonalRating,
+    minImdbRating:
+      criteria.minImdbRating != null
+        ? String(criteria.minImdbRating)
+        : initialFormState.minImdbRating,
+    minTmdbRating:
+      criteria.minTmdbRating != null
+        ? String(criteria.minTmdbRating)
+        : initialFormState.minTmdbRating,
+    yearMin:
+      criteria.yearMin != null
+        ? String(criteria.yearMin)
+        : initialFormState.yearMin,
+    yearMax:
+      criteria.yearMax != null
+        ? String(criteria.yearMax)
+        : initialFormState.yearMax,
+  }
 }
 
 export function SearchFilter({
@@ -162,6 +196,13 @@ export function SearchFilter({
     onClose()
   }
 
+  // FRONTEND-107-AC-09: apply only updates the sheet's pending form state --
+  // it does not call onSearch automatically, consistent with this sheet's
+  // existing "Search" button gate (handleSubmit above).
+  const handleApplyProfile = (criteria: MySeriesFilterCriteria) => {
+    setForm(formStateFromCriteria(criteria))
+  }
+
   const handleModalKeyDown = useEscapeToClose(() => setBrowseModalOpen(false))
 
   // FRONTEND-071-AC-05: same Escape-to-close pattern as
@@ -205,6 +246,12 @@ export function SearchFilter({
               Close
             </button>
           </div>
+
+          <FilterProfileSelector<MySeriesFilterCriteria>
+            area="MY_SERIES"
+            currentCriteria={buildCriteria(form)}
+            onApply={handleApplyProfile}
+          />
 
           <div className={styles.filtersBody} data-testid="filters-body">
             <section className={`${styles.filterSection} ${surface.card}`}>

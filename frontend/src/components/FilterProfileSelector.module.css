@@ -1,0 +1,78 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nameButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--control-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.nameButton:hover {
+  background: var(--social-bg);
+}
+
+.nameButton[aria-pressed='true'] {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.deleteButton {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--control-border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.deleteButton:hover {
+  background: var(--social-bg);
+}
+
+.saveRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.saveRow input {
+  flex: 1 1 10rem;
+}
+
+/* FRONTEND-107-AC-05: mirrors RecommendationControls.module.css's
+   .fieldError exactly (color/font-size only) -- the inline save/update
+   conflict-error convention this component matches. */
+.error {
+  color: #b91c1c;
+  font-size: 0.8125rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error {
+    color: #fca5a5;
+  }
+}
