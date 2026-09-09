@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Tooling: new `scripts/start-dev.sh`/`stop-dev.sh`/`restart-dev.sh` (git bash) to start/stop/restart the local backend and frontend dev servers in the background, with health-check polling, per-run log files, and a safety check that refuses to kill any PID whose process image doesn't match what's expected (`tooling_spec_009`).
+
+### Changed
+
+- Frontend: `vite.config.ts` no longer pins `server.host` to `127.0.0.1` — the VPN/IPv6 reachability issue that required the pin is resolved, so the dev server now uses Vite's default (`localhost`) again.
+
 ## [3.39.0] - 2026-09-09
 
 ### Added

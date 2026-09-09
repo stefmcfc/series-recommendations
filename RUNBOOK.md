@@ -17,6 +17,43 @@ No database installation needed -- SQLite is bundled as a JDBC driver.
 
 ---
 
+## Quick Start (scripts)
+
+`scripts/start-dev.sh`, `scripts/stop-dev.sh`, and `scripts/restart-dev.sh` (git bash) start/stop/
+restart both dev servers in the background, without needing two terminal windows or a manual
+`netstat`/`taskkill` cycle. See `.claude/specs/tooling_spec_009_dev_server_scripts.md` for the full
+design.
+
+```bash
+bash scripts/start-dev.sh              # both servers
+bash scripts/start-dev.sh backend      # just the backend
+bash scripts/start-dev.sh frontend     # just the frontend
+
+bash scripts/stop-dev.sh               # both servers
+bash scripts/restart-dev.sh            # stop then start, both (or one, with an argument)
+```
+
+- **Output**: each service's stdout/stderr goes to `logs/backend.log`/`logs/frontend.log`,
+  truncated fresh on every `start-dev.sh` run (not appended). `logs/` is gitignored.
+- **Readiness**: `start-dev.sh` polls each service's health check (backend:
+  `GET http://localhost:8080/api/v1/series`, up to 90s for a cold Gradle Daemon start; frontend:
+  `GET http://localhost:5173/`, up to 20s) and only reports "ready" once it actually responds — not
+  just launched. On timeout it prints the last 20 lines of that service's log and exits non-zero.
+- **Idempotent**: re-running `start-dev.sh` while a service is already up skips it with a message
+  instead of double-launching.
+- **pid files** (`logs/backend.pid`/`logs/frontend.pid`) are informational only — `stop-dev.sh`
+  always re-resolves the live PID currently bound to the port before acting, and refuses to kill it
+  if that PID's process image isn't `java.exe`/`node.exe` as expected (prints manual
+  `tasklist`/`taskkill` commands instead of guessing). This means it's safe to run even if a pid
+  file is stale or missing.
+- `stop-dev.sh` only stops the backend's forked dev-server JVM, not the underlying Gradle Daemon —
+  same as today's manual `gradlew.bat` usage, the Daemon stays warm across runs.
+
+The manual commands below still work exactly as before and remain the source of truth for what the
+scripts are actually doing under the hood.
+
+---
+
 ## Running the Backend Locally
 
 ### 1. Start the Spring Boot server
@@ -312,6 +349,11 @@ netstat -ano | findstr :8080
 taskkill /PID <pid> /F
 ```
 
+If the server was started via `scripts/start-dev.sh`, prefer `bash scripts/stop-dev.sh` instead —
+same resolution strategy, plus a safety check that refuses to kill anything that isn't actually the
+expected `java.exe`/`node.exe` process. Use the manual recipe above for anything not started via
+the scripts.
+
 **`Unable to open JDBC Connection` on startup**
 
 The `data/` directory does not exist. Create it first:
@@ -358,39 +400,6 @@ gradlew.bat test
 This was a real, currently-blocking CORS gap (confirmed both with and without VPN — not network-related), tracked as `TOOLING-001-AC-16` in `tooling_spec_001_code_quality_security.md`. It's now fixed: `uk.co.stefirby.seriestracker.config.CorsConfig` (a `WebMvcConfigurer` bean) allows cross-origin requests to `/api/**` from the origin(s) configured in `app.cors.allowed-origins` (default `http://localhost:5173,http://127.0.0.1:5173`, see the Environment Variables section above), restricted to the `GET`/`POST`/`PATCH`/`DELETE` methods and `Content-Type` header the frontend actually uses — never a wildcard `*`.
 
 No `frontend/.env.local` proxy workaround is needed anymore: `seriesApi.ts` can call `http://localhost:8080/api/v1` directly from a browser tab serving the frontend on `http://localhost:5173`, and the response will include a matching `Access-Control-Allow-Origin` header. If you deploy the frontend from a different origin, add it to `app.cors.allowed-origins` (comma-separated) or override via `APP_CORS_ALLOWED_ORIGINS` — don't loosen this to a wildcard.
-
-**Frontend dev server unreachable while on a VPN**
-
-Some VPN clients disable or reroute IPv6 while connected. Vite's default `server.host` (`localhost`)
-resolves to the IPv6 loopback (`[::1]`) on this setup, which becomes unreachable from the browser the
-moment the VPN is active, even though `npm run dev` reports "ready" and the port is genuinely
-listening (confirmed via `netstat`, which showed `[::1]:5173 LISTENING` while the browser still
-failed to connect). `frontend/vite.config.ts`'s `server.host` is pinned to the IPv4 loopback
-(`127.0.0.1`) explicitly for this reason — don't revert it to the Vite default without re-confirming
-this isn't still an issue, since this is a single-user local app with no other developer's setup to
-preserve. Access the dev server via `http://127.0.0.1:5173/`, not `http://localhost:5173/`, in case
-DNS resolution of `localhost` itself is also affected.
-
-If the browser also can't reach the backend directly (`http://localhost:8080`) while on VPN for the
-same IPv6 reason, the most robust local fix is `frontend/.env.local` (gitignored) with
-`VITE_API_BASE=/api/v1` — this routes every API call through Vite's own dev-server proxy
-(`vite.config.ts`'s `server.proxy`), which resolves `localhost:8080` server-side in Node, unaffected
-by the browser/VPN's IPv6 behavior.
-
-**This does *not* sidestep CORS origin-matching, despite the request looking same-origin to the
-browser** — a real bug hit this way on 2026-09-04: the browser still attaches an `Origin` header
-(here, `http://127.0.0.1:5173`, matching `server.host` above) to every non-`GET` request even
-though the fetch target is same-origin from its own perspective, and Vite's proxy (`changeOrigin:
-true` only rewrites `Host`, not `Origin`) forwards that header to the backend unchanged. The
-backend's own `CorsConfig` still inspects it and rejects anything not in `app.cors.allowed-origins`
-with `403 "Invalid CORS request"` — invisible to a `curl` reproduction of the same request, since
-`curl` doesn't send an `Origin` header by default and so never triggers the check at all. `GET`
-requests were unaffected (browsers typically omit `Origin` for same-origin `GET`), which is why this
-surfaced specifically as every *save*/*refresh*/*delete* action failing with "An error occurred"
-while browsing and searching worked fine. Fixed by adding `http://127.0.0.1:5173` to
-`app.cors.allowed-origins` alongside `http://localhost:5173` (see above) — if you access the dev
-server via a host/port not already in that list, add it there too, in either mode (direct or
-proxied).
 
 ---
 

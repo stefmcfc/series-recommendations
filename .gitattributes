@@ -1,0 +1,4 @@
+# Shell scripts must always check out with LF line endings -- CRLF breaks
+# bash parsing (e.g. a \r-terminated shebang or trailing \r in variable
+# values), regardless of core.autocrlf on any given clone.
+*.sh text eol=lf
