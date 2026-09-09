@@ -171,4 +171,24 @@ class FilterProfileControllerSpec extends Specification {
             mockMvc.perform(delete("/api/v1/filter-profiles/${id}"))
                 .andExpect(status().isNotFound())
     }
+
+    def "SERIES-056-AC-02: a 256-character name returns 400, not 500"() {
+        when: "POST /api/v1/filter-profiles is requested with an over-length name"
+            def response = mockMvc.perform(post("/api/v1/filter-profiles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString([area: "MY_SERIES", name: "a" * 256, criteria: [:]])))
+
+        then: "400 Bad Request"
+            response.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-056-AC-03: a name containing a newline returns 400, not 500"() {
+        when: "POST /api/v1/filter-profiles is requested with a newline in the name"
+            def response = mockMvc.perform(post("/api/v1/filter-profiles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content('{"area":"MY_SERIES","name":"Bad\\nName","criteria":{}}'))
+
+        then: "400 Bad Request"
+            response.andExpect(status().isBadRequest())
+    }
 }

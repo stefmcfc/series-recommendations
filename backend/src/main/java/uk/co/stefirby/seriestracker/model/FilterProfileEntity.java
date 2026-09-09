@@ -10,6 +10,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import tools.jackson.databind.JsonNode;
@@ -38,6 +40,8 @@ public class FilterProfileEntity {
 
     @Column(nullable = false, length = 255)
     @NotBlank(message = "name is required")
+    @Size(max = 255, message = "name must be at most 255 characters")
+    @Pattern(regexp = "^[^\r\n\t]*$", message = "name must not contain line breaks or tabs")
     private String name;
 
     @Convert(converter = JsonNodeConverter.class)
