@@ -21,6 +21,7 @@ import { ExportControls } from './ExportControls'
 import { ImportControls } from './ImportControls'
 import { KeywordPicker } from './KeywordPicker'
 import { SettingsSection } from './SettingsSection'
+import { FilterProfileManager } from './FilterProfileManager'
 import {
   AppearanceIcon,
   RefreshIcon,
@@ -28,6 +29,7 @@ import {
   ImportIcon,
   FavouritesIcon,
   WatchRegionIcon,
+  FilterProfilesIcon,
 } from './SettingsIcons'
 import {
   toMinutes,
@@ -376,6 +378,13 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
           options={ALL_COUNTRY_OPTIONS}
           hideInput
         />
+      </SettingsSection>
+
+      {/* FRONTEND-108-AC-09: management-only -- no currentCriteria here, so
+          there's no create action; saving only ever happens from a filter
+          view via SaveFilterProfileModal (this spec's Design Decisions). */}
+      <SettingsSection title="Filter Profiles" icon={<FilterProfilesIcon />}>
+        <FilterProfileManager />
       </SettingsSection>
     </div>
   )

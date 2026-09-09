@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { FilterProfileSelector } from './FilterProfileSelector'
 import { seriesApi } from '../services/seriesApi'
@@ -58,8 +64,22 @@ describe('FRONTEND-107-AC-04: selecting a profile applies it immediately', () =>
   })
 })
 
-describe('FRONTEND-107-AC-05: save as new profile', () => {
-  it('creates a profile and adds it to the list', async () => {
+describe('FRONTEND-108-AC-07: Save opens the modal, not an inline input', () => {
+  it('has no bare name input, and clicking Save opens the modal', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    expect(screen.queryByLabelText(/profile name/i)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('creates a profile via the modal and adds it to the list', async () => {
     vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
     vi.spyOn(seriesApi, 'createFilterProfile').mockResolvedValue({
       id: '2',
@@ -76,35 +96,20 @@ describe('FRONTEND-107-AC-05: save as new profile', () => {
         onApply={vi.fn()}
       />,
     )
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    const dialog = await screen.findByRole('dialog')
     fireEvent.change(screen.getByLabelText(/profile name/i), {
       target: { value: 'New' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /save as new/i }))
+    fireEvent.click(within(dialog).getByRole('button', { name: /^save$/i }))
     expect(await screen.findByText('New')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(seriesApi.createFilterProfile).toHaveBeenCalledWith(
       'MY_SERIES',
       'New',
       {},
     )
-  })
-
-  it('shows an inline error on a 409 conflict, not a toast', async () => {
-    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
-    vi.spyOn(seriesApi, 'createFilterProfile').mockRejectedValue(
-      Object.assign(new Error('conflict'), { status: 409, isApiError: true }),
-    )
-    render(
-      <FilterProfileSelector
-        area="MY_SERIES"
-        currentCriteria={{}}
-        onApply={vi.fn()}
-      />,
-    )
-    fireEvent.change(screen.getByLabelText(/profile name/i), {
-      target: { value: 'Dup' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /save as new/i }))
-    expect(await screen.findByText(/already exists/i)).toBeInTheDocument()
+    expect(dialog).not.toBeInTheDocument()
   })
 })
 
@@ -145,8 +150,32 @@ describe('FRONTEND-107-AC-06: update overwrites the selected profile', () => {
   })
 })
 
-describe('FRONTEND-107-AC-07: delete removes the profile', () => {
-  it('removes the deleted profile from the list', async () => {
+describe('FRONTEND-108-AC-08: delete requires confirmation', () => {
+  it('a single click on Delete does not delete', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: {},
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    const deleteSpy = vi.spyOn(seriesApi, 'deleteFilterProfile')
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    fireEvent.click(await screen.findByLabelText(/delete weeknight/i))
+    expect(deleteSpy).not.toHaveBeenCalled()
+    expect(screen.getByTestId('confirm-delete-btn')).toBeInTheDocument()
+  })
+
+  it('Confirm deletes, Cancel does not', async () => {
     vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
       {
         id: '1',
@@ -165,11 +194,37 @@ describe('FRONTEND-107-AC-07: delete removes the profile', () => {
         onApply={vi.fn()}
       />,
     )
-    await screen.findByText('Weeknight')
-    fireEvent.click(screen.getByRole('button', { name: /delete weeknight/i }))
+    fireEvent.click(await screen.findByLabelText(/delete weeknight/i))
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
     await waitFor(() =>
       expect(screen.queryByText('Weeknight')).not.toBeInTheDocument(),
     )
+  })
+
+  it('Cancel reverts without deleting', async () => {
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: {},
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    const deleteSpy = vi.spyOn(seriesApi, 'deleteFilterProfile')
+    render(
+      <FilterProfileSelector
+        area="MY_SERIES"
+        currentCriteria={{}}
+        onApply={vi.fn()}
+      />,
+    )
+    fireEvent.click(await screen.findByLabelText(/delete weeknight/i))
+    fireEvent.click(screen.getByTestId('cancel-delete-btn'))
+    expect(deleteSpy).not.toHaveBeenCalled()
+    expect(screen.getByText('Weeknight')).toBeInTheDocument()
+    expect(screen.queryByTestId('confirm-delete-btn')).not.toBeInTheDocument()
   })
 
   it('clears the selection if the deleted profile was selected', async () => {
@@ -195,7 +250,8 @@ describe('FRONTEND-107-AC-07: delete removes the profile', () => {
     expect(
       screen.getByRole('button', { name: /^update$/i }),
     ).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /delete weeknight/i }))
+    fireEvent.click(screen.getByLabelText(/delete weeknight/i))
+    fireEvent.click(screen.getByTestId('confirm-delete-btn'))
     await waitFor(() =>
       expect(
         screen.queryByRole('button', { name: /^update$/i }),

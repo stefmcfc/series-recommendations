@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: new "Filter Profiles" Settings section — view, rename, and delete (with confirmation) saved profiles for each of the three filter areas, with an expandable readable summary of each profile's contents (`frontend_spec_108`).
+- Frontend: saving a filter profile now opens a "Save" modal pre-filled with a suggested name generated from the active filters, replacing the bare always-visible name input; the modal validates the name client-side (length, no line breaks/tabs, no duplicate) before saving (`frontend_spec_108`).
+
+### Fixed
+
+- Frontend: the inline filter-profile picker's Delete button now requires confirmation (Confirm/Cancel row swap) instead of deleting immediately on click (`frontend_spec_108`).
+
 ## [3.43.1] - 2026-09-09
 
 ### Changed

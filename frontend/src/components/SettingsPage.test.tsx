@@ -18,6 +18,7 @@ vi.mock('../services/seriesApi')
 const mockExport = vi.mocked(seriesApi.export)
 const mockRefreshAll = vi.mocked(seriesApi.refreshAll)
 const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
+const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 
 // FRONTEND-102: the new Watch Region picker shares ALL_COUNTRY_OPTIONS with
 // the Recommendation Favourites section's Country Favourites picker, so a
@@ -44,6 +45,11 @@ beforeEach(() => {
     startedAt: null,
     finishedAt: null,
   })
+  // FRONTEND-108-AC-09: SettingsPage now always mounts FilterProfileManager
+  // (the new "Filter Profiles" section), which fetches all three areas on
+  // mount -- default every existing test in this file to an empty list so
+  // that unrelated tests aren't coupled to filter-profile behavior.
+  mockListFilterProfiles.mockResolvedValue([])
 })
 
 describe('FRONTEND-070-AC-03: SettingsPage renders its heading', () => {
@@ -322,6 +328,22 @@ describe('FRONTEND-097-AC-04: existing sections render via SettingsSection', () 
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /export/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /import/i })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-108-AC-09: Filter Profiles section', () => {
+  it('renders a Filter Profiles section containing FilterProfileManager', async () => {
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    expect(
+      screen.getByRole('heading', { name: /filter profiles/i }),
+    ).toBeInTheDocument()
+    expect(mockListFilterProfiles).toHaveBeenCalledWith('MY_SERIES')
+    expect(mockListFilterProfiles).toHaveBeenCalledWith('USE_MY_SERIES')
+    expect(mockListFilterProfiles).toHaveBeenCalledWith(
+      'RECOMMENDATION_FILTERS',
+    )
+    expect(await screen.findAllByText(/no saved profiles yet/i)).toHaveLength(3)
   })
 })
 
