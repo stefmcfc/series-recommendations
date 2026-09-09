@@ -51,6 +51,7 @@ series-recommendation/
 │   │   └── db/migration/  # Flyway SQL scripts
 │   └── src/test/groovy/   # Spock specifications
 ├── frontend/              # React + Vite application
+├── scripts/               # Dev-server start/stop/restart bash scripts
 ├── CLAUDE.md              # Claude Code steering entrypoint
 ├── README.md
 ├── API.md                 # API endpoint reference
