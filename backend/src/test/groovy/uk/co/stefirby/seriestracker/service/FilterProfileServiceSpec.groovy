@@ -205,4 +205,37 @@ class FilterProfileServiceSpec extends Specification {
         then: "an EntityNotFoundException is thrown"
             thrown(EntityNotFoundException)
     }
+
+    def "SERIES-056-AC-05: create trims the name before storing and before the uniqueness check"() {
+        when: "a profile is created with leading/trailing whitespace in the name"
+            def dto = service.create(FilterProfileArea.MY_SERIES, "  Weeknight  ", objectMapper.createObjectNode())
+
+        then: "the stored name is trimmed"
+            dto.name() == "Weeknight"
+    }
+
+    def "SERIES-056-AC-07: a whitespace-padded name conflicts with an existing trimmed one"() {
+        given: "an existing profile"
+            service.create(FilterProfileArea.MY_SERIES, "Weeknight", objectMapper.createObjectNode())
+
+        when: "creating another with leading whitespace but the same trimmed name"
+            service.create(FilterProfileArea.MY_SERIES, " Weeknight", objectMapper.createObjectNode())
+
+        then: "a ConflictException is thrown, not a second profile created"
+            thrown(ConflictException)
+
+        and: "no duplicate row is persisted"
+            repository.count() == 1
+    }
+
+    def "SERIES-056-AC-06: update trims the name before the uniqueness check, and a whitespace-only rename to itself is a no-op"() {
+        given: "an existing profile"
+            def created = service.create(FilterProfileArea.MY_SERIES, "Weeknight", objectMapper.createObjectNode())
+
+        when: "renaming with only whitespace difference"
+            def updated = service.update(created.id(), " Weeknight ", null)
+
+        then: "no conflict, name stored trimmed"
+            updated.name() == "Weeknight"
+    }
 }

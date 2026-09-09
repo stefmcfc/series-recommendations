@@ -44,13 +44,15 @@ public class FilterProfileService {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name is required");
         }
-        if (repository.findByAreaAndName(area, name).isPresent()) {
-            throw new ConflictException("A filter profile named '" + name + "' already exists for area " + area);
+        String trimmedName = name.trim();
+        if (repository.findByAreaAndName(area, trimmedName).isPresent()) {
+            throw new ConflictException(
+                "A filter profile named '" + trimmedName + "' already exists for area " + area);
         }
 
         FilterProfileEntity entity = new FilterProfileEntity();
         entity.setArea(area);
-        entity.setName(name);
+        entity.setName(trimmedName);
         entity.setCriteria(criteria);
         LocalDateTime now = now();
         // Set explicitly so it's available immediately after save, mirroring
@@ -67,13 +69,16 @@ public class FilterProfileService {
         FilterProfileEntity entity = repository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Filter profile not found: " + id));
 
-        if (name != null && !name.isBlank() && !name.equals(entity.getName())) {
-            Optional<FilterProfileEntity> collision = repository.findByAreaAndName(entity.getArea(), name);
-            if (collision.isPresent() && !collision.get().getId().equals(id)) {
-                throw new ConflictException(
-                    "A filter profile named '" + name + "' already exists for area " + entity.getArea());
+        if (name != null && !name.isBlank()) {
+            String trimmedName = name.trim();
+            if (!trimmedName.equals(entity.getName())) {
+                Optional<FilterProfileEntity> collision = repository.findByAreaAndName(entity.getArea(), trimmedName);
+                if (collision.isPresent() && !collision.get().getId().equals(id)) {
+                    throw new ConflictException(
+                        "A filter profile named '" + trimmedName + "' already exists for area " + entity.getArea());
+                }
+                entity.setName(trimmedName);
             }
-            entity.setName(name);
         }
         if (criteria != null) {
             entity.setCriteria(criteria);

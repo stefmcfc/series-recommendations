@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Backend: `FilterProfileEntity.name` is now bounded to 255 characters and rejects line breaks/tabs, and both `create`/`update` trim the name before checking uniqueness and before storing it (`series_spec_056`) — data hygiene, not a security fix (SQL injection is already structurally impossible for this table, which has no raw/native SQL anywhere).
+
+### Fixed
+
+- Backend: `JsonNodeConverter` now fails with a clear `IllegalStateException` on malformed persisted `criteria` JSON instead of an unhandled crash (`series_spec_056`).
+
 ## [3.43.0] - 2026-09-09
 
 ### Added

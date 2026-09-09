@@ -70,4 +70,26 @@ class JsonNodeConverterSpec extends Specification {
         then: "the criteria is still an empty object"
             reloaded.criteria == objectMapper.createObjectNode()
     }
+
+    def "SERIES-056-AC-08: malformed persisted JSON fails with a clear IllegalStateException, not an unhandled JacksonException"() {
+        given: "a converter and a malformed JSON string"
+            def converter = new JsonNodeConverter()
+
+        when: "converting the malformed string back to a JsonNode"
+            converter.convertToEntityAttribute("{not valid json")
+
+        then: "an IllegalStateException is thrown, not a raw JacksonException"
+            thrown(IllegalStateException)
+    }
+
+    def "SERIES-056-AC-08: well-formed JSON still round-trips unchanged"() {
+        given: "a converter and a well-formed JSON string"
+            def converter = new JsonNodeConverter()
+
+        when: "converting it back to a JsonNode"
+            def node = converter.convertToEntityAttribute('{"genres":["Comedy"]}')
+
+        then: "it parses correctly"
+            node.get("genres").get(0).asString() == "Comedy"
+    }
 }

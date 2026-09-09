@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.model;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -33,6 +34,12 @@ public class JsonNodeConverter implements AttributeConverter<JsonNode, String> {
         if (dbData == null) {
             return null;
         }
-        return objectMapper.readTree(dbData);
+        try {
+            return objectMapper.readTree(dbData);
+        } catch (JacksonException e) {
+            throw new IllegalStateException(
+                "Failed to parse FilterProfileEntity.criteria as JSON -- the persisted column value is malformed",
+                e);
+        }
     }
 }
