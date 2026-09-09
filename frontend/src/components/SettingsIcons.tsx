@@ -67,3 +67,16 @@ export function FavouritesIcon() {
     </svg>
   )
 }
+
+// FRONTEND-102-AC-05: globe icon for the new "Watch Region" section, same
+// decorative/aria-hidden treatment as the other five (see the file-level
+// comment above).
+export function WatchRegionIcon() {
+  return (
+    <svg {...SVG_PROPS}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  )
+}

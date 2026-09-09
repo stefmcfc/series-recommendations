@@ -37,7 +37,7 @@ class RecommendationRankingServiceSpec extends Specification {
             def y = dc(candidate(20, "Y", new BigDecimal("7.0")), [completedSeries("Three Star", 3)])
 
         when: "each is scored and sorted"
-            def results = [x, y].collect { rankingService.score(it, 3) }
+            def results = [x, y].collect { rankingService.score(it, 3, null) }
                 .toSorted(rankingService.resolveSortComparator(new RecommendationCriteria()))
 
         then: "X (from the 5-star source) is ranked ahead of Y (from the 3-star source)"
@@ -50,7 +50,7 @@ class RecommendationRankingServiceSpec extends Specification {
             def fromRated = dc(candidate(20, "FromRated", new BigDecimal("7.0")), [completedSeries("Rated", 4)])
 
         when: "each is scored and sorted"
-            def results = [fromUnrated, fromRated].collect { rankingService.score(it, 3) }
+            def results = [fromUnrated, fromRated].collect { rankingService.score(it, 3, null) }
                 .toSorted(rankingService.resolveSortComparator(new RecommendationCriteria()))
 
         then: "the candidate from the rated source outranks the one from the unrated source"
@@ -60,7 +60,7 @@ class RecommendationRankingServiceSpec extends Specification {
     def "SERIES-007-AC-22: maxPerSource caps candidates attributed to one source series (default 8)"() {
         given: "10 candidates all attributed to the same source series"
             def source = completedSeries("Breaking Bad")
-            def scored = (1..10).collect { rankingService.score(dc(candidate(it), [source]), 3) }
+            def scored = (1..10).collect { rankingService.score(dc(candidate(it), [source]), 3, null) }
 
         when: "applyDiversityCap is called with maxPerSource=8"
             def result = rankingService.applyDiversityCap(scored, 8)
@@ -72,7 +72,7 @@ class RecommendationRankingServiceSpec extends Specification {
 
     def "SERIES-007-AC-22: candidates with a null sourceTitle are not subject to the diversity cap"() {
         given: "5 candidates with no source (genre-sourced), exceeding maxPerSource=3"
-            def scored = (1..5).collect { rankingService.score(dc(candidate(it)), 3) }
+            def scored = (1..5).collect { rankingService.score(dc(candidate(it)), 3, null) }
 
         when: "applyDiversityCap is called with maxPerSource=3"
             def result = rankingService.applyDiversityCap(scored, 3)
@@ -87,7 +87,7 @@ class RecommendationRankingServiceSpec extends Specification {
             def control = dc(candidate(888, "Control", new BigDecimal("5.0")), [completedSeries("Control", 3)])
 
         when: "each is scored and sorted"
-            def results = [control, shared].collect { rankingService.score(it, 3) }
+            def results = [control, shared].collect { rankingService.score(it, 3, null) }
                 .toSorted(rankingService.resolveSortComparator(new RecommendationCriteria()))
 
         then: "Shared (max contributing rating 5) outranks Control (single source rating 3)"
@@ -98,8 +98,8 @@ class RecommendationRankingServiceSpec extends Specification {
         given: "diversityCapMode defaults to best-source; X and Y share the same two sources, maxPerSource 1"
             def sourceA = completedSeries("Source A", 5)
             def sourceB = completedSeries("Source B", 2)
-            def x = rankingService.score(dc(candidate(10, "X"), [sourceA, sourceB]), 3)
-            def y = rankingService.score(dc(candidate(20, "Y"), [sourceA, sourceB]), 3)
+            def x = rankingService.score(dc(candidate(10, "X"), [sourceA, sourceB]), 3, null)
+            def y = rankingService.score(dc(candidate(20, "Y"), [sourceA, sourceB]), 3, null)
 
         when: "applyDiversityCap is called with maxPerSource=1"
             def result = rankingService.applyDiversityCap([x, y], 1)
@@ -113,8 +113,8 @@ class RecommendationRankingServiceSpec extends Specification {
             def allSourcesRanking = new RecommendationRankingService(dtoAssembler, "all-sources")
             def sourceS = completedSeries("Source S", 5)
             def sourceT = completedSeries("Source T", 3)
-            def candidateA = allSourcesRanking.score(dc(candidate(10, "Candidate A"), [sourceS]), 3)
-            def candidateB = allSourcesRanking.score(dc(candidate(20, "Candidate B"), [sourceS, sourceT]), 3)
+            def candidateA = allSourcesRanking.score(dc(candidate(10, "Candidate A"), [sourceS]), 3, null)
+            def candidateB = allSourcesRanking.score(dc(candidate(20, "Candidate B"), [sourceS, sourceT]), 3, null)
 
         when: "applyDiversityCap is called with maxPerSource=1"
             def result = allSourcesRanking.applyDiversityCap([candidateA, candidateB], 1)
@@ -126,8 +126,8 @@ class RecommendationRankingServiceSpec extends Specification {
     def "SERIES-015-AC-17: a candidate with no watched-series source is never capped, under either mode"() {
         given: "10 same-source candidates (exceeding maxPerSource=8) plus 1 candidate with no source"
             def source = completedSeries("Breaking Bad")
-            def sameSource = (1..10).collect { rankingService.score(dc(candidate(it), [source]), 3) }
-            def noSource = rankingService.score(dc(candidate(500, "Genre-Sourced Candidate")), 3)
+            def sameSource = (1..10).collect { rankingService.score(dc(candidate(it), [source]), 3, null) }
+            def noSource = rankingService.score(dc(candidate(500, "Genre-Sourced Candidate")), 3, null)
 
         when: "applyDiversityCap is called with maxPerSource=8"
             def result = rankingService.applyDiversityCap(sameSource + [noSource], 8)
@@ -141,8 +141,8 @@ class RecommendationRankingServiceSpec extends Specification {
             def bogusModeRanking = new RecommendationRankingService(dtoAssembler, "bogus-mode")
             def sourceA = completedSeries("Source A", 5)
             def sourceB = completedSeries("Source B", 2)
-            def x = bogusModeRanking.score(dc(candidate(10, "X"), [sourceA, sourceB]), 3)
-            def y = bogusModeRanking.score(dc(candidate(20, "Y"), [sourceA, sourceB]), 3)
+            def x = bogusModeRanking.score(dc(candidate(10, "X"), [sourceA, sourceB]), 3, null)
+            def y = bogusModeRanking.score(dc(candidate(20, "Y"), [sourceA, sourceB]), 3, null)
 
         expect: "behavior matches best-source mode, not all-sources"
             bogusModeRanking.applyDiversityCap([x, y], 1).size() == 1
@@ -152,8 +152,8 @@ class RecommendationRankingServiceSpec extends Specification {
         given: "candidate A from 3 low-rated sources (lower rankScore); candidate B from 1 high-rated source (higher rankScore)"
             def aSources = (1..3).collect { completedSeries("A-Source ${it}", 1) }
             def bSource = completedSeries("B-Source", 5)
-            def a = rankingService.score(dc(candidate(100, "Candidate A", new BigDecimal("5.0")), aSources), 3)
-            def b = rankingService.score(dc(candidate(200, "Candidate B", new BigDecimal("5.0")), [bSource]), 3)
+            def a = rankingService.score(dc(candidate(100, "Candidate A", new BigDecimal("5.0")), aSources), 3, null)
+            def b = rankingService.score(dc(candidate(200, "Candidate B", new BigDecimal("5.0")), [bSource]), 3, null)
 
         when: "sorted by the recommendationCount comparator"
             def results = [a, b].toSorted(rankingService.resolveSortComparator(new RecommendationCriteria(sortBy: "recommendationCount")))
@@ -168,8 +168,8 @@ class RecommendationRankingServiceSpec extends Specification {
         given: "the same fixture as above"
             def aSources = (1..3).collect { completedSeries("A-Source ${it}", 1) }
             def bSource = completedSeries("B-Source", 5)
-            def a = rankingService.score(dc(candidate(100, "Candidate A", new BigDecimal("5.0")), aSources), 3)
-            def b = rankingService.score(dc(candidate(200, "Candidate B", new BigDecimal("5.0")), [bSource]), 3)
+            def a = rankingService.score(dc(candidate(100, "Candidate A", new BigDecimal("5.0")), aSources), 3, null)
+            def b = rankingService.score(dc(candidate(200, "Candidate B", new BigDecimal("5.0")), [bSource]), 3, null)
 
         when: "sorted by the (bogus sortBy) comparator"
             def results = [a, b].toSorted(rankingService.resolveSortComparator(new RecommendationCriteria(sortBy: "bogus")))

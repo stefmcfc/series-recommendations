@@ -26,7 +26,7 @@ public class RecommendationDtoAssembler {
         this.watchProviderService = watchProviderService;
     }
 
-    RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown) {
+    RecommendationDto toDto(DedupedCandidate dc, int effectiveMaxSourcesShown, String regionOverride) {
         TmdbCandidate c = dc.candidate();
         List<String> sourceTitles = dc.sourceSeries().stream()
             .map(SeriesEntity::getTitle)
@@ -40,7 +40,7 @@ public class RecommendationDtoAssembler {
             c.posterPath() != null ? TmdbClient.POSTER_BASE_URL + c.posterPath() : null,
             c.voteAverage(),
             c.voteCount(),
-            watchProviderService.streamingProviders(c.tmdbId()),
+            watchProviderService.streamingProviders(c.tmdbId(), regionOverride),
             dc.imdbId(),
             sourceTitles,
             dc.sourceSeries().size(),

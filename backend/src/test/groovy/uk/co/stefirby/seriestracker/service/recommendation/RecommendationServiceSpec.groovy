@@ -769,4 +769,60 @@ class RecommendationServiceSpec extends Specification {
         then: "external_ids is never resolved for the 51st raw candidate -- the pre-dedup cap (maxCandidates=50 on this instance) still applies"
             0 * tmdbClient.externalIds(51)
     }
+
+    // -- Spec 053 (SERIES-053-AC-07/08): region override forwarded to every candidate's toDto call --
+
+    def "SERIES-053-AC-07: region from criteria is forwarded to every candidate's watch-provider lookup (useMySeries/ranking path)"() {
+        given: "one source series recommending one candidate, criteria with a region override, sourceMode=useMySeries (SERIES-033-AC-04)"
+            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
+            seriesRepository.findAll() >> [source]
+            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
+            tmdbClient.recommendations(1) >> [candidate(10, "Recommended")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+            def criteria = new RecommendationCriteria(sourceMode: "useMySeries", region: "US")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "the candidate's watch-provider lookup uses the override region, not the injected GB default"
+            1 * tmdbClient.watchProviders(10, "US") >> []
+            0 * tmdbClient.watchProviders(10, "GB")
+    }
+
+    def "SERIES-053-AC-07: region from criteria is forwarded to every candidate's watch-provider lookup (trending/direct-toDto path)"() {
+        given: "trending mode returns one candidate, criteria with a region override"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", region: "US")
+            tmdbClient.trending("week") >> [candidate(10, "Trending Candidate")]
+            tmdbClient.trending("week", 2) >> []
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "the candidate's watch-provider lookup uses the override region, not the injected GB default"
+            1 * tmdbClient.watchProviders(10, "US") >> []
+            0 * tmdbClient.watchProviders(10, "GB")
+    }
+
+    def "SERIES-053-AC-08: omitting region on the recommendations request behaves identically to before this spec"() {
+        given: "one source series recommending one candidate, no region set on criteria, sourceMode=useMySeries (SERIES-033-AC-04)"
+            def source = completedSeries("Show", "tt1234567", LocalDateTime.now())
+            seriesRepository.findAll() >> [source]
+            tmdbClient.findTvIdByImdbId("tt1234567") >> Optional.of(1)
+            tmdbClient.recommendations(1) >> [candidate(10, "Recommended")]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+            def criteria = new RecommendationCriteria(sourceMode: "useMySeries")
+
+        when: "recommend(20, criteria) is called"
+            recommendationService.recommend(20, criteria)
+
+        then: "the injected GB default still governs the candidate's watch-provider lookup"
+            1 * tmdbClient.watchProviders(10, "GB") >> []
+    }
 }

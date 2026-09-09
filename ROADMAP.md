@@ -134,6 +134,7 @@ corrected below.
 | Sticky action bars (Recommendations modal footer gap fix + `SeriesDetail` bottom actions bar) | — | `frontend_spec_104` | ✅ Done |
 | My Series/Recommendations card styling + modernization (shared shadowed-card primitive, pill status tabs with icons, toolbar/Filters grouping) — extends `frontend_spec_101`'s Settings redesign beyond `/settings` | — | `frontend_spec_105` | ✅ Done |
 | Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054` | — | ✅ Done |
+| Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053` | `frontend_spec_102` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -155,18 +156,14 @@ introduces shared frontend infrastructure the next one consumes. Chains 1 (`fron
 table above — and no longer appear here.
 
 **Settings follow-up batch** (planned 2026-09-07, after the above shipped) — two independent
-specs/pairs; `frontend_spec_102` should build after `frontend_spec_101` since both touch
+specs/pairs; `frontend_spec_102` built after `frontend_spec_101` since both touch
 `SettingsPage.tsx` and 101's card/icon treatment is what 102's new section adopts.
-`frontend_spec_101` is now fully delivered — see the "Delivered" table above — and no longer
-appears here.
+`frontend_spec_101`/`series_spec_053`/`frontend_spec_102` are now fully delivered — see the
+"Delivered" table above — and no longer appear here.
 
 **UI polish + backfill batch** (planned 2026-09-08, from a user pass over the live app) — three
 independent specs, no build-order dependency between them. `frontend_spec_103`/`104`/`105` are now
 fully delivered — see the "Delivered" table above — and no longer appear here.
-
-| Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053`                    | `frontend_spec_102`                            | ⬜ Not started                                                                                    |
 
 ## Internal / maintenance specs (not user-facing features)
 

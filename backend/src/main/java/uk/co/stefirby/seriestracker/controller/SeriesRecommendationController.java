@@ -45,7 +45,8 @@ public class SeriesRecommendationController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sourceMode,
             @RequestParam(required = false) String trendingWindow,
-            @RequestParam(required = false) String discoverSortBy) {
+            @RequestParam(required = false) String discoverSortBy,
+            @RequestParam(required = false) String region) {
         int clampedLimit = Math.clamp(limit, 1, 50);
 
         RecommendationCriteria criteria = new RecommendationCriteria();
@@ -66,6 +67,7 @@ public class SeriesRecommendationController {
         criteria.setSourceMode(sourceMode);
         criteria.setTrendingWindow(trendingWindow);
         criteria.setDiscoverSortBy(discoverSortBy);
+        criteria.setRegion(region);
 
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));

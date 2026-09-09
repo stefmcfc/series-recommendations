@@ -48,3 +48,19 @@ export const ALL_COUNTRY_OPTIONS: PickerOption[] = [
   { id: 'US', label: formatCountryName('US') ?? 'US' },
   { id: 'GB', label: formatCountryName('GB') ?? 'GB' },
 ]
+
+// FRONTEND-102-AC-01/SERIES-053: matches the backend's own injected default
+// (`app.tmdb.watch-region`) -- see frontend_spec_102's Design Decisions for
+// why GB was chosen to line up on both sides.
+export const DEFAULT_WATCH_REGION = 'GB'
+
+// FRONTEND-102-AC-01: rejects anything that isn't a single known
+// ALL_COUNTRY_OPTIONS id -- a stale/corrupted stored value falls back to
+// DEFAULT_WATCH_REGION via useLocalStorage rather than sending an
+// unrecognized region to the backend.
+export function isWatchRegion(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    ALL_COUNTRY_OPTIONS.some((option) => option.id === value)
+  )
+}

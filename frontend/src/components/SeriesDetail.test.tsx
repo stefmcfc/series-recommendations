@@ -79,6 +79,9 @@ function makeRecommendation(
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // FRONTEND-102: watchRegion is read from localStorage on every mount --
+  // isolate each test so a value set by one doesn't leak into the next.
+  localStorage.clear()
 })
 
 describe('FRONTEND-005-AC-04/06/07: fetch, loading, render', () => {
@@ -1234,7 +1237,45 @@ describe('FRONTEND-052-AC-05: fetches recommendations scoped to this series', ()
     expect(mockGetRecommendations).toHaveBeenCalledWith({
       sourceMode: 'useMySeries',
       seriesIds: ['s1'],
+      region: 'GB',
     })
+  })
+})
+
+// frontend_spec_102_settings_watch_region.md
+describe('FRONTEND-102-AC-04: resolves the stored watch region on every call', () => {
+  it('includes the stored watch region on getRecommendations (recommendations modal)', async () => {
+    localStorage.setItem('watchRegion', JSON.stringify('FR'))
+    mockGetById.mockResolvedValue(
+      makeSeries({ id: 's1', title: 'Breaking Bad' }),
+    )
+    mockGetRecommendations.mockResolvedValue([])
+    render(<SeriesDetail id="s1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByTestId('recommendations-btn')
+
+    fireEvent.click(screen.getByTestId('recommendations-btn'))
+
+    await waitFor(() =>
+      expect(mockGetRecommendations).toHaveBeenCalledWith({
+        sourceMode: 'useMySeries',
+        seriesIds: ['s1'],
+        region: 'FR',
+      }),
+    )
+  })
+
+  it('includes the stored watch region on getWatchProviders', async () => {
+    localStorage.setItem('watchRegion', JSON.stringify('FR'))
+    mockGetById.mockResolvedValue(makeSeries())
+    mockGetWatchProviders.mockResolvedValue([])
+    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    await screen.findByText(/^The Office/)
+
+    fireEvent.click(screen.getByRole('button', { name: /check streaming/i }))
+
+    await waitFor(() =>
+      expect(mockGetWatchProviders).toHaveBeenCalledWith('abc-123', 'FR'),
+    )
   })
 })
 

@@ -5,7 +5,11 @@ import type { RefreshJobStatus } from '../types/series'
 import { formatRelativeTime } from '../utils/relativeTime'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { Theme } from '../types/theme'
-import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
+import {
+  ALL_COUNTRY_OPTIONS,
+  DEFAULT_WATCH_REGION,
+  isWatchRegion,
+} from '../utils/countryOptions'
 import {
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
@@ -23,6 +27,7 @@ import {
   ExportIcon,
   ImportIcon,
   FavouritesIcon,
+  WatchRegionIcon,
 } from './SettingsIcons'
 import {
   toMinutes,
@@ -104,6 +109,14 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
     'languageFavourites',
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
+  )
+  // FRONTEND-102-AC-01: persisted, editable watch-region -- always resolves
+  // to a definite value (the user's choice or DEFAULT_WATCH_REGION), no
+  // Save button, matching every other Settings control in this batch.
+  const [watchRegion, setWatchRegion] = useLocalStorage(
+    'watchRegion',
+    DEFAULT_WATCH_REGION,
+    isWatchRegion,
   )
 
   const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
@@ -341,6 +354,27 @@ export function SettingsPage({ theme, setTheme }: SettingsPageProps) {
           onChange={setLanguageFavourites}
           options={LANGUAGE_OPTIONS}
           reorderable
+        />
+      </SettingsSection>
+
+      {/* FRONTEND-102-AC-05/06: single-select via the same
+          KeywordPicker-as-single-value adapter RecommendationFiltersBox's
+          Language field already established -- selected={[watchRegion]},
+          onChange resolves next.at(-1). hideInput mirrors this field's
+          fixed, browsable-not-typed catalog (same rationale as the Country/
+          Language inline fields elsewhere -- see KeywordPicker's hideInput
+          usages), and gives this section a stable accessible name/value via
+          the container's aria-label for the currently selected region. */}
+      <SettingsSection title="Watch Region" icon={<WatchRegionIcon />}>
+        <KeywordPicker
+          id="settings-watch-region"
+          label="Watch Region"
+          selected={[watchRegion]}
+          onChange={(next) =>
+            setWatchRegion(next.at(-1) ?? DEFAULT_WATCH_REGION)
+          }
+          options={ALL_COUNTRY_OPTIONS}
+          hideInput
         />
       </SettingsSection>
     </div>

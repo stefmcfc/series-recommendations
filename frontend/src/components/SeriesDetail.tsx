@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import type { Series, StreamingProvider } from '../types/series'
 import { formatCountryNames } from '../utils/countryName'
+import { DEFAULT_WATCH_REGION, isWatchRegion } from '../utils/countryOptions'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
@@ -80,6 +82,14 @@ export function SeriesDetail({
   // the recommendations modal.
   const [posterLightboxOpen, setPosterLightboxOpen] = useState(false)
   const posterCloseButtonRef = useRef<HTMLButtonElement>(null)
+  // FRONTEND-102-AC-04: resolved and passed on every getWatchProviders call,
+  // not just when it differs from the default -- see frontend_spec_102's
+  // Design Decisions.
+  const [watchRegion] = useLocalStorage(
+    'watchRegion',
+    DEFAULT_WATCH_REGION,
+    isWatchRegion,
+  )
 
   if (fetchedForId !== id) {
     setFetchedForId(id)
@@ -248,7 +258,7 @@ export function SeriesDetail({
     setStreamingCheckLoading(true)
 
     seriesApi
-      .getWatchProviders(id)
+      .getWatchProviders(id, watchRegion)
       .then((providers) => {
         setStreamingCheckLoading(false)
         setStreamingCheckResult(providers)

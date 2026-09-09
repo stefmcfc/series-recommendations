@@ -1,4 +1,10 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import {
   SettingsPage,
@@ -12,6 +18,19 @@ vi.mock('../services/seriesApi')
 const mockExport = vi.mocked(seriesApi.export)
 const mockRefreshAll = vi.mocked(seriesApi.refreshAll)
 const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
+
+// FRONTEND-102: the new Watch Region picker shares ALL_COUNTRY_OPTIONS with
+// the Recommendation Favourites section's Country Favourites picker, so a
+// country name (e.g. "France") can now appear as an unselected suggestion
+// in both sections at once -- tests that click/assert on a specific country
+// name scope to one section's <section> ancestor via its own heading to
+// stay unambiguous.
+function getSectionByHeading(name: string): HTMLElement {
+  const heading = screen.getByRole('heading', { name })
+  const section = heading.closest('section')
+  if (!section) throw new Error(`No <section> ancestor for heading: ${name}`)
+  return section as HTMLElement
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -571,7 +590,12 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
   it('selecting a country favourite writes through to localStorage immediately', () => {
     render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'France' }))
+    // FRONTEND-102: scoped to this section -- see the file-level comment on
+    // getSectionByHeading for why an unscoped "France" query is now ambiguous.
+    const favouritesSection = getSectionByHeading('Recommendation Favourites')
+    fireEvent.click(
+      within(favouritesSection).getByRole('button', { name: 'France' }),
+    )
 
     expect(JSON.parse(localStorage.getItem('countryFavourites')!)).toContain(
       'FR',
@@ -592,8 +616,12 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
     localStorage.setItem('countryFavourites', JSON.stringify(['FR', 'DE']))
     render(<SettingsPage theme="system" setTheme={vi.fn()} />)
 
-    expect(screen.getByText('France')).toBeInTheDocument()
-    expect(screen.getByText('Germany')).toBeInTheDocument()
+    // FRONTEND-102: scoped to this section -- see the file-level comment on
+    // getSectionByHeading for why unscoped "France"/"Germany" queries are
+    // now ambiguous (the Watch Region picker also lists both as suggestions).
+    const favouritesSection = getSectionByHeading('Recommendation Favourites')
+    expect(within(favouritesSection).getByText('France')).toBeInTheDocument()
+    expect(within(favouritesSection).getByText('Germany')).toBeInTheDocument()
   })
 })
 
@@ -642,6 +670,41 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
       'zh',
       'it',
     ])
+  })
+})
+
+describe('FRONTEND-102-AC-01/05/06: Watch Region setting', () => {
+  it('defaults to GB and writes through on selection', () => {
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+    expect(screen.getByLabelText(/watch region/i)).toHaveTextContent(
+      'United Kingdom',
+    )
+
+    // FRONTEND-102: scoped to this section -- see the file-level comment on
+    // getSectionByHeading for why an unscoped "France" query is ambiguous
+    // (Recommendation Favourites' Country Favourites picker also lists it).
+    const watchRegionSection = getSectionByHeading('Watch Region')
+    fireEvent.click(
+      within(watchRegionSection).getByRole('button', { name: /^france$/i }),
+    )
+
+    expect(JSON.parse(localStorage.getItem('watchRegion')!)).toBe('FR')
+  })
+
+  it('falls back to the default when a stored value is unrecognized', () => {
+    localStorage.setItem('watchRegion', JSON.stringify('XX'))
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+    expect(screen.getByLabelText(/watch region/i)).toHaveTextContent(
+      'United Kingdom',
+    )
+  })
+
+  it('renders a Watch Region section', () => {
+    render(<SettingsPage theme="system" setTheme={vi.fn()} />)
+
+    expect(
+      screen.getByRole('heading', { name: 'Watch Region' }),
+    ).toBeInTheDocument()
   })
 })
 

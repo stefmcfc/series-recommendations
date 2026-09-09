@@ -190,6 +190,37 @@ class SeriesControllerRecommendationsSpec extends Specification {
             }))
     }
 
+    // -- SERIES-053-AC-06: region endpoint wiring --
+
+    def "SERIES-053-AC-06: region query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?region=US is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("region", "US"))
+
+        then: "the response is 200 and RecommendationService received region=US"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.region == "US"
+            }))
+    }
+
+    def "SERIES-053-AC-08: omitting region behaves identically to before this spec (region left null on criteria)"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations is requested with no region param"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations"))
+
+        then: "the response is 200 and RecommendationCriteria.region is null"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.region == null
+            }))
+    }
+
     // -- SERIES-007-AC-09/17: service-level IllegalArgumentException maps to 400 --
 
     def "SERIES-007-AC-09: an unknown series id in seriesIds is rejected"() {

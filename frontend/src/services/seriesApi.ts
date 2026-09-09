@@ -102,6 +102,10 @@ function buildRecommendationParams(
   addIfPresent(params, 'sourceMode', query.sourceMode)
   addIfPresent(params, 'trendingWindow', query.trendingWindow)
   addIfPresent(params, 'discoverSortBy', query.discoverSortBy)
+  // FRONTEND-102-AC-02: sent whenever the caller resolves and passes a value
+  // -- always the case in practice, since every real call site resolves it
+  // from the watchRegion useLocalStorage hook before calling (AC-04).
+  addIfPresent(params, 'region', query.region)
   return params
 }
 
@@ -284,9 +288,19 @@ export const seriesApi = {
       }),
     ).then((res) => res.data),
 
-  getWatchProviders: (id: string): Promise<StreamingProvider[]> =>
+  // FRONTEND-102-AC-03: region is an additional, optional param -- included
+  // as a query param only when provided, preserving the pre-existing
+  // no-args call shape (and its test's exact-args assertion) when omitted.
+  getWatchProviders: (
+    id: string,
+    region?: string,
+  ): Promise<StreamingProvider[]> =>
     request<{ data: StreamingProvider[]; count: number }>(() =>
-      client.get('/series/' + id + '/watch-providers'),
+      region != null
+        ? client.get('/series/' + id + '/watch-providers', {
+            params: { region },
+          })
+        : client.get('/series/' + id + '/watch-providers'),
     ).then((res) => res.data),
 
   refresh: (id: string): Promise<RefreshResult> =>

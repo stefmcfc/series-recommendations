@@ -48,17 +48,22 @@ public class WatchProviderService {
 
     /**
      * SERIES-020-AC-05/06: resolves a candidate's currently-available flatrate streaming
-     * providers in {@link #watchRegion}, mapping each {@link TmdbWatchProvider} to a {@link
-     * RecommendationDto.StreamingProvider} with a fully-built {@code logoUrl}. A lookup
-     * failure (any reason) is caught, logged, and yields an empty list for that one candidate
-     * -- it never fails or omits the candidate from the overall response, matching every other
-     * upstream-call posture in this service. {@code watchProviders} itself never returns
-     * {@code null} (SERIES-020-AC-02); the extra null-guard here is defense-in-depth only.
+     * providers in {@link #watchRegion} (or {@code regionOverride} when non-null --
+     * SERIES-053-AC-01, mirroring {@code series_spec_052}'s per-request-override pattern: this
+     * revises {@code series_spec_020}'s original single-configured-region design decision,
+     * explicitly, not silently -- see that spec's Design Decisions), mapping each {@link
+     * TmdbWatchProvider} to a {@link RecommendationDto.StreamingProvider} with a fully-built
+     * {@code logoUrl}. A lookup failure (any reason) is caught, logged, and yields an empty
+     * list for that one candidate -- it never fails or omits the candidate from the overall
+     * response, matching every other upstream-call posture in this service. {@code
+     * watchProviders} itself never returns {@code null} (SERIES-020-AC-02); the extra
+     * null-guard here is defense-in-depth only.
      */
-    public List<RecommendationDto.StreamingProvider> streamingProviders(int tmdbId) {
+    public List<RecommendationDto.StreamingProvider> streamingProviders(int tmdbId, String regionOverride) {
+        String effectiveRegion = regionOverride != null ? regionOverride : watchRegion;
         List<TmdbWatchProvider> providers;
         try {
-            providers = tmdbClient.watchProviders(tmdbId, watchRegion);
+            providers = tmdbClient.watchProviders(tmdbId, effectiveRegion);
         } catch (ExternalServiceException e) {
             log.info("TMDB watch-provider lookup unavailable for candidate tmdbId={}, streamingProviders left empty: {}",
                 tmdbId, e.getMessage());
@@ -80,12 +85,13 @@ public class WatchProviderService {
      * A genuinely unknown {@code id} is the only error case (404, matching {@code
      * getById}/{@code update}/{@code delete}/{@code refresh}); a missing/unresolvable {@code
      * imdbId} both yield an empty list rather than an error (SERIES-026-AC-03/04), and once a
-     * {@code tmdbId} is resolved this delegates straight to {@link #streamingProviders(int)}
-     * (Series Spec 020), reusing its own graceful degradation on a {@code watchProviders}
+     * {@code tmdbId} is resolved this delegates straight to {@link #streamingProviders(int,
+     * String)} (Series Spec 020), forwarding {@code regionOverride} through unchanged
+     * (SERIES-053-AC-02) and reusing its own graceful degradation on a {@code watchProviders}
      * failure verbatim (SERIES-026-AC-05).
      */
     @Transactional(readOnly = true)
-    public List<RecommendationDto.StreamingProvider> getStreamingProvidersForSeries(UUID id) {
+    public List<RecommendationDto.StreamingProvider> getStreamingProvidersForSeries(UUID id, String regionOverride) {
         SeriesEntity series = seriesRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Series not found with id: " + id));
 
@@ -95,7 +101,7 @@ public class WatchProviderService {
         }
 
         return tmdbClient.findTvIdByImdbId(imdbId)
-            .map(this::streamingProviders)
+            .map(tmdbId -> streamingProviders(tmdbId, regionOverride))
             .orElse(List.of());
     }
 }

@@ -1,6 +1,6 @@
 # Spec 053: Watch-Region Per-Request Override
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3 (settings/quality-of-life enhancement to an existing feature, not core CRUD)
 **Depends on**: `series_spec_020_watch_providers.md` (`WatchProviderService`, the original single-configured-region design this spec revises), `series_spec_007_recommendation_sourcing.md` (`RecommendationCriteria`, the pattern for adding a new optional recommendations query param)
 **Backend Task**
@@ -152,11 +152,11 @@ above pass.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-053-AC-01: `streamingProviders` resolves an override in place of the injected default
-- [ ] SERIES-053-AC-02: `getStreamingProvidersForSeries` forwards the override
-- [ ] SERIES-053-AC-03: watch-providers endpoint accepts an optional `region` param
-- [ ] SERIES-053-AC-04: omitted `region` is fully backward compatible
-- [ ] SERIES-053-AC-05: `RecommendationCriteria` gains a `region` field
-- [ ] SERIES-053-AC-06: recommendations endpoint accepts and sets `region` on criteria
-- [ ] SERIES-053-AC-07: `RecommendationDtoAssembler.toDto` forwards the override per candidate
-- [ ] SERIES-053-AC-08: omitted `region` on recommendations is fully backward compatible
+- [x] SERIES-053-AC-01: `streamingProviders` resolves an override in place of the injected default
+- [x] SERIES-053-AC-02: `getStreamingProvidersForSeries` forwards the override
+- [x] SERIES-053-AC-03: watch-providers endpoint accepts an optional `region` param
+- [x] SERIES-053-AC-04: omitted `region` is fully backward compatible
+- [x] SERIES-053-AC-05: `RecommendationCriteria` gains a `region` field
+- [x] SERIES-053-AC-06: recommendations endpoint accepts and sets `region` on criteria
+- [x] SERIES-053-AC-07: `RecommendationDtoAssembler.toDto` forwards the override per candidate
+- [x] SERIES-053-AC-08: omitted `region` on recommendations is fully backward compatible

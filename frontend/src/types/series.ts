@@ -275,6 +275,12 @@ export interface RecommendationQuery {
     | 'popularity.desc'
     | 'first_air_date.desc'
     | 'vote_count.desc'
+  // FRONTEND-102-AC-02/SERIES-053: per-request TMDB watch-region override --
+  // always resolved and sent by call sites from the Settings-backed
+  // useLocalStorage('watchRegion', ...) hook, never omitted (see
+  // frontend_spec_102's Design Decisions for why there's no meaningful
+  // "absent" state to preserve here, unlike the skip-threshold override).
+  region?: string
 }
 
 export interface SearchCriteria {

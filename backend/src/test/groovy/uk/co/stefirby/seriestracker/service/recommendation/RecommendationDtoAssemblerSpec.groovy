@@ -36,7 +36,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
             def dc = new DedupedCandidate(candidate(500, "Genre Candidate", 2020, new BigDecimal("8.0"), [18], 1500), [], "tt5005005")
 
         when: "toDto is called"
-            def result = dtoAssembler.toDto(dc, 3)
+            def result = dtoAssembler.toDto(dc, 3, null)
 
         then: "voteCount is passed through unchanged"
             result.voteCount() == 1500
@@ -49,7 +49,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
                 [], "tt0000002")
 
         when: "toDto is called"
-            def result = dtoAssembler.toDto(dc, 3)
+            def result = dtoAssembler.toDto(dc, 3, null)
 
         then: "the result carries both new fields"
             result.originCountry == "US"
@@ -63,7 +63,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
             def dc = new DedupedCandidate(candidate, [], null)
 
         when: "toDto(dc, 5) is called"
-            def dto = dtoAssembler.toDto(dc, 5)
+            def dto = dtoAssembler.toDto(dc, 5, null)
 
         then: "originCountry is both entries, comma-joined"
             dto.originCountry == "GB,US"
@@ -77,7 +77,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
                 [], "tt0000099")
 
         when: "toDto is called"
-            def result = dtoAssembler.toDto(dc, 3)
+            def result = dtoAssembler.toDto(dc, 3, null)
 
         then: "the poster URL is built from TmdbClient's own constant, not a private duplicate"
             result.posterUrl() == TmdbClient.POSTER_BASE_URL + "/poster.jpg"
@@ -90,7 +90,7 @@ class RecommendationDtoAssemblerSpec extends Specification {
             def dc = new DedupedCandidate(candidate(999, "Shared Candidate"), sources, "tt9999999")
 
         when: "toDto is called with the default maxSourcesShown (3)"
-            def result = dtoAssembler.toDto(dc, 3)
+            def result = dtoAssembler.toDto(dc, 3, null)
 
         then: "sourceTitles contains only the 3 best-rated sources' titles, in order"
             result.sourceTitles() == ["Source 5", "Source 4", "Source 3"]
@@ -106,10 +106,33 @@ class RecommendationDtoAssemblerSpec extends Specification {
             def dc = new DedupedCandidate(candidate(999, "Shared Candidate"), sources, "tt9999999")
 
         when: "toDto is called with maxSourcesShown 2"
-            def result = dtoAssembler.toDto(dc, 2)
+            def result = dtoAssembler.toDto(dc, 2, null)
 
         then: "sourceTitles is capped to 2, but totalSourceCount is still 5"
             result.sourceTitles().size() == 2
             result.totalSourceCount() == 5
+    }
+
+    def "SERIES-053-AC-07: a region override is forwarded to WatchProviderService.streamingProviders"() {
+        given: "a deduped candidate"
+            def dc = new DedupedCandidate(candidate(500), [], "tt5005005")
+
+        when: "toDto is called with a region override"
+            dtoAssembler.toDto(dc, 3, "US")
+
+        then: "the override reaches the underlying TMDB call, not the injected GB default"
+            1 * tmdbClient.watchProviders(500, "US") >> []
+            0 * tmdbClient.watchProviders(500, "GB")
+    }
+
+    def "SERIES-053-AC-08: a null region override behaves identically to before this spec (injected default governs)"() {
+        given: "a deduped candidate"
+            def dc = new DedupedCandidate(candidate(500), [], "tt5005005")
+
+        when: "toDto is called with no region override"
+            dtoAssembler.toDto(dc, 3, null)
+
+        then: "the injected GB default is used"
+            1 * tmdbClient.watchProviders(500, "GB") >> []
     }
 }

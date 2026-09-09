@@ -95,6 +95,35 @@ class SeriesControllerWatchProvidersSpec extends Specification {
             result.andExpect(jsonPath('$.count').value(0))
     }
 
+    def "SERIES-053-AC-03: an optional region query param is forwarded to the TMDB watch-providers lookup"() {
+        given: "an existing series with a resolvable imdbId"
+            def created = seriesService.create(new SeriesDto(title: "Ozark", imdbId: "tt5071412"))
+            when(tmdbClient.findTvIdByImdbId("tt5071412")).thenReturn(Optional.of(69740))
+            when(tmdbClient.watchProviders(69740, "US")).thenReturn([new TmdbWatchProvider("Hulu", "/xyz.jpg")])
+
+        when: "the endpoint is requested with ?region=US"
+            def result = mockMvc.perform(get("/api/v1/series/${created.id}/watch-providers?region=US"))
+
+        then: "the response uses the override region, not the injected GB default"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data[0].name').value("Hulu"))
+            result.andExpect(jsonPath('$.count').value(1))
+    }
+
+    def "SERIES-053-AC-04: omitting region behaves identically to before this spec (injected GB default governs)"() {
+        given: "an existing series with a resolvable imdbId"
+            def created = seriesService.create(new SeriesDto(title: "Ozark", imdbId: "tt5071412"))
+            when(tmdbClient.findTvIdByImdbId("tt5071412")).thenReturn(Optional.of(69740))
+            when(tmdbClient.watchProviders(69740, "GB")).thenReturn([new TmdbWatchProvider("Netflix", "/abc.jpg")])
+
+        when: "the endpoint is requested with no region param"
+            def result = mockMvc.perform(get("/api/v1/series/${created.id}/watch-providers"))
+
+        then: "the injected GB default governs, matching pre-spec behavior"
+            result.andExpect(status().isOk())
+            result.andExpect(jsonPath('$.data[0].name').value("Netflix"))
+    }
+
     def "SERIES-026-AC-05: a watchProviders failure yields an empty list, not an error, reusing the existing helper"() {
         given: "a series with a resolvable tmdbId, but TMDB's watch-providers call fails"
             def created = seriesService.create(new SeriesDto(title: "Ozark", imdbId: "tt5071412"))
