@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.42.0] - 2026-09-09
+
+### Added
+
+- Backend: new `/api/v1/filter-profiles` resource (`GET ?area=`, `POST`, `PATCH /{id}`, `DELETE /{id}`) for named, saved filter/criteria snapshots across three areas (My Series filters, Use My Series filters, Recommendation filters); `criteria` is stored and returned as an opaque JSON object the backend never validates (`series_spec_055`). No frontend UI yet — that's `frontend_spec_107`.
+
 ## [3.41.0] - 2026-09-09
 
 ### Added

@@ -504,6 +504,39 @@ result stays visible here until a new job starts. `skipThresholdMinutesUsed` rep
 passed to `POST /refresh-all`, otherwise the configured default — so a run whose `skippedCount`
 looks surprising can be explained without guessing.
 
+## Filter Profiles
+
+Named, saved filter/criteria snapshots for one of three unrelated frontend contexts, identified by
+`area`: `MY_SERIES` (My Series' filter sheet), `USE_MY_SERIES` (Recommendations' "Use My Series"
+panel), `RECOMMENDATION_FILTERS` (Recommendations' shared "Filters" box). A new top-level resource,
+not nested under `/series` — a filter profile isn't series data. `criteria` is an opaque JSON
+object the backend never validates or queries into — it's stored and returned exactly as
+submitted; each area's actual field shape is entirely the frontend's concern
+(`series_spec_055_filter_profiles.md`).
+
+### `GET /api/v1/filter-profiles?area=`
+
+List every saved profile for one `area`, sorted by `name` ascending. `area` is required; an
+unrecognized value returns `400`. An area with no saved profiles returns `200` with an empty list,
+not `404`.
+
+### `POST /api/v1/filter-profiles`
+
+Create a profile: `{ area, name, criteria }`. Returns `201` with the created profile. A blank/
+missing `name` returns `400`. Uniqueness is scoped to `(area, name)`, not `name` alone — the same
+name can exist once per area; a duplicate within the same area returns `409`.
+
+### `PATCH /api/v1/filter-profiles/{id}`
+
+Partial update: `{ name?, criteria? }` — only fields present in the body change, the other stays
+as-is. `area` cannot be changed via this endpoint. Renaming to a name that collides with another
+profile in the same area returns `409`; renaming to the profile's own current name is a no-op and
+succeeds. `404` for an unknown `id`.
+
+### `DELETE /api/v1/filter-profiles/{id}`
+
+Remove a profile. `204` on success, `404` for an unknown `id`.
+
 ## Sorting
 
 `sortBy`/`sortDirection` on `GET /api/v1/series` and `GET /api/v1/series/search`: `sortBy` is one
