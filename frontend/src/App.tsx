@@ -134,37 +134,37 @@ function MySeriesView({
         <NavLink to="/my-series" end className={navLinkClassName}>
           <span aria-hidden="true">
             <AllIcon />
-          </span>
+          </span>{' '}
           All
         </NavLink>
         <NavLink to="/my-series/watching" className={navLinkClassName}>
           <span aria-hidden="true">
             <WatchingIcon />
-          </span>
+          </span>{' '}
           Watching
         </NavLink>
         <NavLink to="/my-series/completed" className={navLinkClassName}>
           <span aria-hidden="true">
             <CompletedIcon />
-          </span>
+          </span>{' '}
           Completed
         </NavLink>
         <NavLink to="/my-series/backlog" className={navLinkClassName}>
           <span aria-hidden="true">
             <BacklogIcon />
-          </span>
+          </span>{' '}
           Backlog
         </NavLink>
         <NavLink to="/my-series/dropped" className={navLinkClassName}>
           <span aria-hidden="true">
             <DroppedIcon />
-          </span>
+          </span>{' '}
           Dropped
         </NavLink>
         <NavLink to="/my-series/rewatch" className={navLinkClassName}>
           <span aria-hidden="true">
             <RewatchIcon />
-          </span>
+          </span>{' '}
           Rewatch
         </NavLink>
       </nav>
