@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import type { RecommendationQuery, Series, SortOptions } from '../types/series'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { PickerOption } from './KeywordPicker'
 import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { formatCountryNames } from '../utils/countryName'
@@ -118,6 +119,18 @@ export function isLanguageFavourites(value: unknown): value is string[] {
 // is active, relevant only while mode === 'discover'.
 export type SourceMode = 'useMySeries' | 'discover'
 export type DiscoverMode = 'customSearch' | 'trending' | 'topRated'
+
+// FRONTEND-106-AC-01: same validator style as isCountryFavourites/
+// isLanguageFavourites above -- a plain type-guard checking the value is one
+// of the three known DiscoverMode literals, so a stale/corrupted stored
+// value can never inject an invalid discoverMode.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isDiscoverMode(value: unknown): value is DiscoverMode {
+  return (
+    value === 'customSearch' || value === 'trending' || value === 'topRated'
+  )
+}
+
 export type SortByOption = 'score' | 'recommendationCount'
 type TrendingWindow = 'day' | 'week'
 // FRONTEND-035: picker-scoped filter/sort state for "Specific Series" mode --
@@ -788,7 +801,23 @@ export function RecommendationControls({
   onQueryChange,
   loading = false,
 }: RecommendationControlsProps) {
-  const [state, setState] = useState<ControlsState>(initialState)
+  // FRONTEND-106-AC-02/03: discoverMode is sticky across page loads/tab
+  // switches via the same useLocalStorage pattern theme/watchRegion already
+  // use -- storedDiscoverMode seeds ControlsState.discoverMode's initial
+  // value (every other initialState field is unaffected) and stays synced
+  // to state.discoverMode via the effect below, so it's always the current
+  // persisted value handleTopLevelModeChange can read from (FRONTEND-106-
+  // AC-04).
+  const [storedDiscoverMode, setStoredDiscoverMode] =
+    useLocalStorage<DiscoverMode>(
+      'discoverMode',
+      'customSearch',
+      isDiscoverMode,
+    )
+  const [state, setState] = useState<ControlsState>({
+    ...initialState,
+    discoverMode: storedDiscoverMode,
+  })
   const [allSeries, setAllSeries] = useState<Series[]>([])
   const [genreOptions, setGenreOptions] = useState<string[]>([])
   const [keywordOptions, setKeywordOptions] = useState<string[]>([])
@@ -827,6 +856,15 @@ export function RecommendationControls({
     setState((prev) => ({ ...prev, ...patch }))
   }
 
+  // FRONTEND-106-AC-03: writes state.discoverMode to localStorage on every
+  // change, whether it came from handleDiscoverSubModeChange (via
+  // updateState/setState above) or the corrected handleTopLevelModeChange
+  // below -- keeps storedDiscoverMode (and therefore the persisted value)
+  // always up to date with the in-memory sticky value.
+  useEffect(() => {
+    setStoredDiscoverMode(state.discoverMode)
+  }, [state.discoverMode, setStoredDiscoverMode])
+
   // FRONTEND-062-AC-02/AC-04 (reverses FRONTEND-040-AC-02): switching the
   // top-level tab now updates pending state only, like every other control
   // -- no onQueryChange(buildQuery(next)) call. It still calls
@@ -841,11 +879,13 @@ export function RecommendationControls({
   const handleTopLevelModeChange = (mode: SourceMode) => {
     if (mode === state.mode) return
 
-    // Entering Discover always lands on its default sub-tab (Custom
-    // Search); leaving it (or staying on Use My Series) doesn't touch
+    // FRONTEND-106-AC-04: entering Discover now lands on the current
+    // persisted/sticky sub-tab (storedDiscoverMode, always up to date per
+    // the sync effect above) instead of always resetting to Custom Search;
+    // leaving Discover (or staying on Use My Series) still doesn't touch
     // discoverMode -- it's simply irrelevant while mode !== 'discover'.
     const nextDiscoverMode: DiscoverMode =
-      mode === 'discover' ? 'customSearch' : state.discoverMode
+      mode === 'discover' ? storedDiscoverMode : state.discoverMode
 
     const patch: Partial<ControlsState> = {
       mode,
