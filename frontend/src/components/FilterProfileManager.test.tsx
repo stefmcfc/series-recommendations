@@ -259,3 +259,44 @@ describe('FRONTEND-108-AC-12: delete confirm, and rename/delete are mutually exc
     expect(screen.getByText('Weeknight')).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-109-AC-06: rename replaces the name display', () => {
+  it('hides the name button and Rename trigger while renaming', async () => {
+    mockOnlyMySeries([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: {},
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(<FilterProfileManager />)
+    fireEvent.click(await screen.findByLabelText(/rename weeknight/i))
+    expect(
+      screen.queryByRole('button', { name: 'Weeknight' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/rename weeknight/i)).not.toBeInTheDocument()
+    expect(screen.getByDisplayValue('Weeknight')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-109-AC-09: row uses the shared card primitive', () => {
+  it('applies the surface.card class to each profile row', async () => {
+    mockOnlyMySeries([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'Weeknight',
+        criteria: {},
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    const { container } = render(<FilterProfileManager />)
+    await screen.findByText('Weeknight')
+    const row = container.querySelector('li')
+    expect(row?.className).toMatch(/card/)
+  })
+})

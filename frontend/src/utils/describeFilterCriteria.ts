@@ -86,12 +86,18 @@ function describeUseMySeriesCriteria(
           },
         ]
       : []
+  // sortBy/sortDirection are never actually "unset" -- UseMySeriesPanel.tsx
+  // always initializes them to 'title'/'asc'. Comparing against those exact
+  // defaults (not just != null) is what makes "no active criteria" mean
+  // anything for this area -- otherwise describeFilterCriteria could never
+  // return zero entries here, and FRONTEND-109-AC-13's "disable Save when
+  // empty" would never actually trigger.
   const sortByEntry =
-    criteria.sortBy != null
+    criteria.sortBy != null && criteria.sortBy !== 'title'
       ? [{ label: 'Sort By', value: SORT_BY_LABELS[criteria.sortBy] }]
       : []
   const sortDirectionEntry =
-    criteria.sortDirection != null
+    criteria.sortDirection != null && criteria.sortDirection !== 'asc'
       ? [
           {
             label: 'Sort Direction',

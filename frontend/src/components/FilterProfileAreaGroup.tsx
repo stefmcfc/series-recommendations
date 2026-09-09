@@ -5,6 +5,7 @@ import { describeFilterCriteria } from '../utils/describeFilterCriteria'
 import { validateFilterProfileName } from '../utils/filterProfileValidation'
 import styles from './FilterProfileAreaGroup.module.css'
 import btn from '../styles/buttons.module.css'
+import surface from '../styles/surfaces.module.css'
 
 interface FilterProfileAreaGroupProps {
   readonly area: FilterProfileArea
@@ -143,46 +144,54 @@ export function FilterProfileAreaGroup({
             // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-cancels-delete-confirmation, mirroring SeriesList.tsx's identical pattern; relies on the keydown bubbling up from whichever Confirm/Cancel button currently has focus, the <li> itself is intentionally non-interactive (no role/tabIndex).
             <li
               key={profile.id}
-              className={styles.row}
+              className={`${styles.row} ${surface.card}`}
               onKeyDown={(event) => handleRowKeyDown(event, profile.id)}
             >
               <div className={styles.rowHeader}>
-                <button
-                  type="button"
-                  className={styles.nameButton}
-                  onClick={() => handleToggleExpand(profile.id)}
-                >
-                  {profile.name}
-                </button>
-
-                <div className={styles.rowActions}>
-                  {renamingId === profile.id ? (
-                    <div className={styles.renameGroup}>
-                      <input
-                        type="text"
-                        aria-label={`New name for ${profile.name}`}
-                        value={renameValue}
-                        onChange={(event) => setRenameValue(event.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className={btn.btnPrimary}
-                        onClick={() => handleRenameSave(profile)}
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        className={btn.btnSecondary}
-                        onClick={handleRenameCancel}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
+                {/* FRONTEND-109-AC-06: while this row is being renamed, the
+                    nameButton (toggle-expand) is replaced in place by
+                    renameGroup rather than the two sitting side by side. */}
+                {renamingId === profile.id ? (
+                  <div className={styles.renameGroup}>
+                    <input
+                      type="text"
+                      aria-label={`New name for ${profile.name}`}
+                      value={renameValue}
+                      onChange={(event) => setRenameValue(event.target.value)}
+                    />
                     <button
                       type="button"
-                      className={btn.btnSecondary}
+                      className={`${btn.btnPrimary} ${styles.actionButton}`}
+                      onClick={() => handleRenameSave(profile)}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      className={`${btn.btnSecondary} ${styles.actionButton}`}
+                      onClick={handleRenameCancel}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.nameButton}
+                    onClick={() => handleToggleExpand(profile.id)}
+                  >
+                    {profile.name}
+                  </button>
+                )}
+
+                <div className={styles.rowActions}>
+                  {/* FRONTEND-109-AC-06: the Rename trigger itself is also
+                      hidden while this row is mid-rename -- only the input,
+                      Save, and Cancel above should show. */}
+                  {renamingId !== profile.id && (
+                    <button
+                      type="button"
+                      className={`${btn.btnSecondary} ${styles.actionButton}`}
                       aria-label={`Rename ${profile.name}`}
                       onClick={() => handleRenameClick(profile)}
                     >
@@ -194,7 +203,7 @@ export function FilterProfileAreaGroup({
                     <>
                       <button
                         type="button"
-                        className={btn.btnDestructive}
+                        className={`${btn.btnDestructive} ${styles.actionButton}`}
                         data-testid="confirm-delete-btn"
                         disabled={deleting}
                         onClick={() => handleConfirmDelete(profile.id)}
@@ -203,7 +212,7 @@ export function FilterProfileAreaGroup({
                       </button>
                       <button
                         type="button"
-                        className={btn.btnSecondary}
+                        className={`${btn.btnSecondary} ${styles.actionButton}`}
                         data-testid="cancel-delete-btn"
                         disabled={deleting}
                         onClick={handleCancelDelete}
@@ -214,7 +223,7 @@ export function FilterProfileAreaGroup({
                   ) : (
                     <button
                       type="button"
-                      className={btn.btnDestructive}
+                      className={`${btn.btnDestructive} ${styles.actionButton}`}
                       aria-label={`Delete ${profile.name}`}
                       onClick={() => handleDeleteClick(profile)}
                     >

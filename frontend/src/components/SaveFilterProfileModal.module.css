@@ -1,3 +1,7 @@
+/* FRONTEND-109-AC-08: z-index raised above SearchFilter.module.css's
+   established overlay/dialog convention (its "Browse Keywords" modal sits at
+   z-index: 100) -- this modal must be able to open on top of an already-open
+   filters sheet, not just match it. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -7,7 +11,7 @@
   padding: 2rem 1rem;
   background: rgba(0, 0, 0, 0.5);
   overflow-y: auto;
-  z-index: 20;
+  z-index: 110;
 }
 
 .dialog {
@@ -19,8 +23,10 @@
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
   padding: 1.25rem;
+  z-index: 110;
 }
 
 .dialogHeading {

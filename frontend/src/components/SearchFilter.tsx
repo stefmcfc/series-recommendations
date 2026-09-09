@@ -196,6 +196,14 @@ export function SearchFilter({
     onClose()
   }
 
+  // FRONTEND-109-AC-10: resets the pending form only -- unlike handleClear
+  // above, this doesn't notify the parent or close the sheet, matching
+  // handleApplyProfile's own "pending state only" contract. Used when the
+  // currently-applied saved-filter chip is clicked again (toggle-off).
+  const handleClearForm = () => {
+    setForm(initialFormState)
+  }
+
   // FRONTEND-107-AC-09: apply only updates the sheet's pending form state --
   // it does not call onSearch automatically, consistent with this sheet's
   // existing "Search" button gate (handleSubmit above).
@@ -246,12 +254,6 @@ export function SearchFilter({
               Close
             </button>
           </div>
-
-          <FilterProfileSelector<MySeriesFilterCriteria>
-            area="MY_SERIES"
-            currentCriteria={buildCriteria(form)}
-            onApply={handleApplyProfile}
-          />
 
           <div className={styles.filtersBody} data-testid="filters-body">
             <section className={`${styles.filterSection} ${surface.card}`}>
@@ -368,6 +370,13 @@ export function SearchFilter({
               </div>
             </section>
           </div>
+
+          <FilterProfileSelector<MySeriesFilterCriteria>
+            area="MY_SERIES"
+            currentCriteria={buildCriteria(form)}
+            onApply={handleApplyProfile}
+            onClear={handleClearForm}
+          />
 
           <div className={styles.actions}>
             <button

@@ -322,6 +322,7 @@ export function RecommendationFiltersBox({
               area="RECOMMENDATION_FILTERS"
               currentCriteria={currentRecommendationFiltersCriteria}
               onApply={handleApplyProfile}
+              onClear={handleResetFilters}
               disabled={isCustomSearch}
             />
           </div>

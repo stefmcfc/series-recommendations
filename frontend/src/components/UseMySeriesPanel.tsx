@@ -153,6 +153,25 @@ export function UseMySeriesPanel({
     setSpecificSeriesSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
   }
 
+  // FRONTEND-109-AC-12: this panel previously had no way to reset its own
+  // filter/sort fields at all (unlike SearchFilter's "Clear Filters" and
+  // RecommendationFiltersBox's "Reset Filters") -- also reused as the
+  // saved-filter chip's onClear (toggle-off), so there's one source of
+  // truth for "reset this panel's filters" rather than two.
+  const handleClearSpecificSeriesFilters = () => {
+    setSpecificSeriesGenreFilter([])
+    setSpecificSeriesExcludeGenreFilter([])
+    setSpecificSeriesStatusFilter('any')
+    setSpecificSeriesKeywordsFilter([])
+    setSpecificSeriesMinPersonalRating(null)
+    setSpecificSeriesMinImdbRating('')
+    setSpecificSeriesMinTmdbRating('')
+    setSpecificSeriesYearMin('')
+    setSpecificSeriesYearMax('')
+    setSpecificSeriesSortBy('title')
+    setSpecificSeriesSortDirection('asc')
+  }
+
   const handleSpecificSeriesModalKeyDown = useEscapeToClose(() =>
     setSpecificSeriesBrowseModalOpen(false),
   )
@@ -233,14 +252,6 @@ export function UseMySeriesPanel({
                     className={styles.filtersBody}
                     data-testid="specific-series-filters-body"
                   >
-                    <div className={styles.filterFullWidthRow}>
-                      <FilterProfileSelector<UseMySeriesFilterCriteria>
-                        area="USE_MY_SERIES"
-                        currentCriteria={currentUseMySeriesCriteria}
-                        onApply={applyUseMySeriesFilterCriteria}
-                      />
-                    </div>
-
                     {/* FRONTEND-081 (2026-09-03 live-review amendment): Status
                         and Sort by are now their own full-width rows
                         (previously stacked together in a shared right-hand
@@ -479,6 +490,30 @@ export function UseMySeriesPanel({
                           }
                         />
                       </div>
+                    </div>
+
+                    <div className={styles.filterFullWidthRow}>
+                      <FilterProfileSelector<UseMySeriesFilterCriteria>
+                        area="USE_MY_SERIES"
+                        currentCriteria={currentUseMySeriesCriteria}
+                        onApply={applyUseMySeriesFilterCriteria}
+                        onClear={handleClearSpecificSeriesFilters}
+                      />
+                    </div>
+
+                    {/* FRONTEND-109-AC-12: matches RecommendationFiltersBox's
+                        "Reset Filters" placement/styling exactly (shared
+                        .filtersActions/.resetButton classes, same
+                        RecommendationControls.module.css). */}
+                    <div className={styles.filtersActions}>
+                      <button
+                        type="button"
+                        className={`${styles.resetButton} ${btn.btnSecondary}`}
+                        data-testid="reset-specific-series-filters-btn"
+                        onClick={handleClearSpecificSeriesFilters}
+                      >
+                        Clear Filters
+                      </button>
                     </div>
                   </div>
                 )}

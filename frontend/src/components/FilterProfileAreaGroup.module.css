@@ -24,8 +24,6 @@
 }
 
 .row {
-  border: 1px solid var(--control-border);
-  border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   display: flex;
   flex-direction: column;
@@ -70,6 +68,23 @@
 
 .renameGroup input {
   padding: 0.25rem 0.5rem;
+}
+
+/* Matches SeriesList.module.css's .editButton/.deleteButton exactly -- the
+   same "small in-row action button" geometry, since btn.btnPrimary/
+   btn.btnSecondary/btn.btnDestructive deliberately carry only color/border/
+   hover and this component's Save/Cancel/Rename/Confirm/Delete buttons never
+   paired them with a local geometry class (same root cause FilterProfileSelector.module.css's
+   .ctaButton fixed in FilterProfileSelector.tsx). */
+.actionButton {
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.actionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .summary {
