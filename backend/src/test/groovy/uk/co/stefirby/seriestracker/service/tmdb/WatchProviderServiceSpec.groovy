@@ -27,8 +27,8 @@ class WatchProviderServiceSpec extends Specification {
         given: "TMDB resolves one GB flatrate provider for tmdbId 500"
             tmdbClient.watchProviders(500, "GB") >> [new TmdbWatchProvider("Netflix", "/abc.jpg")]
 
-        when: "streamingProviders(500) is called"
-            def result = watchProviderService.streamingProviders(500)
+        when: "streamingProviders(500, null) is called"
+            def result = watchProviderService.streamingProviders(500, null)
 
         then: "the mapped provider with a built logo URL is returned"
             result == [new RecommendationDto.StreamingProvider("Netflix", TmdbClient.PROVIDER_LOGO_BASE_URL + "/abc.jpg")]
@@ -38,8 +38,8 @@ class WatchProviderServiceSpec extends Specification {
         given: "TMDB resolves one provider with no logo path"
             tmdbClient.watchProviders(500, "GB") >> [new TmdbWatchProvider("Netflix", null)]
 
-        when: "streamingProviders(500) is called"
-            def result = watchProviderService.streamingProviders(500)
+        when: "streamingProviders(500, null) is called"
+            def result = watchProviderService.streamingProviders(500, null)
 
         then: "logoUrl is null"
             result[0].logoUrl() == null
@@ -51,8 +51,8 @@ class WatchProviderServiceSpec extends Specification {
                 throw new ExternalServiceException("TMDB down")
             }
 
-        when: "streamingProviders(500) is called"
-            def result = watchProviderService.streamingProviders(500)
+        when: "streamingProviders(500, null) is called"
+            def result = watchProviderService.streamingProviders(500, null)
 
         then: "an empty list is returned, no exception propagates"
             result == []
@@ -62,12 +62,32 @@ class WatchProviderServiceSpec extends Specification {
         given: "TMDB returns no providers (default Mock() stub)"
             tmdbClient.watchProviders(500, "GB") >> []
 
-        when: "streamingProviders(500) is called"
-            def result = watchProviderService.streamingProviders(500)
+        when: "streamingProviders(500, null) is called"
+            def result = watchProviderService.streamingProviders(500, null)
 
         then: "an empty list is returned, never null"
             result != null
             result == []
+    }
+
+    def "SERIES-053-AC-01: a region override resolves in place of the injected default"() {
+        given: "a candidate tmdbId"
+            def tmdbId = 500
+
+        when: "streamingProviders is called with a region override"
+            watchProviderService.streamingProviders(tmdbId, "US")
+
+        then: "tmdbClient.watchProviders is called with the override, not the injected default"
+            1 * tmdbClient.watchProviders(tmdbId, "US") >> []
+            0 * tmdbClient.watchProviders(tmdbId, "GB")
+    }
+
+    def "SERIES-053-AC-04: a null region override falls back to the injected default"() {
+        when: "streamingProviders is called with no override"
+            watchProviderService.streamingProviders(500, null)
+
+        then: "tmdbClient.watchProviders is called with the injected default"
+            1 * tmdbClient.watchProviders(500, "GB") >> []
     }
 
     def "SERIES-026-AC-01/05: getStreamingProvidersForSeries resolves a tmdbId and reuses the streamingProviders helper"() {
@@ -78,11 +98,26 @@ class WatchProviderServiceSpec extends Specification {
             tmdbClient.findTvIdByImdbId("tt5071412") >> Optional.of(69740)
             tmdbClient.watchProviders(69740, "GB") >> [new TmdbWatchProvider("Netflix", "/abc.jpg")]
 
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = watchProviderService.getStreamingProvidersForSeries(id)
+        when: "getStreamingProvidersForSeries(id, null) is called"
+            def result = watchProviderService.getStreamingProvidersForSeries(id, null)
 
         then: "the mapped provider (built via the shared helper) is returned"
             result == [new RecommendationDto.StreamingProvider("Netflix", TmdbClient.PROVIDER_LOGO_BASE_URL + "/abc.jpg")]
+    }
+
+    def "SERIES-053-AC-02: getStreamingProvidersForSeries forwards a region override through to streamingProviders"() {
+        given: "a tracked series with a resolvable imdbId"
+            def id = UUID.randomUUID()
+            def series = completedSeries("Ozark", "tt5071412", null)
+            seriesRepository.findById(id) >> Optional.of(series)
+            tmdbClient.findTvIdByImdbId("tt5071412") >> Optional.of(69740)
+
+        when: "getStreamingProvidersForSeries(id, 'US') is called"
+            watchProviderService.getStreamingProvidersForSeries(id, "US")
+
+        then: "the override reaches tmdbClient.watchProviders, not the injected GB default"
+            1 * tmdbClient.watchProviders(69740, "US") >> []
+            0 * tmdbClient.watchProviders(69740, "GB")
     }
 
     def "SERIES-026-AC-02: getStreamingProvidersForSeries throws EntityNotFoundException for an unknown id"() {
@@ -90,8 +125,8 @@ class WatchProviderServiceSpec extends Specification {
             def id = UUID.randomUUID()
             seriesRepository.findById(id) >> Optional.empty()
 
-        when: "getStreamingProvidersForSeries(id) is called"
-            watchProviderService.getStreamingProvidersForSeries(id)
+        when: "getStreamingProvidersForSeries(id, null) is called"
+            watchProviderService.getStreamingProvidersForSeries(id, null)
 
         then: "an EntityNotFoundException is thrown"
             thrown(EntityNotFoundException)
@@ -103,8 +138,8 @@ class WatchProviderServiceSpec extends Specification {
             def series = completedSeries("No IMDb Link", imdbId, null)
             seriesRepository.findById(id) >> Optional.of(series)
 
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = watchProviderService.getStreamingProvidersForSeries(id)
+        when: "getStreamingProvidersForSeries(id, null) is called"
+            def result = watchProviderService.getStreamingProvidersForSeries(id, null)
 
         then: "an empty list is returned, no TMDB call is made"
             result == []
@@ -121,8 +156,8 @@ class WatchProviderServiceSpec extends Specification {
             seriesRepository.findById(id) >> Optional.of(series)
             tmdbClient.findTvIdByImdbId("tt9999999") >> Optional.empty()
 
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = watchProviderService.getStreamingProvidersForSeries(id)
+        when: "getStreamingProvidersForSeries(id, null) is called"
+            def result = watchProviderService.getStreamingProvidersForSeries(id, null)
 
         then: "an empty list is returned"
             result == []
@@ -138,8 +173,8 @@ class WatchProviderServiceSpec extends Specification {
                 throw new ExternalServiceException("TMDB down")
             }
 
-        when: "getStreamingProvidersForSeries(id) is called"
-            def result = watchProviderService.getStreamingProvidersForSeries(id)
+        when: "getStreamingProvidersForSeries(id, null) is called"
+            def result = watchProviderService.getStreamingProvidersForSeries(id, null)
 
         then: "an empty list is returned, not an exception"
             result == []

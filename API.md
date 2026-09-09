@@ -389,6 +389,10 @@ Each result also carries `streamingProviders` — the currently-available subscr
 from TMDB/JustWatch (`GET /tv/{tmdbId}/watch/providers`), never persisted; a failed or empty
 lookup just yields an empty list for that one candidate, never a failed request.
 
+`region` (optional, ISO 3166-1 alpha-2 code) overrides `app.tmdb.watch-region` for every
+candidate's `streamingProviders` lookup in this response; omitting it behaves identically to
+before — the injected default governs (`series_spec_053_watch_region_override.md`).
+
 ---
 
 ### `GET /api/v1/series/recommendations/{tmdbId}/keywords`
@@ -438,6 +442,10 @@ On-demand streaming (subscription/`flatrate`) availability for one tracked serie
 Requires `app.tmdb.api-key`, but never fails with `502` even when it's unset or the TMDB call
 fails: always `200` with an empty list in that case (`series_spec_020_watch_providers.md`,
 `series_spec_026_series_watch_providers.md`). `404` for an unknown series `id`.
+
+`region` (optional, ISO 3166-1 alpha-2 code) overrides `app.tmdb.watch-region` for this lookup;
+omitting it behaves identically to before — the injected default governs
+(`series_spec_053_watch_region_override.md`).
 
 ## Refresh
 

@@ -38,6 +38,7 @@ public class RecommendationCriteria {
     private String sourceMode;
     private String trendingWindow;
     private String discoverSortBy;
+    private String region;
 
     public RecommendationCriteria() {
         // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
@@ -133,6 +134,18 @@ public class RecommendationCriteria {
      */
     public String getDiscoverSortBy() { return discoverSortBy; }
     public void setDiscoverSortBy(String discoverSortBy) { this.discoverSortBy = discoverSortBy; }
+
+    /**
+     * ISO 3166-1 alpha-2 region code overriding {@code WatchProviderService}'s injected {@code
+     * app.tmdb.watch-region} default for every candidate's streaming-availability lookup in this
+     * request (SERIES-053-AC-05/06/07) -- {@code null} (the default) leaves that injected value
+     * governing, unchanged from before this spec (SERIES-053-AC-08). No allow-list validation is
+     * applied here; an unrecognized code simply yields no results for that region, TMDB's own
+     * existing behavior (see {@code series_spec_053_watch_region_override.md}'s Design
+     * Decisions).
+     */
+    public String getRegion() { return region; }
+    public void setRegion(String region) { this.region = region; }
 
     /**
      * {@code true} iff this request is directed by genre and/or keyword (TOOLING-003-AC-05) --

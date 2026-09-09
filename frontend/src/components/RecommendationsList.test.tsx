@@ -47,6 +47,9 @@ function makeRecommendation(
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // FRONTEND-102: watchRegion is read from localStorage on every mount --
+  // isolate each test so a value set by one doesn't leak into the next.
+  localStorage.clear()
   // FRONTEND-053: RecommendationDetailModal fetches this independently of
   // keywords on open -- default it to a benign resolved value so tests in
   // this file that only care about the keywords section (opened via the
@@ -447,6 +450,7 @@ describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
     await waitFor(() =>
       expect(mockGetRecommendations).toHaveBeenCalledWith({
         genres: ['Drama'],
+        region: 'GB',
       }),
     )
 
@@ -454,6 +458,7 @@ describe('FRONTEND-011-AC-11: re-fetches when query prop changes', () => {
     await waitFor(() =>
       expect(mockGetRecommendations).toHaveBeenLastCalledWith({
         genres: ['Comedy'],
+        region: 'GB',
       }),
     )
   })
@@ -721,5 +726,27 @@ describe('FRONTEND-040-AC-05: onLoadingChange broadcasts loading transitions', (
 
     expect(onLoadingChange).toHaveBeenCalledWith(true)
     await waitFor(() => expect(onLoadingChange).toHaveBeenLastCalledWith(false))
+  })
+})
+
+// frontend_spec_102_settings_watch_region.md
+describe('FRONTEND-102-AC-04: resolves the stored watch region on every fetch', () => {
+  it('defaults to GB when nothing is stored', async () => {
+    mockGetRecommendations.mockResolvedValue([])
+    render(<RecommendationsList query={{}} />)
+
+    await waitFor(() =>
+      expect(mockGetRecommendations).toHaveBeenCalledWith({ region: 'GB' }),
+    )
+  })
+
+  it('includes the stored watch region', async () => {
+    localStorage.setItem('watchRegion', JSON.stringify('FR'))
+    mockGetRecommendations.mockResolvedValue([])
+    render(<RecommendationsList query={{}} />)
+
+    await waitFor(() =>
+      expect(mockGetRecommendations).toHaveBeenCalledWith({ region: 'FR' }),
+    )
   })
 })

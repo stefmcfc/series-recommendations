@@ -179,7 +179,7 @@ public class RecommendationService {
             int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
                 ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
             return filtered.stream()
-                .map(dc -> dtoAssembler.toDto(dc, effectiveMaxSourcesShown))
+                .map(dc -> dtoAssembler.toDto(dc, effectiveMaxSourcesShown, criteria.getRegion()))
                 .limit(limit)
                 .toList();
         }
@@ -188,7 +188,7 @@ public class RecommendationService {
             ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
 
         List<ScoredCandidate> ranked = filtered.stream()
-            .map(dc -> rankingService.score(dc, effectiveMaxSourcesShown))
+            .map(dc -> rankingService.score(dc, effectiveMaxSourcesShown, criteria.getRegion()))
             .sorted(rankingService.resolveSortComparator(criteria))
             .toList();
 

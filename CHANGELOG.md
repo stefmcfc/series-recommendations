@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.39.0] - 2026-09-09
+
+### Added
+
+- Backend: `GET /api/v1/series/{id}/watch-providers` and `GET /api/v1/series/recommendations` accept an optional `region` query param overriding `app.tmdb.watch-region` for that request's streaming-availability lookups; omitting it behaves identically to before (`series_spec_053` SERIES-053-AC-01..08).
+- Frontend: new "Watch Region" `/settings` section (single-select, reusing `frontend_spec_098`'s `ALL_COUNTRY_OPTIONS` and `frontend_spec_101`'s card/icon treatment) persists a `watchRegion` value via `useLocalStorage`, defaulting to `GB` (`frontend_spec_102` FRONTEND-102-AC-01/05/06).
+- Frontend: the stored watch region is now sent on every `getRecommendations`/`getWatchProviders` call (Recommendations list, the series-detail recommendations modal, and a tracked series' watch-providers lookup), not just when it differs from the default (`frontend_spec_102` FRONTEND-102-AC-02/03/04).
+
 ## [3.38.1] - 2026-09-09
 
 ### Fixed

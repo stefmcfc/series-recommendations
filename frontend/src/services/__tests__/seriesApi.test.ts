@@ -1102,6 +1102,33 @@ describe('FRONTEND-036-AC-03: getWatchProviders', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-102-AC-02/03: region param on recommendations/watch-providers
+// ---------------------------------------------------------------------------
+describe('FRONTEND-102-AC-02/03: region param on recommendations/watch-providers', () => {
+  it('includes region on getRecommendations when passed', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.getRecommendations({ region: 'FR' })
+    expect(client.get).toHaveBeenCalledWith(
+      '/series/recommendations',
+      expect.objectContaining({
+        params: expect.objectContaining({ region: 'FR' }),
+      }),
+    )
+  })
+
+  it('includes region on getWatchProviders when passed', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.getWatchProviders('abc', 'FR')
+    expect(client.get).toHaveBeenCalledWith(
+      '/series/abc/watch-providers',
+      expect.objectContaining({
+        params: expect.objectContaining({ region: 'FR' }),
+      }),
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-024-AC-05: buildSearchParams includes keyword when present
 // ---------------------------------------------------------------------------
 describe('FRONTEND-024-AC-05: search includes keyword param', () => {

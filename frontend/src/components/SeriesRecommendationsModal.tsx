@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
 import type { Recommendation, Series } from '../types/series'
+import { DEFAULT_WATCH_REGION, isWatchRegion } from '../utils/countryOptions'
 import { AddSeriesForm } from './AddSeriesForm'
 import { RecommendationCard } from './RecommendationCard'
 import styles from './SeriesRecommendationsModal.module.css'
@@ -37,12 +39,23 @@ export function SeriesRecommendationsModal({
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null)
   const [ignoringIds, setIgnoringIds] = useState<Set<string>>(new Set())
   const [ignoreErrors, setIgnoreErrors] = useState<Record<string, string>>({})
+  // FRONTEND-102-AC-04: resolved and passed on every call, not just when it
+  // differs from the default -- see frontend_spec_102's Design Decisions.
+  const [watchRegion] = useLocalStorage(
+    'watchRegion',
+    DEFAULT_WATCH_REGION,
+    isWatchRegion,
+  )
 
   useEffect(() => {
     let cancelled = false
 
     seriesApi
-      .getRecommendations({ sourceMode: 'useMySeries', seriesIds: [series.id] })
+      .getRecommendations({
+        sourceMode: 'useMySeries',
+        seriesIds: [series.id],
+        region: watchRegion,
+      })
       .then((data) => {
         if (cancelled) return
         setRecommendations(data)

@@ -1,6 +1,6 @@
 # Frontend Spec 102: Watch Region Setting
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: `series_spec_053_watch_region_override.md` (the backend `region` override contract this surfaces), `frontend_spec_098_settings_country_language_favourites.md` (`ALL_COUNTRY_OPTIONS`, `useLocalStorage`, reused here as-is), `frontend_spec_101_settings_units_and_card_styling.md` (the card/icon `SettingsSection` treatment this new section adopts)
 **Area**: Frontend (`components/SettingsPage.tsx`, `services/seriesApi.ts`, `types/series.ts`, and each affected file's tests)
@@ -142,9 +142,9 @@ section until the specs above pass.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-102-AC-01: `watchRegion` persisted via `useLocalStorage`, validated against `ALL_COUNTRY_OPTIONS`
-- [ ] FRONTEND-102-AC-02: `RecommendationQuery`/`getRecommendations` gain `region`
-- [ ] FRONTEND-102-AC-03: `getWatchProviders` gains `region`
-- [ ] FRONTEND-102-AC-04: call sites always resolve and pass the stored region
-- [ ] FRONTEND-102-AC-05: new "Watch Region" `SettingsSection` with single-select picker
-- [ ] FRONTEND-102-AC-06: selection writes through immediately, no Save button
+- [x] FRONTEND-102-AC-01: `watchRegion` persisted via `useLocalStorage`, validated against `ALL_COUNTRY_OPTIONS`
+- [x] FRONTEND-102-AC-02: `RecommendationQuery`/`getRecommendations` gain `region`
+- [x] FRONTEND-102-AC-03: `getWatchProviders` gains `region`
+- [x] FRONTEND-102-AC-04: call sites always resolve and pass the stored region
+- [x] FRONTEND-102-AC-05: new "Watch Region" `SettingsSection` with single-select picker
+- [x] FRONTEND-102-AC-06: selection writes through immediately, no Save button

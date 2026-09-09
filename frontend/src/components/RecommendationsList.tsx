@@ -7,6 +7,8 @@ import type {
   RecommendationQuery,
   Series,
 } from '../types/series'
+import { useLocalStorage } from '../hooks/useLocalStorage'
+import { DEFAULT_WATCH_REGION, isWatchRegion } from '../utils/countryOptions'
 import { AddSeriesForm } from './AddSeriesForm'
 import { RecommendationCard } from './RecommendationCard'
 import styles from './RecommendationsList.module.css'
@@ -41,6 +43,15 @@ export function RecommendationsList({
   const [pendingAdd, setPendingAdd] = useState<PendingAdd | null>(null)
   const [ignoringIds, setIgnoringIds] = useState<Set<string>>(new Set())
   const [ignoreErrors, setIgnoreErrors] = useState<Record<string, string>>({})
+  // FRONTEND-102-AC-04: resolved once per fetch and merged into every
+  // getRecommendations call, not just when it differs from the default --
+  // see frontend_spec_102's Design Decisions for why there's no meaningful
+  // "absent" state to preserve here.
+  const [watchRegion] = useLocalStorage(
+    'watchRegion',
+    DEFAULT_WATCH_REGION,
+    isWatchRegion,
+  )
 
   useEffect(() => {
     // FRONTEND-062-AC-06: no fetch (and no loading flip) until a real query
@@ -68,7 +79,7 @@ export function RecommendationsList({
     setLoading(true)
 
     seriesApi
-      .getRecommendations(query)
+      .getRecommendations({ ...query, region: watchRegion })
       .then((data) => {
         if (cancelled) return
         setRecommendations(data)
@@ -83,7 +94,7 @@ export function RecommendationsList({
     return () => {
       cancelled = true
     }
-  }, [refreshIndex, query])
+  }, [refreshIndex, query, watchRegion])
 
   // FRONTEND-040-AC-05: fires on mount and every subsequent loading
   // transition (including the never-reset-before-this-spec transitions on a

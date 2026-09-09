@@ -36,9 +36,9 @@ public class RecommendationRankingService {
         this.diversityCapMode = diversityCapMode;
     }
 
-    ScoredCandidate score(DedupedCandidate dc, int effectiveMaxSourcesShown) {
+    ScoredCandidate score(DedupedCandidate dc, int effectiveMaxSourcesShown, String regionOverride) {
         double tmdbRating = dc.candidate().voteAverage() != null ? dc.candidate().voteAverage().doubleValue() : 0.0;
-        RecommendationDto dto = dtoAssembler.toDto(dc, effectiveMaxSourcesShown);
+        RecommendationDto dto = dtoAssembler.toDto(dc, effectiveMaxSourcesShown, regionOverride);
 
         double rankScore;
         if (!dc.sourceSeries().isEmpty()) {

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,9 +28,15 @@ public class SeriesWatchProviderController {
         this.watchProviderService = watchProviderService;
     }
 
+    /**
+     * SERIES-053-AC-03/04: {@code region} is optional -- omitting it behaves identically to
+     * before this spec, with {@code WatchProviderService}'s injected {@code
+     * app.tmdb.watch-region} default governing.
+     */
     @GetMapping("/" + UuidPathPattern.PATTERN + "/watch-providers")
-    public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(@PathVariable UUID id) {
-        List<RecommendationDto.StreamingProvider> results = watchProviderService.getStreamingProvidersForSeries(id);
+    public ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(
+            @PathVariable UUID id, @RequestParam(required = false) String region) {
+        List<RecommendationDto.StreamingProvider> results = watchProviderService.getStreamingProvidersForSeries(id, region);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
     }
 }
