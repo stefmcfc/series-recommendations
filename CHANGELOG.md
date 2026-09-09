@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.44.0] - 2026-09-09
+
 ### Added
 
 - Frontend: new "Filter Profiles" Settings section — view, rename, and delete (with confirmation) saved profiles for each of the three filter areas, with an expandable readable summary of each profile's contents (`frontend_spec_108`).
