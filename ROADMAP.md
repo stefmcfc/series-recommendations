@@ -135,6 +135,7 @@ corrected below.
 | My Series/Recommendations card styling + modernization (shared shadowed-card primitive, pill status tabs with icons, toolbar/Filters grouping) — extends `frontend_spec_101`'s Settings redesign beyond `/settings` | — | `frontend_spec_105` | ✅ Done |
 | Recommendation discover-mode backfill pagination (trending/topRated/Custom Search fetch additional TMDB pages when short after dedup/filtering) | `series_spec_054` | — | ✅ Done |
 | Watch-region per-request override (revises `series_spec_020`'s prior single-configured-value decision) surfaced as a persisted Settings value, same shape as Country/Language favourites | `series_spec_053` | `frontend_spec_102` | ✅ Done |
+| Sticky Discover-mode tab (Custom Search/Popular Right Now/Highest Rated remembered across page loads and restored when re-entering Discover) | — | `frontend_spec_106` | ✅ Done |
 
 ## Specced, coming soon
 
@@ -164,6 +165,13 @@ specs/pairs; `frontend_spec_102` built after `frontend_spec_101` since both touc
 **UI polish + backfill batch** (planned 2026-09-08, from a user pass over the live app) — three
 independent specs, no build-order dependency between them. `frontend_spec_103`/`104`/`105` are now
 fully delivered — see the "Delivered" table above — and no longer appear here.
+
+**Saved filter profiles batch** (planned 2026-09-09, from `.claude/SPEC_CANDIDATES.md` item 11) —
+three specs, strictly sequenced: `frontend_spec_106` (sticky Discover-mode tab) ships first,
+independently, no backend dependency; `series_spec_055` (backend filter-profile CRUD) next;
+`frontend_spec_107` (the profile-picker UI, consuming `series_spec_055`'s endpoints) last.
+`frontend_spec_106` is now fully delivered — see the "Delivered" table above — and no longer
+appears here.
 
 ## Internal / maintenance specs (not user-facing features)
 

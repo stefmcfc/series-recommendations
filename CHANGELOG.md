@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: the Recommendations Discover sub-tab (Custom Search/Popular Right Now/Highest Rated) is now sticky — remembered across page loads and restored (not reset to Custom Search) when re-entering Discover from Use My Series (`frontend_spec_106`).
+
 ## [3.40.0] - 2026-09-09
 
 ### Added

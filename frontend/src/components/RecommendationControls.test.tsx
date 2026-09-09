@@ -11,6 +11,7 @@ import {
   buildSpecificSeriesCandidatePool,
   buildQuery,
   initialState,
+  isDiscoverMode,
   seriesPickerLabel,
   seriesPickerDisplay,
 } from './RecommendationControls'
@@ -62,6 +63,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   mockGetAll.mockResolvedValue([])
   mockGetGenreOptions.mockResolvedValue([])
   mockGetKeywordStats.mockResolvedValue([])
@@ -2866,5 +2868,81 @@ describe('FRONTEND-085-AC-07: RecommendationControls source-series display shows
     expect(
       screen.getByText(/United Kingdom, United States/),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-106-AC-01: isDiscoverMode validator', () => {
+  it('accepts each of the three known DiscoverMode values', () => {
+    expect(isDiscoverMode('customSearch')).toBe(true)
+    expect(isDiscoverMode('trending')).toBe(true)
+    expect(isDiscoverMode('topRated')).toBe(true)
+  })
+
+  it('rejects anything else', () => {
+    expect(isDiscoverMode('bogus')).toBe(false)
+    expect(isDiscoverMode(null)).toBe(false)
+    expect(isDiscoverMode(42)).toBe(false)
+  })
+})
+
+describe('FRONTEND-106-AC-02: discoverMode restored on mount', () => {
+  it('initializes the Discover sub-tab from a previously stored value', () => {
+    localStorage.setItem('discoverMode', JSON.stringify('trending'))
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    selectDiscover()
+
+    expect(
+      screen.getByRole('tab', { name: /popular right now/i }),
+    ).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('falls back to Custom Search when nothing is stored', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    selectDiscover()
+
+    expect(screen.getByRole('tab', { name: /custom search/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+  })
+})
+
+describe('FRONTEND-106-AC-03: discoverMode written on change', () => {
+  it('persists a sub-tab switch', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    selectDiscover()
+    fireEvent.click(screen.getByRole('tab', { name: /highest rated/i }))
+
+    expect(JSON.parse(localStorage.getItem('discoverMode')!)).toBe('topRated')
+  })
+})
+
+describe('FRONTEND-106-AC-04: entering Discover restores the last-used sub-tab', () => {
+  it('lands on the previously used sub-tab, not Custom Search', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
+
+    selectDiscover()
+    fireEvent.click(screen.getByRole('tab', { name: /popular right now/i }))
+    selectUseMySeries()
+    selectDiscover()
+
+    expect(
+      screen.getByRole('tab', { name: /popular right now/i }),
+    ).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('still no-ops on a re-click of the already-active top-level tab (FRONTEND-042-AC-15, unchanged)', () => {
+    const onQueryChange = vi.fn()
+    render(
+      <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
+    )
+    onQueryChange.mockClear()
+
+    selectUseMySeries()
+
+    expect(onQueryChange).not.toHaveBeenCalled()
   })
 })
