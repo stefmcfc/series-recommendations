@@ -36,7 +36,9 @@ other *within this table* — and can be reordered freely as a block if prioriti
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore.
 
-_None currently queued._
+| Feature                                                          | Backend Spec       | Frontend Spec        | Status      |
+| ----------------------------------------------------------------- | ------------------- | --------------------- | ----------- |
+| Series original language (shown on detail page, after Overview) | `series_spec_061`  | `frontend_spec_117`  | Not started |
 
 ---
 
