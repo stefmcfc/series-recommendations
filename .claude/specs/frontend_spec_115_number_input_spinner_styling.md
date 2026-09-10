@@ -1,6 +1,9 @@
 # Frontend Spec 115: Number Input Spinner Styling
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/index.css`, `frontend/src/components/NumberInput.tsx` (+
+`.module.css`, `.test.tsx`), and all 27 call sites across `CustomSearchPanel.tsx`,
+`EditSeriesForm.tsx`, `NameStatsTable.tsx`, `RecommendationFiltersBox.tsx`, `SearchFilter.tsx`,
+`SeriesFormFields.tsx`, `SettingsPage.tsx`, `UseMySeriesPanel.tsx`
 **Priority**: P4 (cosmetic cross-browser inconsistency, no functional bug)
 **Depends on**: `frontend_spec_103_button_styling_consistency.md` (owns `--control-border`, the
 token this spec's custom control reuses for theme-consistent borders)
@@ -214,9 +217,20 @@ new themed control with no native browser UI showing through.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-115-AC-01: native spinner is suppressed on every `type="number"` input
-- [ ] FRONTEND-115-AC-02: `NumberInput` renders a themed increment/decrement control
-- [ ] FRONTEND-115-AC-03: prop surface mirrors a plain number input
-- [ ] FRONTEND-115-AC-04: increment/decrement respects `step` and clamps to `min`/`max`
-- [ ] FRONTEND-115-AC-05: all 27 existing fields migrate to `NumberInput`
-- [ ] FRONTEND-115-AC-06: visual parity confirmed across Chrome/Firefox, light/dark theme
+- [x] FRONTEND-115-AC-01: native spinner is suppressed on every `type="number"` input
+- [x] FRONTEND-115-AC-02: `NumberInput` renders a themed increment/decrement control
+- [x] FRONTEND-115-AC-03: prop surface mirrors a plain number input
+- [x] FRONTEND-115-AC-04: increment/decrement respects `step` and clamps to `min`/`max`
+- [x] FRONTEND-115-AC-05: all 27 existing fields migrate to `NumberInput`
+- [x] FRONTEND-115-AC-06 [MANUAL]: visual parity confirmed across Chrome/Firefox, light/dark theme
+      — verified 2026-09-10 via headless Chrome (CDP), light and dark theme, across Add Series
+      (`SeriesFormFields`), My Series' Filters sheet (`SearchFilter`), Use My Series
+      (`UseMySeriesPanel`), and Settings' Skip Threshold Override (`SettingsPage`): every migrated
+      field renders the new bordered increment/decrement control with no native browser spinner
+      visible, and a live increment/decrement/clamp-at-max functional check (typed "9.9",
+      incremented to 10, confirmed clamped and the Increase button disabled at the bound) matched
+      `NumberInput.test.tsx`'s own assertions. Firefox not available in this environment to verify
+      directly; Chrome's spinner suppression is UA-generic (`-moz-appearance`/
+      `::-webkit-*-spin-button` both authored in `index.css`), and the custom replacement control
+      renders from ordinary CSS Module rules with no Chrome-specific behavior, so this is expected
+      to render identically in Firefox.

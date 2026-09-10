@@ -254,6 +254,26 @@ textarea {
   font: inherit;
 }
 
+/* FRONTEND-115-AC-01: suppresses every input[type="number"]'s native
+   spinner globally, once -- Chrome/Firefox render it completely differently
+   (Chrome hides it until hover/focus and lets the OS theme it; Firefox
+   always shows its own differently-sized/colored version), in both light and
+   dark theme, independent of this app's own theming. NumberInput.tsx (see
+   components/NumberInput.tsx) supplies a themed custom replacement using
+   this suppressed input plus its own increment/decrement buttons; any future
+   <input type="number"> added without that component still degrades to a
+   plain, spinner-less field (consistent across browsers) rather than
+   reintroducing today's inconsistency. */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
 h1,
 h2 {
   font-family: var(--heading), sans-serif;

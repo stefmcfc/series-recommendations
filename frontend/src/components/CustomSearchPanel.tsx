@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { KeywordPicker } from './KeywordPicker'
+import { NumberInput } from './NumberInput'
 import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
@@ -59,12 +60,6 @@ export function CustomSearchPanel({
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
   )
-
-  const updateField =
-    (field: keyof ControlsState) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      updateState({ [field]: event.target.value } as Partial<ControlsState>)
-    }
 
   return (
     <>
@@ -128,48 +123,47 @@ export function CustomSearchPanel({
           Custom Search is active -- series_spec_031 makes these three
           fields real TMDB discover/tv params for this mode specifically, so
           they're first-class here rather than a generic post-fetch filter.
-          Field ids and updateField wiring are unchanged from their previous
-          Filters-box location. .ratingYearRow/.fieldNarrow (no spec,
-          layout-only) keep the three on one line instead of stacking
-          full-width, since this panel is a flex column (.tabPanel) rather
-          than the Filters box's own grid. */}
+          Field ids are unchanged from their previous Filters-box location;
+          FRONTEND-115 migrated each to NumberInput, so onChange now adapts
+          the returned value straight into updateState rather than going
+          through the old event-based updateField. .ratingYearRow/
+          .fieldNarrow (no spec, layout-only) keep the three on one line
+          instead of stacking full-width, since this panel is a flex column
+          (.tabPanel) rather than the Filters box's own grid. */}
         <div className={styles.ratingYearRow}>
           <div className={`${styles.field} ${styles.fieldNarrow}`}>
-            <label htmlFor="recommendation-min-tmdb-rating">
-              Min TMDB Rating
-            </label>
-            <input
+            <NumberInput
               id="recommendation-min-tmdb-rating"
-              type="number"
-              step="0.1"
-              min="0"
-              max="10"
+              label="Min TMDB Rating"
+              step={0.1}
+              min={0}
+              max={10}
               value={state.minTmdbRating}
-              onChange={updateField('minTmdbRating')}
+              onChange={(value) =>
+                updateState({ minTmdbRating: String(value) })
+              }
             />
           </div>
 
           <div className={`${styles.field} ${styles.fieldNarrow}`}>
-            <label htmlFor="recommendation-year-min">Year Min</label>
-            <input
+            <NumberInput
               id="recommendation-year-min"
-              type="number"
+              label="Year Min"
               min={MIN_VALID_YEAR}
               max={MAX_VALID_YEAR}
               value={state.yearMin}
-              onChange={updateField('yearMin')}
+              onChange={(value) => updateState({ yearMin: String(value) })}
             />
           </div>
 
           <div className={`${styles.field} ${styles.fieldNarrow}`}>
-            <label htmlFor="recommendation-year-max">Year Max</label>
-            <input
+            <NumberInput
               id="recommendation-year-max"
-              type="number"
+              label="Year Max"
               min={MIN_VALID_YEAR}
               max={MAX_VALID_YEAR}
               value={state.yearMax}
-              onChange={updateField('yearMax')}
+              onChange={(value) => updateState({ yearMax: String(value) })}
             />
           </div>
         </div>

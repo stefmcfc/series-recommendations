@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.49.0] - 2026-09-10
+
+### Added
+
+- Frontend: numeric fields (`Min TMDB Rating`, `Year Min/Max`, etc. — 27 fields across 8 components) now use a shared, themed `NumberInput` component with a consistent custom spinner, replacing the browser's native (inconsistent across Chrome/Firefox) spinner UI (`frontend_spec_115`).
+
 ## [3.48.0] - 2026-09-10
 
 ### Added

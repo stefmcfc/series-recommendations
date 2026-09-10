@@ -5,6 +5,7 @@ import type { SearchCriteria } from '../types/series'
 import type { MySeriesFilterCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { KeywordPicker } from './KeywordPicker'
+import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
@@ -316,28 +317,34 @@ export function SearchFilter({
               </div>
 
               <div className={styles.field}>
-                <label htmlFor="search-min-imdb-rating">Min IMDb Rating</label>
-                <input
+                <NumberInput
                   id="search-min-imdb-rating"
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
+                  label="Min IMDb Rating"
+                  min={0}
+                  max={10}
+                  step={0.1}
                   value={form.minImdbRating}
-                  onChange={updateField('minImdbRating')}
+                  onChange={(value) =>
+                    updateField('minImdbRating')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
                 />
               </div>
 
               <div className={styles.field}>
-                <label htmlFor="search-min-tmdb-rating">Min TMDB Rating</label>
-                <input
+                <NumberInput
                   id="search-min-tmdb-rating"
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
+                  label="Min TMDB Rating"
+                  min={0}
+                  max={10}
+                  step={0.1}
                   value={form.minTmdbRating}
-                  onChange={updateField('minTmdbRating')}
+                  onChange={(value) =>
+                    updateField('minTmdbRating')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
                 />
               </div>
             </section>
@@ -346,26 +353,32 @@ export function SearchFilter({
               <h3 className={styles.filterSectionHeading}>Years</h3>
 
               <div className={styles.field}>
-                <label htmlFor="search-year-min">Min Year</label>
-                <input
+                <NumberInput
                   id="search-year-min"
-                  type="number"
+                  label="Min Year"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
                   value={form.yearMin}
-                  onChange={updateField('yearMin')}
+                  onChange={(value) =>
+                    updateField('yearMin')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
                 />
               </div>
 
               <div className={styles.field}>
-                <label htmlFor="search-year-max">Max Year</label>
-                <input
+                <NumberInput
                   id="search-year-max"
-                  type="number"
+                  label="Max Year"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
                   value={form.yearMax}
-                  onChange={updateField('yearMax')}
+                  onChange={(value) =>
+                    updateField('yearMax')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
                 />
               </div>
             </section>
