@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.53.0] - 2026-09-10
+
 ### Added
 
 - Backend: `GET /api/v1/series/search` gains four new filters to find series missing an IMDb, TMDB, or Rotten Tomatoes (Tomatometer/Popcornmeter) rating (`series_spec_060`).
