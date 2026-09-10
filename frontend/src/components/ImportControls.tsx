@@ -30,6 +30,11 @@ export function ImportControls({ onImported }: ImportControlsProps) {
   // double-firing across polling ticks, it isn't itself rendered, so it
   // doesn't need to trigger a re-render (react-hooks/set-state-in-effect).
   const notifiedForCurrentJobRef = useRef(false)
+  // FRONTEND-057-AC-06: <input type="file"> is deliberately uncontrolled (no
+  // `value` prop -- browsers won't let one be set for security reasons), so
+  // clearing its visibly-displayed filename requires this one direct
+  // assignment via a ref rather than React state.
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const importInProgress = jobStatus?.status === 'IN_PROGRESS'
 
@@ -79,6 +84,19 @@ export function ImportControls({ onImported }: ImportControlsProps) {
     notifiedForCurrentJobRef.current = false
   }
 
+  // FRONTEND-057-AC-06: resets everything back to the picker's empty state --
+  // mirrors handleFileChange's reset shape for error/jobStatus/the polling-
+  // guard ref, plus clearing selectedFile and the input element itself.
+  const handleClear = () => {
+    setSelectedFile(null)
+    setError(null)
+    setJobStatus(null)
+    notifiedForCurrentJobRef.current = false
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handleImportClick = () => {
     if (!selectedFile) return
     setError(null)
@@ -107,20 +125,34 @@ export function ImportControls({ onImported }: ImportControlsProps) {
       )}
       <div className={styles.controls}>
         <input
+          ref={fileInputRef}
           type="file"
           accept=".json,application/json,.csv,text/csv"
           data-testid="import-file-input"
           onChange={handleFileChange}
         />
-        <button
-          type="button"
-          data-testid="import-btn"
-          className={`${styles.button} ${btn.btnSecondary}`}
-          disabled={!selectedFile || importInProgress}
-          onClick={handleImportClick}
-        >
-          {importInProgress ? 'Importing...' : 'Import'}
-        </button>
+        <div className={styles.buttonGroup}>
+          {selectedFile && (
+            <button
+              type="button"
+              data-testid="import-clear-btn"
+              className={`${styles.button} ${btn.btnSecondary}`}
+              disabled={importInProgress}
+              onClick={handleClear}
+            >
+              Clear
+            </button>
+          )}
+          <button
+            type="button"
+            data-testid="import-btn"
+            className={`${styles.button} ${btn.btnSecondary}`}
+            disabled={!selectedFile || importInProgress}
+            onClick={handleImportClick}
+          >
+            {importInProgress ? 'Importing...' : 'Import'}
+          </button>
+        </div>
       </div>
       {jobStatus?.status === 'COMPLETED' && (
         <div className={styles.summary}>
