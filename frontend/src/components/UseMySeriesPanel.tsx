@@ -6,6 +6,7 @@ import { KeywordPicker } from './KeywordPicker'
 import type { PickerOption } from './KeywordPicker'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
+import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
@@ -417,18 +418,15 @@ export function UseMySeriesPanel({
                       </div>
 
                       <div className={styles.field}>
-                        <label htmlFor="specific-series-min-imdb-rating">
-                          Min IMDb Rating
-                        </label>
-                        <input
+                        <NumberInput
                           id="specific-series-min-imdb-rating"
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.1"
+                          label="Min IMDb Rating"
+                          min={0}
+                          max={10}
+                          step={0.1}
                           value={specificSeriesMinImdbRating}
-                          onChange={(event) =>
-                            setSpecificSeriesMinImdbRating(event.target.value)
+                          onChange={(value) =>
+                            setSpecificSeriesMinImdbRating(String(value))
                           }
                         />
                       </div>
@@ -438,18 +436,15 @@ export function UseMySeriesPanel({
                           unsuffixed "Min TMDB Rating" (post-TMDB, unrelated
                           field). */}
                       <div className={styles.field}>
-                        <label htmlFor="specific-series-min-tmdb-rating">
-                          Min TMDB Rating (My Series)
-                        </label>
-                        <input
+                        <NumberInput
                           id="specific-series-min-tmdb-rating"
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.1"
+                          label="Min TMDB Rating (My Series)"
+                          min={0}
+                          max={10}
+                          step={0.1}
                           value={specificSeriesMinTmdbRating}
-                          onChange={(event) =>
-                            setSpecificSeriesMinTmdbRating(event.target.value)
+                          onChange={(value) =>
+                            setSpecificSeriesMinTmdbRating(String(value))
                           }
                         />
                       </div>
@@ -460,33 +455,27 @@ export function UseMySeriesPanel({
                         Min"/"Year Max" (post-TMDB, unrelated fields). */}
                     <div className={styles.filterFourColGrid}>
                       <div className={styles.field}>
-                        <label htmlFor="specific-series-year-min">
-                          Year Min (My Series)
-                        </label>
-                        <input
+                        <NumberInput
                           id="specific-series-year-min"
-                          type="number"
+                          label="Year Min (My Series)"
                           min={MIN_VALID_YEAR}
                           max={MAX_VALID_YEAR}
                           value={specificSeriesYearMin}
-                          onChange={(event) =>
-                            setSpecificSeriesYearMin(event.target.value)
+                          onChange={(value) =>
+                            setSpecificSeriesYearMin(String(value))
                           }
                         />
                       </div>
 
                       <div className={styles.field}>
-                        <label htmlFor="specific-series-year-max">
-                          Year Max (My Series)
-                        </label>
-                        <input
+                        <NumberInput
                           id="specific-series-year-max"
-                          type="number"
+                          label="Year Max (My Series)"
                           min={MIN_VALID_YEAR}
                           max={MAX_VALID_YEAR}
                           value={specificSeriesYearMax}
-                          onChange={(event) =>
-                            setSpecificSeriesYearMax(event.target.value)
+                          onChange={(value) =>
+                            setSpecificSeriesYearMax(String(value))
                           }
                         />
                       </div>

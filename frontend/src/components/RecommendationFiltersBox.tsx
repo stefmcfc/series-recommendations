@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { KeywordPicker } from './KeywordPicker'
+import { NumberInput } from './NumberInput'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import { useLocalStorage } from '../hooks/useLocalStorage'
@@ -100,12 +101,6 @@ export function RecommendationFiltersBox({
       ? 'Min vote count must be a whole number of at least 0'
       : null
 
-  const updateField =
-    (field: keyof ControlsState) =>
-    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      updateState({ [field]: event.target.value } as Partial<ControlsState>)
-    }
-
   const handleMinVoteCountChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -179,32 +174,32 @@ export function RecommendationFiltersBox({
         <div className={styles.filtersBody} data-testid="filters-body">
           {!isCustomSearch && (
             <div className={styles.field}>
-              <label htmlFor="recommendation-min-tmdb-rating">
-                Min TMDB Rating
-              </label>
-              <input
+              <NumberInput
                 id="recommendation-min-tmdb-rating"
-                type="number"
-                step="0.1"
-                min="0"
-                max="10"
+                label="Min TMDB Rating"
+                step={0.1}
+                min={0}
+                max={10}
                 value={state.minTmdbRating}
-                onChange={updateField('minTmdbRating')}
+                onChange={(value) =>
+                  updateState({ minTmdbRating: String(value) })
+                }
               />
             </div>
           )}
 
           <div className={styles.field}>
-            <label htmlFor="recommendation-min-vote-count">
-              Min Vote Count
-            </label>
-            <input
+            <NumberInput
               id="recommendation-min-vote-count"
-              type="number"
-              min="0"
-              step="1"
+              label="Min Vote Count"
+              min={0}
+              step={1}
               value={state.minVoteCount}
-              onChange={handleMinVoteCountChange}
+              onChange={(value) =>
+                handleMinVoteCountChange({
+                  target: { value: String(value) },
+                } as React.ChangeEvent<HTMLInputElement>)
+              }
             />
             {minVoteCountError && (
               <span className={styles.fieldError}>{minVoteCountError}</span>
@@ -214,26 +209,24 @@ export function RecommendationFiltersBox({
           {!isCustomSearch && (
             <>
               <div className={styles.field}>
-                <label htmlFor="recommendation-year-min">Year Min</label>
-                <input
+                <NumberInput
                   id="recommendation-year-min"
-                  type="number"
+                  label="Year Min"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
                   value={state.yearMin}
-                  onChange={updateField('yearMin')}
+                  onChange={(value) => updateState({ yearMin: String(value) })}
                 />
               </div>
 
               <div className={styles.field}>
-                <label htmlFor="recommendation-year-max">Year Max</label>
-                <input
+                <NumberInput
                   id="recommendation-year-max"
-                  type="number"
+                  label="Year Max"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
                   value={state.yearMax}
-                  onChange={updateField('yearMax')}
+                  onChange={(value) => updateState({ yearMax: String(value) })}
                 />
               </div>
             </>

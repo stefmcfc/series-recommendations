@@ -13,6 +13,7 @@ import { formatCountryNames } from '../utils/countryName'
 import { isFormDirty } from '../utils/formDirtyCheck'
 import { mergeCommonLookupFields } from '../utils/seriesLookupMerge'
 import { ConfirmDialog } from './ConfirmDialog'
+import { NumberInput } from './NumberInput'
 import { SeriesFormFields } from './SeriesFormFields'
 import {
   validateYear,
@@ -548,16 +549,19 @@ export function EditSeriesForm({
             onClearField={handleClearField}
           >
             <div className={styles.field}>
-              <label htmlFor="currentSeason">Current Season</label>
               <div className={styles.fieldRow}>
-                <input
+                <NumberInput
                   id="currentSeason"
-                  type="number"
-                  step="1"
-                  min="1"
+                  label="Current Season"
+                  step={1}
+                  min={1}
                   value={form.currentSeason}
-                  onChange={updateField('currentSeason')}
-                  aria-describedby={
+                  onChange={(value) =>
+                    updateField('currentSeason')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                  ariaDescribedBy={
                     fieldErrors.currentSeason
                       ? 'currentSeason-error'
                       : undefined
@@ -581,16 +585,19 @@ export function EditSeriesForm({
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="currentEpisode">Current Episode</label>
               <div className={styles.fieldRow}>
-                <input
+                <NumberInput
                   id="currentEpisode"
-                  type="number"
-                  step="1"
-                  min="1"
+                  label="Current Episode"
+                  step={1}
+                  min={1}
                   value={form.currentEpisode}
-                  onChange={updateField('currentEpisode')}
-                  aria-describedby={
+                  onChange={(value) =>
+                    updateField('currentEpisode')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                  ariaDescribedBy={
                     fieldErrors.currentEpisode
                       ? 'currentEpisode-error'
                       : undefined

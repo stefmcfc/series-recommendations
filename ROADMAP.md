@@ -69,7 +69,6 @@ dependency order between the four — independent, can build in any order.
 | Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
 | ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
 | CSV import                                                                    | `series_spec_058`   | `frontend_spec_114`  | ⬜ Not started |
-| Number input (`type="number"`) spinner styling — shared `NumberInput` component | —                  | `frontend_spec_115`  | ⬜ Not started |
 
 ---
 
@@ -197,6 +196,7 @@ dependency order between the four — independent, can build in any order.
 | Appearance accent color schemes (Purple/Blue/Green/Orange/Teal, independent of light/dark) + Recommendation Favourites divider | — | `frontend_spec_110` | ✅ Done |
 | Shareable URL for `SeriesDetail` (`/my-series/view/:id`)                                                                       | —                     | `frontend_spec_113` | ✅ Done |
 | Incremental dedup/output-filtering for the recommendation backfill loop (each newly-fetched page deduped/filtered once via a running accumulator, instead of re-processing the whole accumulated pool on every page) | `series_spec_059` | — | ✅ Done |
+| Number input (`type="number"`) spinner styling — shared, themed `NumberInput` component (native spinner suppressed globally, custom increment/decrement buttons) replacing all 27 numeric fields' native browser spinner across 8 components | — | `frontend_spec_115` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

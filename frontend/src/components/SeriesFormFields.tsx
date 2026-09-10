@@ -1,6 +1,7 @@
 import type { ChangeEvent, ReactNode } from 'react'
 import { SeriesStatus } from '../types/series'
 import { sanitizeImageUrl } from '../utils/safeImageUrl'
+import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import styles from './SeriesFormFields.module.css'
 
@@ -60,6 +61,21 @@ interface SeriesFormFieldsProps {
   // button beside each of the 10 applicable fields below; AddSeriesForm
   // never passes this, so its render is untouched.
   readonly onClearField?: (field: SeriesFormFieldName) => void
+}
+
+// FRONTEND-115-AC-05: bridges NumberInput's onChange(value) contract onto
+// this component's existing event-based updateField(field)(event) contract
+// -- updateField itself (and everything it drives: state, validation,
+// debounce) is untouched; only the immediate call-site closure adapts to
+// NumberInput's slightly different, non-event shape.
+function numberFieldChange(
+  updateField: SeriesFormFieldsProps['updateField'],
+  field: SeriesFormFieldName,
+) {
+  return (value: number | string) =>
+    updateField(field)({
+      target: { value: String(value) },
+    } as FieldChangeEvent)
 }
 
 // FRONTEND-044-AC-01/02/03: renders nothing when onClearField is omitted
@@ -147,15 +163,14 @@ export function SeriesFormFields({
   return (
     <>
       <div className={styles.field}>
-        <label htmlFor="year">Year</label>
         <div className={styles.fieldRow}>
-          <input
+          <NumberInput
             id="year"
-            type="number"
+            label="Year"
             value={form.year}
-            onChange={updateField('year')}
+            onChange={numberFieldChange(updateField, 'year')}
             disabled={lockedFields?.year}
-            aria-describedby={resolveDescribedBy(
+            ariaDescribedBy={resolveDescribedBy(
               lockedFields?.year,
               'year-locked-hint',
               fieldErrors.year,
@@ -220,16 +235,15 @@ export function SeriesFormFields({
 
       {source !== 'recommendation' && (
         <div className={styles.field}>
-          <label htmlFor="totalSeasons">Total Seasons</label>
           <div className={styles.fieldRow}>
-            <input
+            <NumberInput
               id="totalSeasons"
-              type="number"
-              step="1"
+              label="Total Seasons"
+              step={1}
               value={form.totalSeasons}
-              onChange={updateField('totalSeasons')}
+              onChange={numberFieldChange(updateField, 'totalSeasons')}
               disabled={lockedFields?.totalSeasons}
-              aria-describedby={resolveDescribedBy(
+              ariaDescribedBy={resolveDescribedBy(
                 lockedFields?.totalSeasons,
                 'totalSeasons-locked-hint',
                 fieldErrors.totalSeasons,
@@ -256,16 +270,15 @@ export function SeriesFormFields({
 
       {source !== 'recommendation' && (
         <div className={styles.field}>
-          <label htmlFor="totalEpisodes">Total Episodes</label>
           <div className={styles.fieldRow}>
-            <input
+            <NumberInput
               id="totalEpisodes"
-              type="number"
-              step="1"
+              label="Total Episodes"
+              step={1}
               value={form.totalEpisodes}
-              onChange={updateField('totalEpisodes')}
+              onChange={numberFieldChange(updateField, 'totalEpisodes')}
               disabled={lockedFields?.totalEpisodes}
-              aria-describedby={resolveDescribedBy(
+              ariaDescribedBy={resolveDescribedBy(
                 lockedFields?.totalEpisodes,
                 'totalEpisodes-locked-hint',
                 fieldErrors.totalEpisodes,
@@ -312,16 +325,15 @@ export function SeriesFormFields({
 
       {source !== 'recommendation' && (
         <div className={styles.field}>
-          <label htmlFor="imdbRating">IMDb Rating</label>
           <div className={styles.fieldRow}>
-            <input
+            <NumberInput
               id="imdbRating"
-              type="number"
-              step="0.1"
+              label="IMDb Rating"
+              step={0.1}
               value={form.imdbRating}
-              onChange={updateField('imdbRating')}
+              onChange={numberFieldChange(updateField, 'imdbRating')}
               disabled={lockedFields?.imdbRating}
-              aria-describedby={resolveDescribedBy(
+              ariaDescribedBy={resolveDescribedBy(
                 lockedFields?.imdbRating,
                 'imdbRating-locked-hint',
                 fieldErrors.imdbRating,
@@ -346,17 +358,14 @@ export function SeriesFormFields({
 
       {source !== 'recommendation' && (
         <div className={styles.field}>
-          <label htmlFor="rottenTomatoesRating">
-            Rotten Tomatoes Rating (Tomatometer)
-          </label>
           <div className={styles.fieldRow}>
-            <input
+            <NumberInput
               id="rottenTomatoesRating"
-              type="number"
-              step="1"
+              label="Rotten Tomatoes Rating (Tomatometer)"
+              step={1}
               value={form.rottenTomatoesRating}
-              onChange={updateField('rottenTomatoesRating')}
-              aria-describedby={
+              onChange={numberFieldChange(updateField, 'rottenTomatoesRating')}
+              ariaDescribedBy={
                 fieldErrors.rottenTomatoesRating
                   ? 'rottenTomatoesRating-error'
                   : undefined
@@ -379,17 +388,17 @@ export function SeriesFormFields({
 
       {source !== 'recommendation' && (
         <div className={styles.field}>
-          <label htmlFor="rottenTomatoesPopcornmeter">
-            Rotten Tomatoes Rating (Popcornmeter)
-          </label>
           <div className={styles.fieldRow}>
-            <input
+            <NumberInput
               id="rottenTomatoesPopcornmeter"
-              type="number"
-              step="1"
+              label="Rotten Tomatoes Rating (Popcornmeter)"
+              step={1}
               value={form.rottenTomatoesPopcornmeter}
-              onChange={updateField('rottenTomatoesPopcornmeter')}
-              aria-describedby={
+              onChange={numberFieldChange(
+                updateField,
+                'rottenTomatoesPopcornmeter',
+              )}
+              ariaDescribedBy={
                 fieldErrors.rottenTomatoesPopcornmeter
                   ? 'rottenTomatoesPopcornmeter-error'
                   : undefined

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
+import { NumberInput } from './NumberInput'
 import styles from './NameStatsTable.module.css'
 import sharedStyles from './RecommendationControls.module.css'
 
@@ -136,49 +137,48 @@ export function NameStatsTable({
         {filters.filtersOpen && (
           <div className={sharedStyles.filtersBody} data-testid="filters-body">
             <div className={sharedStyles.field}>
-              <label htmlFor={`${idPrefix}-min-series-count`}>
-                Min Series Count
-              </label>
-              <input
+              <NumberInput
                 id={`${idPrefix}-min-series-count`}
-                type="number"
-                min="0"
+                label="Min Series Count"
+                min={0}
                 value={filters.filterInputs.minSeriesCount}
-                onChange={filters.handleFilterInputChange('minSeriesCount')}
+                onChange={(value) =>
+                  filters.handleFilterInputChange('minSeriesCount')({
+                    target: { value: String(value) },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
               />
             </div>
 
             <div className={sharedStyles.field}>
-              <label htmlFor={`${idPrefix}-min-avg-personal-rating`}>
-                Min Avg Personal Rating
-              </label>
-              <input
+              <NumberInput
                 id={`${idPrefix}-min-avg-personal-rating`}
-                type="number"
-                min="0"
-                max="5"
-                step="0.1"
+                label="Min Avg Personal Rating"
+                min={0}
+                max={5}
+                step={0.1}
                 value={filters.filterInputs.minAveragePersonalRating}
-                onChange={filters.handleFilterInputChange(
-                  'minAveragePersonalRating',
-                )}
+                onChange={(value) =>
+                  filters.handleFilterInputChange('minAveragePersonalRating')({
+                    target: { value: String(value) },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
               />
             </div>
 
             <div className={sharedStyles.field}>
-              <label htmlFor={`${idPrefix}-min-avg-blended-rating`}>
-                Min Avg Blended Rating
-              </label>
-              <input
+              <NumberInput
                 id={`${idPrefix}-min-avg-blended-rating`}
-                type="number"
-                min="0"
-                max="10"
-                step="0.1"
+                label="Min Avg Blended Rating"
+                min={0}
+                max={10}
+                step={0.1}
                 value={filters.filterInputs.minAverageBlendedRating}
-                onChange={filters.handleFilterInputChange(
-                  'minAverageBlendedRating',
-                )}
+                onChange={(value) =>
+                  filters.handleFilterInputChange('minAverageBlendedRating')({
+                    target: { value: String(value) },
+                  } as React.ChangeEvent<HTMLInputElement>)
+                }
               />
             </div>
 

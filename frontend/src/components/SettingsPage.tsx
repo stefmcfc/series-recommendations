@@ -21,6 +21,7 @@ import {
 import { ExportControls } from './ExportControls'
 import { ImportControls } from './ImportControls'
 import { KeywordPicker } from './KeywordPicker'
+import { NumberInput } from './NumberInput'
 import { SettingsSection } from './SettingsSection'
 import { FilterProfileManager } from './FilterProfileManager'
 import {
@@ -349,15 +350,12 @@ export function SettingsPage({
       <SettingsSection title="Refresh All" icon={<RefreshIcon />}>
         <div className={styles.refreshRow}>
           <div className={styles.overrideField}>
-            <label htmlFor="refresh-skip-threshold-override">
-              Skip Threshold Override
-            </label>
-            <input
+            <NumberInput
               id="refresh-skip-threshold-override"
-              type="number"
+              label="Skip Threshold Override"
               min={0}
               value={skipThresholdOverride}
-              onChange={(event) => setSkipThresholdOverride(event.target.value)}
+              onChange={(value) => setSkipThresholdOverride(String(value))}
             />
             {/* FRONTEND-101-AC-01: Days/Weeks/Months unit select, default
                 Days -- no Hours/Minutes, see this file's Design Decisions

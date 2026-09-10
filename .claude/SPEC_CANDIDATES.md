@@ -314,6 +314,23 @@ scope is unchanged.
 - Heading hierarchy and skip-link presence across full pages, not per-component.
 - Touch/click target sizing (WCAG 2.5.8) app-wide, not just the one instance flagged during
   `frontend_spec_054`'s icon-button design.
+- **Update (2026-09-10)**: `frontend_spec_115_number_input_spinner_styling.md`'s new shared
+  `NumberInput` component (delivered) gives every numeric field's increment/decrement buttons a
+  deliberately generic `aria-label` ("Increase"/"Decrease", not "Increase {field name}") — see
+  `components/NumberInput.tsx`'s own inline comment. Reason: embedding the field name would make
+  the button match the same unanchored `getByLabelText(/field name/i)` regex this app's existing
+  tests already use for the *input* itself across all 27 migrated call sites, which RTL treats as
+  an ambiguous multi-match. The consequence: a screen-reader user tabbing through a page with
+  several `NumberInput`s (e.g. `UseMySeriesPanel`'s Year Min/Max, or `RecommendationFiltersBox`'s
+  four rating/year fields) hears an unnumbered, indistinguishable "Increase, button" / "Decrease,
+  button" at every one of them, with no way to tell which field a given pair belongs to purely by
+  ear — a real regression from the native spinner it replaced, which was always scoped to its own
+  input. Not fixed as part of that spec (out of scope, no AC required it); a real fix needs
+  disambiguating the buttons' accessible names *without* colliding with the existing test query
+  pattern above — e.g. retargeting the affected tests to scope their queries (`within()`) or match
+  by `role`+more specific text instead of a bare unanchored label regex — which is real,
+  cross-cutting test-suite work, not a one-line component change. Natural fit for this audit's
+  scope rather than a standalone fix.
 
 **Status**: Spec candidate, not yet a real spec. Open questions before scoping one:
 1. Audit-only (a findings report feeding follow-up fix specs, the way `tooling_spec_001`'s Sonar
