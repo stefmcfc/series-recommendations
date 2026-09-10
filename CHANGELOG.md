@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.53.1] - 2026-09-10
+
 ### Fixed
 
 - Frontend: saved filter profiles can no longer be saved with an out-of-range value (e.g. a negative Min TMDB Rating) — the Save modal now validates criteria values, not just the profile name (`frontend_spec_109` AC-16).
