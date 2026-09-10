@@ -16,6 +16,7 @@ Two small, unrelated polish items on the Recommendations page, bundled into one 
 - **The 8 counted fields**: `minTmdbRating`, `minVoteCount`, `yearMin`, `yearMax` (non-empty string), `excludeGenresSelected`, `countriesSelected` (non-empty array), `excludeKeywordsText`, `language` (non-empty string) — exactly the fields `RecommendationFiltersBox` itself reads/writes, confirmed by reading its current field list.
 - **The badge only renders when the count is greater than zero** — mirrors the existing `hasActiveFilters &&` conditional-render pattern already used for `SeriesList`'s filter-funnel dot (`frontend_spec_071`), rather than always showing "(0)".
 - **A plain visible number, not a re-use of the funnel's dot.** The funnel is an icon-only button with no visible label, so a dot is the only inline signal that fits; `RecommendationFiltersBox`'s toggle already has full visible text ("Recommendations Filters"), so a small numeric badge appended to that text is both more informative (matches the user's own "maybe the number of active filters" suggestion) and doesn't need a new `aria-label` — the badge's own text content is already screen-reader-visible as part of the button's accessible name.
+- **Bug-fix correction (added after this spec originally shipped, see `FRONTEND-093-AC-04`): "count all 8 fields unconditionally" is reversed for Custom Search.** The rationale above — "counting only currently-visible fields would make the badge's number change confusingly as the user switches modes without touching anything" — didn't anticipate that `minTmdbRating`/`yearMin`/`yearMax`/`excludeGenresSelected`/`countriesSelected`/`language` are *also* bound to `CustomSearchPanel.tsx`'s own visible fields while Custom Search is active (`frontend_spec_112`'s later addition). That meant editing a field in a completely different, always-visible panel silently bumped `RecommendationFiltersBox`'s own collapsed-toggle badge, which shows none of those fields in that mode — confusing regardless of the original tab-switch concern. Found via a live bug report. The fix: `countActiveFilters` now takes `isCustomSearch` and, while true, only counts the two fields that stay visible in this box regardless of mode (`minVoteCount`, `excludeKeywordsSelected`) — the original "count all 8 unconditionally" behavior is preserved for every other mode.
 
 ## Requirements
 
@@ -106,6 +107,55 @@ describe('FRONTEND-093-AC-03: no badge when no filters are active', () => {
 
 **Test Case (Green)**: covered by the same `count > 0 &&` guard as AC-02.
 
+#### FRONTEND-093-AC-04 [AUTO]: Custom Search field edits do not inflate this box's own badge
+**Statement**: While `isCustomSearch` is true, `countActiveFilters` shall only count `minVoteCount`
+and `excludeKeywordsSelected` — the two fields `RecommendationFiltersBox` still renders in that
+mode — and shall exclude `minTmdbRating`/`yearMin`/`yearMax`/`excludeGenresSelected`/
+`countriesSelected`/`language`, since those six relocate into `CustomSearchPanel.tsx`'s own
+always-visible fields while Custom Search is active and are no longer this box's own concern.
+
+**Rationale**: A bug-fix correction to `FRONTEND-093-AC-02`'s original "count all 8 fields
+unconditionally" decision — see the Design Decisions addendum above for why that reasoning didn't
+anticipate `CustomSearchPanel.tsx` binding to the same `ControlsState` fields. Found via a live bug
+report: editing e.g. Min TMDB Rating in Custom Search (a field `RecommendationFiltersBox` doesn't
+even render in that mode) silently bumped this box's own collapsed-toggle badge.
+
+**References**: `components/RecommendationFiltersBox.tsx`'s `countActiveFilters`; `frontend_spec_112`'s Overview (confirms, via reading `RecommendationFiltersBox.tsx`, that these six fields are shared `ControlsState` slots also driven by `CustomSearchPanel.tsx` while `isCustomSearch`).
+
+**Test Case (Red)**:
+```typescript
+describe('FRONTEND-093-AC-04: Custom Search field edits do not inflate this box\'s own badge', () => {
+  it('does not count minTmdbRating/yearMin/yearMax/excludeGenresSelected/countriesSelected/language while isCustomSearch', () => {
+    renderBox({
+      isCustomSearch: true,
+      state: makeState({
+        minTmdbRating: '7',
+        yearMin: '2010',
+        yearMax: '2020',
+        excludeGenresSelected: ['Comedy'],
+        countriesSelected: ['US'],
+        language: 'en',
+      }),
+    })
+    expect(screen.queryByTestId('filters-active-count')).not.toBeInTheDocument()
+  })
+
+  it('still counts minVoteCount and excludeKeywordsSelected while isCustomSearch', () => {
+    renderBox({
+      isCustomSearch: true,
+      state: makeState({ minVoteCount: '200', excludeKeywordsSelected: ['spoilers'] }),
+    })
+    expect(screen.getByTestId('filters-active-count')).toHaveTextContent('2')
+  })
+})
+```
+
+**Test Case (Green)**: change `countActiveFilters(state: ControlsState)` to
+`countActiveFilters(state: ControlsState, isCustomSearch: boolean)`, branching its `stringFields`/
+`arrayFields` lists on `isCustomSearch` as described above, and update the call site
+(`countActiveFilters(state, isCustomSearch)`) until the spec above passes. Every existing
+non-Custom-Search test (`FRONTEND-093-AC-02`/`AC-03`) must keep passing unmodified.
+
 ## Cross-References
 
 | Concept | Location |
@@ -119,3 +169,4 @@ describe('FRONTEND-093-AC-03: no badge when no filters are active', () => {
 - [x] FRONTEND-093-AC-01: Divider renders between the filter section and the Series picker
 - [x] FRONTEND-093-AC-02: Toggle shows a count badge when filters are active
 - [x] FRONTEND-093-AC-03: No badge when no filters are active
+- [x] FRONTEND-093-AC-04: Custom Search field edits do not inflate this box's own badge (bug-fix correction, reverses part of AC-02's original "count all 8 unconditionally" decision)

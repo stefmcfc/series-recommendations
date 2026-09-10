@@ -458,6 +458,104 @@ above).
 
 ---
 
+## Requirement 7: Criteria value validation
+
+**User story**: As a user, I don't want to be able to save or apply a saved filter profile with an
+out-of-range value (e.g. a negative Min TMDB Rating) — I want to be told what's wrong instead of
+having every subsequent "Get Recommendations"/search request silently fail.
+
+**Background**: added after this spec's original five/six requirements shipped, as a bug-fix
+correction found via a live bug report — `SaveFilterProfileModal.tsx`'s `handleSave` only ever
+validated the profile *name* (`validateFilterProfileName`), never the criteria values themselves.
+A profile could be saved with e.g. `minTmdbRating: '-99'`, and `FilterProfileSelector.tsx`'s
+`handleSelect` applied whatever criteria a saved profile carried unconditionally — writing a bad
+value straight into the live filter state with no clamping (`NumberInput.tsx`'s `min`/`max` props
+only gate its own +/- spinner buttons, not typed or programmatically-applied values). The backend's
+`RecommendationCriteriaValidator` correctly rejects the resulting request with a 400, but nothing
+told the user why or reset the bad field — the only fix a user found was leaving and re-entering
+the page.
+
+### FRONTEND-109-AC-16 [AUTO]
+**Statement**: `SaveFilterProfileModal.tsx`'s `handleSave` shall, after the existing
+`validateFilterProfileName` check passes, call the new `utils/filterCriteriaValidation.ts`'s
+`validateFilterCriteria(area, criteria)`. On failure, it shall `setError` with the returned errors
+joined by a space and return before calling `onSave` — the same early-return shape the name check
+already uses.
+
+**References**: `utils/filterCriteriaValidation.ts` (new shared validator, mirroring
+`utils/describeFilterCriteria.ts`'s dispatch-per-area shape); `components/SaveFilterProfileModal.tsx`'s
+existing `handleSave`/`validateFilterProfileName` early-return pattern.
+
+**Test Case (Red)**:
+```typescript
+// src/components/SaveFilterProfileModal.test.tsx (addition)
+it('does not call onSave and shows an error when criteria has an out-of-range value', () => {
+  const onSave = vi.fn()
+  render(
+    <SaveFilterProfileModal
+      area="RECOMMENDATION_FILTERS"
+      criteria={{ minTmdbRating: '-99' }}
+      existingNames={[]}
+      onSave={onSave}
+      onClose={vi.fn()}
+    />,
+  )
+  fireEvent.change(screen.getByLabelText(/profile name/i), { target: { value: 'New' } })
+  fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+  expect(onSave).not.toHaveBeenCalled()
+  expect(screen.getByRole('alert')).toHaveTextContent(/min tmdb rating must be between 0 and 10/i)
+})
+```
+**Test Case (Green)**: wire the `validateFilterCriteria` call into `handleSave` as described until
+the spec above passes.
+
+---
+
+### FRONTEND-109-AC-17 [AUTO]
+**Statement**: `FilterProfileSelector.tsx`'s `handleSelect` shall, before applying a newly-selected
+profile (`setSelectedId(profile.id); onApply(profile.criteria)`), call
+`validateFilterCriteria(area, profile.criteria)`. If invalid, it shall not call `onApply` or change
+`selectedId`, and shall instead set the existing `actionError` state to a message naming the
+profile and explaining it must be deleted and re-saved — guarding against a profile saved before
+`FRONTEND-109-AC-16` existed (or otherwise already corrupted) from ever corrupting the live filter
+state.
+
+**References**: `components/FilterProfileSelector.tsx`'s existing `handleSelect`/`actionError`
+state (already rendered via `{actionError && <span role="alert">...}`, reused rather than a new
+error surface).
+
+**Test Case (Red)**:
+```typescript
+// src/components/FilterProfileSelector.test.tsx (addition)
+describe('FRONTEND-109-AC-17: an invalid saved profile is refused, not applied', () => {
+  it('does not call onApply and shows an alert for an out-of-range saved value', async () => {
+    const onApply = vi.fn()
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'RECOMMENDATION_FILTERS',
+        name: 'Broken',
+        criteria: { minTmdbRating: '-99' },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <FilterProfileSelector area="RECOMMENDATION_FILTERS" currentCriteria={{}} onApply={onApply} />,
+    )
+    fireEvent.click(await screen.findByText('Broken'))
+    expect(onApply).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /"Broken" has an invalid saved value and can't be applied/i,
+    )
+  })
+})
+```
+**Test Case (Green)**: add the `validateFilterCriteria` guard to `handleSelect` as described until
+the spec above passes.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -490,3 +588,5 @@ above).
 - [x] FRONTEND-109-AC-13: Save Filters disabled when criteria is empty [verified live in browser for both My Series and Use My Series, including the `describeFilterCriteria` sortBy/sortDirection default-comparison bug fix that was required to make this work for Use My Series]
 - [x] FRONTEND-109-AC-14: "Save Filters"/"Update Filters" labels, `.ctaButton` geometry fix [MANUAL — root cause confirmed via getComputedStyle live inspection, fix verified live in browser: Save Filters now matches Clear Filters exactly (border-radius 6.75px, padding 9px 18px, font-size 16.875px) in both My Series and Use My Series]
 - [x] FRONTEND-109-AC-15: `FilterProfileAreaGroup.tsx`'s Rename/Delete/Save/Cancel/Confirm buttons get the same `.actionButton` geometry fix as AC-14 [MANUAL — verified live in browser: all six buttons now match SeriesList's .editButton/.deleteButton geometry exactly (border-radius 6.75px, padding 6.75px 13.5px, font-size 14.625px)]
+- [x] FRONTEND-109-AC-16: `SaveFilterProfileModal.tsx` blocks saving a profile whose criteria has an out-of-range value (bug-fix correction, `utils/filterCriteriaValidation.ts`)
+- [x] FRONTEND-109-AC-17: `FilterProfileSelector.tsx` refuses to apply an already-saved out-of-range profile, surfacing an error instead of corrupting live filter state (bug-fix correction)

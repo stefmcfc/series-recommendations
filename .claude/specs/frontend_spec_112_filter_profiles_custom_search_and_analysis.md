@@ -456,6 +456,53 @@ passes.
 
 ---
 
+## Requirement 6: Settings visibility for the two new areas
+
+**User story**: As a user who has saved a Custom Search or Analysis Filters profile, I want to be
+able to see, rename, and delete it from Settings — the same as every other saved-filter area.
+
+### FRONTEND-112-AC-10 [AUTO]
+**Statement**: `FilterProfileManager.tsx`'s `AREAS` array shall include `CUSTOM_SEARCH`/
+`ANALYSIS_FILTERS` area groups alongside the original three (`MY_SERIES`/`USE_MY_SERIES`/
+`RECOMMENDATION_FILTERS`), so a profile saved for either area is visible, renameable, and
+deletable from Settings — the same as every other area.
+
+**Rationale**: A bug-fix correction to a gap this spec should have covered originally. This spec
+(`frontend_spec_112`) added the two new `FilterProfileArea` values and wired
+`FilterProfileSelector` into both `CustomSearchPanel.tsx` (`FRONTEND-112-AC-03`) and
+`AnalysisView.tsx` (`FRONTEND-112-AC-09`), so users could already save and apply profiles for both
+areas — but `FilterProfileManager.tsx`'s `AREAS` array was never updated to include them, leaving
+any such profile with no way to be renamed or deleted (Settings is the only place either action is
+possible, per `frontend_spec_109`'s Requirement 2). Found via a live bug report, not caught by this
+spec's own original test coverage since `FilterProfileManager.test.tsx` only ever asserted the
+original three areas.
+
+**References**: `components/FilterProfileManager.tsx`'s `AREAS` array; `FRONTEND-112-AC-03`/
+`AC-09` (the two integrations this correction makes visible in Settings);
+`frontend_spec_109_filter_profile_polish.md`'s Requirement 2 (Settings-only delete, the reason an
+invisible area group means a genuinely stuck profile, not just a cosmetic gap).
+
+**Test Case (Red)**:
+```typescript
+// src/components/FilterProfileManager.test.tsx (existing test, updated)
+describe('FRONTEND-108-AC-09/FRONTEND-112-AC-10: five independent area groups', () => {
+  it('renders all five areas and fetches each independently', () => {
+    const listSpy = vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
+    render(<FilterProfileManager />)
+    expect(listSpy).toHaveBeenCalledWith('MY_SERIES')
+    expect(listSpy).toHaveBeenCalledWith('USE_MY_SERIES')
+    expect(listSpy).toHaveBeenCalledWith('RECOMMENDATION_FILTERS')
+    expect(listSpy).toHaveBeenCalledWith('CUSTOM_SEARCH')
+    expect(listSpy).toHaveBeenCalledWith('ANALYSIS_FILTERS')
+  })
+})
+```
+**Test Case (Green)**: add `{ area: 'CUSTOM_SEARCH', title: 'Custom Search' }` and `{ area:
+'ANALYSIS_FILTERS', title: 'Analysis Filters' }` to `AREAS`, ordered to match
+`types/filterProfile.ts`'s `FilterProfileArea` union order, until the spec above passes.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -480,3 +527,4 @@ passes.
 - [x] FRONTEND-112-AC-07: `describeAnalysisFiltersCriteria` dispatch case
 - [x] FRONTEND-112-AC-08: `useNameStatsFilters` gains `applyFilterProfile`/`clearFilterProfile`
 - [x] FRONTEND-112-AC-09: `AnalysisView.tsx` renders one shared `FilterProfileSelector` across all three tabs
+- [x] FRONTEND-112-AC-10: `FilterProfileManager.tsx`'s `AREAS` array includes `CUSTOM_SEARCH`/`ANALYSIS_FILTERS` (bug-fix correction — a gap in this spec's original scope)

@@ -3,6 +3,7 @@ import { seriesApi } from '../services/seriesApi'
 import type { FilterProfile, FilterProfileArea } from '../types/filterProfile'
 import { SaveFilterProfileModal } from './SaveFilterProfileModal'
 import { describeFilterCriteria } from '../utils/describeFilterCriteria'
+import { validateFilterCriteria } from '../utils/filterCriteriaValidation'
 import styles from './FilterProfileSelector.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -80,6 +81,19 @@ export function FilterProfileSelector<TCriteria>({
     if (selectedId === profile.id) {
       setSelectedId(null)
       onClear?.()
+      return
+    }
+
+    // FRONTEND-109-AC-17: guards against a profile that was saved before
+    // FRONTEND-109-AC-16 existed (or otherwise slipped through) carrying an
+    // out-of-range value -- applying it unvalidated would write the bad value
+    // straight into the live filter state, and the backend would then 400
+    // every subsequent request built from it with no obvious cause in the UI.
+    const { valid } = validateFilterCriteria(area, profile.criteria)
+    if (!valid) {
+      setActionError(
+        `"${profile.name}" has an invalid saved value and can't be applied. Delete it from Settings and re-save it.`,
+      )
       return
     }
 

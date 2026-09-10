@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { suggestFilterProfileName } from '../utils/describeFilterCriteria'
 import { validateFilterProfileName } from '../utils/filterProfileValidation'
+import { validateFilterCriteria } from '../utils/filterCriteriaValidation'
 import type { FilterProfileArea } from '../types/filterProfile'
 import styles from './SaveFilterProfileModal.module.css'
 import btn from '../styles/buttons.module.css'
@@ -48,6 +49,16 @@ export function SaveFilterProfileModal({
     const result = validateFilterProfileName(name, existingNames)
     if (!result.valid) {
       setError(result.error)
+      return
+    }
+
+    // FRONTEND-109-AC-16: blocks a bad value (e.g. minTmdbRating: '-99') from
+    // ever reaching the backend -- previously only the name was validated here,
+    // so a saved profile could carry an out-of-range value that would 400 every
+    // "Get Recommendations" request built from it later, with no explanation.
+    const criteriaResult = validateFilterCriteria(area, criteria)
+    if (!criteriaResult.valid) {
+      setError(criteriaResult.errors.join(' '))
       return
     }
 

@@ -10,8 +10,8 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('FRONTEND-108-AC-09: three independent area groups', () => {
-  it('renders all three areas and fetches each independently', () => {
+describe('FRONTEND-108-AC-09/FRONTEND-112-AC-10: five independent area groups', () => {
+  it('renders all five areas and fetches each independently', () => {
     const listSpy = vi
       .spyOn(seriesApi, 'listFilterProfiles')
       .mockResolvedValue([])
@@ -19,12 +19,14 @@ describe('FRONTEND-108-AC-09: three independent area groups', () => {
     expect(listSpy).toHaveBeenCalledWith('MY_SERIES')
     expect(listSpy).toHaveBeenCalledWith('USE_MY_SERIES')
     expect(listSpy).toHaveBeenCalledWith('RECOMMENDATION_FILTERS')
+    expect(listSpy).toHaveBeenCalledWith('CUSTOM_SEARCH')
+    expect(listSpy).toHaveBeenCalledWith('ANALYSIS_FILTERS')
   })
 
   it('shows an empty-state message for an area with no profiles', async () => {
     vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([])
     render(<FilterProfileManager />)
-    expect(await screen.findAllByText(/no saved profiles yet/i)).toHaveLength(3)
+    expect(await screen.findAllByText(/no saved profiles yet/i)).toHaveLength(5)
   })
 
   it('renders readable titles for each area', async () => {
@@ -33,6 +35,8 @@ describe('FRONTEND-108-AC-09: three independent area groups', () => {
     expect(await screen.findByText('My Series')).toBeInTheDocument()
     expect(screen.getByText('Use My Series')).toBeInTheDocument()
     expect(screen.getByText('Recommendation Filters')).toBeInTheDocument()
+    expect(screen.getByText('Custom Search')).toBeInTheDocument()
+    expect(screen.getByText('Analysis Filters')).toBeInTheDocument()
   })
 })
 

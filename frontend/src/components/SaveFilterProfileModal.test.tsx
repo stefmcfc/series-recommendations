@@ -59,6 +59,27 @@ describe('FRONTEND-108-AC-05: submit validates locally, handles a 409 from onSav
     )
   })
 
+  it('does not call onSave and shows an error when criteria has an out-of-range value', () => {
+    const onSave = vi.fn()
+    render(
+      <SaveFilterProfileModal
+        area="RECOMMENDATION_FILTERS"
+        criteria={{ minTmdbRating: '-99' }}
+        existingNames={[]}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText(/profile name/i), {
+      target: { value: 'New' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(onSave).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /min tmdb rating must be between 0 and 10/i,
+    )
+  })
+
   it('calls onSave with the trimmed name on a valid submission', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined)
     render(

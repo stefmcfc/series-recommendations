@@ -126,6 +126,34 @@ describe('FRONTEND-107-AC-04: selecting a profile applies it immediately', () =>
   })
 })
 
+describe('FRONTEND-109-AC-17: an invalid saved profile is refused, not applied', () => {
+  it('does not call onApply and shows an alert for an out-of-range saved value', async () => {
+    const onApply = vi.fn()
+    vi.spyOn(seriesApi, 'listFilterProfiles').mockResolvedValue([
+      {
+        id: '1',
+        area: 'RECOMMENDATION_FILTERS',
+        name: 'Broken',
+        criteria: { minTmdbRating: '-99' },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <FilterProfileSelector
+        area="RECOMMENDATION_FILTERS"
+        currentCriteria={{}}
+        onApply={onApply}
+      />,
+    )
+    fireEvent.click(await screen.findByText('Broken'))
+    expect(onApply).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /"Broken" has an invalid saved value and can't be applied/i,
+    )
+  })
+})
+
 describe('FRONTEND-109-AC-10: reclicking an applied chip clears instead of re-applying', () => {
   it('calls onClear and deselects when the already-applied chip is clicked again', async () => {
     const onApply = vi.fn()

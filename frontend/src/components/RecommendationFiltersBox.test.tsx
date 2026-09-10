@@ -236,6 +236,34 @@ describe('FRONTEND-093-AC-03: no badge when no filters are active', () => {
   })
 })
 
+describe("FRONTEND-093-AC-04: Custom Search field edits do not inflate this box's own badge", () => {
+  it('does not count minTmdbRating/yearMin/yearMax/excludeGenresSelected/countriesSelected/language while isCustomSearch', () => {
+    renderBox({
+      isCustomSearch: true,
+      state: makeState({
+        minTmdbRating: '7',
+        yearMin: '2010',
+        yearMax: '2020',
+        excludeGenresSelected: ['Comedy'],
+        countriesSelected: ['US'],
+        language: 'en',
+      }),
+    })
+    expect(screen.queryByTestId('filters-active-count')).not.toBeInTheDocument()
+  })
+
+  it('still counts minVoteCount and excludeKeywordsSelected while isCustomSearch', () => {
+    renderBox({
+      isCustomSearch: true,
+      state: makeState({
+        minVoteCount: '200',
+        excludeKeywordsSelected: ['spoilers'],
+      }),
+    })
+    expect(screen.getByTestId('filters-active-count')).toHaveTextContent('2')
+  })
+})
+
 describe('FRONTEND-068-AC-05: Reset Filters clears excludeGenresSelected', () => {
   it('calls updateState with excludeGenresSelected: []', () => {
     const updateState = vi.fn()
