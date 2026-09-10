@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.52.0] - 2026-09-10
+
 ### Added
 
 - Backend: saved filter profiles now support two more areas, `CUSTOM_SEARCH` and `ANALYSIS_FILTERS`, alongside the existing three (`series_spec_057`).
