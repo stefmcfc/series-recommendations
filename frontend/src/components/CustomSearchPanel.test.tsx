@@ -36,6 +36,22 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
   }
 }
 
+describe('FRONTEND-111-AC-01: Custom Search description line', () => {
+  it('renders a hint explaining what Custom Search does', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.getByText(/search tmdb directly using your own combination/i),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-076-AC-05: other include/exclude usages are renamed', () => {
   it('renders "Include / Exclude Genres" in CustomSearchPanel', () => {
     render(

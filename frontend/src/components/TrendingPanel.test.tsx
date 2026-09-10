@@ -31,6 +31,15 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
   }
 }
 
+describe('FRONTEND-111-AC-02: Popular Right Now description line', () => {
+  it('renders a hint explaining what Popular Right Now does', () => {
+    render(<TrendingPanel state={makeState()} updateState={vi.fn()} />)
+    expect(
+      screen.getByText(/trending globally on tmdb right now/i),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('TrendingPanel', () => {
   it('renders the Trending Window fieldset with Day/Week options', () => {
     render(<TrendingPanel state={makeState()} updateState={vi.fn()} />)

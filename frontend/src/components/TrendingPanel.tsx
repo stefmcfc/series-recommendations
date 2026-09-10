@@ -17,6 +17,14 @@ export function TrendingPanel({ state, updateState }: TrendingPanelProps) {
       aria-labelledby="discover-tab-trending"
       className={styles.tabPanel}
     >
+      {/* FRONTEND-111-AC-02: same always-visible-hint treatment
+        UseMySeriesPanel's own hint already has, giving Popular Right Now an
+        equivalent one-line explanation of what it does. */}
+      <p className={styles.hint}>
+        Shows trending globally on TMDB right now — not personalized to your
+        ratings, genres, or watch history.
+      </p>
+
       <fieldset className={styles.modeFieldset}>
         <legend>Trending Window</legend>
 

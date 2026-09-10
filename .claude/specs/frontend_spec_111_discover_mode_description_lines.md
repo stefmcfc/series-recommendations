@@ -1,6 +1,6 @@
 # Frontend Spec 111: Discover Sub-Tab Description Lines
 
-**Status**: Not started
+**Status**: Implemented — `CustomSearchPanel.tsx`, `TrendingPanel.tsx`, `RecommendationControls.tsx`
 **Priority**: P4 (small copy/clarity addition, no behavior change)
 **Depends on**: none — frontend-only, no backend pairing
 **Area**: Frontend (`components/CustomSearchPanel.tsx`, `components/TrendingPanel.tsx`,
@@ -193,6 +193,6 @@ describe('FRONTEND-111-AC-03: Highest Rated description line', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-111-AC-01: `CustomSearchPanel.tsx` gains a `.hint` description line
-- [ ] FRONTEND-111-AC-02: `TrendingPanel.tsx` gains a `.hint` description line
-- [ ] FRONTEND-111-AC-03: `RecommendationControls.tsx` gains a new `discover-panel-top-rated` tabpanel wrapper + `.hint` description line, resolving the previously-dangling `aria-controls` reference as a side effect
+- [x] FRONTEND-111-AC-01: `CustomSearchPanel.tsx` gains a `.hint` description line
+- [x] FRONTEND-111-AC-02: `TrendingPanel.tsx` gains a `.hint` description line
+- [x] FRONTEND-111-AC-03: `RecommendationControls.tsx` gains a new `discover-panel-top-rated` tabpanel wrapper + `.hint` description line, resolving the previously-dangling `aria-controls` reference as a side effect

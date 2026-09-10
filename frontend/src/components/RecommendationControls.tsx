@@ -1062,6 +1062,30 @@ export function RecommendationControls({
                 keywordOptions={keywordOptions}
               />
             )}
+
+            {/* FRONTEND-111-AC-03: Highest Rated previously had no dedicated
+              tabpanel at all -- everything it needs (Sort By, output
+              filters) already renders unconditionally via
+              HighestRatedPanel/RecommendationFiltersBox regardless of which
+              Discover sub-tab is active, so no component was ever built for
+              it. This block exists solely to give it a hint line matching
+              its sibling sub-tabs, which also resolves the Highest Rated tab
+              button's previously-dangling aria-controls="discover-panel-top-rated"
+              reference as a side effect. */}
+            {state.discoverMode === 'topRated' && (
+              <div
+                role="tabpanel"
+                id="discover-panel-top-rated"
+                aria-labelledby="discover-tab-top-rated"
+                className={styles.tabPanel}
+              >
+                <p className={styles.hint}>
+                  TMDB's highest-rated shows overall, with a minimum vote count
+                  so a handful of perfect scores can't dominate — not
+                  personalized to your watch history.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
