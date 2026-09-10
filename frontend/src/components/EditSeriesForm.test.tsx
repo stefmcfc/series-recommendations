@@ -39,6 +39,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
+    originalLanguage: null,
     keywords: [],
     overview: null,
     excludeFromRecommendations: false,

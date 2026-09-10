@@ -1,6 +1,6 @@
 # Spec 061: Series Original Language
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3 (quality-of-life — surfaces data TMDB already returns but this app never captured)
 **Depends on**: Series Spec 012 (`TmdbClient.search`/`details`, `TmdbSearchCandidate`/`TmdbSeriesDetail`), Series Spec 017 (TMDB-primary resolve, `SeriesLookupService.resolveTmdbCandidate`), Series Spec 018 (`SeriesRefreshService`), Series Spec 021 (`originCountry`, the closest-precedent spec this one mirrors field-for-field)
 **Backend Task**
@@ -215,11 +215,11 @@ def "SERIES-061-AC-08: fresh migrate() adds the original_language column"() {
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-061-AC-01: `TmdbClient.details` parses `original_language` onto `TmdbSeriesDetail`
-- [ ] SERIES-061-AC-02: `SeriesLookupDto` gains `originalLanguage`
-- [ ] SERIES-061-AC-03: `SeriesEntity`/`SeriesDto` gain `originalLanguage`
-- [ ] SERIES-061-AC-04: `SeriesMapper` persists/round-trips `originalLanguage`
-- [ ] SERIES-061-AC-05: `SeriesRefreshService.refresh` updates `originalLanguage`
-- [ ] SERIES-061-AC-06: export includes `originalLanguage`
-- [ ] SERIES-061-AC-07: CSV import reads `originalLanguage`
-- [ ] SERIES-061-AC-08: `V012__add_original_language_to_series.sql` migration
+- [x] SERIES-061-AC-01: `TmdbClient.details` parses `original_language` onto `TmdbSeriesDetail`
+- [x] SERIES-061-AC-02: `SeriesLookupDto` gains `originalLanguage`
+- [x] SERIES-061-AC-03: `SeriesEntity`/`SeriesDto` gain `originalLanguage`
+- [x] SERIES-061-AC-04: `SeriesMapper` persists/round-trips `originalLanguage`
+- [x] SERIES-061-AC-05: `SeriesRefreshService.refresh` updates `originalLanguage`
+- [x] SERIES-061-AC-06: export includes `originalLanguage`
+- [x] SERIES-061-AC-07: CSV import reads `originalLanguage`
+- [x] SERIES-061-AC-08: `V012__add_original_language_to_series.sql` migration

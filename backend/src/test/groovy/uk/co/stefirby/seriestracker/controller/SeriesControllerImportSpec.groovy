@@ -115,12 +115,13 @@ class SeriesControllerImportSpec extends Specification {
     private static final String CSV_HEADER_ROW =
         "id,title,year,genres,totalSeasons,totalEpisodes,currentSeason,currentEpisode,status," +
         "imdbRating,rottenTomatoesRating,rottenTomatoesPopcornmeter,tmdbRating,tmdbVoteCount," +
-        "personalRating,personalNotes,posterUrl,tags,originCountry,dateAdded,dateCompleted"
+        "personalRating,personalNotes,posterUrl,tags,originCountry,originalLanguage,dateAdded," +
+        "dateCompleted"
 
     def "SERIES-058-AC-01: a valid CSV export file starts an import job"() {
         given: "a valid CSV file matching SeriesExportService's own column order"
             def csv = CSV_HEADER_ROW + "\n" +
-                ",CSV Show,2020,Drama,,,,,,,,,,,,,,,,,\n"
+                ",CSV Show,2020,Drama,,,,,,,,,,,,,,,,,,\n"
             def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
 
         when: "POST /api/v1/series/import is called"
@@ -165,8 +166,8 @@ class SeriesControllerImportSpec extends Specification {
     def "SERIES-058-AC-05/06: a CSV row with an unparseable cell is tracked as a row error, the job still completes"() {
         given: "one valid row and one row with a non-numeric year"
             def csv = CSV_HEADER_ROW + "\n" +
-                ",Good Show,2020,Drama,,,,,,,,,,,,,,,,,\n" +
-                ",Bad Show,not-a-year,Drama,,,,,,,,,,,,,,,,,\n"
+                ",Good Show,2020,Drama,,,,,,,,,,,,,,,,,,\n" +
+                ",Bad Show,not-a-year,Drama,,,,,,,,,,,,,,,,,,\n"
             def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
 
         when: "the file is imported"

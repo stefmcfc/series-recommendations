@@ -423,7 +423,8 @@ public class TmdbClient {
             ProductionStatus.fromTmdbStatus(ExternalApiSupport.str(body.get("status"))).orElse(null),
             originCountries(body.get(FIELD_ORIGIN_COUNTRY)),
             ExternalApiSupport.str(body.get("overview")),
-            extractYear(ExternalApiSupport.str(body.get(FIELD_LAST_AIR_DATE)))
+            extractYear(ExternalApiSupport.str(body.get(FIELD_LAST_AIR_DATE))),
+            ExternalApiSupport.str(body.get("original_language"))
         );
     }
 

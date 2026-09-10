@@ -14,6 +14,7 @@ import {
   isDiscoverMode,
   seriesPickerLabel,
   seriesPickerDisplay,
+  LANGUAGE_OPTIONS,
 } from './RecommendationControls'
 import type { SpecificSeriesFilters } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
@@ -57,6 +58,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
+    originalLanguage: null,
     keywords: [],
     overview: null,
     excludeFromRecommendations: false,
@@ -2963,5 +2965,12 @@ describe('FRONTEND-106-AC-04: entering Discover restores the last-used sub-tab',
     selectUseMySeries()
 
     expect(onQueryChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-117-AC-05: LANGUAGE_OPTIONS unchanged after extraction', () => {
+  it('still resolves each option to its display name', () => {
+    expect(LANGUAGE_OPTIONS.find((o) => o.id === 'en')?.label).toBe('English')
+    expect(LANGUAGE_OPTIONS.find((o) => o.id === 'ja')?.label).toBe('Japanese')
   })
 })

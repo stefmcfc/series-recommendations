@@ -909,6 +909,32 @@ class TmdbClientSpec extends Specification {
             result.lastAirYear() == null
     }
 
+    def "SERIES-061-AC-01: details maps original_language onto TmdbSeriesDetail"() {
+        given: "a TMDB detail response with an original_language field"
+            def body = '{"name": "The Office", "original_language": "en", "genres": []}'
+            mockServer.expect(requestTo(Matchers.containsString("tv/3020")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details(3020) is called"
+            def result = client().details(3020)
+
+        then: "originalLanguage is the parsed value"
+            result.originalLanguage() == "en"
+    }
+
+    def "SERIES-061-AC-01: an absent original_language maps to a null originalLanguage"() {
+        given: "a TMDB detail response with no original_language field"
+            def body = '{"name": "Obscure Show", "genres": []}'
+            mockServer.expect(requestTo(Matchers.containsString("tv/3021")))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
+
+        when: "details(3021) is called"
+            def result = client().details(3021)
+
+        then: "originalLanguage is null"
+            result.originalLanguage() == null
+    }
+
     def "SERIES-012-AC-10: a non-2xx response from TMDB details raises ExternalServiceException"() {
         given: "TMDB responds with a server error"
             mockServer.expect(requestTo(Matchers.containsString("tv/4046")))

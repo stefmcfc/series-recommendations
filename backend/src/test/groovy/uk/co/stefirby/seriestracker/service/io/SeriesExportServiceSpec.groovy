@@ -166,8 +166,9 @@ class SeriesExportServiceSpec extends Specification {
         then: "the header row has one column per series field"
             // 17 original fields (minus metacriticRating, which was removed by SERIES-017)
             // + tags (SERIES-014) + tmdbRating/tmdbVoteCount (SERIES-017) + originCountry
-            // (SERIES-021) + rottenTomatoesPopcornmeter (SERIES-027)
-            headerCols == 21
+            // (SERIES-021) + rottenTomatoesPopcornmeter (SERIES-027) + originalLanguage
+            // (SERIES-061)
+            headerCols == 22
     }
 
     def "SERIES-005-AC-04: exportAsCsv includes posterUrl values"() {
@@ -358,5 +359,43 @@ class SeriesExportServiceSpec extends Specification {
 
         then: "the exported JSON includes the originCountry field"
             office.get('originCountry').stringValue() == 'GB'
+    }
+
+    def "SERIES-061-AC-06: CSV headers include originalLanguage, immediately after originCountry"() {
+        when: "a CSV export is generated"
+            def csv = exportService.exportAsCsv([])
+
+        then: "the header row includes originalLanguage, immediately after originCountry"
+            def headers = csv.readLines().first().split(",")
+            def countryIndex = headers.findIndexOf { it == "originCountry" }
+            headers[countryIndex + 1] == "originalLanguage"
+    }
+
+    def "SERIES-061-AC-06: exportAsCsv includes an originalLanguage value"() {
+        given: "a series with an originalLanguage value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "The Office (Language)", originalLanguage: "en"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as CSV"
+            def csv = exportService.exportAsCsv(series)
+            def lines = csv.trim().split("\n")
+
+        then: "the header includes originalLanguage and a row contains its value"
+            lines[0].contains("originalLanguage")
+            csv.contains("en")
+    }
+
+    def "SERIES-061-AC-06: exportAsJson includes originalLanguage"() {
+        given: "a series with an originalLanguage value, among the retrieved series"
+            seriesService.create(new SeriesDto(title: "The Office (Language) 2", originalLanguage: "en"))
+            def series = seriesService.getAll()
+
+        when: "the series are exported as JSON"
+            def json = exportService.exportAsJson(series, LocalDateTime.now())
+            def parsed = new ObjectMapper().readTree(json)
+            def office = parsed.get('series').find { it.get('title').stringValue() == 'The Office (Language) 2' }
+
+        then: "the exported JSON includes the originalLanguage field"
+            office.get('originalLanguage').stringValue() == 'en'
     }
 }

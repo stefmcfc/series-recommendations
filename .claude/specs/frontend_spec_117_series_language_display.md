@@ -1,6 +1,6 @@
 # Frontend Spec 117: Series Language Display
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Frontend Spec 003 (`AddSeriesForm`) ✅, Frontend Spec 005 (`SeriesDetail`) ✅, Frontend Spec 022 (`SeriesLookupResult`, TMDB candidate picker) ✅, Frontend Spec 026 (`SeriesDetailFields`, `formatValue`, the read-only-system-metadata carry-through pattern this spec reuses) ✅, Series Spec 061 (`originalLanguage`, backend companion spec)
 **Frontend Stage**: 117 of N
 
@@ -167,11 +167,11 @@ Note: every `makeSeries` test-fixture helper (`SeriesDetail.test.tsx`, `SeriesLi
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-117-AC-01: `Series` gains `originalLanguage`
-- [ ] FRONTEND-117-AC-02: `CreateSeriesRequest` gains `originalLanguage`
-- [ ] FRONTEND-117-AC-03: `SeriesLookupResult` gains `originalLanguage`
-- [ ] FRONTEND-117-AC-04: `utils/languageName.ts`'s `formatLanguageName` utility
-- [ ] FRONTEND-117-AC-05: `RecommendationControls.tsx` uses the extracted shared utility, no behavior change
-- [ ] FRONTEND-117-AC-06: `AddSeriesForm` autofill carries `originalLanguage` through
-- [ ] FRONTEND-117-AC-07: `AddSeriesForm` payload includes `originalLanguage`
-- [ ] FRONTEND-117-AC-08: `SeriesDetailFields` shows "Language" immediately after "Overview"
+- [x] FRONTEND-117-AC-01: `Series` gains `originalLanguage`
+- [x] FRONTEND-117-AC-02: `CreateSeriesRequest` gains `originalLanguage`
+- [x] FRONTEND-117-AC-03: `SeriesLookupResult` gains `originalLanguage`
+- [x] FRONTEND-117-AC-04: `utils/languageName.ts`'s `formatLanguageName` utility
+- [x] FRONTEND-117-AC-05: `RecommendationControls.tsx` uses the extracted shared utility, no behavior change
+- [x] FRONTEND-117-AC-06: `AddSeriesForm` autofill carries `originalLanguage` through
+- [x] FRONTEND-117-AC-07: `AddSeriesForm` payload includes `originalLanguage`
+- [x] FRONTEND-117-AC-08: `SeriesDetailFields` shows "Language" immediately after "Overview"

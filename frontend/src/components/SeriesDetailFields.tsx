@@ -2,6 +2,7 @@ import { SeriesStatus } from '../types/series'
 import type { Series, StreamingProvider } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
 import { StarRating } from './StarRating'
+import { formatLanguageName } from '../utils/languageName'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailFieldsProps {
@@ -60,6 +61,12 @@ export function SeriesDetailFields({
           <div className={styles.field}>
             <dt>Overview</dt>
             <dd>{formatValue(series.overview)}</dd>
+          </div>
+        </div>
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <dt>Language</dt>
+            <dd>{formatValue(formatLanguageName(series.originalLanguage))}</dd>
           </div>
         </div>
       </dl>

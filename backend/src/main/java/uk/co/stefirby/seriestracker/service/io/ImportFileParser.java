@@ -48,8 +48,8 @@ public class ImportFileParser {
         "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
         "rottenTomatoesRating", "rottenTomatoesPopcornmeter", "tmdbRating", "tmdbVoteCount",
-        "personalRating", "personalNotes", "posterUrl", "tags", "originCountry", "dateAdded",
-        "dateCompleted"
+        "personalRating", "personalNotes", "posterUrl", "tags", "originCountry",
+        "originalLanguage", "dateAdded", "dateCompleted"
     );
 
     // Matches SeriesExportService.ISO exactly -- the CSV encoding this parser reverses.
@@ -152,6 +152,7 @@ public class ImportFileParser {
             dto.setPosterUrl(cell(csvRecord, "posterUrl"));
             dto.setTags(cell(csvRecord, "tags"));
             dto.setOriginCountry(cell(csvRecord, "originCountry"));
+            dto.setOriginalLanguage(cell(csvRecord, "originalLanguage"));
             dto.setDateAdded(dateCell(csvRecord, "dateAdded"));
             dto.setDateCompleted(dateCell(csvRecord, "dateCompleted"));
             return dto;

@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: tracked series now capture TMDB's original language (`originalLanguage`, an ISO 639-1 code), populated on add/refresh and included in CSV/JSON export and CSV import (`series_spec_061`).
+- Frontend: a series' detail page now shows its language, resolved to a readable name (e.g. "English"), immediately after the Overview field (`frontend_spec_117`).
+
 ## [3.53.2] - 2026-09-10
 
 ### Fixed

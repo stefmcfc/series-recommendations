@@ -44,6 +44,11 @@ import java.util.List;
  * show, the year of the most recently aired episode so far. {@code null} when the field is
  * absent or unparseable, same posture as every other best-effort field here. See
  * {@code series_spec_039_last_air_year.md}.
+ *
+ * <p>{@code originalLanguage} (SERIES-061-AC-01) is this same endpoint's raw {@code
+ * original_language} field (an ISO 639-1 code, e.g. {@code "en"}) -- {@code null} when the
+ * field is absent, same posture as every other best-effort field here. See {@code
+ * series_spec_061_series_original_language.md}.
  */
 public record TmdbSeriesDetail(
     String title,
@@ -57,6 +62,7 @@ public record TmdbSeriesDetail(
     ProductionStatus productionStatus,
     List<String> originCountries,
     String overview,
-    Integer lastAirYear
+    Integer lastAirYear,
+    String originalLanguage
 ) {
 }

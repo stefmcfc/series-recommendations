@@ -165,6 +165,15 @@ public class SeriesEntity {
     @Column(nullable = true)
     private Integer lastAirYear;
 
+    // series_spec_061_series_original_language.md (SERIES-061-AC-03): the raw ISO 639-1
+    // language code TMDB reports for this series' original_language field -- nullable
+    // (manually-added series, or one whose TMDB lookup/refresh never resolved a detail, has no
+    // value), no format validation, same posture as originCountry/imdbId (see that spec's
+    // Design Decisions). Unlike originCountry, always a single code -- no multi-value widening
+    // needed here.
+    @Column(nullable = true, length = 2)
+    private String originalLanguage;
+
     // series_spec_018_series_refresh.md (SERIES-018-AC-23): non-null means a refresh found
     // totalSeasons/totalEpisodes had increased since the prior refresh, not yet acknowledged.
     // Never auto-cleared by a subsequent refresh that finds no further increase
@@ -290,6 +299,9 @@ public class SeriesEntity {
 
     public Integer getLastAirYear() { return lastAirYear; }
     public void setLastAirYear(Integer lastAirYear) { this.lastAirYear = lastAirYear; }
+
+    public String getOriginalLanguage() { return originalLanguage; }
+    public void setOriginalLanguage(String originalLanguage) { this.originalLanguage = originalLanguage; }
 
     public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
     public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }

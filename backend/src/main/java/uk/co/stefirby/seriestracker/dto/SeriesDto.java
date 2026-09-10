@@ -61,6 +61,12 @@ public class SeriesDto {
     // above) and re-resolved on every refresh (SeriesRefreshService).
     private Integer lastAirYear;
 
+    // series_spec_061_series_original_language.md (SERIES-061-AC-03): the raw ISO 639-1
+    // language code TMDB reports for this series -- read at create time (round-tripped from
+    // SeriesLookupDto, same as originCountry/productionStatus/overview/lastAirYear above) and
+    // re-resolved on every refresh (SeriesRefreshService) whenever the fresh value is non-null.
+    private String originalLanguage;
+
     // series_spec_018_series_refresh.md: output-only, like lastRefreshedAt -- never read from
     // the incoming DTO in create/update (SERIES-018-AC-23). Non-null means a refresh detected
     // new content not yet acknowledged (POST /series/{id}/acknowledge-new-content).
@@ -179,6 +185,9 @@ public class SeriesDto {
 
     public Integer getLastAirYear() { return lastAirYear; }
     public void setLastAirYear(Integer lastAirYear) { this.lastAirYear = lastAirYear; }
+
+    public String getOriginalLanguage() { return originalLanguage; }
+    public void setOriginalLanguage(String originalLanguage) { this.originalLanguage = originalLanguage; }
 
     public LocalDateTime getNewContentDetectedAt() { return newContentDetectedAt; }
     public void setNewContentDetectedAt(LocalDateTime newContentDetectedAt) { this.newContentDetectedAt = newContentDetectedAt; }
