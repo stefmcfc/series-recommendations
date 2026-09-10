@@ -1,6 +1,9 @@
 # Frontend Spec 112: Saved Filter Profiles for Custom Search and Analysis Filters
 
-**Status**: Not started
+**Status**: Implemented — `types/filterProfile.ts`, `utils/describeFilterCriteria.ts`,
+`components/CustomSearchPanel.tsx`, `hooks/useNameStatsFilters.ts`, `components/AnalysisView.tsx`,
+and each affected file's tests (`describeFilterCriteria.test.ts`, `CustomSearchPanel.test.tsx`,
+`useNameStatsFilters.test.ts`, `AnalysisView.test.tsx`)
 **Priority**: P3 (extends an existing quality-of-life feature to two more contexts)
 **Depends on**: `series_spec_057_filter_profile_new_areas.md` (the two new `FilterProfileArea`
 values this spec consumes — must merge first), `frontend_spec_107_filter_profile_ui.md` (the
@@ -468,12 +471,12 @@ passes.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-112-AC-01: `CUSTOM_SEARCH` area + `CustomSearchFilterCriteria` type
-- [ ] FRONTEND-112-AC-02: `describeCustomSearchCriteria` dispatch case
-- [ ] FRONTEND-112-AC-03: `CustomSearchPanel.tsx` renders `FilterProfileSelector` at the end of its fields
-- [ ] FRONTEND-112-AC-04: `CustomSearchPanel.tsx` gains `handleClearCustomSearchFilters` + a Clear Filters button
-- [ ] FRONTEND-112-AC-05: Save Filters correctly disables when Custom Search criteria is empty (verified, no bug)
-- [ ] FRONTEND-112-AC-06: `ANALYSIS_FILTERS` area + `AnalysisFilterCriteria` type
-- [ ] FRONTEND-112-AC-07: `describeAnalysisFiltersCriteria` dispatch case
-- [ ] FRONTEND-112-AC-08: `useNameStatsFilters` gains `applyFilterProfile`/`clearFilterProfile`
-- [ ] FRONTEND-112-AC-09: `AnalysisView.tsx` renders one shared `FilterProfileSelector` across all three tabs
+- [x] FRONTEND-112-AC-01: `CUSTOM_SEARCH` area + `CustomSearchFilterCriteria` type
+- [x] FRONTEND-112-AC-02: `describeCustomSearchCriteria` dispatch case
+- [x] FRONTEND-112-AC-03: `CustomSearchPanel.tsx` renders `FilterProfileSelector` at the end of its fields
+- [x] FRONTEND-112-AC-04: `CustomSearchPanel.tsx` gains `handleClearCustomSearchFilters` + a Clear Filters button
+- [x] FRONTEND-112-AC-05: Save Filters correctly disables when Custom Search criteria is empty (verified, no bug)
+- [x] FRONTEND-112-AC-06: `ANALYSIS_FILTERS` area + `AnalysisFilterCriteria` type
+- [x] FRONTEND-112-AC-07: `describeAnalysisFiltersCriteria` dispatch case
+- [x] FRONTEND-112-AC-08: `useNameStatsFilters` gains `applyFilterProfile`/`clearFilterProfile`
+- [x] FRONTEND-112-AC-09: `AnalysisView.tsx` renders one shared `FilterProfileSelector` across all three tabs

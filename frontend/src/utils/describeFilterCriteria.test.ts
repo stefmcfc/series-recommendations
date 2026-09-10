@@ -7,6 +7,8 @@ import type {
   MySeriesFilterCriteria,
   UseMySeriesFilterCriteria,
   RecommendationFiltersCriteria,
+  CustomSearchFilterCriteria,
+  AnalysisFilterCriteria,
 } from '../types/filterProfile'
 
 describe('FRONTEND-108-AC-01: describeFilterCriteria', () => {
@@ -103,5 +105,52 @@ describe('FRONTEND-108-AC-02: suggestFilterProfileName', () => {
       genreFilter: ['Comedy', 'Drama', 'Thriller', 'Documentary', 'Action'],
     } as Partial<UseMySeriesFilterCriteria>)
     expect(long.length).toBeLessThanOrEqual(63) // 60 + '…'
+  })
+})
+
+describe('FRONTEND-112-AC-02: describeFilterCriteria for CUSTOM_SEARCH', () => {
+  it('produces one entry per non-empty field', () => {
+    const entries = describeFilterCriteria('CUSTOM_SEARCH', {
+      genresSelected: ['Comedy'],
+      countriesSelected: ['US'],
+    } as Partial<CustomSearchFilterCriteria>)
+    expect(entries.find((e) => e.label === 'Genres')?.value).toBe('Comedy')
+    expect(entries.find((e) => e.label === 'Countries')?.value).toMatch(
+      /United States/,
+    )
+  })
+
+  it('returns an empty array when every field is empty', () => {
+    expect(describeFilterCriteria('CUSTOM_SEARCH', {})).toEqual([])
+  })
+})
+
+describe('FRONTEND-112-AC-07: describeFilterCriteria for ANALYSIS_FILTERS', () => {
+  it('produces one entry per non-default field', () => {
+    const entries = describeFilterCriteria('ANALYSIS_FILTERS', {
+      minSeriesCount: '3',
+      statusScope: 'completed',
+      sortBy: 'averagePersonalRating',
+      sortDirection: 'desc',
+    } as Partial<AnalysisFilterCriteria>)
+    expect(entries.find((e) => e.label === 'Min Series Count')?.value).toBe('3')
+    expect(entries.find((e) => e.label === 'Status')?.value).toBe(
+      'Completed Only',
+    )
+    expect(entries.find((e) => e.label === 'Sort By')?.value).toBe(
+      'Avg Personal Rating',
+    )
+  })
+
+  it('returns an empty array at the true defaults (statusScope "all", sortBy/sortDirection undefined)', () => {
+    const entries = describeFilterCriteria('ANALYSIS_FILTERS', {
+      minSeriesCount: '',
+      minAveragePersonalRating: '',
+      minAverageBlendedRating: '',
+      statusScope: 'all',
+      sortBy: undefined,
+      sortDirection: undefined,
+    } as Partial<AnalysisFilterCriteria>)
+    expect(entries).toEqual([])
   })
 })

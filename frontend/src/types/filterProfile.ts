@@ -4,8 +4,17 @@
 // not series-specific, per frontend_structure.md's centralization
 // convention.
 
+import type {
+  NameStatsSortBy,
+  NameStatsSortDirection,
+} from '../components/NameStatsTable'
+
 export type FilterProfileArea =
-  'MY_SERIES' | 'USE_MY_SERIES' | 'RECOMMENDATION_FILTERS'
+  | 'MY_SERIES'
+  | 'USE_MY_SERIES'
+  | 'RECOMMENDATION_FILTERS'
+  | 'CUSTOM_SEARCH'
+  | 'ANALYSIS_FILTERS'
 
 export interface FilterProfile<TCriteria> {
   id: string
@@ -66,4 +75,35 @@ export interface RecommendationFiltersCriteria {
   yearMax: string
   language: string
   countriesSelected: string[]
+}
+
+// Area D -- CustomSearchPanel.tsx's 8 fields (frontend_spec_112's Overview:
+// a dedicated type, not a reuse of RecommendationFiltersCriteria, so the two
+// areas' profile lists stay fully independent). No excludeKeywordsSelected
+// -- Custom Search has no such field today (a pre-existing gap, unrelated to
+// this spec).
+export interface CustomSearchFilterCriteria {
+  genresSelected: string[]
+  excludeGenresSelected: string[]
+  keywordsSelected: string[]
+  minTmdbRating: string
+  yearMin: string
+  yearMax: string
+  language: string
+  countriesSelected: string[]
+}
+
+// Area E -- hooks/useNameStatsFilters.ts's FilterInputs plus its live
+// sortBy/sortDirection (frontend_spec_112's Overview/Design Decisions).
+// sortBy/sortDirection are genuinely `| undefined` (not defaulted strings)
+// since the hook never initializes them -- see describeFilterCriteria.ts's
+// describeAnalysisFiltersCriteria for why this sidesteps
+// frontend_spec_109-AC-13's default-value-comparison bug class.
+export interface AnalysisFilterCriteria {
+  minSeriesCount: string
+  minAveragePersonalRating: string
+  minAverageBlendedRating: string
+  statusScope: 'all' | 'completed'
+  sortBy: NameStatsSortBy | undefined
+  sortDirection: NameStatsSortDirection | undefined
 }

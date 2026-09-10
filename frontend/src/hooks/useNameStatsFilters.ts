@@ -4,6 +4,7 @@ import type {
   NameStatsSortBy,
   NameStatsSortDirection,
 } from '../components/NameStatsTable'
+import type { AnalysisFilterCriteria } from '../types/filterProfile'
 
 // FRONTEND-096-AC-09: filter/sort/panel-open state, plus the
 // buildFetchOptions helper, lifted out of NameStatsTable.tsx unchanged in
@@ -106,6 +107,16 @@ export interface NameStatsFiltersState {
   handleResetFilters: () => void
   handleToggleFiltersOpen: () => void
   sortIndicator: (column: NameStatsSortBy) => string
+  // FRONTEND-112-AC-08: applies a saved Analysis profile immediately (no
+  // separate Apply click), matching frontend_spec_107's "select-and-apply
+  // immediately" Design Decision.
+  applyFilterProfile: (criteria: AnalysisFilterCriteria) => void
+  // FRONTEND-112-AC-08: distinct from handleResetFilters -- this also resets
+  // sortBy/sortDirection to undefined, since this area's saved criteria
+  // include sort (this spec's Design Decisions: handleResetFilters
+  // deliberately leaves sort untouched, "filters" and "sort" are separate
+  // concerns there).
+  clearFilterProfile: () => void
 }
 
 export function useNameStatsFilters(): NameStatsFiltersState {
@@ -189,6 +200,48 @@ export function useNameStatsFilters(): NameStatsFiltersState {
     setFiltersOpen((open) => !open)
   }
 
+  // FRONTEND-112-AC-08: sets filterInputs/appliedFilters and sortBy/
+  // sortDirection from the profile's criteria and bumps applyVersion --
+  // adapted from handleApplyFilters, not a copy (also sets sort, which that
+  // function never touches).
+  const applyFilterProfile = (criteria: AnalysisFilterCriteria) => {
+    // A saved profile's criteria may be a partial object (e.g. a profile
+    // saved before a field existed, or omitted at save time) even though
+    // TCriteria's type says otherwise -- defaulting each field via
+    // emptyFilterInputs keeps this a safe full replace either way, matching
+    // how every other area's saved criteria is treated as partial at the
+    // description layer (describeFilterCriteria.ts's own `Partial<...>`
+    // narrowing).
+    const nextFilterInputs: FilterInputs = {
+      minSeriesCount:
+        criteria.minSeriesCount ?? emptyFilterInputs.minSeriesCount,
+      minAveragePersonalRating:
+        criteria.minAveragePersonalRating ??
+        emptyFilterInputs.minAveragePersonalRating,
+      minAverageBlendedRating:
+        criteria.minAverageBlendedRating ??
+        emptyFilterInputs.minAverageBlendedRating,
+      statusScope: criteria.statusScope ?? emptyFilterInputs.statusScope,
+    }
+    setFilterInputs(nextFilterInputs)
+    setAppliedFilters(nextFilterInputs)
+    setSortBy(criteria.sortBy)
+    setSortDirection(criteria.sortDirection)
+    setApplyVersion((v) => v + 1)
+  }
+
+  // FRONTEND-112-AC-08: adapted from handleResetFilters -- additionally
+  // resets sortBy/sortDirection to undefined, since this spec's saved
+  // criteria include sort (deliberately different from handleResetFilters,
+  // see this spec's Design Decisions).
+  const clearFilterProfile = () => {
+    setFilterInputs(emptyFilterInputs)
+    setAppliedFilters(emptyFilterInputs)
+    setSortBy(undefined)
+    setSortDirection(undefined)
+    setApplyVersion((v) => v + 1)
+  }
+
   const sortIndicator = (column: NameStatsSortBy): string => {
     if (sortBy !== column) return ''
     const direction = sortDirection ?? DEFAULT_SORT_DIRECTION[column]
@@ -211,5 +264,7 @@ export function useNameStatsFilters(): NameStatsFiltersState {
     handleResetFilters,
     handleToggleFiltersOpen,
     sortIndicator,
+    applyFilterProfile,
+    clearFilterProfile,
   }
 }

@@ -3,7 +3,9 @@ import type { NavLinkRenderProps } from 'react-router-dom'
 import { KeywordsView } from './KeywordsView'
 import { GenreStatsView } from './GenreStatsView'
 import { CountryStatsView } from './CountryStatsView'
+import { FilterProfileSelector } from './FilterProfileSelector'
 import { useNameStatsFilters } from '../hooks/useNameStatsFilters'
+import type { AnalysisFilterCriteria } from '../types/filterProfile'
 import styles from './AnalysisView.module.css'
 
 const navLinkClassName = ({ isActive }: NavLinkRenderProps) =>
@@ -31,6 +33,17 @@ export function AnalysisView() {
     return <Navigate to="/analysis/keywords" replace />
   }
 
+  // FRONTEND-112-AC-09: currentCriteria is the *pending* filterInputs plus
+  // the live sortBy/sortDirection -- mirrors Area A (SearchFilter)'s own
+  // precedent (this spec's Design Decisions). sortBy/sortDirection have no
+  // separate "pending" state (column-header clicks apply immediately), so
+  // they're read live either way.
+  const currentAnalysisFiltersCriteria: AnalysisFilterCriteria = {
+    ...filters.filterInputs,
+    sortBy: filters.sortBy,
+    sortDirection: filters.sortDirection,
+  }
+
   return (
     <>
       <nav className={styles.navLinks} aria-label="Analysis">
@@ -44,6 +57,16 @@ export function AnalysisView() {
           Country of Origin
         </NavLink>
       </nav>
+      {/* FRONTEND-112-AC-09: renders once here, shared across all three tabs
+        -- not inside NameStatsTable.tsx (instantiated three times, once per
+        tab, which would triple-render a per-instance picker). See this
+        spec's Overview/Design Decisions. */}
+      <FilterProfileSelector<AnalysisFilterCriteria>
+        area="ANALYSIS_FILTERS"
+        currentCriteria={currentAnalysisFiltersCriteria}
+        onApply={filters.applyFilterProfile}
+        onClear={filters.clearFilterProfile}
+      />
       {tab === 'keywords' && <KeywordsView filters={filters} />}
       {tab === 'genres' && <GenreStatsView filters={filters} />}
       {tab === 'country-of-origin' && <CountryStatsView filters={filters} />}
