@@ -330,6 +330,25 @@ describe('SH-006: search', () => {
   })
 })
 
+describe('FRONTEND-116-AC-02: missing-rating params passed through when set', () => {
+  it('includes each missing-rating field only when non-null', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({
+      missingImdbRating: true,
+      missingTmdbRating: false,
+      missingRottenTomatoesRating: true,
+    })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.missingImdbRating).toBe(true)
+    expect(args.params.missingTmdbRating).toBe(false)
+    expect(args.params.missingRottenTomatoesRating).toBe(true)
+    expect(args.params).not.toHaveProperty('missingRottenTomatoesPopcornmeter')
+  })
+})
+
 describe('FRONTEND-063-AC-02: buildSearchParams sends excludeGenre', () => {
   it('includes excludeGenre when excludeGenres is set', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })

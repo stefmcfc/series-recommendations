@@ -93,8 +93,10 @@ used for `yearMin`/`yearMax` on Custom Search/Recommendations (see below).
 ### `GET /api/v1/series/search`
 
 Search and filter series (`title`, `genre`, `excludeGenre`, `keyword`, `status`,
-`minPersonalRating`, `minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`).
-Supports `sortBy`/`sortDirection` — see Sorting below. `yearMin`/`yearMax` use true interval-overlap
+`minPersonalRating`, `minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`,
+`missingImdbRating`, `missingTmdbRating`, `missingRottenTomatoesRating`,
+`missingRottenTomatoesPopcornmeter`). Supports `sortBy`/`sortDirection` — see Sorting below.
+`yearMin`/`yearMax` use true interval-overlap
 matching: a series' known airing span is `[year, lastAirYear ?? year]` (`lastAirYear` is the year
 of the most recently aired episode TMDB reports, resolved at create/refresh time — `null` when
 unresolved, in which case the span collapses to `year` alone), and it matches when that span
@@ -108,6 +110,18 @@ repeatable query params (`?genre=Comedy&genre=Drama`) matched by case-insensitiv
 the stored `genres` field, with OR semantics across multiple values. `excludeGenre` drops any
 series whose `genres` string contains any of the requested values; a series with no genres at all
 is never excluded by it. If a series matches both `genre` and `excludeGenre`, the exclusion wins.
+
+`missingImdbRating`, `missingTmdbRating`, `missingRottenTomatoesRating`, and
+`missingRottenTomatoesPopcornmeter` (`series_spec_060_missing_ratings_filter.md`) are each an
+optional `Boolean` — `null`/absent is a no-op, `true` restricts results to series where that
+specific rating (`SeriesEntity.imdbRating`/`tmdbRating`/`rottenTomatoesRating`/
+`rottenTomatoesPopcornmeter`) is `null`. **Unlike every other filter on this endpoint, these four
+are OR'd together with each other, not AND'd**: if more than one is `true`, a series matches if
+it's missing *any* of the checked ratings, not only if it's missing all of them (the intent is an
+inclusive "what still needs fixing" list, not an increasingly narrow one). This combined
+missing-ratings condition still ANDs with every other criteria field as normal — e.g. combined
+with `status=WATCHING`, results are "status is WATCHING AND is missing at least one checked
+rating".
 
 **Breaking change (`series_spec_037`)**: `maxPersonalRating`, `maxImdbRating`, and
 `startedNotFinished` are no longer accepted — a rating floor (`min...`) is the only supported

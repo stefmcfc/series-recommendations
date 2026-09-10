@@ -168,6 +168,7 @@ _None currently queued._
 | Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated), plus Highest Rated's first-ever dedicated tabpanel wrapper (fixing a previously-dangling `aria-controls` reference) | — | `frontend_spec_111` | ✅ Done |
 | CSV import (backend parsing for `.csv` alongside `.json`; frontend file-picker `accept` widened to match) | `series_spec_058` | `frontend_spec_114` | ✅ Done |
 | Saved filter profiles extended to two more areas: Custom Search and Analysis filters (two new independent `FilterProfileArea` values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS`) | `series_spec_057` | `frontend_spec_112` | ✅ Done |
+| Missing ratings filter (find series missing an IMDb/TMDB/Rotten Tomatoes rating) — four `SeriesSearchCriteria` boolean fields, OR-composed server-side, surfaced as four checkboxes in `SearchFilter`'s existing "Ratings" section | `series_spec_060` | `frontend_spec_116` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

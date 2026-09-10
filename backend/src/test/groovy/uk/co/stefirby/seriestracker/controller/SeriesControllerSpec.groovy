@@ -469,6 +469,20 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data[0].title').value("Rewatch Me"))
   }
 
+  def "SERIES-060-AC-02: GET /api/v1/series/search honors the missingImdbRating query param"() {
+    given: "one series with an imdbRating, one without"
+        seriesService.create(new SeriesDto(title: "Controller Has IMDb", imdbRating: 8.0))
+        seriesService.create(new SeriesDto(title: "Controller No IMDb"))
+
+    when: "a GET request is made with missingImdbRating=true"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("missingImdbRating", "true"))
+
+    then: "only the series without an imdbRating is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.length()').value(1))
+        result.andExpect(jsonPath('$.data[0].title').value("Controller No IMDb"))
+  }
+
   def "SERIES-042-AC-06: GET /api/v1/series/search?excludeGenre=Comedy excludes Comedy series"() {
     given: "a Comedy series and a Drama series exist"
         seriesService.create(new SeriesDto(title: "Funny Show", genres: "Comedy"))

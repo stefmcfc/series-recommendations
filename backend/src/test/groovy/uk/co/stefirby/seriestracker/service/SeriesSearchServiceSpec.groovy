@@ -194,6 +194,72 @@ class SeriesSearchServiceSpec extends Specification {
             results*.title == ["Backlog Rewatch"]
     }
 
+    def "SERIES-060-AC-03: no missing-rating criteria set returns everything, same as today"() {
+        given: "a series with every rating set and one with none, on top of the four from setup()"
+            seriesService.create(new SeriesDto(title: "Fully Rated", imdbRating: 8.0, tmdbRating: 7.5,
+                rottenTomatoesRating: 90, rottenTomatoesPopcornmeter: 85))
+            seriesService.create(new SeriesDto(title: "No Ratings At All"))
+
+        when: "search is called with no missing-rating criteria"
+            def results = searchService.search(new SeriesSearchCriteria())
+
+        then: "all six series are returned"
+            results.size() == 6
+    }
+
+    def "SERIES-060-AC-04: missingImdbRating=true returns only series with a null imdbRating"() {
+        given: "one series with an imdbRating, one without"
+            seriesService.create(new SeriesDto(title: "Missing Ratings Has IMDb", imdbRating: 8.0))
+            seriesService.create(new SeriesDto(title: "Missing Ratings No IMDb"))
+
+        when: "search is called with missingImdbRating: true, scoped to these two"
+            def criteria = new SeriesSearchCriteria(title: "Missing Ratings", missingImdbRating: true)
+            def results = searchService.search(criteria)
+
+        then: "only the series without an imdbRating is returned"
+            results*.title == ["Missing Ratings No IMDb"]
+    }
+
+    def "SERIES-060-AC-05: multiple missing-rating flags OR together"() {
+        given: "one series missing only imdbRating, one missing only tmdbRating, one missing neither"
+            seriesService.create(new SeriesDto(title: "Missing Ratings Missing IMDb Only", tmdbRating: 7.0))
+            seriesService.create(new SeriesDto(title: "Missing Ratings Missing TMDB Only", imdbRating: 8.0))
+            seriesService.create(new SeriesDto(title: "Missing Ratings Missing Neither", imdbRating: 8.0, tmdbRating: 7.0))
+
+        when: "search is called with both missingImdbRating and missingTmdbRating true, scoped to these three"
+            def criteria = new SeriesSearchCriteria(title: "Missing Ratings", missingImdbRating: true, missingTmdbRating: true)
+            def results = searchService.search(criteria)
+
+        then: "both partially-missing series are returned, the fully-rated one is not"
+            results*.title as Set == ["Missing Ratings Missing IMDb Only", "Missing Ratings Missing TMDB Only"] as Set
+    }
+
+    def "SERIES-060-AC-06: missingRottenTomatoesRating=true returns only series without one"() {
+        given: "one series with a Tomatometer score, one without"
+            seriesService.create(new SeriesDto(title: "Missing Ratings Has Tomatometer", rottenTomatoesRating: 90))
+            seriesService.create(new SeriesDto(title: "Missing Ratings No Tomatometer"))
+
+        when: "search is called with missingRottenTomatoesRating: true, scoped to these two"
+            def criteria = new SeriesSearchCriteria(title: "Missing Ratings", missingRottenTomatoesRating: true)
+            def results = searchService.search(criteria)
+
+        then: "only the series without one is returned"
+            results*.title == ["Missing Ratings No Tomatometer"]
+    }
+
+    def "SERIES-060-AC-06: missingRottenTomatoesPopcornmeter=true returns only series without one"() {
+        given: "one series with a Popcornmeter score, one without"
+            seriesService.create(new SeriesDto(title: "Missing Ratings Has Popcornmeter", rottenTomatoesPopcornmeter: 85))
+            seriesService.create(new SeriesDto(title: "Missing Ratings No Popcornmeter"))
+
+        when: "search is called with missingRottenTomatoesPopcornmeter: true, scoped to these two"
+            def criteria = new SeriesSearchCriteria(title: "Missing Ratings", missingRottenTomatoesPopcornmeter: true)
+            def results = searchService.search(criteria)
+
+        then: "only the series without one is returned"
+            results*.title == ["Missing Ratings No Popcornmeter"]
+    }
+
     def "search combines multiple filters"() {
         given: "search criteria combining title, status, and rating filters"
             def criteria = new SeriesSearchCriteria(

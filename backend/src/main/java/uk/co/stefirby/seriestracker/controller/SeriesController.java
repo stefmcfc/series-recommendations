@@ -113,6 +113,10 @@ public class SeriesController {
             @RequestParam(required = false) Integer yearMin,
             @RequestParam(required = false) Integer yearMax,
             @RequestParam(required = false) Boolean flaggedForRewatch,
+            @RequestParam(required = false) Boolean missingImdbRating,
+            @RequestParam(required = false) Boolean missingTmdbRating,
+            @RequestParam(required = false) Boolean missingRottenTomatoesRating,
+            @RequestParam(required = false) Boolean missingRottenTomatoesPopcornmeter,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
 
@@ -121,6 +125,10 @@ public class SeriesController {
         c.setExcludeGenres(excludeGenre);
         c.setKeywords(keyword);
         c.setFlaggedForRewatch(flaggedForRewatch);
+        c.setMissingImdbRating(missingImdbRating);
+        c.setMissingTmdbRating(missingTmdbRating);
+        c.setMissingRottenTomatoesRating(missingRottenTomatoesRating);
+        c.setMissingRottenTomatoesPopcornmeter(missingRottenTomatoesPopcornmeter);
         c.setSortBy(sortBy);
         c.setSortDirection(sortDirection);
 
@@ -171,8 +179,10 @@ public class SeriesController {
 
     /**
      * The 8 {@link SeriesSearchCriteria} fields shared verbatim by {@link #search} and
-     * {@link #export} -- {@code search}'s 5 extra fields ({@code excludeGenres}, {@code
-     * keywords}, {@code flaggedForRewatch}, {@code sortBy}, {@code sortDirection}) are set by
+     * {@link #export} -- {@code search}'s 9 extra fields ({@code excludeGenres}, {@code
+     * keywords}, {@code flaggedForRewatch}, {@code missingImdbRating}, {@code
+     * missingTmdbRating}, {@code missingRottenTomatoesRating}, {@code
+     * missingRottenTomatoesPopcornmeter}, {@code sortBy}, {@code sortDirection}) are set by
      * its own caller on the returned instance.
      */
     private SeriesSearchCriteria buildCriteria(String title, List<String> genre, String status,

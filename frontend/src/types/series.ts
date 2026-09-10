@@ -300,6 +300,13 @@ export interface SearchCriteria {
   yearMin?: number
   yearMax?: number
   flaggedForRewatch?: boolean
+  // FRONTEND-116/SERIES-060: mirror flaggedForRewatch's shape exactly -- four
+  // independent, OR-composed-server-side "find series missing this rating"
+  // toggles (series_spec_060_missing_ratings_filter.md).
+  missingImdbRating?: boolean
+  missingTmdbRating?: boolean
+  missingRottenTomatoesRating?: boolean
+  missingRottenTomatoesPopcornmeter?: boolean
 }
 
 // FRONTEND-013-AC-10/14: mirrors series_spec_009_rating_sort.md's sortBy/sortDirection

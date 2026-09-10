@@ -177,6 +177,17 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (criteria.yearMax != null) params.yearMax = criteria.yearMax
   if (criteria.flaggedForRewatch != null)
     params.flaggedForRewatch = criteria.flaggedForRewatch
+  // FRONTEND-116-AC-02/SERIES-060: mirrors flaggedForRewatch's line exactly --
+  // no addIfPresent helper, per this function's existing hand-written style.
+  if (criteria.missingImdbRating != null)
+    params.missingImdbRating = criteria.missingImdbRating
+  if (criteria.missingTmdbRating != null)
+    params.missingTmdbRating = criteria.missingTmdbRating
+  if (criteria.missingRottenTomatoesRating != null)
+    params.missingRottenTomatoesRating = criteria.missingRottenTomatoesRating
+  if (criteria.missingRottenTomatoesPopcornmeter != null)
+    params.missingRottenTomatoesPopcornmeter =
+      criteria.missingRottenTomatoesPopcornmeter
   return params
 }
 
