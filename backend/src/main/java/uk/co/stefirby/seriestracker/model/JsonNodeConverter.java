@@ -7,7 +7,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Maps {@link FilterProfileEntity#criteria} (an opaque {@link JsonNode} blob the backend never
+ * Maps {@code FilterProfileEntity.criteria} (an opaque {@link JsonNode} blob the backend never
  * validates or queries into -- see series_spec_055_filter_profiles.md's Design Decisions) to a
  * {@code TEXT} column, so it round-trips as real nested JSON over the API rather than forcing the
  * frontend to double-encode (a raw {@code String} column) or relying on a SQLite JSON column type

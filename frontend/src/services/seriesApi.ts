@@ -79,6 +79,19 @@ function addJoinedIfNonEmpty(
   if (value?.length) params[key] = value.join(',')
 }
 
+// Like addJoinedIfNonEmpty, but assigns the array itself rather than a
+// comma-joined string -- buildSearchParams' genre/excludeGenre/keyword params
+// are sent as repeated query params (axios's default array serialization),
+// matching SeriesController.search's List<String> @RequestParam binding, not
+// a single joined string.
+function addArrayIfNonEmpty(
+  params: Record<string, unknown>,
+  key: string,
+  value: string[] | undefined,
+): void {
+  if (value?.length) params[key] = value
+}
+
 function buildRecommendationParams(
   query?: RecommendationQuery,
 ): Record<string, unknown> {
@@ -154,40 +167,42 @@ function buildNameStatsParams(
   return params
 }
 
+// Refactored (SonarQube: Cognitive Complexity 16 -> under the 15 allowed) from
+// a flat sequence of `if (x != null) params.x = x` checks into straight-line
+// addIfPresent/addArrayIfNonEmpty calls -- identical behavior (each helper
+// applies the exact same null/empty check the inlined `if` it replaces did),
+// just no longer one `if` per field.
 function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   if (!criteria) return {}
   const params: Record<string, unknown> = {}
-  if (criteria.title != null) params.title = criteria.title
-  if (criteria.genres?.length) params.genre = criteria.genres
+  addIfPresent(params, 'title', criteria.title)
+  addArrayIfNonEmpty(params, 'genre', criteria.genres)
   // FRONTEND-063-AC-02/SERIES-042-AC-06: excludeGenre (singular, repeatable),
   // matching the existing genre param's convention.
-  if (criteria.excludeGenres?.length)
-    params.excludeGenre = criteria.excludeGenres
-  if (criteria.keywords?.length) params.keyword = criteria.keywords
-  if (criteria.status != null) params.status = criteria.status
-  if (criteria.minPersonalRating != null)
-    params.minPersonalRating = criteria.minPersonalRating
-  if (criteria.minImdbRating != null)
-    params.minImdbRating = criteria.minImdbRating
+  addArrayIfNonEmpty(params, 'excludeGenre', criteria.excludeGenres)
+  addArrayIfNonEmpty(params, 'keyword', criteria.keywords)
+  addIfPresent(params, 'status', criteria.status)
+  addIfPresent(params, 'minPersonalRating', criteria.minPersonalRating)
+  addIfPresent(params, 'minImdbRating', criteria.minImdbRating)
   // FRONTEND-055/SERIES-037: replaces the removed maxPersonalRating/
   // maxImdbRating/startedNotFinished params.
-  if (criteria.minTmdbRating != null)
-    params.minTmdbRating = criteria.minTmdbRating
-  if (criteria.yearMin != null) params.yearMin = criteria.yearMin
-  if (criteria.yearMax != null) params.yearMax = criteria.yearMax
-  if (criteria.flaggedForRewatch != null)
-    params.flaggedForRewatch = criteria.flaggedForRewatch
-  // FRONTEND-116-AC-02/SERIES-060: mirrors flaggedForRewatch's line exactly --
-  // no addIfPresent helper, per this function's existing hand-written style.
-  if (criteria.missingImdbRating != null)
-    params.missingImdbRating = criteria.missingImdbRating
-  if (criteria.missingTmdbRating != null)
-    params.missingTmdbRating = criteria.missingTmdbRating
-  if (criteria.missingRottenTomatoesRating != null)
-    params.missingRottenTomatoesRating = criteria.missingRottenTomatoesRating
-  if (criteria.missingRottenTomatoesPopcornmeter != null)
-    params.missingRottenTomatoesPopcornmeter =
-      criteria.missingRottenTomatoesPopcornmeter
+  addIfPresent(params, 'minTmdbRating', criteria.minTmdbRating)
+  addIfPresent(params, 'yearMin', criteria.yearMin)
+  addIfPresent(params, 'yearMax', criteria.yearMax)
+  addIfPresent(params, 'flaggedForRewatch', criteria.flaggedForRewatch)
+  // FRONTEND-116-AC-02/SERIES-060.
+  addIfPresent(params, 'missingImdbRating', criteria.missingImdbRating)
+  addIfPresent(params, 'missingTmdbRating', criteria.missingTmdbRating)
+  addIfPresent(
+    params,
+    'missingRottenTomatoesRating',
+    criteria.missingRottenTomatoesRating,
+  )
+  addIfPresent(
+    params,
+    'missingRottenTomatoesPopcornmeter',
+    criteria.missingRottenTomatoesPopcornmeter,
+  )
   return params
 }
 

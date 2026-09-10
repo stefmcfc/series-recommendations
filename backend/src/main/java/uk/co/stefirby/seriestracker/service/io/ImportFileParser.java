@@ -122,8 +122,8 @@ public class ImportFileParser {
             }
 
             List<SeriesDto> entries = new ArrayList<>();
-            for (CSVRecord record : parser) {
-                entries.add(toDto(record));
+            for (CSVRecord csvRecord : parser) {
+                entries.add(toDto(csvRecord));
             }
             return entries;
         } catch (IOException e) {
@@ -131,54 +131,54 @@ public class ImportFileParser {
         }
     }
 
-    private SeriesDto toDto(CSVRecord record) {
+    private SeriesDto toDto(CSVRecord csvRecord) {
         try {
             SeriesDto dto = new SeriesDto();
-            dto.setTitle(cell(record, "title"));
-            dto.setYear(intCell(record, "year"));
-            dto.setGenres(cell(record, "genres"));
-            dto.setTotalSeasons(intCell(record, "totalSeasons"));
-            dto.setTotalEpisodes(intCell(record, "totalEpisodes"));
-            dto.setCurrentSeason(intCell(record, "currentSeason"));
-            dto.setCurrentEpisode(intCell(record, "currentEpisode"));
-            dto.setStatus(cell(record, "status"));
-            dto.setImdbRating(decimalCell(record, "imdbRating"));
-            dto.setRottenTomatoesRating(intCell(record, "rottenTomatoesRating"));
-            dto.setRottenTomatoesPopcornmeter(intCell(record, "rottenTomatoesPopcornmeter"));
-            dto.setTmdbRating(decimalCell(record, "tmdbRating"));
-            dto.setTmdbVoteCount(intCell(record, "tmdbVoteCount"));
-            dto.setPersonalRating(intCell(record, "personalRating"));
-            dto.setPersonalNotes(cell(record, "personalNotes"));
-            dto.setPosterUrl(cell(record, "posterUrl"));
-            dto.setTags(cell(record, "tags"));
-            dto.setOriginCountry(cell(record, "originCountry"));
-            dto.setDateAdded(dateCell(record, "dateAdded"));
-            dto.setDateCompleted(dateCell(record, "dateCompleted"));
+            dto.setTitle(cell(csvRecord, "title"));
+            dto.setYear(intCell(csvRecord, "year"));
+            dto.setGenres(cell(csvRecord, "genres"));
+            dto.setTotalSeasons(intCell(csvRecord, "totalSeasons"));
+            dto.setTotalEpisodes(intCell(csvRecord, "totalEpisodes"));
+            dto.setCurrentSeason(intCell(csvRecord, "currentSeason"));
+            dto.setCurrentEpisode(intCell(csvRecord, "currentEpisode"));
+            dto.setStatus(cell(csvRecord, "status"));
+            dto.setImdbRating(decimalCell(csvRecord, "imdbRating"));
+            dto.setRottenTomatoesRating(intCell(csvRecord, "rottenTomatoesRating"));
+            dto.setRottenTomatoesPopcornmeter(intCell(csvRecord, "rottenTomatoesPopcornmeter"));
+            dto.setTmdbRating(decimalCell(csvRecord, "tmdbRating"));
+            dto.setTmdbVoteCount(intCell(csvRecord, "tmdbVoteCount"));
+            dto.setPersonalRating(intCell(csvRecord, "personalRating"));
+            dto.setPersonalNotes(cell(csvRecord, "personalNotes"));
+            dto.setPosterUrl(cell(csvRecord, "posterUrl"));
+            dto.setTags(cell(csvRecord, "tags"));
+            dto.setOriginCountry(cell(csvRecord, "originCountry"));
+            dto.setDateAdded(dateCell(csvRecord, "dateAdded"));
+            dto.setDateCompleted(dateCell(csvRecord, "dateCompleted"));
             return dto;
             // id is read but discarded -- SeriesService.create always generates a fresh id
             // regardless of any incoming value, matching JSON import's existing behavior.
-        } catch (RuntimeException e) {
+        } catch (RuntimeException _) {
             return new SeriesDto();
         }
     }
 
-    private String cell(CSVRecord record, String column) {
-        String value = record.get(column);
+    private String cell(CSVRecord csvRecord, String column) {
+        String value = csvRecord.get(column);
         return (value == null || value.isEmpty()) ? null : value;
     }
 
-    private Integer intCell(CSVRecord record, String column) {
-        String value = cell(record, column);
+    private Integer intCell(CSVRecord csvRecord, String column) {
+        String value = cell(csvRecord, column);
         return value == null ? null : Integer.valueOf(value);
     }
 
-    private BigDecimal decimalCell(CSVRecord record, String column) {
-        String value = cell(record, column);
+    private BigDecimal decimalCell(CSVRecord csvRecord, String column) {
+        String value = cell(csvRecord, column);
         return value == null ? null : new BigDecimal(value);
     }
 
-    private LocalDateTime dateCell(CSVRecord record, String column) {
-        String value = cell(record, column);
+    private LocalDateTime dateCell(CSVRecord csvRecord, String column) {
+        String value = cell(csvRecord, column);
         return value == null ? null : LocalDateTime.parse(value, ISO);
     }
 }

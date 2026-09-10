@@ -45,7 +45,7 @@ public class RecommendationDeduplicationService {
      * SERIES-059-AC-07: overload accepting a caller-supplied {@code externalIdCache}, keyed by
      * {@code tmdbId}, so a {@code tmdbId} already resolved earlier in the same request (whether
      * by an earlier element of {@code raw} itself or an earlier call sharing the same map, as
-     * {@link RecommendationSourcingService#sourceWithBackfill} does across pages) is never
+     * {@code RecommendationSourcingService.sourceWithBackfill} does across pages) is never
      * re-resolved via {@link TmdbClient#externalIds(int)}.
      */
     List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Map<Integer, Optional<String>> externalIdCache) {
