@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.53.2] - 2026-09-10
+
 ### Fixed
 
 - Frontend: once one Recommendations fetch failed (e.g. a rejected out-of-range filter value), every subsequent attempt kept showing "Failed to load recommendations" even after a real, successful request — the page only recovered after being reloaded. `RecommendationsList` now clears the stale error at the start of every new fetch, not just via its own Retry button (`frontend_spec_040` AC-10).
