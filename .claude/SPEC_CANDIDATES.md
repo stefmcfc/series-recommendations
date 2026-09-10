@@ -44,8 +44,13 @@ spec, since that spec already touches the same `SettingsPage.tsx`/`.module.css` 
 removed from this file. The "extending saved filter profiles" candidate was spec'd as a pair —
 `series_spec_057_filter_profile_new_areas.md` (backend, two new `FilterProfileArea` enum values)
 and `frontend_spec_112_filter_profiles_custom_search_and_analysis.md` (frontend, wiring both new
-areas) — both now tracked in `ROADMAP.md`, removed from here. Only the broadened Settings
-info/disclosure-box candidate remains open in this file.
+areas) — both now tracked in `ROADMAP.md`, removed from here.
+
+2026-09-10 update: the "Number input spinner styling" and "Incremental dedup/output-filtering for
+`RecommendationSourcingService`'s backfill loop" candidates were spec'd
+(`frontend_spec_115_number_input_spinner_styling.md`, `series_spec_059_incremental_backfill_dedup.md`)
+and removed from this file — both now tracked in `ROADMAP.md`'s "Specced, coming soon" table. Only
+the broadened Settings info/disclosure-box candidate remains open in this file.
 
 ---
 
@@ -319,87 +324,3 @@ scope is unchanged.
 3. Whether the no-focus-trap dialog pattern above should be revisited as part of this audit or
    treated as an accepted, already-decided tradeoff each dialog's own spec already signed off on.
 
-### Number input (`type="number"`) spinner styling — unstyled, inconsistent across browsers
-
-Raised 2026-09-08, spotted during the manual browser verification pass for `frontend_spec_103`/
-`104` (button styling consistency and sticky action bars) — not caused by either spec (confirmed:
-no diff on any `type="number"` field on that branch), just noticed alongside it.
-
-Confirmed via grep across `frontend/src`: no CSS anywhere in this codebase targets a number input's
-spinner (`::-webkit-inner-spin-button`/`::-webkit-outer-spin-button`, or Firefox's
-`-moz-appearance`) — every numeric field renders 100% native, unstyled browser UI for its up/down
-control. Affected fields span `CustomSearchPanel.tsx`, `EditSeriesForm.tsx`, `NameStatsTable.tsx`,
-`RecommendationFiltersBox.tsx`, `SearchFilter.tsx`, `SeriesFormFields.tsx`, `SettingsPage.tsx`, and
-`UseMySeriesPanel.tsx` (e.g. Min IMDb/TMDB Rating, Year Min/Max, Skip Threshold Override).
-
-Because it's unstyled, the two browsers render it very differently: Chrome hides the spinner
-entirely until the field is hovered or focused, and even then its appearance can be influenced by
-the OS's own native-control theming (Windows dark/light mode for form controls) independent of this
-app's own light/dark theme toggle; Firefox always shows the spinner, with different sizing/coloring
-than Chrome's. Confirmed live in both browsers, both app themes — purely a native-UA rendering gap,
-not an app bug or theme-token issue.
-
-**Open questions for whoever scopes this**:
-1. Suppress the native spinner (`appearance: textfield` + the two `-webkit-*-spin-button`
-   pseudo-elements) and build a custom up/down control themed consistently in both light/dark —
-   real work, but the only way to get actual cross-browser visual parity.
-2. Alternatively, leave the native control but decide whether it's worth even lightly influencing
-   (there's limited styling surface for `-moz-appearance` spinners in Firefox), vs. accepting this
-   as a low-severity cosmetic gap not worth the custom-control effort.
-3. Whether every numeric field listed above needs this treatment uniformly, or only the ones where
-   the spinner's increment/decrement is actually a meaningful interaction (rating/year fields with a
-   real `step`) rather than a rarely-used affordance.
-
-**Status**: Spec candidate, not yet designed.
-
-### Incremental dedup/output-filtering for `RecommendationSourcingService`'s backfill loop
-
-Raised 2026-09-08, discovered while investigating why raising `app.tmdb.max-discover-pages`
-(`series_spec_054_recommendation_discover_backfill_pagination.md`) didn't proportionally increase
-recommendation counts under several active output filters — that turned out to be a real bug
-(`maxCandidates` capping the raw pool *before* filtering, in TMDB page order), now fixed as a
-Correction on `series_spec_054` itself (see that spec's Requirement 5 / SERIES-054-AC-14). This
-candidate is the *separate*, larger issue the bug investigation surfaced along the way: the
-backfill loop's own architecture is wasteful, independent of the now-fixed capping bug.
-
-**Confirmed via live trace** (manual diagnostic logging, since reverted — not left in the
-codebase): `RecommendationSourcingService.sourceWithBackfill`'s stopping check
-(`countAfterDedupAndFilter`) re-runs `RecommendationDeduplicationService.dedupeAndExclude` and
-`RecommendationOutputFilterService.applyOutputFilters` over the *entire accumulated raw pool*
-on every single page fetched — not just the newly-fetched page — purely to get a `.size()` count
-for the "have I found enough yet?" decision, then throws the computed result away. A 6-page
-backfill (`max-discover-pages: 6`) means the accumulated pool is fully re-deduped/re-filtered 6
-times (once at 20 candidates, again at 40, 60, 80, 100, 120), and `RecommendationDeduplication
-Service.dedupeAndExclude` calls `TmdbClient.externalIds` once per raw candidate — so an early
-page's candidates get their `external_ids` re-resolved via TMDB on every subsequent page's check.
-`RecommendationService.doRecommend` then runs dedup/filtering a further, final time over
-whatever raw list the loop returns. Net effect for a 6-page backfill: roughly 7 total
-dedup/filter passes over overlapping data, several of them wholly redundant, for one API request.
-
-**Ideas to design against** (not resolved here):
-1. Dedupe/filter only each *newly-fetched* page's candidates once, folding the result into a
-   running `List<DedupedCandidate>` accumulator, rather than re-deriving the whole pool from
-   scratch every iteration — turns the loop's own cost from roughly O(pages²) dedup/filter work
-   into O(pages).
-2. Have `sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword` return that already-filtered
-   accumulator directly (a `List<DedupedCandidate>`, not `List<RawCandidate>`), eliminating
-   `doRecommend`'s current third, fully-redundant dedup/filter pass entirely. This is a real
-   interface change to `RecommendationSourcingService`'s three backfill-enabled methods (and
-   likely `RawCandidate`'s role in this path), so needs care around what stays unchanged for
-   `sourceFromPool` ("Use My Series", which this candidate doesn't touch — see `series_spec_054`'s
-   own Design Decisions for why that mode was deliberately excluded from the backfill mechanism
-   in the first place).
-3. Whether `RecommendationDeduplicationService.dedupeAndExclude`'s `TmdbClient.externalIds`
-   resolution should itself be memoized per request (a simple per-call cache keyed by `tmdbId`),
-   independent of the incremental-accumulator redesign above — would remove the repeated-
-   resolution cost even if the rest of the loop's shape stays as-is, and is a much smaller change
-   if the bigger interface rework above turns out not to be worth it on its own.
-4. This candidate explicitly **revises** `series_spec_054`'s own "deliberate simplicity-over-
-   efficiency trade-off" Design Decision (dedup-resolving a candidate more than once was
-   accepted there as "revisit only if this proves to actually matter in practice") — it just did,
-   for a personal single-user app, at `max-discover-pages: 6` with several active output filters.
-   Whoever scopes this should read that Design Decision's original reasoning first, since the
-   trade-off wasn't wrong when made (single-page sourcing, no backfill) — it just didn't
-   anticipate this spec's own later change to how large the pool could get.
-
-**Status**: Spec candidate, not yet designed.

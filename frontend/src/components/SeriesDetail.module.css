@@ -37,6 +37,18 @@
   color: var(--text);
 }
 
+/* FRONTEND-113-AC-05: the "way out" link rendered in both the notFound and
+   error branches -- styled like retryButton/backButton (composed with
+   btn.btnSecondary) since it's functionally the same kind of action, just
+   rendered as an <a> (react-router's Link) instead of a <button>. */
+.backLink {
+  display: inline-block;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
 .error {
   display: flex;
   flex-direction: column;

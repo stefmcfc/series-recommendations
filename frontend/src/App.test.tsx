@@ -561,8 +561,15 @@ describe('FRONTEND-041-AC-10: unmatched path redirects to /my-series', () => {
   })
 })
 
-describe('FRONTEND-041-AC-11: menu bar hides behind SeriesDetail', () => {
-  it('hides the nav when a series is selected', async () => {
+// FRONTEND-113: SeriesDetail is now rendered by a real nested route
+// (/my-series/view/:id) instead of a ternary that hijacked the entire
+// <main> and hid the persistent nav -- superseding the two ACs below
+// (FRONTEND-041-AC-11/12), which asserted that old behavior. This is an
+// accepted side effect per frontend_spec_113's Design Decisions, not a
+// regression: see FRONTEND-113-AC-01/03/04 in App.test.tsx for the new
+// contract these two are replaced by.
+describe('FRONTEND-041-AC-11/FRONTEND-113: nav stays visible on SeriesDetail', () => {
+  it('keeps the top-level nav visible when a series is selected', async () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     window.history.pushState({}, '', '/my-series')
@@ -572,14 +579,12 @@ describe('FRONTEND-041-AC-11: menu bar hides behind SeriesDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))
 
     await screen.findByTestId('back-btn')
-    expect(
-      screen.queryByRole('link', { name: /my series/i }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /my series/i })).toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-041-AC-12: selecting a series does not change the URL', () => {
-  it('keeps the URL at /my-series through select and back', async () => {
+describe('FRONTEND-041-AC-12/FRONTEND-113: selecting a series changes the URL', () => {
+  it('navigates to /my-series/view/:id and back to /my-series', async () => {
     mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     window.history.pushState({}, '', '/my-series')
@@ -588,7 +593,7 @@ describe('FRONTEND-041-AC-12: selecting a series does not change the URL', () =>
     await screen.findByTestId('series-row')
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))
     await screen.findByTestId('back-btn')
-    expect(window.location.pathname).toBe('/my-series')
+    expect(window.location.pathname).toBe('/my-series/view/1')
 
     fireEvent.click(screen.getByTestId('back-btn'))
     await screen.findByTestId('series-row')
@@ -918,5 +923,98 @@ describe('FRONTEND-105-AC-11: header nav links are unaffected', () => {
 
     const recsLink = screen.getByRole('link', { name: 'Recommendations' })
     expect(recsLink.querySelector('[aria-hidden="true"]')).toBeFalsy()
+  })
+})
+
+describe('FRONTEND-113-AC-01: /my-series/view/:id renders SeriesDetail', () => {
+  it('fetches and displays the series for the id in the URL', async () => {
+    mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
+    window.history.pushState({}, '', '/my-series/view/abc-123')
+
+    render(<App />)
+
+    expect(await screen.findByText('Show A')).toBeInTheDocument()
+    expect(mockGetById).toHaveBeenCalledWith('abc-123')
+  })
+})
+
+describe('FRONTEND-113-AC-02: /my-series/:statusTab is unaffected', () => {
+  it('still renders MySeriesView filtered to the tab for /my-series/watching', async () => {
+    mockSearch.mockResolvedValue([])
+    window.history.pushState({}, '', '/my-series/watching')
+
+    render(<App />)
+
+    await screen.findByTestId('series-list')
+    expect(screen.getByRole('link', { name: 'Watching' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(mockSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'WATCHING' }),
+      undefined,
+    )
+  })
+})
+
+describe('FRONTEND-113-AC-03: row click navigates to the series URL', () => {
+  it('changes the URL to /my-series/view/:id on row click', async () => {
+    mockGetAll.mockResolvedValue([{ id: 'abc-123', title: 'Show A' } as Series])
+    mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
+    window.history.pushState({}, '', '/my-series')
+
+    render(<App />)
+    await screen.findByText('Show A')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show A' }))
+
+    await waitFor(() =>
+      expect(window.location.pathname).toBe('/my-series/view/abc-123'),
+    )
+  })
+})
+
+describe('FRONTEND-113-AC-04: Back and delete return to /my-series', () => {
+  it('navigates to /my-series when Back is clicked', async () => {
+    mockGetAll.mockResolvedValue([{ id: 'abc-123', title: 'Show A' } as Series])
+    mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
+    window.history.pushState({}, '', '/my-series/view/abc-123')
+
+    render(<App />)
+    fireEvent.click(await screen.findByTestId('back-btn'))
+
+    expect(window.location.pathname).toBe('/my-series')
+  })
+
+  it('navigates to /my-series after a successful delete', async () => {
+    const mockDelete = vi.mocked(seriesApi.delete)
+    mockGetAll.mockResolvedValue([{ id: 'abc-123', title: 'Show A' } as Series])
+    mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
+    mockDelete.mockResolvedValue(undefined)
+    window.history.pushState({}, '', '/my-series/view/abc-123')
+
+    render(<App />)
+    await screen.findByText('Show A')
+
+    fireEvent.click(screen.getByTestId('delete-series-btn'))
+    fireEvent.click(await screen.findByTestId('confirm-delete-btn'))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/my-series'))
+  })
+})
+
+describe('FRONTEND-113-AC-05: an unresolvable id shows an error with a way back', () => {
+  it('shows an error and a link to /my-series when getById rejects', async () => {
+    mockGetById.mockRejectedValue(new Error('Not found'))
+    window.history.pushState({}, '', '/my-series/view/does-not-exist')
+
+    render(<App />)
+
+    expect(
+      await screen.findByText(/could not be found|error/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByRole('link', { name: /my series|back/i })[0],
+    ).toHaveAttribute('href', '/my-series')
   })
 })

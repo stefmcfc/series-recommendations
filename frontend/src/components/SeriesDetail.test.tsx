@@ -6,6 +6,7 @@ import {
   within,
 } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { SeriesDetail } from './SeriesDetail'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
@@ -459,7 +460,9 @@ describe('FRONTEND-005-AC-11: not-found state', () => {
   it('shows "Series not found." and no Retry on 404', async () => {
     mockGetById.mockRejectedValue(new ApiError(404, 'Series not found'))
     render(
-      <SeriesDetail id="missing-id" onBack={vi.fn()} onDeleted={vi.fn()} />,
+      <MemoryRouter>
+        <SeriesDetail id="missing-id" onBack={vi.fn()} onDeleted={vi.fn()} />
+      </MemoryRouter>,
     )
 
     await screen.findByText(/series not found/i)
@@ -475,7 +478,11 @@ describe('FRONTEND-005-AC-12/13: error state', () => {
     mockGetById
       .mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
       .mockResolvedValueOnce(makeSeries())
-    render(<SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />)
+    render(
+      <MemoryRouter>
+        <SeriesDetail id="abc-123" onBack={vi.fn()} onDeleted={vi.fn()} />
+      </MemoryRouter>,
+    )
 
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -486,6 +493,42 @@ describe('FRONTEND-005-AC-12/13: error state', () => {
 
     await screen.findByText(/^The Office/)
     expect(mockGetById).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('FRONTEND-113-AC-05: unresolvable id shows an error with a way back', () => {
+  it('shows a Link back to /my-series in the not-found state', async () => {
+    mockGetById.mockRejectedValue(new ApiError(404, 'Series not found'))
+    render(
+      <MemoryRouter>
+        <SeriesDetail id="missing-id" onBack={vi.fn()} onDeleted={vi.fn()} />
+      </MemoryRouter>,
+    )
+
+    await screen.findByText(/series not found/i)
+    expect(
+      screen.getByRole('link', { name: /my series|back/i }),
+    ).toHaveAttribute('href', '/my-series')
+  })
+
+  it('shows an error message and a Link back to /my-series on a non-404 failure', async () => {
+    mockGetById.mockRejectedValue(new Error('Not found'))
+    render(
+      <MemoryRouter>
+        <SeriesDetail
+          id="does-not-exist"
+          onBack={vi.fn()}
+          onDeleted={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByText(/could not be found|error/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /my series|back/i }),
+    ).toHaveAttribute('href', '/my-series')
   })
 })
 

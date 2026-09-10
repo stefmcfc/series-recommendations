@@ -6,6 +6,7 @@ import {
   Navigate,
   NavLink,
   useParams,
+  useNavigate,
   type NavLinkRenderProps,
 } from 'react-router-dom'
 import { SeriesList } from './components/SeriesList'
@@ -77,7 +78,6 @@ interface MySeriesViewProps {
   readonly onSearch: (criteria: SearchCriteria) => void
   readonly onClear: () => void
   readonly seriesListKey: number
-  readonly onSeriesClick: (id: string) => void
   readonly onAddClick: () => void
   readonly onEditClick: (series: Series) => void
 }
@@ -93,11 +93,18 @@ function MySeriesView({
   onSearch,
   onClear,
   seriesListKey,
-  onSeriesClick,
   onAddClick,
   onEditClick,
 }: MySeriesViewProps) {
   const { statusTab } = useParams<{ statusTab?: string }>()
+  // FRONTEND-113-AC-03: navigates to the new shareable-URL route instead of
+  // App lifting a selectedSeriesId into local state -- MySeriesView is
+  // already a routed component (it reads useParams above), so it's a
+  // descendant of App's own BrowserRouter and can call useNavigate directly.
+  const navigate = useNavigate()
+  const handleSeriesClick = (id: string) => {
+    navigate(`/my-series/view/${id}`)
+  }
   const status = statusFromTabParam(statusTab)
   const flaggedForRewatch = flaggedForRewatchFromTabParam(statusTab)
   // FRONTEND-073-AC-03/04: the live Title search box's raw value lives here
@@ -177,7 +184,7 @@ function MySeriesView({
       />
       <SeriesList
         key={seriesListKey}
-        onSeriesClick={onSeriesClick}
+        onSeriesClick={handleSeriesClick}
         onAddClick={onAddClick}
         onEditClick={onEditClick}
         criteria={effectiveCriteria}
@@ -191,8 +198,42 @@ function MySeriesView({
   )
 }
 
+interface SeriesDetailRouteProps {
+  readonly seriesDetailKey: number
+  readonly onEditClick: (series: Series) => void
+}
+
+// FRONTEND-113-AC-01/04: a thin wrapper so `/my-series/view/:id` can render
+// SeriesDetail as a real nested route -- reads `id` from the route param via
+// useParams and, since it's a routed component (descendant of App's
+// BrowserRouter), can call useNavigate itself for onBack/onDeleted rather
+// than App lifting a selectedSeriesId into local state.
+function SeriesDetailRoute({
+  seriesDetailKey,
+  onEditClick,
+}: SeriesDetailRouteProps) {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const handleBackToList = () => {
+    navigate('/my-series')
+  }
+
+  if (id == null) {
+    return null
+  }
+
+  return (
+    <SeriesDetail
+      key={seriesDetailKey}
+      id={id}
+      onBack={handleBackToList}
+      onDeleted={handleBackToList}
+      onEditClick={onEditClick}
+    />
+  )
+}
+
 function App() {
-  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null)
   const [isAddFormOpen, setIsAddFormOpen] = useState(false)
   const [editingSeries, setEditingSeries] = useState<Series | null>(null)
   const [seriesListKey, setSeriesListKey] = useState(0)
@@ -257,119 +298,120 @@ function App() {
     setSeriesDetailKey((key) => key + 1)
   }
 
-  const handleBackToList = () => {
-    setSelectedSeriesId(null)
-  }
-
   return (
     <BrowserRouter>
       <main>
-        {selectedSeriesId ? (
-          <SeriesDetail
-            key={seriesDetailKey}
-            id={selectedSeriesId}
-            onBack={handleBackToList}
-            onDeleted={handleBackToList}
-            onEditClick={setEditingSeries}
-          />
-        ) : (
-          <>
-            <nav className={styles.nav}>
-              <NavLink
-                to="/my-series"
-                data-testid="app-logo"
-                className={styles.logo}
-              >
-                TV Series Tracker
-              </NavLink>
-              <div className={styles.navLinks}>
-                <NavLink to="/my-series" className={navLinkClassName}>
-                  My Series
-                </NavLink>
-                <NavLink to="/recommendations" className={navLinkClassName}>
-                  Recommendations
-                </NavLink>
-                <NavLink to="/analysis" className={navLinkClassName}>
-                  Analysis
-                </NavLink>
-                <NavLink to="/settings" className={navLinkClassName}>
-                  Settings
-                </NavLink>
-              </div>
-            </nav>
+        {/* FRONTEND-113: the persistent nav and status tabs now stay visible
+            while viewing a series' detail page too -- SeriesDetail is a real
+            nested route (/my-series/view/:id) rendered inside this same
+            <Routes> tree below, not a full-page ternary swap-out that used
+            to hide this <nav> entirely. This is an accepted side effect of
+            switching away from that ternary, noted in the spec's Design
+            Decisions -- not a regression. */}
+        <nav className={styles.nav}>
+          <NavLink
+            to="/my-series"
+            data-testid="app-logo"
+            className={styles.logo}
+          >
+            TV Series Tracker
+          </NavLink>
+          <div className={styles.navLinks}>
+            <NavLink to="/my-series" className={navLinkClassName}>
+              My Series
+            </NavLink>
+            <NavLink to="/recommendations" className={navLinkClassName}>
+              Recommendations
+            </NavLink>
+            <NavLink to="/analysis" className={navLinkClassName}>
+              Analysis
+            </NavLink>
+            <NavLink to="/settings" className={navLinkClassName}>
+              Settings
+            </NavLink>
+          </div>
+        </nav>
 
-            <Routes>
-              <Route path="/" element={<Navigate to="/my-series" replace />} />
-              <Route
-                path="/my-series"
-                element={
-                  <MySeriesView
-                    criteria={criteria}
-                    onSearch={setCriteria}
-                    onClear={() => setCriteria(null)}
-                    seriesListKey={seriesListKey}
-                    onSeriesClick={setSelectedSeriesId}
-                    onAddClick={() => setIsAddFormOpen(true)}
-                    onEditClick={setEditingSeries}
-                  />
-                }
+        <Routes>
+          <Route path="/" element={<Navigate to="/my-series" replace />} />
+          <Route
+            path="/my-series"
+            element={
+              <MySeriesView
+                criteria={criteria}
+                onSearch={setCriteria}
+                onClear={() => setCriteria(null)}
+                seriesListKey={seriesListKey}
+                onAddClick={() => setIsAddFormOpen(true)}
+                onEditClick={setEditingSeries}
               />
-              <Route
-                path="/my-series/:statusTab"
-                element={
-                  <MySeriesView
-                    criteria={criteria}
-                    onSearch={setCriteria}
-                    onClear={() => setCriteria(null)}
-                    seriesListKey={seriesListKey}
-                    onSeriesClick={setSelectedSeriesId}
-                    onAddClick={() => setIsAddFormOpen(true)}
-                    onEditClick={setEditingSeries}
-                  />
-                }
+            }
+          />
+          <Route
+            path="/my-series/:statusTab"
+            element={
+              <MySeriesView
+                criteria={criteria}
+                onSearch={setCriteria}
+                onClear={() => setCriteria(null)}
+                seriesListKey={seriesListKey}
+                onAddClick={() => setIsAddFormOpen(true)}
+                onEditClick={setEditingSeries}
               />
-              <Route
-                path="/recommendations"
-                element={
-                  <>
-                    <RecommendationControls
-                      onQueryChange={setRecommendationQuery}
-                      loading={recommendationsLoading}
-                    />
-                    <RecommendationsList
-                      query={recommendationQuery}
-                      onLoadingChange={setRecommendationsLoading}
-                    />
-                  </>
-                }
+            }
+          />
+          {/* FRONTEND-113-AC-01/02: a distinct `view` path segment, not
+              /my-series/:id -- see the spec's Design Decisions for why that
+              would collide ambiguously with /my-series/:statusTab above. */}
+          <Route
+            path="/my-series/view/:id"
+            element={
+              <SeriesDetailRoute
+                seriesDetailKey={seriesDetailKey}
+                onEditClick={setEditingSeries}
               />
-              <Route
-                path="/analysis"
-                element={<Navigate to="/analysis/keywords" replace />}
+            }
+          />
+          <Route
+            path="/recommendations"
+            element={
+              <>
+                <RecommendationControls
+                  onQueryChange={setRecommendationQuery}
+                  loading={recommendationsLoading}
+                />
+                <RecommendationsList
+                  query={recommendationQuery}
+                  onLoadingChange={setRecommendationsLoading}
+                />
+              </>
+            }
+          />
+          <Route
+            path="/analysis"
+            element={<Navigate to="/analysis/keywords" replace />}
+          />
+          <Route path="/analysis/:tab" element={<AnalysisView />} />
+          {/* FRONTEND-087-AC-02: kept as a redirect rather than removed
+              so no existing bookmark/link to the old top-level /keywords
+              path breaks. */}
+          <Route
+            path="/keywords"
+            element={<Navigate to="/analysis/keywords" replace />}
+          />
+          <Route
+            path="/settings"
+            element={
+              <SettingsPage
+                theme={theme}
+                setTheme={setTheme}
+                accentColor={accentColor}
+                setAccentColor={setAccentColor}
               />
-              <Route path="/analysis/:tab" element={<AnalysisView />} />
-              {/* FRONTEND-087-AC-02: kept as a redirect rather than removed
-                  so no existing bookmark/link to the old top-level /keywords
-                  path breaks. */}
-              <Route
-                path="/keywords"
-                element={<Navigate to="/analysis/keywords" replace />}
-              />
-              <Route
-                path="/settings"
-                element={
-                  <SettingsPage
-                    theme={theme}
-                    setTheme={setTheme}
-                    accentColor={accentColor}
-                    setAccentColor={setAccentColor}
-                  />
-                }
-              />
-              <Route path="*" element={<Navigate to="/my-series" replace />} />
-            </Routes>
-          </>
-        )}
+            }
+          />
+          <Route path="*" element={<Navigate to="/my-series" replace />} />
+        </Routes>
         {isAddFormOpen && (
           <AddSeriesForm
             onCancel={() => setIsAddFormOpen(false)}
