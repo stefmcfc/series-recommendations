@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.51.1] - 2026-09-10
+
 ### Fixed
 
 - Frontend: the Import file picker can now be cleared (a new "Clear" button) after selecting a file or hitting an upload error, instead of requiring a full page reload (`frontend_spec_057`).
