@@ -115,3 +115,35 @@ describe('FRONTEND-096-AC-07/08: Reset Filters clears without a separate Apply, 
     expect(result.current.applyVersion).toBeGreaterThan(versionBefore)
   })
 })
+
+describe('FRONTEND-112-AC-08: applyFilterProfile / clearFilterProfile', () => {
+  it('applyFilterProfile sets filters and sort immediately, bumping applyVersion', () => {
+    const { result } = renderHook(() => useNameStatsFilters())
+    const versionBefore = result.current.applyVersion
+    act(() =>
+      result.current.applyFilterProfile({
+        minSeriesCount: '3',
+        minAveragePersonalRating: '',
+        minAverageBlendedRating: '',
+        statusScope: 'completed',
+        sortBy: 'seriesCount',
+        sortDirection: 'desc',
+      }),
+    )
+    expect(result.current.appliedFilters.minSeriesCount).toBe('3')
+    expect(result.current.filterInputs.minSeriesCount).toBe('3')
+    expect(result.current.sortBy).toBe('seriesCount')
+    expect(result.current.sortDirection).toBe('desc')
+    expect(result.current.applyVersion).toBeGreaterThan(versionBefore)
+  })
+
+  it('clearFilterProfile resets filters AND sort, unlike handleResetFilters', () => {
+    const { result } = renderHook(() => useNameStatsFilters())
+    act(() => result.current.handleSortChange('name'))
+    act(() => result.current.clearFilterProfile())
+    expect(result.current.sortBy).toBeUndefined()
+    expect(result.current.sortDirection).toBeUndefined()
+    expect(result.current.filterInputs.minSeriesCount).toBe('')
+    expect(result.current.appliedFilters.minSeriesCount).toBe('')
+  })
+})

@@ -3,9 +3,14 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { CustomSearchPanel } from './CustomSearchPanel'
 import { initialState } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
+import { seriesApi } from '../services/seriesApi'
+
+vi.mock('../services/seriesApi')
 
 beforeEach(() => {
   localStorage.clear()
+  vi.clearAllMocks()
+  vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
 })
 
 // TOOLING-008-AC-03: dedicated, isolated coverage for the panel extracted
@@ -369,5 +374,68 @@ describe('FRONTEND-068-AC-03: excluding a genre updates state correctly', () => 
       genresSelected: [],
       excludeGenresSelected: ['Comedy'],
     })
+  })
+})
+
+describe('FRONTEND-112-AC-03: Custom Search gains a FilterProfileSelector', () => {
+  it('renders the profile selector as the last field, applying a selected profile', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([
+      {
+        id: '1',
+        area: 'CUSTOM_SEARCH',
+        name: 'Sci-Fi 2020s',
+        criteria: { genresSelected: ['Sci-Fi & Fantasy'], yearMin: '2020' },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    const updateState = vi.fn()
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={updateState}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(await screen.findByText('Sci-Fi 2020s'))
+    expect(updateState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        genresSelected: ['Sci-Fi & Fantasy'],
+        yearMin: '2020',
+      }),
+    )
+  })
+})
+
+describe('FRONTEND-112-AC-04: Custom Search gains a Clear Filters button', () => {
+  it('resets all 8 fields to their defaults', () => {
+    const updateState = vi.fn()
+    render(
+      <CustomSearchPanel
+        state={makeState({ genresSelected: ['Comedy'], yearMin: '2020' })}
+        updateState={updateState}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('reset-custom-search-filters-btn'))
+    expect(updateState).toHaveBeenCalledWith(
+      expect.objectContaining({ genresSelected: [], yearMin: '' }),
+    )
+  })
+})
+
+describe('FRONTEND-112-AC-05: Save Filters disabled when Custom Search criteria is empty', () => {
+  it('disables Save Filters at the default (empty) state', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /save filters/i })).toBeDisabled()
   })
 })

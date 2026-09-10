@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: saved filter profiles now support two more areas, `CUSTOM_SEARCH` and `ANALYSIS_FILTERS`, alongside the existing three (`series_spec_057`).
+- Frontend: saved filter profiles (save/apply/update/clear) now work in Custom Search and on the Analysis page too, matching the three areas this already worked in (`frontend_spec_112`).
+
 ## [3.51.1] - 2026-09-10
 
 ### Fixed

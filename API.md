@@ -513,13 +513,15 @@ looks surprising can be explained without guessing.
 
 ## Filter Profiles
 
-Named, saved filter/criteria snapshots for one of three unrelated frontend contexts, identified by
+Named, saved filter/criteria snapshots for one of five unrelated frontend contexts, identified by
 `area`: `MY_SERIES` (My Series' filter sheet), `USE_MY_SERIES` (Recommendations' "Use My Series"
-panel), `RECOMMENDATION_FILTERS` (Recommendations' shared "Filters" box). A new top-level resource,
-not nested under `/series` — a filter profile isn't series data. `criteria` is an opaque JSON
-object the backend never validates or queries into — it's stored and returned exactly as
-submitted; each area's actual field shape is entirely the frontend's concern
-(`series_spec_055_filter_profiles.md`).
+panel), `RECOMMENDATION_FILTERS` (Recommendations' shared "Filters" box), `CUSTOM_SEARCH`
+(Recommendations' Custom Search mode), `ANALYSIS_FILTERS` (the Analysis/Trends filters, shared
+across all three `/analysis` sub-tabs). A new top-level resource, not nested under `/series` — a
+filter profile isn't series data. `criteria` is an opaque JSON object the backend never validates
+or queries into — it's stored and returned exactly as submitted; each area's actual field shape is
+entirely the frontend's concern (`series_spec_055_filter_profiles.md`,
+`series_spec_057_filter_profile_new_areas.md`).
 
 ### `GET /api/v1/filter-profiles?area=`
 

@@ -36,17 +36,7 @@ other *within this table* — and can be reordered freely as a block if prioriti
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore.
 
-**Saved filter profiles — Custom Search & Analysis extension** (planned 2026-09-09, from the same
-live-app pass) — two specs, backend first: `series_spec_057` (two new `FilterProfileArea` enum
-values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS` — no migration needed, the `area` column was already an
-unconstrained `VARCHAR`) lands before `frontend_spec_112` (wires both new areas into
-`CustomSearchPanel.tsx` and a single shared picker in `AnalysisView.tsx`, resolving Custom Search's
-original field-slot-sharing exclusion from `frontend_spec_107` by giving it a fully independent
-saved-profile area rather than reusing Recommendation Filters' own).
-
-| Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
-| ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
-| Saved filter profiles for Custom Search + Analysis filters                     | `series_spec_057`   | `frontend_spec_112`  | ⬜ Not started |
+_None currently queued._
 
 ---
 
@@ -177,6 +167,7 @@ saved-profile area rather than reusing Recommendation Filters' own).
 | Number input (`type="number"`) spinner styling — shared, themed `NumberInput` component (native spinner suppressed globally, custom increment/decrement buttons) replacing all 27 numeric fields' native browser spinner across 8 components | — | `frontend_spec_115` | ✅ Done |
 | Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated), plus Highest Rated's first-ever dedicated tabpanel wrapper (fixing a previously-dangling `aria-controls` reference) | — | `frontend_spec_111` | ✅ Done |
 | CSV import (backend parsing for `.csv` alongside `.json`; frontend file-picker `accept` widened to match) | `series_spec_058` | `frontend_spec_114` | ✅ Done |
+| Saved filter profiles extended to two more areas: Custom Search and Analysis filters (two new independent `FilterProfileArea` values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS`) | `series_spec_057` | `frontend_spec_112` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

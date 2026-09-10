@@ -172,6 +172,51 @@ class FilterProfileControllerSpec extends Specification {
                 .andExpect(status().isNotFound())
     }
 
+    def "SERIES-057-AC-02: create/list/update/delete all work for the CUSTOM_SEARCH and ANALYSIS_FILTERS areas"() {
+        given: "no saved profiles for this area"
+            def empty = mockMvc.perform(get("/api/v1/filter-profiles").param("area", area.name()))
+            empty.andExpect(status().isOk())
+            empty.andExpect(jsonPath('$.count').value(0))
+
+        when: "a profile is created in this area"
+            def created = mockMvc.perform(post("/api/v1/filter-profiles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString([area: area.name(), name: "Weeknight", criteria: [genres: ["Comedy"]]])))
+                .andReturn().response.contentAsString
+            def id = objectMapper.readTree(created).get("data").get("id").asString()
+
+        then: "it round-trips with the correct area and criteria"
+            objectMapper.readTree(created).get("data").get("area").asString() == area.name()
+            objectMapper.readTree(created).get("data").get("criteria").get("genres").get(0).asString() == "Comedy"
+
+        when: "listing this area"
+            def list = mockMvc.perform(get("/api/v1/filter-profiles").param("area", area.name()))
+
+        then: "the created profile is returned"
+            list.andExpect(status().isOk())
+            list.andExpect(jsonPath('$.count').value(1))
+            list.andExpect(jsonPath('$.data[0].name').value("Weeknight"))
+
+        when: "the profile is renamed via PATCH"
+            def updateResponse = mockMvc.perform(patch("/api/v1/filter-profiles/${id}")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content('{"name":"Renamed"}'))
+
+        then: "the update succeeds"
+            updateResponse.andExpect(status().isOk())
+            updateResponse.andExpect(jsonPath('$.data.name').value("Renamed"))
+
+        when: "the profile is deleted"
+            def deleteResponse = mockMvc.perform(delete("/api/v1/filter-profiles/${id}"))
+
+        then: "the delete succeeds and the profile is gone"
+            deleteResponse.andExpect(status().isNoContent())
+            mockMvc.perform(delete("/api/v1/filter-profiles/${id}")).andExpect(status().isNotFound())
+
+        where:
+            area << [FilterProfileArea.CUSTOM_SEARCH, FilterProfileArea.ANALYSIS_FILTERS]
+    }
+
     def "SERIES-056-AC-02: a 256-character name returns 400, not 500"() {
         when: "POST /api/v1/filter-profiles is requested with an over-length name"
             def response = mockMvc.perform(post("/api/v1/filter-profiles")

@@ -14,6 +14,7 @@ beforeEach(() => {
   mockGetKeywordStats.mockResolvedValue([])
   mockGetGenreStats.mockResolvedValue([])
   mockGetCountryStats.mockResolvedValue([])
+  vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
 })
 
 // FRONTEND-087-AC-03/04: AnalysisView reads the `tab` param off the URL --
@@ -168,5 +169,49 @@ describe('FRONTEND-096-AC-11/12/13: filter/sort/panel state persists across tab 
     expect(
       screen.getByRole('button', { name: /analysis filters/i }),
     ).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
+describe('FRONTEND-112-AC-09: shared FilterProfileSelector across Analysis tabs', () => {
+  it('renders exactly one FilterProfileSelector, positioned above the active tab view', async () => {
+    renderAnalysisView('/analysis/keywords')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    expect(screen.getAllByTestId('filter-profile-selector')).toHaveLength(1)
+  })
+
+  it('applying a saved profile updates the shared filters, visible after switching tabs', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([
+      {
+        id: '1',
+        area: 'ANALYSIS_FILTERS',
+        name: 'Top rated only',
+        criteria: { minAverageBlendedRating: '8', statusScope: 'completed' },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    renderAnalysisView('/analysis/keywords')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+
+    fireEvent.click(await screen.findByText('Top rated only'))
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          minAverageBlendedRating: 8,
+          onlyCompleted: true,
+        }),
+      ),
+    )
+
+    fireEvent.click(screen.getByRole('link', { name: /genres/i }))
+
+    await waitFor(() =>
+      expect(mockGetGenreStats).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          minAverageBlendedRating: 8,
+          onlyCompleted: true,
+        }),
+      ),
+    )
   })
 })

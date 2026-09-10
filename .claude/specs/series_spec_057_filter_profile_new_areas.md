@@ -1,6 +1,7 @@
 # Spec 057: Filter Profiles — Two New Areas (Custom Search, Analysis Filters)
 
-**Status**: Not started
+**Status**: Implemented — `FilterProfileArea.java`, `FilterProfileEntitySpec.groovy`,
+`FilterProfileControllerSpec.groovy`
 **Priority**: P3 (extends an existing quality-of-life feature to two more contexts)
 **Depends on**: `series_spec_055_filter_profiles.md` (the generic CRUD/entity/endpoints this
 extends — already implemented and merged)
@@ -128,5 +129,5 @@ if wrong).
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-057-AC-01: `FilterProfileArea` gains `CUSTOM_SEARCH` and `ANALYSIS_FILTERS`
-- [ ] SERIES-057-AC-02: existing CRUD endpoints work for both new areas with zero controller/service changes
+- [x] SERIES-057-AC-01: `FilterProfileArea` gains `CUSTOM_SEARCH` and `ANALYSIS_FILTERS`
+- [x] SERIES-057-AC-02: existing CRUD endpoints work for both new areas with zero controller/service changes

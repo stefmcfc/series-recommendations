@@ -10,7 +10,10 @@ import type {
   MySeriesFilterCriteria,
   UseMySeriesFilterCriteria,
   RecommendationFiltersCriteria,
+  CustomSearchFilterCriteria,
+  AnalysisFilterCriteria,
 } from '../types/filterProfile'
+import type { NameStatsSortBy } from '../components/NameStatsTable'
 import { formatCountryNames } from './countryName'
 import { LANGUAGE_OPTIONS } from '../components/RecommendationControls'
 
@@ -155,6 +158,99 @@ function describeRecommendationFiltersCriteria(
   ]
 }
 
+// FRONTEND-112-AC-02: mirrors describeRecommendationFiltersCriteria's own
+// Language/Countries resolution -- extended with the two Custom-Search-only
+// fields (genresSelected/keywordsSelected as plain, non-exclude list
+// entries), no new formatting logic.
+function describeCustomSearchCriteria(
+  criteria: Partial<CustomSearchFilterCriteria>,
+): CriteriaDescriptionEntry[] {
+  const languageEntry =
+    criteria.language != null && criteria.language !== ''
+      ? [{ label: 'Language', value: resolveLanguageLabel(criteria.language) }]
+      : []
+  const countriesEntry =
+    criteria.countriesSelected != null && criteria.countriesSelected.length > 0
+      ? [
+          {
+            label: 'Countries',
+            value:
+              formatCountryNames(criteria.countriesSelected.join(',')) ?? '',
+          },
+        ]
+      : []
+
+  return [
+    ...listEntry('Genres', criteria.genresSelected),
+    ...listEntry('Exclude Genres', criteria.excludeGenresSelected),
+    ...listEntry('Keywords', criteria.keywordsSelected),
+    ...entry('Min TMDB Rating', criteria.minTmdbRating),
+    ...entry('Year (from)', criteria.yearMin),
+    ...entry('Year (to)', criteria.yearMax),
+    ...languageEntry,
+    ...countriesEntry,
+  ]
+}
+
+// FRONTEND-112-AC-07: new label maps, new to this area only.
+const ANALYSIS_STATUS_SCOPE_LABELS: Record<'completed', string> = {
+  completed: 'Completed Only',
+}
+
+const NAME_STATS_SORT_BY_LABELS: Record<NameStatsSortBy, string> = {
+  seriesCount: 'Series Count',
+  averagePersonalRating: 'Avg Personal Rating',
+  averageBlendedRating: 'Avg Blended Rating',
+  name: 'Name',
+}
+
+// FRONTEND-112-AC-07: unlike describeUseMySeriesCriteria's sortBy/
+// sortDirection, this area's are genuinely `undefined` until a column header
+// is clicked (useNameStatsFilters never initializes them) -- so a bare
+// `!== undefined` check is correct here with no special-cased default-value
+// comparison needed (this spec's Design Decisions -- verified, not the same
+// bug class as frontend_spec_109-AC-13).
+function describeAnalysisFiltersCriteria(
+  criteria: Partial<AnalysisFilterCriteria>,
+): CriteriaDescriptionEntry[] {
+  const statusEntry =
+    criteria.statusScope === 'completed'
+      ? [
+          {
+            label: 'Status',
+            value: ANALYSIS_STATUS_SCOPE_LABELS.completed,
+          },
+        ]
+      : []
+  const sortByEntry =
+    criteria.sortBy !== undefined
+      ? [
+          {
+            label: 'Sort By',
+            value: NAME_STATS_SORT_BY_LABELS[criteria.sortBy],
+          },
+        ]
+      : []
+  const sortDirectionEntry =
+    criteria.sortDirection !== undefined
+      ? [
+          {
+            label: 'Sort Direction',
+            value: SORT_DIRECTION_LABELS[criteria.sortDirection],
+          },
+        ]
+      : []
+
+  return [
+    ...entry('Min Series Count', criteria.minSeriesCount),
+    ...entry('Min Avg Personal Rating', criteria.minAveragePersonalRating),
+    ...entry('Min Avg Blended Rating', criteria.minAverageBlendedRating),
+    ...statusEntry,
+    ...sortByEntry,
+    ...sortDirectionEntry,
+  ]
+}
+
 // FRONTEND-108-AC-01: `criteria` is `unknown` at the call boundary (it
 // arrives from a JSON `criteria` column via seriesApi, or from an in-flight
 // form's local state before it's ever validated against a concrete type) --
@@ -179,6 +275,14 @@ export function describeFilterCriteria(
     case 'RECOMMENDATION_FILTERS':
       return describeRecommendationFiltersCriteria(
         criteria as Partial<RecommendationFiltersCriteria>,
+      )
+    case 'CUSTOM_SEARCH':
+      return describeCustomSearchCriteria(
+        criteria as Partial<CustomSearchFilterCriteria>,
+      )
+    case 'ANALYSIS_FILTERS':
+      return describeAnalysisFiltersCriteria(
+        criteria as Partial<AnalysisFilterCriteria>,
       )
     default:
       return []

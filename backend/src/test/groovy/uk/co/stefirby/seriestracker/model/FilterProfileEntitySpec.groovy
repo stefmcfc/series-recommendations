@@ -21,6 +21,17 @@ class FilterProfileEntitySpec extends Specification {
         new ObjectMapper().createObjectNode()
     }
 
+    def "SERIES-057-AC-01: FilterProfileArea includes the two new areas alongside the existing three"() {
+        expect:
+            FilterProfileArea.values() as Set == [
+                FilterProfileArea.MY_SERIES,
+                FilterProfileArea.USE_MY_SERIES,
+                FilterProfileArea.RECOMMENDATION_FILTERS,
+                FilterProfileArea.CUSTOM_SEARCH,
+                FilterProfileArea.ANALYSIS_FILTERS,
+            ] as Set
+    }
+
     def "SERIES-056-AC-01: accepts a name of exactly 255 characters"() {
         given: "a profile with a 255-character name"
             def entity = new FilterProfileEntity(area: FilterProfileArea.MY_SERIES, name: "a" * 255, criteria: emptyCriteria())

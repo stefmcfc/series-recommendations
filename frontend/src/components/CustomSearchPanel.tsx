@@ -14,7 +14,9 @@ import {
   isLanguageFavourites,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
+import type { CustomSearchFilterCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
+import { FilterProfileSelector } from './FilterProfileSelector'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -60,6 +62,40 @@ export function CustomSearchPanel({
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
   )
+
+  // FRONTEND-112-AC-03: the 8 fields this area's saved profiles cover --
+  // the live slice of `state`, no local component state needed (mirrors
+  // RecommendationFiltersBox.tsx's own FilterProfileSelector adapter-shape
+  // precedent).
+  const currentCustomSearchCriteria: CustomSearchFilterCriteria = {
+    genresSelected: state.genresSelected,
+    excludeGenresSelected: state.excludeGenresSelected,
+    keywordsSelected: state.keywordsSelected,
+    minTmdbRating: state.minTmdbRating,
+    yearMin: state.yearMin,
+    yearMax: state.yearMax,
+    language: state.language,
+    countriesSelected: state.countriesSelected,
+  }
+
+  // FRONTEND-112-AC-04: brand-new clear function -- CustomSearchPanel had no
+  // existing reset/clear mechanism of any kind before this spec (confirmed
+  // via grep). Shared as both FilterProfileSelector's onClear (toggle-off
+  // on reclick) and a new "Clear Filters" button -- one function, two call
+  // sites, matching frontend_spec_109's UseMySeriesPanel.
+  // handleClearSpecificSeriesFilters pattern.
+  const handleClearCustomSearchFilters = () => {
+    updateState({
+      genresSelected: [],
+      excludeGenresSelected: [],
+      keywordsSelected: [],
+      minTmdbRating: '',
+      yearMin: '',
+      yearMax: '',
+      language: '',
+      countriesSelected: [],
+    })
+  }
 
   return (
     <>
@@ -214,6 +250,27 @@ export function CustomSearchPanel({
               pinnedOptions={languageFavourites}
             />
           </div>
+        </div>
+
+        {/* FRONTEND-112-AC-03/04: end-of-fields placement, matching
+          frontend_spec_109's "Save moves to the end of each filter view"
+          convention for the other three areas. */}
+        <FilterProfileSelector<CustomSearchFilterCriteria>
+          area="CUSTOM_SEARCH"
+          currentCriteria={currentCustomSearchCriteria}
+          onApply={(criteria) => updateState(criteria)}
+          onClear={handleClearCustomSearchFilters}
+        />
+
+        <div className={styles.filtersActions}>
+          <button
+            type="button"
+            className={`${styles.resetButton} ${btn.btnSecondary}`}
+            data-testid="reset-custom-search-filters-btn"
+            onClick={handleClearCustomSearchFilters}
+          >
+            Clear Filters
+          </button>
         </div>
       </div>
 
