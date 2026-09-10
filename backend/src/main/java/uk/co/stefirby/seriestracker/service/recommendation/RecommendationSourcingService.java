@@ -95,7 +95,7 @@ public class RecommendationSourcingService {
     List<DedupedCandidate> sourceTrending(RecommendationCriteria c, int limit) {
         String window = c.getTrendingWindow() != null && !c.getTrendingWindow().isBlank()
             ? c.getTrendingWindow() : "week";
-        return sourceWithBackfill(c, limit,
+        return sourceWithBackfill("trending", c, limit,
             page -> page == 1 ? tmdbClient.trending(window) : tmdbClient.trending(window, page));
     }
 
@@ -106,7 +106,7 @@ public class RecommendationSourcingService {
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
         // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
         String effectiveSortBy = resolveDiscoverSortBy(c, RecommendationDefaults.DEFAULT_TOP_RATED_SORT_BY);
-        return sourceWithBackfill(c, limit, page -> page == 1
+        return sourceWithBackfill("topRated", c, limit, page -> page == 1
             ? tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy)
             : tmdbClient.discoverTopRated(effectiveMinVoteCount, effectiveSortBy, page));
     }
@@ -131,7 +131,7 @@ public class RecommendationSourcingService {
         List<Integer> excludeGenreIds = resolveGenreIds(c.getExcludeGenres());
         DiscoverFilters filters = new DiscoverFilters(effectiveMinVoteCount, c.getMinTmdbRating(), c.getYearMin(),
             c.getYearMax(), c.getLanguage(), c.getCountries(), excludeGenreIds);
-        return sourceWithBackfill(c, limit, page -> page == 1
+        return sourceWithBackfill("genreOrKeyword", c, limit, page -> page == 1
             ? tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters)
             : tmdbClient.discover(genreIds, keywordIds, effectiveSortBy, filters, page));
     }
@@ -154,19 +154,37 @@ public class RecommendationSourcingService {
      * (SERIES-059-AC-02); {@code externalIdCache} is shared across every page's dedupe call so
      * {@link TmdbClient#externalIds(int)} is invoked at most once per distinct {@code tmdbId}
      * for the whole call (SERIES-059-AC-07).
+     *
+     * <p>{@code sourceName} identifies the calling mode ({@code "trending"}/{@code "topRated"}/
+     * {@code "genreOrKeyword"}) for debug logging only -- it has no effect on sourcing/dedup/
+     * filter behavior.
      */
-    private List<DedupedCandidate> sourceWithBackfill(RecommendationCriteria c, int limit,
+    private List<DedupedCandidate> sourceWithBackfill(String sourceName, RecommendationCriteria c, int limit,
                                                         IntFunction<List<TmdbCandidate>> pageFetcher) {
+        log.debug("sourceWithBackfill[{}]: starting (limit={}, maxDiscoverPages={})",
+            sourceName, limit, maxDiscoverPages);
         Map<Integer, DedupedCandidate> accumulator = new LinkedHashMap<>();
         Map<Integer, Optional<String>> externalIdCache = new HashMap<>();
         boolean done = false;
         for (int page = 1; page <= maxDiscoverPages && !done; page++) {
             List<TmdbCandidate> pageResults = pageFetcher.apply(page);
             if (pageResults.isEmpty()) {
+                log.debug("sourceWithBackfill[{}]: page {} returned no results (TMDB end-of-results) -- stopping",
+                    sourceName, page);
                 done = true;
             } else {
-                mergePage(pageResults, c, accumulator, externalIdCache);
-                done = page == maxDiscoverPages || accumulator.size() >= limit;
+                mergePage(sourceName, page, pageResults, c, accumulator, externalIdCache);
+                boolean reachedLimit = accumulator.size() >= limit;
+                boolean reachedPageCap = page == maxDiscoverPages;
+                done = reachedPageCap || reachedLimit;
+                if (reachedLimit) {
+                    log.debug("sourceWithBackfill[{}]: reached limit ({}) after page {} -- stopping backfill",
+                        sourceName, limit, page);
+                } else if (reachedPageCap) {
+                    log.debug("sourceWithBackfill[{}]: reached maxDiscoverPages ({}) after page {} with only {} of {} "
+                            + "requested -- stopping backfill (a shortfall is a valid, expected outcome)",
+                        sourceName, maxDiscoverPages, page, accumulator.size(), limit);
+                }
             }
         }
         return List.copyOf(accumulator.values());
@@ -178,7 +196,7 @@ public class RecommendationSourcingService {
      * -- a repeat {@code tmdbId} merges its (possibly empty) {@code sourceSeries} into the
      * existing entry rather than creating a duplicate.
      */
-    private void mergePage(List<TmdbCandidate> pageResults, RecommendationCriteria c,
+    private void mergePage(String sourceName, int page, List<TmdbCandidate> pageResults, RecommendationCriteria c,
                             Map<Integer, DedupedCandidate> accumulator,
                             Map<Integer, Optional<String>> externalIdCache) {
         List<RawCandidate> pageRaw = pageResults.stream().map(candidate -> new RawCandidate(candidate, null)).toList();
@@ -187,6 +205,9 @@ public class RecommendationSourcingService {
         for (DedupedCandidate dc : pageFiltered) {
             accumulator.merge(dc.candidate().tmdbId(), dc, this::mergeDedupedCandidates);
         }
+        log.debug("sourceWithBackfill[{}]: page {} -- {} raw -> {} after dedup -> {} after output filters "
+                + "(accumulator now holds {})",
+            sourceName, page, pageRaw.size(), pageDeduped.size(), pageFiltered.size(), accumulator.size());
     }
 
     /** SERIES-059-AC-02: combines a repeat {@code tmdbId}'s contributing sources into the entry already in the accumulator, preserving the canonical source ordering. */
@@ -267,8 +288,14 @@ public class RecommendationSourcingService {
         }
 
         long distinctTitleBased = raw.stream().map(r -> r.candidate().tmdbId()).distinct().count();
+        log.debug("sourceFromPool: {} source series -> {} distinct title-based raw candidate(s) (limit={})",
+            pool.size(), distinctTitleBased, limit);
         if (distinctTitleBased < limit) {
-            raw.addAll(genreBasedSupplement(pool));
+            List<RawCandidate> supplement = genreBasedSupplement(pool);
+            log.debug("sourceFromPool: title-based candidates ({}) short of limit ({}) -- adding {} "
+                    + "genre-based supplement candidate(s)",
+                distinctTitleBased, limit, supplement.size());
+            raw.addAll(supplement);
         }
         return raw;
     }

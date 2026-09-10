@@ -149,6 +149,8 @@ public class RecommendationService {
             // processes each page exactly once as it accumulates) -- no redundant third pass
             // here, just the post-hoc maxCandidates truncation. See maxCandidates' javadoc.
             filtered = sourced.size() > maxCandidates ? sourced.subList(0, maxCandidates) : sourced;
+            log.debug("doRecommend[{}]: sourced {} candidate(s) (already deduped/filtered) -> {} after maxCandidates cap ({})",
+                criteria.getSourceMode(), sourced.size(), filtered.size(), maxCandidates);
         }
 
         if (!useMySeriesMode) {
@@ -166,10 +168,13 @@ public class RecommendationService {
             // still run above, unaffected.
             int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
                 ? criteria.getMaxSourcesShown() : DEFAULT_MAX_SOURCES_SHOWN;
-            return filtered.stream()
+            List<RecommendationDto> result = filtered.stream()
                 .map(dc -> dtoAssembler.toDto(dc, effectiveMaxSourcesShown, criteria.getRegion()))
                 .limit(limit)
                 .toList();
+            log.debug("doRecommend[{}]: returning {} recommendation(s) (requested limit={})",
+                criteria.getSourceMode(), result.size(), limit);
+            return result;
         }
 
         int effectiveMaxSourcesShown = criteria.getMaxSourcesShown() != null
@@ -182,11 +187,16 @@ public class RecommendationService {
 
         int effectiveMaxPerSource = criteria.getMaxPerSource() != null ? criteria.getMaxPerSource() : maxPerSource;
         List<ScoredCandidate> diversified = rankingService.applyDiversityCap(ranked, effectiveMaxPerSource);
+        log.debug("doRecommend[useMySeries]: {} ranked -> {} after diversity cap (maxPerSource={})",
+            ranked.size(), diversified.size(), effectiveMaxPerSource);
 
-        return diversified.stream()
+        List<RecommendationDto> result = diversified.stream()
             .map(ScoredCandidate::dto)
             .limit(limit)
             .toList();
+        log.debug("doRecommend[useMySeries]: returning {} recommendation(s) (requested limit={})",
+            result.size(), limit);
+        return result;
     }
 
     /**
@@ -200,7 +210,11 @@ public class RecommendationService {
         List<RawCandidate> raw = sourcingService.sourceFromPool(criteria, limit);
         List<RawCandidate> capped = raw.size() > maxCandidates ? raw.subList(0, maxCandidates) : raw;
         List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
-        return outputFilterService.applyOutputFilters(deduped, criteria);
+        List<DedupedCandidate> filtered = outputFilterService.applyOutputFilters(deduped, criteria);
+        log.debug("doRecommend[useMySeries]: {} raw -> {} after maxCandidates cap ({}) -> {} after dedup "
+                + "-> {} after output filters",
+            raw.size(), capped.size(), maxCandidates, deduped.size(), filtered.size());
+        return filtered;
     }
 
     /**

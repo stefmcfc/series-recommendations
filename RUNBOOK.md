@@ -401,6 +401,20 @@ This was a real, currently-blocking CORS gap (confirmed both with and without VP
 
 No `frontend/.env.local` proxy workaround is needed anymore: `seriesApi.ts` can call `http://localhost:8080/api/v1` directly from a browser tab serving the frontend on `http://localhost:5173`, and the response will include a matching `Access-Control-Allow-Origin` header. If you deploy the frontend from a different origin, add it to `app.cors.allowed-origins` (comma-separated) or override via `APP_CORS_ALLOWED_ORIGINS` — don't loosen this to a wildcard.
 
+**Recommendations return fewer results than expected / want to see how candidates are filtered**
+
+`RecommendationSourcingService` and `RecommendationService` log per-page and per-mode candidate counts at `DEBUG` (raw → after dedup → after output filters, and why a backfill loop stopped — limit reached, page cap reached, or TMDB end-of-results). Not enabled by default. Turn it on for a single run via `application.yml` or an env var override:
+
+```yaml
+logging:
+  level:
+    uk.co.stefirby.seriestracker.service.recommendation: DEBUG
+```
+
+```bash
+LOGGING_LEVEL_UK_CO_STEFIRBY_SERIESTRACKER_SERVICE_RECOMMENDATION=DEBUG gradlew.bat bootRun
+```
+
 ---
 
 ## CI/CD
