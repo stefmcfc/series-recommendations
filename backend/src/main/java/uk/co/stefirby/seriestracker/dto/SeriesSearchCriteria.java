@@ -28,6 +28,15 @@ public class SeriesSearchCriteria {
     // shape as startedNotFinished above -- when non-null and true, restricts results to only
     // series with flaggedForRewatch == true. No server-side status restriction (SERIES-008-AC-21).
     private Boolean flaggedForRewatch;
+    // series_spec_060_missing_ratings_filter.md (SERIES-060-AC-01): four independent nullable-
+    // Boolean fields mirroring flaggedForRewatch's exact shape -- null/absent is a no-op, true
+    // restricts results. Unlike this class' usual all-AND composition, these four are evaluated
+    // together (OR'd) by SeriesSearchService.matchesMissingRatings -- see that spec's Design
+    // Decisions for the reasoning.
+    private Boolean missingImdbRating;
+    private Boolean missingTmdbRating;
+    private Boolean missingRottenTomatoesRating;
+    private Boolean missingRottenTomatoesPopcornmeter;
     // series_spec_009_rating_sort.md (SERIES-009-AC-01/07): dateAdded (default) |
     // personalRating | title | year | imdbRating | tmdbRating.
     private String sortBy;
@@ -61,6 +70,18 @@ public class SeriesSearchCriteria {
     public void setYearMax(Integer yearMax) { this.yearMax = yearMax; }
     public Boolean getFlaggedForRewatch() { return flaggedForRewatch; }
     public void setFlaggedForRewatch(Boolean flaggedForRewatch) { this.flaggedForRewatch = flaggedForRewatch; }
+    public Boolean getMissingImdbRating() { return missingImdbRating; }
+    public void setMissingImdbRating(Boolean missingImdbRating) { this.missingImdbRating = missingImdbRating; }
+    public Boolean getMissingTmdbRating() { return missingTmdbRating; }
+    public void setMissingTmdbRating(Boolean missingTmdbRating) { this.missingTmdbRating = missingTmdbRating; }
+    public Boolean getMissingRottenTomatoesRating() { return missingRottenTomatoesRating; }
+    public void setMissingRottenTomatoesRating(Boolean missingRottenTomatoesRating) {
+        this.missingRottenTomatoesRating = missingRottenTomatoesRating;
+    }
+    public Boolean getMissingRottenTomatoesPopcornmeter() { return missingRottenTomatoesPopcornmeter; }
+    public void setMissingRottenTomatoesPopcornmeter(Boolean missingRottenTomatoesPopcornmeter) {
+        this.missingRottenTomatoesPopcornmeter = missingRottenTomatoesPopcornmeter;
+    }
     public String getSortBy() { return sortBy; }
     public void setSortBy(String sortBy) { this.sortBy = sortBy; }
     public String getSortDirection() { return sortDirection; }

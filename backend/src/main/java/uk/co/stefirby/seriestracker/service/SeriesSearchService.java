@@ -57,6 +57,7 @@ public class SeriesSearchService {
             .filter(s -> matchesTmdbRating(s, criteria.getMinTmdbRating()))
             .filter(s -> matchesYearRange(s, criteria.getYearMin(), criteria.getYearMax()))
             .filter(s -> matchesFlaggedForRewatch(s, criteria.getFlaggedForRewatch()))
+            .filter(s -> matchesMissingRatings(s, criteria))
             .sorted(sortComparator)
             .map(seriesService::entityToDto)
             .toList();
@@ -138,5 +139,27 @@ public class SeriesSearchService {
     private boolean matchesFlaggedForRewatch(SeriesEntity s, Boolean flaggedForRewatch) {
         if (flaggedForRewatch == null || !flaggedForRewatch) return true;
         return s.isFlaggedForRewatch();
+    }
+
+    // series_spec_060_missing_ratings_filter.md (SERIES-060-AC-03/04/05/06): unlike every other
+    // filter stage in this pipeline, these four criteria fields are deliberately OR'd together
+    // rather than each being its own independently-ANDed filter stage -- checking a second
+    // "missing" box is meant to broaden the to-do list of series needing manual attention, not
+    // narrow it to only series missing every checked rating simultaneously. When none of the
+    // four is true this is a no-op, consistent with every other unset criteria field. This
+    // combined predicate still ANDs with every other filter stage as normal via its own single
+    // .filter(...) call above.
+    private boolean matchesMissingRatings(SeriesEntity s, SeriesSearchCriteria criteria) {
+        boolean any = Boolean.TRUE.equals(criteria.getMissingImdbRating())
+            || Boolean.TRUE.equals(criteria.getMissingTmdbRating())
+            || Boolean.TRUE.equals(criteria.getMissingRottenTomatoesRating())
+            || Boolean.TRUE.equals(criteria.getMissingRottenTomatoesPopcornmeter());
+        if (!any) return true;
+
+        return (Boolean.TRUE.equals(criteria.getMissingImdbRating()) && s.getImdbRating() == null)
+            || (Boolean.TRUE.equals(criteria.getMissingTmdbRating()) && s.getTmdbRating() == null)
+            || (Boolean.TRUE.equals(criteria.getMissingRottenTomatoesRating()) && s.getRottenTomatoesRating() == null)
+            || (Boolean.TRUE.equals(criteria.getMissingRottenTomatoesPopcornmeter())
+                && s.getRottenTomatoesPopcornmeter() == null);
     }
 }

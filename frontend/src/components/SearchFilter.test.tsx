@@ -1008,6 +1008,38 @@ describe('FRONTEND-077-AC-04: SearchFilter inline Keywords hides its input', () 
   })
 })
 
+describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
+  it('renders all four checkboxes in the Ratings section, unchecked by default', () => {
+    renderFilter()
+    expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
+    expect(screen.getByLabelText('Missing TMDB Rating')).not.toBeChecked()
+    expect(
+      screen.getByLabelText('Missing Rotten Tomatoes Rating'),
+    ).not.toBeChecked()
+    expect(
+      screen.getByLabelText('Missing Rotten Tomatoes Popcornmeter'),
+    ).not.toBeChecked()
+  })
+
+  it('includes checked missing-rating fields in the submitted search criteria', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.click(screen.getByLabelText('Missing IMDb Rating'))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ missingImdbRating: true }),
+    )
+  })
+})
+
+describe('FRONTEND-116-AC-04: Clear resets the missing-rating checkboxes', () => {
+  it('unchecks all four missing-rating checkboxes on Clear', () => {
+    renderFilter()
+    fireEvent.click(screen.getByLabelText('Missing IMDb Rating'))
+    fireEvent.click(screen.getByTestId('clear-filters-btn'))
+    expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
+  })
+})
+
 describe('FRONTEND-107-AC-09: SearchFilter applies a saved profile to pending form state', () => {
   it('updates the form without auto-submitting', async () => {
     mockListFilterProfiles.mockResolvedValue([

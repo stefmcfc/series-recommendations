@@ -38,6 +38,13 @@ interface FormState {
   minTmdbRating: string
   yearMin: string
   yearMax: string
+  // FRONTEND-116/SERIES-060: four independent "find series missing this
+  // rating" toggles -- OR-composed entirely server-side, no client-side
+  // combination logic here.
+  missingImdbRating: boolean
+  missingTmdbRating: boolean
+  missingRottenTomatoesRating: boolean
+  missingRottenTomatoesPopcornmeter: boolean
 }
 
 const initialFormState: FormState = {
@@ -49,6 +56,10 @@ const initialFormState: FormState = {
   minTmdbRating: '',
   yearMin: '',
   yearMax: '',
+  missingImdbRating: false,
+  missingTmdbRating: false,
+  missingRottenTomatoesRating: false,
+  missingRottenTomatoesPopcornmeter: false,
 }
 
 function buildCriteria(form: FormState): SearchCriteria {
@@ -70,6 +81,16 @@ function buildCriteria(form: FormState): SearchCriteria {
     criteria.minTmdbRating = Number(form.minTmdbRating)
   if (form.yearMin.trim() !== '') criteria.yearMin = Number(form.yearMin)
   if (form.yearMax.trim() !== '') criteria.yearMax = Number(form.yearMax)
+
+  // FRONTEND-116-AC-03: only sent when checked -- unchecked (the default)
+  // means "no filter", same omit-when-absent convention as every other field
+  // above, not an explicit `false`.
+  if (form.missingImdbRating) criteria.missingImdbRating = true
+  if (form.missingTmdbRating) criteria.missingTmdbRating = true
+  if (form.missingRottenTomatoesRating)
+    criteria.missingRottenTomatoesRating = true
+  if (form.missingRottenTomatoesPopcornmeter)
+    criteria.missingRottenTomatoesPopcornmeter = true
 
   return criteria
 }
@@ -103,6 +124,15 @@ function formStateFromCriteria(criteria: MySeriesFilterCriteria): FormState {
       criteria.yearMax != null
         ? String(criteria.yearMax)
         : initialFormState.yearMax,
+    // FRONTEND-116: MySeriesFilterCriteria (the saved-profile shape) doesn't
+    // carry the four missing-rating fields -- out of this spec's scope -- so
+    // applying a saved profile always resets them to unchecked, same as any
+    // other field a saved profile doesn't mention.
+    missingImdbRating: initialFormState.missingImdbRating,
+    missingTmdbRating: initialFormState.missingTmdbRating,
+    missingRottenTomatoesRating: initialFormState.missingRottenTomatoesRating,
+    missingRottenTomatoesPopcornmeter:
+      initialFormState.missingRottenTomatoesPopcornmeter,
   }
 }
 
@@ -169,6 +199,21 @@ export function SearchFilter({
   const handleMinPersonalRatingChange = (value: number | null) => {
     setForm((prev) => ({ ...prev, minPersonalRating: value }))
   }
+
+  // FRONTEND-116-AC-03: separate from updateField above, which reads
+  // event.target.value for the string-valued fields -- these four are
+  // booleans read from event.target.checked.
+  const updateMissingRatingField =
+    (
+      field:
+        | 'missingImdbRating'
+        | 'missingTmdbRating'
+        | 'missingRottenTomatoesRating'
+        | 'missingRottenTomatoesPopcornmeter',
+    ) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: event.target.checked }))
+    }
 
   const handleGenresChange = (next: {
     included: string[]
@@ -345,6 +390,58 @@ export function SearchFilter({
                       target: { value: String(value) },
                     } as React.ChangeEvent<HTMLInputElement>)
                   }
+                />
+              </div>
+
+              <div className={styles.checkboxField}>
+                <label htmlFor="search-missing-imdb-rating">
+                  Missing IMDb Rating
+                </label>
+                <input
+                  id="search-missing-imdb-rating"
+                  type="checkbox"
+                  checked={form.missingImdbRating}
+                  onChange={updateMissingRatingField('missingImdbRating')}
+                />
+              </div>
+
+              <div className={styles.checkboxField}>
+                <label htmlFor="search-missing-tmdb-rating">
+                  Missing TMDB Rating
+                </label>
+                <input
+                  id="search-missing-tmdb-rating"
+                  type="checkbox"
+                  checked={form.missingTmdbRating}
+                  onChange={updateMissingRatingField('missingTmdbRating')}
+                />
+              </div>
+
+              <div className={styles.checkboxField}>
+                <label htmlFor="search-missing-rotten-tomatoes-rating">
+                  Missing Rotten Tomatoes Rating
+                </label>
+                <input
+                  id="search-missing-rotten-tomatoes-rating"
+                  type="checkbox"
+                  checked={form.missingRottenTomatoesRating}
+                  onChange={updateMissingRatingField(
+                    'missingRottenTomatoesRating',
+                  )}
+                />
+              </div>
+
+              <div className={styles.checkboxField}>
+                <label htmlFor="search-missing-rotten-tomatoes-popcornmeter">
+                  Missing Rotten Tomatoes Popcornmeter
+                </label>
+                <input
+                  id="search-missing-rotten-tomatoes-popcornmeter"
+                  type="checkbox"
+                  checked={form.missingRottenTomatoesPopcornmeter}
+                  onChange={updateMissingRatingField(
+                    'missingRottenTomatoesPopcornmeter',
+                  )}
                 />
               </div>
             </section>
