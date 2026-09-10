@@ -215,3 +215,50 @@ describe('failure handling', () => {
     expect(screen.getByTestId('import-btn')).not.toBeDisabled()
   })
 })
+
+describe('FRONTEND-057-AC-06: Clear resets the file picker and any error', () => {
+  it('is not rendered when no file is selected', () => {
+    render(<ImportControls onImported={vi.fn()} />)
+    expect(screen.queryByTestId('import-clear-btn')).not.toBeInTheDocument()
+  })
+
+  it('resets the file picker, error, and job status without a page reload', async () => {
+    mockImportSeries.mockRejectedValue(
+      new ApiError(400, 'Uploaded file must be a .json or .csv file'),
+    )
+
+    render(<ImportControls onImported={vi.fn()} />)
+    selectFile()
+    fireEvent.click(screen.getByTestId('import-btn'))
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.getByTestId('import-clear-btn')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('import-clear-btn'))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('import-clear-btn')).not.toBeInTheDocument()
+    expect(screen.getByTestId('import-file-input')).toHaveValue('')
+    expect(screen.getByTestId('import-btn')).toBeDisabled()
+  })
+
+  it('is disabled while an import is in progress', async () => {
+    mockImportSeries.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      totalCount: 0,
+      importedCount: 0,
+      skippedCount: 0,
+      errorCount: 0,
+      errors: [],
+      startedAt: '2026-09-05T00:00:00',
+      completedAt: null,
+    })
+
+    render(<ImportControls onImported={vi.fn()} />)
+    selectFile()
+    fireEvent.click(screen.getByTestId('import-btn'))
+
+    expect(await screen.findByText(/importing/i)).toBeInTheDocument()
+    expect(screen.getByTestId('import-clear-btn')).toBeDisabled()
+  })
+})

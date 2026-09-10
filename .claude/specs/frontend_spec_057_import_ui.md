@@ -172,6 +172,57 @@ div after the `ExportControls` section; delete the placeholder `<p>`.
 
 ---
 
+## Requirement 2: Clear a selected file without a page reload
+
+**User story**: As a user who picked a file that turned out to be invalid (or just changed my
+mind), I want to clear it and go back to the empty picker state, without reloading the page.
+
+**Gap found via live use (2026-09-10)**: `<input type="file">` is deliberately uncontrolled (no
+`value` prop — file inputs can't be set to an arbitrary value for security reasons) and there was
+no affordance to reset it. After an upload attempt failed (e.g. `SERIES-038-AC-02`'s "structurally
+invalid file" `400`), `selectedFile`/`error` both stayed set indefinitely — the only way to clear
+the picker's displayed filename and the error message was a full page reload. Selecting a
+*different* file already worked (`handleFileChange` already resets `error`/`jobStatus` for the new
+selection) — the gap was having no way to clear back to the empty state without picking a
+replacement.
+
+### FRONTEND-057-AC-06 [AUTO]
+**Statement**: While a file is selected (`selectedFile !== null`), `ImportControls` shall render a
+"Clear" button (`data-testid="import-clear-btn"`), disabled while `importInProgress`. Clicking it
+shall reset `selectedFile`/`error`/`jobStatus` to `null`, reset the polling-guard ref, and reset the
+underlying `<input type="file">` element's own displayed value (via a ref,
+`inputRef.current.value = ''` — the one assignment browsers allow on a file input) so the picker
+visibly returns to its empty state, not just the surrounding React state.
+
+**References**: `ImportControls.tsx`'s existing `handleFileChange` (the reset shape this mirrors
+for `error`/`jobStatus`/the polling-guard ref).
+
+**Test Case (Red)**:
+```typescript
+it('FRONTEND-057-AC-06: Clear resets the file picker and any error', async () => {
+  mockImportSeries.mockRejectedValue(new ApiError('Uploaded file must be a .json or .csv file', 400))
+  render(<ImportControls onImported={vi.fn()} />)
+  const file = new File(['not valid'], 'bad.txt', { type: 'text/plain' })
+  fireEvent.change(screen.getByTestId('import-file-input'), { target: { files: [file] } })
+  fireEvent.click(screen.getByTestId('import-btn'))
+
+  expect(await screen.findByRole('alert')).toBeInTheDocument()
+  expect(screen.getByTestId('import-clear-btn')).toBeInTheDocument()
+
+  fireEvent.click(screen.getByTestId('import-clear-btn'))
+
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(screen.queryByTestId('import-clear-btn')).not.toBeInTheDocument()
+  expect(screen.getByTestId('import-file-input')).toHaveValue('')
+  expect(screen.getByTestId('import-btn')).toBeDisabled()
+})
+```
+**Test Case (Green)**: a `fileInputRef` on the `<input type="file">`; a `handleClear` function
+setting `selectedFile`/`error`/`jobStatus` to `null`, `notifiedForCurrentJobRef.current = false`,
+and `fileInputRef.current.value = ''`; a conditionally-rendered Clear button wired to it.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -190,3 +241,4 @@ div after the `ExportControls` section; delete the placeholder `<p>`.
 - [x] FRONTEND-057-AC-03: per-row errors shown when present
 - [x] FRONTEND-057-AC-04: `onImported` triggers a `SeriesList` refresh
 - [x] FRONTEND-057-AC-05: `SettingsPage` renders Import after Export; stale placeholder removed
+- [x] FRONTEND-057-AC-06: "Clear" button resets the file picker, error, and job status without a page reload
