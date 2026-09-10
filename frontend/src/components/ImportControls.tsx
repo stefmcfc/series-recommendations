@@ -108,7 +108,7 @@ export function ImportControls({ onImported }: ImportControlsProps) {
       <div className={styles.controls}>
         <input
           type="file"
-          accept=".json,application/json"
+          accept=".json,application/json,.csv,text/csv"
           data-testid="import-file-input"
           onChange={handleFileChange}
         />

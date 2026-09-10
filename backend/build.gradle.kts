@@ -15,6 +15,7 @@ version = "3.50.0"
 val sqliteJdbcVersion = "3.53.4.0"
 val spockVersion = "2.4-groovy-5.0"
 val groovyVersion = "5.1.1"
+val commonsCsvVersion = "1.14.1"
 
 java {
     toolchain {
@@ -53,6 +54,10 @@ dependencies {
     // and without it migrations silently never run (no error, no log output).
     implementation("org.springframework.boot:spring-boot-flyway")
     implementation("org.flywaydb:flyway-core")
+
+    // CSV import (series_spec_058): RFC4180-aware parsing for the CSV half of
+    // POST /api/v1/series/import, reversing SeriesExportService's own hand-rolled CSV writer.
+    implementation("org.apache.commons:commons-csv:$commonsCsvVersion")
 
     // Dev-only: automatic context restart on classpath changes (fast, in-process --
     // not a full JVM/Gradle-daemon relaunch). `developmentOnly` is excluded from the

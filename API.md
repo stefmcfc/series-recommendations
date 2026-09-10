@@ -159,20 +159,27 @@ default, byte-identical to before this param existed).
 
 ### `POST /api/v1/series/import`
 
-Start an async job re-importing a previously exported JSON file (`series_spec_038_import.md`).
-Multipart file upload (`file` field), **JSON only** — CSV import is out of scope. The uploaded file
-must be parseable JSON containing a `series` array of `SeriesDto` objects; `exportDate`/`count` are
-ignored if present, so a re-uploaded, unmodified `GET /api/v1/series/export?format=json` file works
-unchanged. `400` if the file isn't valid JSON or is missing the `series` array — rejected before any
-job starts. Otherwise creates each entry sequentially via the same path as `POST /api/v1/series`
-(full validation, best-effort TMDB/OMDb enrichment when `imdbId` is present), with a fixed delay
-between items (`app.tmdb.refresh-delay-ms`, reused from bulk refresh — no separate import-delay
-property) to stay within TMDB's rate limit. A duplicate `imdbId` (`409` from `POST /api/v1/series`,
+Start an async job re-importing a previously exported file — **JSON or CSV**, dispatched by the
+uploaded file's extension (`series_spec_038_import.md`, `series_spec_058_csv_import.md`). Multipart
+file upload (`file` field). A `.json` file must be parseable JSON containing a `series` array of
+`SeriesDto` objects; `exportDate`/`count` are ignored if present, so a re-uploaded, unmodified
+`GET /api/v1/series/export?format=json` file works unchanged. A `.csv` file must have a header row
+matching `GET /api/v1/series/export?format=csv`'s own column order exactly (same 21 columns, same
+order, case-sensitive) — so a re-uploaded, unmodified CSV export file also works unchanged; each
+data row is mapped column-for-column back into a `SeriesDto` (the `id` column is read but
+discarded, matching JSON import's own behavior of always generating a fresh id). `400` if the file's
+extension is neither `.json` nor `.csv`, if a `.json` file isn't valid JSON or is missing the
+`series` array, or if a `.csv` file's header row doesn't match — all rejected before any job starts.
+Otherwise creates each entry sequentially via the same path as `POST /api/v1/series` (full
+validation, best-effort TMDB/OMDb enrichment when `imdbId` is present), with a fixed delay between
+items (`app.tmdb.refresh-delay-ms`, reused from bulk refresh — no separate import-delay property) to
+stay within TMDB's rate limit. A duplicate `imdbId` (`409` from `POST /api/v1/series`,
 `series_spec_028_prevent_duplicate_series.md`) is caught and counted toward `skippedCount`, not a
-job failure; any other per-row failure (e.g. a validation error) is counted toward `errorCount` with
-a per-row message appended to `errors` (capped at 20 entries). `202` with the job's initial state;
-`409` if a job is already running (bulk refresh and bulk import are tracked independently — one
-running doesn't block the other).
+job failure; any other per-row failure (e.g. a validation error, or a CSV row with an unparseable
+cell — reported as a missing-title error since that row is dropped in favor of a blank placeholder)
+is counted toward `errorCount` with a per-row message appended to `errors` (capped at 20 entries).
+`202` with the job's initial state; `409` if a job is already running (bulk refresh and bulk import
+are tracked independently — one running doesn't block the other).
 
 ---
 

@@ -48,15 +48,6 @@ saved-profile area rather than reusing Recommendation Filters' own).
 | ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
 | Saved filter profiles for Custom Search + Analysis filters                     | `series_spec_057`   | `frontend_spec_112`  | ⬜ Not started |
 
-**Idea-pipeline batch** (planned 2026-09-10) — four specs written from `future_ideas.md`/
-`SPEC_CANDIDATES.md` items: a shareable `SeriesDetail` URL, CSV import (paired backend/frontend),
-number-input spinner styling, and an efficiency fix for the recommendation backfill loop. No
-dependency order between the four — independent, can build in any order.
-
-| Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
-| ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
-| CSV import                                                                    | `series_spec_058`   | `frontend_spec_114`  | ⬜ Not started |
-
 ---
 
 ## Delivered
@@ -185,6 +176,7 @@ dependency order between the four — independent, can build in any order.
 | Incremental dedup/output-filtering for the recommendation backfill loop (each newly-fetched page deduped/filtered once via a running accumulator, instead of re-processing the whole accumulated pool on every page) | `series_spec_059` | — | ✅ Done |
 | Number input (`type="number"`) spinner styling — shared, themed `NumberInput` component (native spinner suppressed globally, custom increment/decrement buttons) replacing all 27 numeric fields' native browser spinner across 8 components | — | `frontend_spec_115` | ✅ Done |
 | Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated), plus Highest Rated's first-ever dedicated tabpanel wrapper (fixing a previously-dangling `aria-controls` reference) | — | `frontend_spec_111` | ✅ Done |
+| CSV import (backend parsing for `.csv` alongside `.json`; frontend file-picker `accept` widened to match) | `series_spec_058` | `frontend_spec_114` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

@@ -1,6 +1,6 @@
 # Frontend Spec 114: CSV Import UI
 
-**Status**: Not started
+**Status**: Implemented — `frontend/src/components/ImportControls.tsx`, `frontend/src/components/ImportControls.test.tsx`
 **Priority**: P3 (matches `series_spec_058`'s tier — small frontend companion to a backend format
 addition)
 **Depends on**: `series_spec_058_csv_import.md` (backend CSV parsing this spec's file picker
@@ -102,5 +102,5 @@ format-agnostically once `AC-01`'s `accept` change lands.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-114-AC-01: file input accepts `.csv`/`text/csv`
-- [ ] FRONTEND-114-AC-02: selecting and submitting a CSV file drives the same upload flow as JSON
+- [x] FRONTEND-114-AC-01: file input accepts `.csv`/`text/csv`
+- [x] FRONTEND-114-AC-02: selecting and submitting a CSV file drives the same upload flow as JSON

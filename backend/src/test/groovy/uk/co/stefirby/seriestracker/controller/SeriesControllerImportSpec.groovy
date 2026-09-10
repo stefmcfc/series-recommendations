@@ -111,6 +111,79 @@ class SeriesControllerImportSpec extends Specification {
             }
     }
 
+    // series_spec_058_csv_import.md
+    private static final String CSV_HEADER_ROW =
+        "id,title,year,genres,totalSeasons,totalEpisodes,currentSeason,currentEpisode,status," +
+        "imdbRating,rottenTomatoesRating,rottenTomatoesPopcornmeter,tmdbRating,tmdbVoteCount," +
+        "personalRating,personalNotes,posterUrl,tags,originCountry,dateAdded,dateCompleted"
+
+    def "SERIES-058-AC-01: a valid CSV export file starts an import job"() {
+        given: "a valid CSV file matching SeriesExportService's own column order"
+            def csv = CSV_HEADER_ROW + "\n" +
+                ",CSV Show,2020,Drama,,,,,,,,,,,,,,,,,\n"
+            def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
+
+        when: "POST /api/v1/series/import is called"
+            def result = mockMvc.perform(multipart("/api/v1/series/import").file(file))
+
+        then: "202 Accepted with an IN_PROGRESS status"
+            result.andExpect(status().isAccepted())
+            result.andExpect(jsonPath('$.data.status').value("IN_PROGRESS"))
+            result.andExpect(jsonPath('$.data.totalCount').value(1))
+
+        and: "the row is eventually imported"
+            conditions.eventually {
+                def statusResult = mockMvc.perform(get("/api/v1/series/import/status"))
+                statusResult.andExpect(jsonPath('$.data.status').value("COMPLETED"))
+                statusResult.andExpect(jsonPath('$.data.importedCount').value(1))
+            }
+    }
+
+    def "SERIES-058-AC-02: a CSV file with a mismatched header row is rejected with 400 before any job starts"() {
+        given: "a CSV missing the 'status' column"
+            def csv = "id,title,year,genres\nabc,Show A,2020,Drama\n"
+            def file = new MockMultipartFile("file", "bad.csv", "text/csv", csv.bytes)
+
+        when: "POST /api/v1/series/import is called"
+            def result = mockMvc.perform(multipart("/api/v1/series/import").file(file))
+
+        then: "400, no job started"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-058-AC-03: an unrecognized file extension is rejected with 400 before any job starts"() {
+        given: "a .txt file"
+            def file = new MockMultipartFile("file", "export.txt", "text/plain", "irrelevant".bytes)
+
+        when: "POST /api/v1/series/import is called"
+            def result = mockMvc.perform(multipart("/api/v1/series/import").file(file))
+
+        then: "400, no job started"
+            result.andExpect(status().isBadRequest())
+    }
+
+    def "SERIES-058-AC-05/06: a CSV row with an unparseable cell is tracked as a row error, the job still completes"() {
+        given: "one valid row and one row with a non-numeric year"
+            def csv = CSV_HEADER_ROW + "\n" +
+                ",Good Show,2020,Drama,,,,,,,,,,,,,,,,,\n" +
+                ",Bad Show,not-a-year,Drama,,,,,,,,,,,,,,,,,\n"
+            def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
+
+        when: "the file is imported"
+            def started = mockMvc.perform(multipart("/api/v1/series/import").file(file))
+            started.andExpect(status().isAccepted())
+
+        then: "the status endpoint eventually reports COMPLETED with one imported, one errored"
+            conditions.eventually {
+                def result = mockMvc.perform(get("/api/v1/series/import/status"))
+                result.andExpect(status().isOk())
+                result.andExpect(jsonPath('$.data.status').value("COMPLETED"))
+                result.andExpect(jsonPath('$.data.totalCount').value(2))
+                result.andExpect(jsonPath('$.data.importedCount').value(1))
+                result.andExpect(jsonPath('$.data.errorCount').value(1))
+            }
+    }
+
     def "a second POST /import while one is in progress returns 409"() {
         given: "enough rows that app.tmdb.refresh-delay-ms keeps the first job IN_PROGRESS briefly"
             def rows = (1..3).collect { "{\"title\":\"Show ${it}\",\"imdbId\":\"tt000000${it}\"}" }.join(",")
