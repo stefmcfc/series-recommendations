@@ -70,7 +70,6 @@ dependency order between the four — independent, can build in any order.
 | ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
 | CSV import                                                                    | `series_spec_058`   | `frontend_spec_114`  | ⬜ Not started |
 | Number input (`type="number"`) spinner styling — shared `NumberInput` component | —                  | `frontend_spec_115`  | ⬜ Not started |
-| Incremental dedup/output-filtering for the recommendation backfill loop        | `series_spec_059`   | —                    | ⬜ Not started |
 
 ---
 
@@ -197,6 +196,7 @@ dependency order between the four — independent, can build in any order.
 | Filter profile polish (labeling, Settings-only delete, Save repositioning, rename UX, look-and-feel alignment across both the inline picker and Settings management section) | — | `frontend_spec_109` | ✅ Done |
 | Appearance accent color schemes (Purple/Blue/Green/Orange/Teal, independent of light/dark) + Recommendation Favourites divider | — | `frontend_spec_110` | ✅ Done |
 | Shareable URL for `SeriesDetail` (`/my-series/view/:id`)                                                                       | —                     | `frontend_spec_113` | ✅ Done |
+| Incremental dedup/output-filtering for the recommendation backfill loop (each newly-fetched page deduped/filtered once via a running accumulator, instead of re-processing the whole accumulated pool on every page) | `series_spec_059` | — | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

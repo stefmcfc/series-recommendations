@@ -1,6 +1,8 @@
 # Spec 059: Incremental Dedup/Output-Filtering for the Backfill Loop
 
-**Status**: Not started
+**Status**: Implemented — `service/recommendation/RecommendationSourcingService.java`,
+`service/recommendation/RecommendationDeduplicationService.java`,
+`service/recommendation/RecommendationService.java`
 **Priority**: P3 (performance/efficiency fix, no user-visible correctness issue on its own —
 distinct from `series_spec_054`'s Requirement 5 correction, which *was* a correctness bug)
 **Depends on**: `series_spec_054_recommendation_discover_backfill_pagination.md` (owns
@@ -265,10 +267,10 @@ consulted before every subsequent `externalIds` call within the same sourcing in
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-059-AC-01: only newly-fetched candidates are dedup/filter-processed per page
-- [ ] SERIES-059-AC-02: a duplicate `tmdbId` across pages merges rather than duplicates
-- [ ] SERIES-059-AC-03: the stopping check reads the accumulator's own size directly
-- [ ] SERIES-059-AC-04: backfill-enabled sourcing methods return the deduped/filtered list directly
-- [ ] SERIES-059-AC-05: `doRecommend` skips its own dedup/filter calls for these three modes
-- [ ] SERIES-059-AC-06: `sourceFromPool` is unaffected
-- [ ] SERIES-059-AC-07: `externalIds` is called at most once per distinct `tmdbId` per request
+- [x] SERIES-059-AC-01: only newly-fetched candidates are dedup/filter-processed per page
+- [x] SERIES-059-AC-02: a duplicate `tmdbId` across pages merges rather than duplicates
+- [x] SERIES-059-AC-03: the stopping check reads the accumulator's own size directly
+- [x] SERIES-059-AC-04: backfill-enabled sourcing methods return the deduped/filtered list directly
+- [x] SERIES-059-AC-05: `doRecommend` skips its own dedup/filter calls for these three modes
+- [x] SERIES-059-AC-06: `sourceFromPool` is unaffected
+- [x] SERIES-059-AC-07: `externalIds` is called at most once per distinct `tmdbId` per request

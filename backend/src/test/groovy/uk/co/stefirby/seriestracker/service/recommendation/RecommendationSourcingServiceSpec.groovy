@@ -6,6 +6,7 @@ import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
+import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
 import uk.co.stefirby.seriestracker.service.tmdb.TmdbGenreTable
 import spock.lang.Specification
@@ -16,6 +17,7 @@ import java.time.LocalDateTime
 class RecommendationSourcingServiceSpec extends Specification {
 
     SeriesRepository seriesRepository = Mock()
+    IgnoredSeriesRepository ignoredSeriesRepository = Mock()
     TmdbClient tmdbClient = Mock()
     RecommendationDeduplicationService deduplicationService = Mock()
     RecommendationOutputFilterService outputFilterService = Mock()
@@ -46,6 +48,16 @@ class RecommendationSourcingServiceSpec extends Specification {
     /** SERIES-054: a placeholder post-dedup/post-filter result of exactly {@code count} entries, for stubbing {@code outputFilterService.applyOutputFilters}'s return in the backfill-pagination stopping-condition specs below -- content is irrelevant, only {@code size()} is. */
     private static List<DedupedCandidate> dedupedOfSize(int count) {
         (1..count).collect { new DedupedCandidate(candidate(it), [], "tt${it}") }
+    }
+
+    /**
+     * SERIES-059: like {@link #dedupedOfSize}, but starting at a caller-chosen {@code tmdbId}
+     * offset so two pages' stubbed results don't share {@code tmdbId}s -- the accumulator merges
+     * by {@code tmdbId} (SERIES-059-AC-02), so overlapping ids across pages would collapse into
+     * fewer entries than the test intends.
+     */
+    private static List<DedupedCandidate> dedupedFrom(int startId, int count) {
+        (startId..<(startId + count)).collect { new DedupedCandidate(candidate(it), [], "tt${it}") }
     }
 
     // -- Automatic pool sourcing (SERIES-006-AC-14/15/16/17/20, SERIES-008-AC-04/05) --
@@ -415,15 +427,17 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "discover() is called with Drama's id (18) only -- Spy has no genre mapping"
             1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> [candidate(50, "Drama Show")]
-            // SERIES-054-AC-11: stub the backfill loop's own internal dedup/filter stopping
-            // check to already reach the requested limit (20), so the loop stops after page 1
-            // -- this test cares about routing/genre-mapping, not pagination.
-            1 * deduplicationService.dedupeAndExclude(_) >> dedupedOfSize(20)
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
+            // SERIES-059: the page's own single candidate survives dedup/filtering as-is; page 2
+            // is fetched (still short of the 20 limit) and explicitly returns empty -- TMDB's own
+            // end-of-results signal, stopping the loop -- this test cares about routing/genre-
+            // mapping, not pagination.
+            1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, []), 2) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> [new DedupedCandidate(candidate(50, "Drama Show"), [], "tt0000050")]
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> [new DedupedCandidate(candidate(50, "Drama Show"), [], "tt0000050")]
 
-        and: "the candidate has no linked source series"
+        and: "the candidate has no linked source series (empty, not null -- SERIES-015-AC-03)"
             result.size() == 1
-            result[0].sourceSeries() == null
+            result[0].sourceSeries() == []
     }
 
     // -- Spec 044 (SERIES-044-AC-04/05/06): excludeGenres resolved and forwarded as DiscoverFilters.excludeGenreIds --
@@ -765,24 +779,48 @@ class RecommendationSourcingServiceSpec extends Specification {
             2 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, [])) >> []
     }
 
-    // -- Spec 054, Requirement 2/4 (SERIES-054-AC-09/11/12/13): backfill-pagination stopping conditions -- sourceTrending --
+    // -- Spec 054, Requirement 2/4 (SERIES-054-AC-09/11/12/13), restructured by Spec 059
+    // (SERIES-059-AC-01/02/03/04): backfill-pagination stopping conditions -- sourceTrending --
 
     def "SERIES-054-AC-09/11: sourceTrending stops paging once dedup/filter yields enough"() {
         given: "page 1's post-dedup/filter count already reaches the requested limit of 15"
             def criteria = new RecommendationCriteria(sourceMode: "trending")
 
         when: "sourceTrending is called with limit=15"
-            sourcingService.sourceTrending(criteria, 15)
+            def result = sourcingService.sourceTrending(criteria, 15)
 
         then: "only page 1 is fetched"
             1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
-            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
             0 * tmdbClient.trending("week", 2)
+
+        and: "SERIES-059-AC-04: the returned list is the accumulator itself, of DedupedCandidate"
+            result.size() == 15
+            result.every { it instanceof DedupedCandidate }
+    }
+
+    def "SERIES-059-AC-01: dedupeAndExclude/applyOutputFilters are called once per page's own candidates, not the whole accumulated pool"() {
+        given: "a 3-page backfill, 20 fresh raw trending candidates per page, each page contributing only 1 survivor"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+
+        when: "sourceTrending is called with a limit (100) requiring all 3 pages"
+            sourcingService.sourceTrending(criteria, 100)
+
+        then: "each page's own 20 candidates are fetched"
+            1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
+            1 * tmdbClient.trending("week", 2) >> (21..40).collect { candidate(it) }
+            1 * tmdbClient.trending("week", 3) >> (41..60).collect { candidate(it) }
+
+        and: "each page's raw candidates (exactly 20, never the growing accumulated total) are dedup/filtered exactly once"
+            3 * deduplicationService.dedupeAndExclude({ it.size() == 20 }, _) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 1)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(2, 1)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(3, 1)
     }
 
     def "SERIES-054-AC-09: sourceTrending fetches page 2 and merges its candidates when page 1's post-dedup/filter count is short"() {
-        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's reaches 20"
+        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's takes it to 20 (non-overlapping tmdbIds)"
             def criteria = new RecommendationCriteria(sourceMode: "trending")
 
         when: "sourceTrending is called with limit=20"
@@ -792,11 +830,13 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
             1 * tmdbClient.trending("week", 2) >> [candidate(21)]
             0 * tmdbClient.trending("week", 3)
-            1 * deduplicationService.dedupeAndExclude(_) >> []
-            1 * deduplicationService.dedupeAndExclude(_) >> []
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(5)
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
-            result.size() == 21
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 5)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(100, 15)
+
+        and: "SERIES-059-AC-04: the merged accumulator (not a raw-candidate merge) is returned"
+            result.size() == 20
     }
 
     def "SERIES-054-AC-12: sourceTrending stops at max-discover-pages even if still short, without erroring"() {
@@ -811,7 +851,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week", 2) >> [candidate(2)]
             1 * tmdbClient.trending("week", 3) >> [candidate(3)]
             0 * tmdbClient.trending("week", 4)
-            deduplicationService.dedupeAndExclude(_) >> []
+            deduplicationService.dedupeAndExclude(_, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
             notThrown(Exception)
     }
@@ -827,8 +867,39 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week") >> [candidate(1)]
             1 * tmdbClient.trending("week", 2) >> []
             0 * tmdbClient.trending("week", 3)
-            deduplicationService.dedupeAndExclude(_) >> []
+            deduplicationService.dedupeAndExclude(_, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
+    }
+
+    // -- Spec 059, Requirement 1/3 (SERIES-059-AC-02/07): cross-page tmdbId merge + externalIds memoization, using the real dedup/output-filter collaborators --
+
+    def "SERIES-059-AC-02/07: a tmdbId reappearing on page 2 merges into its existing entry, and externalIds resolves it only once"() {
+        given: "a sourcing service wired with the real dedup/output-filter services"
+            def realDedup = new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient)
+            def realFilter = new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200)
+            def svc = new RecommendationSourcingService(seriesRepository, tmdbClient, new TmdbGenreTable(), 20, 200,
+                new RecommendationPoolCache(Clock.systemDefaultZone(), 10, 50), realDedup, realFilter, 3)
+            // minVoteCount=0 sidesteps the output filter's vote-count floor entirely, isolating
+            // this test to the merge/memoization behavior it actually cares about.
+            def criteria = new RecommendationCriteria(sourceMode: "trending", minVoteCount: 0)
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        and: "tmdbId=42 appears on both page 1 and page 2, alongside a page-2-only tmdbId=43; page 3 is empty (stops the loop)"
+            tmdbClient.trending("week") >> [candidate(42)]
+            tmdbClient.trending("week", 2) >> [candidate(42), candidate(43)]
+            tmdbClient.trending("week", 3) >> []
+            tmdbClient.externalIds(43) >> Optional.of("tt0000043")
+
+        when: "sourceTrending backfills through page 2"
+            def result = svc.sourceTrending(criteria, 100)
+
+        then: "externalIds(42) is called exactly once, despite tmdbId 42 appearing on both pages"
+            1 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
+
+        and: "tmdbId 42 appears exactly once in the final accumulator, alongside the page-2-only candidate"
+            result.count { it.candidate().tmdbId() == 42 } == 1
+            result.count { it.candidate().tmdbId() == 43 } == 1
     }
 
     // -- Spec 054: backfill-pagination stopping conditions -- sourceTopRated (analogous to sourceTrending above) --
@@ -842,13 +913,13 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "only page 1 is fetched"
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> (1..20).collect { candidate(it) }
-            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2)
     }
 
     def "SERIES-054-AC-09: sourceTopRated fetches page 2 and merges its candidates when page 1's post-dedup/filter count is short"() {
-        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's reaches 20"
+        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's takes it to 20 (non-overlapping tmdbIds)"
             def criteria = new RecommendationCriteria(sourceMode: "topRated")
 
         when: "sourceTopRated is called with limit=20"
@@ -858,11 +929,11 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> (1..20).collect { candidate(it) }
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> [candidate(21)]
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3)
-            1 * deduplicationService.dedupeAndExclude(_) >> []
-            1 * deduplicationService.dedupeAndExclude(_) >> []
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(5)
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
-            result.size() == 21
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 5)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(100, 15)
+            result.size() == 20
     }
 
     def "SERIES-054-AC-12: sourceTopRated stops at max-discover-pages even if still short, without erroring"() {
@@ -877,7 +948,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> [candidate(2)]
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3) >> [candidate(3)]
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 4)
-            deduplicationService.dedupeAndExclude(_) >> []
+            deduplicationService.dedupeAndExclude(_, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
             notThrown(Exception)
     }
@@ -893,7 +964,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(1)]
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3)
-            deduplicationService.dedupeAndExclude(_) >> []
+            deduplicationService.dedupeAndExclude(_, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
     }
 
@@ -911,13 +982,13 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "only page 1 is fetched"
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> (1..20).collect { candidate(it) }
-            1 * deduplicationService.dedupeAndExclude(_) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2)
     }
 
     def "SERIES-054-AC-09: sourceByGenreOrKeyword fetches page 2 and merges its candidates when page 1's post-dedup/filter count is short"() {
-        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's reaches 20"
+        given: "page 1's post-dedup/filter count of 5 is short of limit=20, page 2's takes it to 20 (non-overlapping tmdbIds)"
             def criteria = new RecommendationCriteria()
 
         when: "sourceByGenreOrKeyword is called with limit=20"
@@ -927,11 +998,11 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> (1..20).collect { candidate(it) }
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> [candidate(21)]
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3)
-            1 * deduplicationService.dedupeAndExclude(_) >> []
-            1 * deduplicationService.dedupeAndExclude(_) >> []
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(5)
-            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(20)
-            result.size() == 21
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _) >> []
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 5)
+            1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(100, 15)
+            result.size() == 20
     }
 
     def "SERIES-054-AC-12: sourceByGenreOrKeyword stops at max-discover-pages even if still short, without erroring"() {
@@ -946,7 +1017,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> [candidate(2)]
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3) >> [candidate(3)]
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 4)
-            deduplicationService.dedupeAndExclude(_) >> []
+            deduplicationService.dedupeAndExclude(_, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
             notThrown(Exception)
     }
@@ -962,7 +1033,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> [candidate(1)]
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> []
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3)
-            deduplicationService.dedupeAndExclude(_) >> []
+            deduplicationService.dedupeAndExclude(_, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
     }
 }

@@ -8,6 +8,17 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.48.0] - 2026-09-10
+
+### Added
+
+- Backend: debug-level logging across the recommendation sourcing/dedup/output-filter/ranking pipeline (`RecommendationSourcingService`, `RecommendationService`) — per-page and per-mode candidate counts at each stage, and why a backfill loop stopped (limit reached, page cap reached, or TMDB end-of-results), to make "why did I get N results" diagnosable without ad-hoc temporary logging.
+
+### Fixed
+
+- Backend: the recommendation discover-mode backfill loop (`sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword`) no longer re-deduplicates/re-filters its entire accumulated candidate pool on every page fetched — each newly-fetched page is deduped/filtered exactly once via a running accumulator instead, and `RecommendationService` no longer runs a redundant third dedup/filter pass over their already-processed result (`series_spec_059`).
+- Backend: `TmdbClient.externalIds` is now memoized per sourcing request, so a `tmdbId` already resolved (e.g. reappearing on a later backfill page) is never re-resolved (`series_spec_059`).
+
 ## [3.47.0] - 2026-09-10
 
 ### Added
