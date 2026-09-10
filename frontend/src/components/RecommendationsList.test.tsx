@@ -250,6 +250,29 @@ describe('FRONTEND-010-AC-07: error and retry', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
     )
   })
+
+  // FRONTEND-040-AC-10: distinct from the Retry-button case above -- this is
+  // the far more common path (edit filters, click "Get Recommendations"/
+  // "Apply Filters" again, which passes a brand-new `query` prop rather than
+  // going through handleRetry). Previously `error` was never reset when a
+  // new `query` triggered the fetch effect, so a successful follow-up fetch
+  // still rendered the old failure message forever, hiding real results.
+  it('a new query prop after a failure clears the stale error once it succeeds', async () => {
+    mockGetRecommendations.mockRejectedValueOnce(
+      new ApiError(400, 'minTmdbRating must be between 0 and 10'),
+    )
+    mockGetRecommendations.mockResolvedValueOnce([makeRecommendation()])
+    const { rerender } = render(
+      <RecommendationsList query={{ minTmdbRating: -9 }} />,
+    )
+
+    await screen.findByRole('alert')
+
+    rerender(<RecommendationsList query={{}} />)
+
+    await screen.findByText('Ozark')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-010-AC-12/13/14: mark as watched / add to list', () => {
