@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 2 (SERIES-022-AC-07..10): directed sourcing -- trending, bypassing the watched pool entirely --
 
-    List<RawCandidate> sourceTrending(RecommendationCriteria c, int limit) {
+    List<DedupedCandidate> sourceTrending(RecommendationCriteria c, int limit) {
         String window = c.getTrendingWindow() != null && !c.getTrendingWindow().isBlank()
             ? c.getTrendingWindow() : "week";
         return sourceWithBackfill(c, limit,
@@ -100,7 +101,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 3 (SERIES-022-AC-11..15): directed sourcing -- top rated, bypassing the watched pool entirely --
 
-    List<RawCandidate> sourceTopRated(RecommendationCriteria c, int limit) {
+    List<DedupedCandidate> sourceTopRated(RecommendationCriteria c, int limit) {
         // SERIES-024-AC-10: topRated's sourcing-time default is 200, not the shared 20.
         int effectiveMinVoteCount = c.getMinVoteCount() != null ? c.getMinVoteCount() : RecommendationDefaults.DEFAULT_MIN_VOTE_COUNT_TOP_RATED;
         // SERIES-025-AC-05: resolve discoverSortBy to vote_average.desc when unset.
@@ -112,7 +113,7 @@ public class RecommendationSourcingService {
 
     // -- Requirement 5: directed sourcing by genre/keyword, bypassing the watched pool entirely --
 
-    List<RawCandidate> sourceByGenreOrKeyword(RecommendationCriteria c, int limit) {
+    List<DedupedCandidate> sourceByGenreOrKeyword(RecommendationCriteria c, int limit) {
         List<Integer> genreIds = resolveGenreIds(c.getGenres());
         List<Integer> keywordIds = resolveKeywordIds(c.getKeywords());
         // SERIES-025-AC-06: resolve discoverSortBy to popularity.desc when unset.
@@ -136,39 +137,67 @@ public class RecommendationSourcingService {
     }
 
     /**
-     * SERIES-054-AC-09/11/12/13: shared backfill-pagination loop for {@link #sourceTrending}/
-     * {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword} -- the three direct-TMDB-discover
-     * sourcing modes (deliberately excluding {@link #sourceFromPool}, "Use My Series"; see
-     * {@code series_spec_054_recommendation_discover_backfill_pagination.md}'s Design
-     * Decisions). Fetches page 1 via {@code pageFetcher}, then keeps fetching subsequent pages
-     * -- merging each page's raw candidates into the same accumulated set -- until whichever
-     * comes first: the post-dedup/post-output-filter candidate count reaches {@code limit}
-     * (AC-11), {@link #maxDiscoverPages} pages have been fetched (AC-12, never an error -- a
-     * shortfall is a valid outcome), or a fetched page's results come back empty, TMDB's own
-     * end-of-results signal (AC-13). The evaluate-against-dedup/filter step is skipped on the
-     * final page under the cap, since its result can never change whether another page is
-     * fetched.
+     * SERIES-054-AC-09/11/12/13, restructured by SERIES-059-AC-01/02/03/04: shared backfill-
+     * pagination loop for {@link #sourceTrending}/{@link #sourceTopRated}/{@link
+     * #sourceByGenreOrKeyword} -- the three direct-TMDB-discover sourcing modes (deliberately
+     * excluding {@link #sourceFromPool}, "Use My Series"; see {@code
+     * series_spec_054_recommendation_discover_backfill_pagination.md}'s Design Decisions, kept
+     * unrevised by {@code series_spec_059}). Fetches page 1 via {@code pageFetcher}, then keeps
+     * fetching subsequent pages -- deduping/filtering each newly-fetched page's own raw
+     * candidates exactly once and merging the result into a running {@code
+     * accumulator} keyed by {@code tmdbId} (SERIES-059-AC-01) -- until whichever comes first:
+     * the accumulator's own size reaches {@code limit} (AC-11, read directly with no
+     * re-derivation -- SERIES-059-AC-03), {@link #maxDiscoverPages} pages have been fetched
+     * (AC-12, never an error -- a shortfall is a valid outcome), or a fetched page's results
+     * come back empty, TMDB's own end-of-results signal (AC-13). A {@code tmdbId} reappearing on
+     * a later page merges into its existing accumulator entry rather than duplicating it
+     * (SERIES-059-AC-02); {@code externalIdCache} is shared across every page's dedupe call so
+     * {@link TmdbClient#externalIds(int)} is invoked at most once per distinct {@code tmdbId}
+     * for the whole call (SERIES-059-AC-07).
      */
-    private List<RawCandidate> sourceWithBackfill(RecommendationCriteria c, int limit,
-                                                    IntFunction<List<TmdbCandidate>> pageFetcher) {
-        List<RawCandidate> accumulated = new ArrayList<>();
+    private List<DedupedCandidate> sourceWithBackfill(RecommendationCriteria c, int limit,
+                                                        IntFunction<List<TmdbCandidate>> pageFetcher) {
+        Map<Integer, DedupedCandidate> accumulator = new LinkedHashMap<>();
+        Map<Integer, Optional<String>> externalIdCache = new HashMap<>();
         boolean done = false;
         for (int page = 1; page <= maxDiscoverPages && !done; page++) {
             List<TmdbCandidate> pageResults = pageFetcher.apply(page);
             if (pageResults.isEmpty()) {
                 done = true;
             } else {
-                pageResults.forEach(candidate -> accumulated.add(new RawCandidate(candidate, null)));
-                done = page == maxDiscoverPages || countAfterDedupAndFilter(accumulated, c) >= limit;
+                mergePage(pageResults, c, accumulator, externalIdCache);
+                done = page == maxDiscoverPages || accumulator.size() >= limit;
             }
         }
-        return accumulated;
+        return List.copyOf(accumulator.values());
     }
 
-    /** SERIES-054-AC-09: evaluates the accumulated raw candidates through the same dedup/output-filter pipeline {@code RecommendationService.doRecommend} runs downstream, purely to decide whether another page is worth fetching. */
-    private int countAfterDedupAndFilter(List<RawCandidate> accumulated, RecommendationCriteria c) {
-        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(accumulated);
-        return outputFilterService.applyOutputFilters(deduped, c).size();
+    /**
+     * SERIES-059-AC-01/02: dedupes/filters {@code pageResults} (this page's own raw candidates
+     * only) exactly once, then merges each survivor into {@code accumulator} by {@code tmdbId}
+     * -- a repeat {@code tmdbId} merges its (possibly empty) {@code sourceSeries} into the
+     * existing entry rather than creating a duplicate.
+     */
+    private void mergePage(List<TmdbCandidate> pageResults, RecommendationCriteria c,
+                            Map<Integer, DedupedCandidate> accumulator,
+                            Map<Integer, Optional<String>> externalIdCache) {
+        List<RawCandidate> pageRaw = pageResults.stream().map(candidate -> new RawCandidate(candidate, null)).toList();
+        List<DedupedCandidate> pageDeduped = deduplicationService.dedupeAndExclude(pageRaw, externalIdCache);
+        List<DedupedCandidate> pageFiltered = outputFilterService.applyOutputFilters(pageDeduped, c);
+        for (DedupedCandidate dc : pageFiltered) {
+            accumulator.merge(dc.candidate().tmdbId(), dc, this::mergeDedupedCandidates);
+        }
+    }
+
+    /** SERIES-059-AC-02: combines a repeat {@code tmdbId}'s contributing sources into the entry already in the accumulator, preserving the canonical source ordering. */
+    private DedupedCandidate mergeDedupedCandidates(DedupedCandidate existing, DedupedCandidate incoming) {
+        if (incoming.sourceSeries().isEmpty()) {
+            return existing;
+        }
+        List<SeriesEntity> combined = new ArrayList<>(existing.sourceSeries());
+        combined.addAll(incoming.sourceSeries());
+        return new DedupedCandidate(existing.candidate(),
+            combined.stream().sorted(SourceOrderComparator.INSTANCE).toList(), existing.imdbId());
     }
 
     /** Shared by {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword}: an explicit, non-blank {@code discoverSortBy} wins; otherwise the mode's own default. */

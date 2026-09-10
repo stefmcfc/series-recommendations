@@ -112,6 +112,41 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             result[0].sourceSeries() == []
     }
 
+    def "SERIES-059-AC-07: the cache-aware overload memoizes externalIds across separate calls sharing the same cache"() {
+        given: "two separate raw candidate lists, both containing tmdbId 42, and a shared externalIdCache"
+            def firstPage = [new RawCandidate(candidate(42), null)]
+            def secondPage = [new RawCandidate(candidate(42), null)]
+            def cache = [:]
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "dedupeAndExclude(raw, cache) is called twice, sharing the same cache"
+            def firstResult = deduplicationService.dedupeAndExclude(firstPage, cache)
+            def secondResult = deduplicationService.dedupeAndExclude(secondPage, cache)
+
+        then: "externalIds(42) is resolved only once across both calls"
+            1 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
+
+        and: "both calls' own result still surfaces the resolved candidate"
+            firstResult.size() == 1
+            secondResult.size() == 1
+    }
+
+    def "SERIES-059-AC-07: the single-arg overload doesn't share memoization across separate calls"() {
+        given: "two separate calls to the single-arg dedupeAndExclude, both containing tmdbId 42"
+            def firstPage = [new RawCandidate(candidate(42), null)]
+            def secondPage = [new RawCandidate(candidate(42), null)]
+            seriesRepository.existsByImdbId(_) >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+
+        when: "dedupeAndExclude(raw) is called twice, with no shared cache"
+            deduplicationService.dedupeAndExclude(firstPage)
+            deduplicationService.dedupeAndExclude(secondPage)
+
+        then: "externalIds(42) is resolved once per call -- no cross-call memoization for the no-cache overload"
+            2 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
+    }
+
     def "SERIES-015-AC-05: contributing sources are ordered personalRating desc, dateCompleted desc"() {
         given: "three source series recommending the same candidate: rating 2, rating 5, rating null"
             def low = completedSeries("Low Rated", "tt2000001", LocalDateTime.now().minusDays(1), null, 2)

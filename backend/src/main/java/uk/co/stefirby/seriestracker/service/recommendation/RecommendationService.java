@@ -51,23 +51,21 @@ public class RecommendationService {
      * Upper bound on the candidate pool {@code external_ids} gets resolved for / that feeds
      * ranking (SERIES-007-AC-02, superseding the previously hardcoded {@code
      * TMDB_MAX_CANDIDATES = 50}) -- applied at a different pipeline stage depending on {@code
-     * sourceMode}, per the post-{@code series_spec_054} fix below.
+     * sourceMode}.
      *
      * <p>For {@code sourceFromPool} ("Use My Series"): still applied to the *raw*, pre-dedup
      * candidate list, exactly as originally designed -- this mode's raw pool (aggregated across
      * many source series) is never independently resolved/filtered before reaching {@code
      * doRecommend}, so capping it before {@code dedupeAndExclude} genuinely bounds {@code
      * external_ids} call volume, and existing tests assert on that (0 calls beyond the cap).
+     * {@code series_spec_059} leaves this mode entirely unrevised (SERIES-059-AC-06).
      *
      * <p>For {@code sourceTrending}/{@code sourceTopRated}/{@code sourceByGenreOrKeyword}:
-     * applied *after* {@link RecommendationOutputFilterService#applyOutputFilters} instead.
-     * Capping their raw list pre-dedup was a silent correctness bug once {@code
-     * series_spec_054}'s backfill pagination could source up to {@code maxDiscoverPages * ~20}
-     * raw candidates: truncating in TMDB's own page order, before dedup/filtering ever ran,
-     * discarded whichever candidates happened to land past position 50 -- including ones that
-     * would have passed every filter -- for no real {@code external_ids}-call savings (these
-     * three modes' own backfill loop already dedupes/filters the full accumulated pool on every
-     * page as its stopping check, so the calls happen regardless of where this cap sits).
+     * applied directly to the already-deduped/already-output-filtered {@code
+     * List<DedupedCandidate>} these three modes now return (SERIES-059-AC-04/05) -- their own
+     * {@code sourceWithBackfill} loop dedupes/filters each page exactly once as it accumulates,
+     * so there is no separate dedup/filter pass left in {@code doRecommend} to place this cap
+     * before or after; it's simply a post-hoc truncation of the sourcing method's own result.
      */
     private final int maxCandidates;
 
@@ -127,40 +125,30 @@ public class RecommendationService {
         boolean topRatedMode = RecommendationDefaults.SOURCE_MODE_TOP_RATED.equals(criteria.getSourceMode());
         boolean useMySeriesMode = isUseMySeriesMode(criteria);
 
-        List<RawCandidate> raw;
-        if (trendingMode) {
-            raw = sourcingService.sourceTrending(criteria, limit);
-        } else if (topRatedMode) {
-            raw = sourcingService.sourceTopRated(criteria, limit);
-        } else if (useMySeriesMode) {
-            raw = sourcingService.sourceFromPool(criteria, limit);
-        } else {
-            // SERIES-033-AC-06/07: Custom Search (sourceByGenreOrKeyword) is now the default/
-            // fallback branch, reached whenever the request is neither trending, topRated, nor
-            // "Use My Series" -- including a request with nothing set at all, which TmdbClient
-            // .discover() already turns into an unfiltered discover/tv call (no with_genres/
-            // with_keywords params) rather than silently falling back to pool-based sourcing.
-            raw = sourcingService.sourceByGenreOrKeyword(criteria, limit);
-        }
-
         List<DedupedCandidate> filtered;
         if (useMySeriesMode) {
-            // See maxCandidates' javadoc: this mode's raw pool is never independently
-            // resolved/filtered before here, so the cap genuinely bounds external_ids call
-            // volume applied pre-dedup, as originally designed.
-            List<RawCandidate> capped = raw.size() > maxCandidates ? raw.subList(0, maxCandidates) : raw;
-            List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
-            filtered = outputFilterService.applyOutputFilters(deduped, criteria);
+            // SERIES-059-AC-06: sourceFromPool is untouched by series_spec_059 -- still its own
+            // raw pool, capped pre-dedup, then dedup/filtered here exactly as before that spec.
+            filtered = sourceAndFilterFromPool(criteria, limit);
         } else {
-            // See maxCandidates' javadoc: these three modes' own backfill loop already
-            // dedupes/filters the full raw pool as its stopping check, so a pre-dedup cap here
-            // saves nothing and only risks discarding candidates that would have passed
-            // filtering -- applied post-filter instead.
-            List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(raw);
-            List<DedupedCandidate> outputFiltered = outputFilterService.applyOutputFilters(deduped, criteria);
-            filtered = outputFiltered.size() > maxCandidates
-                ? outputFiltered.subList(0, maxCandidates)
-                : outputFiltered;
+            List<DedupedCandidate> sourced;
+            if (trendingMode) {
+                sourced = sourcingService.sourceTrending(criteria, limit);
+            } else if (topRatedMode) {
+                sourced = sourcingService.sourceTopRated(criteria, limit);
+            } else {
+                // SERIES-033-AC-06/07: Custom Search (sourceByGenreOrKeyword) is now the
+                // default/fallback branch, reached whenever the request is neither trending,
+                // topRated, nor "Use My Series" -- including a request with nothing set at all,
+                // which TmdbClient.discover() already turns into an unfiltered discover/tv call
+                // (no with_genres/with_keywords params) rather than silently falling back to
+                // pool-based sourcing.
+                sourced = sourcingService.sourceByGenreOrKeyword(criteria, limit);
+            }
+            // SERIES-059-AC-04/05: sourced is already deduped/output-filtered (sourceWithBackfill
+            // processes each page exactly once as it accumulates) -- no redundant third pass
+            // here, just the post-hoc maxCandidates truncation. See maxCandidates' javadoc.
+            filtered = sourced.size() > maxCandidates ? sourced.subList(0, maxCandidates) : sourced;
         }
 
         if (!useMySeriesMode) {
@@ -199,6 +187,20 @@ public class RecommendationService {
             .map(ScoredCandidate::dto)
             .limit(limit)
             .toList();
+    }
+
+    /**
+     * SERIES-059-AC-06: "Use My Series" sourcing's own dedup/filter path, kept byte-identical to
+     * its pre-{@code series_spec_059} shape -- {@link RecommendationSourcingService#sourceFromPool}
+     * still returns a raw, un-deduped pool, capped here pre-dedup (see {@code maxCandidates}'
+     * javadoc), then run through {@code dedupeAndExclude}/{@code applyOutputFilters} exactly as
+     * before this spec.
+     */
+    private List<DedupedCandidate> sourceAndFilterFromPool(RecommendationCriteria criteria, int limit) {
+        List<RawCandidate> raw = sourcingService.sourceFromPool(criteria, limit);
+        List<RawCandidate> capped = raw.size() > maxCandidates ? raw.subList(0, maxCandidates) : raw;
+        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
+        return outputFilterService.applyOutputFilters(deduped, criteria);
     }
 
     /**

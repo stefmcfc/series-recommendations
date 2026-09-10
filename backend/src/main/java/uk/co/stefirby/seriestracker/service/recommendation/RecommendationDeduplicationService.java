@@ -8,6 +8,7 @@ import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,11 +34,26 @@ public class RecommendationDeduplicationService {
     }
 
     List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw) {
+        // SERIES-059-AC-07: a fresh, call-scoped cache when there's no shared cache to pass in
+        // (e.g. sourceFromPool's single dedupeAndExclude call) -- equivalent to no memoization
+        // at all for a single call, but lets sourceWithBackfill's multi-page loop share one
+        // cache across several calls via the overload below.
+        return dedupeAndExclude(raw, new HashMap<>());
+    }
+
+    /**
+     * SERIES-059-AC-07: overload accepting a caller-supplied {@code externalIdCache}, keyed by
+     * {@code tmdbId}, so a {@code tmdbId} already resolved earlier in the same request (whether
+     * by an earlier element of {@code raw} itself or an earlier call sharing the same map, as
+     * {@link RecommendationSourcingService#sourceWithBackfill} does across pages) is never
+     * re-resolved via {@link TmdbClient#externalIds(int)}.
+     */
+    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Map<Integer, Optional<String>> externalIdCache) {
         Map<String, TmdbCandidate> candidateByImdbId = new LinkedHashMap<>();
         Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
 
         for (RawCandidate rc : raw) {
-            accumulateCandidate(rc, candidateByImdbId, sourcesByImdbId);
+            accumulateCandidate(rc, candidateByImdbId, sourcesByImdbId, externalIdCache);
         }
 
         return candidateByImdbId.entrySet().stream()
@@ -52,8 +68,9 @@ public class RecommendationDeduplicationService {
      */
     private void accumulateCandidate(RawCandidate rc,
                                       Map<String, TmdbCandidate> candidateByImdbId,
-                                      Map<String, List<SeriesEntity>> sourcesByImdbId) {
-        Optional<String> imdbIdOpt = tmdbClient.externalIds(rc.candidate().tmdbId());
+                                      Map<String, List<SeriesEntity>> sourcesByImdbId,
+                                      Map<Integer, Optional<String>> externalIdCache) {
+        Optional<String> imdbIdOpt = externalIdCache.computeIfAbsent(rc.candidate().tmdbId(), tmdbClient::externalIds);
         if (imdbIdOpt.isEmpty()) {
             return;
         }

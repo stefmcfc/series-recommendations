@@ -707,8 +707,13 @@ class RecommendationServiceSpec extends Specification {
             1 * sourcingService.sourceByGenreOrKeyword(criteria, 7) >> []
     }
 
-    def "SERIES-054-AC-14: the final response is built by the same unchanged downstream pipeline"() {
-        given: "sourceTrending returns a multi-page-merged raw candidate list, standing in for the sourcing service's own internal pagination"
+    // -- Spec 059, Requirement 2 (SERIES-059-AC-04/05): sourceTrending/sourceTopRated/
+    // sourceByGenreOrKeyword now return an already-deduped/already-output-filtered result;
+    // doRecommend must use it directly rather than re-dedup/re-filtering it a third time --
+    // supersedes the pre-Spec-059 "SERIES-054-AC-14" test, which asserted the opposite.
+
+    def "SERIES-059-AC-05: doRecommend does not re-dedup/re-filter sourceTrending's already-processed result"() {
+        given: "sourceTrending already returns a deduped/filtered list (its own backfill loop having done that incrementally per page)"
             def criteria = new RecommendationCriteria(sourceMode: "trending")
             def sourcingService = Mock(RecommendationSourcingService)
             def deduplicationServiceMock = Mock(RecommendationDeduplicationService)
@@ -718,42 +723,42 @@ class RecommendationServiceSpec extends Specification {
                 deduplicationServiceMock, outputFilterServiceMock,
                 new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"),
                 new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 50, 8)
-            def multiPageMerged = [new RawCandidate(candidate(10), null), new RawCandidate(candidate(20), null),
-                                    new RawCandidate(candidate(30), null)]
+            def alreadyDeduped = [new DedupedCandidate(candidate(10), [], "tt0000010"), new DedupedCandidate(candidate(20), [], "tt0000020")]
 
         when: "recommend is called"
-            service.recommend(20, criteria)
-
-        then: "deduplicationService/outputFilterService are invoked exactly as before this spec, once each, over the whole (possibly multi-page-sourced) raw list"
-            1 * sourcingService.sourceTrending(criteria, 20) >> multiPageMerged
-            1 * deduplicationServiceMock.dedupeAndExclude(multiPageMerged) >> []
-            1 * outputFilterServiceMock.applyOutputFilters(_, criteria) >> []
-    }
-
-    // -- Post-SERIES-054 correction (2026-09-08): maxCandidates must not discard raw candidates
-    // before dedup/filtering for the three backfill-enabled modes -- see series_spec_054's
-    // Correction note.
-
-    def "Correction: a raw candidate beyond maxCandidates' position still gets a chance to survive dedup/filtering for trending mode"() {
-        given: "trending mode sources 51 raw candidates (raw.size() > maxCandidates=50); the first 50 fail the language filter, the 51st (a real, on-topic candidate) doesn't"
-            def criteria = new RecommendationCriteria(sourceMode: "trending", language: "en")
-            def sourcingService = Mock(RecommendationSourcingService)
-            def service = serviceWithMockSourcing(sourcingService)
-            def nonEnglish = (1..50).collect { candidate(it, "Candidate ${it}", 2020, new BigDecimal("8.0"), [18], 300, "ko") }
-            def survivor = candidate(51, "Survivor", 2020, new BigDecimal("8.0"), [18], 300, "en")
-            def rawList = (nonEnglish + [survivor]).collect { new RawCandidate(it, null) }
-            sourcingService.sourceTrending(criteria, 20) >> rawList
-            (1..51).each { i -> tmdbClient.externalIds(i) >> Optional.of("tt" + i.toString().padLeft(7, '0')) }
-            seriesRepository.existsByImdbId(_) >> false
-            ignoredSeriesRepository.existsByImdbId(_) >> false
-
-        when: "recommend(20, criteria) is called"
             def results = service.recommend(20, criteria)
 
-        then: "the 51st candidate -- beyond position 50 in raw/TMDB-page order -- still reaches the output filters and survives, instead of being silently discarded by a pre-filter raw cap"
-            results.size() == 1
-            results[0].title == "Survivor"
+        then: "sourceTrending's own already-deduped/filtered result is used directly, no further dedup/filter pass runs"
+            1 * sourcingService.sourceTrending(criteria, 20) >> alreadyDeduped
+            0 * deduplicationServiceMock.dedupeAndExclude(_)
+            0 * deduplicationServiceMock.dedupeAndExclude(_, _)
+            0 * outputFilterServiceMock.applyOutputFilters(_, _)
+
+        and: "the DTOs are assembled straight from that result"
+            results*.title() == ["Candidate 10", "Candidate 20"]
     }
+
+    def "SERIES-059: maxCandidates caps sourceTrending's already-deduped/filtered result directly, not via a discard-then-refilter pass"() {
+        given: "a service configured with maxCandidates=3, and sourceTrending returning 5 already-deduped/filtered candidates"
+            def sourcingService = Mock(RecommendationSourcingService)
+            def svc = new RecommendationService(tmdbClient, omdbClient, new RecommendationCriteriaValidator(Clock.systemDefaultZone()), sourcingService,
+                new RecommendationDeduplicationService(seriesRepository, ignoredSeriesRepository, tmdbClient),
+                new RecommendationOutputFilterService(tmdbClient, new TmdbGenreTable(), 200),
+                new RecommendationRankingService(new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), "best-source"),
+                new RecommendationDtoAssembler(new TmdbGenreTable(), new WatchProviderService(seriesRepository, tmdbClient, "GB")), 3, 8)
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+            def deduped = (1..5).collect { new DedupedCandidate(candidate(it), [], "tt" + it.toString().padLeft(7, '0')) }
+            sourcingService.sourceTrending(criteria, 20) >> deduped
+
+        when: "recommend(20, criteria) is called"
+            def results = svc.recommend(20, criteria)
+
+        then: "only the first 3 (maxCandidates) reach the response, in TMDB's own order"
+            results*.title() == ["Candidate 1", "Candidate 2", "Candidate 3"]
+    }
+
+    // -- Post-SERIES-054 correction (2026-09-08), preserved by SERIES-059: sourceFromPool's own
+    // pre-dedup raw cap is unaffected by the trending/topRated/Custom Search restructuring.
 
     def "Correction: sourceFromPool ('Use My Series') keeps the original pre-dedup raw cap, unaffected by the trending/topRated/Custom Search fix"() {
         given: "Use My Series mode sources 51 raw candidates -- unlike the three backfill-enabled modes, this mode's raw pool is still capped before dedup, as originally designed"

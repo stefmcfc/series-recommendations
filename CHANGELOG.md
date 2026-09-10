@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Backend: the recommendation discover-mode backfill loop (`sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword`) no longer re-deduplicates/re-filters its entire accumulated candidate pool on every page fetched — each newly-fetched page is deduped/filtered exactly once via a running accumulator instead, and `RecommendationService` no longer runs a redundant third dedup/filter pass over their already-processed result (`series_spec_059`).
+- Backend: `TmdbClient.externalIds` is now memoized per sourcing request, so a `tmdbId` already resolved (e.g. reappearing on a later backfill page) is never re-resolved (`series_spec_059`).
+
 ## [3.47.0] - 2026-09-10
 
 ### Added
