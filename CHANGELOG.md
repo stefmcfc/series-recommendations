@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.47.0] - 2026-09-10
+
 ### Added
 
 - Frontend: `SeriesDetail` gains a shareable, deep-linkable URL (`/my-series/view/:id`) — bookmarking, sharing, refreshing, and the browser's Back/Forward buttons now all work against a specific series (`frontend_spec_113`).
