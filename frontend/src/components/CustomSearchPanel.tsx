@@ -69,6 +69,14 @@ export function CustomSearchPanel({
         aria-labelledby="discover-tab-custom-search"
         className={styles.tabPanel}
       >
+        {/* FRONTEND-111-AC-01: same always-visible-hint treatment
+          UseMySeriesPanel's own hint already has, giving Custom Search an
+          equivalent one-line explanation of what it does. */}
+        <p className={styles.hint}>
+          Search TMDB directly using your own combination of genres, keywords,
+          ratings, and other filters — not based on your watched shows.
+        </p>
+
         <div className={styles.genreKeywordFields}>
           {/* FRONTEND-068-AC-02: combined include/exclude Genres picker,
             replacing the former include-only checkbox fieldset -- one

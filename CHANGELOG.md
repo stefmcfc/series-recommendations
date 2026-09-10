@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: each Discover sub-tab (Custom Search/Popular Right Now/Highest Rated) now shows a one-line description of what it does, matching "Use My Series"' existing precedent; Highest Rated also gains its first-ever dedicated tabpanel wrapper, fixing a previously-dangling `aria-controls` reference (`frontend_spec_111`).
+
 ## [3.49.0] - 2026-09-10
 
 ### Added

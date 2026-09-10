@@ -36,19 +36,6 @@ other *within this table* — and can be reordered freely as a block if prioriti
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore.
 
-**Settings & Discover ideas batch** (planned 2026-09-09, from a live-app pass covering Settings and
-Recommendations/Discover) — `frontend_spec_110` (Appearance accent color schemes + Recommendation
-Favourites divider) is now fully delivered, see the "Delivered" table below. `frontend_spec_111`
-(each Discover sub-tab — Custom Search/Popular Right Now/Highest Rated — gains a one-line
-description, matching "Use My Series"' existing precedent line; also adds Highest Rated's
-first-ever dedicated tabpanel wrapper, a real structural gap found while grounding the spec) is
-still outstanding. The broadened Settings info/disclosure-box candidate remains logged in
-`.claude/SPEC_CANDIDATES.md`, not yet spec'd.
-
-| Feature                                                                       | Backend Spec | Frontend Spec        | Status         |
-| ------------------------------------------------------------------------------ | ------------- | --------------------- | -------------- |
-| Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated) | —         | `frontend_spec_111`  | ⬜ Not started |
-
 **Saved filter profiles — Custom Search & Analysis extension** (planned 2026-09-09, from the same
 live-app pass) — two specs, backend first: `series_spec_057` (two new `FilterProfileArea` enum
 values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS` — no migration needed, the `area` column was already an
@@ -197,6 +184,7 @@ dependency order between the four — independent, can build in any order.
 | Shareable URL for `SeriesDetail` (`/my-series/view/:id`)                                                                       | —                     | `frontend_spec_113` | ✅ Done |
 | Incremental dedup/output-filtering for the recommendation backfill loop (each newly-fetched page deduped/filtered once via a running accumulator, instead of re-processing the whole accumulated pool on every page) | `series_spec_059` | — | ✅ Done |
 | Number input (`type="number"`) spinner styling — shared, themed `NumberInput` component (native spinner suppressed globally, custom increment/decrement buttons) replacing all 27 numeric fields' native browser spinner across 8 components | — | `frontend_spec_115` | ✅ Done |
+| Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated), plus Highest Rated's first-ever dedicated tabpanel wrapper (fixing a previously-dangling `aria-controls` reference) | — | `frontend_spec_111` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

@@ -758,6 +758,20 @@ describe('FRONTEND-027-AC-03: Discover reveals Popular Right Now / Highest Rated
   })
 })
 
+describe('FRONTEND-111-AC-03: Highest Rated description line', () => {
+  it('renders a tabpanel with a hint when Highest Rated is selected', () => {
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    selectHighestRated()
+
+    expect(
+      screen.getByText(/tmdb's highest-rated shows overall/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('tabpanel', { name: /highest rated/i }),
+    ).toHaveAttribute('id', 'discover-panel-top-rated')
+  })
+})
+
 describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch', () => {
   it('selects Popular Right Now and clears a prior Use My Series selection', async () => {
     mockGetAll.mockResolvedValue([
