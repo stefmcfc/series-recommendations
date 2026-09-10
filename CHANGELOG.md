@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.48.0] - 2026-09-10
+
 ### Added
 
 - Backend: debug-level logging across the recommendation sourcing/dedup/output-filter/ranking pipeline (`RecommendationSourcingService`, `RecommendationService`) — per-page and per-mode candidate counts at each stage, and why a backfill loop stopped (limit reached, page cap reached, or TMDB end-of-results), to make "why did I get N results" diagnosable without ad-hoc temporary logging.
