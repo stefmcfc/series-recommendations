@@ -165,6 +165,44 @@ describe('FRONTEND-057-AC-04: onImported fires only when something was actually 
   }, 10000)
 })
 
+describe('FRONTEND-114-AC-01: file input accepts CSV', () => {
+  it('sets accept to include both json and csv types', () => {
+    render(<ImportControls onImported={vi.fn()} />)
+    const input = screen.getByTestId('import-file-input') as HTMLInputElement
+    expect(input.accept).toContain('.csv')
+    expect(input.accept).toContain('text/csv')
+    expect(input.accept).toContain('.json')
+    expect(input.accept).toContain('application/json')
+  })
+})
+
+describe('FRONTEND-114-AC-02: submitting a CSV file uses the existing upload flow', () => {
+  it('calls importSeries with the selected CSV file and shows progress', async () => {
+    const csvFile = new File(['id,title\n,Show A\n'], 'export.csv', {
+      type: 'text/csv',
+    })
+    mockImportSeries.mockResolvedValue({
+      status: 'IN_PROGRESS',
+      totalCount: 1,
+      importedCount: 0,
+      skippedCount: 0,
+      errorCount: 0,
+      errors: [],
+      startedAt: '2026-09-05T00:00:00',
+      completedAt: null,
+    })
+
+    render(<ImportControls onImported={vi.fn()} />)
+    fireEvent.change(screen.getByTestId('import-file-input'), {
+      target: { files: [csvFile] },
+    })
+    fireEvent.click(screen.getByTestId('import-btn'))
+
+    expect(mockImportSeries).toHaveBeenCalledWith(csvFile)
+    expect(await screen.findByText(/importing/i)).toBeInTheDocument()
+  })
+})
+
 describe('failure handling', () => {
   it('shows the ApiError message and re-enables the button when the upload itself fails', async () => {
     mockImportSeries.mockRejectedValue(new ApiError(400, 'Invalid file'))

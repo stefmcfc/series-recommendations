@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.51.0] - 2026-09-10
+
+### Added
+
+- Backend: `POST /api/v1/series/import` now also accepts CSV files (reversing `SeriesExportService`'s own CSV export encoding), alongside the existing JSON format (`series_spec_058`).
+- Frontend: the Import file picker now also accepts `.csv` files, matching the backend's new CSV import support (`frontend_spec_114`).
+
 ## [3.50.0] - 2026-09-10
 
 ### Added

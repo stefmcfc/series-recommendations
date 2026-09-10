@@ -1,6 +1,6 @@
 # Spec 058: CSV Import
 
-**Status**: Not started
+**Status**: Implemented — `service/io/ImportFileParser.java`, `build.gradle.kts`
 **Priority**: P3 (`series_spec_038`'s own deferred scope, picked up as its own follow-up)
 **Depends on**: `series_spec_038_import.md` (owns the async job/`BulkImportService`/
 `ImportJobStatus` mechanism this spec plugs a second file format into, unchanged), `series_spec_004_export.md`
@@ -237,7 +237,18 @@ tests already assert on.
 - **`API.md`** — `POST /api/v1/series/import`'s entry gains a note that `.csv` (matching
   `SeriesExportService`'s own export column order) is now accepted alongside `.json`.
 - **`RUNBOOK.md`** — no new config property.
-- **`build.gradle.kts`** — add `implementation("org.apache.commons:commons-csv:<latest>")`.
+- **`build.gradle.kts`** — added `implementation("org.apache.commons:commons-csv:1.14.1")`
+  (latest stable on Maven Central at implementation time; RFC4180-aware, no Java-version
+  constraints beyond what's already required).
+- **AC-05's per-row error mechanism, concretely**: `ImportFileParser` never throws mid-file for a
+  bad cell. `toDto(CSVRecord)` wraps the whole field-by-field conversion in one try/catch; on any
+  parse failure (bad integer/decimal/date) it returns a brand-new, all-`null` `SeriesDto` instead
+  of the partially-built one. Since `title` is mandatory (`SeriesService.validateCreate` throws
+  `IllegalArgumentException("Title is required")` for a `null` title), that blank placeholder
+  deterministically fails `SeriesService.create` during the job, which `BulkImportService`
+  already counts toward `errorCount`/`errors` — no change needed to `BulkImportService` itself
+  (AC-06). This reuses the exact same "missing title" failure path `BulkImportServiceSpec`'s own
+  JSON-import tests already exercise, rather than inventing a second error-reporting channel.
 
 ## Cross-References
 
@@ -250,9 +261,9 @@ tests already assert on.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-058-AC-01: `.csv` files are parsed via Commons CSV
-- [ ] SERIES-058-AC-02: a mismatched header row is rejected before the job starts
-- [ ] SERIES-058-AC-03: an unrecognized file extension is rejected before the job starts
-- [ ] SERIES-058-AC-04: row parsing matches `csvRow`'s column order/type formatting, reversed
-- [ ] SERIES-058-AC-05: an unparseable cell is a per-row error, not a job failure
-- [ ] SERIES-058-AC-06: parsed CSV entries flow through the existing import job unchanged
+- [x] SERIES-058-AC-01: `.csv` files are parsed via Commons CSV
+- [x] SERIES-058-AC-02: a mismatched header row is rejected before the job starts
+- [x] SERIES-058-AC-03: an unrecognized file extension is rejected before the job starts
+- [x] SERIES-058-AC-04: row parsing matches `csvRow`'s column order/type formatting, reversed
+- [x] SERIES-058-AC-05: an unparseable cell is a per-row error, not a job failure
+- [x] SERIES-058-AC-06: parsed CSV entries flow through the existing import job unchanged
