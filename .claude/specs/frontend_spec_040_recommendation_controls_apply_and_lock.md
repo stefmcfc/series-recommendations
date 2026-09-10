@@ -330,6 +330,46 @@ it('FRONTEND-040-AC-09: a disabled control does not fire onQueryChange when clic
 
 ---
 
+### FRONTEND-040-AC-10 [AUTO]
+**Statement**: `RecommendationsList`'s fetch effect shall clear a previous `error` (`setError(null)`) at
+the start of every new fetch attempt, not only when the in-box "Retry" button (`handleRetry`) is used.
+
+**Rationale**: A live-app bug found after this spec shipped: the effect already re-flips `loading` to
+`true` on every new `query`/`refreshIndex` (AC-05's own fix), but never reset `error`. A failed request
+(e.g. an out-of-range filter value the backend rejects with a 400) left `error` truthy; editing the
+filters and clicking "Get Recommendations"/"Apply Filters" again — the normal path, not the Retry
+button — passed a brand-new `query` prop and re-ran the effect, but `error` was never cleared. Even a
+fully successful follow-up fetch (a real `200`, real results) still rendered the old failure message,
+since the render logic checks `error` before `recommendations`. The only way out was unmounting this
+component entirely (navigating away and back). Reproduced live: Discover → Custom Search → Min TMDB
+Rating `-9` → "Failed to load recommendations" (correct, backend rejects it) → Clear Filters → Get
+Recommendations again → still "Failed to load recommendations", despite the network request actually
+returning `200`.
+
+**References**: `RecommendationsList.tsx`'s fetch `useEffect` (AC-05's `setLoading(true)`), `handleRetry`
+(the only place `setError(null)` previously existed).
+
+**Test Case (Red)**:
+```typescript
+it('FRONTEND-040-AC-10: a new query prop after a failure clears the stale error once it succeeds', async () => {
+  mockGetRecommendations.mockRejectedValueOnce(
+    new ApiError(400, 'minTmdbRating must be between 0 and 10'),
+  )
+  mockGetRecommendations.mockResolvedValueOnce([makeRecommendation()])
+  const { rerender } = render(<RecommendationsList query={{ minTmdbRating: -9 }} />)
+
+  await screen.findByRole('alert')
+
+  rerender(<RecommendationsList query={{}} />)
+
+  await screen.findByText('Ozark')
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+})
+```
+**Test Case (Green)**: add `setError(null)` alongside the effect's existing `setLoading(true)`.
+
+---
+
 ## Implementation Notes
 
 - **`RecommendationsList`'s fetch effect now calls `setLoading(true)` at the top of every run, not just via
@@ -367,3 +407,4 @@ it('FRONTEND-040-AC-09: a disabled control does not fire onQueryChange when clic
 - [x] FRONTEND-040-AC-07: "Processing recommendations…" overlay renders while `loading`
 - [x] FRONTEND-040-AC-08: Recommendation Source radios + Apply Filters disabled while `loading`
 - [x] FRONTEND-040-AC-09: a disabled control cannot fire `onQueryChange` (regression guard)
+- [x] FRONTEND-040-AC-10: fetch effect clears a stale `error` at the start of every new attempt, not only via Retry

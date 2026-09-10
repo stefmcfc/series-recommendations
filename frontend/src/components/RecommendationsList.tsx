@@ -77,6 +77,16 @@ export function RecommendationsList({
     // reducer/fetch-token pattern) for no behavioral gain here.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
     setLoading(true)
+    // FRONTEND-040-AC-10: also clears a stale `error` from a *previous*
+    // fetch attempt at the start of every new one -- previously only
+    // `handleRetry` (the in-error-box "Retry" button) did this, so a normal
+    // filter change + "Apply"/"Get Recommendations" click after a failed
+    // request left `error` truthy forever. The next fetch could succeed
+    // (200, real results) and this component would still render the old
+    // failure message instead, since the render logic below checks `error`
+    // before `recommendations` -- the only way out was unmounting this
+    // component entirely (leaving the page and coming back).
+    setError(null)
 
     seriesApi
       .getRecommendations({ ...query, region: watchRegion })
