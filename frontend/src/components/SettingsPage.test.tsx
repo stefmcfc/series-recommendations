@@ -455,7 +455,12 @@ describe('FRONTEND-108-AC-09: Filter Profiles section', () => {
     expect(mockListFilterProfiles).toHaveBeenCalledWith(
       'RECOMMENDATION_FILTERS',
     )
-    expect(await screen.findAllByText(/no saved profiles yet/i)).toHaveLength(3)
+    // FRONTEND-112-AC-10: FilterProfileManager now renders five area groups
+    // (CUSTOM_SEARCH/ANALYSIS_FILTERS were missing from Settings entirely
+    // until this fix), so the empty-state message now appears five times.
+    expect(mockListFilterProfiles).toHaveBeenCalledWith('CUSTOM_SEARCH')
+    expect(mockListFilterProfiles).toHaveBeenCalledWith('ANALYSIS_FILTERS')
+    expect(await screen.findAllByText(/no saved profiles yet/i)).toHaveLength(5)
   })
 })
 

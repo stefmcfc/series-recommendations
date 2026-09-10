@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.53.1] - 2026-09-10
+
+### Fixed
+
+- Frontend: saved filter profiles can no longer be saved with an out-of-range value (e.g. a negative Min TMDB Rating) — the Save modal now validates criteria values, not just the profile name (`frontend_spec_109` AC-16).
+- Frontend: applying an already-saved filter profile with an out-of-range value (e.g. saved before the above fix shipped) no longer silently corrupts the live filter state and gets every "Get Recommendations"/search request stuck failing until the page is reloaded — it's now refused with an inline error instead (`frontend_spec_109` AC-17).
+- Frontend: editing a field in Custom Search (e.g. Min TMDB Rating) no longer inflates the Recommendation Filters box's own collapsed-toggle badge count for fields it doesn't even render in that mode (`frontend_spec_093` AC-04).
+- Frontend: Custom Search and Analysis Filters saved profiles are now visible, renameable, and deletable from Settings — they were previously invisible there despite already being saveable/applyable on their own pages (`frontend_spec_112` AC-10).
+
 ## [3.53.0] - 2026-09-10
 
 ### Added

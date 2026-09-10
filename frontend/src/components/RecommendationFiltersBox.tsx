@@ -19,28 +19,42 @@ import { FilterProfileSelector } from './FilterProfileSelector'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
-// FRONTEND-093-AC-02/03: counts every field this box reads/writes,
-// regardless of isCustomSearch -- several fields are hidden while
-// isCustomSearch is true, but their state values persist across mode
-// switches, so counting only currently-visible fields would make the
-// badge's number change confusingly as the user switches modes without
-// touching anything (this spec's Design Decisions).
-function countActiveFilters(state: ControlsState): number {
-  const stringFields = [
-    state.minTmdbRating,
-    state.minVoteCount,
-    state.yearMin,
-    state.yearMax,
-    state.language,
-  ]
+// FRONTEND-093-AC-02/03/04: counts every field this box reads/writes while NOT
+// isCustomSearch -- several fields are hidden while isCustomSearch is true, but
+// their state values persist across mode switches, so counting only
+// currently-visible fields would make the badge's number change confusingly as
+// the user switches modes without touching anything (this spec's original
+// Design Decisions). FRONTEND-093-AC-04 corrects a real bug that original
+// reasoning didn't anticipate: minTmdbRating/yearMin/yearMax/
+// excludeGenresSelected/countriesSelected/language are ALSO bound to
+// CustomSearchPanel.tsx's own visible fields while Custom Search is active --
+// so editing them there silently bumped this box's own badge even though none
+// of those fields are shown by this box's own collapsed toggle in that mode.
+// While isCustomSearch, only the two fields that stay visible in this box
+// regardless of mode (minVoteCount, excludeKeywordsSelected) are counted.
+function countActiveFilters(
+  state: ControlsState,
+  isCustomSearch: boolean,
+): number {
+  const stringFields = isCustomSearch
+    ? [state.minVoteCount]
+    : [
+        state.minTmdbRating,
+        state.minVoteCount,
+        state.yearMin,
+        state.yearMax,
+        state.language,
+      ]
   // FRONTEND-094-AC-08: excludeKeywordsSelected moved here from
   // stringFields above -- it's now an array (KeywordPicker), checked via
   // `.length > 0` like every other array-typed field, not `.trim() !== ''`.
-  const arrayFields = [
-    state.excludeGenresSelected,
-    state.excludeKeywordsSelected,
-    state.countriesSelected,
-  ]
+  const arrayFields = isCustomSearch
+    ? [state.excludeKeywordsSelected]
+    : [
+        state.excludeGenresSelected,
+        state.excludeKeywordsSelected,
+        state.countriesSelected,
+      ]
 
   return (
     stringFields.filter((value) => value.trim() !== '').length +
@@ -78,7 +92,7 @@ export function RecommendationFiltersBox({
   keywordOptions,
 }: RecommendationFiltersBoxProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const activeFilterCount = countActiveFilters(state)
+  const activeFilterCount = countActiveFilters(state, isCustomSearch)
   // FRONTEND-098-AC-07/08: same localStorage-backed favourites as
   // CustomSearchPanel's own instance (this spec's Design Decisions: no
   // cross-tab sync needed, each mounted consumer just reads its own copy).
