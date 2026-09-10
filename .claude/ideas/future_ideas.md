@@ -35,6 +35,10 @@ favourites, light/dark toggle) were specced (`series_spec_052`, `frontend_spec_0
 removed/trimmed here accordingly — only saved filter/algorithm profiles remains open in that
 section now.
 
+2026-09-10 update: "No shareable URL for a specific series (`SeriesDetail`)" (Navigation section)
+and "CSV import" (Export section) were specced (`frontend_spec_113`, `series_spec_058`/
+`frontend_spec_114`) and removed accordingly — see `ROADMAP.md`'s "Specced, coming soon" table.
+
 ---
 
 ## Recommendations & Lookup
@@ -85,22 +89,6 @@ section's heading is still plain "Series" (`UseMySeriesPanel.tsx`), not "Select 
 
 **Status**: Not specced. Narrow remaining scope — a single label change, `UseMySeriesPanel.tsx`'s
 `label="Series"` → `"Select Series"` (two occurrences, the picker and its "Browse..." modal).
-
-### Trim the Genres checkbox list (My Series + Recs) to only genres present in the user's tracked series — explicitly undecided
-
-Raised 2026-09-01, flagged by the user themselves as unsure whether it's a good idea. Confirmed both
-`SearchFilter` and every Recs genre-checkbox surface source their options from the same static,
-full 18-alias TMDB taxonomy (`TmdbGenreTable`, exposed via `GET /api/v1/series/genres`) — not from
-what the user actually has tracked.
-
-**Tradeoff to weigh before deciding**: a shorter, more relevant list for filtering what you already
-have, vs. losing the ability to pick a genre not yet present in your library (relevant for
-genre-based recommendation sourcing, where you may want to explore a genre you don't own anything in
-yet). **What's required** if pursued: in-memory parsing of the comma-separated `SeriesEntity.genres`
-column across all series, the same pattern `KeywordStatsService` already uses for keywords (per this
-file's own "Analysis" section note on why genres aren't normalized into a table).
-
-**Status**: Not specced — explicitly undecided, not just unprioritized.
 
 ### "Use My Series" as a step-by-step wizard instead of a single scrolling page
 
@@ -198,20 +186,6 @@ color) was explicitly out of scope for it and deferred here.
 **Status**: Not specced. No design direction chosen yet — purely a placeholder-now,
 design-properly-later split.
 
-### No shareable URL for a specific series (`SeriesDetail`)
-
-Updated 2026-08-28: `frontend_spec_041` added `react-router-dom` app-wide and gave the three
-top-level views (`/my-series`, `/recommendations`, `/keywords`) real URLs, so the old "no router
-dependency at all" framing of this note is now stale. `SeriesDetail` itself, though, was explicitly
-kept out of that spec's scope (Requirement 4) — it's still reachable only by clicking a row from
-`SeriesList`, with "Back" as the only way out, no deep-linking, no browser history entry, and no
-URL change while it's shown. The remaining gap is narrower now: routing exists, `SeriesDetail`
-just isn't wired into it yet.
-
-**Status**: Not specced. Would be a small addition on top of an already-installed router (e.g.
-`/my-series/:id`) rather than a from-scratch architectural decision — deferred until something
-actually needs a shareable link to a specific series.
-
 ---
 
 ## Export
@@ -220,23 +194,6 @@ actually needs a shareable link to a specific series.
 
 `series_spec_004_export.md`, "Future Enhancements." Choose a subset of columns rather than always
 exporting every field.
-
-**Status**: Not specced. Kept on the list (2026-08-26 review).
-
-### CSV import
-
-`series_spec_038_import.md` (2026-08-29) specced JSON-only import — CSV was explicitly scoped out:
-correctly parsing quoted/escaped CSV fields on read is materially riskier to hand-roll than writing
-them (no CSV parsing library is a backend dependency today), and a subtly wrong parse could corrupt
-data on import in a way a JSON parse failure can't. Worth picking up as its own follow-up (most
-likely via a real CSV parsing library rather than a hand-rolled reader) if genuinely wanted.
-
-**Status**: Not specced. Deliberately deferred, not overlooked — see `series_spec_038`'s own Design
-Decisions for the full reasoning.
-
-### Other export formats (Excel, XML)
-
-`series_spec_004_export.md`, "Future Enhancements" — currently JSON/CSV only.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review).
 

@@ -27,6 +27,53 @@ corrected below.
 
 ---
 
+## Specced, coming soon
+
+Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
+then by suggested build order within a tier — grouped into independent dependency chains. Rows
+within a chain must build in the listed order; the chains themselves have no dependencies on each
+other *within this table* — and can be reordered freely as a block if priorities change — but
+re-check priority order too when doing so, since this table's row order isn't just
+dependency-derived anymore.
+
+**Settings & Discover ideas batch** (planned 2026-09-09, from a live-app pass covering Settings and
+Recommendations/Discover) — `frontend_spec_110` (Appearance accent color schemes + Recommendation
+Favourites divider) is now fully delivered, see the "Delivered" table below. `frontend_spec_111`
+(each Discover sub-tab — Custom Search/Popular Right Now/Highest Rated — gains a one-line
+description, matching "Use My Series"' existing precedent line; also adds Highest Rated's
+first-ever dedicated tabpanel wrapper, a real structural gap found while grounding the spec) is
+still outstanding. The broadened Settings info/disclosure-box candidate remains logged in
+`.claude/SPEC_CANDIDATES.md`, not yet spec'd.
+
+| Feature                                                                       | Backend Spec | Frontend Spec        | Status         |
+| ------------------------------------------------------------------------------ | ------------- | --------------------- | -------------- |
+| Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated) | —         | `frontend_spec_111`  | ⬜ Not started |
+
+**Saved filter profiles — Custom Search & Analysis extension** (planned 2026-09-09, from the same
+live-app pass) — two specs, backend first: `series_spec_057` (two new `FilterProfileArea` enum
+values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS` — no migration needed, the `area` column was already an
+unconstrained `VARCHAR`) lands before `frontend_spec_112` (wires both new areas into
+`CustomSearchPanel.tsx` and a single shared picker in `AnalysisView.tsx`, resolving Custom Search's
+original field-slot-sharing exclusion from `frontend_spec_107` by giving it a fully independent
+saved-profile area rather than reusing Recommendation Filters' own).
+
+| Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
+| ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
+| Saved filter profiles for Custom Search + Analysis filters                     | `series_spec_057`   | `frontend_spec_112`  | ⬜ Not started |
+
+**Idea-pipeline batch** (planned 2026-09-10) — four specs written from `future_ideas.md`/
+`SPEC_CANDIDATES.md` items: a shareable `SeriesDetail` URL, CSV import (paired backend/frontend),
+number-input spinner styling, and an efficiency fix for the recommendation backfill loop. No
+dependency order between the four — independent, can build in any order.
+
+| Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
+| ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
+| CSV import                                                                    | `series_spec_058`   | `frontend_spec_114`  | ⬜ Not started |
+| Number input (`type="number"`) spinner styling — shared `NumberInput` component | —                  | `frontend_spec_115`  | ⬜ Not started |
+| Incremental dedup/output-filtering for the recommendation backfill loop        | `series_spec_059`   | —                    | ⬜ Not started |
+
+---
+
 ## Delivered
 
 | Feature                                                                                                                                                              | Backend Spec                         | Frontend Spec                                  | Status                                                                                          |
@@ -149,40 +196,7 @@ corrected below.
 | Filter profile management (Settings section: view/rename/delete-with-confirm per area), save modal with suggested name replacing the inline name input, delete confirmation added to the inline picker | — | `frontend_spec_108` | ✅ Done |
 | Filter profile polish (labeling, Settings-only delete, Save repositioning, rename UX, look-and-feel alignment across both the inline picker and Settings management section) | — | `frontend_spec_109` | ✅ Done |
 | Appearance accent color schemes (Purple/Blue/Green/Orange/Teal, independent of light/dark) + Recommendation Favourites divider | — | `frontend_spec_110` | ✅ Done |
-
-## Specced, coming soon
-
-Ordered by priority first (P2 before P3 before P4 — see each spec's own `Priority` header line),
-then by suggested build order within a tier — grouped into independent dependency chains. Rows
-within a chain must build in the listed order; the chains themselves have no dependencies on each
-other *within this table* — and can be reordered freely as a block if priorities change — but
-re-check priority order too when doing so, since this table's row order isn't just
-dependency-derived anymore.
-
-**Settings & Discover ideas batch** (planned 2026-09-09, from a live-app pass covering Settings and
-Recommendations/Discover) — `frontend_spec_110` (Appearance accent color schemes + Recommendation
-Favourites divider) is now fully delivered, see the "Delivered" table above. `frontend_spec_111`
-(each Discover sub-tab — Custom Search/Popular Right Now/Highest Rated — gains a one-line
-description, matching "Use My Series"' existing precedent line; also adds Highest Rated's
-first-ever dedicated tabpanel wrapper, a real structural gap found while grounding the spec) is
-still outstanding. The broadened Settings info/disclosure-box candidate remains logged in
-`.claude/SPEC_CANDIDATES.md`, not yet spec'd.
-
-| Feature                                                                       | Backend Spec | Frontend Spec        | Status         |
-| ------------------------------------------------------------------------------ | ------------- | --------------------- | -------------- |
-| Discover sub-tab description lines (Custom Search/Popular Right Now/Highest Rated) | —         | `frontend_spec_111`  | ⬜ Not started |
-
-**Saved filter profiles — Custom Search & Analysis extension** (planned 2026-09-09, from the same
-live-app pass) — two specs, backend first: `series_spec_057` (two new `FilterProfileArea` enum
-values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS` — no migration needed, the `area` column was already an
-unconstrained `VARCHAR`) lands before `frontend_spec_112` (wires both new areas into
-`CustomSearchPanel.tsx` and a single shared picker in `AnalysisView.tsx`, resolving Custom Search's
-original field-slot-sharing exclusion from `frontend_spec_107` by giving it a fully independent
-saved-profile area rather than reusing Recommendation Filters' own).
-
-| Feature                                                                       | Backend Spec        | Frontend Spec        | Status         |
-| ------------------------------------------------------------------------------ | -------------------- | --------------------- | -------------- |
-| Saved filter profiles for Custom Search + Analysis filters                     | `series_spec_057`   | `frontend_spec_112`  | ⬜ Not started |
+| Shareable URL for `SeriesDetail` (`/my-series/view/:id`)                                                                       | —                     | `frontend_spec_113` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

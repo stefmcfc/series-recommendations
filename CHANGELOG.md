@@ -8,6 +8,18 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `SeriesDetail` gains a shareable, deep-linkable URL (`/my-series/view/:id`) — bookmarking, sharing, refreshing, and the browser's Back/Forward buttons now all work against a specific series (`frontend_spec_113`).
+
+### Changed
+
+- Frontend: clicking a series row now navigates via the router (`navigate('/my-series/view/:id')`) instead of a local-state swap; "Back" and a successful delete from `SeriesDetail` now navigate to `/my-series` the same way (`frontend_spec_113`).
+
+### Fixed
+
+- Frontend: `SeriesDetail` now shows an error message with a link back to `/my-series` when the series for the URL's id can't be loaded (e.g. a stale bookmark to a deleted series), instead of leaving the user stuck with no way out other than browser Back (`frontend_spec_113`).
+
 ## [3.46.0] - 2026-09-10
 
 ### Added

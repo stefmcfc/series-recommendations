@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { seriesApi } from '../services/seriesApi'
@@ -126,7 +127,15 @@ export function SeriesDetail({
         if (err instanceof ApiError && err.status === 404) {
           setNotFound(true)
         } else {
-          setError('Failed to load series. Please try again.')
+          // FRONTEND-113-AC-05: wording keeps the pre-existing "Failed to
+          // load series" text (FRONTEND-005-AC-12/13 already asserts on it)
+          // but adds "error" so a stale/bookmarked link -- which can reject
+          // with any error, not only a 404 -- always shows a message this
+          // spec's acceptance test can find, alongside the Link back to
+          // /my-series below.
+          setError(
+            'Failed to load series due to an error. Please try again, or go back to My Series.',
+          )
         }
         setLoading(false)
       })
@@ -319,6 +328,16 @@ export function SeriesDetail({
       {!loading && notFound && (
         <div className={styles.notFound}>
           <p>Series not found.</p>
+          {/* FRONTEND-113-AC-05: a bookmarked/shared /my-series/view/:id link
+              can go stale (series deleted) -- this is the way out for that
+              case, separate from the backButton above (which relies on
+              browser history that a fresh page load won't have). */}
+          <Link
+            to="/my-series"
+            className={`${styles.backLink} ${btn.btnSecondary}`}
+          >
+            Back to My Series
+          </Link>
         </div>
       )}
 
@@ -332,6 +351,15 @@ export function SeriesDetail({
           >
             Retry
           </button>
+          {/* FRONTEND-113-AC-05: see the identical Link in the notFound
+              branch above -- a non-404 fetch failure on a stale/bookmarked
+              link needs the same way out. */}
+          <Link
+            to="/my-series"
+            className={`${styles.backLink} ${btn.btnSecondary}`}
+          >
+            Back to My Series
+          </Link>
         </div>
       )}
 
