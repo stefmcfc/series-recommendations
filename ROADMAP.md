@@ -36,7 +36,8 @@ other *within this table* — and can be reordered freely as a block if prioriti
 re-check priority order too when doing so, since this table's row order isn't just
 dependency-derived anymore.
 
-_None currently queued._
+| Feature | Backend Spec | Frontend Spec | Status |
+| ------- | ------------ | -------------- | ------ |
 
 ---
 
@@ -170,6 +171,7 @@ _None currently queued._
 | Saved filter profiles extended to two more areas: Custom Search and Analysis filters (two new independent `FilterProfileArea` values, `CUSTOM_SEARCH`/`ANALYSIS_FILTERS`) | `series_spec_057` | `frontend_spec_112` | ✅ Done |
 | Missing ratings filter (find series missing an IMDb/TMDB/Rotten Tomatoes rating) — four `SeriesSearchCriteria` boolean fields, OR-composed server-side, surfaced as four checkboxes in `SearchFilter`'s existing "Ratings" section | `series_spec_060` | `frontend_spec_116` | ✅ Done |
 | Series original language (TMDB `originalLanguage`, an ISO 639-1 code) captured on add/refresh, included in export/import, shown on the detail page immediately after Overview | `series_spec_061` | `frontend_spec_117` | ✅ Done |
+| Missing-ratings filter checkboxes moved into their own "Missing Ratings" section, separate from the "Ratings" threshold fields | — | `frontend_spec_118` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 
