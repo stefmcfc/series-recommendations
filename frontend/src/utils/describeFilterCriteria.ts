@@ -42,6 +42,9 @@ const SORT_BY_LABELS: Record<UseMySeriesFilterCriteria['sortBy'], string> = {
   year: 'Year',
   imdbRating: 'IMDb Rating',
   tmdbRating: 'TMDB Rating',
+  // FRONTEND-119-AC-07/SERIES-062.
+  rottenTomatoesRating: 'Rotten Tomatoes Rating',
+  rottenTomatoesPopcornmeter: 'Rotten Tomatoes Popcornmeter',
 }
 
 const SORT_DIRECTION_LABELS: Record<

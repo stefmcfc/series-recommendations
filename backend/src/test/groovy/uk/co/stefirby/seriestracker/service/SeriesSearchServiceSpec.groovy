@@ -446,7 +446,10 @@ class SeriesSearchServiceSpec extends Specification {
             results*.year == [2010, 2020, null]
     }
 
-    def "SERIES-009-AC-09: sortBy=imdbRating sorts nulls last regardless of direction"() {
+    // series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-04) supersedes the
+    // nulls-last behavior this test originally asserted for imdbRating -- a series missing the
+    // sorted-on rating is now excluded entirely rather than sorted last.
+    def "SERIES-062-AC-04: sortBy=imdbRating excludes the unrated series rather than sorting it last"() {
         given: "two additional series: one rated, one unrated"
             seriesService.create(new SeriesDto(title: "Imdb Sort Test A", imdbRating: 7.0))
             seriesService.create(new SeriesDto(title: "Imdb Sort Test B"))
@@ -455,11 +458,14 @@ class SeriesSearchServiceSpec extends Specification {
             def results = searchService.search(new SeriesSearchCriteria(
                 title: "Imdb Sort Test", sortBy: "imdbRating", sortDirection: "desc"))
 
-        then: "the rated series comes first, the unrated one last"
-            results*.title == ["Imdb Sort Test A", "Imdb Sort Test B"]
+        then: "only the rated series is returned"
+            results*.title == ["Imdb Sort Test A"]
     }
 
-    def "SERIES-009-AC-09: sortBy=tmdbRating sorts nulls last regardless of direction"() {
+    // series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-04) supersedes the
+    // nulls-last behavior this test originally asserted for tmdbRating -- a series missing the
+    // sorted-on rating is now excluded entirely rather than sorted last.
+    def "SERIES-062-AC-04: sortBy=tmdbRating excludes the unrated series rather than sorting it last"() {
         given: "two additional series: one rated, one unrated"
             seriesService.create(new SeriesDto(title: "Tmdb Sort Test A", tmdbRating: 7.0, tmdbVoteCount: 10))
             seriesService.create(new SeriesDto(title: "Tmdb Sort Test B"))
@@ -468,8 +474,8 @@ class SeriesSearchServiceSpec extends Specification {
             def results = searchService.search(new SeriesSearchCriteria(
                 title: "Tmdb Sort Test", sortBy: "tmdbRating", sortDirection: "asc"))
 
-        then: "the rated series comes first (ascending order among the non-null values), the unrated one last"
-            results*.title == ["Tmdb Sort Test A", "Tmdb Sort Test B"]
+        then: "only the rated series is returned"
+            results*.title == ["Tmdb Sort Test A"]
     }
 
     def "SERIES-009-AC-10: tmdbRating ties break on tmdbVoteCount descending"() {
@@ -507,6 +513,49 @@ class SeriesSearchServiceSpec extends Specification {
 
         then: "an IllegalArgumentException is thrown"
             thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-062-AC-01: sortBy=rottenTomatoesRating is a valid, working sort option"() {
+        given: "two additional series with different Rotten Tomatoes ratings"
+            seriesService.create(new SeriesDto(title: "RT Search Sort A", rottenTomatoesRating: 60))
+            seriesService.create(new SeriesDto(title: "RT Search Sort B", rottenTomatoesRating: 95))
+
+        when: "search is called with sortBy=rottenTomatoesRating, sortDirection=desc"
+            def results = searchService.search(new SeriesSearchCriteria(
+                title: "RT Search Sort", sortBy: "rottenTomatoesRating", sortDirection: "desc"))
+
+        then: "results are ordered descending"
+            results*.title == ["RT Search Sort B", "RT Search Sort A"]
+    }
+
+    def "SERIES-062-AC-04: search excludes series missing the sorted-on Rotten Tomatoes rating"() {
+        given: "one matching series with a Rotten Tomatoes rating, one matching series without"
+            seriesService.create(new SeriesDto(title: "RT Search Has", genres: "Drama", rottenTomatoesRating: 80))
+            seriesService.create(new SeriesDto(title: "RT Search Missing", genres: "Drama"))
+
+        when: "search is called with sortBy=rottenTomatoesRating and an unrelated matching filter"
+            def criteria = new SeriesSearchCriteria(genres: ["Drama"], sortBy: "rottenTomatoesRating")
+            def results = searchService.search(criteria)
+            def titles = results*.title
+
+        then: "only the series with the rating is returned"
+            titles.contains("RT Search Has")
+            !titles.contains("RT Search Missing")
+    }
+
+    def "SERIES-062-AC-06: countMissingForSort counts within the filtered population"() {
+        given: "two Drama series match the filter; one has a Rotten Tomatoes rating, one doesn't; a non-Drama series without the rating is out of scope"
+            seriesService.create(new SeriesDto(title: "Count Has", genres: "Drama", rottenTomatoesRating: 80))
+            seriesService.create(new SeriesDto(title: "Count Missing", genres: "Drama"))
+            seriesService.create(new SeriesDto(title: "Count Out Of Scope", genres: "Comedy"))
+
+        when: "countMissingForSort is called with the same Drama + rottenTomatoesRating criteria, scoped to these three via title"
+            def criteria = new SeriesSearchCriteria(
+                title: "Count", genres: ["Drama"], sortBy: "rottenTomatoesRating")
+            def count = searchService.countMissingForSort(criteria)
+
+        then: "only the in-scope, rating-missing series is counted"
+            count == 1
     }
 
     def "SERIES-037-AC-01: maxPersonalRating/maxImdbRating/startedNotFinished no longer filter results"() {

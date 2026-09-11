@@ -215,6 +215,12 @@ export const SPECIFIC_SERIES_SORT_BY_OPTIONS: {
   { value: 'year', label: 'Year' },
   { value: 'imdbRating', label: 'IMDb Rating' },
   { value: 'tmdbRating', label: 'TMDB Rating' },
+  // FRONTEND-119-AC-07/SERIES-062.
+  { value: 'rottenTomatoesRating', label: 'Rotten Tomatoes Rating' },
+  {
+    value: 'rottenTomatoesPopcornmeter',
+    label: 'Rotten Tomatoes Popcornmeter',
+  },
 ]
 
 // TOOLING-008/FRONTEND-068: exported so buildQuery's field-population
@@ -650,8 +656,37 @@ function getSpecificSeriesSortValue(
       return series.imdbRating
     case 'tmdbRating':
       return series.tmdbRating
+    case 'rottenTomatoesRating':
+      return series.rottenTomatoesRating
+    case 'rottenTomatoesPopcornmeter':
+      return series.rottenTomatoesPopcornmeter
     default:
       return null
+  }
+}
+
+// FRONTEND-119-AC-08/SERIES-062: this file's own, independent client-side
+// reimplementation of the backend's droppable-fields predicate
+// (SeriesSortResolver.isMissingRatingForSort) -- same four fields
+// (personalRating/dateAdded/title/year are never droppable), deliberately
+// not shared with SeriesList.tsx's backend-driven exclusion (this spec's
+// Design Decisions).
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isSpecificSeriesMissingSortRating(
+  series: Series,
+  sortBy: SpecificSeriesSortBy,
+): boolean {
+  switch (sortBy) {
+    case 'imdbRating':
+      return series.imdbRating == null
+    case 'tmdbRating':
+      return series.tmdbRating == null
+    case 'rottenTomatoesRating':
+      return series.rottenTomatoesRating == null
+    case 'rottenTomatoesPopcornmeter':
+      return series.rottenTomatoesPopcornmeter == null
+    default:
+      return false
   }
 }
 
@@ -659,7 +694,10 @@ function getSpecificSeriesSortValue(
 // last, regardless of ascending/descending -- matches
 // series_spec_009_rating_sort.md's backend null-last convention, kept here
 // for consistency even though this sort runs entirely client-side.
-function compareSpecificSeries(
+// FRONTEND-119-AC-07: exported so it's directly unit-testable, matching the
+// spec's own test case sketch.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function compareSpecificSeries(
   a: Series,
   b: Series,
   sortBy: SpecificSeriesSortBy,
@@ -728,15 +766,24 @@ export interface SpecificSeriesFilters {
 // and never affects what's offered as a *suggestion*: KeywordPicker already
 // excludes anything in `selected` from its suggestion list. This step
 // operates generically on whatever the filter chain excluded, so it already
-// covers the five new FRONTEND-081 predicates with no change of its own.
+// covers the five new FRONTEND-081 predicates -- and the FRONTEND-119
+// missing-sort-rating predicate below -- with no change of its own.
+//
+// FRONTEND-119-AC-08/SERIES-062: return type is now { series,
+// missingRatingCount } instead of a bare array. missingRatingCount is
+// computed from what the new missing-sort-rating filter step drops *before*
+// the reunion step above runs -- a deliberate, documented simplification
+// (this spec's Design Decisions), not a bug: a reunited already-selected
+// series is still counted as excluded even though it reappears in the final
+// list.
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function buildSpecificSeriesCandidatePool(
   allSeries: Series[],
   filters: SpecificSeriesFilters,
   selectedSeriesIds: string[],
-): Series[] {
+): { series: Series[]; missingRatingCount: number } {
   const selectable = allSeries.filter((s) => !s.excludeFromRecommendations)
-  const filtered = filterSpecificSeriesByYearRange(
+  const preRatingFiltered = filterSpecificSeriesByYearRange(
     filterSpecificSeriesByMinTmdbRating(
       filterSpecificSeriesByMinImdbRating(
         filterSpecificSeriesByMinPersonalRating(
@@ -759,6 +806,10 @@ export function buildSpecificSeriesCandidatePool(
     filters.yearMin,
     filters.yearMax,
   )
+  const filtered = preRatingFiltered.filter(
+    (s) => !isSpecificSeriesMissingSortRating(s, filters.sortBy),
+  )
+  const missingRatingCount = preRatingFiltered.length - filtered.length
   const sorted = [...filtered].sort((a, b) =>
     compareSpecificSeries(a, b, filters.sortBy, filters.sortDirection),
   )
@@ -768,7 +819,7 @@ export function buildSpecificSeriesCandidatePool(
     (s) => selectedSeriesIds.includes(s.id) && !sortedIds.has(s.id),
   )
 
-  return [...sorted, ...missingSelected]
+  return { series: [...sorted, ...missingSelected], missingRatingCount }
 }
 
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
@@ -807,9 +858,13 @@ export function RecommendationControls({
   const [keywordOptions, setKeywordOptions] = useState<string[]>([])
 
   useEffect(() => {
+    // FRONTEND-119-AC-04/SERIES-062: getAll() now resolves { series,
+    // excludedCount } -- this panel's client-side sort never drops series
+    // via the backend's excludedCount (Requirement 3 below reimplements
+    // exclusion independently), so only the series array is kept here.
     seriesApi
       .getAll()
-      .then(setAllSeries)
+      .then(({ series }) => setAllSeries(series))
       .catch(() => undefined)
   }, [])
 

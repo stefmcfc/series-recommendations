@@ -563,10 +563,19 @@ Remove a profile. `204` on success, `404` for an unknown `id`.
 ## Sorting
 
 `sortBy`/`sortDirection` on `GET /api/v1/series` and `GET /api/v1/series/search`: `sortBy` is one
-of `dateAdded` (default), `personalRating`, `title`, `year`, `imdbRating`, `tmdbRating`;
-`sortDirection` is `asc` or `desc` (default `desc`). An unrecognized value for either returns
-`400`, unlike `/keywords?sortBy=`'s fall-back-to-default behavior above. A `null` value for the
-chosen field always sorts last regardless of direction (`title` has no null case). Under
-`sortBy=tmdbRating`, `tmdbVoteCount` descending breaks ties (including both-`tmdbRating`-null
-ties) so a near-unrated show can't outrank a well-established one on a coincidental exact-rating
-match.
+of `dateAdded` (default), `personalRating`, `title`, `year`, `imdbRating`, `tmdbRating`,
+`rottenTomatoesRating`, `rottenTomatoesPopcornmeter`; `sortDirection` is `asc` or `desc` (default
+`desc`). An unrecognized value for either returns `400`, unlike `/keywords?sortBy=`'s
+fall-back-to-default behavior above.
+
+For `dateAdded`/`personalRating`/`title`/`year`, a `null` value for the chosen field always sorts
+last regardless of direction (`title` has no null case). For the four externally-sourced rating
+fields (`imdbRating`, `tmdbRating`, `rottenTomatoesRating`, `rottenTomatoesPopcornmeter`), a series
+missing the field being sorted on is instead **excluded entirely** from `data`, not sorted last —
+the response's `excludedCount` field reports how many series were excluded this way (`0` for every
+other `sortBy` value, and always `0` when `sortBy` is omitted/defaulted). `personalRating` is
+deliberately not treated as droppable even though it's also a rating: an unrated series is a
+normal, everyday state (not yet watched/reviewed), not a data gap. Under `sortBy=tmdbRating`,
+`tmdbVoteCount` descending breaks ties so a near-unrated show can't outrank a well-established one
+on a coincidental exact-rating match (series missing `tmdbRating` are already excluded, so there's
+no longer a both-null tie case to break).

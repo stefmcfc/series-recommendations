@@ -53,6 +53,9 @@ export interface UseMySeriesFilterCriteria {
   minTmdbRating: string
   yearMin: string
   yearMax: string
+  // FRONTEND-119-AC-07/SERIES-062: rottenTomatoesRating/
+  // rottenTomatoesPopcornmeter added, mirroring
+  // RecommendationControls.tsx's SpecificSeriesSortBy exactly.
   sortBy:
     | 'dateAdded'
     | 'personalRating'
@@ -60,6 +63,8 @@ export interface UseMySeriesFilterCriteria {
     | 'year'
     | 'imdbRating'
     | 'tmdbRating'
+    | 'rottenTomatoesRating'
+    | 'rottenTomatoesPopcornmeter'
   sortDirection: 'asc' | 'desc'
 }
 

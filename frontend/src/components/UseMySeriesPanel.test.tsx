@@ -907,3 +907,68 @@ describe('FRONTEND-109-AC-04: Save appears after the filter fields in UseMySerie
     ).toBe(true)
   })
 })
+
+describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
+  it('shows the notice when sorted by a droppable rating with excluded series', () => {
+    const allSeries = [
+      makeSeries({
+        id: '1',
+        title: 'Has RT',
+        rottenTomatoesRating: 80,
+        excludeFromRecommendations: false,
+      }),
+      makeSeries({
+        id: '2',
+        title: 'No RT',
+        excludeFromRecommendations: false,
+      }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={allSeries}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesRating' },
+    })
+
+    expect(
+      screen.getByText(
+        '1 series meeting this criteria does not have Rotten Tomatoes ratings',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('shows nothing when every candidate has the sorted-on rating', () => {
+    const allSeries = [
+      makeSeries({
+        id: '1',
+        title: 'Has RT',
+        rottenTomatoesRating: 80,
+        excludeFromRecommendations: false,
+      }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={allSeries}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesRating' },
+    })
+
+    expect(
+      screen.queryByText(/do not have|does not have/),
+    ).not.toBeInTheDocument()
+  })
+})

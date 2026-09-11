@@ -74,7 +74,8 @@ public class SeriesController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
         List<SeriesDto> list = seriesService.getAll(sortBy, sortDirection);
-        return ResponseEntity.ok(new ApiResponse<>(list, list.size()));
+        long excludedCount = seriesService.countMissingForSort(sortBy);
+        return ResponseEntity.ok(new ApiResponse<>(list, list.size(), excludedCount));
     }
 
     @GetMapping("/" + UuidPathPattern.PATTERN)
@@ -133,7 +134,8 @@ public class SeriesController {
         c.setSortDirection(sortDirection);
 
         List<SeriesDto> results = searchService.search(c);
-        return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
+        long excludedCount = searchService.countMissingForSort(c);
+        return ResponseEntity.ok(new ApiResponse<>(results, results.size(), excludedCount));
     }
 
     @GetMapping("/export")

@@ -109,18 +109,45 @@ describe('SH-001: getAll', () => {
         status: SeriesStatus.WATCHING,
       }),
     ]
-    client.get.mockResolvedValue({ data: { data: mockSeries, count: 1 } })
+    client.get.mockResolvedValue({
+      data: { data: mockSeries, count: 1, excludedCount: 0 },
+    })
 
     const result = await seriesApi.getAll()
 
     expect(client.get).toHaveBeenCalledWith('/series')
-    expect(result).toEqual(mockSeries)
-    expect(Array.isArray(result)).toBe(true)
+    expect(result).toEqual({ series: mockSeries, excludedCount: 0 })
+    expect(Array.isArray(result.series)).toBe(true)
   })
 
   it('should return empty array when list is empty', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
-    expect(await seriesApi.getAll()).toEqual([])
+    expect(await seriesApi.getAll()).toEqual({ series: [] })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRONTEND-119-AC-04: getAll/search surface excludedCount
+// ---------------------------------------------------------------------------
+describe('FRONTEND-119-AC-04: seriesApi surfaces excludedCount', () => {
+  it('getAll resolves with series and excludedCount', async () => {
+    client.get.mockResolvedValue({
+      data: { data: [], count: 0, excludedCount: 2 },
+    })
+
+    const result = await seriesApi.getAll()
+
+    expect(result).toEqual({ series: [], excludedCount: 2 })
+  })
+
+  it('search resolves with series and excludedCount', async () => {
+    client.get.mockResolvedValue({
+      data: { data: [], count: 0, excludedCount: 1 },
+    })
+
+    const result = await seriesApi.search({ title: 'office' })
+
+    expect(result).toEqual({ series: [], excludedCount: 1 })
   })
 })
 
@@ -290,7 +317,9 @@ describe('SH-006: search', () => {
 
   it('should return empty array on no matches without throwing', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
-    expect(await seriesApi.search({ title: 'nonexistent' })).toEqual([])
+    expect(await seriesApi.search({ title: 'nonexistent' })).toEqual({
+      series: [],
+    })
   })
 
   it('should include flaggedForRewatch when set (FRONTEND-012-AC-11)', async () => {

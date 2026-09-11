@@ -455,6 +455,39 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data[2].title').value("Controller Sort C"))
   }
 
+  def "SERIES-062-AC-08: GET /api/v1/series reports excludedCount when sorting by a droppable rating"() {
+    given: "one series with a Rotten Tomatoes rating, one without"
+        seriesService.create(new SeriesDto(title: "Controller RT Has", rottenTomatoesRating: 88))
+        seriesService.create(new SeriesDto(title: "Controller RT Missing"))
+
+    when: "a GET request is made with sortBy=rottenTomatoesRating"
+        def result = mockMvc.perform(get("/api/v1/series").param("sortBy", "rottenTomatoesRating"))
+
+    then: "the response reports at least one excluded series, and the excluded series is not in data"
+        result.andExpect(status().isOk())
+        def body = objectMapper.readValue(result.andReturn().response.contentAsString, Map)
+        body.excludedCount >= 1
+        !body.data*.title.contains("Controller RT Missing")
+  }
+
+  def "SERIES-062-AC-09: GET /api/v1/series/search reports excludedCount for the filtered population"() {
+    given: "one Drama series with a Popcornmeter score, one Drama series without"
+        seriesService.create(new SeriesDto(title: "Search RT Has", genres: "Drama", rottenTomatoesPopcornmeter: 75))
+        seriesService.create(new SeriesDto(title: "Search RT Missing", genres: "Drama"))
+
+    when: "a GET request is made with genre=Drama&sortBy=rottenTomatoesPopcornmeter"
+        def result = mockMvc.perform(
+          get("/api/v1/series/search")
+            .param("genre", "Drama")
+            .param("sortBy", "rottenTomatoesPopcornmeter")
+        )
+
+    then: "excludedCount reflects the one matching-but-missing series"
+        result.andExpect(status().isOk())
+        def body = objectMapper.readValue(result.andReturn().response.contentAsString, Map)
+        body.excludedCount == 1
+  }
+
   def "SERIES-008-AC-20: GET /api/v1/series/search honors the flaggedForRewatch query param"() {
     given: "one flagged series, one unflagged series"
         seriesService.create(new SeriesDto(title: "Rewatch Me", flaggedForRewatch: true))

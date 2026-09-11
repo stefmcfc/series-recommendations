@@ -10,6 +10,7 @@ import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
+import { formatMissingRatingMessage } from '../utils/missingRatingMessage'
 import {
   buildSpecificSeriesCandidatePool,
   seriesPickerLabel,
@@ -186,22 +187,30 @@ export function UseMySeriesPanel({
 
   // FRONTEND-035-AC-05/13: computed once, shared by both the inline picker
   // and the "Show all series" modal.
-  const specificSeriesCandidatePool = buildSpecificSeriesCandidatePool(
-    allSeries,
-    {
-      genreFilter: specificSeriesGenreFilter,
-      excludeGenreFilter: specificSeriesExcludeGenreFilter,
-      statusFilter: specificSeriesStatusFilter,
-      sortBy: specificSeriesSortBy,
-      sortDirection: specificSeriesSortDirection,
-      keywordsFilter: specificSeriesKeywordsFilter,
-      minPersonalRating: specificSeriesMinPersonalRating,
-      minImdbRating: specificSeriesMinImdbRating,
-      minTmdbRating: specificSeriesMinTmdbRating,
-      yearMin: specificSeriesYearMin,
-      yearMax: specificSeriesYearMax,
-    },
-    state.selectedSeriesIds,
+  // FRONTEND-119-AC-08/09/SERIES-062: buildSpecificSeriesCandidatePool now
+  // returns { series, missingRatingCount } -- missingRatingCount feeds the
+  // notice rendered near the sort control below.
+  const { series: specificSeriesCandidatePool, missingRatingCount } =
+    buildSpecificSeriesCandidatePool(
+      allSeries,
+      {
+        genreFilter: specificSeriesGenreFilter,
+        excludeGenreFilter: specificSeriesExcludeGenreFilter,
+        statusFilter: specificSeriesStatusFilter,
+        sortBy: specificSeriesSortBy,
+        sortDirection: specificSeriesSortDirection,
+        keywordsFilter: specificSeriesKeywordsFilter,
+        minPersonalRating: specificSeriesMinPersonalRating,
+        minImdbRating: specificSeriesMinImdbRating,
+        minTmdbRating: specificSeriesMinTmdbRating,
+        yearMin: specificSeriesYearMin,
+        yearMax: specificSeriesYearMax,
+      },
+      state.selectedSeriesIds,
+    )
+  const missingRatingMessage = formatMissingRatingMessage(
+    missingRatingCount,
+    specificSeriesSortBy,
   )
   const specificSeriesOptions: PickerOption[] = specificSeriesCandidatePool.map(
     (s) => ({
@@ -339,6 +348,12 @@ export function UseMySeriesPanel({
                         {specificSeriesSortDirection === 'asc' ? '↑' : '↓'}
                       </button>
                     </div>
+
+                    {/* FRONTEND-119-AC-09/SERIES-062: notice shown when the
+                        current sort drops series missing that rating. */}
+                    {missingRatingMessage && (
+                      <p className={styles.hint}>{missingRatingMessage}</p>
+                    )}
 
                     {/* FRONTEND-081 (2026-09-03 live-review amendment):
                         Genre and Keyword now share a fixed 4-column grid row,

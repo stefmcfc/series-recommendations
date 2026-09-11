@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `GET /api/v1/series` and `GET /api/v1/series/search` gain two new sort options (Rotten Tomatoes Tomatometer/Popcornmeter) and now exclude series missing the sorted-on rating (reported via a new `excludedCount` field) instead of sorting them last (`series_spec_062`).
+- Frontend: My Series and Recs > Use My Series show a count message when series are hidden from a rating sort for missing that rating, and both gain the two new Rotten Tomatoes sort options (`frontend_spec_119`).
+
 ## [3.54.1] - 2026-09-11
 
 ### Fixed

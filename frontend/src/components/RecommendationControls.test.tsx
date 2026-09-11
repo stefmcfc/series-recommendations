@@ -15,6 +15,8 @@ import {
   seriesPickerLabel,
   seriesPickerDisplay,
   LANGUAGE_OPTIONS,
+  SPECIFIC_SERIES_SORT_BY_OPTIONS,
+  compareSpecificSeries,
 } from './RecommendationControls'
 import type { SpecificSeriesFilters } from './RecommendationControls'
 import { seriesApi } from '../services/seriesApi'
@@ -70,7 +72,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
-  mockGetAll.mockResolvedValue([])
+  mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
   mockGetGenreOptions.mockResolvedValue([])
   mockGetKeywordStats.mockResolvedValue([])
   mockListFilterProfiles.mockResolvedValue([])
@@ -208,15 +210,23 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
   // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
   // the inline Series field no longer renders its own typing input (its default suggestion list still shows, but the modal exercises the same options uncapped).
   it('fetches series and offers each as a pickable suggestion, populating seriesIds when picked', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
-      makeSeries({
-        id: '2',
-        title: 'The Wire',
-        status: 'WATCHING',
-        year: null,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          status: 'COMPLETED',
+          year: null,
+        }),
+        makeSeries({
+          id: '2',
+          title: 'The Wire',
+          status: 'WATCHING',
+          year: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -261,22 +271,25 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
   })
 
   it('includes year and origin country in the label to disambiguate same-titled series', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'Ozark',
-        year: 2017,
-        originCountry: 'US',
-        status: 'COMPLETED',
-      }),
-      makeSeries({
-        id: '2',
-        title: 'Ozark',
-        year: 2022,
-        originCountry: 'GB',
-        status: 'BACKLOG',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          year: 2017,
+          originCountry: 'US',
+          status: 'COMPLETED',
+        }),
+        makeSeries({
+          id: '2',
+          title: 'Ozark',
+          year: 2022,
+          originCountry: 'GB',
+          status: 'BACKLOG',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(
@@ -296,9 +309,17 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
   })
 
   it('omits the year/country segment when either field is null', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', year: null, originCountry: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          year: null,
+          originCountry: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(
@@ -476,9 +497,10 @@ describe('FRONTEND-014-AC-10: switching mode clears genresSelected', () => {
 
 describe('FRONTEND-011-AC-06: mode switching clears stale fields', () => {
   it('clears seriesIds when switching from Use My Series to Custom Search', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Ozark', year: null })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -573,9 +595,10 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
   // Apply Filters afterward like any other pending change, so this test now
   // clicks it both after making the change and after resetting.
   it('clears every filter field but leaves sourcing mode/selection untouched, applied via Apply Filters', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Ozark', year: null })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -776,9 +799,17 @@ describe('FRONTEND-111-AC-03: Highest Rated description line', () => {
 
 describe('FRONTEND-027-AC-03/04: new mode options, clears stale state on switch', () => {
   it('selects Popular Right Now and clears a prior Use My Series selection', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          status: 'COMPLETED',
+          year: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -1302,15 +1333,23 @@ describe('FRONTEND-033-AC-05: switching modes never leaks discoverSortBy into an
 // full KeywordPicker.
 describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () => {
   it('builds one PickerOption per candidate series, offered as suggestions', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
-      makeSeries({
-        id: '2',
-        title: 'The Wire',
-        status: 'WATCHING',
-        year: null,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          status: 'COMPLETED',
+          year: null,
+        }),
+        makeSeries({
+          id: '2',
+          title: 'The Wire',
+          status: 'WATCHING',
+          year: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(
@@ -1330,9 +1369,17 @@ describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () 
 
 describe('FRONTEND-035-AC-06: picking a suggestion populates seriesIds', () => {
   it('emits seriesIds in the built query after picking a series', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED', year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          status: 'COMPLETED',
+          year: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -1348,22 +1395,25 @@ describe('FRONTEND-035-AC-06: picking a suggestion populates seriesIds', () => {
 describe('FRONTEND-035-AC-07: selected series stay visible as chips through filter changes', () => {
   it('keeps the Ozark chip (with its correct label) after narrowing the genre filter away from it', async () => {
     mockGetGenreOptions.mockResolvedValue(['Crime', 'Comedy'])
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'Ozark',
-        status: 'COMPLETED',
-        genres: 'Crime, Drama',
-        year: null,
-      }),
-      makeSeries({
-        id: '2',
-        title: 'Ted Lasso',
-        status: 'COMPLETED',
-        genres: 'Comedy',
-        year: null,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          status: 'COMPLETED',
+          genres: 'Crime, Drama',
+          year: null,
+        }),
+        makeSeries({
+          id: '2',
+          title: 'Ted Lasso',
+          status: 'COMPLETED',
+          genres: 'Comedy',
+          year: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -1394,15 +1444,18 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
 // the same thing via the modal.
 describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific Series picker', () => {
   it('does not show an excluded series as a selectable suggestion', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Included Show', status: 'COMPLETED' }),
-      makeSeries({
-        id: '2',
-        title: 'Excluded Show',
-        status: 'COMPLETED',
-        excludeFromRecommendations: true,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'Included Show', status: 'COMPLETED' }),
+        makeSeries({
+          id: '2',
+          title: 'Excluded Show',
+          status: 'COMPLETED',
+          excludeFromRecommendations: true,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(
@@ -1420,15 +1473,18 @@ describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific 
 
 describe('FRONTEND-050-AC-02: excluded series are never offered in the browse-all modal', () => {
   it('omits an excluded series from the "Show all series" modal', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Included Show', status: 'COMPLETED' }),
-      makeSeries({
-        id: '2',
-        title: 'Excluded Show',
-        status: 'COMPLETED',
-        excludeFromRecommendations: true,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'Included Show', status: 'COMPLETED' }),
+        makeSeries({
+          id: '2',
+          title: 'Excluded Show',
+          status: 'COMPLETED',
+          excludeFromRecommendations: true,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
@@ -1457,7 +1513,7 @@ describe('FRONTEND-050-AC-03: an already-selected-then-excluded series still res
       status: 'COMPLETED',
       excludeFromRecommendations: true,
     })
-    const pool = buildSpecificSeriesCandidatePool(
+    const { series: pool } = buildSpecificSeriesCandidatePool(
       [nowExcluded],
       makeSpecificSeriesFilters(),
       ['1'],
@@ -1475,14 +1531,15 @@ describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_
   // capped at SPECIFIC_SERIES_PICKER_LIMIT. The "Show all series" modal
   // remains uncapped, covered separately by FRONTEND-035-AC-09 below.
   it('renders inline suggestions capped at SPECIFIC_SERIES_PICKER_LIMIT, with no inline typing input', async () => {
-    mockGetAll.mockResolvedValue(
-      Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
+    mockGetAll.mockResolvedValue({
+      series: Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
         makeSeries({
           id: String(i),
           title: `Show ${String(i).padStart(2, '0')}`,
         }),
       ),
-    )
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: /show all series/i })
 
@@ -1500,14 +1557,15 @@ describe('FRONTEND-035-AC-08: default suggestion list capped at SPECIFIC_SERIES_
 
 describe('FRONTEND-035-AC-09: Show all series modal is uncapped and shares selection state', () => {
   it('opens a dialog with every series, without re-fetching', async () => {
-    mockGetAll.mockResolvedValue(
-      Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
+    mockGetAll.mockResolvedValue({
+      series: Array.from({ length: SPECIFIC_SERIES_PICKER_LIMIT + 5 }, (_, i) =>
         makeSeries({
           id: String(i),
           title: `Show ${String(i).padStart(2, '0')}`,
         }),
       ),
-    )
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: /show all series/i })
 
@@ -1526,9 +1584,10 @@ describe('FRONTEND-035-AC-09: Show all series modal is uncapped and shares selec
 describe('FRONTEND-035-AC-10: genre/status filters render but never appear in the emitted query', () => {
   it('renders filter controls without affecting the emitted RecommendationQuery', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama'])
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', genres: 'Drama' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Ozark', genres: 'Drama' })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
@@ -1551,10 +1610,13 @@ describe('FRONTEND-035-AC-10: genre/status filters render but never appear in th
 describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the comma-separated field', () => {
   it('narrows the candidate pool to series with a matching genre', async () => {
     mockGetGenreOptions.mockResolvedValue(['Comedy'])
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ted Lasso', genres: 'comedy, Sport' }),
-      makeSeries({ id: '2', title: 'Ozark', genres: 'Crime, Drama' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'Ted Lasso', genres: 'comedy, Sport' }),
+        makeSeries({ id: '2', title: 'Ozark', genres: 'Crime, Drama' }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: 'Include / Exclude Genres' })
     includeSpecificSeriesGenre('Comedy')
@@ -1572,11 +1634,14 @@ describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the
 
 describe('FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed or Watching', () => {
   it('"Completed or Watching" includes both statuses, excludes others', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED' }),
-      makeSeries({ id: '2', title: 'The Wire', status: 'WATCHING' }),
-      makeSeries({ id: '3', title: 'Firefly', status: 'DROPPED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'Ozark', status: 'COMPLETED' }),
+        makeSeries({ id: '2', title: 'The Wire', status: 'WATCHING' }),
+        makeSeries({ id: '3', title: 'Firefly', status: 'DROPPED' }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(await screen.findByLabelText(/completed or watching/i))
 
@@ -1596,9 +1661,17 @@ describe('FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed
 
 describe('FRONTEND-035-AC-17: status suffix hidden unless "Any Status"', () => {
   it('hides the status suffix once the status filter narrows to one value', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', year: 2017, status: 'COMPLETED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          year: 2017,
+          status: 'COMPLETED',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(await screen.findByLabelText(/completed only/i))
 
@@ -1611,9 +1684,17 @@ describe('FRONTEND-035-AC-17: status suffix hidden unless "Any Status"', () => {
   })
 
   it('shows the status suffix at Any Status (default)', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Ozark', year: 2017, status: 'COMPLETED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Ozark',
+          year: 2017,
+          status: 'COMPLETED',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
 
     fireEvent.click(
@@ -1629,29 +1710,32 @@ describe('FRONTEND-035-AC-17: status suffix hidden unless "Any Status"', () => {
 describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => {
   it('sorts within the genre-filtered pool, excluding the filtered-out series entirely', async () => {
     mockGetGenreOptions.mockResolvedValue(['Drama'])
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'B Show',
-        genres: 'Drama',
-        status: 'COMPLETED',
-        year: null,
-      }),
-      makeSeries({
-        id: '2',
-        title: 'A Show',
-        genres: 'Drama',
-        status: 'COMPLETED',
-        year: null,
-      }),
-      makeSeries({
-        id: '3',
-        title: 'Z Show',
-        genres: 'Comedy',
-        status: 'COMPLETED',
-        year: null,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'B Show',
+          genres: 'Drama',
+          status: 'COMPLETED',
+          year: null,
+        }),
+        makeSeries({
+          id: '2',
+          title: 'A Show',
+          genres: 'Drama',
+          status: 'COMPLETED',
+          year: null,
+        }),
+        makeSeries({
+          id: '3',
+          title: 'Z Show',
+          genres: 'Comedy',
+          status: 'COMPLETED',
+          year: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: 'Include / Exclude Genres' })
     includeSpecificSeriesGenre('Drama')
@@ -1671,10 +1755,13 @@ describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => 
 
 describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, defaults to title/asc', () => {
   it('orders the picker by title ascending by default, without re-fetching', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'B Show', year: null }),
-      makeSeries({ id: '2', title: 'A Show', year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'B Show', year: null }),
+        makeSeries({ id: '2', title: 'A Show', year: null }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: /show all series/i })
 
@@ -1689,10 +1776,13 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
   })
 
   it('reverses order when the direction toggle is clicked', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'B Show', year: null }),
-      makeSeries({ id: '2', title: 'A Show', year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'B Show', year: null }),
+        makeSeries({ id: '2', title: 'A Show', year: null }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: /show all series/i })
 
@@ -1710,15 +1800,18 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
 
 describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction', () => {
   it('places a null personalRating after a rated series', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'No Rating',
-        personalRating: null,
-        year: null,
-      }),
-      makeSeries({ id: '2', title: 'Rated', personalRating: 4, year: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'No Rating',
+          personalRating: null,
+          year: null,
+        }),
+        makeSeries({ id: '2', title: 'Rated', personalRating: 4, year: null }),
+      ],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: /show all series/i })
 
@@ -1916,7 +2009,10 @@ describe('FRONTEND-040-AC-09: a disabled control cannot fire onQueryChange', () 
 // frontend_spec_042_recommendation_source_mode_reorganization.md
 describe('FRONTEND-042-AC-02: the series picker is always visible under Use My Series', () => {
   it('renders the picker with nothing selected', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} loading={false} />)
 
     // FRONTEND-077-AC-05: hideInput replaces the inline field's
@@ -1962,7 +2058,10 @@ describe("FRONTEND-042-AC-05: a selection behaves exactly like today's Specific 
   // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
   // the inline field no longer renders its own input.
   it('sends seriesIds once a series is picked', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Show' })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
@@ -2325,7 +2424,10 @@ describe('FRONTEND-049-AC-02: sourceMode and seriesIds are both sent together', 
   // FRONTEND-077-AC-05: routed through the "Show all series" modal now that
   // the inline field no longer renders its own input.
   it('includes both when a series is selected', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Show' })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(
       <RecommendationControls onQueryChange={onQueryChange} loading={false} />,
@@ -2668,7 +2770,7 @@ describe('FRONTEND-069-AC-01: excludeGenreFilter narrows the pool', () => {
         excludeFromRecommendations: false,
       },
     ] as Series[]
-    const pool = buildSpecificSeriesCandidatePool(
+    const { series: pool } = buildSpecificSeriesCandidatePool(
       series,
       makeSpecificSeriesFilters({ excludeGenreFilter: ['Comedy'] }),
       [],
@@ -2687,7 +2789,7 @@ describe('FRONTEND-069-AC-02: a genre-less series is not excluded', () => {
         excludeFromRecommendations: false,
       },
     ] as Series[]
-    const pool = buildSpecificSeriesCandidatePool(
+    const { series: pool } = buildSpecificSeriesCandidatePool(
       series,
       makeSpecificSeriesFilters({ excludeGenreFilter: ['Comedy'] }),
       [],
@@ -2706,7 +2808,7 @@ describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
         excludeFromRecommendations: false,
       },
     ] as Series[]
-    const pool = buildSpecificSeriesCandidatePool(
+    const { series: pool } = buildSpecificSeriesCandidatePool(
       series,
       makeSpecificSeriesFilters(),
       [],
@@ -2715,13 +2817,90 @@ describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
   })
 })
 
+describe('FRONTEND-119-AC-07: specific-series Rotten Tomatoes sort', () => {
+  it('offers both new sort options', () => {
+    const labels = SPECIFIC_SERIES_SORT_BY_OPTIONS.map((o) => o.label)
+    expect(labels).toContain('Rotten Tomatoes Rating')
+    expect(labels).toContain('Rotten Tomatoes Popcornmeter')
+  })
+
+  it('sorts by rottenTomatoesRating descending', () => {
+    const a = { id: '1', rottenTomatoesRating: 60 } as Series
+    const b = { id: '2', rottenTomatoesRating: 95 } as Series
+    expect(
+      compareSpecificSeries(a, b, 'rottenTomatoesRating', 'desc'),
+    ).toBeGreaterThan(0)
+  })
+
+  it('sorts by rottenTomatoesPopcornmeter ascending', () => {
+    const a = { id: '1', rottenTomatoesPopcornmeter: 95 } as Series
+    const b = { id: '2', rottenTomatoesPopcornmeter: 60 } as Series
+    expect(
+      compareSpecificSeries(a, b, 'rottenTomatoesPopcornmeter', 'asc'),
+    ).toBeGreaterThan(0)
+  })
+})
+
+describe('FRONTEND-119-AC-08: candidate pool excludes missing-rating series when sorted on it', () => {
+  it('excludes a series missing the sorted-on rating and reports the count', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'Has RT',
+        rottenTomatoesRating: 80,
+        excludeFromRecommendations: false,
+      },
+      { id: '2', title: 'No RT', excludeFromRecommendations: false },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ sortBy: 'rottenTomatoesRating' }),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['Has RT'])
+    expect(result.missingRatingCount).toBe(1)
+  })
+
+  it('does not exclude on a non-droppable sortBy (existing behavior unchanged)', () => {
+    const series = [
+      { id: '1', title: 'Show', excludeFromRecommendations: false },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters(),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['Show'])
+    expect(result.missingRatingCount).toBe(0)
+  })
+
+  it('still reunites an already-selected series missing the sorted-on rating (existing FRONTEND-035-AC-07 behavior)', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'Selected No RT',
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ sortBy: 'rottenTomatoesRating' }),
+      ['1'],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['Selected No RT'])
+  })
+})
+
 // frontend_spec_051_specific_series_bulk_select.md
 describe('FRONTEND-051-AC-01: Select all', () => {
   it('selects every series in the current candidate pool', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
-      makeSeries({ id: '2', title: 'B', status: 'COMPLETED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
+        makeSeries({ id: '2', title: 'B', status: 'COMPLETED' }),
+      ],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
     // FRONTEND-011-AC-03/FRONTEND-042: "Use My Series" (which hosts the
@@ -2741,9 +2920,10 @@ describe('FRONTEND-051-AC-01: Select all', () => {
 
 describe('FRONTEND-051-AC-02: Clear all', () => {
   it('clears the entire selection', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'A', status: 'COMPLETED' })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
     fireEvent.click(await screen.findByRole('button', { name: /select all/i }))
@@ -2758,9 +2938,10 @@ describe('FRONTEND-051-AC-02: Clear all', () => {
 
 describe('FRONTEND-051-AC-03: disabled states', () => {
   it('disables Clear all when nothing is selected', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'A', status: 'COMPLETED' })],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     expect(
       await screen.findByRole('button', { name: /clear all/i }),
@@ -2774,9 +2955,10 @@ describe('FRONTEND-051-AC-03: disabled states', () => {
     // Using a genuinely non-matching status ('BACKLOG') plus the "Completed
     // Only" filter actually empties buildSpecificSeriesCandidatePool's
     // output, unlike the spec snippet's own combination.
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'A', status: 'BACKLOG' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'A', status: 'BACKLOG' })],
+      excludedCount: 0,
+    })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     fireEvent.click(await screen.findByLabelText(/^completed only/i))
 
@@ -2786,9 +2968,10 @@ describe('FRONTEND-051-AC-03: disabled states', () => {
 
 describe('FRONTEND-051-AC-04: gated behind Apply Filters', () => {
   it('does not call onQueryChange until Apply Filters is clicked', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'A', status: 'COMPLETED' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'A', status: 'COMPLETED' })],
+      excludedCount: 0,
+    })
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
     onQueryChange.mockClear() // clear the mount-time initial call, if any
