@@ -8,10 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.55.0] - 2026-09-11
+
 ### Added
 
 - Backend: `GET /api/v1/series` and `GET /api/v1/series/search` gain two new sort options (Rotten Tomatoes Tomatometer/Popcornmeter) and now exclude series missing the sorted-on rating (reported via a new `excludedCount` field) instead of sorting them last (`series_spec_062`).
-- Frontend: My Series and Recs > Use My Series show a count message when series are hidden from a rating sort for missing that rating, and both gain the two new Rotten Tomatoes sort options — "Rotten Tomatoes Tomatometer" and "Rotten Tomatoes Popcornmeter" — with My Series' rating column showing the Tomatometer/Popcornmeter value as a percent with its emoji (🍅/🍿) when sorted by either (`frontend_spec_119`).
+- Frontend: My Series and Recs > Use My Series show a count message when series are hidden from a rating sort for missing that rating, and both gain two new sort options, "Tomatometer" and "Popcornmeter" — with My Series' rating column showing the value as a percent with its emoji (🍅/🍿) when sorted by either (`frontend_spec_119`).
 - Frontend: My Series' Compact view cards now show the same sort-aware "active rating" (IMDb/TMDB/Rotten Tomatoes Tomatometer/Popcornmeter) as the Expanded view, alongside the personal rating, so switching view modes no longer hides it (`frontend_spec_120`).
 
 ## [3.54.1] - 2026-09-11
