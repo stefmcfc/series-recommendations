@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Frontend: My Series' four missing-rating checkboxes (Missing IMDb/TMDB/Rotten Tomatoes Rating/Popcornmeter) now live in their own "Missing Ratings" section, separate from the "Ratings" threshold fields (Min Personal/IMDb/TMDB Rating) they were previously grouped with (`frontend_spec_118`).
+
 ## [3.54.0] - 2026-09-11
 
 ### Added

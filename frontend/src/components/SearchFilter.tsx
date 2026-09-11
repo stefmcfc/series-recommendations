@@ -392,6 +392,10 @@ export function SearchFilter({
                   }
                 />
               </div>
+            </section>
+
+            <section className={`${styles.filterSection} ${surface.card}`}>
+              <h3 className={styles.filterSectionHeading}>Missing Ratings</h3>
 
               <div className={styles.checkboxField}>
                 <label htmlFor="search-missing-imdb-rating">

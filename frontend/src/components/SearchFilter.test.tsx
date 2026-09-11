@@ -911,7 +911,7 @@ describe('FRONTEND-105-AC-15/16: filter sections are individually carded, no div
       />,
     )
 
-    const ratingsHeading = screen.getByRole('heading', { name: /ratings/i })
+    const ratingsHeading = screen.getByRole('heading', { name: 'Ratings' })
     expect(ratingsHeading.closest(`.${surface.card}`)).toBeTruthy()
 
     const genresSection = screen
@@ -1008,8 +1008,60 @@ describe('FRONTEND-077-AC-04: SearchFilter inline Keywords hides its input', () 
   })
 })
 
+describe('FRONTEND-118-AC-01: Missing Ratings section exists and is positioned correctly', () => {
+  it('renders a "Missing Ratings" heading between "Ratings" and "Years"', () => {
+    renderFilter()
+    const headings = screen.getAllByRole('heading').map((h) => h.textContent)
+    const ratingsIndex = headings.indexOf('Ratings')
+    const missingRatingsIndex = headings.indexOf('Missing Ratings')
+    const yearsIndex = headings.indexOf('Years')
+    expect(missingRatingsIndex).toBeGreaterThan(ratingsIndex)
+    expect(missingRatingsIndex).toBeLessThan(yearsIndex)
+  })
+})
+
+describe('FRONTEND-118-AC-02: checkboxes live in Missing Ratings, not Ratings', () => {
+  it('groups all four missing-rating checkboxes under the new heading', () => {
+    renderFilter()
+    const heading = screen.getByRole('heading', { name: 'Missing Ratings' })
+    const section = heading.closest('section')!
+    expect(
+      within(section).getByLabelText('Missing IMDb Rating'),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByLabelText('Missing TMDB Rating'),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByLabelText('Missing Rotten Tomatoes Rating'),
+    ).toBeInTheDocument()
+    expect(
+      within(section).getByLabelText('Missing Rotten Tomatoes Popcornmeter'),
+    ).toBeInTheDocument()
+  })
+
+  it('no longer renders the missing-rating checkboxes inside the Ratings section', () => {
+    renderFilter()
+    const ratingsHeading = screen.getByRole('heading', { name: 'Ratings' })
+    const ratingsSection = ratingsHeading.closest('section')!
+    expect(
+      within(ratingsSection).queryByLabelText('Missing IMDb Rating'),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-118-AC-03: Missing Ratings section is individually carded', () => {
+  it('composes surface.card and has no sectionDivider class', () => {
+    renderFilter()
+    const section = screen
+      .getByRole('heading', { name: 'Missing Ratings' })
+      .closest('section')!
+    expect(section.className).toContain(surface.card)
+    expect(section.className).not.toMatch(/sectionDivider/)
+  })
+})
+
 describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
-  it('renders all four checkboxes in the Ratings section, unchecked by default', () => {
+  it('renders all four checkboxes, unchecked by default', () => {
     renderFilter()
     expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
     expect(screen.getByLabelText('Missing TMDB Rating')).not.toBeChecked()
