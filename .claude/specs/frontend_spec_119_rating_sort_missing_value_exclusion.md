@@ -31,6 +31,7 @@ Both surfaces render the same message format via one new shared utility, so the 
 1. **The "Rotten Tomatoes Rating" sort option is renamed to "Rotten Tomatoes Tomatometer"** in both `SORT_BY_OPTIONS` (`SeriesList.tsx`) and `SPECIFIC_SERIES_SORT_BY_OPTIONS` (`RecommendationControls.tsx`), disambiguating it from "Rotten Tomatoes Popcornmeter" — matching `SeriesDetailFields.tsx`'s existing field label, "Rotten Tomatoes Rating (Tomatometer)". Only the display `label` changes; the `value` (`'rottenTomatoesRating'`) is unchanged, so this has no effect on `SortOptions`, the API, or `activeRating()`'s existing `source: 'Rotten Tomatoes'` return value (`FRONTEND-119-AC-06`, unaffected).
 2. **The rating column's display format changes for the two Rotten Tomatoes sort fields**, from the plain `{value} {source}` text pattern shared with IMDb/TMDB (e.g. "8.5 IMDb") to a percent-plus-emoji format matching the series detail page's existing convention: `formatPercent` (currently a private helper in `SeriesDetailFields.tsx` — `${value}% ${emoji}`, or `—` when null) is extracted into a new shared util, `frontend/src/utils/formatPercent.ts`, exported and reused by `SeriesDetailFields.tsx` (updated to import it instead of its own private copy — a third consumer justifies the extraction per `frontend_conventions.md`'s "extract on a third consumer" rule), `SeriesList.tsx`, and `SeriesCompactGrid.tsx` (`frontend_spec_120`). IMDb/TMDB's existing two-part `{value ?? '—'} <span class="ratingSource">{source}</span>` rendering in `SeriesList.tsx`'s expanded row is **unchanged** — only the two Rotten Tomatoes fields switch to the single-string percent+emoji format (🍅 for Tomatometer, 🍿 for Popcornmeter).
 3. **(Same-day follow-up, after seeing 1-2 live)** `formatMissingRatingMessage`'s `DROPPABLE_FIELD_LABELS` shortens to match: `rottenTomatoesRating` → "Tomatometer" (not "Rotten Tomatoes"), `rottenTomatoesPopcornmeter` → "Popcornmeter" (not "Rotten Tomatoes Popcornmeter") — e.g. "3 series meeting this criteria do not have Tomatometer ratings". `imdbRating`/`tmdbRating` labels are unaffected. Every test snippet below quoting the old wording (`FRONTEND-119-AC-02`, `AC-05`, `AC-09`) reflects this — the actual test files were updated to match, not the other way around.
+4. **(Second same-day follow-up)** The sort option labels themselves drop the "Rotten Tomatoes" prefix too: `SORT_BY_OPTIONS`/`SPECIFIC_SERIES_SORT_BY_OPTIONS` now label the two options plain "Tomatometer" and "Popcornmeter" (not "Rotten Tomatoes Tomatometer"/"Rotten Tomatoes Popcornmeter"), and `describeFilterCriteria.ts`'s `SORT_BY_LABELS` matches. Scoped to these two label maps only — `SearchFilter.tsx`'s unrelated "Missing Rotten Tomatoes Popcornmeter" filter *checkbox* label (`frontend_spec_116`/`frontend_spec_118`) keeps its full name, as does `activeRating()`'s internal `source` field (`'Rotten Tomatoes'`/`'Rotten Tomatoes Popcornmeter'`, `FRONTEND-119-AC-06`) — neither is a sort-by dropdown label.
 
 ---
 
@@ -366,6 +367,17 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
 
 ---
 
+### FRONTEND-119-AC-12 [AUTO] (Correction, 2026-09-11)
+**Statement**: `SORT_BY_OPTIONS` and `SPECIFIC_SERIES_SORT_BY_OPTIONS` shall label the `'rottenTomatoesRating'`/`'rottenTomatoesPopcornmeter'` options plain "Tomatometer"/"Popcornmeter" (no "Rotten Tomatoes" prefix); `describeFilterCriteria.ts`'s `SORT_BY_LABELS` matches. `SearchFilter.tsx`'s "Missing Rotten Tomatoes Popcornmeter" checkbox label and `activeRating()`'s internal `source` field are unaffected — neither is a sort-by dropdown label.
+
+**References**: `components/SeriesList.tsx` `SORT_BY_OPTIONS`; `components/RecommendationControls.tsx` `SPECIFIC_SERIES_SORT_BY_OPTIONS`; `utils/describeFilterCriteria.ts` `SORT_BY_LABELS`.
+
+**Test Case (Red)**: update every existing label assertion introduced by `FRONTEND-119-AC-03`/`AC-07`/`AC-10` from "Tomatometer"/"Popcornmeter" *without* the "Rotten Tomatoes" prefix — i.e. `within(select).getByText('Tomatometer')` / `('Popcornmeter')`, and `expect(labels).toContain('Tomatometer')` / `('Popcornmeter')`.
+
+**Test Case (Green)**: change the two `label` strings in each of the three files.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -390,3 +402,4 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
 - [x] FRONTEND-119-AC-09: `UseMySeriesPanel` renders the missing-rating notice correctly
 - [x] FRONTEND-119-AC-10 (Correction): "Rotten Tomatoes Rating" sort option renamed to "Rotten Tomatoes Tomatometer" in both option lists
 - [x] FRONTEND-119-AC-11 (Correction): Rotten Tomatoes rating column shows `percent% emoji`, IMDb/TMDB unchanged
+- [x] FRONTEND-119-AC-12 (Correction): sort option labels drop the "Rotten Tomatoes" prefix ("Tomatometer"/"Popcornmeter" only)

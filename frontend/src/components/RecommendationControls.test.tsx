@@ -2820,8 +2820,8 @@ describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
 describe('FRONTEND-119-AC-07: specific-series Rotten Tomatoes sort', () => {
   it('offers both new sort options', () => {
     const labels = SPECIFIC_SERIES_SORT_BY_OPTIONS.map((o) => o.label)
-    expect(labels).toContain('Rotten Tomatoes Tomatometer')
-    expect(labels).toContain('Rotten Tomatoes Popcornmeter')
+    expect(labels).toContain('Tomatometer')
+    expect(labels).toContain('Popcornmeter')
   })
 
   it('sorts by rottenTomatoesRating descending', () => {

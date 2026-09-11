@@ -287,12 +287,8 @@ describe('FRONTEND-119-AC-03: Rotten Tomatoes sort options', () => {
     mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     const select = await screen.findByLabelText('Sort by')
-    expect(
-      within(select).getByText('Rotten Tomatoes Tomatometer'),
-    ).toBeInTheDocument()
-    expect(
-      within(select).getByText('Rotten Tomatoes Popcornmeter'),
-    ).toBeInTheDocument()
+    expect(within(select).getByText('Tomatometer')).toBeInTheDocument()
+    expect(within(select).getByText('Popcornmeter')).toBeInTheDocument()
   })
 })
 
@@ -1145,8 +1141,8 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
       'Year',
       'IMDb Rating',
       'TMDB Rating',
-      'Rotten Tomatoes Tomatometer',
-      'Rotten Tomatoes Popcornmeter',
+      'Tomatometer',
+      'Popcornmeter',
     ])
   })
 
