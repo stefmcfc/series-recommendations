@@ -6,6 +6,8 @@ import {
   within,
 } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
 import {
   RecommendationControls,
   buildSpecificSeriesCandidatePool,
@@ -3155,5 +3157,22 @@ describe('FRONTEND-117-AC-05: LANGUAGE_OPTIONS unchanged after extraction', () =
   it('still resolves each option to its display name', () => {
     expect(LANGUAGE_OPTIONS.find((o) => o.id === 'en')?.label).toBe('English')
     expect(LANGUAGE_OPTIONS.find((o) => o.id === 'ja')?.label).toBe('Japanese')
+  })
+})
+
+describe('FRONTEND-121-AC-01: .tablistNested is sticky', () => {
+  it('declares position: sticky with a top offset stacked below .tablist', () => {
+    const css = fs.readFileSync(
+      path.resolve(__dirname, 'RecommendationControls.module.css'),
+      'utf-8',
+    )
+    const nestedBlock = css.match(/\.tablistNested\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(nestedBlock).toMatch(/position:\s*sticky/)
+    expect(nestedBlock).toMatch(
+      /top:\s*calc\(var\(--header-height\)\s*\+\s*var\(--tablist-height\)\)/,
+    )
+    expect(nestedBlock).toMatch(/z-index:\s*18/)
+    expect(nestedBlock).toMatch(/background:\s*var\(--bg\)/)
+    expect(css).toMatch(/--tablist-height:\s*56px/)
   })
 })

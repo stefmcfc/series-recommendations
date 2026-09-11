@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.55.1] - 2026-09-11
+
+### Fixed
+
+- Frontend: Discover's "Custom Search"/"Popular Right Now"/"Highest Rated" sub-tabs now stay pinned while scrolling, matching the top-level "Use My Series"/"Discover" tabs' existing sticky behavior (`frontend_spec_121`).
+
 ## [3.55.0] - 2026-09-11
 
 ### Added

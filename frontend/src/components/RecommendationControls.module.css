@@ -1,4 +1,14 @@
 .container {
+  /* FRONTEND-121-AC-01: defined here (not on .tablist itself) so it
+     inherits down to .tablistNested too -- custom properties cascade to
+     descendants, not siblings, and .tablist/.tablistNested are siblings
+     under this shared ancestor. Measured directly (getBoundingClientRect)
+     in a running browser -- .tablist's real rendered height, 56.09px --
+     and kept in px, not rem: this app's root font-size is 18px (not the
+     16px browser default), so a rem value here would need converting
+     against that, not the usual 16px assumption -- a plain px value sidesteps
+     the conversion entirely. */
+  --tablist-height: 56px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -84,11 +94,20 @@
   background: var(--bg);
 }
 
+/* FRONTEND-121-AC-01: mirrors .tablist's own sticky pattern, stacked
+   directly below it -- --tablist-height is a measured constant (.tablist's
+   real rendered height in a browser, ~56px), the same fixed-value approach
+   App.module.css's --header-height already uses. z-index one tier below
+   .tablist's 19 since this row sits underneath it once both are stuck. */
 .tablistNested {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  position: sticky;
+  top: calc(var(--header-height) + var(--tablist-height));
+  z-index: 18;
+  background: var(--bg);
 }
 
 .tab {

@@ -30,8 +30,13 @@ Settings fields (Skip Threshold Override, Filter Profiles, Watch Region), and ad
 candidates from a live-app pass — Recommendation Favourites divider gap, additional Appearance
 color schemes, extending saved filter profiles to Custom Search + Analysis filters, and a
 per-mode description line for each Discover sub-tab. A fifth item from the same pass ("Custom
-Search/Popular Right Now/Highest Rated should also be sticky") was confirmed already fully
-delivered — `frontend_spec_106_sticky_discover_mode.md` — no candidate needed.
+Search/Popular Right Now/Highest Rated should also be sticky") was noted as "confirmed already
+fully delivered" via `frontend_spec_106_sticky_discover_mode.md` — **this was wrong**, caught
+2026-09-11 when the user asked for it directly and it turned out not to be built: `frontend_spec_106`
+is about the app remembering the last-used Discover sub-tab across page loads (`localStorage`), a
+different meaning of "sticky" than CSS `position: sticky` (staying pinned while scrolling), which
+the actual CSS confirmed `.tablistNested` never had. Spec'd and delivered for real as
+`frontend_spec_121_sticky_discover_subtabs.md`.
 
 2026-09-09 update (same day, later): the Appearance color-schemes and Discover-description-line
 candidates above were spec'd — `frontend_spec_110_appearance_color_schemes.md` and

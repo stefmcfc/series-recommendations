@@ -174,6 +174,7 @@ dependency-derived anymore.
 | Missing-ratings filter checkboxes moved into their own "Missing Ratings" section, separate from the "Ratings" threshold fields | — | `frontend_spec_118` | ✅ Done |
 | Rotten Tomatoes (Tomatometer/Popcornmeter) sort options added to My Series and Recs > Use My Series; sorting by any externally-sourced rating (IMDb/TMDB/RT) now excludes series missing it, with a count message, instead of sorting them last | `series_spec_062` | `frontend_spec_119` | ✅ Done |
 | My Series Compact view gains the same "active rating" (sort-aware IMDb/TMDB/Rotten Tomatoes) shown in Expanded view, alongside the personal rating | — | `frontend_spec_120` | ✅ Done |
+| Discover sub-tabs ("Custom Search"/"Popular Right Now"/"Highest Rated") stay pinned while scrolling, matching the top-level "Use My Series"/"Discover" tabs' existing sticky behavior | — | `frontend_spec_121` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 
