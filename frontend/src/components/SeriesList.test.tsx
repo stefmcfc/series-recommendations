@@ -6,7 +6,11 @@ import {
   within,
 } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { SeriesList, activeRating } from './SeriesList'
+import {
+  SeriesList,
+  activeRating,
+  formatCompactRatingLabel,
+} from './SeriesList'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
@@ -284,11 +288,102 @@ describe('FRONTEND-119-AC-03: Rotten Tomatoes sort options', () => {
     render(<SeriesList />)
     const select = await screen.findByLabelText('Sort by')
     expect(
-      within(select).getByText('Rotten Tomatoes Rating'),
+      within(select).getByText('Rotten Tomatoes Tomatometer'),
     ).toBeInTheDocument()
     expect(
       within(select).getByText('Rotten Tomatoes Popcornmeter'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-119-AC-11: Rotten Tomatoes rating column shows percent + emoji', () => {
+  it('shows the Tomatometer value as a percent with the tomato emoji', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', rottenTomatoesRating: 88 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesRating' },
+    })
+    expect(await screen.findByText('88% 🍅')).toBeInTheDocument()
+  })
+
+  it('shows the Popcornmeter value as a percent with the popcorn emoji', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', rottenTomatoesPopcornmeter: 75 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesPopcornmeter' },
+    })
+    expect(await screen.findByText('75% 🍿')).toBeInTheDocument()
+  })
+
+  it('leaves the IMDb display format unchanged', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', imdbRating: 8.4 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
+    expect(screen.getByText('IMDb')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-120-AC-01: formatCompactRatingLabel', () => {
+  it('formats IMDb as "value IMDb"', () => {
+    expect(
+      formatCompactRatingLabel({ imdbRating: 8.4 } as Series, 'dateAdded'),
+    ).toBe('8.4 IMDb')
+  })
+
+  it('formats TMDB as "value TMDB" when sorted by tmdbRating', () => {
+    expect(
+      formatCompactRatingLabel({ tmdbRating: 7.9 } as Series, 'tmdbRating'),
+    ).toBe('7.9 TMDB')
+  })
+
+  it('formats Rotten Tomatoes Tomatometer as percent + tomato emoji', () => {
+    expect(
+      formatCompactRatingLabel(
+        { rottenTomatoesRating: 88 } as Series,
+        'rottenTomatoesRating',
+      ),
+    ).toBe('88% 🍅')
+  })
+
+  it('formats Rotten Tomatoes Popcornmeter as percent + popcorn emoji', () => {
+    expect(
+      formatCompactRatingLabel(
+        { rottenTomatoesPopcornmeter: 75 } as Series,
+        'rottenTomatoesPopcornmeter',
+      ),
+    ).toBe('75% 🍿')
+  })
+
+  it('renders a dash when the active value is null', () => {
+    expect(
+      formatCompactRatingLabel({ imdbRating: null } as Series, 'dateAdded'),
+    ).toBe('— IMDb')
+  })
+})
+
+describe('FRONTEND-120-AC-03: SeriesList threads sortBy into Compact view', () => {
+  it('reflects a changed sort in the compact card rating', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
+      ],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.click(await screen.findByTestId('view-mode-compact-btn'))
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'tmdbRating' },
+    })
+    expect(await screen.findByText('8.1 TMDB')).toBeInTheDocument()
   })
 })
 
@@ -301,7 +396,7 @@ describe('FRONTEND-119-AC-05: missing-rating notice', () => {
     })
     expect(
       await screen.findByText(
-        '3 series meeting this criteria do not have Rotten Tomatoes ratings',
+        '3 series meeting this criteria do not have Tomatometer ratings',
       ),
     ).toBeInTheDocument()
   })
@@ -1050,7 +1145,7 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
       'Year',
       'IMDb Rating',
       'TMDB Rating',
-      'Rotten Tomatoes Rating',
+      'Rotten Tomatoes Tomatometer',
       'Rotten Tomatoes Popcornmeter',
     ])
   })

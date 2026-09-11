@@ -1,6 +1,8 @@
 import type { Series } from '../types/series'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { StarRating } from './StarRating'
+import { formatCompactRatingLabel } from './SeriesList'
+import type { SortByOption } from './SeriesList'
 import styles from './SeriesCompactGrid.module.css'
 import surface from '../styles/surfaces.module.css'
 
@@ -9,6 +11,10 @@ interface SeriesCompactGridProps {
   readonly posterErrorIds: ReadonlySet<string>
   readonly onPosterError: (id: string) => void
   readonly onCardClick: (id: string) => void
+  // FRONTEND-120-AC-02/03: the same sortBy state already driving SeriesList's
+  // expanded-row active rating, threaded one level further so compact cards
+  // can show the same rating rather than only the personal StarRating.
+  readonly sortBy: SortByOption
 }
 
 // FRONTEND-054-AC-04/05/06: a denser, opt-in alternative to SeriesList's
@@ -22,6 +28,7 @@ export function SeriesCompactGrid({
   posterErrorIds,
   onPosterError,
   onCardClick,
+  sortBy,
 }: SeriesCompactGridProps) {
   return (
     <ul className={styles.grid}>
@@ -50,6 +57,9 @@ export function SeriesCompactGrid({
                 )}
               </div>
               <span className={styles.title}>{titleYear}</span>
+              <span className={styles.rating}>
+                {formatCompactRatingLabel(s, sortBy)}
+              </span>
               <StarRating value={s.personalRating} />
             </button>
           </li>

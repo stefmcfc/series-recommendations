@@ -10,9 +10,9 @@ describe('FRONTEND-119-AC-02: formatMissingRatingMessage', () => {
     expect(formatMissingRatingMessage(3, 'personalRating')).toBeNull()
   })
 
-  it('formats a plural message for Rotten Tomatoes', () => {
+  it('formats a plural message for the Tomatometer', () => {
     expect(formatMissingRatingMessage(3, 'rottenTomatoesRating')).toBe(
-      '3 series meeting this criteria do not have Rotten Tomatoes ratings',
+      '3 series meeting this criteria do not have Tomatometer ratings',
     )
   })
 
@@ -24,7 +24,7 @@ describe('FRONTEND-119-AC-02: formatMissingRatingMessage', () => {
 
   it('uses the Popcornmeter label for rottenTomatoesPopcornmeter', () => {
     expect(formatMissingRatingMessage(2, 'rottenTomatoesPopcornmeter')).toBe(
-      '2 series meeting this criteria do not have Rotten Tomatoes Popcornmeter ratings',
+      '2 series meeting this criteria do not have Popcornmeter ratings',
     )
   })
 

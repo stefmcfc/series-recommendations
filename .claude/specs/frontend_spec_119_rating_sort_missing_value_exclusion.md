@@ -26,6 +26,12 @@ Both surfaces render the same message format via one new shared utility, so the 
 - **`activeRating()` (`SeriesList.tsx`, `FRONTEND-039-AC-01`) is extended to cover the two new sort fields**, so the displayed rating column matches whichever rating the list is actually sorted by — the same existing behavior already applied to `imdbRating`/`tmdbRating`, now extended rather than left inconsistent for the two new options.
 - **The exclusion-notice message renders in the same location on both surfaces relative to their existing loading/error/empty states**: immediately below the header/toolbar, shown only when not loading, no error, and the count is non-zero — mirroring the existing `{!loading && error && (...)}` conditional pattern already used for the error banner (`SeriesList.tsx` line 515) so it participates in the same state machine rather than fighting it for visibility.
 
+**Correction (2026-09-11, before this spec's PR merged)**: user feedback on the open PR, in two rounds, made here rather than as a follow-up spec since the work hadn't shipped yet:
+
+1. **The "Rotten Tomatoes Rating" sort option is renamed to "Rotten Tomatoes Tomatometer"** in both `SORT_BY_OPTIONS` (`SeriesList.tsx`) and `SPECIFIC_SERIES_SORT_BY_OPTIONS` (`RecommendationControls.tsx`), disambiguating it from "Rotten Tomatoes Popcornmeter" — matching `SeriesDetailFields.tsx`'s existing field label, "Rotten Tomatoes Rating (Tomatometer)". Only the display `label` changes; the `value` (`'rottenTomatoesRating'`) is unchanged, so this has no effect on `SortOptions`, the API, or `activeRating()`'s existing `source: 'Rotten Tomatoes'` return value (`FRONTEND-119-AC-06`, unaffected).
+2. **The rating column's display format changes for the two Rotten Tomatoes sort fields**, from the plain `{value} {source}` text pattern shared with IMDb/TMDB (e.g. "8.5 IMDb") to a percent-plus-emoji format matching the series detail page's existing convention: `formatPercent` (currently a private helper in `SeriesDetailFields.tsx` — `${value}% ${emoji}`, or `—` when null) is extracted into a new shared util, `frontend/src/utils/formatPercent.ts`, exported and reused by `SeriesDetailFields.tsx` (updated to import it instead of its own private copy — a third consumer justifies the extraction per `frontend_conventions.md`'s "extract on a third consumer" rule), `SeriesList.tsx`, and `SeriesCompactGrid.tsx` (`frontend_spec_120`). IMDb/TMDB's existing two-part `{value ?? '—'} <span class="ratingSource">{source}</span>` rendering in `SeriesList.tsx`'s expanded row is **unchanged** — only the two Rotten Tomatoes fields switch to the single-string percent+emoji format (🍅 for Tomatometer, 🍿 for Popcornmeter).
+3. **(Same-day follow-up, after seeing 1-2 live)** `formatMissingRatingMessage`'s `DROPPABLE_FIELD_LABELS` shortens to match: `rottenTomatoesRating` → "Tomatometer" (not "Rotten Tomatoes"), `rottenTomatoesPopcornmeter` → "Popcornmeter" (not "Rotten Tomatoes Popcornmeter") — e.g. "3 series meeting this criteria do not have Tomatometer ratings". `imdbRating`/`tmdbRating` labels are unaffected. Every test snippet below quoting the old wording (`FRONTEND-119-AC-02`, `AC-05`, `AC-09`) reflects this — the actual test files were updated to match, not the other way around.
+
 ---
 
 ## Requirement 1: `SortOptions` and the shared message util
@@ -55,7 +61,7 @@ describe('FRONTEND-119-AC-02: formatMissingRatingMessage', () => {
 
   it('formats a plural message for Rotten Tomatoes', () => {
     expect(formatMissingRatingMessage(3, 'rottenTomatoesRating')).toBe(
-      '3 series meeting this criteria do not have Rotten Tomatoes ratings',
+      '3 series meeting this criteria do not have Tomatometer ratings',
     )
   })
 
@@ -67,7 +73,7 @@ describe('FRONTEND-119-AC-02: formatMissingRatingMessage', () => {
 
   it('uses the Popcornmeter label for rottenTomatoesPopcornmeter', () => {
     expect(formatMissingRatingMessage(2, 'rottenTomatoesPopcornmeter')).toBe(
-      '2 series meeting this criteria do not have Rotten Tomatoes Popcornmeter ratings',
+      '2 series meeting this criteria do not have Popcornmeter ratings',
     )
   })
 })
@@ -143,7 +149,7 @@ describe('FRONTEND-119-AC-05: missing-rating notice', () => {
     })
     expect(
       await screen.findByText(
-        '3 series meeting this criteria do not have Rotten Tomatoes ratings',
+        '3 series meeting this criteria do not have Tomatometer ratings',
       ),
     ).toBeInTheDocument()
   })
@@ -186,6 +192,64 @@ describe('FRONTEND-119-AC-06: activeRating covers Rotten Tomatoes fields', () =>
 })
 ```
 **Test Case (Green)**: extend `activeRating`'s branching (a `switch` or additional ternary branches) to cover both new fields.
+
+---
+
+### FRONTEND-119-AC-10 [AUTO] (Correction, 2026-09-11)
+**Statement**: `SORT_BY_OPTIONS` and `SPECIFIC_SERIES_SORT_BY_OPTIONS` shall label the `'rottenTomatoesRating'` option "Rotten Tomatoes Tomatometer" (not "Rotten Tomatoes Rating"); the `'rottenTomatoesPopcornmeter'` option's label is unchanged.
+
+**References**: `components/SeriesList.tsx` `SORT_BY_OPTIONS`; `components/RecommendationControls.tsx` `SPECIFIC_SERIES_SORT_BY_OPTIONS`.
+
+**Test Case (Red)**: update `FRONTEND-119-AC-03`'s existing assertion from `within(select).getByText('Rotten Tomatoes Rating')` to `within(select).getByText('Rotten Tomatoes Tomatometer')`; add the equivalent assertion for `SPECIFIC_SERIES_SORT_BY_OPTIONS` in `RecommendationControls.test.tsx` alongside the existing `FRONTEND-119-AC-07` label check.
+
+**Test Case (Green)**: change the one `label` string in each options array.
+
+---
+
+### FRONTEND-119-AC-11 [AUTO] (Correction, 2026-09-11)
+**Statement**: `SeriesList`'s expanded-row rating column shall display the two Rotten Tomatoes fields as `formatPercent(value, emoji)` (🍅 for `rottenTomatoesRating`, 🍿 for `rottenTomatoesPopcornmeter`) instead of the plain `{value} {source}` text pattern; the `imdbRating`/`tmdbRating` display is unchanged.
+
+**References**: `components/SeriesList.tsx` — the `.rating`/`.ratingSource` JSX (around line 590); new shared `frontend/src/utils/formatPercent.ts`, extracted from `components/SeriesDetailFields.tsx`'s existing private `formatPercent` helper.
+
+**Test Case (Red)**:
+```typescript
+describe('FRONTEND-119-AC-11: Rotten Tomatoes rating column shows percent + emoji', () => {
+  it('shows the Tomatometer value as a percent with the tomato emoji', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', rottenTomatoesRating: 88 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesRating' },
+    })
+    expect(await screen.findByText('88% 🍅')).toBeInTheDocument()
+  })
+
+  it('shows the Popcornmeter value as a percent with the popcorn emoji', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', rottenTomatoesPopcornmeter: 75 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesPopcornmeter' },
+    })
+    expect(await screen.findByText('75% 🍿')).toBeInTheDocument()
+  })
+
+  it('leaves the IMDb display format unchanged', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', imdbRating: 8.4 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
+    expect(screen.getByText('IMDb')).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: extract `formatPercent` into `frontend/src/utils/formatPercent.ts` (update `SeriesDetailFields.tsx` to import it); in `SeriesList.tsx`'s expanded row, branch on `sortBy` — for the two Rotten Tomatoes values, render `formatPercent(activeRating(s, sortBy).value, emoji)` as a single string; otherwise keep the existing two-span JSX unchanged.
 
 ---
 
@@ -292,7 +356,7 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
     )
     expect(
       screen.getByText(
-        '1 series meeting this criteria does not have Rotten Tomatoes ratings',
+        '1 series meeting this criteria does not have Tomatometer ratings',
       ),
     ).toBeInTheDocument()
   })
@@ -324,3 +388,5 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
 - [x] FRONTEND-119-AC-07: `SPECIFIC_SERIES_SORT_BY_OPTIONS`/`getSpecificSeriesSortValue` cover both new fields
 - [x] FRONTEND-119-AC-08: `buildSpecificSeriesCandidatePool` excludes missing-rating series and reports the count
 - [x] FRONTEND-119-AC-09: `UseMySeriesPanel` renders the missing-rating notice correctly
+- [x] FRONTEND-119-AC-10 (Correction): "Rotten Tomatoes Rating" sort option renamed to "Rotten Tomatoes Tomatometer" in both option lists
+- [x] FRONTEND-119-AC-11 (Correction): Rotten Tomatoes rating column shows `percent% emoji`, IMDb/TMDB unchanged

@@ -939,7 +939,7 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
 
     expect(
       screen.getByText(
-        '1 series meeting this criteria does not have Rotten Tomatoes ratings',
+        '1 series meeting this criteria does not have Tomatometer ratings',
       ),
     ).toBeInTheDocument()
   })

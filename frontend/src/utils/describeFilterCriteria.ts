@@ -42,8 +42,9 @@ const SORT_BY_LABELS: Record<UseMySeriesFilterCriteria['sortBy'], string> = {
   year: 'Year',
   imdbRating: 'IMDb Rating',
   tmdbRating: 'TMDB Rating',
-  // FRONTEND-119-AC-07/SERIES-062.
-  rottenTomatoesRating: 'Rotten Tomatoes Rating',
+  // FRONTEND-119-AC-07/SERIES-062. Label corrected to "Tomatometer"
+  // (FRONTEND-119-AC-10, 2026-09-11) to disambiguate from Popcornmeter.
+  rottenTomatoesRating: 'Rotten Tomatoes Tomatometer',
   rottenTomatoesPopcornmeter: 'Rotten Tomatoes Popcornmeter',
 }
 

@@ -215,8 +215,9 @@ export const SPECIFIC_SERIES_SORT_BY_OPTIONS: {
   { value: 'year', label: 'Year' },
   { value: 'imdbRating', label: 'IMDb Rating' },
   { value: 'tmdbRating', label: 'TMDB Rating' },
-  // FRONTEND-119-AC-07/SERIES-062.
-  { value: 'rottenTomatoesRating', label: 'Rotten Tomatoes Rating' },
+  // FRONTEND-119-AC-07/SERIES-062. Label corrected to "Tomatometer"
+  // (FRONTEND-119-AC-10, 2026-09-11) to disambiguate from Popcornmeter.
+  { value: 'rottenTomatoesRating', label: 'Rotten Tomatoes Tomatometer' },
   {
     value: 'rottenTomatoesPopcornmeter',
     label: 'Rotten Tomatoes Popcornmeter',

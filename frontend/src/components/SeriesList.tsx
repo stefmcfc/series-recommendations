@@ -7,6 +7,7 @@ import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
 import { formatMissingRatingMessage } from '../utils/missingRatingMessage'
+import { formatPercent } from '../utils/formatPercent'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { StarRating } from './StarRating'
 import { SeriesCompactGrid } from './SeriesCompactGrid'
@@ -41,7 +42,10 @@ interface SeriesListProps {
 // FRONTEND-013-AC-12: sort field options, in display order. Extended by
 // Requirement 5 (FRONTEND-013-AC-14/15) with title/year/imdbRating/tmdbRating
 // alongside the original dateAdded/personalRating pair.
-type SortByOption = NonNullable<SortOptions['sortBy']>
+// FRONTEND-120-AC-01/03: exported (was module-private) so SeriesCompactGrid.tsx
+// can type its new `sortBy` prop against this same union rather than
+// redeclaring it or widening to `string`.
+export type SortByOption = NonNullable<SortOptions['sortBy']>
 type SortDirection = NonNullable<SortOptions['sortDirection']>
 
 const SORT_BY_OPTIONS: { value: SortByOption; label: string }[] = [
@@ -51,8 +55,9 @@ const SORT_BY_OPTIONS: { value: SortByOption; label: string }[] = [
   { value: 'year', label: 'Year' },
   { value: 'imdbRating', label: 'IMDb Rating' },
   { value: 'tmdbRating', label: 'TMDB Rating' },
-  // FRONTEND-119-AC-03/SERIES-062.
-  { value: 'rottenTomatoesRating', label: 'Rotten Tomatoes Rating' },
+  // FRONTEND-119-AC-03/SERIES-062. Label corrected to "Tomatometer"
+  // (FRONTEND-119-AC-10, 2026-09-11) to disambiguate from Popcornmeter.
+  { value: 'rottenTomatoesRating', label: 'Rotten Tomatoes Tomatometer' },
   {
     value: 'rottenTomatoesPopcornmeter',
     label: 'Rotten Tomatoes Popcornmeter',
@@ -106,6 +111,25 @@ export function activeRating(
     default:
       return { value: series.imdbRating, source: 'IMDb' }
   }
+}
+
+// FRONTEND-120-AC-01/SERIES-062: SeriesCompactGrid's denser card layout has no
+// equivalent of the expanded row's two-span value/source split, so this
+// composes activeRating() + formatPercent() into one combined string for
+// every case -- "8.4 IMDb", "88% 🍅", or "— IMDb" when the value is null.
+// eslint-disable-next-line react-refresh/only-export-components -- exported purely for direct unit-testability, not a component.
+export function formatCompactRatingLabel(
+  series: Series,
+  sortBy: SortByOption,
+): string {
+  const { value, source } = activeRating(series, sortBy)
+  if (sortBy === 'rottenTomatoesRating') {
+    return formatPercent(value, '🍅')
+  }
+  if (sortBy === 'rottenTomatoesPopcornmeter') {
+    return formatPercent(value, '🍿')
+  }
+  return `${value ?? '—'} ${source}`
 }
 
 // FRONTEND-054-AC-01/03: three opt-in rendering modes over the same fetched
@@ -630,11 +654,25 @@ export function SeriesList({
                     )}
                   </div>
                   <span className={styles.rating}>
-                    {activeRating(s, sortBy).value ?? '—'}
-                    <span className={styles.ratingSource}>
-                      {' '}
-                      {activeRating(s, sortBy).source}
-                    </span>
+                    {/* FRONTEND-119-AC-11/SERIES-062: the two Rotten Tomatoes
+                        sort fields render as a single percent+emoji string;
+                        every other field keeps the existing two-span
+                        value/source split unchanged. */}
+                    {sortBy === 'rottenTomatoesRating' ||
+                    sortBy === 'rottenTomatoesPopcornmeter' ? (
+                      formatPercent(
+                        activeRating(s, sortBy).value,
+                        sortBy === 'rottenTomatoesRating' ? '🍅' : '🍿',
+                      )
+                    ) : (
+                      <>
+                        {activeRating(s, sortBy).value ?? '—'}
+                        <span className={styles.ratingSource}>
+                          {' '}
+                          {activeRating(s, sortBy).source}
+                        </span>
+                      </>
+                    )}
                   </span>
                   <StarRating value={s.personalRating} />
 
@@ -757,6 +795,7 @@ export function SeriesList({
           posterErrorIds={posterErrorIds}
           onPosterError={handlePosterError}
           onCardClick={handleRowClick}
+          sortBy={sortBy}
         />
       )}
 

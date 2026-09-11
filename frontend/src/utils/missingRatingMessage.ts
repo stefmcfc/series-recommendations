@@ -9,8 +9,8 @@ export type SortByOption = NonNullable<SortOptions['sortBy']>
 const DROPPABLE_FIELD_LABELS: Partial<Record<SortByOption, string>> = {
   imdbRating: 'IMDb',
   tmdbRating: 'TMDB',
-  rottenTomatoesRating: 'Rotten Tomatoes',
-  rottenTomatoesPopcornmeter: 'Rotten Tomatoes Popcornmeter',
+  rottenTomatoesRating: 'Tomatometer',
+  rottenTomatoesPopcornmeter: 'Popcornmeter',
 }
 
 /**
