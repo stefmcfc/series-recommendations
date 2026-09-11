@@ -53,7 +53,7 @@ beforeEach(() => {
 
 describe('FRONTEND-003-AC-27/28: opening the form', () => {
   it('does not render AddSeriesForm until Add Series is clicked', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('add-series-btn')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -65,7 +65,7 @@ describe('FRONTEND-003-AC-27/28: opening the form', () => {
 
 describe('FRONTEND-003-AC-29: cancelling', () => {
   it('closes the dialog without re-fetching', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findAllByTestId('add-series-btn')
     fireEvent.click(screen.getAllByTestId('add-series-btn')[0])
@@ -79,8 +79,11 @@ describe('FRONTEND-003-AC-29: cancelling', () => {
 describe('FRONTEND-003-AC-30: successful creation refreshes the list', () => {
   it('closes the dialog and re-fetches the series list', async () => {
     mockGetAll
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ id: '1', title: 'New Show' } as Series])
+      .mockResolvedValueOnce({ series: [], excludedCount: 0 })
+      .mockResolvedValueOnce({
+        series: [{ id: '1', title: 'New Show' } as Series],
+        excludedCount: 0,
+      })
     mockCreate.mockResolvedValue({ id: '1', title: 'New Show' } as Series)
 
     render(<App />)
@@ -105,9 +108,10 @@ describe('FRONTEND-003-AC-30: successful creation refreshes the list', () => {
 
 describe('FRONTEND-004-AC-34/35: opening the edit form', () => {
   it('renders EditSeriesForm pre-filled when a row Edit button is clicked', async () => {
-    mockGetAll.mockResolvedValue([
-      { id: '1', title: 'Show', status: 'WATCHING' } as Series,
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show', status: 'WATCHING' } as Series],
+      excludedCount: 0,
+    })
     render(<App />)
     await screen.findByTestId('edit-series-btn')
 
@@ -121,7 +125,10 @@ describe('FRONTEND-004-AC-34/35: opening the edit form', () => {
 
 describe('FRONTEND-004-AC-36: cancelling an edit', () => {
   it('closes the dialog without re-fetching', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show' } as Series],
+      excludedCount: 0,
+    })
     render(<App />)
     await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
@@ -134,7 +141,7 @@ describe('FRONTEND-004-AC-36: cancelling an edit', () => {
 
 describe('FRONTEND-072-AC-01: Export controls no longer render on My Series', () => {
   it('does not render Export JSON/CSV buttons on the My Series page', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -146,8 +153,14 @@ describe('FRONTEND-072-AC-01: Export controls no longer render on My Series', ()
 describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
   it('closes the dialog and re-fetches the series list', async () => {
     mockGetAll
-      .mockResolvedValueOnce([{ id: '1', title: 'Show' } as Series])
-      .mockResolvedValueOnce([{ id: '1', title: 'Updated Show' } as Series])
+      .mockResolvedValueOnce({
+        series: [{ id: '1', title: 'Show' } as Series],
+        excludedCount: 0,
+      })
+      .mockResolvedValueOnce({
+        series: [{ id: '1', title: 'Updated Show' } as Series],
+        excludedCount: 0,
+      })
     mockUpdate.mockResolvedValue({ id: '1', title: 'Updated Show' } as Series)
 
     render(<App />)
@@ -165,8 +178,14 @@ describe('FRONTEND-004-AC-37: successful edit refreshes the list', () => {
 
 describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
   it('applies a search from the live Title search box to the rendered list', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
-    mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'The Office' } as Series],
+      excludedCount: 0,
+    })
+    mockSearch.mockResolvedValue({
+      series: [{ id: '1', title: 'The Office' } as Series],
+      excludedCount: 0,
+    })
 
     render(<App />)
     await screen.findByText('The Office')
@@ -186,8 +205,8 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
   })
 
   it('reverts to getAll after Clear Filters', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockSearch.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -208,7 +227,10 @@ describe('FRONTEND-006-AC-16/17/18: search wiring', () => {
 
 describe('FRONTEND-005-AC-25/26: navigating to detail', () => {
   it('renders SeriesDetail instead of SeriesList when the title is clicked', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     render(<App />)
     await screen.findByTestId('series-row')
@@ -221,7 +243,10 @@ describe('FRONTEND-005-AC-25/26: navigating to detail', () => {
 
 describe('FRONTEND-005-AC-27: returning to the list', () => {
   it('re-fetches SeriesList after Back', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     render(<App />)
     await screen.findByTestId('series-row')
@@ -237,8 +262,14 @@ describe('FRONTEND-005-AC-27: returning to the list', () => {
 
 describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
   it('switches the main view without disturbing active search criteria', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
-    mockSearch.mockResolvedValue([{ id: '1', title: 'The Office' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'The Office' } as Series],
+      excludedCount: 0,
+    })
+    mockSearch.mockResolvedValue({
+      series: [{ id: '1', title: 'The Office' } as Series],
+      excludedCount: 0,
+    })
     mockGetRecommendations.mockResolvedValue([])
     mockGetGenreOptions.mockResolvedValue([])
     window.history.pushState({}, '', '/my-series')
@@ -301,7 +332,7 @@ describe('FRONTEND-010-AC-18/19: Recommendations nav toggle', () => {
 
 describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recommendations view', () => {
   it('shows the sourcing controls only while the Recommendations view is active', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     mockGetRecommendations.mockResolvedValue([])
     mockGetGenreOptions.mockResolvedValue([])
     window.history.pushState({}, '', '/my-series')
@@ -329,7 +360,7 @@ describe('FRONTEND-011-AC-10: RecommendationControls only renders in the Recomme
 
 describe('FRONTEND-024-AC-10/FRONTEND-087-AC-01: Analysis nav toggle', () => {
   it('renders KeywordsView when the Analysis toggle is clicked', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series')
 
     render(<App />)
@@ -349,7 +380,7 @@ describe('FRONTEND-024-AC-10/FRONTEND-087-AC-01: Analysis nav toggle', () => {
 
 describe('FRONTEND-087-AC-01/02: Analysis nav and routing', () => {
   it('shows an Analysis nav link instead of Keywords', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
@@ -380,7 +411,10 @@ describe('FRONTEND-087-AC-01/02: Analysis nav and routing', () => {
 
 describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () => {
   it('stays on SeriesDetail and shows updated data after a successful edit', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show' } as Series],
+      excludedCount: 0,
+    })
     mockGetById
       .mockResolvedValueOnce({
         id: '1',
@@ -412,7 +446,7 @@ describe('FRONTEND-005-AC-28/29: editing from detail refreshes it in place', () 
 
 describe('FRONTEND-041-AC-01: nav items are links, not buttons', () => {
   it('renders My Series/Recommendations/Analysis as links', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
@@ -428,7 +462,7 @@ describe('FRONTEND-041-AC-01: nav items are links, not buttons', () => {
 
 describe('FRONTEND-041-AC-03: logo links home', () => {
   it('renders a logo link pointing at /my-series', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
@@ -439,7 +473,7 @@ describe('FRONTEND-041-AC-03: logo links home', () => {
 
 describe('FRONTEND-041-AC-04: logo click navigates home from any view', () => {
   it('navigates to My Series from Recommendations', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     mockGetRecommendations.mockResolvedValue([])
     mockGetGenreOptions.mockResolvedValue([])
     window.history.pushState({}, '', '/recommendations')
@@ -456,7 +490,7 @@ describe('FRONTEND-041-AC-04: logo click navigates home from any view', () => {
 
 describe('FRONTEND-041-AC-05: root redirects to /my-series', () => {
   it('shows the series list when loaded at /', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/')
 
     render(<App />)
@@ -468,7 +502,7 @@ describe('FRONTEND-041-AC-05: root redirects to /my-series', () => {
 
 describe('FRONTEND-041-AC-06: /my-series renders the list view', () => {
   it('renders SeriesList content at /my-series', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series')
 
     render(<App />)
@@ -493,7 +527,7 @@ describe('FRONTEND-041-AC-07: /recommendations renders the recommendations view'
 
 describe('FRONTEND-041-AC-08/FRONTEND-087-AC-02: /keywords redirects to /analysis/keywords', () => {
   it('renders KeywordsView content at /keywords via redirect', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/keywords')
 
     render(<App />)
@@ -505,7 +539,7 @@ describe('FRONTEND-041-AC-08/FRONTEND-087-AC-02: /keywords redirects to /analysi
 
 describe('FRONTEND-070-AC-01: Settings nav link renders after Analysis', () => {
   it('renders a Settings link after Analysis in the nav', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('add-series-btn')
 
@@ -520,7 +554,7 @@ describe('FRONTEND-070-AC-01: Settings nav link renders after Analysis', () => {
 
 describe('FRONTEND-070-AC-02: /settings renders the Settings page shell', () => {
   it('renders SettingsPage content at /settings', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/settings')
 
     render(<App />)
@@ -531,7 +565,7 @@ describe('FRONTEND-070-AC-02: /settings renders the Settings page shell', () => 
 
 describe('FRONTEND-041-AC-09: nav updates the URL and supports Back', () => {
   it('navigates and supports browser Back', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     mockGetRecommendations.mockResolvedValue([])
     mockGetGenreOptions.mockResolvedValue([])
     window.history.pushState({}, '', '/my-series')
@@ -551,7 +585,7 @@ describe('FRONTEND-041-AC-09: nav updates the URL and supports Back', () => {
 
 describe('FRONTEND-041-AC-10: unmatched path redirects to /my-series', () => {
   it('redirects an unknown path to /my-series', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/does-not-exist')
 
     render(<App />)
@@ -570,7 +604,10 @@ describe('FRONTEND-041-AC-10: unmatched path redirects to /my-series', () => {
 // contract these two are replaced by.
 describe('FRONTEND-041-AC-11/FRONTEND-113: nav stays visible on SeriesDetail', () => {
   it('keeps the top-level nav visible when a series is selected', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     window.history.pushState({}, '', '/my-series')
 
@@ -585,7 +622,10 @@ describe('FRONTEND-041-AC-11/FRONTEND-113: nav stays visible on SeriesDetail', (
 
 describe('FRONTEND-041-AC-12/FRONTEND-113: selecting a series changes the URL', () => {
   it('navigates to /my-series/view/:id and back to /my-series', async () => {
-    mockGetAll.mockResolvedValue([{ id: '1', title: 'Show' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: '1', title: 'Show' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: '1', title: 'Show' } as Series)
     window.history.pushState({}, '', '/my-series')
 
@@ -603,7 +643,7 @@ describe('FRONTEND-041-AC-12/FRONTEND-113: selecting a series changes the URL', 
 
 describe('FRONTEND-056-AC-01: status tab bar renders', () => {
   it('renders five status tabs', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
 
     expect(await screen.findByRole('link', { name: 'All' })).toBeInTheDocument()
@@ -616,9 +656,12 @@ describe('FRONTEND-056-AC-01: status tab bar renders', () => {
 
 describe('FRONTEND-056-AC-02: deep-linking to a status tab filters SeriesList', () => {
   it('renders SeriesList filtered to the route-derived status', async () => {
-    mockSearch.mockResolvedValue([
-      { id: '1', title: 'Completed Show', status: 'COMPLETED' } as Series,
-    ])
+    mockSearch.mockResolvedValue({
+      series: [
+        { id: '1', title: 'Completed Show', status: 'COMPLETED' } as Series,
+      ],
+      excludedCount: 0,
+    })
     window.history.pushState({}, '', '/my-series/completed')
 
     render(<App />)
@@ -637,7 +680,7 @@ describe('FRONTEND-056-AC-02: deep-linking to a status tab filters SeriesList', 
 
 describe('FRONTEND-056-AC-03: top-level My Series nav stays active on a status tab', () => {
   it('keeps aria-current on the top-level My Series link', async () => {
-    mockSearch.mockResolvedValue([])
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series/watching')
 
     render(<App />)
@@ -650,8 +693,8 @@ describe('FRONTEND-056-AC-03: top-level My Series nav stays active on a status t
 
 describe('FRONTEND-056-AC-05: SearchFilter criteria and tab-derived status combine', () => {
   it('merges the SearchFilter criteria with the route-derived status', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockSearch.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series/watching')
 
     render(<App />)
@@ -672,8 +715,8 @@ describe('FRONTEND-056-AC-05: SearchFilter criteria and tab-derived status combi
 
 describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each other', () => {
   it('preserves the active tab when other criteria change, and vice versa', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockSearch.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series/watching')
 
     render(<App />)
@@ -709,7 +752,7 @@ describe('FRONTEND-056-AC-06: tabs and other filters do not clear/override each 
 
 describe('FRONTEND-071-AC-09: opening Filters from SeriesList shows the sheet', () => {
   it('opens the SearchFilter sheet when the Filters button is clicked', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -721,8 +764,8 @@ describe('FRONTEND-071-AC-09: opening Filters from SeriesList shows the sheet', 
   })
 
   it('closes the sheet and reflects an active filter after a search', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockSearch.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     mockGetGenreOptions.mockResolvedValue([])
     mockGetKeywordStats.mockResolvedValue([])
     render(<App />)
@@ -751,8 +794,8 @@ describe('FRONTEND-073-AC-04: typing debounces into fetch criteria', () => {
   // waitFor's default polling exercises the same 350ms debounce contract
   // without that hazard.
   it('does not refetch until the debounce settles', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockSearch.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -772,7 +815,7 @@ describe('FRONTEND-073-AC-04: typing debounces into fetch criteria', () => {
 
 describe('FRONTEND-073-AC-05: live title clear is independent of Clear Filters', () => {
   it('Clear Filters in the sheet does not reset the live title box', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -788,7 +831,7 @@ describe('FRONTEND-073-AC-05: live title clear is independent of Clear Filters',
 
 describe('FRONTEND-074-AC-01: Rewatch tab renders', () => {
   it('renders a Rewatch link alongside the status tabs', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -798,8 +841,8 @@ describe('FRONTEND-074-AC-01: Rewatch tab renders', () => {
 
 describe('FRONTEND-074-AC-02: Rewatch tab filters by flaggedForRewatch', () => {
   it('fetches with flaggedForRewatch true and no status when on the Rewatch tab', async () => {
-    mockGetAll.mockResolvedValue([])
-    mockSearch.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series/rewatch')
     render(<App />)
 
@@ -814,7 +857,7 @@ describe('FRONTEND-074-AC-02: Rewatch tab filters by flaggedForRewatch', () => {
 
 describe('FRONTEND-074-AC-03: Rewatch tab shows active state', () => {
   it('marks only Rewatch active when on /my-series/rewatch', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series/rewatch')
     render(<App />)
     await screen.findByTestId('series-list')
@@ -832,7 +875,7 @@ describe('FRONTEND-074-AC-03: Rewatch tab shows active state', () => {
 
 describe('FRONTEND-073-AC-06: active-filter dot ignores live title', () => {
   it('does not show the active-filter dot from typing a title alone', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -846,7 +889,7 @@ describe('FRONTEND-073-AC-06: active-filter dot ignores live title', () => {
 
 describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', () => {
   it('defaults to no data-theme attribute (system) when nothing is stored', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -855,7 +898,7 @@ describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', ()
 
   it('applies data-theme="dark" when a stored theme is dark', async () => {
     localStorage.setItem('theme', JSON.stringify('dark'))
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -864,7 +907,7 @@ describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', ()
 
   it('removes the attribute when switching back to Match System', async () => {
     localStorage.setItem('theme', JSON.stringify('dark'))
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -877,7 +920,7 @@ describe('FRONTEND-099-AC-01/02: theme state applies a data-theme attribute', ()
 
 describe('FRONTEND-110-AC-01/02: accentColor applies a data-accent attribute', () => {
   it('defaults to no data-accent attribute (purple) when nothing is stored', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -886,7 +929,7 @@ describe('FRONTEND-110-AC-01/02: accentColor applies a data-accent attribute', (
 
   it('applies data-accent="blue" when a stored accentColor is blue', async () => {
     localStorage.setItem('accentColor', JSON.stringify('blue'))
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -895,7 +938,7 @@ describe('FRONTEND-110-AC-01/02: accentColor applies a data-accent attribute', (
 
   it('removes the attribute when switching back to Purple', async () => {
     localStorage.setItem('accentColor', JSON.stringify('green'))
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -908,7 +951,7 @@ describe('FRONTEND-110-AC-01/02: accentColor applies a data-accent attribute', (
 
 describe('FRONTEND-105-AC-09/10: status tabs render decorative icons', () => {
   it('each status tab renders an aria-hidden icon before its label', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     const watchingTab = await screen.findByRole('link', { name: 'Watching' })
     expect(watchingTab.querySelector('[aria-hidden="true"] svg')).toBeTruthy()
@@ -917,7 +960,7 @@ describe('FRONTEND-105-AC-09/10: status tabs render decorative icons', () => {
 
 describe('FRONTEND-105-AC-11: header nav links are unaffected', () => {
   it('the header My Series/Recommendations/Analysis/Settings links carry no icon', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<App />)
     await screen.findByTestId('series-list')
 
@@ -940,7 +983,7 @@ describe('FRONTEND-113-AC-01: /my-series/view/:id renders SeriesDetail', () => {
 
 describe('FRONTEND-113-AC-02: /my-series/:statusTab is unaffected', () => {
   it('still renders MySeriesView filtered to the tab for /my-series/watching', async () => {
-    mockSearch.mockResolvedValue([])
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     window.history.pushState({}, '', '/my-series/watching')
 
     render(<App />)
@@ -959,7 +1002,10 @@ describe('FRONTEND-113-AC-02: /my-series/:statusTab is unaffected', () => {
 
 describe('FRONTEND-113-AC-03: row click navigates to the series URL', () => {
   it('changes the URL to /my-series/view/:id on row click', async () => {
-    mockGetAll.mockResolvedValue([{ id: 'abc-123', title: 'Show A' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: 'abc-123', title: 'Show A' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
     window.history.pushState({}, '', '/my-series')
 
@@ -976,7 +1022,10 @@ describe('FRONTEND-113-AC-03: row click navigates to the series URL', () => {
 
 describe('FRONTEND-113-AC-04: Back and delete return to /my-series', () => {
   it('navigates to /my-series when Back is clicked', async () => {
-    mockGetAll.mockResolvedValue([{ id: 'abc-123', title: 'Show A' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: 'abc-123', title: 'Show A' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
     window.history.pushState({}, '', '/my-series/view/abc-123')
 
@@ -988,7 +1037,10 @@ describe('FRONTEND-113-AC-04: Back and delete return to /my-series', () => {
 
   it('navigates to /my-series after a successful delete', async () => {
     const mockDelete = vi.mocked(seriesApi.delete)
-    mockGetAll.mockResolvedValue([{ id: 'abc-123', title: 'Show A' } as Series])
+    mockGetAll.mockResolvedValue({
+      series: [{ id: 'abc-123', title: 'Show A' } as Series],
+      excludedCount: 0,
+    })
     mockGetById.mockResolvedValue({ id: 'abc-123', title: 'Show A' } as Series)
     mockDelete.mockResolvedValue(undefined)
     window.history.pushState({}, '', '/my-series/view/abc-123')

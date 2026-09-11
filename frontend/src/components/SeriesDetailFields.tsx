@@ -3,6 +3,7 @@ import type { Series, StreamingProvider } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
 import { StarRating } from './StarRating'
 import { formatLanguageName } from '../utils/languageName'
+import { formatPercent } from '../utils/formatPercent'
 import styles from './SeriesDetail.module.css'
 
 interface SeriesDetailFieldsProps {
@@ -19,10 +20,6 @@ interface SeriesDetailFieldsProps {
 // These formatters only apply to this block's fields, so they moved here too.
 function formatValue(value: string | number | null): string {
   return value === null ? '—' : String(value)
-}
-
-function formatPercent(value: number | null, emoji: string): string {
-  return value === null ? '—' : `${value}% ${emoji}`
 }
 
 function formatDate(value: string | null): string {

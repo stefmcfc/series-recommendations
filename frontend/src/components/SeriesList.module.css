@@ -180,6 +180,15 @@
   }
 }
 
+/* FRONTEND-119-AC-05/SERIES-062: notice shown below the header/toolbar when
+   a rating sort drops series missing that rating -- var(--text), not a new
+   accent color, since this is informational, not an error/warning state. */
+.missingRatingNotice {
+  margin: 0.5rem 0 0;
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
 .error {
   display: flex;
   flex-direction: column;

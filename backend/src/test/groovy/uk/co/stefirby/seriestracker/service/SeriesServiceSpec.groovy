@@ -648,6 +648,76 @@ class SeriesServiceSpec extends Specification {
         thrown(IllegalArgumentException)
   }
 
+  def "SERIES-062-AC-01: getAll sorts by rottenTomatoesRating, nulls last"() {
+    given: "three series with different Rotten Tomatoes ratings"
+        seriesService.create(new SeriesDto(title: "RT Sort A", rottenTomatoesRating: 60))
+        seriesService.create(new SeriesDto(title: "RT Sort B", rottenTomatoesRating: 95))
+        seriesService.create(new SeriesDto(title: "RT Sort C"))
+
+    when: "getAll() is called with sortBy=rottenTomatoesRating, sortDirection=desc"
+        def results = seriesService.getAll("rottenTomatoesRating", "desc")
+        def scoped = results.findAll { it.title.startsWith("RT Sort") }
+
+    then: "results are ordered by rottenTomatoesRating descending -- the missing-value series is excluded, not sorted last (SERIES-062-AC-03)"
+        scoped*.title == ["RT Sort B", "RT Sort A"]
+  }
+
+  def "SERIES-062-AC-01b: getAll sorts by rottenTomatoesPopcornmeter"() {
+    given: "two series with different Popcornmeter scores"
+        seriesService.create(new SeriesDto(title: "Popcorn A", rottenTomatoesPopcornmeter: 70))
+        seriesService.create(new SeriesDto(title: "Popcorn B", rottenTomatoesPopcornmeter: 90))
+
+    when: "getAll() is called with sortBy=rottenTomatoesPopcornmeter, sortDirection=asc"
+        def results = seriesService.getAll("rottenTomatoesPopcornmeter", "asc")
+        def scoped = results.findAll { it.title.startsWith("Popcorn") }
+
+    then: "results are ordered ascending"
+        scoped*.title == ["Popcorn A", "Popcorn B"]
+  }
+
+  def "SERIES-062-AC-03: getAll excludes series missing the sorted-on rating"() {
+    given: "one series with an IMDb rating, one without"
+        seriesService.create(new SeriesDto(title: "Has IMDb", imdbRating: 7.5))
+        seriesService.create(new SeriesDto(title: "No IMDb"))
+
+    when: "getAll() is called with sortBy=imdbRating"
+        def results = seriesService.getAll("imdbRating", "desc")
+        def titles = results*.title
+
+    then: "the series without an IMDb rating is excluded entirely, not sorted last"
+        titles.contains("Has IMDb")
+        !titles.contains("No IMDb")
+  }
+
+  def "SERIES-062-AC-03b: getAll does not exclude on a non-droppable sortBy"() {
+    given: "a series with no personal rating"
+        seriesService.create(new SeriesDto(title: "Unrated"))
+
+    when: "getAll() is called with sortBy=personalRating"
+        def results = seriesService.getAll("personalRating", "desc")
+
+    then: "the unrated series is still present"
+        results*.title.contains("Unrated")
+  }
+
+  def "SERIES-062-AC-05: countMissingForSort counts series missing the sorted-on rating"() {
+    given: "two series with a TMDB rating, one without"
+        seriesService.create(new SeriesDto(title: "TMDB Count A", tmdbRating: 7.0))
+        seriesService.create(new SeriesDto(title: "TMDB Count B", tmdbRating: 8.0))
+        seriesService.create(new SeriesDto(title: "TMDB Count C"))
+
+    when: "countMissingForSort is called with sortBy=tmdbRating"
+        def count = seriesService.countMissingForSort("tmdbRating")
+
+    then: "it reports at least the one series known to be missing a TMDB rating"
+        count >= 1
+  }
+
+  def "SERIES-062-AC-05b: countMissingForSort returns 0 for a non-droppable sortBy"() {
+    expect:
+        seriesService.countMissingForSort("personalRating") == 0
+  }
+
   def "should retrieve series by ID"() {
     given: "a series has been created"
         def created = seriesService.create(new SeriesDto(title: "The Office"))

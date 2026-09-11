@@ -50,10 +50,41 @@ describe('FRONTEND-105-AC-05: compact-grid cards compose the shared surface prim
         posterErrorIds={new Set()}
         onPosterError={vi.fn()}
         onCardClick={vi.fn()}
+        sortBy="dateAdded"
       />,
     )
     expect(
       screen.getByText('Chernobyl').closest('button')?.className,
     ).toContain(surface.card)
+  })
+})
+
+describe('FRONTEND-120-AC-02: compact card shows the active rating', () => {
+  it('shows the IMDb rating before the personal rating', () => {
+    render(
+      <SeriesCompactGrid
+        series={[
+          makeSeries({ title: 'Ozark', imdbRating: 8.4, personalRating: 4 }),
+        ]}
+        posterErrorIds={new Set()}
+        onPosterError={vi.fn()}
+        onCardClick={vi.fn()}
+        sortBy="dateAdded"
+      />,
+    )
+    expect(screen.getByText('8.4 IMDb')).toBeInTheDocument()
+  })
+
+  it('shows the Rotten Tomatoes percent+emoji format when sorted by it', () => {
+    render(
+      <SeriesCompactGrid
+        series={[makeSeries({ title: 'Ozark', rottenTomatoesRating: 88 })]}
+        posterErrorIds={new Set()}
+        onPosterError={vi.fn()}
+        onCardClick={vi.fn()}
+        sortBy="rottenTomatoesRating"
+      />,
+    )
+    expect(screen.getByText('88% 🍅')).toBeInTheDocument()
   })
 })

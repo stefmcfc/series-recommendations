@@ -13,10 +13,19 @@ import java.util.function.Function;
 final class SeriesSortResolver {
 
     // SERIES-009-AC-01/07: dateAdded/personalRating (Requirement 1) plus title/year/
-    // imdbRating/tmdbRating (Requirement 2).
+    // imdbRating/tmdbRating (Requirement 2). series_spec_062_rating_sort_missing_value_exclusion.md
+    // (SERIES-062-AC-01) adds rottenTomatoesRating/rottenTomatoesPopcornmeter.
     private static final List<String> VALID_SORT_BY =
-        List.of("dateAdded", "personalRating", "title", "year", "imdbRating", "tmdbRating");
+        List.of("dateAdded", "personalRating", "title", "year", "imdbRating", "tmdbRating",
+            "rottenTomatoesRating", "rottenTomatoesPopcornmeter");
     private static final List<String> VALID_SORT_DIRECTION = List.of("asc", "desc");
+
+    // series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-02): the four
+    // externally-sourced rating fields for which a missing value now means "excluded from the
+    // list" (SeriesService/SeriesSearchService) rather than "sorted last but still shown".
+    // personalRating is deliberately not in this set -- see the spec's Overview.
+    private static final List<String> DROPPABLE_SORT_BY =
+        List.of("imdbRating", "tmdbRating", "rottenTomatoesRating", "rottenTomatoesPopcornmeter");
 
     private SeriesSortResolver() {}
 
@@ -25,14 +34,21 @@ final class SeriesSortResolver {
         return (sortDirection == null || sortDirection.isBlank()) ? "desc" : sortDirection;
     }
 
+    // SERIES-009-AC-01: a null/blank sortBy defaults to "dateAdded". Extracted (SERIES-062
+    // Design Decisions) so resolve() and isMissingRatingForSort() apply this rule identically.
+    private static String resolveEffectiveSortBy(String sortBy) {
+        return (sortBy == null || sortBy.isBlank()) ? "dateAdded" : sortBy;
+    }
+
     static Comparator<SeriesEntity> resolve(String sortBy, String sortDirection) {
-        String effectiveSortBy = (sortBy == null || sortBy.isBlank()) ? "dateAdded" : sortBy;
+        String effectiveSortBy = resolveEffectiveSortBy(sortBy);
         String effectiveDirection = resolveEffectiveDirection(sortDirection);
 
-        // SERIES-009-AC-02/11: any value outside the (now six-member) accepted set is rejected.
+        // SERIES-009-AC-02/11: any value outside the accepted set is rejected.
         if (!VALID_SORT_BY.contains(effectiveSortBy)) {
             throw new IllegalArgumentException("Invalid sortBy: " + sortBy
-                + ". Must be one of: dateAdded, personalRating, title, year, imdbRating, tmdbRating");
+                + ". Must be one of: dateAdded, personalRating, title, year, imdbRating, tmdbRating, "
+                + "rottenTomatoesRating, rottenTomatoesPopcornmeter");
         }
         // SERIES-009-AC-03: same style as the sortBy validation above.
         if (!VALID_SORT_DIRECTION.contains(effectiveDirection)) {
@@ -48,7 +64,30 @@ final class SeriesSortResolver {
             case "year" -> comparingNullsLast(SeriesEntity::getYear, descending);
             case "imdbRating" -> comparingNullsLast(SeriesEntity::getImdbRating, descending);
             case "tmdbRating" -> tmdbRatingComparator(descending);
+            case "rottenTomatoesRating" -> comparingNullsLast(SeriesEntity::getRottenTomatoesRating, descending);
+            case "rottenTomatoesPopcornmeter" ->
+                comparingNullsLast(SeriesEntity::getRottenTomatoesPopcornmeter, descending);
             default -> comparingNullsLast(SeriesEntity::getDateAdded, descending);
+        };
+    }
+
+    /**
+     * series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-02): true only when
+     * the effective {@code sortBy} is one of the four droppable rating fields and this entity's
+     * corresponding value is null. Package-private, alongside {@link #resolve}, so both
+     * {@code SeriesService} and {@code SeriesSearchService} apply the identical rule.
+     */
+    static boolean isMissingRatingForSort(SeriesEntity entity, String sortBy) {
+        String effectiveSortBy = resolveEffectiveSortBy(sortBy);
+        if (!DROPPABLE_SORT_BY.contains(effectiveSortBy)) {
+            return false;
+        }
+        return switch (effectiveSortBy) {
+            case "imdbRating" -> entity.getImdbRating() == null;
+            case "tmdbRating" -> entity.getTmdbRating() == null;
+            case "rottenTomatoesRating" -> entity.getRottenTomatoesRating() == null;
+            case "rottenTomatoesPopcornmeter" -> entity.getRottenTomatoesPopcornmeter() == null;
+            default -> false;
         };
     }
 

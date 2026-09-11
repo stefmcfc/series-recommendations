@@ -6,6 +6,8 @@ import { formatCountryNames } from '../utils/countryName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { toggleRewatchFlag } from '../utils/rewatchToggle'
 import { submitDelete } from '../utils/deleteSeries'
+import { formatMissingRatingMessage } from '../utils/missingRatingMessage'
+import { formatPercent } from '../utils/formatPercent'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { StarRating } from './StarRating'
 import { SeriesCompactGrid } from './SeriesCompactGrid'
@@ -40,7 +42,10 @@ interface SeriesListProps {
 // FRONTEND-013-AC-12: sort field options, in display order. Extended by
 // Requirement 5 (FRONTEND-013-AC-14/15) with title/year/imdbRating/tmdbRating
 // alongside the original dateAdded/personalRating pair.
-type SortByOption = NonNullable<SortOptions['sortBy']>
+// FRONTEND-120-AC-01/03: exported (was module-private) so SeriesCompactGrid.tsx
+// can type its new `sortBy` prop against this same union rather than
+// redeclaring it or widening to `string`.
+export type SortByOption = NonNullable<SortOptions['sortBy']>
 type SortDirection = NonNullable<SortOptions['sortDirection']>
 
 const SORT_BY_OPTIONS: { value: SortByOption; label: string }[] = [
@@ -50,6 +55,13 @@ const SORT_BY_OPTIONS: { value: SortByOption; label: string }[] = [
   { value: 'year', label: 'Year' },
   { value: 'imdbRating', label: 'IMDb Rating' },
   { value: 'tmdbRating', label: 'TMDB Rating' },
+  // FRONTEND-119-AC-03/SERIES-062. Label corrected to "Tomatometer"
+  // (FRONTEND-119-AC-10, 2026-09-11) to disambiguate from Popcornmeter.
+  { value: 'rottenTomatoesRating', label: 'Tomatometer' },
+  {
+    value: 'rottenTomatoesPopcornmeter',
+    label: 'Popcornmeter',
+  },
 ]
 
 // Matches the backend's own default (series_spec_009_rating_sort.md,
@@ -71,13 +83,53 @@ function buildSortParam(
 // FRONTEND-039-AC-01: the rating column shows whichever rating the list is
 // currently sorted by, when that's a rating field -- otherwise it falls back
 // to IMDb rating (the pre-existing default display).
-function activeRating(
+// FRONTEND-119-AC-06/SERIES-062: extended to cover the two new Rotten
+// Tomatoes sort fields, exported (a pure helper function alongside the
+// SeriesList component itself) so it's directly unit-testable like the
+// spec's own test case sketch.
+// eslint-disable-next-line react-refresh/only-export-components -- exported purely for direct unit-testability, not a component.
+export function activeRating(
   series: Series,
   sortBy: SortByOption,
-): { value: number | null; source: 'IMDb' | 'TMDB' } {
-  return sortBy === 'tmdbRating'
-    ? { value: series.tmdbRating, source: 'TMDB' }
-    : { value: series.imdbRating, source: 'IMDb' }
+): {
+  value: number | null
+  source: 'IMDb' | 'TMDB' | 'Rotten Tomatoes' | 'Rotten Tomatoes Popcornmeter'
+} {
+  switch (sortBy) {
+    case 'tmdbRating':
+      return { value: series.tmdbRating, source: 'TMDB' }
+    case 'rottenTomatoesRating':
+      return {
+        value: series.rottenTomatoesRating,
+        source: 'Rotten Tomatoes',
+      }
+    case 'rottenTomatoesPopcornmeter':
+      return {
+        value: series.rottenTomatoesPopcornmeter,
+        source: 'Rotten Tomatoes Popcornmeter',
+      }
+    default:
+      return { value: series.imdbRating, source: 'IMDb' }
+  }
+}
+
+// FRONTEND-120-AC-01/SERIES-062: SeriesCompactGrid's denser card layout has no
+// equivalent of the expanded row's two-span value/source split, so this
+// composes activeRating() + formatPercent() into one combined string for
+// every case -- "8.4 IMDb", "88% 🍅", or "— IMDb" when the value is null.
+// eslint-disable-next-line react-refresh/only-export-components -- exported purely for direct unit-testability, not a component.
+export function formatCompactRatingLabel(
+  series: Series,
+  sortBy: SortByOption,
+): string {
+  const { value, source } = activeRating(series, sortBy)
+  if (sortBy === 'rottenTomatoesRating') {
+    return formatPercent(value, '🍅')
+  }
+  if (sortBy === 'rottenTomatoesPopcornmeter') {
+    return formatPercent(value, '🍿')
+  }
+  return `${value ?? '—'} ${source}`
 }
 
 // FRONTEND-054-AC-01/03: three opt-in rendering modes over the same fetched
@@ -123,6 +175,11 @@ export function SeriesList({
   const [series, setSeries] = useState<Series[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // FRONTEND-119-AC-05/SERIES-062: how many series the backend excluded for
+  // missing the currently-sorted-on rating -- reset to 0 on error, same as
+  // series itself effectively resets to its prior render (this state just
+  // stops rendering the notice while an error is shown).
+  const [excludedCount, setExcludedCount] = useState(0)
   const [refreshIndex, setRefreshIndex] = useState(0)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(
     null,
@@ -164,14 +221,16 @@ export function SeriesList({
       : seriesApi.getAll(sortParam)
 
     fetchSeries
-      .then((data) => {
+      .then(({ series: data, excludedCount: excluded }) => {
         if (cancelled) return
         setSeries(data)
+        setExcludedCount(excluded)
         setLoading(false)
       })
       .catch(() => {
         if (cancelled) return
         setError('Failed to load series. Please try again.')
+        setExcludedCount(0)
         setLoading(false)
       })
 
@@ -275,6 +334,9 @@ export function SeriesList({
     setConfirmingDeleteId(null)
     setDeleteError(null)
   }
+
+  // FRONTEND-119-AC-05/SERIES-062.
+  const missingRatingMessage = formatMissingRatingMessage(excludedCount, sortBy)
 
   const handleConfirmDelete = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -483,6 +545,10 @@ export function SeriesList({
         </div>
       </div>
 
+      {!loading && !error && missingRatingMessage && (
+        <p className={styles.missingRatingNotice}>{missingRatingMessage}</p>
+      )}
+
       {loading && (
         <output className={styles.loading} aria-label="Loading">
           <svg
@@ -588,11 +654,25 @@ export function SeriesList({
                     )}
                   </div>
                   <span className={styles.rating}>
-                    {activeRating(s, sortBy).value ?? '—'}
-                    <span className={styles.ratingSource}>
-                      {' '}
-                      {activeRating(s, sortBy).source}
-                    </span>
+                    {/* FRONTEND-119-AC-11/SERIES-062: the two Rotten Tomatoes
+                        sort fields render as a single percent+emoji string;
+                        every other field keeps the existing two-span
+                        value/source split unchanged. */}
+                    {sortBy === 'rottenTomatoesRating' ||
+                    sortBy === 'rottenTomatoesPopcornmeter' ? (
+                      formatPercent(
+                        activeRating(s, sortBy).value,
+                        sortBy === 'rottenTomatoesRating' ? '🍅' : '🍿',
+                      )
+                    ) : (
+                      <>
+                        {activeRating(s, sortBy).value ?? '—'}
+                        <span className={styles.ratingSource}>
+                          {' '}
+                          {activeRating(s, sortBy).source}
+                        </span>
+                      </>
+                    )}
                   </span>
                   <StarRating value={s.personalRating} />
 
@@ -715,6 +795,7 @@ export function SeriesList({
           posterErrorIds={posterErrorIds}
           onPosterError={handlePosterError}
           onCardClick={handleRowClick}
+          sortBy={sortBy}
         />
       )}
 

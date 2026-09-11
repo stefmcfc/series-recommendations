@@ -264,9 +264,22 @@ public class SeriesService {
         log.debug("Fetching all series");
         Comparator<SeriesEntity> comparator = SeriesSortResolver.resolve(sortBy, sortDirection);
         return repository.findAll().stream()
+            .filter(s -> !SeriesSortResolver.isMissingRatingForSort(s, sortBy))
             .sorted(comparator)
             .map(this::entityToDto)
             .toList();
+    }
+
+    /**
+     * series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-05): the count of
+     * tracked series {@link #doGetAll} drops for the given {@code sortBy} -- {@code 0} for every
+     * non-droppable value (personalRating, dateAdded, title, year, or an unrecognized value).
+     */
+    @Transactional(readOnly = true)
+    public long countMissingForSort(String sortBy) {
+        return repository.findAll().stream()
+            .filter(s -> SeriesSortResolver.isMissingRatingForSort(s, sortBy))
+            .count();
     }
 
     /**

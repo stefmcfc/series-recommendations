@@ -172,6 +172,8 @@ dependency-derived anymore.
 | Missing ratings filter (find series missing an IMDb/TMDB/Rotten Tomatoes rating) — four `SeriesSearchCriteria` boolean fields, OR-composed server-side, surfaced as four checkboxes in `SearchFilter`'s existing "Ratings" section | `series_spec_060` | `frontend_spec_116` | ✅ Done |
 | Series original language (TMDB `originalLanguage`, an ISO 639-1 code) captured on add/refresh, included in export/import, shown on the detail page immediately after Overview | `series_spec_061` | `frontend_spec_117` | ✅ Done |
 | Missing-ratings filter checkboxes moved into their own "Missing Ratings" section, separate from the "Ratings" threshold fields | — | `frontend_spec_118` | ✅ Done |
+| Rotten Tomatoes (Tomatometer/Popcornmeter) sort options added to My Series and Recs > Use My Series; sorting by any externally-sourced rating (IMDb/TMDB/RT) now excludes series missing it, with a count message, instead of sorting them last | `series_spec_062` | `frontend_spec_119` | ✅ Done |
+| My Series Compact view gains the same "active rating" (sort-aware IMDb/TMDB/Rotten Tomatoes) shown in Expanded view, alongside the personal rating | — | `frontend_spec_120` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

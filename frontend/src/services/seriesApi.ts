@@ -19,6 +19,7 @@ import type {
   CountryStatsOptions,
   NameStatsOptions,
   SortOptions,
+  SeriesListResult,
   StreamingProvider,
   CandidateDetail,
 } from '../types/series'
@@ -210,13 +211,17 @@ export const seriesApi = {
   // FRONTEND-013-AC-11: sort is optional -- omitting it (or leaving it
   // undefined) preserves the pre-existing no-params GET /series call exactly,
   // so callers/tests that never pass a sort see no behavior change.
-  getAll: (sort?: SortOptions): Promise<Series[]> => {
+  // FRONTEND-119-AC-04/SERIES-062: resolves { series, excludedCount } instead
+  // of a bare array -- the backend now returns excludedCount alongside data
+  // so a rating sort can report how many series were dropped for missing it.
+  getAll: (sort?: SortOptions): Promise<SeriesListResult> => {
     const sortParams = buildSortParams(sort)
-    return request<{ data: Series[]; count: number }>(() =>
-      Object.keys(sortParams).length > 0
-        ? client.get('/series', { params: sortParams })
-        : client.get('/series'),
-    ).then((res) => res.data)
+    return request<{ data: Series[]; count: number; excludedCount: number }>(
+      () =>
+        Object.keys(sortParams).length > 0
+          ? client.get('/series', { params: sortParams })
+          : client.get('/series'),
+    ).then((res) => ({ series: res.data, excludedCount: res.excludedCount }))
   },
 
   getById: (id: string): Promise<Series> =>
@@ -237,12 +242,17 @@ export const seriesApi = {
   delete: (id: string): Promise<void> =>
     request<null>(() => client.delete('/series/' + id)).then(() => undefined),
 
-  search: (criteria: SearchCriteria, sort?: SortOptions): Promise<Series[]> =>
-    request<{ data: Series[]; count: number }>(() =>
+  // FRONTEND-119-AC-04/SERIES-062: mirrors getAll's excludedCount-surfacing
+  // change above.
+  search: (
+    criteria: SearchCriteria,
+    sort?: SortOptions,
+  ): Promise<SeriesListResult> =>
+    request<{ data: Series[]; count: number; excludedCount: number }>(() =>
       client.get('/series/search', {
         params: { ...buildSearchParams(criteria), ...buildSortParams(sort) },
       }),
-    ).then((res) => res.data),
+    ).then((res) => ({ series: res.data, excludedCount: res.excludedCount })),
 
   searchTmdb: (title: string): Promise<LookupTmdbCandidate[]> =>
     request<{ data: LookupTmdbCandidate[] }>(() =>

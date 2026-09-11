@@ -46,6 +46,23 @@ public class SeriesSearchService {
         Comparator<SeriesEntity> sortComparator =
             SeriesSortResolver.resolve(criteria.getSortBy(), criteria.getSortDirection());
 
+        // series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-04): a series
+        // missing the sorted-on rating is excluded entirely, applied after every other filter.
+        return filteredEntities(criteria).stream()
+            .filter(s -> !SeriesSortResolver.isMissingRatingForSort(s, criteria.getSortBy()))
+            .sorted(sortComparator)
+            .map(seriesService::entityToDto)
+            .toList();
+    }
+
+    /**
+     * series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-04/06): every filter
+     * stage {@link #search} already applied, extracted so both {@code search} (drops entries
+     * missing the sorted-on rating, returns the rest) and {@link #countMissingForSort} (counts
+     * exactly those dropped entries) operate over the identical pre-sort, post-every-other-filter
+     * population. Pure extraction -- no behavior change to the filter chain itself.
+     */
+    private List<SeriesEntity> filteredEntities(SeriesSearchCriteria criteria) {
         return repository.findAll().stream()
             .filter(s -> matchesTitle(s, criteria.getTitle()))
             .filter(s -> matchesGenres(s, criteria.getGenres()))
@@ -58,9 +75,19 @@ public class SeriesSearchService {
             .filter(s -> matchesYearRange(s, criteria.getYearMin(), criteria.getYearMax()))
             .filter(s -> matchesFlaggedForRewatch(s, criteria.getFlaggedForRewatch()))
             .filter(s -> matchesMissingRatings(s, criteria))
-            .sorted(sortComparator)
-            .map(seriesService::entityToDto)
             .toList();
+    }
+
+    /**
+     * series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-06): the count of
+     * criteria-matching series {@link #search} drops for {@code criteria.getSortBy()} -- {@code
+     * 0} for every non-droppable value.
+     */
+    @Transactional(readOnly = true)
+    public long countMissingForSort(SeriesSearchCriteria criteria) {
+        return filteredEntities(criteria).stream()
+            .filter(s -> SeriesSortResolver.isMissingRatingForSort(s, criteria.getSortBy()))
+            .count();
     }
 
     private boolean matchesTitle(SeriesEntity s, String title) {

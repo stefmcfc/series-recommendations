@@ -6,7 +6,11 @@ import {
   within,
 } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { SeriesList } from './SeriesList'
+import {
+  SeriesList,
+  activeRating,
+  formatCompactRatingLabel,
+} from './SeriesList'
 import { seriesApi } from '../services/seriesApi'
 import { ApiError } from '../types/api'
 import { SeriesStatus } from '../types/series'
@@ -68,7 +72,7 @@ beforeEach(() => {
 
 describe('FRONTEND-072-AC-03: Refresh All no longer renders on SeriesList', () => {
   it('does not render the Refresh All button', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(
       <SeriesList
         onSeriesClick={vi.fn()}
@@ -84,7 +88,7 @@ describe('FRONTEND-072-AC-03: Refresh All no longer renders on SeriesList', () =
 
 describe('SH-001: Fetch on mount', () => {
   it('should call seriesApi.getAll() once on mount', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
   })
@@ -99,7 +103,7 @@ describe('SH-002: Loading state', () => {
   })
 
   it('should hide loading indicator after fetch completes', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() =>
       expect(screen.queryByRole('status')).not.toBeInTheDocument(),
@@ -109,27 +113,33 @@ describe('SH-002: Loading state', () => {
 
 describe('FRONTEND-058-AC-02: year range display', () => {
   it('shows a closed year range for an ended show', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        title: 'Ozark',
-        year: 2017,
-        lastAirYear: 2022,
-        productionStatus: 'ENDED',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          title: 'Ozark',
+          year: 2017,
+          lastAirYear: 2022,
+          productionStatus: 'ENDED',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     expect(await screen.findByText('Ozark (2017-2022)')).toBeInTheDocument()
   })
 
   it('shows an open-ended year range for a running show', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        title: 'The Simpsons',
-        year: 1989,
-        lastAirYear: 2025,
-        productionStatus: 'RETURNING_SERIES',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          title: 'The Simpsons',
+          year: 1989,
+          lastAirYear: 2025,
+          productionStatus: 'RETURNING_SERIES',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     expect(await screen.findByText('The Simpsons (1989-)')).toBeInTheDocument()
   })
@@ -137,18 +147,21 @@ describe('FRONTEND-058-AC-02: year range display', () => {
 
 describe('SH-003: Render series data', () => {
   it('should render title and status for each series', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'The Office',
-        status: SeriesStatus.WATCHING,
-      }),
-      makeSeries({
-        id: '2',
-        title: 'Breaking Bad',
-        status: SeriesStatus.COMPLETED,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'The Office',
+          status: SeriesStatus.WATCHING,
+        }),
+        makeSeries({
+          id: '2',
+          title: 'Breaking Bad',
+          status: SeriesStatus.COMPLETED,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await waitFor(() => {
       expect(screen.getByText('The Office')).toBeInTheDocument()
@@ -159,26 +172,31 @@ describe('SH-003: Render series data', () => {
   })
 
   it('should render IMDb rating when present', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Show', imdbRating: 8.4 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show', imdbRating: 8.4 })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
   })
 
   it('should display "—" when imdbRating is null', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Show', imdbRating: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show', imdbRating: null })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     expect(await screen.findByText(/—/)).toBeInTheDocument()
   })
 
   it('should render one series-row per series', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Show 1' }),
-      makeSeries({ id: '2', title: 'Show 2' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'Show 1' }),
+        makeSeries({ id: '2', title: 'Show 2' }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await waitFor(() =>
       expect(screen.getAllByTestId('series-row')).toHaveLength(2),
@@ -188,9 +206,10 @@ describe('SH-003: Render series data', () => {
 
 describe('FRONTEND-013-AC-06: personalRating column', () => {
   it('renders a read-only StarRating per row', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Show', personalRating: 4 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show', personalRating: 4 })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     expect(await screen.findByLabelText('Personal rating')).toBeInTheDocument()
   })
@@ -198,9 +217,12 @@ describe('FRONTEND-013-AC-06: personalRating column', () => {
 
 describe('FRONTEND-039-AC-01: sort-aware rating column', () => {
   it('shows IMDb rating by default', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
@@ -209,9 +231,12 @@ describe('FRONTEND-039-AC-01: sort-aware rating column', () => {
   })
 
   it('shows TMDB rating when sorted by tmdbRating', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByText('Ozark')
 
@@ -225,25 +250,176 @@ describe('FRONTEND-039-AC-01: sort-aware rating column', () => {
   })
 
   it('renders a dash when the currently-displayed source is null', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Ozark', imdbRating: null, tmdbRating: 8.1 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'Ozark', imdbRating: null, tmdbRating: 8.1 }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     expect(await screen.findByText(/—/)).toBeInTheDocument()
   })
 })
 
+describe('FRONTEND-119-AC-06: activeRating covers Rotten Tomatoes fields', () => {
+  it('shows the Rotten Tomatoes rating when sorted by it', () => {
+    expect(
+      activeRating(
+        { rottenTomatoesRating: 88 } as Series,
+        'rottenTomatoesRating',
+      ),
+    ).toEqual({ value: 88, source: 'Rotten Tomatoes' })
+  })
+
+  it('shows the Popcornmeter rating when sorted by it', () => {
+    expect(
+      activeRating(
+        { rottenTomatoesPopcornmeter: 92 } as Series,
+        'rottenTomatoesPopcornmeter',
+      ),
+    ).toEqual({ value: 92, source: 'Rotten Tomatoes Popcornmeter' })
+  })
+})
+
+describe('FRONTEND-119-AC-03: Rotten Tomatoes sort options', () => {
+  it('offers both new Rotten Tomatoes sort options', async () => {
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    render(<SeriesList />)
+    const select = await screen.findByLabelText('Sort by')
+    expect(within(select).getByText('Tomatometer')).toBeInTheDocument()
+    expect(within(select).getByText('Popcornmeter')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-119-AC-11: Rotten Tomatoes rating column shows percent + emoji', () => {
+  it('shows the Tomatometer value as a percent with the tomato emoji', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', rottenTomatoesRating: 88 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesRating' },
+    })
+    expect(await screen.findByText('88% 🍅')).toBeInTheDocument()
+  })
+
+  it('shows the Popcornmeter value as a percent with the popcorn emoji', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', rottenTomatoesPopcornmeter: 75 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesPopcornmeter' },
+    })
+    expect(await screen.findByText('75% 🍿')).toBeInTheDocument()
+  })
+
+  it('leaves the IMDb display format unchanged', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', imdbRating: 8.4 })],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    expect(await screen.findByText(/8\.4/)).toBeInTheDocument()
+    expect(screen.getByText('IMDb')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-120-AC-01: formatCompactRatingLabel', () => {
+  it('formats IMDb as "value IMDb"', () => {
+    expect(
+      formatCompactRatingLabel({ imdbRating: 8.4 } as Series, 'dateAdded'),
+    ).toBe('8.4 IMDb')
+  })
+
+  it('formats TMDB as "value TMDB" when sorted by tmdbRating', () => {
+    expect(
+      formatCompactRatingLabel({ tmdbRating: 7.9 } as Series, 'tmdbRating'),
+    ).toBe('7.9 TMDB')
+  })
+
+  it('formats Rotten Tomatoes Tomatometer as percent + tomato emoji', () => {
+    expect(
+      formatCompactRatingLabel(
+        { rottenTomatoesRating: 88 } as Series,
+        'rottenTomatoesRating',
+      ),
+    ).toBe('88% 🍅')
+  })
+
+  it('formats Rotten Tomatoes Popcornmeter as percent + popcorn emoji', () => {
+    expect(
+      formatCompactRatingLabel(
+        { rottenTomatoesPopcornmeter: 75 } as Series,
+        'rottenTomatoesPopcornmeter',
+      ),
+    ).toBe('75% 🍿')
+  })
+
+  it('renders a dash when the active value is null', () => {
+    expect(
+      formatCompactRatingLabel({ imdbRating: null } as Series, 'dateAdded'),
+    ).toBe('— IMDb')
+  })
+})
+
+describe('FRONTEND-120-AC-03: SeriesList threads sortBy into Compact view', () => {
+  it('reflects a changed sort in the compact card rating', async () => {
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'Ozark', imdbRating: 8.4, tmdbRating: 8.1 }),
+      ],
+      excludedCount: 0,
+    })
+    render(<SeriesList />)
+    fireEvent.click(await screen.findByTestId('view-mode-compact-btn'))
+    fireEvent.change(screen.getByLabelText('Sort by'), {
+      target: { value: 'tmdbRating' },
+    })
+    expect(await screen.findByText('8.1 TMDB')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-119-AC-05: missing-rating notice', () => {
+  it('shows the notice when sorted by a droppable rating with excluded series', async () => {
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 3 })
+    render(<SeriesList />)
+    fireEvent.change(await screen.findByLabelText('Sort by'), {
+      target: { value: 'rottenTomatoesRating' },
+    })
+    expect(
+      await screen.findByText(
+        '3 series meeting this criteria do not have Tomatometer ratings',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('shows nothing when excludedCount is 0', async () => {
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    render(<SeriesList />)
+    await screen.findByTestId('series-list')
+    expect(
+      screen.queryByText(/do not have|does not have/),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
   it('renders a placeholder slot when posterUrl is null, an image when present', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'No Poster', posterUrl: null }),
-      makeSeries({
-        id: '2',
-        title: 'Has Poster',
-        posterUrl: 'https://example.com/p.jpg',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'No Poster', posterUrl: null }),
+        makeSeries({
+          id: '2',
+          title: 'Has Poster',
+          posterUrl: 'https://example.com/p.jpg',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByText('No Poster')
 
@@ -255,13 +431,16 @@ describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
   })
 
   it('falls back to the placeholder if the poster image fails to load', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'Has Poster',
-        posterUrl: 'https://example.com/p.jpg',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Has Poster',
+          posterUrl: 'https://example.com/p.jpg',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByText('Has Poster')
 
@@ -274,13 +453,13 @@ describe('FRONTEND-009-AC-21/22: row thumbnail', () => {
 
 describe('IF-004: Empty state', () => {
   it('should show "No series yet." when list is empty', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     expect(await screen.findByText(/no series yet/i)).toBeInTheDocument()
   })
 
   it('should show "Add your first series" button in empty state', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     expect(
       await screen.findByText(/add your first series/i),
@@ -288,7 +467,7 @@ describe('IF-004: Empty state', () => {
   })
 
   it('should not render any series rows in empty state', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() =>
       expect(screen.queryAllByTestId('series-row')).toHaveLength(0),
@@ -316,7 +495,10 @@ describe('IF-005: Error state', () => {
   it('should re-fetch when Retry is clicked', async () => {
     mockGetAll
       .mockRejectedValueOnce(new Error('Network error'))
-      .mockResolvedValue([makeSeries({ title: 'Loaded on retry' })])
+      .mockResolvedValue({
+        series: [makeSeries({ title: 'Loaded on retry' })],
+        excludedCount: 0,
+      })
 
     render(<SeriesList />)
 
@@ -349,7 +531,10 @@ describe('IF-005: Error state', () => {
 
 describe('SH-006: Add Series button', () => {
   it('should show Add Series button when list is populated', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     expect(await screen.findByTestId('add-series-btn')).toBeInTheDocument()
   })
@@ -358,9 +543,10 @@ describe('SH-006: Add Series button', () => {
 describe('SH-007: Series row click', () => {
   it('should call onSeriesClick with series id when the title is clicked', async () => {
     const onSeriesClick = vi.fn()
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: 'abc-123', title: 'Clickable Show' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: 'abc-123', title: 'Clickable Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList onSeriesClick={onSeriesClick} />)
 
     const titleButton = await screen.findByRole('button', {
@@ -372,7 +558,10 @@ describe('SH-007: Series row click', () => {
   })
 
   it('should not throw if onSeriesClick is not provided', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     const titleButton = await screen.findByRole('button', { name: 'Show' })
@@ -383,7 +572,10 @@ describe('SH-007: Series row click', () => {
 
 describe('FRONTEND-008-AC-02: row is not itself interactive', () => {
   it('the row <li> has no role or tabIndex', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     const row = await screen.findByTestId('series-row')
     expect(row).not.toHaveAttribute('role')
@@ -394,7 +586,10 @@ describe('FRONTEND-008-AC-02: row is not itself interactive', () => {
 describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
   it('calls onAddClick when the header Add Series button is clicked', async () => {
     const onAddClick = vi.fn()
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList onAddClick={onAddClick} />)
     await screen.findByText('Show')
     fireEvent.click(screen.getByTestId('add-series-btn'))
@@ -403,7 +598,7 @@ describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
 
   it('calls onAddClick when the empty-state Add button is clicked', async () => {
     const onAddClick = vi.fn()
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList onAddClick={onAddClick} />)
     const emptyStateButton = await screen.findByText(/add your first series/i)
     fireEvent.click(emptyStateButton)
@@ -411,7 +606,7 @@ describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
   })
 
   it('does not throw when clicked without onAddClick', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     const emptyStateButton = await screen.findByText(/add your first series/i)
     fireEvent.click(emptyStateButton)
@@ -421,7 +616,10 @@ describe('FRONTEND-003-AC-01/02/03: onAddClick wiring', () => {
 
 describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
   it('renders labelled Edit and Delete buttons per row', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'The Office' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'The Office' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByText('The Office')
     expect(
@@ -436,7 +634,7 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
     const onEditClick = vi.fn()
     const onSeriesClick = vi.fn()
     const series = makeSeries({ id: '1', title: 'The Office' })
-    mockGetAll.mockResolvedValue([series])
+    mockGetAll.mockResolvedValue({ series: [series], excludedCount: 0 })
     render(
       <SeriesList onEditClick={onEditClick} onSeriesClick={onSeriesClick} />,
     )
@@ -448,7 +646,10 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
   })
 
   it('does not throw when Edit is clicked without onEditClick', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByTestId('edit-series-btn')
     fireEvent.click(screen.getByTestId('edit-series-btn'))
@@ -458,7 +659,10 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
   it('does not call onSeriesClick, onEditClick, or seriesApi.delete when Delete is clicked', async () => {
     const onSeriesClick = vi.fn()
     const onEditClick = vi.fn()
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(
       <SeriesList onSeriesClick={onSeriesClick} onEditClick={onEditClick} />,
     )
@@ -472,7 +676,10 @@ describe('FRONTEND-004-AC-01/02/03/04: edit button wiring', () => {
 
 describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
   it('shows Confirm/Cancel in place of Edit/Delete when Delete is clicked', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
 
@@ -483,7 +690,10 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
   })
 
   it('restores Edit/Delete when the confirmation Cancel is clicked, without deleting', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
@@ -494,7 +704,10 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
   })
 
   it('restores Edit/Delete on Escape without deleting', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
@@ -506,7 +719,10 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
 
   it('does not call onSeriesClick when the title is clicked while confirming', async () => {
     const onSeriesClick = vi.fn()
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList onSeriesClick={onSeriesClick} />)
     await screen.findByTestId('delete-series-btn')
     fireEvent.click(screen.getByTestId('delete-series-btn'))
@@ -518,7 +734,10 @@ describe('FRONTEND-004-AC-06/07/08/09: delete confirmation', () => {
 
 describe('FRONTEND-004-AC-10/11/12: delete loading state', () => {
   it('disables Confirm/Cancel and shows "Deleting..." while in flight', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Show' })],
+      excludedCount: 0,
+    })
     mockDelete.mockReturnValue(new Promise(() => undefined))
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
@@ -535,10 +754,13 @@ describe('FRONTEND-004-AC-10/11/12: delete loading state', () => {
 
 describe('FRONTEND-004-AC-13/14: delete success', () => {
   it('removes the row without re-fetching', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'Show A' }),
-      makeSeries({ id: '2', title: 'Show B' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'Show A' }),
+        makeSeries({ id: '2', title: 'Show B' }),
+      ],
+      excludedCount: 0,
+    })
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesList />)
     await screen.findAllByTestId('delete-series-btn')
@@ -554,7 +776,10 @@ describe('FRONTEND-004-AC-13/14: delete success', () => {
   })
 
   it('shows the empty state after deleting the last series', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Only Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Only Show' })],
+      excludedCount: 0,
+    })
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
@@ -567,7 +792,10 @@ describe('FRONTEND-004-AC-13/14: delete success', () => {
 
 describe('FRONTEND-004-AC-15: delete error handling', () => {
   it('shows an alert scoped to the row and keeps it deletable', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ id: '1', title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: '1', title: 'Show' })],
+      excludedCount: 0,
+    })
     mockDelete.mockRejectedValue(new ApiError(500, 'Internal server error'))
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
@@ -587,13 +815,16 @@ describe('FRONTEND-004-AC-15: delete error handling', () => {
 describe('FRONTEND-004-AC-39: no series data logged during delete', () => {
   it('never logs series data to the console when deleting', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined)
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'Secret Show',
-        personalNotes: 'private note',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Secret Show',
+          personalNotes: 'private note',
+        }),
+      ],
+      excludedCount: 0,
+    })
     mockDelete.mockResolvedValue(undefined)
     render(<SeriesList />)
     await screen.findByTestId('delete-series-btn')
@@ -609,18 +840,20 @@ describe('FRONTEND-004-AC-39: no series data logged during delete', () => {
 
 describe('SN-008: No sensitive data exposed', () => {
   it('should not render the series UUID as visible text', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: 'secret-uuid-123', title: 'Show' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: 'secret-uuid-123', title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByText('Show')
     expect(screen.queryByText('secret-uuid-123')).not.toBeInTheDocument()
   })
 
   it('should not render personalNotes in the list view', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Show', personalNotes: 'My private note' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show', personalNotes: 'My private note' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     await screen.findByText('Show')
     expect(screen.queryByText('My private note')).not.toBeInTheDocument()
@@ -629,21 +862,21 @@ describe('SN-008: No sensitive data exposed', () => {
 
 describe('FRONTEND-006-AC-09/10/11: criteria-driven fetching', () => {
   it('calls getAll when no criteria is provided', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
     expect(mockSearch).not.toHaveBeenCalled()
   })
 
   it('calls getAll when criteria is an empty object', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList criteria={{}} />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledTimes(1))
     expect(mockSearch).not.toHaveBeenCalled()
   })
 
   it('calls search with the given criteria when non-empty', async () => {
-    mockSearch.mockResolvedValue([])
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList criteria={{ title: 'office' }} />)
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith({ title: 'office' }, undefined),
@@ -654,7 +887,7 @@ describe('FRONTEND-006-AC-09/10/11: criteria-driven fetching', () => {
 
 describe('FRONTEND-006-AC-12: re-fetch on criteria change', () => {
   it('re-fetches when criteria changes', async () => {
-    mockSearch.mockResolvedValue([])
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     const { rerender } = render(<SeriesList criteria={{ title: 'a' }} />)
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith({ title: 'a' }, undefined),
@@ -670,9 +903,10 @@ describe('FRONTEND-006-AC-12: re-fetch on criteria change', () => {
 
 describe('FRONTEND-056-AC-07: status badge hidden except on the "All" tab', () => {
   it('hides the status badge while a specific status tab is active', async () => {
-    mockSearch.mockResolvedValue([
-      makeSeries({ title: 'Ozark', status: SeriesStatus.WATCHING }),
-    ])
+    mockSearch.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', status: SeriesStatus.WATCHING })],
+      excludedCount: 0,
+    })
     render(<SeriesList criteria={{ status: SeriesStatus.WATCHING }} />)
 
     await screen.findByText('Ozark')
@@ -680,9 +914,10 @@ describe('FRONTEND-056-AC-07: status badge hidden except on the "All" tab', () =
   })
 
   it('shows the status badge on the "All" tab (no status criteria)', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Ozark', status: SeriesStatus.WATCHING }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Ozark', status: SeriesStatus.WATCHING })],
+      excludedCount: 0,
+    })
     render(<SeriesList criteria={{}} />)
 
     await screen.findByText('Ozark')
@@ -694,7 +929,7 @@ describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
   it('retries via search, not getAll', async () => {
     mockSearch
       .mockRejectedValueOnce(new Error('fail'))
-      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({ series: [], excludedCount: 0 })
     render(<SeriesList criteria={{ title: 'office' }} />)
     await screen.findByRole('button', { name: /retry/i })
 
@@ -706,7 +941,10 @@ describe('FRONTEND-006-AC-13: retry uses search when criteria active', () => {
 
 describe('FRONTEND-022-AC-10: alternateTitle no longer displayed', () => {
   it('does not render an "aka" line next to the row title', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'MI-5' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'MI-5' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     await screen.findByText('MI-5')
@@ -716,9 +954,12 @@ describe('FRONTEND-022-AC-10: alternateTitle no longer displayed', () => {
 
 describe('FRONTEND-026-AC-12/13: year and country next to the title', () => {
   it('shows "(Year) | Country" for a series with both set', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'The Office', year: 2001, originCountry: 'GB' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'The Office', year: 2001, originCountry: 'GB' }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     expect(await screen.findByText('The Office (2001)')).toBeInTheDocument()
@@ -726,9 +967,12 @@ describe('FRONTEND-026-AC-12/13: year and country next to the title', () => {
   })
 
   it('omits the year suffix and country span when both are null', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'Obscure Show', year: null, originCountry: null }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'Obscure Show', year: null, originCountry: null }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     expect(await screen.findByText('Obscure Show')).toBeInTheDocument()
@@ -738,9 +982,12 @@ describe('FRONTEND-026-AC-12/13: year and country next to the title', () => {
 
 describe('FRONTEND-085-AC-04: multi-country origin shown next to the title', () => {
   it('renders every origin country for a multi-country series', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ title: 'MobLand', year: 2025, originCountry: 'GB,US' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ title: 'MobLand', year: 2025, originCountry: 'GB,US' }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     expect(
@@ -751,18 +998,21 @@ describe('FRONTEND-085-AC-04: multi-country origin shown next to the title', () 
 
 describe('FRONTEND-023-AC-18: new-content badge per row', () => {
   it('shows a "New content" badge on a row whose newContentDetectedAt is set', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'Flagged Show',
-        newContentDetectedAt: new Date().toISOString(),
-      }),
-      makeSeries({
-        id: '2',
-        title: 'Unflagged Show',
-        newContentDetectedAt: null,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Flagged Show',
+          newContentDetectedAt: new Date().toISOString(),
+        }),
+        makeSeries({
+          id: '2',
+          title: 'Unflagged Show',
+          newContentDetectedAt: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     await screen.findByText('Flagged Show')
@@ -774,9 +1024,10 @@ describe('FRONTEND-023-AC-18: new-content badge per row', () => {
 
 describe('FRONTEND-050-AC-04: excluded-from-recommendations badge', () => {
   it('shows the badge for a series with excludeFromRecommendations=true', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ excludeFromRecommendations: true }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ excludeFromRecommendations: true })],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     expect(
       await screen.findByTestId('excluded-from-recommendations-badge'),
@@ -784,9 +1035,10 @@ describe('FRONTEND-050-AC-04: excluded-from-recommendations badge', () => {
   })
 
   it('does not show the badge for a series with excludeFromRecommendations=false', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ excludeFromRecommendations: false }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ excludeFromRecommendations: false })],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     await screen.findByTestId('series-row')
     expect(
@@ -797,9 +1049,10 @@ describe('FRONTEND-050-AC-04: excluded-from-recommendations badge', () => {
 
 describe('FRONTEND-050-AC-05: badge is read-only', () => {
   it('renders the badge as a plain span with no interactive role', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ excludeFromRecommendations: true }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ excludeFromRecommendations: true })],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     const badge = await screen.findByTestId(
       'excluded-from-recommendations-badge',
@@ -811,7 +1064,7 @@ describe('FRONTEND-050-AC-05: badge is read-only', () => {
 
 describe('FRONTEND-013-AC-12/13: sort control', () => {
   it('renders a "Sort by" field selector defaulting to Date Added', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -819,7 +1072,7 @@ describe('FRONTEND-013-AC-12/13: sort control', () => {
   })
 
   it('re-fetches getAll with sort params on change', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -836,7 +1089,7 @@ describe('FRONTEND-013-AC-12/13: sort control', () => {
   })
 
   it('re-fetches via search (not getAll) with sort params when criteria is active', async () => {
-    mockSearch.mockResolvedValue([])
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList criteria={{ title: 'office' }} />)
     await waitFor(() =>
       expect(mockSearch).toHaveBeenCalledWith({ title: 'office' }, undefined),
@@ -856,7 +1109,7 @@ describe('FRONTEND-013-AC-12/13: sort control', () => {
   })
 
   it('toggles sort direction and re-fetches with the new direction', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -873,7 +1126,7 @@ describe('FRONTEND-013-AC-12/13: sort control', () => {
 
 describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', () => {
   it('offers Title/Year/IMDb Rating/TMDB Rating alongside Date Added/Personal Rating', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -888,13 +1141,15 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
       'Year',
       'IMDb Rating',
       'TMDB Rating',
+      'Tomatometer',
+      'Popcornmeter',
     ])
   })
 
   it.each(['tmdbRating', 'year', 'imdbRating'])(
     're-fetches with sortBy=%s when that option is selected',
     async (sortBy) => {
-      mockGetAll.mockResolvedValue([])
+      mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
       render(<SeriesList />)
       await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -912,7 +1167,7 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
   )
 
   it('re-fetches with sortBy=title and sortDirection=asc when Title is selected', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -931,7 +1186,7 @@ describe('FRONTEND-013-AC-15/16: additional sort options re-fetch correctly', ()
 
 describe('FRONTEND-064-AC-01/02/03: sort direction defaults per newly-selected field', () => {
   it('sets sortDirection to desc when switching to Personal Rating', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -946,7 +1201,7 @@ describe('FRONTEND-064-AC-01/02/03: sort direction defaults per newly-selected f
   })
 
   it('sets sortDirection to asc when switching to Title from a descending field', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -962,7 +1217,7 @@ describe('FRONTEND-064-AC-01/02/03: sort direction defaults per newly-selected f
   })
 
   it('keeps a manual direction toggle for the same field across re-renders', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     const { rerender } = render(<SeriesList />)
     await waitFor(() => expect(mockGetAll).toHaveBeenCalledWith(undefined))
 
@@ -982,20 +1237,23 @@ describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
   const mockUpdate = vi.mocked(seriesApi.update)
 
   it('renders only for COMPLETED rows and updates on toggle', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        title: 'Finished Show',
-        status: SeriesStatus.COMPLETED,
-        flaggedForRewatch: false,
-      }),
-      makeSeries({
-        id: '2',
-        title: 'Ongoing Show',
-        status: SeriesStatus.WATCHING,
-        flaggedForRewatch: false,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          title: 'Finished Show',
+          status: SeriesStatus.COMPLETED,
+          flaggedForRewatch: false,
+        }),
+        makeSeries({
+          id: '2',
+          title: 'Ongoing Show',
+          status: SeriesStatus.WATCHING,
+          flaggedForRewatch: false,
+        }),
+      ],
+      excludedCount: 0,
+    })
     mockUpdate.mockResolvedValue(
       makeSeries({
         id: '1',
@@ -1019,13 +1277,16 @@ describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
   })
 
   it('reverts and shows a scoped error on failure', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: '1',
-        status: SeriesStatus.COMPLETED,
-        flaggedForRewatch: false,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: '1',
+          status: SeriesStatus.COMPLETED,
+          flaggedForRewatch: false,
+        }),
+      ],
+      excludedCount: 0,
+    })
     mockUpdate.mockRejectedValue(new ApiError(500, 'Internal server error'))
     render(<SeriesList />)
     const toggle = await screen.findByLabelText(/flag for rewatch/i)
@@ -1041,7 +1302,7 @@ describe('FRONTEND-012-AC-12/14: rewatch toggle on COMPLETED rows', () => {
 
 describe('FRONTEND-006-AC-14/15: filtered empty state', () => {
   it('shows "No series match your filters." without the add-first-series button', async () => {
-    mockSearch.mockResolvedValue([])
+    mockSearch.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList criteria={{ title: 'nonexistent' }} />)
     await screen.findByText(/no series match your filters/i)
     expect(screen.queryByText(/add your first series/i)).not.toBeInTheDocument()
@@ -1051,9 +1312,12 @@ describe('FRONTEND-006-AC-14/15: filtered empty state', () => {
 
 describe('FRONTEND-059-AC-01: genres shown before status', () => {
   it('renders genres before the status text when present', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ genres: 'Drama, Crime', status: SeriesStatus.WATCHING }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ genres: 'Drama, Crime', status: SeriesStatus.WATCHING }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
 
     const row = await screen.findByTestId('series-row')
@@ -1069,18 +1333,20 @@ describe('FRONTEND-059-AC-01: genres shown before status', () => {
   })
 
   it('renders nothing extra when genres is null', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ genres: null, status: SeriesStatus.WATCHING }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ genres: null, status: SeriesStatus.WATCHING })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     const row = await screen.findByTestId('series-row')
     expect(within(row).getByText('WATCHING')).toBeInTheDocument()
   })
 
   it('renders nothing extra when genres is blank', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ genres: '   ', status: SeriesStatus.WATCHING }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ genres: '   ', status: SeriesStatus.WATCHING })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     const row = await screen.findByTestId('series-row')
     expect(within(row).queryByText('   ')).not.toBeInTheDocument()
@@ -1090,7 +1356,7 @@ describe('FRONTEND-059-AC-01: genres shown before status', () => {
 
 describe('FRONTEND-054-AC-01: view mode toggle', () => {
   it('renders the icon view mode toggle with correct aria-pressed state and accessible names', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList {...defaultProps} />)
     const expandedBtn = await screen.findByTestId('view-mode-expanded-btn')
     const compactBtn = screen.getByTestId('view-mode-compact-btn')
@@ -1107,7 +1373,10 @@ describe('FRONTEND-054-AC-01: view mode toggle', () => {
 
 describe('FRONTEND-054-AC-02: switching view mode does not refetch', () => {
   it('switches to the compact grid without calling seriesApi again', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'Show' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'Show' })],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     await screen.findByTestId('series-row')
     mockGetAll.mockClear()
@@ -1122,7 +1391,7 @@ describe('FRONTEND-054-AC-02: switching view mode does not refetch', () => {
 describe('FRONTEND-054-AC-03/FRONTEND-098-AC-04: view mode persistence via useLocalStorage', () => {
   it('persists and restores the view mode via localStorage', async () => {
     localStorage.setItem('seriesListViewMode', JSON.stringify('compact'))
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList {...defaultProps} />)
     expect(await screen.findByTestId('view-mode-compact-btn')).toHaveAttribute(
       'aria-pressed',
@@ -1136,7 +1405,7 @@ describe('FRONTEND-054-AC-03/FRONTEND-098-AC-04: view mode persistence via useLo
   })
 
   it('a localStorage read failure defaults to expanded without throwing', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     const spy = vi
       .spyOn(Storage.prototype, 'getItem')
       .mockImplementation(() => {
@@ -1151,7 +1420,7 @@ describe('FRONTEND-054-AC-03/FRONTEND-098-AC-04: view mode persistence via useLo
       'seriesListViewMode',
       JSON.stringify('not-a-real-mode'),
     )
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList {...defaultProps} />)
     expect(await screen.findByTestId('view-mode-expanded-btn')).toHaveAttribute(
       'aria-pressed',
@@ -1162,14 +1431,17 @@ describe('FRONTEND-054-AC-03/FRONTEND-098-AC-04: view mode persistence via useLo
 
 describe('FRONTEND-054-AC-04: compact card rendering', () => {
   it('compact card shows only poster, title/year, and rating', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        title: 'Ozark',
-        year: 2017,
-        personalRating: 4,
-        newContentDetectedAt: new Date().toISOString(),
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          title: 'Ozark',
+          year: 2017,
+          personalRating: 4,
+          newContentDetectedAt: new Date().toISOString(),
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     fireEvent.click(await screen.findByTestId('view-mode-compact-btn'))
 
@@ -1188,9 +1460,10 @@ describe('FRONTEND-054-AC-04: compact card rendering', () => {
 describe('FRONTEND-054-AC-05: compact card navigation', () => {
   it('compact card navigates to SeriesDetail via an accessible button', async () => {
     const onSeriesClick = vi.fn()
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: 's1', title: 'Ozark', year: 2017 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: 's1', title: 'Ozark', year: 2017 })],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} onSeriesClick={onSeriesClick} />)
     fireEvent.click(await screen.findByTestId('view-mode-compact-btn'))
 
@@ -1203,10 +1476,13 @@ describe('FRONTEND-054-AC-05: compact card navigation', () => {
 
 describe('FRONTEND-054-AC-06: all three views show the same series', () => {
   it('renders the same number of series in every view mode', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: '1', title: 'A' }),
-      makeSeries({ id: '2', title: 'B' }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({ id: '1', title: 'A' }),
+        makeSeries({ id: '2', title: 'B' }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     await screen.findAllByTestId('series-row')
 
@@ -1220,14 +1496,17 @@ describe('FRONTEND-054-AC-06: all three views show the same series', () => {
 
 describe('FRONTEND-054-AC-07: poster-only card rendering', () => {
   it('poster card shows only the poster image', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        title: 'Ozark',
-        year: 2017,
-        personalRating: 4,
-        posterUrl: 'https://example.com/ozark.jpg',
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          title: 'Ozark',
+          year: 2017,
+          personalRating: 4,
+          posterUrl: 'https://example.com/ozark.jpg',
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     fireEvent.click(await screen.findByTestId('view-mode-poster-btn'))
 
@@ -1248,9 +1527,10 @@ describe('FRONTEND-054-AC-07: poster-only card rendering', () => {
 describe('FRONTEND-054-AC-08: poster card navigation', () => {
   it('poster card navigates to SeriesDetail via an accessible button', async () => {
     const onSeriesClick = vi.fn()
-    mockGetAll.mockResolvedValue([
-      makeSeries({ id: 's1', title: 'Ozark', year: 2017 }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ id: 's1', title: 'Ozark', year: 2017 })],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} onSeriesClick={onSeriesClick} />)
     fireEvent.click(await screen.findByTestId('view-mode-poster-btn'))
 
@@ -1263,14 +1543,17 @@ describe('FRONTEND-054-AC-08: poster card navigation', () => {
 
 describe('FRONTEND-054-AC-09: poster card missing-poster handling', () => {
   it('a series with no poster renders the card with no img, not a broken one', async () => {
-    mockGetAll.mockResolvedValue([
-      makeSeries({
-        id: 's1',
-        title: 'No Poster Show',
-        year: 2020,
-        posterUrl: null,
-      }),
-    ])
+    mockGetAll.mockResolvedValue({
+      series: [
+        makeSeries({
+          id: 's1',
+          title: 'No Poster Show',
+          year: 2020,
+          posterUrl: null,
+        }),
+      ],
+      excludedCount: 0,
+    })
     render(<SeriesList {...defaultProps} />)
     fireEvent.click(await screen.findByTestId('view-mode-poster-btn'))
 
@@ -1286,7 +1569,7 @@ describe('FRONTEND-054-AC-09: poster card missing-poster handling', () => {
 
 describe('FRONTEND-071-AC-01: Filters button renders', () => {
   it('renders a Filters button next to the view-mode toggle', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(
       <SeriesList
         onSeriesClick={vi.fn()}
@@ -1304,7 +1587,7 @@ describe('FRONTEND-071-AC-01: Filters button renders', () => {
 
 describe('FRONTEND-071-AC-02: Filters button opens the sheet', () => {
   it('calls onOpenFilters when clicked', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     const onOpenFilters = vi.fn()
     render(
       <SeriesList
@@ -1323,7 +1606,7 @@ describe('FRONTEND-071-AC-02: Filters button opens the sheet', () => {
 
 describe('FRONTEND-071-AC-03: active-filter indicator', () => {
   it('shows a dot and updated label when filters are active', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(
       <SeriesList
         onSeriesClick={vi.fn()}
@@ -1341,7 +1624,7 @@ describe('FRONTEND-071-AC-03: active-filter indicator', () => {
   })
 
   it('renders no dot and the plain label when filters are inactive', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(
       <SeriesList
         onSeriesClick={vi.fn()}
@@ -1360,7 +1643,7 @@ describe('FRONTEND-071-AC-03: active-filter indicator', () => {
 
 describe('FRONTEND-073-AC-03: live Title search box renders on the page', () => {
   it('renders a title search input outside any dialog', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(
       <SeriesList
         onSeriesClick={vi.fn()}
@@ -1375,7 +1658,7 @@ describe('FRONTEND-073-AC-03: live Title search box renders on the page', () => 
   })
 
   it('calls onTitleSearchChange as the controlled input changes, and shows a clear button when non-empty', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     const onTitleSearchChange = vi.fn()
     render(
       <SeriesList
@@ -1399,7 +1682,7 @@ describe('FRONTEND-073-AC-03: live Title search box renders on the page', () => 
   })
 
   it('clears the title search via its own clear button, independent of any sheet state', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     const onTitleSearchChange = vi.fn()
     render(
       <SeriesList
@@ -1419,7 +1702,7 @@ describe('FRONTEND-073-AC-03: live Title search box renders on the page', () => 
 
 describe('FRONTEND-079-AC-01: icon buttons carry a tooltip label', () => {
   it('sets data-tooltip to match aria-label on each icon-only toolbar button', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(
       <SeriesList
         onAddClick={vi.fn()}
@@ -1455,7 +1738,7 @@ describe('FRONTEND-079-AC-01: icon buttons carry a tooltip label', () => {
 
 describe('FRONTEND-103-AC-09/10/11/13: buttons compose shared tier classes', () => {
   it('the Add button carries both its own class and btnPrimary', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     const addButton = await screen.findByRole('button', {
       name: /add new series/i,
@@ -1464,7 +1747,7 @@ describe('FRONTEND-103-AC-09/10/11/13: buttons compose shared tier classes', () 
   })
 
   it('the Filters trigger carries both its own class and btnSecondary', async () => {
-    mockGetAll.mockResolvedValue([])
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
     render(<SeriesList />)
     const filtersButton = await screen.findByRole('button', {
       name: /filters/i,
@@ -1482,7 +1765,10 @@ describe('FRONTEND-103-AC-09/10/11/13: buttons compose shared tier classes', () 
 
 describe('FRONTEND-105-AC-04: series rows compose the shared surface primitive', () => {
   it('applies surface.card to each row', async () => {
-    mockGetAll.mockResolvedValue([makeSeries({ title: 'The Wire' })])
+    mockGetAll.mockResolvedValue({
+      series: [makeSeries({ title: 'The Wire' })],
+      excludedCount: 0,
+    })
     render(<SeriesList />)
     const row = (await screen.findByText('The Wire')).closest('li')
     expect(row?.className).toContain(surface.card)

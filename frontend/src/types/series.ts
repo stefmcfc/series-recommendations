@@ -319,6 +319,8 @@ export interface SearchCriteria {
 // FRONTEND-013-AC-10/14: mirrors series_spec_009_rating_sort.md's sortBy/sortDirection
 // params on GET /series and GET /series/search -- the full six-member enum from that
 // spec's Requirement 1 + Requirement 2 amendment.
+// FRONTEND-119-AC-01/SERIES-062: rottenTomatoesRating/rottenTomatoesPopcornmeter added --
+// see series_spec_062_rating_sort_missing_value_exclusion.md.
 export interface SortOptions {
   sortBy?:
     | 'dateAdded'
@@ -327,5 +329,15 @@ export interface SortOptions {
     | 'year'
     | 'imdbRating'
     | 'tmdbRating'
+    | 'rottenTomatoesRating'
+    | 'rottenTomatoesPopcornmeter'
   sortDirection?: 'asc' | 'desc'
+}
+
+// FRONTEND-119-AC-01/04: seriesApi.getAll/search's resolved shape -- the backend now
+// returns excludedCount alongside data on both list endpoints (series_spec_062), and
+// both need to reach SeriesList.tsx.
+export interface SeriesListResult {
+  series: Series[]
+  excludedCount: number
 }
