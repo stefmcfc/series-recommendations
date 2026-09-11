@@ -1004,6 +1004,37 @@ describe('FRONTEND-026-AC-06/07: TMDB metadata carried through to the create pay
   })
 })
 
+describe('FRONTEND-117-AC-06/07: original language carried through to the create payload', () => {
+  it('includes originalLanguage after a resolved lookup', async () => {
+    mockSearchTmdb.mockResolvedValue([
+      { tmdbId: 2996, title: 'The Office', year: 2001 },
+    ])
+    mockResolveTmdb.mockResolvedValue(
+      makeLookupResult({ title: 'The Office', originalLanguage: 'en' }),
+    )
+    mockCreate.mockResolvedValue({ id: '1', title: 'The Office' } as Series)
+    renderForm()
+
+    await runLookup('The Office')
+    await screen.findByDisplayValue('The Office')
+
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ originalLanguage: 'en' }),
+      ),
+    )
+  })
+
+  it('does not render originalLanguage as an input', () => {
+    renderForm()
+    expect(
+      screen.queryByLabelText(/original language/i),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-026-AC-08: candidate picker shows origin country', () => {
   it("displays each candidate's country to disambiguate same-titled results", async () => {
     mockSearchTmdb.mockResolvedValue([

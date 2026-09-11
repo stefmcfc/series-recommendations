@@ -45,6 +45,7 @@ final class SeriesMapper {
         dto.setOriginCountry(entity.getOriginCountry());
         dto.setOverview(entity.getOverview());
         dto.setLastAirYear(entity.getLastAirYear());
+        dto.setOriginalLanguage(entity.getOriginalLanguage());
         dto.setNewContentDetectedAt(entity.getNewContentDetectedAt());
         dto.setExcludeFromRecommendations(entity.isExcludeFromRecommendations());
         dto.setFlaggedForRewatch(entity.isFlaggedForRewatch());
@@ -77,6 +78,7 @@ final class SeriesMapper {
         entity.setOriginCountry(dto.getOriginCountry());
         entity.setOverview(dto.getOverview());
         entity.setLastAirYear(dto.getLastAirYear());
+        entity.setOriginalLanguage(dto.getOriginalLanguage());
         return entity;
     }
 }

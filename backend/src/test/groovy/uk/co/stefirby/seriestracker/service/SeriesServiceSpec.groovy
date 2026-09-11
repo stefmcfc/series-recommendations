@@ -225,6 +225,45 @@ class SeriesServiceSpec extends Specification {
         reloaded.originCountry == "GB,US,FR"
   }
 
+  def "SERIES-061-AC-04: SeriesMapper.toEntity/toDto round-trip originalLanguage unchanged"() {
+    given: "a SeriesDto with originalLanguage set"
+        def dto = new SeriesDto(title: "The Office", originalLanguage: "en")
+
+    when: "toEntity(dto) then toDto(entity) round-trips it"
+        def entity = SeriesMapper.toEntity(dto)
+        def roundTripped = SeriesMapper.toDto(entity)
+
+    then: "originalLanguage survives unchanged"
+        entity.originalLanguage == "en"
+        roundTripped.originalLanguage == "en"
+  }
+
+  def "SERIES-061-AC-04: create persists originalLanguage unchanged from the incoming dto"() {
+    given: "a SeriesDto with originalLanguage set"
+        def dto = new SeriesDto(title: "The Office", originalLanguage: "en")
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "originalLanguage is persisted unchanged"
+        created.originalLanguage == "en"
+
+    and: "originalLanguage is retrievable after persistence"
+        def fetched = seriesService.getById(created.id)
+        fetched.originalLanguage == "en"
+  }
+
+  def "SERIES-061-AC-04: create leaves originalLanguage null when unset"() {
+    given: "a SeriesDto with no originalLanguage"
+        def dto = new SeriesDto(title: "No Original Language Show")
+
+    when: "create(dto) is called"
+        def created = seriesService.create(dto)
+
+    then: "originalLanguage is null, like other unset optional fields"
+        created.originalLanguage == null
+  }
+
   def "SERIES-023-AC-11: create persists overview unchanged from the incoming dto"() {
     given: "a SeriesDto with overview set"
         def dto = new SeriesDto(title: "The Office", overview: "A mockumentary sitcom.")

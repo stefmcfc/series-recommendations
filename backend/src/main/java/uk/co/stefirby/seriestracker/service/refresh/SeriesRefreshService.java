@@ -136,11 +136,12 @@ public class SeriesRefreshService {
     /**
      * Updates {@code title}/{@code year}/{@code genres}/{@code totalSeasons}/{@code
      * totalEpisodes}/{@code tmdbRating}/{@code tmdbVoteCount}/{@code productionStatus}/{@code
-     * originCountry}/{@code overview}/{@code lastAirYear} from a fresh TMDB detail lookup
-     * (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09, {@code overview} per
-     * SERIES-023-AC-13, {@code lastAirYear} per SERIES-039-AC-04, {@code title}/{@code year}/
-     * {@code genres} per {@code series_spec_040_tmdb_managed_field_lock.md} SERIES-040-AC-04 --
-     * applied unconditionally regardless of the entity's current value, unlike a manual
+     * originCountry}/{@code overview}/{@code lastAirYear}/{@code originalLanguage} from a fresh
+     * TMDB detail lookup (SERIES-018-AC-02, {@code originCountry} per SERIES-021-AC-09,
+     * {@code overview} per SERIES-023-AC-13, {@code lastAirYear} per SERIES-039-AC-04, {@code
+     * originalLanguage} per SERIES-061-AC-05, {@code title}/{@code year}/{@code genres} per
+     * {@code series_spec_040_tmdb_managed_field_lock.md} SERIES-040-AC-04 -- applied
+     * unconditionally regardless of the entity's current value, unlike a manual
      * {@code SeriesService.update}, which SERIES-040-AC-01 locks out once each is non-null), and
      * reconciles
      * {@code keywords} via {@link KeywordSyncService#syncKeywords} using the same resolved
@@ -218,6 +219,9 @@ public class SeriesRefreshService {
         }
         if (detail.lastAirYear() != null) {
             entity.setLastAirYear(detail.lastAirYear());
+        }
+        if (detail.originalLanguage() != null) {
+            entity.setOriginalLanguage(detail.originalLanguage());
         }
     }
 

@@ -51,6 +51,7 @@ interface FormState {
   tmdbVoteCount: string
   originCountry: string
   productionStatus: string
+  originalLanguage: string
   tmdbId: string
   overview: string
   excludeFromRecommendations: boolean
@@ -75,6 +76,7 @@ const initialFormState: FormState = {
   tmdbVoteCount: '',
   originCountry: '',
   productionStatus: '',
+  originalLanguage: '',
   tmdbId: '',
   overview: '',
   excludeFromRecommendations: false,
@@ -141,6 +143,8 @@ function applyTmdbMetadataToPayload(
     payload.originCountry = form.originCountry.trim()
   if (form.productionStatus.trim() !== '')
     payload.productionStatus = form.productionStatus.trim()
+  if (form.originalLanguage.trim() !== '')
+    payload.originalLanguage = form.originalLanguage.trim()
   if (form.tmdbId.trim() !== '') payload.tmdbId = Number(form.tmdbId)
   if (form.personalNotes.trim() !== '')
     payload.personalNotes = form.personalNotes.trim()
@@ -173,6 +177,8 @@ function applyLookupResult(
   if (result.originCountry != null) next.originCountry = result.originCountry
   if (result.productionStatus != null)
     next.productionStatus = result.productionStatus
+  if (result.originalLanguage != null)
+    next.originalLanguage = result.originalLanguage
   if (result.tmdbId != null) next.tmdbId = String(result.tmdbId)
   if (result.overview != null) next.overview = result.overview
 

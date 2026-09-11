@@ -20,13 +20,14 @@ public class SeriesExportService {
     // and originCountry appended alongside the other newer optional fields, before the date
     // columns. metacriticRating and alternateTitle are gone entirely (SERIES-017-AC-14/15).
     // SERIES-027-AC-05: rottenTomatoesPopcornmeter appended immediately after
-    // rottenTomatoesRating.
+    // rottenTomatoesRating. SERIES-061-AC-06: originalLanguage appended immediately after
+    // originCountry.
     private static final String[] CSV_HEADERS = {
         "id", "title", "year", "genres", "totalSeasons", "totalEpisodes",
         "currentSeason", "currentEpisode", "status", "imdbRating",
         "rottenTomatoesRating", "rottenTomatoesPopcornmeter", "tmdbRating", "tmdbVoteCount",
-        "personalRating", "personalNotes", "posterUrl", "tags", "originCountry", "dateAdded",
-        "dateCompleted"
+        "personalRating", "personalNotes", "posterUrl", "tags", "originCountry",
+        "originalLanguage", "dateAdded", "dateCompleted"
     };
 
     private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -78,6 +79,7 @@ public class SeriesExportService {
             csv(s.getPosterUrl()),
             csv(s.getTags()),
             csv(s.getOriginCountry()),
+            csv(s.getOriginalLanguage()),
             csv(s.getDateAdded() != null ? s.getDateAdded().format(ISO) : null),
             csv(s.getDateCompleted() != null ? s.getDateCompleted().format(ISO) : null)
         );

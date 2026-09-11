@@ -18,7 +18,8 @@ class ImportFileParserSpec extends Specification {
     private static final String CSV_HEADER_ROW =
         "id,title,year,genres,totalSeasons,totalEpisodes,currentSeason,currentEpisode,status," +
         "imdbRating,rottenTomatoesRating,rottenTomatoesPopcornmeter,tmdbRating,tmdbVoteCount," +
-        "personalRating,personalNotes,posterUrl,tags,originCountry,dateAdded,dateCompleted"
+        "personalRating,personalNotes,posterUrl,tags,originCountry,originalLanguage,dateAdded," +
+        "dateCompleted"
 
     ImportFileParser parser = new ImportFileParser(new ObjectMapper())
 
@@ -62,7 +63,7 @@ class ImportFileParserSpec extends Specification {
     def "SERIES-058-AC-01: a valid CSV export file is parsed into SeriesDto entries"() {
         given: "a valid CSV file matching SeriesExportService's own column order"
             def csv = CSV_HEADER_ROW + "\n" +
-                ",Show A,2020,Drama,3,24,,,WATCHING,8.5,,,,,,,,,,,\n"
+                ",Show A,2020,Drama,3,24,,,WATCHING,8.5,,,,,,,,,,,,\n"
             def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
 
         when: "parse is called"
@@ -77,7 +78,7 @@ class ImportFileParserSpec extends Specification {
     def "SERIES-058-AC-01: a valid .CSV file (uppercase extension) is also parsed via Commons CSV"() {
         given: "a valid CSV file with an uppercase extension"
             def csv = CSV_HEADER_ROW + "\n" +
-                ",Show A,2020,Drama,,,,,,,,,,,,,,,,,\n"
+                ",Show A,2020,Drama,,,,,,,,,,,,,,,,,,\n"
             def file = new MockMultipartFile("file", "EXPORT.CSV", "text/csv", csv.bytes)
 
         when: "parse is called"
@@ -101,9 +102,9 @@ class ImportFileParserSpec extends Specification {
     }
 
     def "SERIES-058-AC-02: a CSV with reordered columns throws IllegalArgumentException"() {
-        given: "the same 21 columns as CSV_HEADERS, but reordered"
-            def csv = "title,id,year,genres,totalSeasons,totalEpisodes,currentSeason,currentEpisode,status,imdbRating,rottenTomatoesRating,rottenTomatoesPopcornmeter,tmdbRating,tmdbVoteCount,personalRating,personalNotes,posterUrl,tags,originCountry,dateAdded,dateCompleted\n" +
-                "Show A,,2020,Drama,,,,,,,,,,,,,,,,,\n"
+        given: "the same 22 columns as CSV_HEADERS, but reordered"
+            def csv = "title,id,year,genres,totalSeasons,totalEpisodes,currentSeason,currentEpisode,status,imdbRating,rottenTomatoesRating,rottenTomatoesPopcornmeter,tmdbRating,tmdbVoteCount,personalRating,personalNotes,posterUrl,tags,originCountry,originalLanguage,dateAdded,dateCompleted\n" +
+                "Show A,,2020,Drama,,,,,,,,,,,,,,,,,,\n"
             def file = new MockMultipartFile("file", "bad.csv", "text/csv", csv.bytes)
 
         when: "parse is called"
@@ -138,7 +139,7 @@ class ImportFileParserSpec extends Specification {
     def "SERIES-058-AC-04: numeric, decimal, date, and empty cells map correctly, id is discarded"() {
         given: "a CSV row exercising every column type, including empty cells"
             def csv = CSV_HEADER_ROW + "\n" +
-                "ignored-id,Show A,2020,\"Drama,Comedy\",3,24,1,5,WATCHING,8.5,,,7.9,1200,4,,,,,2024-01-01T00:00:00Z,\n"
+                "ignored-id,Show A,2020,\"Drama,Comedy\",3,24,1,5,WATCHING,8.5,,,7.9,1200,4,,,,,,2024-01-01T00:00:00Z,\n"
             def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
 
         when: "parse is called"
@@ -165,11 +166,24 @@ class ImportFileParserSpec extends Specification {
             dto.dateCompleted == null
     }
 
+    def "SERIES-061-AC-07: CSV import reads the originalLanguage column"() {
+        given: "a CSV row with an originalLanguage value"
+            def csv = CSV_HEADER_ROW + "\n" +
+                ",The Office,,,,,,,,,,,,,,,,,,en,,\n"
+            def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
+
+        when: "the file is parsed"
+            def dtos = parser.parse(file)
+
+        then: "originalLanguage is carried onto the resulting SeriesDto"
+            dtos[0].originalLanguage == "en"
+    }
+
     def "SERIES-058-AC-05: a row with an unparseable numeric cell yields a blank (title-null) SeriesDto"() {
         given: "one valid row and one row with a non-numeric year"
             def csv = CSV_HEADER_ROW + "\n" +
-                ",Show A,2020,Drama,,,,,,,,,,,,,,,,,\n" +
-                ",Show B,not-a-year,Drama,,,,,,,,,,,,,,,,,\n"
+                ",Show A,2020,Drama,,,,,,,,,,,,,,,,,,\n" +
+                ",Show B,not-a-year,Drama,,,,,,,,,,,,,,,,,,\n"
             def file = new MockMultipartFile("file", "export.csv", "text/csv", csv.bytes)
 
         when: "parse is called"

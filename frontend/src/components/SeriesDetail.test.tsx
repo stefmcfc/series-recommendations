@@ -49,6 +49,7 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
     newContentDetectedAt: null,
     originCountry: null,
     productionStatus: null,
+    originalLanguage: null,
     keywords: [],
     overview: null,
     excludeFromRecommendations: false,
@@ -834,6 +835,34 @@ describe('FRONTEND-026-AC-09/10/11: TMDB metadata fields', () => {
 
     await screen.findByText(/^The Office/)
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4)
+  })
+})
+
+describe('FRONTEND-117-AC-08: Language field renders after Overview', () => {
+  it('displays the resolved language name immediately after Overview', async () => {
+    mockGetById.mockResolvedValue(
+      makeSeries({
+        overview: 'A financial planner relocates.',
+        originalLanguage: 'en',
+      }),
+    )
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    const overviewTerm = await screen.findByText('Overview')
+    const languageTerm = screen.getByText('Language')
+    expect(
+      overviewTerm.compareDocumentPosition(languageTerm) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(screen.getByText('English')).toBeInTheDocument()
+  })
+
+  it('shows "—" for Language when null', async () => {
+    mockGetById.mockResolvedValue(makeSeries({ originalLanguage: null }))
+    render(<SeriesDetail id="1" onBack={vi.fn()} onDeleted={vi.fn()} />)
+
+    await screen.findByText('Language')
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
   })
 })
 

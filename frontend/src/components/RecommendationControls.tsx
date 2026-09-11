@@ -6,6 +6,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { PickerOption } from './KeywordPicker'
 import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { formatCountryNames } from '../utils/countryName'
+import { formatLanguageName } from '../utils/languageName'
 import { formatSeriesYear } from '../utils/formatSeriesYear'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
 import { CustomSearchPanel } from './CustomSearchPanel'
@@ -15,34 +16,17 @@ import { RecommendationFiltersBox } from './RecommendationFiltersBox'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
-// FRONTEND-047-AC-08/09/12 (revised 2026-08-28): Language keeps a hardcoded,
-// locally-scoped option list (not extracted to utils/ -- exactly one
-// consumer today, see this spec's Design Decisions) resolved to
-// human-readable names via Intl.DisplayNames, mirroring
-// utils/countryName.ts's formatCountryName pattern but for language codes
-// specifically. Language now renders through KeywordPicker itself (the same
-// chip-with-"x" UX Country already uses) instead of a bespoke picker --
-// single-select is enforced by a thin adapter where it's used below, not
-// here. Unlike Country's pinned codes (deliberately excluded from `options`
-// so they display as bare codes), Language's pinned codes ARE included in
-// `options` so resolvePinnedOptions resolves them to full names.
-let languageDisplayNames: Intl.DisplayNames | null = null
-function getLanguageDisplayNames(): Intl.DisplayNames | null {
-  if (languageDisplayNames !== null) return languageDisplayNames
-  try {
-    languageDisplayNames = new Intl.DisplayNames(['en'], { type: 'language' })
-    return languageDisplayNames
-  } catch {
-    return null
-  }
-}
-function formatLanguageName(code: string): string {
-  try {
-    return getLanguageDisplayNames()?.of(code) ?? code
-  } catch {
-    return code
-  }
-}
+// FRONTEND-047-AC-08/09/12 (revised 2026-08-28): Language renders through
+// KeywordPicker itself (the same chip-with-"x" UX Country already uses)
+// instead of a bespoke picker -- single-select is enforced by a thin adapter
+// where it's used below, not here. Unlike Country's pinned codes
+// (deliberately excluded from `options` so they display as bare codes),
+// Language's pinned codes ARE included in `options` so resolvePinnedOptions
+// resolves them to full names. FRONTEND-117: the code-to-display-name
+// resolution itself now lives in the shared utils/languageName.ts
+// (formatLanguageName) -- this file used to have its own private
+// Intl.DisplayNames setup here, extracted once a second consumer
+// (SeriesDetailFields) needed the same logic.
 
 // FRONTEND-098-AC-06: an independent static array of all 14 codes --
 // identical membership to the old spread-from-LANGUAGE_PINNED_CODES-derived
@@ -72,7 +56,7 @@ const LANGUAGE_OPTION_CODES = [
 export const LANGUAGE_OPTIONS: PickerOption[] = LANGUAGE_OPTION_CODES.map(
   (code) => ({
     id: code,
-    label: formatLanguageName(code),
+    label: formatLanguageName(code) ?? code,
   }),
 )
 

@@ -37,6 +37,11 @@ export interface Series {
   newContentDetectedAt: string | null
   originCountry: string | null
   productionStatus: string | null
+  // FRONTEND-117/SERIES-061: TMDB's raw ISO 639-1 original-language code
+  // (e.g. "en"), resolved to a readable name for display via
+  // formatLanguageName -- null when not yet resolved, same pattern as
+  // originCountry/productionStatus.
+  originalLanguage: string | null
   keywords: string[]
   overview: string | null
   excludeFromRecommendations: boolean
@@ -165,6 +170,7 @@ export interface CreateSeriesRequest {
   tmdbVoteCount?: number
   originCountry?: string
   productionStatus?: string
+  originalLanguage?: string
   tmdbId?: number
   overview?: string
   excludeFromRecommendations?: boolean
@@ -196,6 +202,7 @@ export interface SeriesLookupResult {
   imdbId?: string
   originCountry?: string
   productionStatus?: string
+  originalLanguage?: string
   tmdbId?: number
   overview?: string
 }

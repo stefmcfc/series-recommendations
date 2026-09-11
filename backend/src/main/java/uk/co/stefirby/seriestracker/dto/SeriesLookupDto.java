@@ -57,6 +57,12 @@ public class SeriesLookupDto {
     // originCountry/productionStatus/overview above.
     private Integer lastAirYear;
 
+    // series_spec_061_series_original_language.md (SERIES-061-AC-02): the resolved candidate's
+    // raw ISO 639-1 language code, sourced from TmdbSeriesDetail.originalLanguage() --
+    // round-tripped so the add-series form can carry it into the create payload, same
+    // precedent as originCountry/productionStatus/overview/lastAirYear above.
+    private String originalLanguage;
+
     public SeriesLookupDto() {
         // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
     }
@@ -108,4 +114,7 @@ public class SeriesLookupDto {
 
     public Integer getLastAirYear() { return lastAirYear; }
     public void setLastAirYear(Integer lastAirYear) { this.lastAirYear = lastAirYear; }
+
+    public String getOriginalLanguage() { return originalLanguage; }
+    public void setOriginalLanguage(String originalLanguage) { this.originalLanguage = originalLanguage; }
 }
