@@ -8,5 +8,8 @@
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   box-shadow: var(--shadow);
-  background: var(--bg);
+  /* FRONTEND-124-AC-01: falls back to the original var(--bg) when the
+     card-tint setting is off (--card-bg undefined) -- zero visual change by
+     construction. */
+  background: var(--card-bg, var(--bg));
 }

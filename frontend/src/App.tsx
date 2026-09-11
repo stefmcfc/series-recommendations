@@ -262,6 +262,16 @@ function App() {
     'purple',
     isAccentColor,
   )
+  // FRONTEND-124-AC-02: a third, independent Appearance axis -- a plain
+  // boolean, not a string-literal union, so no types/cardTint.ts type guard
+  // is needed (see this spec's Design Decisions); default false applies no
+  // data-card-tint attribute at all, so anyone who never opens the new
+  // control sees zero change.
+  const [cardTint, setCardTint] = useLocalStorage<boolean>(
+    'cardTint',
+    false,
+    (v): v is boolean => typeof v === 'boolean',
+  )
 
   // FRONTEND-099-AC-02: applies/removes the data-theme attribute on <html>
   // (document.documentElement) whenever theme changes -- 'system' removes it
@@ -286,6 +296,19 @@ function App() {
       document.documentElement.dataset.accent = accentColor
     }
   }, [accentColor])
+
+  // FRONTEND-124-AC-02: applies/removes the data-card-tint attribute on
+  // <html> the same way the theme/accentColor effects above do -- false
+  // removes it entirely so surfaces.module.css/SeriesPosterGrid.module.css's
+  // var(--card-bg, <original-default>) fallbacks keep driving background
+  // unopposed, exactly as they did before this spec.
+  useEffect(() => {
+    if (cardTint) {
+      document.documentElement.dataset.cardTint = 'on'
+    } else {
+      delete document.documentElement.dataset.cardTint
+    }
+  }, [cardTint])
 
   const handleAddSuccess = () => {
     setIsAddFormOpen(false)
@@ -407,6 +430,8 @@ function App() {
                 setTheme={setTheme}
                 accentColor={accentColor}
                 setAccentColor={setAccentColor}
+                cardTint={cardTint}
+                setCardTint={setCardTint}
               />
             }
           />

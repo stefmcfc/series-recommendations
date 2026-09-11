@@ -224,6 +224,15 @@
   --accent-border: rgba(19, 78, 74, 0.65);
 }
 
+/* FRONTEND-124-AC-01: opt-in card tint -- one shared rule derives --card-bg
+   from whichever --accent/--bg are already active via color-mix(), rather
+   than 10 hand-picked hex values (2 per accent x 5 accents). --card-bg is
+   left undefined when the setting is off, so every consumer's
+   var(--card-bg, <original-default>) fallback renders unchanged. */
+[data-card-tint='on'] {
+  --card-bg: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
 #root {
   width: 1126px;
   max-width: 100%;

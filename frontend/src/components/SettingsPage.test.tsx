@@ -60,6 +60,8 @@ describe('FRONTEND-070-AC-03: SettingsPage renders its heading', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -78,6 +80,8 @@ describe('FRONTEND-057-AC-05: Settings renders Import after Export, no stale pla
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -97,6 +101,8 @@ describe('FRONTEND-072-AC-02: Settings renders unfiltered Export controls', () =
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -115,6 +121,8 @@ describe('FRONTEND-072-AC-02: Settings renders unfiltered Export controls', () =
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -143,6 +151,8 @@ describe('FRONTEND-072-AC-04: Settings resyncs Refresh All state on mount', () =
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -174,6 +184,8 @@ describe('FRONTEND-072-AC-05: Refresh All starts a job and polls to completion',
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -213,6 +225,8 @@ describe('FRONTEND-023-AC-10/12/13: refresh-all click, polling, completion', () 
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -258,6 +272,8 @@ describe('FRONTEND-023-AC-11: resumes polling on mount if a job is already runni
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -277,6 +293,8 @@ describe('FRONTEND-023-AC-14: 409 on click is treated as already-in-progress, no
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -308,6 +326,8 @@ describe('FRONTEND-023-AC-15: last full refresh display', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
     expect(await screen.findByText(/last full refresh/i)).toBeInTheDocument()
@@ -331,6 +351,8 @@ describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -357,6 +379,8 @@ describe('FRONTEND-023-AC-23: skipped count shown in progress text', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -383,6 +407,8 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -409,6 +435,8 @@ describe('FRONTEND-023-AC-24: skipped count in "Last full refresh" summary', () 
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -425,6 +453,8 @@ describe('FRONTEND-097-AC-04: existing sections render via SettingsSection', () 
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -444,6 +474,8 @@ describe('FRONTEND-108-AC-09: Filter Profiles section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -472,6 +504,8 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -496,6 +530,8 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -520,6 +556,8 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -549,6 +587,8 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -576,6 +616,8 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -606,6 +648,8 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -636,6 +680,8 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -654,6 +700,8 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -741,6 +789,8 @@ describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThres
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -773,6 +823,8 @@ describe('FRONTEND-097-AC-09: 409-conflict synthesized status includes skipThres
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -793,6 +845,8 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -810,6 +864,8 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -832,6 +888,8 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -850,6 +908,8 @@ describe('FRONTEND-098-AC-10/11: Recommendation Favourites editor', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -877,6 +937,8 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -898,6 +960,8 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -919,6 +983,8 @@ describe('FRONTEND-100-AC-07/08: favourites editors are reorderable', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -939,6 +1005,8 @@ describe('FRONTEND-102-AC-01/05/06: Watch Region setting', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
     expect(screen.getByLabelText(/watch region/i)).toHaveTextContent(
@@ -964,6 +1032,8 @@ describe('FRONTEND-102-AC-01/05/06: Watch Region setting', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
     expect(screen.getByLabelText(/watch region/i)).toHaveTextContent(
@@ -978,6 +1048,8 @@ describe('FRONTEND-102-AC-01/05/06: Watch Region setting', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -995,6 +1067,8 @@ describe('FRONTEND-099-AC-07/08: Appearance section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1013,6 +1087,8 @@ describe('FRONTEND-099-AC-07/08: Appearance section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1027,6 +1103,8 @@ describe('FRONTEND-099-AC-07/08: Appearance section', () => {
         setTheme={setTheme}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1043,6 +1121,8 @@ describe('FRONTEND-099-AC-07/08: Appearance section', () => {
         setTheme={setTheme}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1059,6 +1139,8 @@ describe('FRONTEND-099-AC-07/08: Appearance section', () => {
         setTheme={setTheme}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1076,6 +1158,8 @@ describe('FRONTEND-110-AC-07/08: Accent Color section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1096,6 +1180,8 @@ describe('FRONTEND-110-AC-07/08: Accent Color section', () => {
         setTheme={vi.fn()}
         accentColor="blue"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1110,6 +1196,8 @@ describe('FRONTEND-110-AC-07/08: Accent Color section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={setAccentColor}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1126,6 +1214,8 @@ describe('FRONTEND-110-AC-07/08: Accent Color section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={setAccentColor}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1142,6 +1232,8 @@ describe('FRONTEND-110-AC-07/08: Accent Color section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={setAccentColor}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
@@ -1158,12 +1250,52 @@ describe('FRONTEND-110-AC-07/08: Accent Color section', () => {
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={setAccentColor}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
     fireEvent.click(screen.getByRole('radio', { name: /^teal$/i }))
 
     expect(setAccentColor).toHaveBeenCalledWith('teal')
+  })
+})
+
+describe('FRONTEND-124-AC-03: card tint checkbox in Settings', () => {
+  it('renders unchecked by default and calls setCardTint on click', () => {
+    const setCardTint = vi.fn()
+    render(
+      <SettingsPage
+        theme="system"
+        setTheme={vi.fn()}
+        accentColor="purple"
+        setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={setCardTint}
+      />,
+    )
+
+    const checkbox = screen.getByLabelText(/tint cards/i)
+    expect(checkbox).not.toBeChecked()
+
+    fireEvent.click(checkbox)
+
+    expect(setCardTint).toHaveBeenCalledWith(true)
+  })
+
+  it('renders checked when cardTint is true', () => {
+    render(
+      <SettingsPage
+        theme="system"
+        setTheme={vi.fn()}
+        accentColor="purple"
+        setAccentColor={vi.fn()}
+        cardTint={true}
+        setCardTint={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText(/tint cards/i)).toBeChecked()
   })
 })
 
@@ -1175,6 +1307,8 @@ describe('FRONTEND-110-AC-09: divider between Country and Language Favourites', 
         setTheme={vi.fn()}
         accentColor="purple"
         setAccentColor={vi.fn()}
+        cardTint={false}
+        setCardTint={vi.fn()}
       />,
     )
 
