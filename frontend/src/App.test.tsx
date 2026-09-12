@@ -949,6 +949,37 @@ describe('FRONTEND-110-AC-01/02: accentColor applies a data-accent attribute', (
   })
 })
 
+describe('FRONTEND-124-AC-02: cardTint state applies a data-card-tint attribute', () => {
+  it('defaults to no data-card-tint attribute when nothing is stored', async () => {
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(document.documentElement.dataset.cardTint).toBeUndefined()
+  })
+
+  it('applies data-card-tint="on" when the stored setting is true', async () => {
+    localStorage.setItem('cardTint', JSON.stringify(true))
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    expect(document.documentElement.dataset.cardTint).toBe('on')
+  })
+
+  it('removes the attribute when the checkbox is unchecked', async () => {
+    localStorage.setItem('cardTint', JSON.stringify(true))
+    mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })
+    render(<App />)
+    await screen.findByTestId('series-list')
+
+    fireEvent.click(screen.getByRole('link', { name: /settings/i }))
+    fireEvent.click(await screen.findByLabelText(/tint cards/i))
+
+    expect(document.documentElement.dataset.cardTint).toBeUndefined()
+  })
+})
+
 describe('FRONTEND-105-AC-09/10: status tabs render decorative icons', () => {
   it('each status tab renders an aria-hidden icon before its label', async () => {
     mockGetAll.mockResolvedValue({ series: [], excludedCount: 0 })

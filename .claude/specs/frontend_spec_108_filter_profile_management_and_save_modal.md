@@ -123,6 +123,12 @@ describe('FRONTEND-108-AC-01: describeFilterCriteria', () => {
 ---
 
 ### FRONTEND-108-AC-02 [AUTO]
+**Superseded (2026-09-12) by `frontend_spec_125_filter_profile_name_labels.md`**: this AC's
+"not `label: value` pairs" behavior turned out to produce meaningless names for all-numeric
+criteria (e.g. "5, 4, 8" for an Analysis profile) — `frontend_spec_125` labels bare-numeric
+entries (`"Series Count 5"`) while leaving self-describing string values exactly as described
+below, unchanged.
+
 **Statement**: The same file shall export `suggestFilterProfileName(area, criteria): string`,
 calling `describeFilterCriteria` internally and joining the first few entries' `value`s (not
 `label: value` pairs) with `", "`, truncated to a sensible length with a `…` suffix when truncated;

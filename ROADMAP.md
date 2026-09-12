@@ -38,6 +38,10 @@ dependency-derived anymore.
 
 | Feature | Backend Spec | Frontend Spec | Status |
 | ------- | ------------ | -------------- | ------ |
+| Rotten Tomatoes minimum-rating filter (My Series + Recs > Use My Series); tiered step sizes for IMDb/TMDB/RT/Year controls; flat step-100 for Min Vote Count | `series_spec_063` | `frontend_spec_122` | ⬜ Not started |
+| My Series filters: Ratings section reorganized into rows (Personal / IMDb+TMDB / RT); all 4 sections made collapsible with per-section active-filter badges | — | `frontend_spec_123` | ⬜ Not started |
+| Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
+| Analysis's saved-filters picker moved inside its own "Analysis Filters" box, matching every other filterable area's convention | — | `frontend_spec_126` | ⬜ Not started |
 
 ---
 
@@ -175,6 +179,7 @@ dependency-derived anymore.
 | Rotten Tomatoes (Tomatometer/Popcornmeter) sort options added to My Series and Recs > Use My Series; sorting by any externally-sourced rating (IMDb/TMDB/RT) now excludes series missing it, with a count message, instead of sorting them last | `series_spec_062` | `frontend_spec_119` | ✅ Done |
 | My Series Compact view gains the same "active rating" (sort-aware IMDb/TMDB/Rotten Tomatoes) shown in Expanded view, alongside the personal rating | — | `frontend_spec_120` | ✅ Done |
 | Discover sub-tabs ("Custom Search"/"Popular Right Now"/"Highest Rated") stay pinned while scrolling, matching the top-level "Use My Series"/"Discover" tabs' existing sticky behavior | — | `frontend_spec_121` | ✅ Done |
+| Cards tinted a shade of the active accent palette (dark in dark mode, light in light mode, via `color-mix()`), on/off in Settings | — | `frontend_spec_124` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

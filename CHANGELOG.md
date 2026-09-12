@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.56.0] - 2026-09-12
+
+### Added
+
+- Frontend: opt-in Settings toggle ("Tint cards with the active accent color") tints every card surface a shade of the active accent color, derived automatically via CSS `color-mix()` so it works across all 5 accent presets and both light/dark themes with no per-accent/per-theme hand-picked colors (`frontend_spec_124`).
+
 ## [3.55.1] - 2026-09-11
 
 ### Fixed

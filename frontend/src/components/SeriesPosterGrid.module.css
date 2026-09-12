@@ -18,7 +18,10 @@
   display: block;
   width: 100%;
   aspect-ratio: 2 / 3;
-  background: var(--social-bg);
+  /* FRONTEND-124-AC-01: falls back to the original var(--social-bg) when the
+     card-tint setting is off (--card-bg undefined) -- zero visual change by
+     construction. */
+  background: var(--card-bg, var(--social-bg));
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0;

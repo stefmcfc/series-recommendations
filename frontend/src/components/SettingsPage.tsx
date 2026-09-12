@@ -81,6 +81,8 @@ interface SettingsPageProps {
   readonly setTheme: (theme: Theme) => void
   readonly accentColor: AccentColor
   readonly setAccentColor: (accentColor: AccentColor) => void
+  readonly cardTint: boolean
+  readonly setCardTint: (cardTint: boolean) => void
 }
 
 // FRONTEND-099-AC-03/FRONTEND-110-AC-03: theme/setTheme and
@@ -94,6 +96,8 @@ export function SettingsPage({
   setTheme,
   accentColor,
   setAccentColor,
+  cardTint,
+  setCardTint,
 }: SettingsPageProps) {
   const [jobStatus, setJobStatus] = useState<RefreshJobStatus | null>(null)
   const [refreshAllError, setRefreshAllError] = useState<string | null>(null)
@@ -344,6 +348,22 @@ export function SettingsPage({
             />
             <label htmlFor="accent-color-teal">Teal</label>
           </div>
+        </div>
+
+        {/* FRONTEND-124-AC-03: a genuine on/off boolean, not a 3-way/5-way
+            choice like the two radiogroups above -- a plain checkbox, not a
+            custom toggle-switch component (no such UI exists anywhere in
+            this app today; see this spec's Design Decisions). */}
+        <div className={styles.themeOption}>
+          <input
+            id="card-tint-toggle"
+            type="checkbox"
+            checked={cardTint}
+            onChange={(e) => setCardTint(e.target.checked)}
+          />
+          <label htmlFor="card-tint-toggle">
+            Tint cards with the active accent color
+          </label>
         </div>
       </SettingsSection>
 
