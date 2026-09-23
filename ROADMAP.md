@@ -41,6 +41,8 @@ dependency-derived anymore.
 | My Series filters: Ratings section reorganized into rows (Personal / IMDb+TMDB / RT); all 4 sections made collapsible with per-section active-filter badges | — | `frontend_spec_123` | ⬜ Not started |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | Analysis's saved-filters picker moved inside its own "Analysis Filters" box, matching every other filterable area's convention | — | `frontend_spec_126` | ⬜ Not started |
+| "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
+| Filter My Series (and Use My Series) by Origin Country / Original Language | `series_spec_065` | `frontend_spec_128` | ⬜ Not started |
 
 ---
 
