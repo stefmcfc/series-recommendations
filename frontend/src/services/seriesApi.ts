@@ -183,6 +183,9 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   addArrayIfNonEmpty(params, 'excludeGenre', criteria.excludeGenres)
   addArrayIfNonEmpty(params, 'keyword', criteria.keywords)
   addIfPresent(params, 'status', criteria.status)
+  // FRONTEND-128-AC-01/SERIES-065.
+  addArrayIfNonEmpty(params, 'originCountry', criteria.originCountry)
+  addIfPresent(params, 'originalLanguage', criteria.originalLanguage)
   addIfPresent(params, 'minPersonalRating', criteria.minPersonalRating)
   addIfPresent(params, 'minImdbRating', criteria.minImdbRating)
   // FRONTEND-055/SERIES-037: replaces the removed maxPersonalRating/

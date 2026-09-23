@@ -33,6 +33,9 @@ export interface MySeriesFilterCriteria {
   genres?: string[]
   excludeGenres?: string[]
   keywords?: string[]
+  // FRONTEND-128-AC-01/SERIES-065: matches SearchCriteria's shape directly.
+  originCountry?: string[]
+  originalLanguage?: string
   minPersonalRating?: number
   minImdbRating?: number
   minTmdbRating?: number
@@ -51,6 +54,11 @@ export interface UseMySeriesFilterCriteria {
   excludeGenreFilter: string[]
   statusFilter: 'any' | 'completedOnly' | 'completedOrWatching'
   keywordsFilter: string[]
+  // FRONTEND-128-AC-01/SERIES-065: mirrors the interface's own existing
+  // `Filter`-suffixed naming convention -- statusFilter already establishes
+  // that a single (non-array) value still takes the `Filter` suffix.
+  originCountryFilter: string[]
+  originalLanguageFilter: string
   minPersonalRating: number | null
   minImdbRating: string
   minTmdbRating: string

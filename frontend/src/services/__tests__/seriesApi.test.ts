@@ -387,6 +387,33 @@ describe('FRONTEND-122-AC-01: buildSearchParams includes RT min-rating fields', 
   })
 })
 
+describe('FRONTEND-128-AC-01: buildSearchParams includes origin country/language fields', () => {
+  it('includes originCountry/originalLanguage when set', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({
+      originCountry: ['GB', 'US'],
+      originalLanguage: 'en',
+    })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.originCountry).toEqual(['GB', 'US'])
+    expect(args.params.originalLanguage).toBe('en')
+  })
+
+  it('omits both fields when absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ title: 'office' })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.originCountry).toBeUndefined()
+    expect(args.params.originalLanguage).toBeUndefined()
+  })
+})
+
 describe('FRONTEND-116-AC-02: missing-rating params passed through when set', () => {
   it('includes each missing-rating field only when non-null', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })
@@ -1307,6 +1334,25 @@ describe('SH-007: export', () => {
     const result = await seriesApi.export('csv')
 
     expect(result.filename).toBe('series-export.csv')
+  })
+})
+
+describe('FRONTEND-128-AC-04: export includes origin country/language fields', () => {
+  it('includes originCountry/originalLanguage in the export request when set', async () => {
+    client.get.mockResolvedValue({
+      data: new Blob(['{}']),
+      headers: {},
+    })
+    await seriesApi.export('json', {
+      originCountry: ['GB', 'US'],
+      originalLanguage: 'en',
+    })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.originCountry).toEqual(['GB', 'US'])
+    expect(args.params.originalLanguage).toBe('en')
   })
 })
 

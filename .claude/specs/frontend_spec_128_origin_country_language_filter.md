@@ -1,6 +1,6 @@
 # Frontend Spec 128: Filter My Series by Origin Country / Original Language
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `series_spec_065_origin_country_language_filter.md` (companion backend spec — new
 `originCountry`/`originalLanguage` query params on `GET /api/v1/series/search`/`GET
@@ -354,7 +354,7 @@ apply the same filters.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-128-AC-01: `SearchCriteria`/`MySeriesFilterCriteria`/`UseMySeriesFilterCriteria`/`buildSearchParams` carry the two new fields
-- [ ] FRONTEND-128-AC-02: My Series filters gain both origin fields, round-trip through saved profiles
-- [ ] FRONTEND-128-AC-03: Use My Series filters gain both origin fields, filter the candidate pool correctly
-- [ ] FRONTEND-128-AC-04: export includes both fields with no export-specific wiring (regression guard)
+- [x] FRONTEND-128-AC-01: `SearchCriteria`/`MySeriesFilterCriteria`/`UseMySeriesFilterCriteria`/`buildSearchParams` carry the two new fields
+- [x] FRONTEND-128-AC-02: My Series filters gain both origin fields, round-trip through saved profiles
+- [x] FRONTEND-128-AC-03: Use My Series filters gain both origin fields, filter the candidate pool correctly
+- [x] FRONTEND-128-AC-04: export includes both fields with no export-specific wiring (regression guard)

@@ -298,6 +298,11 @@ export interface SearchCriteria {
   excludeGenres?: string[]
   keywords?: string[]
   status?: SeriesStatus
+  // FRONTEND-128-AC-01/SERIES-065: originCountry is multi-value (OR-matched
+  // server-side), originalLanguage is single-value (exact match) -- mirrors
+  // the backend's own asymmetry for these two fields.
+  originCountry?: string[]
+  originalLanguage?: string
   minPersonalRating?: number
   minImdbRating?: number
   // FRONTEND-055/SERIES-037: replaces the removed maxPersonalRating/

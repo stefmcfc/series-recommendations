@@ -22,6 +22,7 @@ import {
   seriesPickerLabel,
   seriesPickerDisplay,
   SPECIFIC_SERIES_SORT_BY_OPTIONS,
+  LANGUAGE_OPTIONS,
 } from './RecommendationControls'
 import type {
   ControlsState,
@@ -29,6 +30,7 @@ import type {
   SpecificSeriesSortBy,
   SpecificSeriesSortDirection,
 } from './RecommendationControls'
+import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -91,6 +93,17 @@ export function UseMySeriesPanel({
   // retired backend minSourceRating gate conceptually.
   const [specificSeriesKeywordsFilter, setSpecificSeriesKeywordsFilter] =
     useState<string[]>([])
+  // FRONTEND-128-AC-03/SERIES-065: mirrors specificSeriesGenreFilter/
+  // specificSeriesKeywordsFilter's shape -- country is multi-value
+  // (OR/substring matched), language is single-value (exact matched).
+  const [
+    specificSeriesOriginCountryFilter,
+    setSpecificSeriesOriginCountryFilter,
+  ] = useState<string[]>([])
+  const [
+    specificSeriesOriginalLanguageFilter,
+    setSpecificSeriesOriginalLanguageFilter,
+  ] = useState('')
   const [specificSeriesMinPersonalRating, setSpecificSeriesMinPersonalRating] =
     useState<number | null>(null)
   const [specificSeriesMinImdbRating, setSpecificSeriesMinImdbRating] =
@@ -126,6 +139,8 @@ export function UseMySeriesPanel({
     excludeGenreFilter: specificSeriesExcludeGenreFilter,
     statusFilter: specificSeriesStatusFilter,
     keywordsFilter: specificSeriesKeywordsFilter,
+    originCountryFilter: specificSeriesOriginCountryFilter,
+    originalLanguageFilter: specificSeriesOriginalLanguageFilter,
     minPersonalRating: specificSeriesMinPersonalRating,
     minImdbRating: specificSeriesMinImdbRating,
     minTmdbRating: specificSeriesMinTmdbRating,
@@ -147,6 +162,8 @@ export function UseMySeriesPanel({
     setSpecificSeriesExcludeGenreFilter(criteria.excludeGenreFilter)
     setSpecificSeriesStatusFilter(criteria.statusFilter)
     setSpecificSeriesKeywordsFilter(criteria.keywordsFilter)
+    setSpecificSeriesOriginCountryFilter(criteria.originCountryFilter)
+    setSpecificSeriesOriginalLanguageFilter(criteria.originalLanguageFilter)
     setSpecificSeriesMinPersonalRating(criteria.minPersonalRating)
     setSpecificSeriesMinImdbRating(criteria.minImdbRating)
     setSpecificSeriesMinTmdbRating(criteria.minTmdbRating)
@@ -187,6 +204,8 @@ export function UseMySeriesPanel({
     setSpecificSeriesExcludeGenreFilter([])
     setSpecificSeriesStatusFilter('any')
     setSpecificSeriesKeywordsFilter([])
+    setSpecificSeriesOriginCountryFilter([])
+    setSpecificSeriesOriginalLanguageFilter('')
     setSpecificSeriesMinPersonalRating(null)
     setSpecificSeriesMinImdbRating('')
     setSpecificSeriesMinTmdbRating('')
@@ -224,6 +243,8 @@ export function UseMySeriesPanel({
         sortBy: specificSeriesSortBy,
         sortDirection: specificSeriesSortDirection,
         keywordsFilter: specificSeriesKeywordsFilter,
+        originCountryFilter: specificSeriesOriginCountryFilter,
+        originalLanguageFilter: specificSeriesOriginalLanguageFilter,
         minPersonalRating: specificSeriesMinPersonalRating,
         minImdbRating: specificSeriesMinImdbRating,
         minTmdbRating: specificSeriesMinTmdbRating,
@@ -443,6 +464,44 @@ export function UseMySeriesPanel({
                         >
                           Browse all keywords
                         </button>
+                      </div>
+                    </div>
+
+                    {/* FRONTEND-128-AC-03/SERIES-065: Country/Language
+                        client-side filters, mirroring the Genre/Keywords row
+                        immediately above -- Country is multi-select
+                        (OR/substring matched), Language is single-select via
+                        the same selected/onChange adapter
+                        RecommendationFiltersBox.tsx's own Language field
+                        uses to make KeywordPicker (a multi-select component)
+                        behave as a single-select. */}
+                    <div className={styles.filterFourColGrid}>
+                      <div className={styles.filterSpanTwo}>
+                        <KeywordPicker
+                          id="specific-series-origin-country"
+                          label="Country"
+                          selected={specificSeriesOriginCountryFilter}
+                          onChange={setSpecificSeriesOriginCountryFilter}
+                          options={ALL_COUNTRY_OPTIONS}
+                        />
+                      </div>
+
+                      <div className={styles.filterSpanTwo}>
+                        <KeywordPicker
+                          id="specific-series-original-language"
+                          label="Language"
+                          selected={
+                            specificSeriesOriginalLanguageFilter
+                              ? [specificSeriesOriginalLanguageFilter]
+                              : []
+                          }
+                          onChange={(next) =>
+                            setSpecificSeriesOriginalLanguageFilter(
+                              next.at(-1) ?? '',
+                            )
+                          }
+                          options={LANGUAGE_OPTIONS}
+                        />
                       </div>
                     </div>
 

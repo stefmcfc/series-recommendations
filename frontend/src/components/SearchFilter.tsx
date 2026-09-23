@@ -8,6 +8,8 @@ import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
+import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
+import { LANGUAGE_OPTIONS } from './RecommendationControls'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   resolveTieredStep,
@@ -36,6 +38,12 @@ interface FormState {
   // (include-side).
   excludeGenresSelected: string[]
   keywordsSelected: string[]
+  // FRONTEND-128-AC-02/SERIES-065: mirrors keywordsSelected/minImdbRating's
+  // shape -- originCountrySelected is multi-value (array), originalLanguage
+  // is single-value (a plain string, matching Language's single-select
+  // adapter pattern elsewhere in the app).
+  originCountrySelected: string[]
+  originalLanguage: string
   // FRONTEND-055-AC-06: number|null (not string) to match StarRating's own
   // value/onChange shape directly -- no string parsing needed for this
   // field anymore.
@@ -61,6 +69,8 @@ const initialFormState: FormState = {
   genresSelected: [],
   excludeGenresSelected: [],
   keywordsSelected: [],
+  originCountrySelected: [],
+  originalLanguage: '',
   minPersonalRating: null,
   minImdbRating: '',
   minTmdbRating: '',
@@ -84,6 +94,11 @@ function buildCriteria(form: FormState): SearchCriteria {
 
   if (form.keywordsSelected.length > 0)
     criteria.keywords = form.keywordsSelected
+
+  if (form.originCountrySelected.length > 0)
+    criteria.originCountry = form.originCountrySelected
+  if (form.originalLanguage.trim() !== '')
+    criteria.originalLanguage = form.originalLanguage
 
   if (form.minPersonalRating != null)
     criteria.minPersonalRating = form.minPersonalRating
@@ -124,6 +139,10 @@ function formStateFromCriteria(criteria: MySeriesFilterCriteria): FormState {
     excludeGenresSelected:
       criteria.excludeGenres ?? initialFormState.excludeGenresSelected,
     keywordsSelected: criteria.keywords ?? initialFormState.keywordsSelected,
+    originCountrySelected:
+      criteria.originCountry ?? initialFormState.originCountrySelected,
+    originalLanguage:
+      criteria.originalLanguage ?? initialFormState.originalLanguage,
     minPersonalRating:
       criteria.minPersonalRating ?? initialFormState.minPersonalRating,
     minImdbRating:
@@ -215,7 +234,10 @@ export function SearchFilter({
     (
       field: Exclude<
         keyof FormState,
-        'genresSelected' | 'keywordsSelected' | 'minPersonalRating'
+        | 'genresSelected'
+        | 'keywordsSelected'
+        | 'originCountrySelected'
+        | 'minPersonalRating'
       >,
     ) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,6 +276,19 @@ export function SearchFilter({
 
   const handleKeywordsChange = (next: string[]) => {
     setForm((prev) => ({ ...prev, keywordsSelected: next }))
+  }
+
+  // FRONTEND-128-AC-02/SERIES-065: mirrors handleKeywordsChange above.
+  const handleOriginCountryChange = (next: string[]) => {
+    setForm((prev) => ({ ...prev, originCountrySelected: next }))
+  }
+
+  // FRONTEND-128-AC-02/SERIES-065: the same selected={val ? [val] : []} /
+  // onChange={(next) => next.at(-1) ?? ''} adapter
+  // RecommendationFiltersBox.tsx's own Language field already uses to make
+  // KeywordPicker (a multi-select component) behave as a single-select.
+  const handleOriginalLanguageChange = (next: string[]) => {
+    setForm((prev) => ({ ...prev, originalLanguage: next.at(-1) ?? '' }))
   }
 
   const handleSubmit = (event: React.SubmitEvent<HTMLFormElement>) => {
@@ -373,6 +408,36 @@ export function SearchFilter({
                 >
                   Browse all keywords
                 </button>
+              </div>
+            </section>
+
+            {/* FRONTEND-128-AC-02/SERIES-065: Country (multi-select) and
+                Language (single-select via the KeywordPicker adapter) --
+                mirrors the Country/Language pair RecommendationFiltersBox.tsx
+                already renders for Discover. */}
+            <section className={`${styles.filterSection} ${surface.card}`}>
+              <h3 className={styles.filterSectionHeading}>Origin</h3>
+
+              <div className={styles.field}>
+                <KeywordPicker
+                  id="search-origin-country"
+                  label="Country"
+                  selected={form.originCountrySelected}
+                  onChange={handleOriginCountryChange}
+                  options={ALL_COUNTRY_OPTIONS}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <KeywordPicker
+                  id="search-original-language"
+                  label="Language"
+                  selected={
+                    form.originalLanguage ? [form.originalLanguage] : []
+                  }
+                  onChange={handleOriginalLanguageChange}
+                  options={LANGUAGE_OPTIONS}
+                />
               </div>
             </section>
 

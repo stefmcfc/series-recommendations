@@ -185,6 +185,44 @@ describe('FRONTEND-122-AC-02: Rotten Tomatoes min-rating filters in My Series', 
   })
 })
 
+describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () => {
+  it('includes both origin fields in the submitted criteria when filled in', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.click(screen.getByLabelText('Country'))
+    fireEvent.click(screen.getByText('United Kingdom'))
+    fireEvent.click(screen.getByLabelText('Language'))
+    fireEvent.click(screen.getByText('English'))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originCountry: ['GB'],
+        originalLanguage: 'en',
+      }),
+    )
+  })
+
+  // ALL_COUNTRY_OPTIONS/LANGUAGE_OPTIONS resolve codes to full display names
+  // (via Intl.DisplayNames -- see countryName.test.ts/languageName.test.ts),
+  // so the round-tripped chip renders "United Kingdom"/"English", not the
+  // raw "GB"/"en" codes.
+  it('round-trips both origin fields through a saved filter profile', async () => {
+    mockListFilterProfiles.mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'UK English',
+        criteria: { originCountry: ['GB'], originalLanguage: 'en' },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    renderFilter()
+    fireEvent.click(await screen.findByText('UK English'))
+    expect(screen.getByText('United Kingdom')).toBeInTheDocument()
+    expect(screen.getByText('English')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
   it('submits minTmdbRating and yearMin/yearMax', () => {
     const { onSearch } = renderFilter()
