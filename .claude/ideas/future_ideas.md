@@ -39,6 +39,17 @@ section now.
 and "CSV import" (Export section) were specced (`frontend_spec_113`, `series_spec_058`/
 `frontend_spec_114`) and removed accordingly — see `ROADMAP.md`'s "Specced, coming soon" table.
 
+2026-09-23 full review: four items updated against the current codebase. The Configuration
+section's "saved filter/algorithm profiles" gap narrowed — filter profiles fully shipped
+(`series_spec_055`/`056`/`057`, `frontend_spec_107`/`108`/`109`/`112`, all five filterable areas);
+only saved *algorithm* profiles remain, unchanged blocking reason. "Recommendations for a
+recommendation"'s blocking condition (candidate detail modal) shipped (`frontend_spec_053`) — no
+longer gated on anything. "Filter My Series by Country of Origin / Language" was corrected —
+`SeriesEntity.originalLanguage` now exists (`series_spec_061`), so Language is no longer a
+materially bigger lift than Country. The export test-coverage gap narrowed to two of its original
+three checks after `series_spec_063` incidentally added one MockMvc `/export` test. Every other
+item confirmed still accurate, no changes needed.
+
 ---
 
 ## Recommendations & Lookup
@@ -67,9 +78,10 @@ bare `tmdbId` as a *source* — only `seriesIds`, tracked-series UUIDs), and the
 surface + frontend entry point (most naturally a "Get recommendations for this" action inside the
 candidate detail modal once that ships).
 
-**Status**: Not specced. Deliberately kept here rather than specced alongside its two siblings —
-worth revisiting once the candidate detail modal (`frontend_spec_053`) actually ships and there's a
-concrete UI home for the resulting action.
+**Status**: Not specced. **Update (2026-09-23 review)**: the candidate detail modal
+(`frontend_spec_053`) has since shipped (✅ Done, `ROADMAP.md`) — its concrete UI home ("Get
+recommendations for this" inside that modal) now exists, so this is no longer blocked on anything.
+Worth actually scoping now rather than continuing to defer.
 
 ### "Use My Series" source-series picker — "Select Series" relabel
 
@@ -160,17 +172,21 @@ Configuration section's "Favourite country of origin" idea below — that one is
 *TMDB-discovery* pinned-chip list; this one is about filtering the user's *own tracked series* by
 these fields on My Series. Confirmed via a backend check: `SeriesEntity.originCountry` exists (a
 single ISO 3166-1 alpha-2 code) but isn't wired into `SeriesSearchCriteria`/`SeriesSearchService` at
-all today — adding a Country filter would be a small addition. **There is no language field
-anywhere on `SeriesEntity`** — adding a Language filter would first need a new column, a migration,
-and a change to the TMDB lookup/refresh path to actually capture `original_language`, before any
-filter could be built on top of it. Confirmed no slider UI pattern exists anywhere in this codebase
-either (checked while deciding Min IMDb/TMDB Rating should stay plain number inputs, not sliders, in
-`frontend_spec_075`).
+all today — adding a Country filter would be a small addition. Confirmed no slider UI pattern
+exists anywhere in this codebase either (checked while deciding Min IMDb/TMDB Rating should stay
+plain number inputs, not sliders, in `frontend_spec_075`).
 
-**Status**: Not specced. Deliberately deferred out of the `frontend_spec_072`–`077` batch — Country
-is a small, self-contained addition (`series_spec_0XX` + a frontend field) worth picking up on its
-own; Language is materially bigger (new DB field + TMDB-capture change) and should not be scoped
-together with Country just because they were raised at the same time.
+**Update (2026-09-23 review)**: the original "no language field anywhere on `SeriesEntity`"
+reasoning is now stale — `series_spec_061` (delivered) added `SeriesEntity.originalLanguage`
+(captured on add/refresh from TMDB, shown on the detail page) for an unrelated reason. That was the
+entire "new column + migration + TMDB-capture change" cost this entry originally used to justify
+splitting Language out as materially bigger than Country. Confirmed neither filter is wired up
+yet — `SeriesSearchCriteria`/`SearchFilter.tsx` both still lack any country/language field — but
+the two are now symmetric, equally small additions.
+
+**Status**: Not specced. No longer any size-based reason to split Country and Language into
+separate specs if picked up together — both are now just a `SeriesSearchCriteria` field +
+`SeriesSearchService` predicate + a frontend field each.
 
 ---
 
@@ -201,7 +217,7 @@ exporting every field.
 
 ## Configuration
 
-### No settings menu — saved filter/algorithm profiles are the one remaining gap
+### Saved algorithm profiles — the one remaining Settings gap
 
 Originally raised as a broader "every tunable is an `application.yml`/env-var value, not a live
 in-app setting" observation; the settings shell and its content have since landed incrementally
@@ -212,14 +228,23 @@ theme toggle — the last two both built on a new shared `useLocalStorage` hook,
 since this app has zero settings/preference persistence anywhere backend-side and no
 auth/multi-user concept to need one).
 
-**The one item this entry originally flagged that's still unspecced: saved filter/algorithm
-profiles** — `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation algorithm" candidate's own
-item #11. That candidate's own text is explicit this needs designing *together* with its 10 sibling
+**Update (2026-09-23 review)**: this entry originally also flagged *saved filter profiles* as
+open — that half has since fully shipped. `series_spec_055`/`056`/`057` +
+`frontend_spec_107`/`108`/`109`/`112` deliver named, saved, rename/delete-managed filter profiles
+across all five filterable areas (My Series, Use My Series, Recommendation filters, Custom Search,
+Analysis filters — confirmed in `ROADMAP.md`'s Delivered table). Only *algorithm* profiles — saving
+a chosen combination of scoring weights/source settings, distinct from filter criteria — remain
+unbuilt.
+
+**The one item this entry originally flagged that's still unspecced: saved algorithm profiles** —
+`.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation algorithm" candidate's own item #11.
+That candidate's own text is explicit this needs designing *together* with its 10 sibling
 scoring-formula sub-items, not pulled out alone — still blocked on that larger candidate being
-scoped, not on any settings-infrastructure question (that question is now answered: `localStorage`
-suffices for everything else in this app's settings surface; whether saved *profiles* specifically
-need something richer, given they're structured multi-field data rather than a flat preference, is
-part of what that candidate still needs to resolve).
+scoped, not on any settings-infrastructure question (that question is now answered twice over:
+`localStorage` suffices for every flat preference in this app's settings surface, and the now-shipped
+filter-profile persistence pattern shows structured multi-field saved data is also a solved
+problem here — whether algorithm profiles specifically can reuse that same pattern or need
+something else is part of what that candidate still needs to resolve).
 
 **Status**: Not specced — blocked on `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
 algorithm" candidate.
@@ -257,13 +282,14 @@ big enough decision to warrant its own spec once picked up.
 These aren't feature ideas, but debt flagged the same way — worth tracking alongside the above
 rather than letting them stay buried in an old spec.
 
-### No controller-level (`MockMvc`) test for the `/export` HTTP endpoint
+### `/export`'s `Content-Disposition` header and invalid-`format` → 400 response are still untested at the controller level
 
-Confirmed still true (2026-08-26 re-check — grepped `SeriesControllerSpec.groovy` for
-`export`/`Content-Disposition`, zero matches). `SeriesExportServiceSpec.groovy` covers the service
-layer thoroughly, but the controller test doesn't exercise the `Content-Disposition` header, the
-invalid-`format` → 400 response, or filter-before-export wiring at the HTTP layer. Unaffected by
-this session's `SeriesController` split (`tooling_spec_002`) — export stayed on the trimmed
-`SeriesController`, and that split didn't add new tests, only preserved existing ones.
+Originally "no controller-level (`MockMvc`) test for `/export` at all" (confirmed 2026-08-26 —
+grepped `SeriesControllerSpec.groovy` for `export`/`Content-Disposition`, zero matches). **Update
+(2026-09-23 review)**: no longer fully true — `series_spec_063` incidentally added one MockMvc
+`/export` test (`SERIES-063-AC-04`) while covering that spec's own Rotten-Tomatoes-filter query
+param, which does exercise filter-before-export wiring at the HTTP layer now. Still untested at
+the controller level: the `Content-Disposition` header, and the invalid-`format` → 400 response.
+`SeriesExportServiceSpec.groovy` continues to cover the service layer thoroughly regardless.
 
 **Status**: Not specced.
