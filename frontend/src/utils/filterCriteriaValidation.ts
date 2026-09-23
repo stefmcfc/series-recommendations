@@ -28,13 +28,17 @@ export interface FilterCriteriaValidationResult {
   errors: string[]
 }
 
+// Shared by checkRange/checkYearRange's value params below -- a raw form field
+// can be a typed-in string, an already-parsed number, or unset.
+type NumericFieldValue = number | string | undefined
+
 // A missing/blank field is never an error -- same "unset means no constraint"
 // convention describeFilterCriteria.ts's entry()/listEntry() helpers use, so an
 // in-progress, partially-filled form (or an older profile saved before a field
 // existed) never trips this validator on a field it never touched.
 function checkRange(
   label: string,
-  value: number | string | undefined,
+  value: NumericFieldValue,
   min: number,
   max: number,
 ): string[] {
@@ -58,8 +62,8 @@ function checkNonNegativeInteger(
 }
 
 function checkYearRange(
-  yearMin: number | string | undefined,
-  yearMax: number | string | undefined,
+  yearMin: NumericFieldValue,
+  yearMax: NumericFieldValue,
 ): string[] {
   const errors = [
     ...checkRange('Year (from)', yearMin, MIN_VALID_YEAR, MAX_VALID_YEAR),
@@ -77,12 +81,18 @@ function checkYearRange(
   return errors
 }
 
-// Deliberately no minPersonalRating check for MY_SERIES/USE_MY_SERIES -- that
-// field is driven by a fixed StarRating picker (0-5 whole stars only), which
-// can't be typed out of range the way a free-text NumberInput can.
-function validateMySeriesCriteria(
-  criteria: Partial<MySeriesFilterCriteria>,
-): string[] {
+// Shared by validateMySeriesCriteria/validateUseMySeriesCriteria below -- both
+// areas validate the same Min IMDb/TMDB Rating + Year range fields today. Kept
+// as two separate named functions (rather than one function serving both
+// switch cases) so either area's validation can diverge later without
+// disturbing the other, matching MySeriesFilterCriteria/UseMySeriesFilterCriteria's
+// own deliberate type separation.
+function validateMinRatingAndYearCriteria(criteria: {
+  minImdbRating?: NumericFieldValue
+  minTmdbRating?: NumericFieldValue
+  yearMin?: NumericFieldValue
+  yearMax?: NumericFieldValue
+}): string[] {
   return [
     ...checkRange('Min IMDb Rating', criteria.minImdbRating, 0, 10),
     ...checkRange('Min TMDB Rating', criteria.minTmdbRating, 0, 10),
@@ -90,14 +100,19 @@ function validateMySeriesCriteria(
   ]
 }
 
+// Deliberately no minPersonalRating check for MY_SERIES/USE_MY_SERIES -- that
+// field is driven by a fixed StarRating picker (0-5 whole stars only), which
+// can't be typed out of range the way a free-text NumberInput can.
+function validateMySeriesCriteria(
+  criteria: Partial<MySeriesFilterCriteria>,
+): string[] {
+  return validateMinRatingAndYearCriteria(criteria)
+}
+
 function validateUseMySeriesCriteria(
   criteria: Partial<UseMySeriesFilterCriteria>,
 ): string[] {
-  return [
-    ...checkRange('Min IMDb Rating', criteria.minImdbRating, 0, 10),
-    ...checkRange('Min TMDB Rating', criteria.minTmdbRating, 0, 10),
-    ...checkYearRange(criteria.yearMin, criteria.yearMax),
-  ]
+  return validateMinRatingAndYearCriteria(criteria)
 }
 
 function validateRecommendationFiltersCriteria(

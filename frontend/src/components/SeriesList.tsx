@@ -616,6 +616,8 @@ export function SeriesList({
         <ul className={styles.list}>
           {series.map((s) => {
             const yearLabel = formatSeriesYear(s)
+            const rottenTomatoesEmoji =
+              sortBy === 'rottenTomatoesRating' ? '🍅' : '🍿'
             return (
               // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-cancels-delete-confirmation (frontend_spec_008.md FRONTEND-008-AC-06) relies on the keydown bubbling up from whichever Confirm/Cancel button currently has focus; the <li> itself is intentionally non-interactive (no role/tabIndex — see frontend_spec_008.md) and isn't a keyboard-interaction target on its own.
               <li
@@ -662,7 +664,7 @@ export function SeriesList({
                     sortBy === 'rottenTomatoesPopcornmeter' ? (
                       formatPercent(
                         activeRating(s, sortBy).value,
-                        sortBy === 'rottenTomatoesRating' ? '🍅' : '🍿',
+                        rottenTomatoesEmoji,
                       )
                     ) : (
                       <>
