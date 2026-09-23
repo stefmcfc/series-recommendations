@@ -50,38 +50,15 @@ materially bigger lift than Country. The export test-coverage gap narrowed to tw
 three checks after `series_spec_063` incidentally added one MockMvc `/export` test. Every other
 item confirmed still accurate, no changes needed.
 
+2026-09-23 same-day follow-up: "Recommendations for a recommendation" and "Filter My Series by
+Country of Origin / Language" (just reconfirmed above) were both specced —
+`series_spec_064`/`frontend_spec_127` and `series_spec_065`/`frontend_spec_128` respectively — and
+removed accordingly, per this file's own pipeline rule. See `ROADMAP.md`'s "Specced, coming soon"
+table.
+
 ---
 
 ## Recommendations & Lookup
-
-### Recommendations for a recommendation — sourcing from an arbitrary candidate `tmdbId`, not just a tracked series
-
-Raised 2026-08-29 alongside the now-specced "SeriesDetail gains a Recommendations button"/
-"candidate detail view" ideas (`frontend_spec_052`/`series_spec_036`/`frontend_spec_053`) — this is
-the third, deliberately deferred piece: letting a user get recommendations *for* a recommendation
-candidate that isn't in their tracked series at all (e.g. from within the new candidate detail
-modal).
-
-Backend feasibility, confirmed by reading `RecommendationSourcingService.sourceTitleBased`: the
-`imdbId` a tracked `SeriesEntity` carries is only ever used to *resolve* a `tmdbId` via
-`tmdbClient.findTvIdByImdbId(...)` — every call after that (`tmdbClient.recommendations(tmdbId)`/
-`similar(tmdbId)`) is already pure tmdbId-in, with no `SeriesEntity` dependency. Since a candidate's
-`tmdbId` is already known (`Recommendation`/`RecommendationDto` both carry it, added originally for
-the keywords endpoint), "recommendations for a recommendation" could skip the imdbId→tmdbId
-resolution step entirely.
-
-**What's required**: not what's hard, what's missing — a new `sourceFromTmdbId(int tmdbId)`-shaped
-method (mirroring `sourceTrending`/`sourceTopRated`, flowing through as `RawCandidate(c, null)` —
-the same untracked-source pattern those two and the genre supplement already use, no new type
-needed), a new `RecommendationCriteria`/`sourceMode` path to request it (nothing today accepts a
-bare `tmdbId` as a *source* — only `seriesIds`, tracked-series UUIDs), and the corresponding API
-surface + frontend entry point (most naturally a "Get recommendations for this" action inside the
-candidate detail modal once that ships).
-
-**Status**: Not specced. **Update (2026-09-23 review)**: the candidate detail modal
-(`frontend_spec_053`) has since shipped (✅ Done, `ROADMAP.md`) — its concrete UI home ("Get
-recommendations for this" inside that modal) now exists, so this is no longer blocked on anything.
-Worth actually scoping now rather than continuing to defer.
 
 ### "Use My Series" source-series picker — "Select Series" relabel
 
@@ -164,29 +141,6 @@ a slide-out sheet (not a left-hand panel), triggered by a new funnel icon next t
 view-mode icons, superseding the inline disclosure entirely. `RecommendationControls`' equivalent
 panel remains open/unspecced and still uses its original inline disclosure — the same sheet
 treatment for it is a separate future spec if wanted, not bundled into `frontend_spec_071`.
-
-### Filter My Series by Country of Origin / Language
-
-Raised 2026-09-01 while scoping `frontend_spec_073`–`075`'s filter-sheet rework. Distinct from the
-Configuration section's "Favourite country of origin" idea below — that one is about Custom Search's
-*TMDB-discovery* pinned-chip list; this one is about filtering the user's *own tracked series* by
-these fields on My Series. Confirmed via a backend check: `SeriesEntity.originCountry` exists (a
-single ISO 3166-1 alpha-2 code) but isn't wired into `SeriesSearchCriteria`/`SeriesSearchService` at
-all today — adding a Country filter would be a small addition. Confirmed no slider UI pattern
-exists anywhere in this codebase either (checked while deciding Min IMDb/TMDB Rating should stay
-plain number inputs, not sliders, in `frontend_spec_075`).
-
-**Update (2026-09-23 review)**: the original "no language field anywhere on `SeriesEntity`"
-reasoning is now stale — `series_spec_061` (delivered) added `SeriesEntity.originalLanguage`
-(captured on add/refresh from TMDB, shown on the detail page) for an unrelated reason. That was the
-entire "new column + migration + TMDB-capture change" cost this entry originally used to justify
-splitting Language out as materially bigger than Country. Confirmed neither filter is wired up
-yet — `SeriesSearchCriteria`/`SearchFilter.tsx` both still lack any country/language field — but
-the two are now symmetric, equally small additions.
-
-**Status**: Not specced. No longer any size-based reason to split Country and Language into
-separate specs if picked up together — both are now just a `SeriesSearchCriteria` field +
-`SeriesSearchService` predicate + a frontend field each.
 
 ---
 
