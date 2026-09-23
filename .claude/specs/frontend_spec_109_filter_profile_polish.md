@@ -192,6 +192,13 @@ describe('FRONTEND-109-AC-04: Save appears after the filter fields in UseMySerie
 ```
 **Test Case (Green)**: move the JSX until the spec above passes.
 
+**Superseded (2026-09-23)**: `frontend_spec_129_filter_profile_selector_top_placement_and_tooltips.md`
+reverses `FRONTEND-109-AC-03`/this AC's bottom placement, moving `FilterProfileSelector` back to
+the top of the filters area in both files (and generalizing the same top placement to every other
+filterable area). Both ACs' history/reasoning stay accurate for when they shipped — the assertions
+above will start failing once `frontend_spec_129` lands, which is expected and correct; that spec's
+own AC-01 replaces them.
+
 ---
 
 ### FRONTEND-109-AC-05 [MANUAL]
