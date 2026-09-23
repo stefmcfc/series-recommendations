@@ -230,7 +230,11 @@
    left undefined when the setting is off, so every consumer's
    var(--card-bg, <original-default>) fallback renders unchanged. */
 [data-card-tint='on'] {
-  --card-bg: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  --card-bg: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 20%, var(--bg)) 0%,
+    var(--bg) 60%
+  );
 }
 
 #root {
