@@ -16,6 +16,11 @@ versioned together as one app.
 - Frontend: all 5 My Series filter sections (Genres & Keywords, Origin, Ratings, Missing Ratings, Years) are now collapsible, each showing its own active-filter count badge — Genres & Keywords and Ratings default open, Origin/Missing Ratings/Years default closed (`frontend_spec_123`).
 - Frontend: new shared `CollapsibleSection` component extracting the "toggle button + active-count badge + conditional body" pattern previously hand-rolled independently in `RecommendationFiltersBox`/`UseMySeriesPanel` (`frontend_spec_123`).
 
+### Fixed
+
+- Frontend: My Series filter sections now show a larger rotating chevron and a tinted header bar, making it clear they're collapsible; a collapsed section no longer leaves trailing empty space beneath its header (`frontend_spec_123` follow-up, found in live review).
+- Frontend: the four Missing Ratings checkboxes are now toggle chips (matching the app's existing rewatch-flag toggle style) instead of label+checkbox rows, since the checkboxes never lined up into a consistent column regardless of label length (`frontend_spec_123` follow-up, found in live review).
+
 ## [3.58.0] - 2026-09-23
 
 ### Added

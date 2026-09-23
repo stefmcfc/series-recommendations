@@ -22,6 +22,31 @@
   text-align: left;
 }
 
+.toggleRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* CSS-generated, not a real text node -- keeps it out of the button's
+   textContent (SearchFilter.test.tsx's heading-order assertions read raw
+   textContent, which a real "▾" child would have broken) and out of screen
+   readers' way, since aria-expanded on the button already conveys the state.
+   Rotates -90deg when closed (pointing right) vs open (pointing down) --
+   instant flip, no transition, matching this pattern's existing "no
+   animation" convention (CollapsibleSection.tsx's own top comment). */
+.toggleRight::after {
+  content: '▾';
+  display: inline-block;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.toggle[aria-expanded='false'] .toggleRight::after {
+  transform: rotate(-90deg);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

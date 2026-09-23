@@ -320,8 +320,9 @@ export function SearchFilter({
 
   // FRONTEND-116-AC-03: separate from updateField above, which reads
   // event.target.value for the string-valued fields -- these four are
-  // booleans read from event.target.checked.
-  const updateMissingRatingField =
+  // booleans, flipped directly (no change-event target to read once these
+  // render as toggle chips rather than checkboxes).
+  const toggleMissingRatingField =
     (
       field:
         | 'missingImdbRating'
@@ -329,8 +330,8 @@ export function SearchFilter({
         | 'missingRottenTomatoesRating'
         | 'missingRottenTomatoesPopcornmeter',
     ) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: event.target.checked }))
+    () => {
+      setForm((prev) => ({ ...prev, [field]: !prev[field] }))
     }
 
   const handleGenresChange = (next: {
@@ -632,56 +633,62 @@ export function SearchFilter({
                 bodyClassName={styles.filterSectionBody}
                 headingTag="h3"
               >
-                <div className={styles.checkboxField}>
-                  <label htmlFor="search-missing-imdb-rating">
+                <div className={styles.missingRatingsChips}>
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingImdbRating
+                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
+                        : ''
+                    }`}
+                    aria-pressed={form.missingImdbRating}
+                    onClick={toggleMissingRatingField('missingImdbRating')}
+                  >
                     Missing IMDb Rating
-                  </label>
-                  <input
-                    id="search-missing-imdb-rating"
-                    type="checkbox"
-                    checked={form.missingImdbRating}
-                    onChange={updateMissingRatingField('missingImdbRating')}
-                  />
-                </div>
+                  </button>
 
-                <div className={styles.checkboxField}>
-                  <label htmlFor="search-missing-tmdb-rating">
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingTmdbRating
+                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
+                        : ''
+                    }`}
+                    aria-pressed={form.missingTmdbRating}
+                    onClick={toggleMissingRatingField('missingTmdbRating')}
+                  >
                     Missing TMDB Rating
-                  </label>
-                  <input
-                    id="search-missing-tmdb-rating"
-                    type="checkbox"
-                    checked={form.missingTmdbRating}
-                    onChange={updateMissingRatingField('missingTmdbRating')}
-                  />
-                </div>
+                  </button>
 
-                <div className={styles.checkboxField}>
-                  <label htmlFor="search-missing-rotten-tomatoes-rating">
-                    Missing Rotten Tomatoes Rating
-                  </label>
-                  <input
-                    id="search-missing-rotten-tomatoes-rating"
-                    type="checkbox"
-                    checked={form.missingRottenTomatoesRating}
-                    onChange={updateMissingRatingField(
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingRottenTomatoesRating
+                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
+                        : ''
+                    }`}
+                    aria-pressed={form.missingRottenTomatoesRating}
+                    onClick={toggleMissingRatingField(
                       'missingRottenTomatoesRating',
                     )}
-                  />
-                </div>
+                  >
+                    Missing Rotten Tomatoes Rating
+                  </button>
 
-                <div className={styles.checkboxField}>
-                  <label htmlFor="search-missing-rotten-tomatoes-popcornmeter">
-                    Missing Rotten Tomatoes Popcornmeter
-                  </label>
-                  <input
-                    id="search-missing-rotten-tomatoes-popcornmeter"
-                    type="checkbox"
-                    checked={form.missingRottenTomatoesPopcornmeter}
-                    onChange={updateMissingRatingField(
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingRottenTomatoesPopcornmeter
+                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
+                        : ''
+                    }`}
+                    aria-pressed={form.missingRottenTomatoesPopcornmeter}
+                    onClick={toggleMissingRatingField(
                       'missingRottenTomatoesPopcornmeter',
                     )}
-                  />
+                  >
+                    Missing Rotten Tomatoes Popcornmeter
+                  </button>
                 </div>
               </CollapsibleSection>
             </section>

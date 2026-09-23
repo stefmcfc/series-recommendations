@@ -40,6 +40,9 @@ export function CollapsibleSection({
 }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen)
 
+  // A plain-text toggle with no icon gave no visual hint it was interactive
+  // (found in review of frontend_spec_123's SearchFilter.tsx sections) -- the
+  // chevron rotates via CSS based on aria-expanded, no JS branching needed.
   const toggle = (
     <button
       type="button"
@@ -49,16 +52,20 @@ export function CollapsibleSection({
       aria-expanded={open}
       onClick={() => setOpen((prev) => !prev)}
     >
-      {title}
-      {activeCount > 0 && (
-        <span
-          className={
-            badgeClassName ? `${styles.badge} ${badgeClassName}` : styles.badge
-          }
-        >
-          {activeCount}
-        </span>
-      )}
+      <span>{title}</span>
+      <span className={styles.toggleRight}>
+        {activeCount > 0 && (
+          <span
+            className={
+              badgeClassName
+                ? `${styles.badge} ${badgeClassName}`
+                : styles.badge
+            }
+          >
+            {activeCount}
+          </span>
+        )}
+      </span>
     </button>
   )
 

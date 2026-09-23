@@ -1163,33 +1163,39 @@ describe('FRONTEND-118-AC-01: Missing Ratings section exists and is positioned c
   })
 })
 
-describe('FRONTEND-118-AC-02: checkboxes live in Missing Ratings, not Ratings', () => {
-  it('groups all four missing-rating checkboxes under the new heading', () => {
+describe('FRONTEND-118-AC-02: toggle chips live in Missing Ratings, not Ratings', () => {
+  it('groups all four missing-rating toggle chips under the new heading', () => {
     renderFilter()
     // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
     fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
     const heading = screen.getByRole('heading', { name: 'Missing Ratings' })
     const section = heading.closest('section')!
     expect(
-      within(section).getByLabelText('Missing IMDb Rating'),
+      within(section).getByRole('button', { name: 'Missing IMDb Rating' }),
     ).toBeInTheDocument()
     expect(
-      within(section).getByLabelText('Missing TMDB Rating'),
+      within(section).getByRole('button', { name: 'Missing TMDB Rating' }),
     ).toBeInTheDocument()
     expect(
-      within(section).getByLabelText('Missing Rotten Tomatoes Rating'),
+      within(section).getByRole('button', {
+        name: 'Missing Rotten Tomatoes Rating',
+      }),
     ).toBeInTheDocument()
     expect(
-      within(section).getByLabelText('Missing Rotten Tomatoes Popcornmeter'),
+      within(section).getByRole('button', {
+        name: 'Missing Rotten Tomatoes Popcornmeter',
+      }),
     ).toBeInTheDocument()
   })
 
-  it('no longer renders the missing-rating checkboxes inside the Ratings section', () => {
+  it('no longer renders the missing-rating toggle chips inside the Ratings section', () => {
     renderFilter()
     const ratingsHeading = screen.getByRole('heading', { name: 'Ratings' })
     const ratingsSection = ratingsHeading.closest('section')!
     expect(
-      within(ratingsSection).queryByLabelText('Missing IMDb Rating'),
+      within(ratingsSection).queryByRole('button', {
+        name: 'Missing IMDb Rating',
+      }),
     ).not.toBeInTheDocument()
   })
 })
@@ -1205,26 +1211,34 @@ describe('FRONTEND-118-AC-03: Missing Ratings section is individually carded', (
   })
 })
 
-describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
-  it('renders all four checkboxes, unchecked by default', () => {
+describe('FRONTEND-116-AC-03: missing-rating toggle chips', () => {
+  it('renders all four toggle chips, unpressed by default', () => {
     renderFilter()
     // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
     fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
-    expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
-    expect(screen.getByLabelText('Missing TMDB Rating')).not.toBeChecked()
     expect(
-      screen.getByLabelText('Missing Rotten Tomatoes Rating'),
-    ).not.toBeChecked()
+      screen.getByRole('button', { name: 'Missing IMDb Rating' }),
+    ).toHaveAttribute('aria-pressed', 'false')
     expect(
-      screen.getByLabelText('Missing Rotten Tomatoes Popcornmeter'),
-    ).not.toBeChecked()
+      screen.getByRole('button', { name: 'Missing TMDB Rating' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', {
+        name: 'Missing Rotten Tomatoes Rating',
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.getByRole('button', {
+        name: 'Missing Rotten Tomatoes Popcornmeter',
+      }),
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('includes checked missing-rating fields in the submitted search criteria', () => {
     const { onSearch } = renderFilter()
     // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
     fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
-    fireEvent.click(screen.getByLabelText('Missing IMDb Rating'))
+    fireEvent.click(screen.getByRole('button', { name: 'Missing IMDb Rating' }))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({ missingImdbRating: true }),
@@ -1232,14 +1246,16 @@ describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
   })
 })
 
-describe('FRONTEND-116-AC-04: Clear resets the missing-rating checkboxes', () => {
-  it('unchecks all four missing-rating checkboxes on Clear', () => {
+describe('FRONTEND-116-AC-04: Clear resets the missing-rating toggle chips', () => {
+  it('unpresses all four missing-rating toggle chips on Clear', () => {
     renderFilter()
     // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
     fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
-    fireEvent.click(screen.getByLabelText('Missing IMDb Rating'))
+    fireEvent.click(screen.getByRole('button', { name: 'Missing IMDb Rating' }))
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
-    expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
+    expect(
+      screen.getByRole('button', { name: 'Missing IMDb Rating' }),
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 })
 
