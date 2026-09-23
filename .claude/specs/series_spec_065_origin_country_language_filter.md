@@ -1,6 +1,6 @@
 # Series Spec 065: Filter My Series by Origin Country / Original Language
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (extends existing search/export filtering to two fields — `originCountry`,
 `originalLanguage` — that already exist on `SeriesEntity` and are already displayed, but have no
 filter yet)
@@ -255,7 +255,7 @@ construction path, update its Javadoc from 10 to 12 shared fields.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-065-AC-01: `SeriesSearchCriteria` gains the two new fields
-- [ ] SERIES-065-AC-02: `SeriesSearchService.search()` filters correctly on both new fields, null/empty-criterion no-op
-- [ ] SERIES-065-AC-03: `GET /api/v1/series/search` accepts and applies both new params
-- [ ] SERIES-065-AC-04: `GET /api/v1/series/export` accepts and applies both new params
+- [x] SERIES-065-AC-01: `SeriesSearchCriteria` gains the two new fields
+- [x] SERIES-065-AC-02: `SeriesSearchService.search()` filters correctly on both new fields, null/empty-criterion no-op
+- [x] SERIES-065-AC-03: `GET /api/v1/series/search` accepts and applies both new params
+- [x] SERIES-065-AC-04: `GET /api/v1/series/export` accepts and applies both new params

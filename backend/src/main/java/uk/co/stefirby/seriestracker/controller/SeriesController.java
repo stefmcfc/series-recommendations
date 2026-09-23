@@ -108,6 +108,8 @@ public class SeriesController {
             @RequestParam(required = false) List<String> excludeGenre,
             @RequestParam(required = false) List<String> keyword,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) List<String> originCountry,
+            @RequestParam(required = false) String originalLanguage,
             @RequestParam(required = false) Integer minPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal minTmdbRating,
@@ -123,8 +125,9 @@ public class SeriesController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortDirection) {
 
-        SeriesSearchCriteria c = buildCriteria(title, genre, status, minPersonalRating, minImdbRating,
-            minTmdbRating, minRottenTomatoesRating, minRottenTomatoesPopcornmeter, yearMin, yearMax);
+        SeriesSearchCriteria c = buildCriteria(title, genre, status, originCountry, originalLanguage,
+            minPersonalRating, minImdbRating, minTmdbRating, minRottenTomatoesRating,
+            minRottenTomatoesPopcornmeter, yearMin, yearMax);
         c.setExcludeGenres(excludeGenre);
         c.setKeywords(keyword);
         c.setFlaggedForRewatch(flaggedForRewatch);
@@ -146,6 +149,8 @@ public class SeriesController {
             @RequestParam(required = false) String title,
             @RequestParam(required = false) List<String> genre,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) List<String> originCountry,
+            @RequestParam(required = false) String originalLanguage,
             @RequestParam(required = false) Integer minPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal minTmdbRating,
@@ -158,8 +163,9 @@ public class SeriesController {
             return ResponseEntity.badRequest().body("Invalid format. Use 'json' or 'csv'.");
         }
 
-        SeriesSearchCriteria c = buildCriteria(title, genre, status, minPersonalRating, minImdbRating,
-            minTmdbRating, minRottenTomatoesRating, minRottenTomatoesPopcornmeter, yearMin, yearMax);
+        SeriesSearchCriteria c = buildCriteria(title, genre, status, originCountry, originalLanguage,
+            minPersonalRating, minImdbRating, minTmdbRating, minRottenTomatoesRating,
+            minRottenTomatoesPopcornmeter, yearMin, yearMax);
 
         List<SeriesDto> series = searchService.search(c);
         String ts = LocalDateTime.now(clock).format(FILENAME_FMT);
@@ -184,7 +190,7 @@ public class SeriesController {
     }
 
     /**
-     * The 10 {@link SeriesSearchCriteria} fields shared verbatim by {@link #search} and
+     * The 12 {@link SeriesSearchCriteria} fields shared verbatim by {@link #search} and
      * {@link #export} -- {@code search}'s 9 extra fields ({@code excludeGenres}, {@code
      * keywords}, {@code flaggedForRewatch}, {@code missingImdbRating}, {@code
      * missingTmdbRating}, {@code missingRottenTomatoesRating}, {@code
@@ -192,6 +198,7 @@ public class SeriesController {
      * its own caller on the returned instance.
      */
     private SeriesSearchCriteria buildCriteria(String title, List<String> genre, String status,
+            List<String> originCountry, String originalLanguage,
             Integer minPersonalRating, BigDecimal minImdbRating, BigDecimal minTmdbRating,
             Integer minRottenTomatoesRating, Integer minRottenTomatoesPopcornmeter,
             Integer yearMin, Integer yearMax) {
@@ -199,6 +206,8 @@ public class SeriesController {
         c.setTitle(title);
         c.setGenres(genre);
         c.setStatus(status);
+        c.setOriginCountry(originCountry);
+        c.setOriginalLanguage(originalLanguage);
         c.setMinPersonalRating(minPersonalRating);
         c.setMinImdbRating(minImdbRating);
         c.setMinTmdbRating(minTmdbRating);

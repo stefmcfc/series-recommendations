@@ -765,4 +765,47 @@ class SeriesSearchServiceSpec extends Specification {
         then: "the series is still returned"
             titles.contains("RT Min No-Op")
     }
+
+    def "SERIES-065-AC-02: search matches a series on any of its comma-joined origin countries"() {
+        given: "a co-produced series, a single-country series, and a series with no origin country at all"
+            seriesService.create(new SeriesDto(title: "Origin Co-Production", originCountry: "GB,US"))
+            seriesService.create(new SeriesDto(title: "Origin Single", originCountry: "FR"))
+            seriesService.create(new SeriesDto(title: "Origin Missing"))
+
+        when: "search is called with originCountry=[US]"
+            def criteria = new SeriesSearchCriteria(originCountry: ["US"])
+            def titles = searchService.search(criteria)*.title
+
+        then: "only the series carrying that country (anywhere in its comma-joined value) is returned"
+            titles.contains("Origin Co-Production")
+            !titles.contains("Origin Single")
+            !titles.contains("Origin Missing")
+    }
+
+    def "SERIES-065-AC-02b: search excludes a series whose originalLanguage doesn't match"() {
+        given: "one series in English, one in Korean, one with no language set"
+            seriesService.create(new SeriesDto(title: "Language English", originalLanguage: "en"))
+            seriesService.create(new SeriesDto(title: "Language Korean", originalLanguage: "ko"))
+            seriesService.create(new SeriesDto(title: "Language Missing"))
+
+        when: "search is called with originalLanguage=en"
+            def criteria = new SeriesSearchCriteria(originalLanguage: "en")
+            def titles = searchService.search(criteria)*.title
+
+        then: "only the exactly-matching series is returned"
+            titles.contains("Language English")
+            !titles.contains("Language Korean")
+            !titles.contains("Language Missing")
+    }
+
+    def "SERIES-065-AC-02c: null originCountry/originalLanguage criteria are a no-op"() {
+        given: "a series with no origin country or language set"
+            seriesService.create(new SeriesDto(title: "Origin No-Op"))
+
+        when: "search is called with no origin criteria set"
+            def titles = searchService.search(new SeriesSearchCriteria())*.title
+
+        then: "the series is still returned"
+            titles.contains("Origin No-Op")
+    }
 }

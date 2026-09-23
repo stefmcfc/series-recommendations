@@ -14,6 +14,14 @@ public class SeriesSearchCriteria {
     // SeriesSearchService.matchesKeywords.
     private List<String> keywords;
     private String status;
+    // series_spec_065_origin_country_language_filter.md (SERIES-065-AC-01): mirrors genres'
+    // shape/OR-logic exactly (SeriesEntity.originCountry has the same comma-joined multi-value
+    // shape as SeriesEntity.genres) -- see SeriesSearchService.matchesOriginCountry.
+    private List<String> originCountry;
+    // series_spec_065_origin_country_language_filter.md (SERIES-065-AC-01): single-value,
+    // case-sensitive exact match mirroring matchesStatus -- SeriesEntity.originalLanguage is
+    // documented single-value-only, unlike originCountry above.
+    private String originalLanguage;
     private Integer minPersonalRating;
     private BigDecimal minImdbRating;
     // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-02): mirrors minImdbRating's
@@ -63,6 +71,10 @@ public class SeriesSearchCriteria {
     public void setKeywords(List<String> keywords) { this.keywords = keywords; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public List<String> getOriginCountry() { return originCountry; }
+    public void setOriginCountry(List<String> originCountry) { this.originCountry = originCountry; }
+    public String getOriginalLanguage() { return originalLanguage; }
+    public void setOriginalLanguage(String originalLanguage) { this.originalLanguage = originalLanguage; }
     public Integer getMinPersonalRating() { return minPersonalRating; }
     public void setMinPersonalRating(Integer minPersonalRating) { this.minPersonalRating = minPersonalRating; }
     public BigDecimal getMinImdbRating() { return minImdbRating; }

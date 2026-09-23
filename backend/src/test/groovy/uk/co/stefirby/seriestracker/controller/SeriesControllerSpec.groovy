@@ -559,4 +559,53 @@ class SeriesControllerSpec extends Specification {
         result.andReturn().response.contentAsString.contains("Export RT Has")
         !result.andReturn().response.contentAsString.contains("Export RT Low")
   }
+
+  def "SERIES-065-AC-03: GET /api/v1/series/search honors originCountry"() {
+    given: "one series matching, one not"
+        seriesService.create(new SeriesDto(title: "Controller Origin Has", originCountry: "GB,US"))
+        seriesService.create(new SeriesDto(title: "Controller Origin Low", originCountry: "FR"))
+
+    when: "a GET request is made with originCountry=US"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("originCountry", "US"))
+
+    then: "only the matching series is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.length()').value(1))
+        result.andExpect(jsonPath('$.data[0].title').value("Controller Origin Has"))
+  }
+
+  def "SERIES-065-AC-03b: GET /api/v1/series/search honors originalLanguage"() {
+    given: "one series in the requested language, one not"
+        seriesService.create(new SeriesDto(title: "Controller Language Has", originalLanguage: "en"))
+        seriesService.create(new SeriesDto(title: "Controller Language Low", originalLanguage: "ko"))
+
+    when: "a GET request is made with originalLanguage=en"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("originalLanguage", "en"))
+
+    then: "only the matching series is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.length()').value(1))
+        result.andExpect(jsonPath('$.data[0].title').value("Controller Language Has"))
+  }
+
+  def "SERIES-065-AC-04: GET /api/v1/series/export honors originCountry and originalLanguage"() {
+    given: "one series matching both filters, one matching neither"
+        seriesService.create(new SeriesDto(
+            title: "Export Origin Has", originCountry: "GB,US", originalLanguage: "en"))
+        seriesService.create(new SeriesDto(
+            title: "Export Origin Low", originCountry: "FR", originalLanguage: "fr"))
+
+    when: "an export request is made with format=json, originCountry=US and originalLanguage=en"
+        def result = mockMvc.perform(
+          get("/api/v1/series/export")
+            .param("format", "json")
+            .param("originCountry", "US")
+            .param("originalLanguage", "en")
+        )
+
+    then: "only the matching series is included"
+        result.andExpect(status().isOk())
+        result.andReturn().response.contentAsString.contains("Export Origin Has")
+        !result.andReturn().response.contentAsString.contains("Export Origin Low")
+  }
 }
