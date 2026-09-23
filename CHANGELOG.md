@@ -8,6 +8,10 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Dev tooling: Vite's dev server now binds to all interfaces (`server.host: true`) instead of defaulting to the IPv6 loopback only, which left it unreachable at `127.0.0.1` and possibly `localhost` depending on how the OS resolved it — no effect on the built/deployed app, local dev only.
+
 ## [3.56.0] - 2026-09-12
 
 ### Added
