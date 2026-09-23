@@ -66,6 +66,9 @@ describe('FRONTEND-076-AC-04: SearchFilter genre picker is renamed', () => {
 describe('FRONTEND-006-AC-01/02: fields', () => {
   it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()
+    // FRONTEND-123-AC-03: Years defaults closed -- open it so its fields
+    // are in the DOM to query.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
     for (const label of [
       /min imdb rating/i,
       /min tmdb rating/i,
@@ -188,6 +191,8 @@ describe('FRONTEND-122-AC-02: Rotten Tomatoes min-rating filters in My Series', 
 describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () => {
   it('includes both origin fields in the submitted criteria when filled in', () => {
     const { onSearch } = renderFilter()
+    // FRONTEND-123-AC-03: Origin defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /^origin/i }))
     fireEvent.click(screen.getByLabelText('Country'))
     fireEvent.click(screen.getByText('GB'))
     fireEvent.click(screen.getByLabelText('Language'))
@@ -221,6 +226,10 @@ describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () 
     ])
     renderFilter()
     fireEvent.click(await screen.findByText('UK English'))
+    // FRONTEND-123-AC-03: Origin defaults closed -- applying a saved profile
+    // updates form state only, not this section's own open/closed state, so
+    // it must still be opened to see the resulting chips.
+    fireEvent.click(screen.getByRole('button', { name: /^origin/i }))
     expect(screen.getByText('GB')).toBeInTheDocument()
     expect(screen.getByText('English')).toBeInTheDocument()
   })
@@ -229,6 +238,8 @@ describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () 
 describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
   it('submits minTmdbRating and yearMin/yearMax', () => {
     const { onSearch } = renderFilter()
+    // FRONTEND-123-AC-03: Years defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
 
     fireEvent.change(screen.getByLabelText(/min tmdb rating/i), {
       target: { value: '7.5' },
@@ -450,6 +461,9 @@ describe('FRONTEND-071-AC-08: all fields still present', () => {
         onClear={vi.fn()}
       />,
     )
+    // FRONTEND-123-AC-03: Years defaults closed -- open it so its fields
+    // are in the DOM to query.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
     for (const label of [
       /min imdb rating/i,
       /min tmdb rating/i,
@@ -465,6 +479,8 @@ describe('FRONTEND-071-AC-08: all fields still present', () => {
 describe('FRONTEND-055-AC-05: rating/year fields carry validation bounds', () => {
   it('rating and year fields carry the same bounds as Custom Search', () => {
     renderFilter()
+    // FRONTEND-123-AC-03: Years defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
 
     // FRONTEND-122-AC-06: step is now tiered (RATING_STEP_BREAKPOINTS), not a
     // flat 0.1 -- a blank field resolves currentValue to 0, which is the
@@ -508,6 +524,8 @@ describe('FRONTEND-122-AC-06: rating/year controls use tiered steps', () => {
 
   it('Min Year steps by 1 once at/above 2010', () => {
     const { onSearch } = renderFilter()
+    // FRONTEND-123-AC-03: Years defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
     fireEvent.change(screen.getByLabelText(/min year/i), {
       target: { value: '2010' },
     })
@@ -1016,6 +1034,8 @@ describe('FRONTEND-075-AC-03: Years section', () => {
       />,
     )
 
+    // FRONTEND-123-AC-03: Years defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
     const heading = screen.getByRole('heading', { name: 'Years' })
     const section = heading.closest('section') ?? heading.parentElement!
     expect(within(section).getByLabelText(/min year/i)).toBeInTheDocument()
@@ -1146,6 +1166,8 @@ describe('FRONTEND-118-AC-01: Missing Ratings section exists and is positioned c
 describe('FRONTEND-118-AC-02: checkboxes live in Missing Ratings, not Ratings', () => {
   it('groups all four missing-rating checkboxes under the new heading', () => {
     renderFilter()
+    // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
     const heading = screen.getByRole('heading', { name: 'Missing Ratings' })
     const section = heading.closest('section')!
     expect(
@@ -1186,6 +1208,8 @@ describe('FRONTEND-118-AC-03: Missing Ratings section is individually carded', (
 describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
   it('renders all four checkboxes, unchecked by default', () => {
     renderFilter()
+    // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
     expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
     expect(screen.getByLabelText('Missing TMDB Rating')).not.toBeChecked()
     expect(
@@ -1198,6 +1222,8 @@ describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
 
   it('includes checked missing-rating fields in the submitted search criteria', () => {
     const { onSearch } = renderFilter()
+    // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
     fireEvent.click(screen.getByLabelText('Missing IMDb Rating'))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     expect(onSearch).toHaveBeenCalledWith(
@@ -1209,6 +1235,8 @@ describe('FRONTEND-116-AC-03: missing-rating checkboxes', () => {
 describe('FRONTEND-116-AC-04: Clear resets the missing-rating checkboxes', () => {
   it('unchecks all four missing-rating checkboxes on Clear', () => {
     renderFilter()
+    // FRONTEND-123-AC-03: Missing Ratings defaults closed -- open it first.
+    fireEvent.click(screen.getByRole('button', { name: /missing ratings/i }))
     fireEvent.click(screen.getByLabelText('Missing IMDb Rating'))
     fireEvent.click(screen.getByTestId('clear-filters-btn'))
     expect(screen.getByLabelText('Missing IMDb Rating')).not.toBeChecked()
@@ -1241,8 +1269,97 @@ describe('FRONTEND-107-AC-09: SearchFilter applies a saved profile to pending fo
     expect(
       screen.getByLabelText('Remove Comedy from included'),
     ).toBeInTheDocument()
+    // FRONTEND-123-AC-03: Years defaults closed -- applying a saved profile
+    // updates form state only, not this section's own open/closed state, so
+    // it must still be opened to see the resulting value.
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
     expect(screen.getByLabelText('Min Year')).toHaveValue(2020)
     expect(onSearch).not.toHaveBeenCalled()
+  })
+})
+
+describe('FRONTEND-123-AC-01: Ratings section row grouping', () => {
+  it('groups Min Personal Rating alone in its own row', () => {
+    renderFilter()
+    const personalRatingField = screen
+      .getByText('Min Personal Rating')
+      .closest('[class*=ratingRow]') as HTMLElement | null
+    expect(
+      within(personalRatingField!).queryByLabelText(/min imdb rating/i),
+    ).not.toBeInTheDocument()
+  })
+
+  it('groups Min IMDb and Min TMDB Rating in the same row', () => {
+    renderFilter()
+    const imdbRow = screen
+      .getByLabelText(/min imdb rating/i)
+      .closest('[class*=ratingRow]') as HTMLElement | null
+    expect(
+      within(imdbRow!).getByLabelText(/min tmdb rating/i),
+    ).toBeInTheDocument()
+  })
+
+  it('groups both Rotten Tomatoes fields in the same row', () => {
+    renderFilter()
+    const rtRow = screen
+      .getByLabelText('Min Rotten Tomatoes Rating')
+      .closest('[class*=ratingRow]') as HTMLElement | null
+    expect(
+      within(rtRow!).getByLabelText('Min Rotten Tomatoes Popcornmeter'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-123-AC-03: SearchFilter sections default open/closed correctly', () => {
+  it('Genres & Keywords and Ratings default open', () => {
+    renderFilter()
+    expect(
+      screen.getByRole('button', { name: /genres & keywords/i }),
+    ).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: /^ratings/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+  })
+
+  it('Origin, Missing Ratings, and Years default closed', () => {
+    renderFilter()
+    expect(screen.getByRole('button', { name: /^origin/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    expect(
+      screen.getByRole('button', { name: /missing ratings/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: /^years/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    expect(screen.queryByLabelText(/min year/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Country')).not.toBeInTheDocument()
+  })
+
+  it('shows an active-count badge on Origin once a country is selected, even while collapsed', () => {
+    renderFilter()
+    fireEvent.click(screen.getByRole('button', { name: /^origin/i }))
+    fireEvent.click(screen.getByLabelText('Country'))
+    fireEvent.click(screen.getByText('GB'))
+    fireEvent.click(screen.getByRole('button', { name: /^origin/i })) // collapse again
+    expect(
+      within(screen.getByRole('button', { name: /^origin/i })).getByText('1'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows an active-count badge on Years once a year bound is set, even while collapsed', () => {
+    renderFilter()
+    fireEvent.click(screen.getByRole('button', { name: /^years/i }))
+    fireEvent.change(screen.getByLabelText(/min year/i), {
+      target: { value: '2020' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^years/i })) // collapse again
+    expect(
+      within(screen.getByRole('button', { name: /^years/i })).getByText('1'),
+    ).toBeInTheDocument()
   })
 })
 

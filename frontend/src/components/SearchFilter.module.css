@@ -57,28 +57,49 @@
   gap: 1.5rem;
 }
 
-/* FRONTEND-075-AC-01/02/03: each of the three grouped sections lays out its
-   own fields the same way .filtersBody used to lay out all six flat --
-   a responsive grid, fields aligned to their own bottom edge.
-   FRONTEND-105-AC-16: border/radius/shadow/background now come from the
-   shared surface primitive (surfaces.module.css), composed in
-   SearchFilter.tsx as `${styles.filterSection} ${surface.card}` -- .filterSection
-   gains its own padding here, replacing .sectionDivider's former top-border
-   separation (removed, see FRONTEND-105-AC-15). */
+/* FRONTEND-105-AC-16: border/radius/shadow/background come from the shared
+   surface primitive (surfaces.module.css), composed in SearchFilter.tsx as
+   `${styles.filterSection} ${surface.card}` -- .filterSection carries card
+   chrome + padding only, replacing .sectionDivider's former top-border
+   separation (removed, see FRONTEND-105-AC-15).
+   FRONTEND-123-AC-03: the grid layout that used to live on this rule moved
+   to .filterSectionBody below, once a toggle button (CollapsibleSection)
+   sits above the now-conditionally-rendered fields -- only the fields
+   should be a grid, not the whole card. */
 .filterSection {
+  padding: 1.5rem;
+}
+
+/* FRONTEND-075-AC-01/02/03: each section's fields lay out in a responsive
+   grid, aligned to their own bottom edge -- applied via CollapsibleSection's
+   bodyClassName prop, so it only wraps the conditionally-rendered fields,
+   not the toggle button above them. */
+.filterSectionBody {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1rem;
   align-items: end;
-  padding: 1.5rem;
 }
 
+/* FRONTEND-123-AC-03: typography for each section's toggle button (passed as
+   CollapsibleSection's toggleClassName) -- same look the plain-text <h3> had
+   before this spec, now on an interactive control instead. */
 .filterSectionHeading {
-  grid-column: 1 / -1;
-  margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-h);
+}
+
+/* FRONTEND-123-AC-01: full-width row wrapper with its own internal grid --
+   ported from RecommendationControls.module.css's .filterFullWidthRow/
+   .filterFourColGrid idiom, used to group Min Personal Rating alone, Min
+   IMDb + Min TMDB together, and both Rotten Tomatoes ratings together within
+   the Ratings section's .filterSectionBody grid. */
+.ratingRow {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
 }
 
 .field {

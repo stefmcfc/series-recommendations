@@ -1,6 +1,6 @@
 # Frontend Spec 123: My Series Filter Row Layout & Collapsible Sections
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `frontend_spec_075_my_series_filter_sections.md` (established `SearchFilter.tsx`'s section structure this spec reorganizes), `frontend_spec_105_my_series_card_styling_and_modernization.md` (the `surface.card` styling each section keeps), `frontend_spec_122_rating_filter_and_step_refinements.md` (adds the 2 RT rating fields this spec's row reorg accounts for — should land first so the Ratings section is only restructured once, against its final 5-field shape), `frontend_spec_128_origin_country_language_filter.md` (adds the "Origin" section this spec's collapsible-sections requirement now also covers — should land first for the same reason as `frontend_spec_122`)
 **Area**: Frontend (`components/SearchFilter.tsx`, `components/SearchFilter.module.css`, new `components/CollapsibleSection.tsx` + CSS module, optionally `components/RecommendationFiltersBox.tsx`/`components/UseMySeriesPanel.tsx`)
@@ -181,6 +181,12 @@ describe('FRONTEND-123-AC-03: SearchFilter sections default open/closed correctl
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-123-AC-01: Ratings section fields grouped into 3 explicit rows
-- [ ] FRONTEND-123-AC-02: `CollapsibleSection` component implemented correctly
-- [ ] FRONTEND-123-AC-03: all 5 `SearchFilter` sections use it with correct defaults and active-count badges
+- [x] FRONTEND-123-AC-01: Ratings section fields grouped into 3 explicit rows
+- [x] FRONTEND-123-AC-02: `CollapsibleSection` component implemented correctly
+- [x] FRONTEND-123-AC-03: all 5 `SearchFilter` sections use it with correct defaults and active-count badges
+
+## Implementation Notes (2026-09-23)
+
+- `CollapsibleSection` gained one prop beyond the spec's explicit list: optional `headingTag?: 'h2' | 'h3' | 'h4'`. Needed because `SearchFilter.tsx`'s pre-existing `<h3>` must wrap only the toggle button, never the conditionally-rendered body (Design Decisions) — but the component renders both as one unit. `headingTag` lets the caller opt into wrapping just the toggle in that tag (with its own margin reset), while the body always renders as a sibling. Without this, an open section's body text would fold into the `<h3>`'s accessible name, breaking exact-match heading queries several pre-existing `SearchFilter.test.tsx` tests rely on (e.g. `getByRole('heading', { name: 'Ratings' })`).
+- Migrating `RecommendationFiltersBox.tsx`/`UseMySeriesPanel.tsx` to the shared component was left as a documented follow-up, not attempted — see Cross-References/Design Decisions; out of scope was the explicit default and nothing in this pass required touching either file.
+- A batch of pre-existing `SearchFilter.test.tsx` tests needed a `fireEvent.click` to open the now-collapsed-by-default Origin/Missing Ratings/Years sections before querying their fields (behavior genuinely changed by this spec, not a regression) — see the `FRONTEND-123-AC-03` comments added at each call site.
