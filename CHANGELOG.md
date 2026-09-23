@@ -25,6 +25,12 @@ versioned together as one app.
 - Frontend: `filterCriteriaValidation.ts`'s repeated `number | string | undefined` union is replaced by a `NumericFieldValue` type alias (Sonar `typescript:S4323`).
 - Frontend: `validateMySeriesCriteria`/`validateUseMySeriesCriteria`'s identical bodies are factored into a shared `validateMinRatingAndYearCriteria` helper both now delegate to (Sonar `typescript:S4144`).
 
+## [3.56.1] - 2026-09-23
+
+### Fixed
+
+- Dev tooling: Vite's dev server now binds to all interfaces (`server.host: true`) instead of defaulting to the IPv6 loopback only, which left it unreachable at `127.0.0.1` and possibly `localhost` depending on how the OS resolved it — no effect on the built/deployed app, local dev only.
+
 ## [3.56.0] - 2026-09-12
 
 ### Added
