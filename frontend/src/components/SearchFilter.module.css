@@ -179,10 +179,19 @@
    button, matching GenreIncludeExcludePicker.tsx's .triggerButton right next
    to it in the same section, which already does the same thing. Previously
    hand-rolled its own near-duplicate of btnSecondary with the wrong (pre-
-   WCAG-fix) border/text color tokens, which is what made the two buttons
-   look inconsistent side by side (found in live review). */
+   WCAG-fix) border token, which is what made the two buttons look
+   inconsistent side by side (found in live review). color: var(--text-h) is
+   kept here deliberately, matching .triggerButton's own override right next
+   to it -- both buttons' local `color` wins the cascade over composed
+   btnSecondary's `color: var(--text)` (same file-bundle-order reasoning
+   documented in GenreIncludeExcludePicker.module.css), so this is the one
+   property both buttons intentionally diverge from plain btnSecondary on,
+   together. Dropping it (an earlier pass here did, by mistake) left this
+   button on plain --text while triggerButton stayed on --text-h -- a new,
+   different mismatch than the one it was meant to fix. */
 .browseKeywordsButton {
   align-self: flex-start;
+  color: var(--text-h);
   border-radius: 0.375rem;
   padding: 0.375rem 0.625rem;
   font-size: 0.8125rem;
