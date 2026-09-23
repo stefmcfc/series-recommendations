@@ -57,28 +57,62 @@
   gap: 1.5rem;
 }
 
-/* FRONTEND-075-AC-01/02/03: each of the three grouped sections lays out its
-   own fields the same way .filtersBody used to lay out all six flat --
-   a responsive grid, fields aligned to their own bottom edge.
-   FRONTEND-105-AC-16: border/radius/shadow/background now come from the
-   shared surface primitive (surfaces.module.css), composed in
-   SearchFilter.tsx as `${styles.filterSection} ${surface.card}` -- .filterSection
-   gains its own padding here, replacing .sectionDivider's former top-border
-   separation (removed, see FRONTEND-105-AC-15). */
+/* FRONTEND-105-AC-16: border/radius/shadow/background come from the shared
+   surface primitive (surfaces.module.css), composed in SearchFilter.tsx as
+   `${styles.filterSection} ${surface.card}` -- .filterSection carries card
+   chrome + padding only, replacing .sectionDivider's former top-border
+   separation (removed, see FRONTEND-105-AC-15).
+   FRONTEND-123-AC-03: the grid layout that used to live on this rule moved
+   to .filterSectionBody below, once a toggle button (CollapsibleSection)
+   sits above the now-conditionally-rendered fields -- only the fields
+   should be a grid, not the whole card. */
 .filterSection {
+  padding: 1.5rem;
+}
+
+/* FRONTEND-075-AC-01/02/03: each section's fields lay out in a responsive
+   grid, aligned to their own bottom edge -- applied via CollapsibleSection's
+   bodyClassName prop, so it only wraps the conditionally-rendered fields,
+   not the toggle button above them. margin-top (not a margin-bottom on the
+   heading below) is deliberate: this element only exists in the DOM while
+   the section is open, so a collapsed section never carries the extra
+   trailing whitespace a heading-side margin would leave behind. */
+.filterSectionBody {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1rem;
   align-items: end;
-  padding: 1.5rem;
+  margin-top: 1rem;
 }
 
+/* FRONTEND-123-AC-03: typography for each section's toggle button (passed as
+   CollapsibleSection's toggleClassName) -- same look the plain-text <h3> had
+   before this spec, now on an interactive control instead. Tinted background
+   + its own padding/radius make the toggle read as a distinct header bar
+   (found lacking in live review: a plain-text heading gave no visual hint of
+   being interactive) -- var(--social-bg) is the same subtle, theme-aware
+   tint already used for hover affordance elsewhere (e.g. SeriesList.module
+   .css's .rewatchToggle:hover), just applied here unconditionally rather
+   than only on hover. */
 .filterSectionHeading {
-  grid-column: 1 / -1;
-  margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-h);
+  background: var(--social-bg);
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+}
+
+/* FRONTEND-123-AC-01: full-width row wrapper with its own internal grid --
+   ported from RecommendationControls.module.css's .filterFullWidthRow/
+   .filterFourColGrid idiom, used to group Min Personal Rating alone, Min
+   IMDb + Min TMDB together, and both Rotten Tomatoes ratings together within
+   the Ratings section's .filterSectionBody grid. */
+.ratingRow {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
 }
 
 .field {
@@ -105,26 +139,63 @@
   color: var(--text-h);
 }
 
-.checkboxField {
+/* Replaces the former label+checkbox rows for Missing Ratings -- those sat
+   in the section's own grid, where each field's checkbox drifted left/right
+   independently based on its label's length (found in live review: no
+   grid-column-edge alignment fixed this convincingly, since a 2-per-row
+   auto-fit grid still leaves each row's own pair uneven against the other).
+   A flex-wrap row of self-sized toggle chips sidesteps the alignment
+   question entirely -- nothing needs to line up, the same way genre/keyword
+   chips elsewhere in this app never need to. */
+.missingRatingsChips {
+  grid-column: 1 / -1;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
+/* Composes btn.btnSecondary (unpressed) / btn.btnPrimary (pressed) in the
+   JSX -- same "shared button class supplies color/border/hover, this class
+   only supplies shape" split as .browseKeywordsButton/.triggerButton above.
+   Deliberately NOT the same recipe as SeriesList.module.css's .rewatchToggle
+   (hand-rolled background/color/border, only composing btnPrimary once
+   active) -- that pattern has two real bugs this chip must not repeat
+   (found in live review): its own unconditional `color` declaration sits in
+   this same file, bundled after buttons.module.css, so it wins the cascade
+   over btnPrimary's `color: #000` even while active -- greyish body text on
+   the accent-purple fill, unreadable; and its plain `border-color:
+   var(--border)` (not btnSecondary's WCAG-passing `--control-border`) reads
+   as barely distinguishable from the surrounding card background while
+   unpressed. Composing the shared classes for both states avoids both. */
+.ratingToggleChip {
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* Composes btn.btnSecondary in the JSX (background/border/color/hover come
+   from there) -- this class only carries what's genuinely specific to this
+   button, matching GenreIncludeExcludePicker.tsx's .triggerButton right next
+   to it in the same section, which already does the same thing. Previously
+   hand-rolled its own near-duplicate of btnSecondary with the wrong (pre-
+   WCAG-fix) border token, which is what made the two buttons look
+   inconsistent side by side (found in live review). color: var(--text-h) is
+   kept here deliberately, matching .triggerButton's own override right next
+   to it -- both buttons' local `color` wins the cascade over composed
+   btnSecondary's `color: var(--text)` (same file-bundle-order reasoning
+   documented in GenreIncludeExcludePicker.module.css), so this is the one
+   property both buttons intentionally diverge from plain btnSecondary on,
+   together. Dropping it (an earlier pass here did, by mistake) left this
+   button on plain --text while triggerButton stayed on --text-h -- a new,
+   different mismatch than the one it was meant to fix. */
 .browseKeywordsButton {
   align-self: flex-start;
-  background: transparent;
   color: var(--text-h);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.375rem 0.625rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
-}
-
-.browseKeywordsButton:hover {
-  background: var(--social-bg);
 }
 
 .overlay {

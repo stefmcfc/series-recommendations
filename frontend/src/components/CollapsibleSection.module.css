@@ -1,0 +1,72 @@
+/* FRONTEND-123-AC-02: structural-only styling -- this component's job is the
+   open/closed behavior (state, aria-expanded, badge rendering, conditional
+   mount), not a single imposed visual language. Callers (SearchFilter.tsx,
+   and optionally RecommendationFiltersBox.tsx/UseMySeriesPanel.tsx) supply
+   their own toggleClassName/badgeClassName/bodyClassName for typography and
+   card/divider chrome -- these rules only reset default button styling and
+   give the badge a sane default shape/color if the caller doesn't override
+   it. */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.toggleRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* CSS-generated, not a real text node -- keeps it out of the button's
+   textContent (SearchFilter.test.tsx's heading-order assertions read raw
+   textContent, which a real "▾" child would have broken) and out of screen
+   readers' way, since aria-expanded on the button already conveys the state.
+   Rotates -90deg when closed (pointing right) vs open (pointing down) --
+   instant flip, no transition, matching this pattern's existing "no
+   animation" convention (CollapsibleSection.tsx's own top comment). */
+.toggleRight::after {
+  content: '▾';
+  display: inline-block;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.toggle[aria-expanded='false'] .toggleRight::after {
+  transform: rotate(-90deg);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  background: var(--accent);
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+}
+
+/* FRONTEND-123-AC-03: zeroes the wrapping heading tag's default UA margin --
+   applied only when headingTag is set (SearchFilter.tsx's 5 sections, to
+   preserve their pre-existing <h3> document-outline semantics). The
+   conditionally-rendered body is deliberately never nested inside this tag
+   -- see CollapsibleSection.tsx's headingTag prop comment. */
+.headingReset {
+  margin: 0;
+}

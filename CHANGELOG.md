@@ -8,6 +8,21 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.59.0] - 2026-09-23
+
+### Added
+
+- Frontend: My Series filter sheet's Ratings section groups Min Personal Rating, Min IMDb + Min TMDB, and both Rotten Tomatoes fields into three explicit rows instead of one free-flowing grid (`frontend_spec_123`).
+- Frontend: all 5 My Series filter sections (Genres & Keywords, Origin, Ratings, Missing Ratings, Years) are now collapsible, each showing its own active-filter count badge — Genres & Keywords and Ratings default open, Origin/Missing Ratings/Years default closed (`frontend_spec_123`).
+- Frontend: new shared `CollapsibleSection` component extracting the "toggle button + active-count badge + conditional body" pattern previously hand-rolled independently in `RecommendationFiltersBox`/`UseMySeriesPanel` (`frontend_spec_123`).
+
+### Fixed
+
+- Frontend: My Series filter sections now show a larger rotating chevron and a tinted header bar, making it clear they're collapsible; a collapsed section no longer leaves trailing empty space beneath its header (`frontend_spec_123` follow-up, found in live review).
+- Frontend: the four Missing Ratings checkboxes are now toggle chips (matching the app's existing rewatch-flag toggle style) instead of label+checkbox rows, since the checkboxes never lined up into a consistent column regardless of label length (`frontend_spec_123` follow-up, found in live review).
+- Frontend: My Series' "Include / Exclude Genres" and "Browse all keywords" buttons now share identical styling (both compose `btn.btnSecondary`) — the latter previously hand-rolled a near-duplicate with the pre-WCAG-fix border/text color tokens, making the two look subtly inconsistent side by side (`frontend_spec_123` follow-up, found in live review).
+- Frontend: the Missing Ratings toggle chips now compose `btn.btnSecondary`/`btn.btnPrimary` instead of hand-rolled colors — fixes two real contrast bugs: unpressed chips were barely distinguishable from the surrounding card background, and pressed chips showed low-contrast grey text on the accent-purple fill instead of black (`frontend_spec_123` follow-up, found in live review).
+
 ## [3.58.0] - 2026-09-23
 
 ### Added

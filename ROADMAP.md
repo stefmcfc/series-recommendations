@@ -38,7 +38,6 @@ dependency-derived anymore.
 
 | Feature | Backend Spec | Frontend Spec | Status |
 | ------- | ------------ | -------------- | ------ |
-| My Series filters: Ratings section reorganized into rows (Personal / IMDb+TMDB / RT); all 5 sections (including the new Origin section) made collapsible with per-section active-filter badges | — | `frontend_spec_123` | ⬜ Not started |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | Saved Filters picker moved to the top of every filter area (My Series, Use My Series, Recommendation Filters, Custom Search, Analysis — the last folded into its own filters box for the first time), plus a hover tooltip on each saved filter describing what it contains | — | `frontend_spec_129` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
@@ -182,6 +181,7 @@ dependency-derived anymore.
 | Cards tinted a shade of the active accent palette (dark in dark mode, light in light mode, via `color-mix()`), on/off in Settings | — | `frontend_spec_124` | ✅ Done |
 | Rotten Tomatoes minimum-rating filter (My Series + Recs > Use My Series); tiered step sizes for IMDb/TMDB/RT/Year controls; flat step-100 for Min Vote Count | `series_spec_063` | `frontend_spec_122` | ✅ Done |
 | Filter My Series (and Use My Series) by Origin Country / Original Language | `series_spec_065` | `frontend_spec_128` | ✅ Done |
+| My Series filters: Ratings section reorganized into rows (Personal / IMDb+TMDB / RT); all 5 sections (including the new Origin section) made collapsible with per-section active-filter badges | — | `frontend_spec_123` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

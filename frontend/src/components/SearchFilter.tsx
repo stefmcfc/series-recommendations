@@ -9,6 +9,7 @@ import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
+import { CollapsibleSection } from './CollapsibleSection'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import {
   LANGUAGE_OPTIONS,
@@ -188,6 +189,58 @@ function formStateFromCriteria(criteria: MySeriesFilterCriteria): FormState {
   }
 }
 
+// FRONTEND-123-AC-03: five small per-section active-filter counters, one per
+// CollapsibleSection instance below -- mirroring
+// RecommendationFiltersBox.tsx's own countActiveFilters style (group
+// relevant fields into arrays, filter non-empty/checked, sum lengths), but
+// scoped per-section since no whole-form counter exists in this file today.
+function countGenresKeywordsActive(form: FormState): number {
+  const arrayFields = [
+    form.genresSelected,
+    form.excludeGenresSelected,
+    form.keywordsSelected,
+  ]
+  return arrayFields.filter((value) => value.length > 0).length
+}
+
+// FRONTEND-123 Design Decisions: unlike the other four counters below (which
+// count non-empty *fields*, following countActiveFilters's style),
+// originCountry's contribution is its own length -- one badge increment per
+// selected country, not a flat 1 for "any selected".
+function countOriginActive(form: FormState): number {
+  return (
+    form.originCountrySelected.length +
+    (form.originalLanguage.trim() !== '' ? 1 : 0)
+  )
+}
+
+function countRatingsActive(form: FormState): number {
+  const stringFields = [
+    form.minImdbRating,
+    form.minTmdbRating,
+    form.minRottenTomatoesRating,
+    form.minRottenTomatoesPopcornmeter,
+  ]
+  return (
+    (form.minPersonalRating != null ? 1 : 0) +
+    stringFields.filter((value) => value.trim() !== '').length
+  )
+}
+
+function countMissingRatingsActive(form: FormState): number {
+  return [
+    form.missingImdbRating,
+    form.missingTmdbRating,
+    form.missingRottenTomatoesRating,
+    form.missingRottenTomatoesPopcornmeter,
+  ].filter(Boolean).length
+}
+
+function countYearsActive(form: FormState): number {
+  return [form.yearMin, form.yearMax].filter((value) => value.trim() !== '')
+    .length
+}
+
 export function SearchFilter({
   isOpen,
   onClose,
@@ -267,8 +320,9 @@ export function SearchFilter({
 
   // FRONTEND-116-AC-03: separate from updateField above, which reads
   // event.target.value for the string-valued fields -- these four are
-  // booleans read from event.target.checked.
-  const updateMissingRatingField =
+  // booleans, flipped directly (no change-event target to read once these
+  // render as toggle chips rather than checkboxes).
+  const toggleMissingRatingField =
     (
       field:
         | 'missingImdbRating'
@@ -276,8 +330,8 @@ export function SearchFilter({
         | 'missingRottenTomatoesRating'
         | 'missingRottenTomatoesPopcornmeter',
     ) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: event.target.checked }))
+    () => {
+      setForm((prev) => ({ ...prev, [field]: !prev[field] }))
     }
 
   const handleGenresChange = (next: {
@@ -381,51 +435,58 @@ export function SearchFilter({
 
           <div className={styles.filtersBody} data-testid="filters-body">
             <section className={`${styles.filterSection} ${surface.card}`}>
-              <h3 className={styles.filterSectionHeading}>Genres & Keywords</h3>
+              <CollapsibleSection
+                title="Genres & Keywords"
+                defaultOpen={true}
+                activeCount={countGenresKeywordsActive(form)}
+                toggleClassName={styles.filterSectionHeading}
+                bodyClassName={styles.filterSectionBody}
+                headingTag="h3"
+              >
+                <div className={styles.field}>
+                  <GenreIncludeExcludePicker
+                    idPrefix="search-filter-genre"
+                    label="Include / Exclude Genres"
+                    genreOptions={genreOptions}
+                    included={form.genresSelected}
+                    excluded={form.excludeGenresSelected}
+                    onChange={handleGenresChange}
+                  />
+                </div>
 
-              <div className={styles.field}>
-                <GenreIncludeExcludePicker
-                  idPrefix="search-filter-genre"
-                  label="Include / Exclude Genres"
-                  genreOptions={genreOptions}
-                  included={form.genresSelected}
-                  excluded={form.excludeGenresSelected}
-                  onChange={handleGenresChange}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <KeywordPicker
-                  id="search-keywords"
-                  label="Keywords"
-                  selected={form.keywordsSelected}
-                  onChange={handleKeywordsChange}
-                  options={keywordOptionsError ? [] : keywordOptions}
-                  placeholder="Type to filter tracked keywords"
-                  allowFreeText
-                  // A default suggestion list here (rather than only once typing)
-                  // read as cluttered in this field's narrower layout, and the
-                  // "Browse all keywords" modal already covers browsing without
-                  // typing -- so this field only shows matches once you type.
-                  maxSuggestionsWhenEmpty={0}
-                  // FRONTEND-077-AC-04: the "Browse all keywords" modal below
-                  // is now the sole place to type/search for this field --
-                  // the inline field only shows what's already selected.
-                  hideInput
-                />
-                {keywordOptionsError && (
-                  <p className={styles.keywordError} role="alert">
-                    {keywordOptionsError}
-                  </p>
-                )}
-                <button
-                  type="button"
-                  className={styles.browseKeywordsButton}
-                  onClick={() => setBrowseModalOpen(true)}
-                >
-                  Browse all keywords
-                </button>
-              </div>
+                <div className={styles.field}>
+                  <KeywordPicker
+                    id="search-keywords"
+                    label="Keywords"
+                    selected={form.keywordsSelected}
+                    onChange={handleKeywordsChange}
+                    options={keywordOptionsError ? [] : keywordOptions}
+                    placeholder="Type to filter tracked keywords"
+                    allowFreeText
+                    // A default suggestion list here (rather than only once typing)
+                    // read as cluttered in this field's narrower layout, and the
+                    // "Browse all keywords" modal already covers browsing without
+                    // typing -- so this field only shows matches once you type.
+                    maxSuggestionsWhenEmpty={0}
+                    // FRONTEND-077-AC-04: the "Browse all keywords" modal below
+                    // is now the sole place to type/search for this field --
+                    // the inline field only shows what's already selected.
+                    hideInput
+                  />
+                  {keywordOptionsError && (
+                    <p className={styles.keywordError} role="alert">
+                      {keywordOptionsError}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className={`${styles.browseKeywordsButton} ${btn.btnSecondary}`}
+                    onClick={() => setBrowseModalOpen(true)}
+                  >
+                    Browse all keywords
+                  </button>
+                </div>
+              </CollapsibleSection>
             </section>
 
             {/* FRONTEND-128-AC-02/SERIES-065: Country (multi-select) and
@@ -433,200 +494,242 @@ export function SearchFilter({
                 mirrors the Country/Language pair RecommendationFiltersBox.tsx
                 already renders for Discover. */}
             <section className={`${styles.filterSection} ${surface.card}`}>
-              <h3 className={styles.filterSectionHeading}>Origin</h3>
+              <CollapsibleSection
+                title="Origin"
+                defaultOpen={false}
+                activeCount={countOriginActive(form)}
+                toggleClassName={styles.filterSectionHeading}
+                bodyClassName={styles.filterSectionBody}
+                headingTag="h3"
+              >
+                <div className={styles.field}>
+                  <KeywordPicker
+                    id="search-origin-country"
+                    label="Country"
+                    selected={form.originCountrySelected}
+                    onChange={handleOriginCountryChange}
+                    options={COUNTRY_OPTIONS}
+                    pinnedOptions={countryFavourites}
+                  />
+                </div>
 
-              <div className={styles.field}>
-                <KeywordPicker
-                  id="search-origin-country"
-                  label="Country"
-                  selected={form.originCountrySelected}
-                  onChange={handleOriginCountryChange}
-                  options={COUNTRY_OPTIONS}
-                  pinnedOptions={countryFavourites}
-                />
-              </div>
-
-              <div className={styles.field}>
-                <KeywordPicker
-                  id="search-original-language"
-                  label="Language"
-                  selected={
-                    form.originalLanguage ? [form.originalLanguage] : []
-                  }
-                  onChange={handleOriginalLanguageChange}
-                  options={LANGUAGE_OPTIONS}
-                  pinnedOptions={languageFavourites}
-                />
-              </div>
+                <div className={styles.field}>
+                  <KeywordPicker
+                    id="search-original-language"
+                    label="Language"
+                    selected={
+                      form.originalLanguage ? [form.originalLanguage] : []
+                    }
+                    onChange={handleOriginalLanguageChange}
+                    options={LANGUAGE_OPTIONS}
+                    pinnedOptions={languageFavourites}
+                  />
+                </div>
+              </CollapsibleSection>
             </section>
 
             <section className={`${styles.filterSection} ${surface.card}`}>
-              <h3 className={styles.filterSectionHeading}>Ratings</h3>
+              <CollapsibleSection
+                title="Ratings"
+                defaultOpen={true}
+                activeCount={countRatingsActive(form)}
+                toggleClassName={styles.filterSectionHeading}
+                bodyClassName={styles.filterSectionBody}
+                headingTag="h3"
+              >
+                {/* FRONTEND-123-AC-01: Min Personal Rating alone in its own
+                    row -- three explicit rows replace the former flat
+                    auto-fit grid, so related fields read together
+                    regardless of viewport width. */}
+                <div className={styles.ratingRow}>
+                  <div className={styles.field}>
+                    <span>Min Personal Rating</span>
+                    <StarRating
+                      value={form.minPersonalRating}
+                      onChange={handleMinPersonalRatingChange}
+                    />
+                  </div>
+                </div>
 
-              <div className={styles.field}>
-                <span>Min Personal Rating</span>
-                <StarRating
-                  value={form.minPersonalRating}
-                  onChange={handleMinPersonalRatingChange}
-                />
-              </div>
+                {/* FRONTEND-123-AC-01: Min IMDb + Min TMDB together. */}
+                <div className={styles.ratingRow}>
+                  <div className={styles.field}>
+                    <NumberInput
+                      id="search-min-imdb-rating"
+                      label="Min IMDb Rating"
+                      min={0}
+                      max={10}
+                      step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
+                      value={form.minImdbRating}
+                      onChange={(value) =>
+                        updateField('minImdbRating')({
+                          target: { value: String(value) },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                    />
+                  </div>
 
-              <div className={styles.field}>
-                <NumberInput
-                  id="search-min-imdb-rating"
-                  label="Min IMDb Rating"
-                  min={0}
-                  max={10}
-                  step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
-                  value={form.minImdbRating}
-                  onChange={(value) =>
-                    updateField('minImdbRating')({
-                      target: { value: String(value) },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
-                />
-              </div>
+                  <div className={styles.field}>
+                    <NumberInput
+                      id="search-min-tmdb-rating"
+                      label="Min TMDB Rating"
+                      min={0}
+                      max={10}
+                      step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
+                      value={form.minTmdbRating}
+                      onChange={(value) =>
+                        updateField('minTmdbRating')({
+                          target: { value: String(value) },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                    />
+                  </div>
+                </div>
 
-              <div className={styles.field}>
-                <NumberInput
-                  id="search-min-tmdb-rating"
-                  label="Min TMDB Rating"
-                  min={0}
-                  max={10}
-                  step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
-                  value={form.minTmdbRating}
-                  onChange={(value) =>
-                    updateField('minTmdbRating')({
-                      target: { value: String(value) },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
-                />
-              </div>
+                {/* FRONTEND-122-AC-02/SERIES-063. FRONTEND-123-AC-01: both
+                    Rotten Tomatoes ratings together. */}
+                <div className={styles.ratingRow}>
+                  <div className={styles.field}>
+                    <NumberInput
+                      id="search-min-rotten-tomatoes-rating"
+                      label="Min Rotten Tomatoes Rating"
+                      min={0}
+                      max={100}
+                      step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
+                      value={form.minRottenTomatoesRating}
+                      onChange={(value) =>
+                        updateField('minRottenTomatoesRating')({
+                          target: { value: String(value) },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                    />
+                  </div>
 
-              {/* FRONTEND-122-AC-02/SERIES-063. */}
-              <div className={styles.field}>
-                <NumberInput
-                  id="search-min-rotten-tomatoes-rating"
-                  label="Min Rotten Tomatoes Rating"
-                  min={0}
-                  max={100}
-                  step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
-                  value={form.minRottenTomatoesRating}
-                  onChange={(value) =>
-                    updateField('minRottenTomatoesRating')({
-                      target: { value: String(value) },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
-                />
-              </div>
-
-              <div className={styles.field}>
-                <NumberInput
-                  id="search-min-rotten-tomatoes-popcornmeter"
-                  label="Min Rotten Tomatoes Popcornmeter"
-                  min={0}
-                  max={100}
-                  step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
-                  value={form.minRottenTomatoesPopcornmeter}
-                  onChange={(value) =>
-                    updateField('minRottenTomatoesPopcornmeter')({
-                      target: { value: String(value) },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
-                />
-              </div>
+                  <div className={styles.field}>
+                    <NumberInput
+                      id="search-min-rotten-tomatoes-popcornmeter"
+                      label="Min Rotten Tomatoes Popcornmeter"
+                      min={0}
+                      max={100}
+                      step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
+                      value={form.minRottenTomatoesPopcornmeter}
+                      onChange={(value) =>
+                        updateField('minRottenTomatoesPopcornmeter')({
+                          target: { value: String(value) },
+                        } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                    />
+                  </div>
+                </div>
+              </CollapsibleSection>
             </section>
 
             <section className={`${styles.filterSection} ${surface.card}`}>
-              <h3 className={styles.filterSectionHeading}>Missing Ratings</h3>
+              <CollapsibleSection
+                title="Missing Ratings"
+                defaultOpen={false}
+                activeCount={countMissingRatingsActive(form)}
+                toggleClassName={styles.filterSectionHeading}
+                bodyClassName={styles.filterSectionBody}
+                headingTag="h3"
+              >
+                <div className={styles.missingRatingsChips}>
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingImdbRating ? btn.btnPrimary : btn.btnSecondary
+                    }`}
+                    aria-pressed={form.missingImdbRating}
+                    onClick={toggleMissingRatingField('missingImdbRating')}
+                  >
+                    Missing IMDb Rating
+                  </button>
 
-              <div className={styles.checkboxField}>
-                <label htmlFor="search-missing-imdb-rating">
-                  Missing IMDb Rating
-                </label>
-                <input
-                  id="search-missing-imdb-rating"
-                  type="checkbox"
-                  checked={form.missingImdbRating}
-                  onChange={updateMissingRatingField('missingImdbRating')}
-                />
-              </div>
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingTmdbRating ? btn.btnPrimary : btn.btnSecondary
+                    }`}
+                    aria-pressed={form.missingTmdbRating}
+                    onClick={toggleMissingRatingField('missingTmdbRating')}
+                  >
+                    Missing TMDB Rating
+                  </button>
 
-              <div className={styles.checkboxField}>
-                <label htmlFor="search-missing-tmdb-rating">
-                  Missing TMDB Rating
-                </label>
-                <input
-                  id="search-missing-tmdb-rating"
-                  type="checkbox"
-                  checked={form.missingTmdbRating}
-                  onChange={updateMissingRatingField('missingTmdbRating')}
-                />
-              </div>
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingRottenTomatoesRating
+                        ? btn.btnPrimary
+                        : btn.btnSecondary
+                    }`}
+                    aria-pressed={form.missingRottenTomatoesRating}
+                    onClick={toggleMissingRatingField(
+                      'missingRottenTomatoesRating',
+                    )}
+                  >
+                    Missing Rotten Tomatoes Rating
+                  </button>
 
-              <div className={styles.checkboxField}>
-                <label htmlFor="search-missing-rotten-tomatoes-rating">
-                  Missing Rotten Tomatoes Rating
-                </label>
-                <input
-                  id="search-missing-rotten-tomatoes-rating"
-                  type="checkbox"
-                  checked={form.missingRottenTomatoesRating}
-                  onChange={updateMissingRatingField(
-                    'missingRottenTomatoesRating',
-                  )}
-                />
-              </div>
-
-              <div className={styles.checkboxField}>
-                <label htmlFor="search-missing-rotten-tomatoes-popcornmeter">
-                  Missing Rotten Tomatoes Popcornmeter
-                </label>
-                <input
-                  id="search-missing-rotten-tomatoes-popcornmeter"
-                  type="checkbox"
-                  checked={form.missingRottenTomatoesPopcornmeter}
-                  onChange={updateMissingRatingField(
-                    'missingRottenTomatoesPopcornmeter',
-                  )}
-                />
-              </div>
+                  <button
+                    type="button"
+                    className={`${styles.ratingToggleChip} ${
+                      form.missingRottenTomatoesPopcornmeter
+                        ? btn.btnPrimary
+                        : btn.btnSecondary
+                    }`}
+                    aria-pressed={form.missingRottenTomatoesPopcornmeter}
+                    onClick={toggleMissingRatingField(
+                      'missingRottenTomatoesPopcornmeter',
+                    )}
+                  >
+                    Missing Rotten Tomatoes Popcornmeter
+                  </button>
+                </div>
+              </CollapsibleSection>
             </section>
 
             <section className={`${styles.filterSection} ${surface.card}`}>
-              <h3 className={styles.filterSectionHeading}>Years</h3>
+              <CollapsibleSection
+                title="Years"
+                defaultOpen={false}
+                activeCount={countYearsActive(form)}
+                toggleClassName={styles.filterSectionHeading}
+                bodyClassName={styles.filterSectionBody}
+                headingTag="h3"
+              >
+                <div className={styles.field}>
+                  <NumberInput
+                    id="search-year-min"
+                    label="Min Year"
+                    min={MIN_VALID_YEAR}
+                    max={MAX_VALID_YEAR}
+                    step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
+                    value={form.yearMin}
+                    onChange={(value) =>
+                      updateField('yearMin')({
+                        target: { value: String(value) },
+                      } as React.ChangeEvent<HTMLInputElement>)
+                    }
+                  />
+                </div>
 
-              <div className={styles.field}>
-                <NumberInput
-                  id="search-year-min"
-                  label="Min Year"
-                  min={MIN_VALID_YEAR}
-                  max={MAX_VALID_YEAR}
-                  step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
-                  value={form.yearMin}
-                  onChange={(value) =>
-                    updateField('yearMin')({
-                      target: { value: String(value) },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
-                />
-              </div>
-
-              <div className={styles.field}>
-                <NumberInput
-                  id="search-year-max"
-                  label="Max Year"
-                  min={MIN_VALID_YEAR}
-                  max={MAX_VALID_YEAR}
-                  step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
-                  value={form.yearMax}
-                  onChange={(value) =>
-                    updateField('yearMax')({
-                      target: { value: String(value) },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
-                />
-              </div>
+                <div className={styles.field}>
+                  <NumberInput
+                    id="search-year-max"
+                    label="Max Year"
+                    min={MIN_VALID_YEAR}
+                    max={MAX_VALID_YEAR}
+                    step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
+                    value={form.yearMax}
+                    onChange={(value) =>
+                      updateField('yearMax')({
+                        target: { value: String(value) },
+                      } as React.ChangeEvent<HTMLInputElement>)
+                    }
+                  />
+                </div>
+              </CollapsibleSection>
             </section>
           </div>
 
