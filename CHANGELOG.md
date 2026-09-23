@@ -8,6 +8,14 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.59.0] - 2026-09-23
+
+### Added
+
+- Frontend: My Series filter sheet's Ratings section groups Min Personal Rating, Min IMDb + Min TMDB, and both Rotten Tomatoes fields into three explicit rows instead of one free-flowing grid (`frontend_spec_123`).
+- Frontend: all 5 My Series filter sections (Genres & Keywords, Origin, Ratings, Missing Ratings, Years) are now collapsible, each showing its own active-filter count badge — Genres & Keywords and Ratings default open, Origin/Missing Ratings/Years default closed (`frontend_spec_123`).
+- Frontend: new shared `CollapsibleSection` component extracting the "toggle button + active-count badge + conditional body" pattern previously hand-rolled independently in `RecommendationFiltersBox`/`UseMySeriesPanel` (`frontend_spec_123`).
+
 ## [3.58.0] - 2026-09-23
 
 ### Added
