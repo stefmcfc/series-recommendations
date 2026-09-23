@@ -94,6 +94,9 @@ function makeSpecificSeriesFilters(
     sortBy: 'title',
     sortDirection: 'asc',
     keywordsFilter: [],
+    // FRONTEND-128-AC-03/SERIES-065.
+    originCountryFilter: [],
+    originalLanguageFilter: '',
     minPersonalRating: null,
     minImdbRating: '',
     minTmdbRating: '',
@@ -2819,6 +2822,54 @@ describe('FRONTEND-069-AC-03: empty excludeGenreFilter is a no-op', () => {
       [],
     )
     expect(pool.map((s) => s.title)).toEqual(['Show'])
+  })
+})
+
+describe('FRONTEND-128-AC-03: buildSpecificSeriesCandidatePool origin filters', () => {
+  it('excludes a series that matches none of the selected origin countries', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'GB Show',
+        originCountry: 'GB',
+        excludeFromRecommendations: false,
+      },
+      {
+        id: '2',
+        title: 'FR Show',
+        originCountry: 'FR',
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ originCountryFilter: ['GB'] }),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['GB Show'])
+  })
+
+  it('excludes a series whose originalLanguage does not exactly match', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'English Show',
+        originalLanguage: 'en',
+        excludeFromRecommendations: false,
+      },
+      {
+        id: '2',
+        title: 'Korean Show',
+        originalLanguage: 'ko',
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ originalLanguageFilter: 'en' }),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['English Show'])
   })
 })
 

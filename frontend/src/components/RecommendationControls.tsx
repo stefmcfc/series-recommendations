@@ -533,6 +533,41 @@ function filterSpecificSeriesByExcludeGenre(
   })
 }
 
+// FRONTEND-128-AC-03/SERIES-065: OR/substring match, mirroring the backend's
+// own matchesOriginCountry semantics -- a series matches when any of its own
+// comma-joined origin countries matches any selected filter country,
+// case-insensitively, each segment trimmed. Same shape as
+// filterSpecificSeriesByGenre above. No countries selected means every
+// series passes.
+function filterSpecificSeriesByOriginCountry(
+  series: Series[],
+  originCountryFilter: string[],
+): Series[] {
+  if (originCountryFilter.length === 0) return series
+  const lowerFilter = new Set(
+    originCountryFilter.map((country) => country.toLowerCase()),
+  )
+  return series.filter((s) => {
+    const seriesCountries =
+      s.originCountry
+        ?.split(',')
+        .map((country) => country.trim().toLowerCase()) ?? []
+    return seriesCountries.some((country) => lowerFilter.has(country))
+  })
+}
+
+// FRONTEND-128-AC-03/SERIES-065: exact match, mirroring the backend's own
+// matchesOriginalLanguage semantics. No language selected means every series
+// passes.
+function filterSpecificSeriesByOriginalLanguage(
+  series: Series[],
+  originalLanguageFilter: string,
+): Series[] {
+  const trimmed = originalLanguageFilter.trim()
+  if (trimmed === '') return series
+  return series.filter((s) => s.originalLanguage === trimmed)
+}
+
 // FRONTEND-035-AC-12: three fixed options -- Any Status (default, everything
 // passes), Completed Only, Completed or Watching.
 function filterSpecificSeriesByStatus(
@@ -772,6 +807,10 @@ export interface SpecificSeriesFilters {
   // ControlsState/RecommendationQuery -- same scope call as the five fields
   // above (this spec's Design Decisions).
   keywordsFilter: string[]
+  // FRONTEND-128-AC-03/SERIES-065: matches UseMySeriesFilterCriteria's own
+  // `Filter`-suffixed naming convention.
+  originCountryFilter: string[]
+  originalLanguageFilter: string
   minPersonalRating: number | null
   minImdbRating: string
   minTmdbRating: string
@@ -832,12 +871,22 @@ export function buildSpecificSeriesCandidatePool(
             filterSpecificSeriesByMinPersonalRating(
               filterSpecificSeriesByKeywords(
                 filterSpecificSeriesByStatus(
-                  filterSpecificSeriesByExcludeGenre(
-                    filterSpecificSeriesByGenre(
-                      selectable,
-                      filters.genreFilter,
+                  // FRONTEND-128-AC-03/SERIES-065: inserted immediately
+                  // after the exclude-genre stage and before status, keeping
+                  // the categorical filters grouped together ahead of the
+                  // rating/year filters.
+                  filterSpecificSeriesByOriginalLanguage(
+                    filterSpecificSeriesByOriginCountry(
+                      filterSpecificSeriesByExcludeGenre(
+                        filterSpecificSeriesByGenre(
+                          selectable,
+                          filters.genreFilter,
+                        ),
+                        filters.excludeGenreFilter,
+                      ),
+                      filters.originCountryFilter,
                     ),
-                    filters.excludeGenreFilter,
+                    filters.originalLanguageFilter,
                   ),
                   filters.statusFilter,
                 ),

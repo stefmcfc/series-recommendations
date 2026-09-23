@@ -69,6 +69,8 @@ public class SeriesSearchService {
             .filter(s -> matchesExcludeGenres(s, criteria.getExcludeGenres()))
             .filter(s -> matchesKeywords(s, criteria.getKeywords()))
             .filter(s -> matchesStatus(s, criteria.getStatus()))
+            .filter(s -> matchesOriginCountry(s, criteria.getOriginCountry()))
+            .filter(s -> matchesOriginalLanguage(s, criteria.getOriginalLanguage()))
             .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating()))
             .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating()))
             .filter(s -> matchesTmdbRating(s, criteria.getMinTmdbRating()))
@@ -129,6 +131,25 @@ public class SeriesSearchService {
     private boolean matchesStatus(SeriesEntity s, String status) {
         if (status == null || status.isBlank()) return true;
         return s.getStatus() != null && s.getStatus().name().equals(status);
+    }
+
+    // series_spec_065_origin_country_language_filter.md (SERIES-065-AC-02): mirrors
+    // matchesGenres exactly -- SeriesEntity.originCountry has the identical comma-joined
+    // multi-value shape as SeriesEntity.genres.
+    private boolean matchesOriginCountry(SeriesEntity s, List<String> originCountry) {
+        if (originCountry == null || originCountry.isEmpty()) return true;
+        if (s.getOriginCountry() == null || s.getOriginCountry().isBlank()) return false;
+        String lower = s.getOriginCountry().toLowerCase(Locale.ROOT);
+        return originCountry.stream().anyMatch(c -> lower.contains(c.toLowerCase(Locale.ROOT)));
+    }
+
+    // series_spec_065_origin_country_language_filter.md (SERIES-065-AC-02): mirrors
+    // matchesStatus's exact shape -- SeriesEntity.originalLanguage is documented
+    // single-value-only, so this is a case-sensitive exact match, not the OR/substring
+    // matching matchesOriginCountry uses.
+    private boolean matchesOriginalLanguage(SeriesEntity s, String originalLanguage) {
+        if (originalLanguage == null || originalLanguage.isBlank()) return true;
+        return s.getOriginalLanguage() != null && s.getOriginalLanguage().equals(originalLanguage);
     }
 
     private boolean matchesPersonalRating(SeriesEntity s, Integer min) {

@@ -917,6 +917,9 @@ describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
           excludeGenreFilter: [],
           statusFilter: 'completedOnly',
           keywordsFilter: [],
+          // FRONTEND-128-AC-03/SERIES-065.
+          originCountryFilter: [],
+          originalLanguageFilter: '',
           minPersonalRating: null,
           minImdbRating: '',
           minTmdbRating: '',
@@ -1032,5 +1035,34 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
     expect(
       screen.queryByText(/do not have|does not have/),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series', () => {
+  it('only offers a series matching one of the selected origin countries', () => {
+    const series = [
+      makeSeries({
+        id: '1',
+        title: 'UK Co-Production',
+        originCountry: 'GB,US',
+      }),
+      makeSeries({ id: '2', title: 'French Show', originCountry: 'FR' }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByLabelText('Country'))
+    fireEvent.click(screen.getByText('GB'))
+    const dialog = openBrowseSeriesModal()
+
+    expect(within(dialog).getByText('UK Co-Production')).toBeInTheDocument()
+    expect(within(dialog).queryByText('French Show')).not.toBeInTheDocument()
   })
 })

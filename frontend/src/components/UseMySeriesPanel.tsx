@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { Series } from '../types/series'
 import type { UseMySeriesFilterCriteria } from '../types/filterProfile'
 import { KeywordPicker } from './KeywordPicker'
@@ -22,6 +23,11 @@ import {
   seriesPickerLabel,
   seriesPickerDisplay,
   SPECIFIC_SERIES_SORT_BY_OPTIONS,
+  LANGUAGE_OPTIONS,
+  DEFAULT_COUNTRY_FAVOURITES,
+  DEFAULT_LANGUAGE_FAVOURITES,
+  isCountryFavourites,
+  isLanguageFavourites,
 } from './RecommendationControls'
 import type {
   ControlsState,
@@ -29,6 +35,7 @@ import type {
   SpecificSeriesSortBy,
   SpecificSeriesSortDirection,
 } from './RecommendationControls'
+import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -77,6 +84,16 @@ export function UseMySeriesPanel({
     useState<SpecificSeriesSortDirection>('asc')
   const [specificSeriesBrowseModalOpen, setSpecificSeriesBrowseModalOpen] =
     useState(false)
+  const [countryFavourites] = useLocalStorage(
+    'countryFavourites',
+    DEFAULT_COUNTRY_FAVOURITES,
+    isCountryFavourites,
+  )
+  const [languageFavourites] = useLocalStorage(
+    'languageFavourites',
+    DEFAULT_LANGUAGE_FAVOURITES,
+    isLanguageFavourites,
+  )
   // FRONTEND-077-AC-07: separate open/closed state for the new "Browse all
   // keywords" modal paired with the Keywords filter field below -- mirrors
   // specificSeriesBrowseModalOpen above in every respect, just for a
@@ -91,6 +108,17 @@ export function UseMySeriesPanel({
   // retired backend minSourceRating gate conceptually.
   const [specificSeriesKeywordsFilter, setSpecificSeriesKeywordsFilter] =
     useState<string[]>([])
+  // FRONTEND-128-AC-03/SERIES-065: mirrors specificSeriesGenreFilter/
+  // specificSeriesKeywordsFilter's shape -- country is multi-value
+  // (OR/substring matched), language is single-value (exact matched).
+  const [
+    specificSeriesOriginCountryFilter,
+    setSpecificSeriesOriginCountryFilter,
+  ] = useState<string[]>([])
+  const [
+    specificSeriesOriginalLanguageFilter,
+    setSpecificSeriesOriginalLanguageFilter,
+  ] = useState('')
   const [specificSeriesMinPersonalRating, setSpecificSeriesMinPersonalRating] =
     useState<number | null>(null)
   const [specificSeriesMinImdbRating, setSpecificSeriesMinImdbRating] =
@@ -126,6 +154,8 @@ export function UseMySeriesPanel({
     excludeGenreFilter: specificSeriesExcludeGenreFilter,
     statusFilter: specificSeriesStatusFilter,
     keywordsFilter: specificSeriesKeywordsFilter,
+    originCountryFilter: specificSeriesOriginCountryFilter,
+    originalLanguageFilter: specificSeriesOriginalLanguageFilter,
     minPersonalRating: specificSeriesMinPersonalRating,
     minImdbRating: specificSeriesMinImdbRating,
     minTmdbRating: specificSeriesMinTmdbRating,
@@ -147,6 +177,8 @@ export function UseMySeriesPanel({
     setSpecificSeriesExcludeGenreFilter(criteria.excludeGenreFilter)
     setSpecificSeriesStatusFilter(criteria.statusFilter)
     setSpecificSeriesKeywordsFilter(criteria.keywordsFilter)
+    setSpecificSeriesOriginCountryFilter(criteria.originCountryFilter)
+    setSpecificSeriesOriginalLanguageFilter(criteria.originalLanguageFilter)
     setSpecificSeriesMinPersonalRating(criteria.minPersonalRating)
     setSpecificSeriesMinImdbRating(criteria.minImdbRating)
     setSpecificSeriesMinTmdbRating(criteria.minTmdbRating)
@@ -187,6 +219,8 @@ export function UseMySeriesPanel({
     setSpecificSeriesExcludeGenreFilter([])
     setSpecificSeriesStatusFilter('any')
     setSpecificSeriesKeywordsFilter([])
+    setSpecificSeriesOriginCountryFilter([])
+    setSpecificSeriesOriginalLanguageFilter('')
     setSpecificSeriesMinPersonalRating(null)
     setSpecificSeriesMinImdbRating('')
     setSpecificSeriesMinTmdbRating('')
@@ -224,6 +258,8 @@ export function UseMySeriesPanel({
         sortBy: specificSeriesSortBy,
         sortDirection: specificSeriesSortDirection,
         keywordsFilter: specificSeriesKeywordsFilter,
+        originCountryFilter: specificSeriesOriginCountryFilter,
+        originalLanguageFilter: specificSeriesOriginalLanguageFilter,
         minPersonalRating: specificSeriesMinPersonalRating,
         minImdbRating: specificSeriesMinImdbRating,
         minTmdbRating: specificSeriesMinTmdbRating,
@@ -443,6 +479,46 @@ export function UseMySeriesPanel({
                         >
                           Browse all keywords
                         </button>
+                      </div>
+                    </div>
+
+                    {/* FRONTEND-128-AC-03/SERIES-065: Country/Language
+                        client-side filters, mirroring the Genre/Keywords row
+                        immediately above -- Country is multi-select
+                        (OR/substring matched), Language is single-select via
+                        the same selected/onChange adapter
+                        RecommendationFiltersBox.tsx's own Language field
+                        uses to make KeywordPicker (a multi-select component)
+                        behave as a single-select. */}
+                    <div className={styles.filterFourColGrid}>
+                      <div className={styles.filterSpanTwo}>
+                        <KeywordPicker
+                          id="specific-series-origin-country"
+                          label="Country"
+                          selected={specificSeriesOriginCountryFilter}
+                          onChange={setSpecificSeriesOriginCountryFilter}
+                          options={COUNTRY_OPTIONS}
+                          pinnedOptions={countryFavourites}
+                        />
+                      </div>
+
+                      <div className={styles.filterSpanTwo}>
+                        <KeywordPicker
+                          id="specific-series-original-language"
+                          label="Language"
+                          selected={
+                            specificSeriesOriginalLanguageFilter
+                              ? [specificSeriesOriginalLanguageFilter]
+                              : []
+                          }
+                          onChange={(next) =>
+                            setSpecificSeriesOriginalLanguageFilter(
+                              next.at(-1) ?? '',
+                            )
+                          }
+                          options={LANGUAGE_OPTIONS}
+                          pinnedOptions={languageFavourites}
+                        />
                       </div>
                     </div>
 

@@ -92,8 +92,8 @@ used for `yearMin`/`yearMax` on Custom Search/Recommendations (see below).
 
 ### `GET /api/v1/series/search`
 
-Search and filter series (`title`, `genre`, `excludeGenre`, `keyword`, `status`,
-`minPersonalRating`, `minImdbRating`, `minTmdbRating`, `minRottenTomatoesRating`,
+Search and filter series (`title`, `genre`, `excludeGenre`, `keyword`, `status`, `originCountry`,
+`originalLanguage`, `minPersonalRating`, `minImdbRating`, `minTmdbRating`, `minRottenTomatoesRating`,
 `minRottenTomatoesPopcornmeter`, `yearMin`/`yearMax`, `flaggedForRewatch`,
 `missingImdbRating`, `missingTmdbRating`, `missingRottenTomatoesRating`,
 `missingRottenTomatoesPopcornmeter`). Supports `sortBy`/`sortDirection` — see Sorting below.
@@ -136,14 +136,23 @@ no-op. Unlike `minImdbRating`/`minTmdbRating` (`BigDecimal`, 0-10 scale), these 
 `Integer` (0-100 scale), matching `rottenTomatoesRating`/`rottenTomatoesPopcornmeter`'s own type. No
 backend range validation on this endpoint, same as the other two `min...` rating params.
 
+`originCountry` (`series_spec_065_origin_country_language_filter.md`) is a singular, repeatable
+query param (`?originCountry=GB&originCountry=US`), matched by case-insensitive substring against
+the stored, comma-joined `originCountry` field, OR'd across multiple values — the same shape as
+`genre`. `originalLanguage` is a single param, matched by case-sensitive exact equality against the
+stored (always single-value) `originalLanguage` field — the same shape as `status`. A series with no
+`originCountry`/`originalLanguage` at all never matches either filter; an unset param on either is a
+no-op.
+
 ---
 
 ### `GET /api/v1/series/export`
 
-Export as JSON or CSV. Accepts the same `title`, `genre`, `status`, `minPersonalRating`,
-`minImdbRating`, `minTmdbRating`, `minRottenTomatoesRating`, `minRottenTomatoesPopcornmeter`,
-`yearMin`/`yearMax` filter params as `GET /api/v1/series/search` (a smaller shared subset — no
-`excludeGenre`/`keyword`/`flaggedForRewatch`/missing-rating booleans/sort params on this endpoint).
+Export as JSON or CSV. Accepts the same `title`, `genre`, `status`, `originCountry`,
+`originalLanguage`, `minPersonalRating`, `minImdbRating`, `minTmdbRating`, `minRottenTomatoesRating`,
+`minRottenTomatoesPopcornmeter`, `yearMin`/`yearMax` filter params as `GET /api/v1/series/search` (a
+smaller shared subset — no `excludeGenre`/`keyword`/`flaggedForRewatch`/missing-rating
+booleans/sort params on this endpoint).
 
 ## Genres
 

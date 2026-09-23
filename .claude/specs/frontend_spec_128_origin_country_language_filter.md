@@ -1,6 +1,6 @@
 # Frontend Spec 128: Filter My Series by Origin Country / Original Language
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `series_spec_065_origin_country_language_filter.md` (companion backend spec — new
 `originCountry`/`originalLanguage` query params on `GET /api/v1/series/search`/`GET
@@ -33,13 +33,21 @@ surfaces" shape `frontend_spec_122` established for its own pair of Rotten Tomat
   single-value-only). This is the same asymmetry `RecommendationQuery.countries`/`RecommendationQuery.language`
   already model for Discover/Custom Search (`frontend_spec_047`'s Design Decisions), just applied here
   to My Series/Use My Series instead.
-- **Country uses `ALL_COUNTRY_OPTIONS` (`utils/countryOptions.ts`), not the Discover-only
-  `COUNTRY_OPTIONS`.** `COUNTRY_OPTIONS` deliberately excludes US/GB so they can be supplied separately
-  via `pinnedOptions` in the Discover pickers (`CustomSearchPanel.tsx`/`RecommendationFiltersBox.tsx`) —
-  a UX affordance for a *favourites*-backed picker this filter doesn't have. My Series' Country filter
-  is a plain, un-favourited picker, so it needs the full, self-contained option list `ALL_COUNTRY_OPTIONS`
-  already provides (the same list `SettingsPage.tsx`'s own plain pickers use) rather than reintroducing a
-  parallel `pinnedOptions` scaffold purely to work around `COUNTRY_OPTIONS`' intentional gap.
+- **Correction (post-ship, reported by the user testing the live feature): Country/Language use
+  `COUNTRY_OPTIONS`/`LANGUAGE_OPTIONS` with `pinnedOptions={countryFavourites}`/`{languageFavourites}`,
+  not `ALL_COUNTRY_OPTIONS` with no pinning.** The original text below argued this filter is
+  "plain, un-favourited," and reached for `ALL_COUNTRY_OPTIONS` on that basis — but
+  `ALL_COUNTRY_OPTIONS` is documented in `countryOptions.ts` itself as "used only by the Settings
+  Country Favourites editor," not as a general-purpose substitute for a favourites-aware picker.
+  Every *consuming* picker elsewhere in the app (`CustomSearchPanel.tsx`/`RecommendationFiltersBox.tsx`)
+  reads the user's saved favourites via `useLocalStorage('countryFavourites', DEFAULT_COUNTRY_FAVOURITES,
+  isCountryFavourites)` (same for language) and passes them as `pinnedOptions` alongside the disjoint
+  `COUNTRY_OPTIONS`/`LANGUAGE_OPTIONS` list — there was no real "un-favourited" precedent to follow;
+  this filter is exactly the same *kind* of consumer as those two, just on a different page, and should
+  behave identically (GB/US pinned at the top by default, matching a user's actual saved favourites).
+  Fixed to reuse that exact pattern, including the pinned entries' bare-code display (`"GB"`/`"US"`, not
+  `"United Kingdom"`/`"United States"`) — see `RecommendationFiltersBox.test.tsx`/`CustomSearchPanel.test.tsx`
+  for the same established display convention this filter now also follows.
 - **Language reuses `LANGUAGE_OPTIONS`/the existing single-select adapter pattern verbatim, both
   exported from `RecommendationControls.tsx`.** `LANGUAGE_OPTIONS` is already the app's one canonical
   language catalog (`frontend_spec_098`); duplicating it would let the two lists drift. The
@@ -139,10 +147,14 @@ country I choose, or in a language I choose, the same way I already can by genre
 
 ### FRONTEND-128-AC-02 [AUTO]
 **Statement**: `SearchFilter.tsx` shall render a new "Origin" section with a Country field (`KeywordPicker`,
-multi-select, `options={ALL_COUNTRY_OPTIONS}`) and a Language field (`KeywordPicker`, single-select via
-the `selected={val ? [val] : []}` / `onChange: (next) => next.at(-1) ?? ''` adapter,
-`options={LANGUAGE_OPTIONS}`), both included in the submitted search criteria when non-empty, and
-round-tripped correctly through `formStateFromCriteria` (saved filter profiles).
+multi-select, `options={COUNTRY_OPTIONS}`, `pinnedOptions={countryFavourites}`) and a Language field
+(`KeywordPicker`, single-select via the `selected={val ? [val] : []}` / `onChange: (next) => next.at(-1) ?? ''`
+adapter, `options={LANGUAGE_OPTIONS}`, `pinnedOptions={languageFavourites}`), both included in the
+submitted search criteria when non-empty, and round-tripped correctly through `formStateFromCriteria`
+(saved filter profiles). `countryFavourites`/`languageFavourites` are read via
+`useLocalStorage('countryFavourites', DEFAULT_COUNTRY_FAVOURITES, isCountryFavourites)` (same for
+language), mirroring `CustomSearchPanel.tsx`/`RecommendationFiltersBox.tsx`'s own Discover pickers
+exactly, so a user's saved favourites (GB/US by default) render pinned at the top here too.
 
 **References**: `components/SearchFilter.tsx` — `FormState`/`initialFormState` (lines 32-75, specifically
 the `updateField` curried handler's `Exclude<keyof FormState, ...>` type at lines 214-219, which must
@@ -223,8 +235,10 @@ its `originalLanguage`.
 — `SpecificSeriesFilters` (lines 764-784), `filterSpecificSeriesByGenre`/`filterSpecificSeriesByExcludeGenre`
 (lines 500-534, the OR/substring pattern `filterSpecificSeriesByOriginCountry` mirrors),
 `buildSpecificSeriesCandidatePool`'s filter chain (lines 821-858, insertion point immediately after the
-`filterSpecificSeriesByExcludeGenre` stage), `LANGUAGE_OPTIONS`/`ALL_COUNTRY_OPTIONS` (line 56, line 7 —
-the same catalogs AC-02's `SearchFilter.tsx` fields reuse). `types/filterProfile.ts`'s
+`filterSpecificSeriesByExcludeGenre` stage), `LANGUAGE_OPTIONS`/`COUNTRY_OPTIONS`/`DEFAULT_COUNTRY_FAVOURITES`/
+`DEFAULT_LANGUAGE_FAVOURITES`/`isCountryFavourites`/`isLanguageFavourites` — the same catalogs and
+favourites-reading pattern AC-02's `SearchFilter.tsx` fields reuse (see this spec's corrected Design
+Decisions). `types/filterProfile.ts`'s
 `UseMySeriesFilterCriteria` needs the two `Filter`-suffixed fields (AC-01).
 
 **Test Case (Red)**:
@@ -246,7 +260,7 @@ describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series',
     )
 
     fireEvent.click(screen.getByLabelText('Country'))
-    fireEvent.click(screen.getByText('United Kingdom'))
+    fireEvent.click(screen.getByText('GB'))
     const dialog = openBrowseSeriesModal()
 
     expect(within(dialog).getByText('UK Co-Production')).toBeInTheDocument()
@@ -287,8 +301,10 @@ describe('FRONTEND-128-AC-03: buildSpecificSeriesCandidatePool origin filters', 
 `specificSeriesOriginalLanguageFilter`) in `UseMySeriesPanel.tsx`, wired into
 `currentUseMySeriesCriteria`/`applyUseMySeriesFilterCriteria`/`handleClearSpecificSeriesFilters`/the
 filters object passed to `buildSpecificSeriesCandidatePool`, plus two new `KeywordPicker` fields in a new
-`filterFourColGrid` row (Country: `options={ALL_COUNTRY_OPTIONS}`; Language: `options={LANGUAGE_OPTIONS}`
-via the single-select adapter). In `RecommendationControls.tsx`: add `originCountryFilter: string[]`/
+`filterFourColGrid` row (Country: `options={COUNTRY_OPTIONS}`, `pinnedOptions={countryFavourites}`;
+Language: `options={LANGUAGE_OPTIONS}`, `pinnedOptions={languageFavourites}`, via the single-select
+adapter — `countryFavourites`/`languageFavourites` read the same `useLocalStorage` way as AC-02). In
+`RecommendationControls.tsx`: add `originCountryFilter: string[]`/
 `originalLanguageFilter: string` to `SpecificSeriesFilters`; two new filter functions —
 `filterSpecificSeriesByOriginCountry` (splits `s.originCountry` on `,`, lowercases/trims each entry,
 mirroring `filterSpecificSeriesByGenre`'s exact shape) and `filterSpecificSeriesByOriginalLanguage`
@@ -354,7 +370,7 @@ apply the same filters.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-128-AC-01: `SearchCriteria`/`MySeriesFilterCriteria`/`UseMySeriesFilterCriteria`/`buildSearchParams` carry the two new fields
-- [ ] FRONTEND-128-AC-02: My Series filters gain both origin fields, round-trip through saved profiles
-- [ ] FRONTEND-128-AC-03: Use My Series filters gain both origin fields, filter the candidate pool correctly
-- [ ] FRONTEND-128-AC-04: export includes both fields with no export-specific wiring (regression guard)
+- [x] FRONTEND-128-AC-01: `SearchCriteria`/`MySeriesFilterCriteria`/`UseMySeriesFilterCriteria`/`buildSearchParams` carry the two new fields
+- [x] FRONTEND-128-AC-02: My Series filters gain both origin fields, round-trip through saved profiles
+- [x] FRONTEND-128-AC-03: Use My Series filters gain both origin fields, filter the candidate pool correctly
+- [x] FRONTEND-128-AC-04: export includes both fields with no export-specific wiring (regression guard)

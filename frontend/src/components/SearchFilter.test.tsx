@@ -185,6 +185,47 @@ describe('FRONTEND-122-AC-02: Rotten Tomatoes min-rating filters in My Series', 
   })
 })
 
+describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () => {
+  it('includes both origin fields in the submitted criteria when filled in', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.click(screen.getByLabelText('Country'))
+    fireEvent.click(screen.getByText('GB'))
+    fireEvent.click(screen.getByLabelText('Language'))
+    fireEvent.click(screen.getByText('English'))
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originCountry: ['GB'],
+        originalLanguage: 'en',
+      }),
+    )
+  })
+
+  // GB is deliberately excluded from COUNTRY_OPTIONS (it's supplied via
+  // pinnedOptions instead, per countryOptions.ts) -- so a selected GB chip
+  // falls back to its bare code, matching every other Discover country
+  // picker's own display convention (RecommendationFiltersBox.test.tsx/
+  // CustomSearchPanel.test.tsx). LANGUAGE_OPTIONS is the app's one canonical
+  // language catalog, so "en" still resolves to "English" via
+  // Intl.DisplayNames -- see languageName.test.ts.
+  it('round-trips both origin fields through a saved filter profile', async () => {
+    mockListFilterProfiles.mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'UK English',
+        criteria: { originCountry: ['GB'], originalLanguage: 'en' },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    renderFilter()
+    fireEvent.click(await screen.findByText('UK English'))
+    expect(screen.getByText('GB')).toBeInTheDocument()
+    expect(screen.getByText('English')).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
   it('submits minTmdbRating and yearMin/yearMax', () => {
     const { onSearch } = renderFilter()
