@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.57.0] - 2026-09-23
+
 ### Added
 
 - Backend: `GET /api/v1/series/search` and `GET /api/v1/series/export` gain `minRottenTomatoesRating`/`minRottenTomatoesPopcornmeter` query params, filtering to series at or above a chosen Tomatometer/Popcornmeter score, matching the existing `minImdbRating`/`minTmdbRating` filters (`series_spec_063`).
