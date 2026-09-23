@@ -154,44 +154,39 @@
   gap: 0.5rem;
 }
 
-/* Mirrors SeriesList.module.css's .rewatchToggle/.rewatchToggleActive pill
-   pattern exactly -- outline by default, filled accent (composed with
-   btn.btnPrimary in the JSX) when pressed -- rather than inventing a new
-   toggle-button look for what's the same "on/off flag" shape as the rewatch
-   toggle. */
+/* Composes btn.btnSecondary (unpressed) / btn.btnPrimary (pressed) in the
+   JSX -- same "shared button class supplies color/border/hover, this class
+   only supplies shape" split as .browseKeywordsButton/.triggerButton above.
+   Deliberately NOT the same recipe as SeriesList.module.css's .rewatchToggle
+   (hand-rolled background/color/border, only composing btnPrimary once
+   active) -- that pattern has two real bugs this chip must not repeat
+   (found in live review): its own unconditional `color` declaration sits in
+   this same file, bundled after buttons.module.css, so it wins the cascade
+   over btnPrimary's `color: #000` even while active -- greyish body text on
+   the accent-purple fill, unreadable; and its plain `border-color:
+   var(--border)` (not btnSecondary's WCAG-passing `--control-border`) reads
+   as barely distinguishable from the surrounding card background while
+   unpressed. Composing the shared classes for both states avoids both. */
 .ratingToggleChip {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
   border-radius: 9999px;
   padding: 0.375rem 0.875rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
 }
 
-.ratingToggleChip:hover {
-  background: var(--social-bg);
-}
-
-.ratingToggleChipActive:hover {
-  background: var(--accent);
-}
-
+/* Composes btn.btnSecondary in the JSX (background/border/color/hover come
+   from there) -- this class only carries what's genuinely specific to this
+   button, matching GenreIncludeExcludePicker.tsx's .triggerButton right next
+   to it in the same section, which already does the same thing. Previously
+   hand-rolled its own near-duplicate of btnSecondary with the wrong (pre-
+   WCAG-fix) border/text color tokens, which is what made the two buttons
+   look inconsistent side by side (found in live review). */
 .browseKeywordsButton {
   align-self: flex-start;
-  background: transparent;
-  color: var(--text-h);
-  border: 1px solid var(--border);
   border-radius: 0.375rem;
   padding: 0.375rem 0.625rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
-}
-
-.browseKeywordsButton:hover {
-  background: var(--social-bg);
 }
 
 .overlay {

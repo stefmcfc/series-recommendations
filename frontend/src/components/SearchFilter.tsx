@@ -480,7 +480,7 @@ export function SearchFilter({
                   )}
                   <button
                     type="button"
-                    className={styles.browseKeywordsButton}
+                    className={`${styles.browseKeywordsButton} ${btn.btnSecondary}`}
                     onClick={() => setBrowseModalOpen(true)}
                   >
                     Browse all keywords
@@ -637,9 +637,7 @@ export function SearchFilter({
                   <button
                     type="button"
                     className={`${styles.ratingToggleChip} ${
-                      form.missingImdbRating
-                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
-                        : ''
+                      form.missingImdbRating ? btn.btnPrimary : btn.btnSecondary
                     }`}
                     aria-pressed={form.missingImdbRating}
                     onClick={toggleMissingRatingField('missingImdbRating')}
@@ -650,9 +648,7 @@ export function SearchFilter({
                   <button
                     type="button"
                     className={`${styles.ratingToggleChip} ${
-                      form.missingTmdbRating
-                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
-                        : ''
+                      form.missingTmdbRating ? btn.btnPrimary : btn.btnSecondary
                     }`}
                     aria-pressed={form.missingTmdbRating}
                     onClick={toggleMissingRatingField('missingTmdbRating')}
@@ -664,8 +660,8 @@ export function SearchFilter({
                     type="button"
                     className={`${styles.ratingToggleChip} ${
                       form.missingRottenTomatoesRating
-                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
-                        : ''
+                        ? btn.btnPrimary
+                        : btn.btnSecondary
                     }`}
                     aria-pressed={form.missingRottenTomatoesRating}
                     onClick={toggleMissingRatingField(
@@ -679,8 +675,8 @@ export function SearchFilter({
                     type="button"
                     className={`${styles.ratingToggleChip} ${
                       form.missingRottenTomatoesPopcornmeter
-                        ? `${styles.ratingToggleChipActive} ${btn.btnPrimary}`
-                        : ''
+                        ? btn.btnPrimary
+                        : btn.btnSecondary
                     }`}
                     aria-pressed={form.missingRottenTomatoesPopcornmeter}
                     onClick={toggleMissingRatingField(
