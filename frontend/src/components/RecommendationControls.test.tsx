@@ -97,6 +97,9 @@ function makeSpecificSeriesFilters(
     minPersonalRating: null,
     minImdbRating: '',
     minTmdbRating: '',
+    // FRONTEND-122-AC-03/SERIES-063.
+    minRottenTomatoesRating: '',
+    minRottenTomatoesPopcornmeter: '',
     yearMin: '',
     yearMax: '',
     ...overrides,
@@ -2890,6 +2893,72 @@ describe('FRONTEND-119-AC-08: candidate pool excludes missing-rating series when
       ['1'],
     )
     expect(result.series.map((s) => s.title)).toEqual(['Selected No RT'])
+  })
+})
+
+describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters in Use My Series', () => {
+  it('excludes a series below the minimum Rotten Tomatoes rating', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'RT Has',
+        rottenTomatoesRating: 80,
+        excludeFromRecommendations: false,
+      },
+      {
+        id: '2',
+        title: 'RT Low',
+        rottenTomatoesRating: 30,
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ minRottenTomatoesRating: '60' }),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['RT Has'])
+  })
+
+  it('excludes a series below the minimum Rotten Tomatoes Popcornmeter', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'Popcorn Has',
+        rottenTomatoesPopcornmeter: 80,
+        excludeFromRecommendations: false,
+      },
+      {
+        id: '2',
+        title: 'Popcorn Low',
+        rottenTomatoesPopcornmeter: 30,
+        excludeFromRecommendations: false,
+      },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ minRottenTomatoesPopcornmeter: '60' }),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['Popcorn Has'])
+  })
+
+  it('excludes a series with no Rotten Tomatoes rating when a minimum is set', () => {
+    const series = [
+      {
+        id: '1',
+        title: 'Has RT',
+        rottenTomatoesRating: 80,
+        excludeFromRecommendations: false,
+      },
+      { id: '2', title: 'No RT', excludeFromRecommendations: false },
+    ] as Series[]
+    const result = buildSpecificSeriesCandidatePool(
+      series,
+      makeSpecificSeriesFilters({ minRottenTomatoesRating: '60' }),
+      [],
+    )
+    expect(result.series.map((s) => s.title)).toEqual(['Has RT'])
   })
 })
 

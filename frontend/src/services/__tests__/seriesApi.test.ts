@@ -360,6 +360,33 @@ describe('SH-006: search', () => {
   })
 })
 
+describe('FRONTEND-122-AC-01: buildSearchParams includes RT min-rating fields', () => {
+  it('includes minRottenTomatoesRating/minRottenTomatoesPopcornmeter when set', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({
+      minRottenTomatoesRating: 60,
+      minRottenTomatoesPopcornmeter: 70,
+    })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params.minRottenTomatoesRating).toBe(60)
+    expect(args.params.minRottenTomatoesPopcornmeter).toBe(70)
+  })
+
+  it('omits both RT fields when absent', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+    await seriesApi.search({ title: 'office' })
+
+    const args = client.get.mock.calls[0][1] as {
+      params: Record<string, unknown>
+    }
+    expect(args.params).not.toHaveProperty('minRottenTomatoesRating')
+    expect(args.params).not.toHaveProperty('minRottenTomatoesPopcornmeter')
+  })
+})
+
 describe('FRONTEND-116-AC-02: missing-rating params passed through when set', () => {
   it('includes each missing-rating field only when non-null', async () => {
     client.get.mockResolvedValue({ data: { data: [], count: 0 } })

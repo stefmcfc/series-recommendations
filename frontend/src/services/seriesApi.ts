@@ -188,6 +188,17 @@ function buildSearchParams(criteria?: SearchCriteria): Record<string, unknown> {
   // FRONTEND-055/SERIES-037: replaces the removed maxPersonalRating/
   // maxImdbRating/startedNotFinished params.
   addIfPresent(params, 'minTmdbRating', criteria.minTmdbRating)
+  // FRONTEND-122-AC-01/SERIES-063.
+  addIfPresent(
+    params,
+    'minRottenTomatoesRating',
+    criteria.minRottenTomatoesRating,
+  )
+  addIfPresent(
+    params,
+    'minRottenTomatoesPopcornmeter',
+    criteria.minRottenTomatoesPopcornmeter,
+  )
   addIfPresent(params, 'yearMin', criteria.yearMin)
   addIfPresent(params, 'yearMax', criteria.yearMax)
   addIfPresent(params, 'flaggedForRewatch', criteria.flaggedForRewatch)

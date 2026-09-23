@@ -36,6 +36,9 @@ export interface MySeriesFilterCriteria {
   minPersonalRating?: number
   minImdbRating?: number
   minTmdbRating?: number
+  // FRONTEND-122-AC-02/SERIES-063: mirrors minTmdbRating's shape exactly.
+  minRottenTomatoesRating?: number
+  minRottenTomatoesPopcornmeter?: number
   yearMin?: number
   yearMax?: number
 }
@@ -51,6 +54,10 @@ export interface UseMySeriesFilterCriteria {
   minPersonalRating: number | null
   minImdbRating: string
   minTmdbRating: string
+  // FRONTEND-122-AC-03/SERIES-063: string-typed, matching every other
+  // numeric field in this interface.
+  minRottenTomatoesRating: string
+  minRottenTomatoesPopcornmeter: string
   yearMin: string
   yearMax: string
   // FRONTEND-119-AC-07/SERIES-062: rottenTomatoesRating/

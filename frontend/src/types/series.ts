@@ -304,6 +304,11 @@ export interface SearchCriteria {
   // maxImdbRating/startedNotFinished fields -- minTmdbRating/yearMin/yearMax
   // map 1:1 to series_spec_037's new GET /series/search query params.
   minTmdbRating?: number
+  // FRONTEND-122-AC-01/SERIES-063: two independent RT min-rating filters,
+  // matching how RT is already treated as two independent things everywhere
+  // else in this app (sort options, missing-value booleans).
+  minRottenTomatoesRating?: number
+  minRottenTomatoesPopcornmeter?: number
   yearMin?: number
   yearMax?: number
   flaggedForRewatch?: boolean

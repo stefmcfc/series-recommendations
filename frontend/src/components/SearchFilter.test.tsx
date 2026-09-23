@@ -140,6 +140,51 @@ describe('FRONTEND-055-AC-01: removed fields', () => {
   })
 })
 
+describe('FRONTEND-122-AC-02: Rotten Tomatoes min-rating filters in My Series', () => {
+  it('includes both RT fields in the submitted criteria when filled in', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.change(screen.getByLabelText('Min Rotten Tomatoes Rating'), {
+      target: { value: '60' },
+    })
+    fireEvent.change(
+      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
+      {
+        target: { value: '70' },
+      },
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        minRottenTomatoesRating: 60,
+        minRottenTomatoesPopcornmeter: 70,
+      }),
+    )
+  })
+
+  it('round-trips both RT fields through a saved filter profile', async () => {
+    mockListFilterProfiles.mockResolvedValue([
+      {
+        id: '1',
+        area: 'MY_SERIES',
+        name: 'High RT',
+        criteria: {
+          minRottenTomatoesRating: 60,
+          minRottenTomatoesPopcornmeter: 70,
+        },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    renderFilter()
+    fireEvent.click(await screen.findByText('High RT'))
+
+    expect(screen.getByLabelText('Min Rotten Tomatoes Rating')).toHaveValue(60)
+    expect(
+      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
+    ).toHaveValue(70)
+  })
+})
+
 describe('FRONTEND-055-AC-02: min TMDB rating and min/max year', () => {
   it('submits minTmdbRating and yearMin/yearMax', () => {
     const { onSearch } = renderFilter()
@@ -380,15 +425,18 @@ describe('FRONTEND-055-AC-05: rating/year fields carry validation bounds', () =>
   it('rating and year fields carry the same bounds as Custom Search', () => {
     renderFilter()
 
+    // FRONTEND-122-AC-06: step is now tiered (RATING_STEP_BREAKPOINTS), not a
+    // flat 0.1 -- a blank field resolves currentValue to 0, which is the
+    // coarsest (1) tier.
     const minImdb = screen.getByLabelText(/min imdb rating/i)
     expect(minImdb).toHaveAttribute('min', '0')
     expect(minImdb).toHaveAttribute('max', '10')
-    expect(minImdb).toHaveAttribute('step', '0.1')
+    expect(minImdb).toHaveAttribute('step', '1')
 
     const minTmdb = screen.getByLabelText(/min tmdb rating/i)
     expect(minTmdb).toHaveAttribute('min', '0')
     expect(minTmdb).toHaveAttribute('max', '10')
-    expect(minTmdb).toHaveAttribute('step', '0.1')
+    expect(minTmdb).toHaveAttribute('step', '1')
 
     const yearMin = screen.getByLabelText(/min year/i)
     expect(yearMin).toHaveAttribute('min', '1900')
@@ -397,6 +445,40 @@ describe('FRONTEND-055-AC-05: rating/year fields carry validation bounds', () =>
     const yearMax = screen.getByLabelText(/max year/i)
     expect(yearMax).toHaveAttribute('min', '1900')
     expect(yearMax).toHaveAttribute('max', String(new Date().getFullYear() + 1))
+  })
+})
+
+describe('FRONTEND-122-AC-06: rating/year controls use tiered steps', () => {
+  it('Min IMDb Rating steps by 0.5 once at/above 6', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
+      target: { value: '6' },
+    })
+    fireEvent.click(
+      within(
+        screen.getByLabelText(/min imdb rating/i).closest('div')!,
+      ).getByLabelText('Increase'),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ minImdbRating: 6.5 }),
+    )
+  })
+
+  it('Min Year steps by 1 once at/above 2010', () => {
+    const { onSearch } = renderFilter()
+    fireEvent.change(screen.getByLabelText(/min year/i), {
+      target: { value: '2010' },
+    })
+    fireEvent.click(
+      within(screen.getByLabelText(/min year/i).closest('div')!).getByLabelText(
+        'Increase',
+      ),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
+    expect(onSearch).toHaveBeenCalledWith(
+      expect.objectContaining({ yearMin: 2011 }),
+    )
   })
 })
 

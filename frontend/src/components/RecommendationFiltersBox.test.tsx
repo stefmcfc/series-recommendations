@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RecommendationFiltersBox } from './RecommendationFiltersBox'
 import type { ControlsState } from './RecommendationControls'
@@ -381,6 +381,46 @@ describe('FRONTEND-094-AC-11: valid Min Vote Count has no error', () => {
     expect(
       screen.queryByText(/min vote count must be a whole number/i),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-122-AC-06: Min TMDB Rating/Year use tiered steps', () => {
+  it('Min TMDB Rating steps by 0.5 once at/above 6', () => {
+    const { updateState } = renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    const input = screen.getByLabelText(/min tmdb rating/i)
+    fireEvent.click(within(input.closest('div')!).getByLabelText('Increase'))
+    // Blank field resolves currentValue to 0 -> coarsest tier (1).
+    expect(updateState).toHaveBeenCalledWith({ minTmdbRating: '1' })
+  })
+
+  it('Year Min steps by 1 once at/above 2010', () => {
+    const { updateState } = renderBox({
+      state: makeState({ yearMin: '2010' }),
+    })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    const input = screen.getByLabelText(/^year min$/i)
+    fireEvent.click(within(input.closest('div')!).getByLabelText('Increase'))
+    expect(updateState).toHaveBeenCalledWith({ yearMin: '2011' })
+  })
+})
+
+describe('FRONTEND-122-AC-07: Min Vote Count steps by 100', () => {
+  it('increases by 100 per click', () => {
+    const { updateState } = renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    const input = screen.getByLabelText('Min Vote Count')
+    fireEvent.click(within(input.closest('div')!).getByLabelText('Increase'))
+    expect(updateState).toHaveBeenCalledWith({
+      minVoteCount: '100',
+      minVoteCountTouched: true,
+    })
   })
 })
 

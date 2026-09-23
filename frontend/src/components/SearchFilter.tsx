@@ -9,6 +9,12 @@ import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
+import {
+  resolveTieredStep,
+  RATING_STEP_BREAKPOINTS,
+  ROTTEN_TOMATOES_STEP_BREAKPOINTS,
+  YEAR_STEP_BREAKPOINTS,
+} from '../utils/tieredStep'
 import styles from './SearchFilter.module.css'
 import btn from '../styles/buttons.module.css'
 import surface from '../styles/surfaces.module.css'
@@ -36,6 +42,10 @@ interface FormState {
   minPersonalRating: number | null
   minImdbRating: string
   minTmdbRating: string
+  // FRONTEND-122-AC-02/SERIES-063: two independent RT min-rating filters,
+  // mirroring minImdbRating/minTmdbRating's shape exactly.
+  minRottenTomatoesRating: string
+  minRottenTomatoesPopcornmeter: string
   yearMin: string
   yearMax: string
   // FRONTEND-116/SERIES-060: four independent "find series missing this
@@ -54,6 +64,8 @@ const initialFormState: FormState = {
   minPersonalRating: null,
   minImdbRating: '',
   minTmdbRating: '',
+  minRottenTomatoesRating: '',
+  minRottenTomatoesPopcornmeter: '',
   yearMin: '',
   yearMax: '',
   missingImdbRating: false,
@@ -79,6 +91,12 @@ function buildCriteria(form: FormState): SearchCriteria {
     criteria.minImdbRating = Number(form.minImdbRating)
   if (form.minTmdbRating.trim() !== '')
     criteria.minTmdbRating = Number(form.minTmdbRating)
+  if (form.minRottenTomatoesRating.trim() !== '')
+    criteria.minRottenTomatoesRating = Number(form.minRottenTomatoesRating)
+  if (form.minRottenTomatoesPopcornmeter.trim() !== '')
+    criteria.minRottenTomatoesPopcornmeter = Number(
+      form.minRottenTomatoesPopcornmeter,
+    )
   if (form.yearMin.trim() !== '') criteria.yearMin = Number(form.yearMin)
   if (form.yearMax.trim() !== '') criteria.yearMax = Number(form.yearMax)
 
@@ -116,6 +134,14 @@ function formStateFromCriteria(criteria: MySeriesFilterCriteria): FormState {
       criteria.minTmdbRating != null
         ? String(criteria.minTmdbRating)
         : initialFormState.minTmdbRating,
+    minRottenTomatoesRating:
+      criteria.minRottenTomatoesRating != null
+        ? String(criteria.minRottenTomatoesRating)
+        : initialFormState.minRottenTomatoesRating,
+    minRottenTomatoesPopcornmeter:
+      criteria.minRottenTomatoesPopcornmeter != null
+        ? String(criteria.minRottenTomatoesPopcornmeter)
+        : initialFormState.minRottenTomatoesPopcornmeter,
     yearMin:
       criteria.yearMin != null
         ? String(criteria.yearMin)
@@ -367,7 +393,7 @@ export function SearchFilter({
                   label="Min IMDb Rating"
                   min={0}
                   max={10}
-                  step={0.1}
+                  step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
                   value={form.minImdbRating}
                   onChange={(value) =>
                     updateField('minImdbRating')({
@@ -383,10 +409,43 @@ export function SearchFilter({
                   label="Min TMDB Rating"
                   min={0}
                   max={10}
-                  step={0.1}
+                  step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
                   value={form.minTmdbRating}
                   onChange={(value) =>
                     updateField('minTmdbRating')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                />
+              </div>
+
+              {/* FRONTEND-122-AC-02/SERIES-063. */}
+              <div className={styles.field}>
+                <NumberInput
+                  id="search-min-rotten-tomatoes-rating"
+                  label="Min Rotten Tomatoes Rating"
+                  min={0}
+                  max={100}
+                  step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
+                  value={form.minRottenTomatoesRating}
+                  onChange={(value) =>
+                    updateField('minRottenTomatoesRating')({
+                      target: { value: String(value) },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }
+                />
+              </div>
+
+              <div className={styles.field}>
+                <NumberInput
+                  id="search-min-rotten-tomatoes-popcornmeter"
+                  label="Min Rotten Tomatoes Popcornmeter"
+                  min={0}
+                  max={100}
+                  step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
+                  value={form.minRottenTomatoesPopcornmeter}
+                  onChange={(value) =>
+                    updateField('minRottenTomatoesPopcornmeter')({
                       target: { value: String(value) },
                     } as React.ChangeEvent<HTMLInputElement>)
                   }
@@ -459,6 +518,7 @@ export function SearchFilter({
                   label="Min Year"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
+                  step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
                   value={form.yearMin}
                   onChange={(value) =>
                     updateField('yearMin')({
@@ -474,6 +534,7 @@ export function SearchFilter({
                   label="Max Year"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
+                  step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
                   value={form.yearMax}
                   onChange={(value) =>
                     updateField('yearMax')({

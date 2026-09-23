@@ -4,6 +4,11 @@ import { NumberInput } from './NumberInput'
 import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
+import {
+  resolveTieredStep,
+  RATING_STEP_BREAKPOINTS,
+  YEAR_STEP_BREAKPOINTS,
+} from '../utils/tieredStep'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
@@ -179,7 +184,7 @@ export function CustomSearchPanel({
             <NumberInput
               id="recommendation-min-tmdb-rating"
               label="Min TMDB Rating"
-              step={0.1}
+              step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
               min={0}
               max={10}
               value={state.minTmdbRating}
@@ -195,6 +200,7 @@ export function CustomSearchPanel({
               label="Year Min"
               min={MIN_VALID_YEAR}
               max={MAX_VALID_YEAR}
+              step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
               value={state.yearMin}
               onChange={(value) => updateState({ yearMin: String(value) })}
             />
@@ -206,6 +212,7 @@ export function CustomSearchPanel({
               label="Year Max"
               min={MIN_VALID_YEAR}
               max={MAX_VALID_YEAR}
+              step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
               value={state.yearMax}
               onChange={(value) => updateState({ yearMax: String(value) })}
             />
