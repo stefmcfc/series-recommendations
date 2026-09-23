@@ -23,7 +23,11 @@ interface NumberInputProps {
   readonly onChange: (value: NumberLike) => void
   readonly min?: NumberLike
   readonly max?: NumberLike
-  readonly step?: NumberLike
+  // FRONTEND-122-AC-04: step may also be a resolver, called with the
+  // current numeric value on every render -- lets callers apply a tiered
+  // step (see utils/tieredStep.ts) that gets finer as the value climbs into
+  // a range where precision matters, instead of one flat step end-to-end.
+  readonly step?: NumberLike | ((currentValue: number) => NumberLike)
   readonly disabled?: boolean
   readonly label: string
   readonly id?: string
@@ -84,8 +88,12 @@ export function NumberInput({
 
   const parsedMin = toNumber(min)
   const parsedMax = toNumber(max)
-  const parsedStep = toNumber(step) ?? 1
   const currentValue = toNumber(value) ?? 0
+  // FRONTEND-122-AC-04: resolved fresh on every render -- this is already a
+  // controlled component re-rendering on every value change, so no new
+  // state/effect is needed to keep a function step in sync with the value.
+  const resolvedStep = typeof step === 'function' ? step(currentValue) : step
+  const parsedStep = toNumber(resolvedStep) ?? 1
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value)
@@ -115,7 +123,7 @@ export function NumberInput({
           value={value}
           min={min}
           max={max}
-          step={step}
+          step={resolvedStep}
           disabled={disabled}
           aria-describedby={ariaDescribedBy}
           onChange={handleInputChange}

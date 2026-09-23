@@ -504,6 +504,65 @@ describe('FRONTEND-081-AC-07: Min TMDB Rating (My Series) filter narrows the pic
   })
 })
 
+describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the picker', () => {
+  it('only offers series at or above the entered Rotten Tomatoes rating', () => {
+    const series = [
+      makeSeries({ id: '1', title: 'High RT', rottenTomatoesRating: 80 }),
+      makeSeries({ id: '2', title: 'Low RT', rottenTomatoesRating: 30 }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Min Rotten Tomatoes Rating'), {
+      target: { value: '60' },
+    })
+    const dialog = openBrowseSeriesModal()
+
+    expect(within(dialog).getByText('High RT')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Low RT')).not.toBeInTheDocument()
+  })
+
+  it('only offers series at or above the entered Rotten Tomatoes Popcornmeter', () => {
+    const series = [
+      makeSeries({
+        id: '1',
+        title: 'High Popcorn',
+        rottenTomatoesPopcornmeter: 80,
+      }),
+      makeSeries({
+        id: '2',
+        title: 'Low Popcorn',
+        rottenTomatoesPopcornmeter: 30,
+      }),
+    ]
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={series}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
+      { target: { value: '60' } },
+    )
+    const dialog = openBrowseSeriesModal()
+
+    expect(within(dialog).getByText('High Popcorn')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Low Popcorn')).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-081-AC-08: Year Min/Max (My Series) filters narrow the picker', () => {
   it('only offers series within the entered year range', () => {
     const series = [
@@ -861,6 +920,9 @@ describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
           minPersonalRating: null,
           minImdbRating: '',
           minTmdbRating: '',
+          // FRONTEND-122-AC-03/SERIES-063.
+          minRottenTomatoesRating: '',
+          minRottenTomatoesPopcornmeter: '',
           yearMin: '',
           yearMax: '',
           sortBy: 'title',

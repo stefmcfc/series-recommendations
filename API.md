@@ -93,7 +93,8 @@ used for `yearMin`/`yearMax` on Custom Search/Recommendations (see below).
 ### `GET /api/v1/series/search`
 
 Search and filter series (`title`, `genre`, `excludeGenre`, `keyword`, `status`,
-`minPersonalRating`, `minImdbRating`, `minTmdbRating`, `yearMin`/`yearMax`, `flaggedForRewatch`,
+`minPersonalRating`, `minImdbRating`, `minTmdbRating`, `minRottenTomatoesRating`,
+`minRottenTomatoesPopcornmeter`, `yearMin`/`yearMax`, `flaggedForRewatch`,
 `missingImdbRating`, `missingTmdbRating`, `missingRottenTomatoesRating`,
 `missingRottenTomatoesPopcornmeter`). Supports `sortBy`/`sortDirection` — see Sorting below.
 `yearMin`/`yearMax` use true interval-overlap
@@ -128,11 +129,21 @@ rating".
 shape, and the started-not-finished filter has been dropped outright, not deprecated. Unrecognized
 params are silently ignored (as with any other unknown query key on this endpoint), not rejected.
 
+`minRottenTomatoesRating`/`minRottenTomatoesPopcornmeter` (`series_spec_063_rotten_tomatoes_min_rating_filter.md`)
+mirror `minImdbRating`/`minTmdbRating`'s exact shape and null-handling — a series is excluded when
+the corresponding `SeriesEntity` field is `null` or below the given value, and an unset param is a
+no-op. Unlike `minImdbRating`/`minTmdbRating` (`BigDecimal`, 0-10 scale), these two are plain
+`Integer` (0-100 scale), matching `rottenTomatoesRating`/`rottenTomatoesPopcornmeter`'s own type. No
+backend range validation on this endpoint, same as the other two `min...` rating params.
+
 ---
 
 ### `GET /api/v1/series/export`
 
-Export as JSON or CSV.
+Export as JSON or CSV. Accepts the same `title`, `genre`, `status`, `minPersonalRating`,
+`minImdbRating`, `minTmdbRating`, `minRottenTomatoesRating`, `minRottenTomatoesPopcornmeter`,
+`yearMin`/`yearMax` filter params as `GET /api/v1/series/search` (a smaller shared subset — no
+`excludeGenre`/`keyword`/`flaggedForRewatch`/missing-rating booleans/sort params on this endpoint).
 
 ## Genres
 

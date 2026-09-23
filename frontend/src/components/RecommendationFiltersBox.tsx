@@ -3,6 +3,11 @@ import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
+import {
+  resolveTieredStep,
+  RATING_STEP_BREAKPOINTS,
+  YEAR_STEP_BREAKPOINTS,
+} from '../utils/tieredStep'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
   DEFAULT_COUNTRY_FAVOURITES,
@@ -191,7 +196,7 @@ export function RecommendationFiltersBox({
               <NumberInput
                 id="recommendation-min-tmdb-rating"
                 label="Min TMDB Rating"
-                step={0.1}
+                step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
                 min={0}
                 max={10}
                 value={state.minTmdbRating}
@@ -207,7 +212,9 @@ export function RecommendationFiltersBox({
               id="recommendation-min-vote-count"
               label="Min Vote Count"
               min={0}
-              step={1}
+              // FRONTEND-122-AC-07: flat, non-tiered -- only a single range
+              // was requested for this field.
+              step={100}
               value={state.minVoteCount}
               onChange={(value) =>
                 handleMinVoteCountChange({
@@ -228,6 +235,7 @@ export function RecommendationFiltersBox({
                   label="Year Min"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
+                  step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
                   value={state.yearMin}
                   onChange={(value) => updateState({ yearMin: String(value) })}
                 />
@@ -239,6 +247,7 @@ export function RecommendationFiltersBox({
                   label="Year Max"
                   min={MIN_VALID_YEAR}
                   max={MAX_VALID_YEAR}
+                  step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
                   value={state.yearMax}
                   onChange={(value) => updateState({ yearMax: String(value) })}
                 />

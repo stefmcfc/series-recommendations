@@ -1,6 +1,6 @@
 # Series Spec 063: Rotten Tomatoes Minimum-Rating Filter
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (extends existing min-rating filtering to a field that already has sort/missing-value support)
 **Depends on**: `series_spec_037_search_filter_overhaul.md` (established `minImdbRating`/`minTmdbRating` — the pattern this spec mirrors), `series_spec_060_missing_ratings_filter.md` (introduced `rottenTomatoesRating`/`rottenTomatoesPopcornmeter` as independently-filterable fields via the `missingRottenTomatoes*` booleans), `series_spec_062_rating_sort_missing_value_exclusion.md` (RT already sortable — this spec adds the remaining "filter by minimum value" capability so RT reaches parity with IMDb/TMDB across sort, missing-check, and now minimum-value filtering)
 **Area**: Backend (`dto/SeriesSearchCriteria.java`, `service/SeriesSearchService.java`, `controller/SeriesController.java`)
@@ -160,7 +160,7 @@ def "SERIES-063-AC-04: GET /api/v1/series/export honors minRottenTomatoesRating"
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-063-AC-01: `SeriesSearchCriteria` gains the two new fields
-- [ ] SERIES-063-AC-02: `SeriesSearchService.search()` filters correctly on both new fields, null-criterion no-op
-- [ ] SERIES-063-AC-03: `GET /api/v1/series/search` accepts and applies both new params
-- [ ] SERIES-063-AC-04: `GET /api/v1/series/export` accepts and applies both new params
+- [x] SERIES-063-AC-01: `SeriesSearchCriteria` gains the two new fields
+- [x] SERIES-063-AC-02: `SeriesSearchService.search()` filters correctly on both new fields, null-criterion no-op
+- [x] SERIES-063-AC-03: `GET /api/v1/series/search` accepts and applies both new params
+- [x] SERIES-063-AC-04: `GET /api/v1/series/export` accepts and applies both new params

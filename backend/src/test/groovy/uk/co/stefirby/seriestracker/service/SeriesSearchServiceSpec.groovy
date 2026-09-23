@@ -724,4 +724,45 @@ class SeriesSearchServiceSpec extends Specification {
         then: "no series is returned"
             results.isEmpty()
     }
+
+    def "SERIES-063-AC-02: search excludes series below the minimum Rotten Tomatoes rating"() {
+        given: "one series meeting the threshold, one below it, one with no rating at all"
+            seriesService.create(new SeriesDto(title: "RT Min Has", rottenTomatoesRating: 85))
+            seriesService.create(new SeriesDto(title: "RT Min Low", rottenTomatoesRating: 40))
+            seriesService.create(new SeriesDto(title: "RT Min Missing"))
+
+        when: "search is called with minRottenTomatoesRating=60"
+            def criteria = new SeriesSearchCriteria(minRottenTomatoesRating: 60)
+            def titles = searchService.search(criteria)*.title
+
+        then: "only the series meeting the threshold is returned"
+            titles.contains("RT Min Has")
+            !titles.contains("RT Min Low")
+            !titles.contains("RT Min Missing")
+    }
+
+    def "SERIES-063-AC-02b: search excludes series below the minimum Popcornmeter rating"() {
+        given: "one series meeting the threshold, one below it"
+            seriesService.create(new SeriesDto(title: "Popcorn Min Has", rottenTomatoesPopcornmeter: 90))
+            seriesService.create(new SeriesDto(title: "Popcorn Min Low", rottenTomatoesPopcornmeter: 50))
+
+        when: "search is called with minRottenTomatoesPopcornmeter=70"
+            def criteria = new SeriesSearchCriteria(minRottenTomatoesPopcornmeter: 70)
+            def titles = searchService.search(criteria)*.title
+
+        then: "only the series meeting the threshold is returned"
+            titles.contains("Popcorn Min Has")
+            !titles.contains("Popcorn Min Low")
+    }
+
+    def "SERIES-063-AC-02c: a null minRottenTomatoesRating is a no-op"() {
+        given: "a series with no Rotten Tomatoes rating at all"
+            seriesService.create(new SeriesDto(title: "RT Min No-Op"))
+
+        when: "search is called with no RT criteria set"
+            def titles = searchService.search(new SeriesSearchCriteria())*.title
+
+        then: "the series is still returned"
+            titles.contains("RT Min No-Op")
+    }
 }

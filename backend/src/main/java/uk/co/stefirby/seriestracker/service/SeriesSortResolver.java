@@ -12,12 +12,21 @@ import java.util.function.Function;
 // identical behaviour for the same params. Package-private: only those two services use it.
 final class SeriesSortResolver {
 
+    public static final String DATE_ADDED = "dateAdded";
+    public static final String PERSONAL_RATING = "personalRating";
+    public static final String TITLE = "title";
+    public static final String YEAR = "year";
+    public static final String IMDB_RATING = "imdbRating";
+    public static final String TMDB_RATING = "tmdbRating";
+    public static final String ROTTEN_TOMATOES_RATING = "rottenTomatoesRating";
+    public static final String ROTTEN_TOMATOES_POPCORNMETER = "rottenTomatoesPopcornmeter";
+
     // SERIES-009-AC-01/07: dateAdded/personalRating (Requirement 1) plus title/year/
     // imdbRating/tmdbRating (Requirement 2). series_spec_062_rating_sort_missing_value_exclusion.md
     // (SERIES-062-AC-01) adds rottenTomatoesRating/rottenTomatoesPopcornmeter.
     private static final List<String> VALID_SORT_BY =
-        List.of("dateAdded", "personalRating", "title", "year", "imdbRating", "tmdbRating",
-            "rottenTomatoesRating", "rottenTomatoesPopcornmeter");
+        List.of(DATE_ADDED, PERSONAL_RATING, TITLE, YEAR, IMDB_RATING, TMDB_RATING,
+            ROTTEN_TOMATOES_RATING, ROTTEN_TOMATOES_POPCORNMETER);
     private static final List<String> VALID_SORT_DIRECTION = List.of("asc", "desc");
 
     // series_spec_062_rating_sort_missing_value_exclusion.md (SERIES-062-AC-02): the four
@@ -25,7 +34,7 @@ final class SeriesSortResolver {
     // list" (SeriesService/SeriesSearchService) rather than "sorted last but still shown".
     // personalRating is deliberately not in this set -- see the spec's Overview.
     private static final List<String> DROPPABLE_SORT_BY =
-        List.of("imdbRating", "tmdbRating", "rottenTomatoesRating", "rottenTomatoesPopcornmeter");
+        List.of(IMDB_RATING, TMDB_RATING, ROTTEN_TOMATOES_RATING, ROTTEN_TOMATOES_POPCORNMETER);
 
     private SeriesSortResolver() {}
 
@@ -37,7 +46,7 @@ final class SeriesSortResolver {
     // SERIES-009-AC-01: a null/blank sortBy defaults to "dateAdded". Extracted (SERIES-062
     // Design Decisions) so resolve() and isMissingRatingForSort() apply this rule identically.
     private static String resolveEffectiveSortBy(String sortBy) {
-        return (sortBy == null || sortBy.isBlank()) ? "dateAdded" : sortBy;
+        return (sortBy == null || sortBy.isBlank()) ? DATE_ADDED : sortBy;
     }
 
     static Comparator<SeriesEntity> resolve(String sortBy, String sortDirection) {
@@ -59,13 +68,13 @@ final class SeriesSortResolver {
         boolean descending = effectiveDirection.equals("desc");
 
         return switch (effectiveSortBy) {
-            case "personalRating" -> comparingNullsLast(SeriesEntity::getPersonalRating, descending);
-            case "title" -> titleComparator(descending);
-            case "year" -> comparingNullsLast(SeriesEntity::getYear, descending);
-            case "imdbRating" -> comparingNullsLast(SeriesEntity::getImdbRating, descending);
-            case "tmdbRating" -> tmdbRatingComparator(descending);
-            case "rottenTomatoesRating" -> comparingNullsLast(SeriesEntity::getRottenTomatoesRating, descending);
-            case "rottenTomatoesPopcornmeter" ->
+            case PERSONAL_RATING -> comparingNullsLast(SeriesEntity::getPersonalRating, descending);
+            case TITLE -> titleComparator(descending);
+            case YEAR -> comparingNullsLast(SeriesEntity::getYear, descending);
+            case IMDB_RATING -> comparingNullsLast(SeriesEntity::getImdbRating, descending);
+            case TMDB_RATING -> tmdbRatingComparator(descending);
+            case ROTTEN_TOMATOES_RATING -> comparingNullsLast(SeriesEntity::getRottenTomatoesRating, descending);
+            case ROTTEN_TOMATOES_POPCORNMETER ->
                 comparingNullsLast(SeriesEntity::getRottenTomatoesPopcornmeter, descending);
             default -> comparingNullsLast(SeriesEntity::getDateAdded, descending);
         };
@@ -83,10 +92,10 @@ final class SeriesSortResolver {
             return false;
         }
         return switch (effectiveSortBy) {
-            case "imdbRating" -> entity.getImdbRating() == null;
-            case "tmdbRating" -> entity.getTmdbRating() == null;
-            case "rottenTomatoesRating" -> entity.getRottenTomatoesRating() == null;
-            case "rottenTomatoesPopcornmeter" -> entity.getRottenTomatoesPopcornmeter() == null;
+            case IMDB_RATING -> entity.getImdbRating() == null;
+            case TMDB_RATING -> entity.getTmdbRating() == null;
+            case ROTTEN_TOMATOES_RATING -> entity.getRottenTomatoesRating() == null;
+            case ROTTEN_TOMATOES_POPCORNMETER -> entity.getRottenTomatoesPopcornmeter() == null;
             default -> false;
         };
     }

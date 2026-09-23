@@ -111,6 +111,8 @@ public class SeriesController {
             @RequestParam(required = false) Integer minPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal minTmdbRating,
+            @RequestParam(required = false) Integer minRottenTomatoesRating,
+            @RequestParam(required = false) Integer minRottenTomatoesPopcornmeter,
             @RequestParam(required = false) Integer yearMin,
             @RequestParam(required = false) Integer yearMax,
             @RequestParam(required = false) Boolean flaggedForRewatch,
@@ -122,7 +124,7 @@ public class SeriesController {
             @RequestParam(required = false) String sortDirection) {
 
         SeriesSearchCriteria c = buildCriteria(title, genre, status, minPersonalRating, minImdbRating,
-            minTmdbRating, yearMin, yearMax);
+            minTmdbRating, minRottenTomatoesRating, minRottenTomatoesPopcornmeter, yearMin, yearMax);
         c.setExcludeGenres(excludeGenre);
         c.setKeywords(keyword);
         c.setFlaggedForRewatch(flaggedForRewatch);
@@ -147,6 +149,8 @@ public class SeriesController {
             @RequestParam(required = false) Integer minPersonalRating,
             @RequestParam(required = false) BigDecimal minImdbRating,
             @RequestParam(required = false) BigDecimal minTmdbRating,
+            @RequestParam(required = false) Integer minRottenTomatoesRating,
+            @RequestParam(required = false) Integer minRottenTomatoesPopcornmeter,
             @RequestParam(required = false) Integer yearMin,
             @RequestParam(required = false) Integer yearMax) {
 
@@ -155,7 +159,7 @@ public class SeriesController {
         }
 
         SeriesSearchCriteria c = buildCriteria(title, genre, status, minPersonalRating, minImdbRating,
-            minTmdbRating, yearMin, yearMax);
+            minTmdbRating, minRottenTomatoesRating, minRottenTomatoesPopcornmeter, yearMin, yearMax);
 
         List<SeriesDto> series = searchService.search(c);
         String ts = LocalDateTime.now(clock).format(FILENAME_FMT);
@@ -180,7 +184,7 @@ public class SeriesController {
     }
 
     /**
-     * The 8 {@link SeriesSearchCriteria} fields shared verbatim by {@link #search} and
+     * The 10 {@link SeriesSearchCriteria} fields shared verbatim by {@link #search} and
      * {@link #export} -- {@code search}'s 9 extra fields ({@code excludeGenres}, {@code
      * keywords}, {@code flaggedForRewatch}, {@code missingImdbRating}, {@code
      * missingTmdbRating}, {@code missingRottenTomatoesRating}, {@code
@@ -189,6 +193,7 @@ public class SeriesController {
      */
     private SeriesSearchCriteria buildCriteria(String title, List<String> genre, String status,
             Integer minPersonalRating, BigDecimal minImdbRating, BigDecimal minTmdbRating,
+            Integer minRottenTomatoesRating, Integer minRottenTomatoesPopcornmeter,
             Integer yearMin, Integer yearMax) {
         SeriesSearchCriteria c = new SeriesSearchCriteria();
         c.setTitle(title);
@@ -197,6 +202,8 @@ public class SeriesController {
         c.setMinPersonalRating(minPersonalRating);
         c.setMinImdbRating(minImdbRating);
         c.setMinTmdbRating(minTmdbRating);
+        c.setMinRottenTomatoesRating(minRottenTomatoesRating);
+        c.setMinRottenTomatoesPopcornmeter(minRottenTomatoesPopcornmeter);
         c.setYearMin(yearMin);
         c.setYearMax(yearMax);
         return c;

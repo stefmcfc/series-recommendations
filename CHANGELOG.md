@@ -8,6 +8,25 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.57.0] - 2026-09-23
+
+### Added
+
+- Backend: `GET /api/v1/series/search` and `GET /api/v1/series/export` gain `minRottenTomatoesRating`/`minRottenTomatoesPopcornmeter` query params, filtering to series at or above a chosen Tomatometer/Popcornmeter score, matching the existing `minImdbRating`/`minTmdbRating` filters (`series_spec_063`).
+- Frontend: My Series and Recs > Use My Series filters gain "Min Rotten Tomatoes Rating" and "Min Rotten Tomatoes Popcornmeter" fields, matching the existing Min IMDb/TMDB Rating filters (`frontend_spec_122`).
+
+### Changed
+
+- Frontend: IMDb/TMDB/Rotten Tomatoes/Year rating controls now use tiered step sizes (finer increments as the value climbs into the range where precision matters) instead of one flat step across the whole range (`frontend_spec_122`).
+- Frontend: Min Vote Count (Discover mode) now steps by 100 instead of 1 (`frontend_spec_122`).
+
+### Fixed
+
+- Backend: `SeriesSortResolver`'s repeated sort-key string literals (`"dateAdded"`, `"personalRating"`, etc.) are now named constants (Sonar `java:S1192`).
+- Frontend: `SeriesList`'s Rotten Tomatoes sort-emoji nested ternary is extracted into a local variable (Sonar `typescript:S3358`).
+- Frontend: `filterCriteriaValidation.ts`'s repeated `number | string | undefined` union is replaced by a `NumericFieldValue` type alias (Sonar `typescript:S4323`).
+- Frontend: `validateMySeriesCriteria`/`validateUseMySeriesCriteria`'s identical bodies are factored into a shared `validateMinRatingAndYearCriteria` helper both now delegate to (Sonar `typescript:S4144`).
+
 ## [3.56.1] - 2026-09-23
 
 ### Fixed

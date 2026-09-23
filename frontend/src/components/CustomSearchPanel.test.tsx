@@ -152,6 +152,38 @@ describe('CustomSearchPanel', () => {
   })
 })
 
+describe('FRONTEND-122-AC-06: Min TMDB Rating/Year use tiered steps', () => {
+  it('Min TMDB Rating steps by 0.5 once at/above 6', () => {
+    const updateState = vi.fn()
+    render(
+      <CustomSearchPanel
+        state={makeState({ minTmdbRating: '6' })}
+        updateState={updateState}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const input = screen.getByLabelText(/min tmdb rating/i)
+    fireEvent.click(within(input.closest('div')!).getByLabelText('Increase'))
+    expect(updateState).toHaveBeenCalledWith({ minTmdbRating: '6.5' })
+  })
+
+  it('Year Min steps by 1 once at/above 2010', () => {
+    const updateState = vi.fn()
+    render(
+      <CustomSearchPanel
+        state={makeState({ yearMin: '2010' })}
+        updateState={updateState}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const input = screen.getByLabelText(/^year min$/i)
+    fireEvent.click(within(input.closest('div')!).getByLabelText('Increase'))
+    expect(updateState).toHaveBeenCalledWith({ yearMin: '2011' })
+  })
+})
+
 describe('FRONTEND-094-AC-02: inline Keywords field has no text input', () => {
   it('does not render a typeable Keywords input', () => {
     render(

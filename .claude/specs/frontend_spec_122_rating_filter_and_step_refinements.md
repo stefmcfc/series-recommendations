@@ -1,6 +1,6 @@
 # Frontend Spec 122: Rotten Tomatoes Min-Rating Filter & Tiered Control Steps
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `series_spec_063_rotten_tomatoes_min_rating_filter.md` (companion backend spec — new `minRottenTomatoesRating`/`minRottenTomatoesPopcornmeter` query params on `GET /api/v1/series/search`/`GET /api/v1/series/export`), `frontend_spec_035_specific_series_picker.md` / `frontend_spec_081_use_my_series_page_restructure.md` (established the client-side min-rating filter pattern for "Recs > Use My Series" this spec extends)
 **Area**: Frontend (`components/NumberInput.tsx`, `components/SearchFilter.tsx`, `components/UseMySeriesPanel.tsx`, `components/RecommendationControls.tsx`, `components/RecommendationFiltersBox.tsx`, `components/CustomSearchPanel.tsx`, `services/seriesApi.ts`, `types/series.ts`, `types/filterProfile.ts`, new `utils/tieredStep.ts`)
@@ -250,10 +250,10 @@ describe('FRONTEND-122-AC-07: Min Vote Count steps by 100', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-122-AC-01: `SearchCriteria`/`buildSearchParams` carry the two new RT query params
-- [ ] FRONTEND-122-AC-02: My Series filters gain both RT min-rating fields, round-trip through saved profiles
-- [ ] FRONTEND-122-AC-03: Use My Series filters gain both RT min-rating fields, filter the candidate pool correctly
-- [ ] FRONTEND-122-AC-04: `NumberInput` accepts and correctly resolves a dynamic step function
-- [ ] FRONTEND-122-AC-05: `resolveTieredStep` correctly resolves each tier at its boundary
-- [ ] FRONTEND-122-AC-06: every IMDb/TMDB/RT/Year control in the app uses the correct tiered-step breakpoints
-- [ ] FRONTEND-122-AC-07: Min Vote Count steps by a flat 100
+- [x] FRONTEND-122-AC-01: `SearchCriteria`/`buildSearchParams` carry the two new RT query params
+- [x] FRONTEND-122-AC-02: My Series filters gain both RT min-rating fields, round-trip through saved profiles
+- [x] FRONTEND-122-AC-03: Use My Series filters gain both RT min-rating fields, filter the candidate pool correctly
+- [x] FRONTEND-122-AC-04: `NumberInput` accepts and correctly resolves a dynamic step function
+- [x] FRONTEND-122-AC-05: `resolveTieredStep` correctly resolves each tier at its boundary
+- [x] FRONTEND-122-AC-06: every IMDb/TMDB/RT/Year control in the app uses the correct tiered-step breakpoints
+- [x] FRONTEND-122-AC-07: Min Vote Count steps by a flat 100

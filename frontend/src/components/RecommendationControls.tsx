@@ -610,6 +610,42 @@ function filterSpecificSeriesByMinTmdbRating(
   return series.filter((s) => s.tmdbRating != null && s.tmdbRating >= threshold)
 }
 
+// FRONTEND-122-AC-03/SERIES-063: same shape/null-exclusion-when-active
+// convention as filterSpecificSeriesByMinImdbRating/
+// filterSpecificSeriesByMinTmdbRating above, applied to
+// rottenTomatoesRating. rottenTomatoesRating/rottenTomatoesPopcornmeter are
+// already integers on Series, so there's no decimal-parsing difference from
+// the IMDb/TMDB versions above.
+function filterSpecificSeriesByMinRottenTomatoesRating(
+  series: Series[],
+  minRottenTomatoesRating: string,
+): Series[] {
+  const trimmed = minRottenTomatoesRating.trim()
+  if (trimmed === '') return series
+  const threshold = Number(trimmed)
+  return series.filter(
+    (s) =>
+      s.rottenTomatoesRating != null && s.rottenTomatoesRating >= threshold,
+  )
+}
+
+// FRONTEND-122-AC-03/SERIES-063: same shape as
+// filterSpecificSeriesByMinRottenTomatoesRating above, applied to
+// rottenTomatoesPopcornmeter.
+function filterSpecificSeriesByMinRottenTomatoesPopcornmeter(
+  series: Series[],
+  minRottenTomatoesPopcornmeter: string,
+): Series[] {
+  const trimmed = minRottenTomatoesPopcornmeter.trim()
+  if (trimmed === '') return series
+  const threshold = Number(trimmed)
+  return series.filter(
+    (s) =>
+      s.rottenTomatoesPopcornmeter != null &&
+      s.rottenTomatoesPopcornmeter >= threshold,
+  )
+}
+
 // FRONTEND-081-AC-08: a null year never passes an active range (either bound
 // set) -- same null-exclusion-when-active convention as the rating filters
 // above. Either bound may be set independently; an unset bound imposes no
@@ -739,6 +775,10 @@ export interface SpecificSeriesFilters {
   minPersonalRating: number | null
   minImdbRating: string
   minTmdbRating: string
+  // FRONTEND-122-AC-03/SERIES-063: two independent RT min-rating filters,
+  // mirroring minImdbRating/minTmdbRating's shape exactly.
+  minRottenTomatoesRating: string
+  minRottenTomatoesPopcornmeter: string
   yearMin: string
   yearMax: string
 }
@@ -785,24 +825,33 @@ export function buildSpecificSeriesCandidatePool(
 ): { series: Series[]; missingRatingCount: number } {
   const selectable = allSeries.filter((s) => !s.excludeFromRecommendations)
   const preRatingFiltered = filterSpecificSeriesByYearRange(
-    filterSpecificSeriesByMinTmdbRating(
-      filterSpecificSeriesByMinImdbRating(
-        filterSpecificSeriesByMinPersonalRating(
-          filterSpecificSeriesByKeywords(
-            filterSpecificSeriesByStatus(
-              filterSpecificSeriesByExcludeGenre(
-                filterSpecificSeriesByGenre(selectable, filters.genreFilter),
-                filters.excludeGenreFilter,
+    filterSpecificSeriesByMinRottenTomatoesPopcornmeter(
+      filterSpecificSeriesByMinRottenTomatoesRating(
+        filterSpecificSeriesByMinTmdbRating(
+          filterSpecificSeriesByMinImdbRating(
+            filterSpecificSeriesByMinPersonalRating(
+              filterSpecificSeriesByKeywords(
+                filterSpecificSeriesByStatus(
+                  filterSpecificSeriesByExcludeGenre(
+                    filterSpecificSeriesByGenre(
+                      selectable,
+                      filters.genreFilter,
+                    ),
+                    filters.excludeGenreFilter,
+                  ),
+                  filters.statusFilter,
+                ),
+                filters.keywordsFilter,
               ),
-              filters.statusFilter,
+              filters.minPersonalRating,
             ),
-            filters.keywordsFilter,
+            filters.minImdbRating,
           ),
-          filters.minPersonalRating,
+          filters.minTmdbRating,
         ),
-        filters.minImdbRating,
+        filters.minRottenTomatoesRating,
       ),
-      filters.minTmdbRating,
+      filters.minRottenTomatoesPopcornmeter,
     ),
     filters.yearMin,
     filters.yearMax,

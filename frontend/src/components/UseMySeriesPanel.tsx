@@ -10,6 +10,12 @@ import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
+import {
+  resolveTieredStep,
+  RATING_STEP_BREAKPOINTS,
+  ROTTEN_TOMATOES_STEP_BREAKPOINTS,
+  YEAR_STEP_BREAKPOINTS,
+} from '../utils/tieredStep'
 import { formatMissingRatingMessage } from '../utils/missingRatingMessage'
 import {
   buildSpecificSeriesCandidatePool,
@@ -91,6 +97,16 @@ export function UseMySeriesPanel({
     useState('')
   const [specificSeriesMinTmdbRating, setSpecificSeriesMinTmdbRating] =
     useState('')
+  // FRONTEND-122-AC-03/SERIES-063: two independent RT min-rating filters,
+  // mirroring specificSeriesMinImdbRating/specificSeriesMinTmdbRating above.
+  const [
+    specificSeriesMinRottenTomatoesRating,
+    setSpecificSeriesMinRottenTomatoesRating,
+  ] = useState('')
+  const [
+    specificSeriesMinRottenTomatoesPopcornmeter,
+    setSpecificSeriesMinRottenTomatoesPopcornmeter,
+  ] = useState('')
   const [specificSeriesYearMin, setSpecificSeriesYearMin] = useState('')
   const [specificSeriesYearMax, setSpecificSeriesYearMax] = useState('')
   // FRONTEND-081-AC-01: "Filter & sort my series" disclosure, defaulting
@@ -113,6 +129,8 @@ export function UseMySeriesPanel({
     minPersonalRating: specificSeriesMinPersonalRating,
     minImdbRating: specificSeriesMinImdbRating,
     minTmdbRating: specificSeriesMinTmdbRating,
+    minRottenTomatoesRating: specificSeriesMinRottenTomatoesRating,
+    minRottenTomatoesPopcornmeter: specificSeriesMinRottenTomatoesPopcornmeter,
     yearMin: specificSeriesYearMin,
     yearMax: specificSeriesYearMax,
     sortBy: specificSeriesSortBy,
@@ -132,6 +150,10 @@ export function UseMySeriesPanel({
     setSpecificSeriesMinPersonalRating(criteria.minPersonalRating)
     setSpecificSeriesMinImdbRating(criteria.minImdbRating)
     setSpecificSeriesMinTmdbRating(criteria.minTmdbRating)
+    setSpecificSeriesMinRottenTomatoesRating(criteria.minRottenTomatoesRating)
+    setSpecificSeriesMinRottenTomatoesPopcornmeter(
+      criteria.minRottenTomatoesPopcornmeter,
+    )
     setSpecificSeriesYearMin(criteria.yearMin)
     setSpecificSeriesYearMax(criteria.yearMax)
     setSpecificSeriesSortBy(criteria.sortBy)
@@ -168,6 +190,8 @@ export function UseMySeriesPanel({
     setSpecificSeriesMinPersonalRating(null)
     setSpecificSeriesMinImdbRating('')
     setSpecificSeriesMinTmdbRating('')
+    setSpecificSeriesMinRottenTomatoesRating('')
+    setSpecificSeriesMinRottenTomatoesPopcornmeter('')
     setSpecificSeriesYearMin('')
     setSpecificSeriesYearMax('')
     setSpecificSeriesSortBy('title')
@@ -203,6 +227,9 @@ export function UseMySeriesPanel({
         minPersonalRating: specificSeriesMinPersonalRating,
         minImdbRating: specificSeriesMinImdbRating,
         minTmdbRating: specificSeriesMinTmdbRating,
+        minRottenTomatoesRating: specificSeriesMinRottenTomatoesRating,
+        minRottenTomatoesPopcornmeter:
+          specificSeriesMinRottenTomatoesPopcornmeter,
         yearMin: specificSeriesYearMin,
         yearMax: specificSeriesYearMax,
       },
@@ -438,7 +465,7 @@ export function UseMySeriesPanel({
                           label="Min IMDb Rating"
                           min={0}
                           max={10}
-                          step={0.1}
+                          step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
                           value={specificSeriesMinImdbRating}
                           onChange={(value) =>
                             setSpecificSeriesMinImdbRating(String(value))
@@ -456,10 +483,47 @@ export function UseMySeriesPanel({
                           label="Min TMDB Rating (My Series)"
                           min={0}
                           max={10}
-                          step={0.1}
+                          step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
                           value={specificSeriesMinTmdbRating}
                           onChange={(value) =>
                             setSpecificSeriesMinTmdbRating(String(value))
+                          }
+                        />
+                      </div>
+
+                      {/* FRONTEND-122-AC-03/SERIES-063. */}
+                      <div className={styles.field}>
+                        <NumberInput
+                          id="specific-series-min-rotten-tomatoes-rating"
+                          label="Min Rotten Tomatoes Rating"
+                          min={0}
+                          max={100}
+                          step={resolveTieredStep(
+                            ROTTEN_TOMATOES_STEP_BREAKPOINTS,
+                          )}
+                          value={specificSeriesMinRottenTomatoesRating}
+                          onChange={(value) =>
+                            setSpecificSeriesMinRottenTomatoesRating(
+                              String(value),
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className={styles.field}>
+                        <NumberInput
+                          id="specific-series-min-rotten-tomatoes-popcornmeter"
+                          label="Min Rotten Tomatoes Popcornmeter"
+                          min={0}
+                          max={100}
+                          step={resolveTieredStep(
+                            ROTTEN_TOMATOES_STEP_BREAKPOINTS,
+                          )}
+                          value={specificSeriesMinRottenTomatoesPopcornmeter}
+                          onChange={(value) =>
+                            setSpecificSeriesMinRottenTomatoesPopcornmeter(
+                              String(value),
+                            )
                           }
                         />
                       </div>
@@ -475,6 +539,7 @@ export function UseMySeriesPanel({
                           label="Year Min (My Series)"
                           min={MIN_VALID_YEAR}
                           max={MAX_VALID_YEAR}
+                          step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
                           value={specificSeriesYearMin}
                           onChange={(value) =>
                             setSpecificSeriesYearMin(String(value))
@@ -488,6 +553,7 @@ export function UseMySeriesPanel({
                           label="Year Max (My Series)"
                           min={MIN_VALID_YEAR}
                           max={MAX_VALID_YEAR}
+                          step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
                           value={specificSeriesYearMax}
                           onChange={(value) =>
                             setSpecificSeriesYearMax(String(value))

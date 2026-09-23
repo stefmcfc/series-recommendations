@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect } from 'vitest'
 import { NumberInput } from './NumberInput'
@@ -122,5 +122,51 @@ describe('FRONTEND-115-AC-04: increment/decrement respects step and clamps to mi
     expect(
       screen.getByRole('button', { name: /decrement|decrease/i }),
     ).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-122-AC-04: NumberInput accepts a dynamic step resolver', () => {
+  it('uses the resolver-computed step for the increment button', () => {
+    const onChange = vi.fn()
+    render(
+      <NumberInput
+        label="Test"
+        value={5}
+        onChange={onChange}
+        step={(v) => (v >= 6 ? 0.5 : 1)}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText('Increase'))
+    expect(onChange).toHaveBeenCalledWith(6)
+    onChange.mockClear()
+  })
+
+  it('re-resolves the step once the value crosses the threshold', () => {
+    const onChange = vi.fn()
+    render(
+      <NumberInput
+        label="Test"
+        value={6}
+        onChange={onChange}
+        step={(v) => (v >= 6 ? 0.5 : 1)}
+      />,
+    )
+    fireEvent.click(screen.getByLabelText('Increase'))
+    expect(onChange).toHaveBeenCalledWith(6.5)
+  })
+
+  it('uses the resolver-computed step for the native input attribute', () => {
+    render(
+      <NumberInput
+        label="Test"
+        value={6}
+        onChange={() => {}}
+        step={(v) => (v >= 6 ? 0.5 : 1)}
+      />,
+    )
+    expect(screen.getByRole('spinbutton', { name: 'Test' })).toHaveAttribute(
+      'step',
+      '0.5',
+    )
   })
 })
