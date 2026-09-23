@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `GET /api/v1/series/search` and `GET /api/v1/series/export` gain `originCountry` (repeatable, OR-matched) and `originalLanguage` (single, exact-matched) query params, filtering by a series' origin country/original language (`series_spec_065`).
+- Frontend: My Series filters gain a Country (multi-select) and Language (single-select) filter under a new "Origin" section, matching against `originCountry`/`originalLanguage`, round-tripped through saved filter profiles (`frontend_spec_128`).
+- Frontend: Recs > Use My Series' specific-series picker gains matching Country/Language filters, narrowing the candidate pool client-side (`frontend_spec_128`).
+
 ## [3.57.0] - 2026-09-23
 
 ### Added
