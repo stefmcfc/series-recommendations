@@ -1059,7 +1059,7 @@ describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series',
     )
 
     fireEvent.click(screen.getByLabelText('Country'))
-    fireEvent.click(screen.getByText('United Kingdom'))
+    fireEvent.click(screen.getByText('GB'))
     const dialog = openBrowseSeriesModal()
 
     expect(within(dialog).getByText('UK Co-Production')).toBeInTheDocument()

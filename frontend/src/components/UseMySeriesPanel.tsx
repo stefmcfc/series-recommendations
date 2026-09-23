@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { Series } from '../types/series'
 import type { UseMySeriesFilterCriteria } from '../types/filterProfile'
 import { KeywordPicker } from './KeywordPicker'
@@ -23,6 +24,10 @@ import {
   seriesPickerDisplay,
   SPECIFIC_SERIES_SORT_BY_OPTIONS,
   LANGUAGE_OPTIONS,
+  DEFAULT_COUNTRY_FAVOURITES,
+  DEFAULT_LANGUAGE_FAVOURITES,
+  isCountryFavourites,
+  isLanguageFavourites,
 } from './RecommendationControls'
 import type {
   ControlsState,
@@ -30,7 +35,7 @@ import type {
   SpecificSeriesSortBy,
   SpecificSeriesSortDirection,
 } from './RecommendationControls'
-import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
+import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -79,6 +84,16 @@ export function UseMySeriesPanel({
     useState<SpecificSeriesSortDirection>('asc')
   const [specificSeriesBrowseModalOpen, setSpecificSeriesBrowseModalOpen] =
     useState(false)
+  const [countryFavourites] = useLocalStorage(
+    'countryFavourites',
+    DEFAULT_COUNTRY_FAVOURITES,
+    isCountryFavourites,
+  )
+  const [languageFavourites] = useLocalStorage(
+    'languageFavourites',
+    DEFAULT_LANGUAGE_FAVOURITES,
+    isLanguageFavourites,
+  )
   // FRONTEND-077-AC-07: separate open/closed state for the new "Browse all
   // keywords" modal paired with the Keywords filter field below -- mirrors
   // specificSeriesBrowseModalOpen above in every respect, just for a
@@ -482,7 +497,8 @@ export function UseMySeriesPanel({
                           label="Country"
                           selected={specificSeriesOriginCountryFilter}
                           onChange={setSpecificSeriesOriginCountryFilter}
-                          options={ALL_COUNTRY_OPTIONS}
+                          options={COUNTRY_OPTIONS}
+                          pinnedOptions={countryFavourites}
                         />
                       </div>
 
@@ -501,6 +517,7 @@ export function UseMySeriesPanel({
                             )
                           }
                           options={LANGUAGE_OPTIONS}
+                          pinnedOptions={languageFavourites}
                         />
                       </div>
                     </div>

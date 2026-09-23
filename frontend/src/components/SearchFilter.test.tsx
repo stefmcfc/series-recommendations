@@ -189,7 +189,7 @@ describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () 
   it('includes both origin fields in the submitted criteria when filled in', () => {
     const { onSearch } = renderFilter()
     fireEvent.click(screen.getByLabelText('Country'))
-    fireEvent.click(screen.getByText('United Kingdom'))
+    fireEvent.click(screen.getByText('GB'))
     fireEvent.click(screen.getByLabelText('Language'))
     fireEvent.click(screen.getByText('English'))
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
@@ -201,10 +201,13 @@ describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () 
     )
   })
 
-  // ALL_COUNTRY_OPTIONS/LANGUAGE_OPTIONS resolve codes to full display names
-  // (via Intl.DisplayNames -- see countryName.test.ts/languageName.test.ts),
-  // so the round-tripped chip renders "United Kingdom"/"English", not the
-  // raw "GB"/"en" codes.
+  // GB is deliberately excluded from COUNTRY_OPTIONS (it's supplied via
+  // pinnedOptions instead, per countryOptions.ts) -- so a selected GB chip
+  // falls back to its bare code, matching every other Discover country
+  // picker's own display convention (RecommendationFiltersBox.test.tsx/
+  // CustomSearchPanel.test.tsx). LANGUAGE_OPTIONS is the app's one canonical
+  // language catalog, so "en" still resolves to "English" via
+  // Intl.DisplayNames -- see languageName.test.ts.
   it('round-trips both origin fields through a saved filter profile', async () => {
     mockListFilterProfiles.mockResolvedValue([
       {
@@ -218,7 +221,7 @@ describe('FRONTEND-128-AC-02: origin country/language filters in My Series', () 
     ])
     renderFilter()
     fireEvent.click(await screen.findByText('UK English'))
-    expect(screen.getByText('United Kingdom')).toBeInTheDocument()
+    expect(screen.getByText('GB')).toBeInTheDocument()
     expect(screen.getByText('English')).toBeInTheDocument()
   })
 })

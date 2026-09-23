@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import { seriesApi } from '../services/seriesApi'
 import type { SearchCriteria } from '../types/series'
 import type { MySeriesFilterCriteria } from '../types/filterProfile'
@@ -8,8 +9,14 @@ import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
 import { FilterProfileSelector } from './FilterProfileSelector'
-import { ALL_COUNTRY_OPTIONS } from '../utils/countryOptions'
-import { LANGUAGE_OPTIONS } from './RecommendationControls'
+import { COUNTRY_OPTIONS } from '../utils/countryOptions'
+import {
+  LANGUAGE_OPTIONS,
+  DEFAULT_COUNTRY_FAVOURITES,
+  DEFAULT_LANGUAGE_FAVOURITES,
+  isCountryFavourites,
+  isLanguageFavourites,
+} from './RecommendationControls'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   resolveTieredStep,
@@ -194,6 +201,16 @@ export function SearchFilter({
   )
   const [genreOptions, setGenreOptions] = useState<string[]>([])
   const [browseModalOpen, setBrowseModalOpen] = useState(false)
+  const [countryFavourites] = useLocalStorage(
+    'countryFavourites',
+    DEFAULT_COUNTRY_FAVOURITES,
+    isCountryFavourites,
+  )
+  const [languageFavourites] = useLocalStorage(
+    'languageFavourites',
+    DEFAULT_LANGUAGE_FAVOURITES,
+    isLanguageFavourites,
+  )
   // FRONTEND-073-AC-02: Title used to be this sheet's first field (and this
   // ref's focus target) -- now that it's lived on the My Series page itself
   // since frontend_spec_073, the Close button is the first focusable element
@@ -424,7 +441,8 @@ export function SearchFilter({
                   label="Country"
                   selected={form.originCountrySelected}
                   onChange={handleOriginCountryChange}
-                  options={ALL_COUNTRY_OPTIONS}
+                  options={COUNTRY_OPTIONS}
+                  pinnedOptions={countryFavourites}
                 />
               </div>
 
@@ -437,6 +455,7 @@ export function SearchFilter({
                   }
                   onChange={handleOriginalLanguageChange}
                   options={LANGUAGE_OPTIONS}
+                  pinnedOptions={languageFavourites}
                 />
               </div>
             </section>
