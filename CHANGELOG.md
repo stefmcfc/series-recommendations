@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `GET /api/v1/series/search` and `GET /api/v1/series/export` gain `minRottenTomatoesRating`/`minRottenTomatoesPopcornmeter` query params, filtering to series at or above a chosen Tomatometer/Popcornmeter score, matching the existing `minImdbRating`/`minTmdbRating` filters (`series_spec_063`).
+- Frontend: My Series and Recs > Use My Series filters gain "Min Rotten Tomatoes Rating" and "Min Rotten Tomatoes Popcornmeter" fields, matching the existing Min IMDb/TMDB Rating filters (`frontend_spec_122`).
+
+### Changed
+
+- Frontend: IMDb/TMDB/Rotten Tomatoes/Year rating controls now use tiered step sizes (finer increments as the value climbs into the range where precision matters) instead of one flat step across the whole range (`frontend_spec_122`).
+- Frontend: Min Vote Count (Discover mode) now steps by 100 instead of 1 (`frontend_spec_122`).
+
 ## [3.56.0] - 2026-09-12
 
 ### Added
