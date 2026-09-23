@@ -72,6 +72,8 @@ public class SeriesSearchService {
             .filter(s -> matchesPersonalRating(s, criteria.getMinPersonalRating()))
             .filter(s -> matchesImdbRating(s, criteria.getMinImdbRating()))
             .filter(s -> matchesTmdbRating(s, criteria.getMinTmdbRating()))
+            .filter(s -> matchesRottenTomatoesRating(s, criteria.getMinRottenTomatoesRating()))
+            .filter(s -> matchesRottenTomatoesPopcornmeter(s, criteria.getMinRottenTomatoesPopcornmeter()))
             .filter(s -> matchesYearRange(s, criteria.getYearMin(), criteria.getYearMax()))
             .filter(s -> matchesFlaggedForRewatch(s, criteria.getFlaggedForRewatch()))
             .filter(s -> matchesMissingRatings(s, criteria))
@@ -144,6 +146,19 @@ public class SeriesSearchService {
     private boolean matchesTmdbRating(SeriesEntity s, BigDecimal min) {
         if (s.getTmdbRating() == null) return min == null;
         return min == null || s.getTmdbRating().compareTo(min) >= 0;
+    }
+
+    // series_spec_063_rotten_tomatoes_min_rating_filter.md (SERIES-063-AC-02): mirrors
+    // matchesTmdbRating's exact null-handling shape, but a plain Integer >= comparison rather
+    // than BigDecimal.compareTo, matching SeriesEntity.rottenTomatoesRating's own type.
+    private boolean matchesRottenTomatoesRating(SeriesEntity s, Integer min) {
+        if (s.getRottenTomatoesRating() == null) return min == null;
+        return min == null || s.getRottenTomatoesRating() >= min;
+    }
+
+    private boolean matchesRottenTomatoesPopcornmeter(SeriesEntity s, Integer min) {
+        if (s.getRottenTomatoesPopcornmeter() == null) return min == null;
+        return min == null || s.getRottenTomatoesPopcornmeter() >= min;
     }
 
     // series_spec_039_last_air_year.md (SERIES-039-AC-05): true interval-overlap matching --

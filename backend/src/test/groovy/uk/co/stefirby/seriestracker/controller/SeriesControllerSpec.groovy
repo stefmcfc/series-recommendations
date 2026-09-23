@@ -529,4 +529,34 @@ class SeriesControllerSpec extends Specification {
         result.andExpect(jsonPath('$.data[*].title').value(Matchers.not(Matchers.hasItem("Funny Show"))))
         result.andExpect(jsonPath('$.data[*].title').value(Matchers.hasItem("Serious Show")))
   }
+
+  def "SERIES-063-AC-03: GET /api/v1/series/search honors minRottenTomatoesRating"() {
+    given: "one series meeting the threshold, one below it"
+        seriesService.create(new SeriesDto(title: "Controller RT Has", rottenTomatoesRating: 85))
+        seriesService.create(new SeriesDto(title: "Controller RT Low", rottenTomatoesRating: 40))
+
+    when: "a GET request is made with minRottenTomatoesRating=60"
+        def result = mockMvc.perform(get("/api/v1/series/search").param("minRottenTomatoesRating", "60"))
+
+    then: "only the series meeting the threshold is returned"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.data.length()').value(1))
+        result.andExpect(jsonPath('$.data[0].title').value("Controller RT Has"))
+  }
+
+  def "SERIES-063-AC-04: GET /api/v1/series/export honors minRottenTomatoesRating"() {
+    given: "one series meeting the threshold, one below it"
+        seriesService.create(new SeriesDto(title: "Export RT Has", rottenTomatoesRating: 85))
+        seriesService.create(new SeriesDto(title: "Export RT Low", rottenTomatoesRating: 40))
+
+    when: "an export request is made with format=json and minRottenTomatoesRating=60"
+        def result = mockMvc.perform(
+          get("/api/v1/series/export").param("format", "json").param("minRottenTomatoesRating", "60")
+        )
+
+    then: "only the series meeting the threshold is included"
+        result.andExpect(status().isOk())
+        result.andReturn().response.contentAsString.contains("Export RT Has")
+        !result.andReturn().response.contentAsString.contains("Export RT Low")
+  }
 }

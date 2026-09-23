@@ -19,6 +19,11 @@ public class SeriesSearchCriteria {
     // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-02): mirrors minImdbRating's
     // shape exactly, matched against SeriesEntity.tmdbRating.
     private BigDecimal minTmdbRating;
+    // series_spec_063_rotten_tomatoes_min_rating_filter.md (SERIES-063-AC-01): mirrors
+    // minTmdbRating's shape exactly, but Integer (0-100 scale) rather than BigDecimal (0-10
+    // scale) to match SeriesEntity.rottenTomatoesRating/rottenTomatoesPopcornmeter's own type.
+    private Integer minRottenTomatoesRating;
+    private Integer minRottenTomatoesPopcornmeter;
     // series_spec_037_search_filter_overhaul.md (SERIES-037-AC-03): matched against the series'
     // single stored SeriesEntity.year -- a documented stopgap, not a true episode-air-date range
     // (see the spec's Design Decisions).
@@ -64,6 +69,14 @@ public class SeriesSearchCriteria {
     public void setMinImdbRating(BigDecimal minImdbRating) { this.minImdbRating = minImdbRating; }
     public BigDecimal getMinTmdbRating() { return minTmdbRating; }
     public void setMinTmdbRating(BigDecimal minTmdbRating) { this.minTmdbRating = minTmdbRating; }
+    public Integer getMinRottenTomatoesRating() { return minRottenTomatoesRating; }
+    public void setMinRottenTomatoesRating(Integer minRottenTomatoesRating) {
+        this.minRottenTomatoesRating = minRottenTomatoesRating;
+    }
+    public Integer getMinRottenTomatoesPopcornmeter() { return minRottenTomatoesPopcornmeter; }
+    public void setMinRottenTomatoesPopcornmeter(Integer minRottenTomatoesPopcornmeter) {
+        this.minRottenTomatoesPopcornmeter = minRottenTomatoesPopcornmeter;
+    }
     public Integer getYearMin() { return yearMin; }
     public void setYearMin(Integer yearMin) { this.yearMin = yearMin; }
     public Integer getYearMax() { return yearMax; }
