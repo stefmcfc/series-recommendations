@@ -42,7 +42,6 @@ dependency-derived anymore.
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 | Add `springdoc-openapi` dependency for a live Swagger UI (`/swagger-ui.html`) and machine-readable OpenAPI spec (`/v3/api-docs`), with app-identifying title/description metadata | `series_spec_066` | — | ⬜ Not started |
 | Port `API.md`'s existing endpoint/parameter prose into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ⬜ Not started |
-| "Use My Series" source-ranking strategy (3 presets) plus a user-configurable "Custom Rating Blend" (IMDb/TMDB/Tomatometer/Popcornmeter chips) | `series_spec_068` | `frontend_spec_132` | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
 
 ---
@@ -188,6 +187,7 @@ dependency-derived anymore.
 | Card tint (`frontend_spec_124`) reworked from a flat wash to a 135° diagonal gradient after a live A/B/C/D comparison, plus a polish pass fixing toolbar/nested-row tint bleed, a clashing filter-section heading background, filter-panel spacing, and low-contrast star-rating glyphs | — | `frontend_spec_130` | ✅ Done |
 | Saved Filters list split to the top of every filter area (My Series, Use My Series, Recommendation Filters, Custom Search, Analysis — the last folded into its own filters box for the first time, bookended with fields in between; Save/Update actions stay at the existing bottom position), a hover tooltip on each saved filter describing what it contains, and an "Update Filters" confirmation dialog with an editable name (was a silent, unconfirmed overwrite) | — | `frontend_spec_129` | ✅ Done |
 | Shared `InfoDisclosure` click-to-toggle info boxes for 7 non-obvious controls (Skip Threshold Override, Watch Region, Filter Profiles, Sort By's Best Match/Most Recommended pair, Min Vote Count, Min Avg Blended Rating, Min Rotten Tomatoes Popcornmeter) | — | `frontend_spec_131` | ✅ Done |
+| "Use My Series" source-ranking strategy (personal rating + date completed [default], personal rating + Custom Rating Blend, or Custom Rating Blend + personal rating) plus a user-configurable "Custom Rating Blend" (IMDb/TMDB/Tomatometer/Popcornmeter chips, normalized to a shared 0-10 scale) | `series_spec_068` | `frontend_spec_132` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 
