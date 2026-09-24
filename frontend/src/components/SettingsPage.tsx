@@ -24,6 +24,7 @@ import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
 import { SettingsSection } from './SettingsSection'
 import { FilterProfileManager } from './FilterProfileManager'
+import { InfoDisclosure } from './InfoDisclosure'
 import {
   AppearanceIcon,
   RefreshIcon,
@@ -376,6 +377,12 @@ export function SettingsPage({
               min={0}
               value={skipThresholdOverride}
               onChange={(value) => setSkipThresholdOverride(String(value))}
+              labelInfo={
+                <InfoDisclosure
+                  label="About Skip Threshold Override"
+                  description="Series untouched for longer than this are skipped during a refresh, so API calls aren't wasted on shows that clearly aren't airing new episodes. Lower it for more frequent re-checks; raise it to skip stale series for longer."
+                />
+              }
             />
             {/* FRONTEND-101-AC-01: Days/Weeks/Months unit select, default
                 Days -- no Hours/Minutes, see this file's Design Decisions
@@ -470,7 +477,16 @@ export function SettingsPage({
           Language inline fields elsewhere -- see KeywordPicker's hideInput
           usages), and gives this section a stable accessible name/value via
           the container's aria-label for the currently selected region. */}
-      <SettingsSection title="Watch Region" icon={<WatchRegionIcon />}>
+      <SettingsSection
+        title="Watch Region"
+        icon={<WatchRegionIcon />}
+        info={
+          <InfoDisclosure
+            label="About Watch Region"
+            description="Controls which country's streaming availability (e.g. Netflix, Disney+) is shown for your series and recommendations. It doesn't affect search results or ratings — only where-to-watch information."
+          />
+        }
+      >
         <KeywordPicker
           id="settings-watch-region"
           label="Watch Region"
@@ -486,7 +502,16 @@ export function SettingsPage({
       {/* FRONTEND-108-AC-09: management-only -- no currentCriteria here, so
           there's no create action; saving only ever happens from a filter
           view via SaveFilterProfileModal (this spec's Design Decisions). */}
-      <SettingsSection title="Filter Profiles" icon={<FilterProfilesIcon />}>
+      <SettingsSection
+        title="Filter Profiles"
+        icon={<FilterProfilesIcon />}
+        info={
+          <InfoDisclosure
+            label="About Filter Profiles"
+            description="Named, reusable snapshots of a filter setup. Save your current filters from any filters panel, then reapply them later with one click instead of re-entering them each time."
+          />
+        }
+      >
         <FilterProfileManager />
       </SettingsSection>
     </div>

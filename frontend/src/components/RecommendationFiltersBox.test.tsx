@@ -116,7 +116,9 @@ describe('RecommendationFiltersBox', () => {
     )
 
     expect(screen.getByLabelText(/min tmdb rating/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toBeInTheDocument()
     // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
     // trigger button, not a labeled text input.
     expect(
@@ -137,7 +139,9 @@ describe('RecommendationFiltersBox', () => {
     expect(screen.queryByLabelText(/countries/i)).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/^language/i)).not.toBeInTheDocument()
     // Min Vote Count is unaffected by isCustomSearch.
-    expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toBeInTheDocument()
   })
 
   it('marks minVoteCountTouched when Min Vote Count is edited', () => {
@@ -146,9 +150,12 @@ describe('RecommendationFiltersBox', () => {
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
 
-    fireEvent.change(screen.getByLabelText(/min vote count/i), {
-      target: { value: '50' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+      {
+        target: { value: '50' },
+      },
+    )
 
     expect(updateState).toHaveBeenCalledWith({
       minVoteCount: '50',
@@ -424,6 +431,18 @@ describe('FRONTEND-122-AC-07: Min Vote Count steps by 100', () => {
   })
 })
 
+describe('FRONTEND-131-AC-09: Min Vote Count has an info disclosure', () => {
+  it('renders the disclosure button beside the field', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'About Min Vote Count' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-107-AC-11: RecommendationFiltersBox selector wiring', () => {
   it('is disabled while isCustomSearch', () => {
     renderBox({ isCustomSearch: true })
@@ -451,7 +470,9 @@ describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom,
       screen.getByRole('button', { name: /^recommendations filters/i }),
     )
     const list = await screen.findByTestId('filter-profile-selector')
-    const minVoteCount = screen.getByLabelText(/min vote count/i)
+    const minVoteCount = screen.getByRole('spinbutton', {
+      name: /min vote count/i,
+    })
     const actions = await screen.findByTestId('filter-profile-actions')
     const resetButton = screen.getByTestId('reset-filters-btn')
 

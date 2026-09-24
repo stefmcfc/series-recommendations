@@ -296,6 +296,19 @@ describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
   })
 })
 
+describe('FRONTEND-131-AC-10: Min Avg Blended Rating has an info disclosure', () => {
+  it('renders the disclosure button beside the field, once expanded', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
+    render(<Harness fetchStats={vi.fn().mockResolvedValue([])} />)
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+    expect(
+      await screen.findByRole('button', {
+        name: 'About Min Avg Blended Rating',
+      }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-129-AC-03: Saved Filters list and actions bookend the fields in NameStatsTable', () => {
   it('renders the list before Min Series Count and actions before Reset Filters, once expanded', async () => {
     vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])

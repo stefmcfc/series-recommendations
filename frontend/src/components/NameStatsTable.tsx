@@ -3,6 +3,7 @@ import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
 import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import type { AnalysisFilterCriteria } from '../types/filterProfile'
 import { NumberInput } from './NumberInput'
+import { InfoDisclosure } from './InfoDisclosure'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
 import styles from './NameStatsTable.module.css'
@@ -211,6 +212,12 @@ export function NameStatsTable({
                   filters.handleFilterInputChange('minAverageBlendedRating')({
                     target: { value: String(value) },
                   } as React.ChangeEvent<HTMLInputElement>)
+                }
+                labelInfo={
+                  <InfoDisclosure
+                    label="About Min Avg Blended Rating"
+                    description="The average of each series' IMDb and TMDB ratings blended together — distinct from Min Avg Personal Rating, which uses only your own star ratings."
+                  />
                 }
               />
             </div>

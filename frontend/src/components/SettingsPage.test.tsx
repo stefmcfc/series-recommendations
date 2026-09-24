@@ -52,6 +52,42 @@ beforeEach(() => {
   mockListFilterProfiles.mockResolvedValue([])
 })
 
+const defaultProps = {
+  theme: 'system' as const,
+  setTheme: vi.fn(),
+  accentColor: 'purple' as const,
+  setAccentColor: vi.fn(),
+  cardTint: false,
+  setCardTint: vi.fn(),
+}
+
+describe('FRONTEND-131-AC-05: Skip Threshold Override has an info disclosure', () => {
+  it('renders the disclosure button beside the field', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Skip Threshold Override' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-131-AC-06: Watch Region has an info disclosure', () => {
+  it('renders the disclosure button beside the section heading', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Watch Region' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-131-AC-07: Filter Profiles has an info disclosure', () => {
+  it('renders the disclosure button beside the section heading', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Filter Profiles' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-070-AC-03: SettingsPage renders its heading', () => {
   it('renders a heading', () => {
     render(
@@ -509,7 +545,9 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
       />,
     )
 
-    const input = screen.getByLabelText(/skip threshold override/i)
+    const input = screen.getByRole('spinbutton', {
+      name: /skip threshold override/i,
+    })
     expect(input).toBeInTheDocument()
     expect(input).toHaveAttribute('id', 'refresh-skip-threshold-override')
   })
@@ -561,9 +599,12 @@ describe('FRONTEND-097-AC-05/06/07: skip-threshold override input', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
-      target: { value: '10' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /skip threshold override/i }),
+      {
+        target: { value: '10' },
+      },
+    )
     fireEvent.click(screen.getByTestId('refresh-all-btn'))
 
     await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(14400))
@@ -592,9 +633,12 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
-      target: { value: '3' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /skip threshold override/i }),
+      {
+        target: { value: '3' },
+      },
+    )
     fireEvent.click(screen.getByTestId('refresh-all-btn'))
 
     await waitFor(() => expect(mockRefreshAll).toHaveBeenCalledWith(4320))
@@ -621,9 +665,12 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
-      target: { value: '3' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /skip threshold override/i }),
+      {
+        target: { value: '3' },
+      },
+    )
     fireEvent.change(screen.getByRole('combobox', { name: /unit/i }), {
       target: { value: 'weeks' },
     })
@@ -653,9 +700,12 @@ describe('FRONTEND-101-AC-01/02/03: Days/Weeks/Months override control', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText(/skip threshold override/i), {
-      target: { value: '2' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /skip threshold override/i }),
+      {
+        target: { value: '2' },
+      },
+    )
     fireEvent.change(screen.getByRole('combobox', { name: /unit/i }), {
       target: { value: 'months' },
     })
@@ -1009,7 +1059,7 @@ describe('FRONTEND-102-AC-01/05/06: Watch Region setting', () => {
         setCardTint={vi.fn()}
       />,
     )
-    expect(screen.getByLabelText(/watch region/i)).toHaveTextContent(
+    expect(screen.getByLabelText(/^watch region$/i)).toHaveTextContent(
       'United Kingdom',
     )
 
@@ -1036,7 +1086,7 @@ describe('FRONTEND-102-AC-01/05/06: Watch Region setting', () => {
         setCardTint={vi.fn()}
       />,
     )
-    expect(screen.getByLabelText(/watch region/i)).toHaveTextContent(
+    expect(screen.getByLabelText(/^watch region$/i)).toHaveTextContent(
       'United Kingdom',
     )
   })

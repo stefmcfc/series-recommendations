@@ -536,7 +536,9 @@ describe('FRONTEND-011-AC-07: output filter fields', () => {
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
     expect(screen.getByLabelText(/^min tmdb rating$/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText(/^year min$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^year max$/i)).toBeInTheDocument()
     // FRONTEND-068-AC-04: Exclude Genres is now a GenreIncludeExcludePicker
@@ -576,9 +578,12 @@ describe('FRONTEND-011-AC-08: empty filter fields omitted, not sent as empty/zer
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
 
-    fireEvent.change(screen.getByLabelText(/min vote count/i), {
-      target: { value: '50' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+      {
+        target: { value: '50' },
+      },
+    )
     fireEvent.change(screen.getByLabelText(/^year min$/i), {
       target: { value: '2020' },
     })
@@ -906,7 +911,9 @@ describe('FRONTEND-027-AC-06: no additional control for Highest Rated beyond min
       // "Recommendations Filters1" (count badge appended).
       screen.getByRole('button', { name: /^recommendations filters/i }),
     )
-    expect(screen.getByLabelText(/min vote count/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toBeInTheDocument()
   })
 })
 
@@ -1111,10 +1118,14 @@ describe('FRONTEND-030-AC-07/08: mode-aware Min Vote Count auto-fill', () => {
     )
 
     selectHighestRated()
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(200)
 
     selectUseMySeries()
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(null)
   })
 })
 
@@ -1126,12 +1137,17 @@ describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbere
     )
 
     selectHighestRated()
-    fireEvent.change(screen.getByLabelText(/min vote count/i), {
-      target: { value: '500' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+      {
+        target: { value: '500' },
+      },
+    )
     selectUseMySeries()
 
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(500)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(500)
   })
 
   it('preserves a user-typed value when switching into Highest Rated too', () => {
@@ -1140,12 +1156,17 @@ describe('FRONTEND-030-AC-09: a manually-edited Min Vote Count is never clobbere
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
 
-    fireEvent.change(screen.getByLabelText(/min vote count/i), {
-      target: { value: '50' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+      {
+        target: { value: '50' },
+      },
+    )
     selectHighestRated()
 
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(50)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(50)
   })
 })
 
@@ -1158,13 +1179,18 @@ describe('FRONTEND-030-AC-10: Reset Filters clears minVoteCount and minVoteCount
     )
 
     selectHighestRated()
-    fireEvent.change(screen.getByLabelText(/min vote count/i), {
-      target: { value: '500' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+      {
+        target: { value: '500' },
+      },
+    )
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
     clickApplyFilters()
 
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(null)
     expect(onQueryChange).toHaveBeenLastCalledWith(
       expect.not.objectContaining({ minVoteCount: expect.anything() }),
     )
@@ -1823,7 +1849,7 @@ describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction
     render(<RecommendationControls onQueryChange={vi.fn()} />)
     await screen.findByRole('button', { name: /show all series/i })
 
-    fireEvent.change(screen.getByLabelText(/sort by/i), {
+    fireEvent.change(screen.getByRole('combobox', { name: /sort by/i }), {
       target: { value: 'personalRating' },
     })
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
@@ -2182,10 +2208,14 @@ describe("FRONTEND-042-AC-10: Highest Rated's minVoteCount default survives the 
     )
 
     selectHighestRated()
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(200)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(200)
 
     selectUseMySeries()
-    expect(screen.getByLabelText(/min vote count/i)).toHaveValue(null)
+    expect(
+      screen.getByRole('spinbutton', { name: /min vote count/i }),
+    ).toHaveValue(null)
   })
 })
 

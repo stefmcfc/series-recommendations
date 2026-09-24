@@ -93,3 +93,29 @@ describe('HighestRatedPanel', () => {
     })
   })
 })
+
+describe('FRONTEND-131-AC-08: Sort By has an info disclosure only for Best Match/Most Recommended', () => {
+  it('renders the disclosure when the Best Match/Most Recommended pair is shown', () => {
+    render(
+      <HighestRatedPanel
+        state={makeState({ mode: 'useMySeries' })}
+        updateState={vi.fn()}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'About Sort By' }),
+    ).toBeInTheDocument()
+  })
+
+  it('omits the disclosure when the TMDB-native options are shown instead', () => {
+    render(
+      <HighestRatedPanel
+        state={makeState({ mode: 'discover', discoverMode: 'topRated' })}
+        updateState={vi.fn()}
+      />,
+    )
+    expect(
+      screen.queryByRole('button', { name: 'About Sort By' }),
+    ).not.toBeInTheDocument()
+  })
+})

@@ -173,7 +173,9 @@ describe('FRONTEND-088-AC-03: minimum-value filters', () => {
     expect(
       screen.getByLabelText(/min avg personal rating/i),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/min avg blended rating/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: /min avg blended rating/i }),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /apply filters/i }),
     ).toBeInTheDocument()
@@ -215,9 +217,12 @@ describe('FRONTEND-088-AC-03: minimum-value filters', () => {
     fireEvent.change(screen.getByLabelText(/min avg personal rating/i), {
       target: { value: '3.5' },
     })
-    fireEvent.change(screen.getByLabelText(/min avg blended rating/i), {
-      target: { value: '6' },
-    })
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: /min avg blended rating/i }),
+      {
+        target: { value: '6' },
+      },
+    )
     fireEvent.click(screen.getByRole('button', { name: /apply filters/i }))
 
     await waitFor(() =>

@@ -1326,6 +1326,22 @@ describe('FRONTEND-123-AC-01: Ratings section row grouping', () => {
   })
 })
 
+describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure', () => {
+  it('renders the disclosure only on the Popcornmeter field, not the Rating field', () => {
+    renderFilter()
+    expect(
+      screen.getByRole('button', {
+        name: 'About Min Rotten Tomatoes Popcornmeter',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: 'About Min Rotten Tomatoes Rating',
+      }),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-123-AC-03: SearchFilter sections default open/closed correctly', () => {
   it('Genres & Keywords and Ratings default open', () => {
     renderFilter()

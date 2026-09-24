@@ -1131,3 +1131,27 @@ describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series',
     expect(within(dialog).queryByText('French Show')).not.toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure', () => {
+  it('renders the disclosure beside the field', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.getByRole('button', {
+        name: 'About Min Rotten Tomatoes Popcornmeter',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', {
+        name: 'About Min Rotten Tomatoes Rating',
+      }),
+    ).not.toBeInTheDocument()
+  })
+})
