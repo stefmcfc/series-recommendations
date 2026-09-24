@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.61.0] - 2026-09-24
+
 ### Added
 
 - Frontend: new shared `InfoDisclosure` component — a small click-to-toggle ⓘ button revealing a short description beneath a field, closed by default, for controls whose purpose isn't obvious from their label alone (`frontend_spec_131`).
@@ -16,6 +18,10 @@ versioned together as one app.
 - Frontend: Sort By's Best Match/Most Recommended pair (Use My Series) gains an info disclosure explaining the difference between the two, shown only for that branch (`frontend_spec_131`).
 - Frontend: Min Vote Count (Recommendation Filters) and Min Avg Blended Rating (Analysis — Keywords/Genres/Country of Origin) each gain an info disclosure (`frontend_spec_131`).
 - Frontend: Min Rotten Tomatoes Popcornmeter (My Series and Recs > Use My Series) gains an info disclosure disambiguating it from the Tomatometer-based "Min Rotten Tomatoes Rating" field beside it (`frontend_spec_131`).
+
+### Fixed
+
+- Frontend: `InfoDisclosure`'s description now floats as a small absolutely-positioned card instead of inheriting whichever narrow grid-cell column its field lived in, which wrapped it into a cramped, unnecessarily tall paragraph (`frontend_spec_131` follow-up, found in live review).
 
 ## [3.60.0] - 2026-09-24
 
