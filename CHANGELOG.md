@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.60.0] - 2026-09-24
+
 ### Added
 
 - Frontend: saved-filter chips now show a hover tooltip describing what the profile actually filters by (e.g. "Genres: Crime, Drama"), reusing the same description data already shown in Settings (`frontend_spec_129`).
