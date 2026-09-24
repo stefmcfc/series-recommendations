@@ -54,7 +54,7 @@
 .filtersBody {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 /* FRONTEND-105-AC-16: border/radius/shadow/background come from the shared
@@ -65,9 +65,13 @@
    FRONTEND-123-AC-03: the grid layout that used to live on this rule moved
    to .filterSectionBody below, once a toggle button (CollapsibleSection)
    sits above the now-conditionally-rendered fields -- only the fields
-   should be a grid, not the whole card. */
+   should be a grid, not the whole card.
+   FRONTEND-130 (card-tint live review): trimmed from 1.5rem -- with the
+   heading now its own tighter chip (see .filterSectionHeading below), the
+   original outer padding left a disproportionate amount of empty card
+   around a collapsed section's heading alone. */
 .filterSection {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 /* FRONTEND-075-AC-01/02/03: each section's fields lay out in a responsive
@@ -82,7 +86,7 @@
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1rem;
   align-items: end;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 /* FRONTEND-123-AC-03: typography for each section's toggle button (passed as
@@ -90,16 +94,23 @@
    before this spec, now on an interactive control instead. Tinted background
    + its own padding/radius make the toggle read as a distinct header bar
    (found lacking in live review: a plain-text heading gave no visual hint of
-   being interactive) -- var(--social-bg) is the same subtle, theme-aware
-   tint already used for hover affordance elsewhere (e.g. SeriesList.module
-   .css's .rewatchToggle:hover), just applied here unconditionally rather
-   than only on hover. */
+   being interactive).
+   FRONTEND-130 (card-tint live review): background swapped from
+   var(--social-bg) (a neutral grey chip) to var(--accent-bg) -- once the
+   parent .filterSection card itself carries the accent-gradient tint,
+   --social-bg's flat grey read as clashing against it (unrelated hue on top
+   of the accent gradient). --accent-bg is the same low-alpha accent token
+   already used elsewhere (e.g. frontend_spec_110's active-filter styling),
+   so the heading now reads as an extension of the tint rather than a
+   competing neutral box. Padding trimmed slightly at the same time --
+   the original felt oversized once the card itself started carrying more
+   visual weight. */
 .filterSectionHeading {
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-h);
-  background: var(--social-bg);
-  padding: 0.625rem 0.875rem;
+  background: var(--accent-bg);
+  padding: 0.5rem 0.625rem;
   border-radius: 0.5rem;
 }
 

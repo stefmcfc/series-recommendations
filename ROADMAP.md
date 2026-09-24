@@ -182,6 +182,7 @@ dependency-derived anymore.
 | Rotten Tomatoes minimum-rating filter (My Series + Recs > Use My Series); tiered step sizes for IMDb/TMDB/RT/Year controls; flat step-100 for Min Vote Count | `series_spec_063` | `frontend_spec_122` | ✅ Done |
 | Filter My Series (and Use My Series) by Origin Country / Original Language | `series_spec_065` | `frontend_spec_128` | ✅ Done |
 | My Series filters: Ratings section reorganized into rows (Personal / IMDb+TMDB / RT); all 5 sections (including the new Origin section) made collapsible with per-section active-filter badges | — | `frontend_spec_123` | ✅ Done |
+| Card tint (`frontend_spec_124`) reworked from a flat wash to a 135° diagonal gradient after a live A/B/C/D comparison, plus a polish pass fixing toolbar/nested-row tint bleed, a clashing filter-section heading background, filter-panel spacing, and low-contrast star-rating glyphs | — | `frontend_spec_130` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

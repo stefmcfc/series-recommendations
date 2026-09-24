@@ -21,8 +21,15 @@
 
 /* FRONTEND-105-AC-13: composes the shared surface primitive (surfaces.module.css)
    in SeriesList.tsx -- its own padding here, sized for a slim control bar
-   rather than copied from .row's content-row padding. */
+   rather than copied from .row's content-row padding.
+   FRONTEND-130 (card-tint live review): shadows the inherited --card-bg
+   custom property back to plain --bg, so .card's `background: var(--card-bg,
+   var(--bg))` rule resolves to the untinted default regardless of whether
+   card-tint is on. This is chrome (sort/view/filter controls), not a content
+   card, and competed with the series rows below it for the same tinted
+   treatment -- see this spec's Design Decisions. */
 .headerToolbar {
+  --card-bg: var(--bg);
   display: flex;
   align-items: center;
   justify-content: space-between;
