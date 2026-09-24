@@ -730,30 +730,56 @@ export function UseMySeriesPanel({
                         'useMySeries' (series_spec_068's Design Decisions),
                         which is always true here since this fieldset only
                         ever renders inside UseMySeriesPanel. */}
-                    <fieldset
+                    {/* (2026-09-24 live-review amendment): a real <legend>
+                        can never share a flex row with a sibling -- browsers
+                        render a fieldset's legend as its own block-level
+                        "rendered legend" box outside the flex formatting
+                        context entirely, confirmed live (computed
+                        display: block, full row width, pushing every
+                        sibling -- including the heading InfoDisclosure --
+                        onto the next line) regardless of legend/CSS
+                        tweaks. Switched to a plain div with
+                        role="radiogroup"/aria-labelledby (the standard
+                        ARIA-authoring-practices equivalent of
+                        fieldset/legend for a radio group) so the visible
+                        heading is an ordinary flex item that can sit beside
+                        InfoDisclosure normally. */}
+                    <div
+                      role="radiogroup"
+                      aria-labelledby="source-ranking-strategy-heading"
                       className={`${styles.modeFieldset} ${styles.filterFullWidthRow}`}
                     >
-                      <legend>Source Ranking Strategy</legend>
-                      <InfoDisclosure
-                        label="About Source Ranking Strategy"
-                        description={
-                          <>
-                            Controls how your own tracked series are ordered
-                            before recommendations are drawn from them.
-                            &quot;Personal Rating, then Date Completed&quot;
-                            uses your star rating first, breaking ties by when
-                            you finished a series. The two Custom Rating Blend
-                            options instead blend the rating sources you pick
-                            below (IMDb/TMDB/Tomatometer/ Popcornmeter) — either
-                            as the primary signal or as a tiebreaker behind your
-                            personal rating. This &quot;Custom Rating
-                            Blend&quot; is distinct from the Analysis
-                            page&apos;s fixed &quot;Blended Rating&quot; (Min
-                            Avg Blended Rating) — the two features are unrelated
-                            even though they can use the same sources.
-                          </>
-                        }
-                      />
+                      <div
+                        className={`${styles.fieldsetLegendRow} ${styles.modeOptionFullRow}`}
+                      >
+                        <span
+                          id="source-ranking-strategy-heading"
+                          className={styles.legendText}
+                        >
+                          Source Ranking Strategy
+                        </span>
+                        <InfoDisclosure
+                          label="About Source Ranking Strategy"
+                          description={
+                            <>
+                              Controls how your own tracked series are ordered
+                              before recommendations are drawn from them.
+                              &quot;Personal Rating, then Date Completed&quot;
+                              uses your star rating first, breaking ties by when
+                              you finished a series. The two Custom Rating Blend
+                              options instead blend the rating sources you pick
+                              below (IMDb/TMDB/Tomatometer/ Popcornmeter) —
+                              either as the primary signal or as a tiebreaker
+                              behind your personal rating. This &quot;Custom
+                              Rating Blend&quot; is distinct from the Analysis
+                              page&apos;s fixed &quot;Blended Rating&quot; (Min
+                              Avg Blended Rating) — the two features are
+                              unrelated even though they can use the same
+                              sources.
+                            </>
+                          }
+                        />
+                      </div>
 
                       {/* (2026-09-24 live-review amendment): modeOptionFullRow
                           forces each option onto its own row (see the class's
@@ -843,7 +869,7 @@ export function UseMySeriesPanel({
                           description="Ranks primarily by Custom Rating Blend (the sources you pick below); your own personal rating is used only to break ties between series with the same blend score."
                         />
                       </div>
-                    </fieldset>
+                    </div>
 
                     {/* FRONTEND-132-AC-03/04/SERIES-068: only rendered for
                         the two Custom-Rating-Blend strategies -- hidden

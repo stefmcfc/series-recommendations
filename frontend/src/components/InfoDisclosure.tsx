@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import styles from './InfoDisclosure.module.css'
 
@@ -43,7 +43,26 @@ function InfoIcon() {
 // component ever references it.
 export function InfoDisclosure({ label, description }: InfoDisclosureProps) {
   const [open, setOpen] = useState(false)
+  // FRONTEND-132 (live-review amendment): the description defaults to
+  // left:0, but a wrapper near the viewport's right edge (e.g. the last
+  // field in a 4-col grid) pushed it past the right edge, inflating
+  // document.scrollWidth into page-level horizontal scroll (found in a
+  // live browser pass, confirmed via getBoundingClientRect() -- this
+  // wasn't visible in jsdom, which doesn't lay out CSS at all). Measured
+  // and flipped via useLayoutEffect (runs before paint, so no visible
+  // flicker) rather than guessed from viewport width alone, since the
+  // wrapper's own position -- not just the window size -- determines
+  // whether the fixed-width description would overflow.
+  const [alignRight, setAlignRight] = useState(false)
   const descriptionId = useId()
+  const descriptionRef = useRef<HTMLParagraphElement>(null)
+
+  useLayoutEffect(() => {
+    if (!open || !descriptionRef.current) return
+    setAlignRight(
+      descriptionRef.current.getBoundingClientRect().right > window.innerWidth,
+    )
+  }, [open])
 
   return (
     <span className={styles.wrapper}>
@@ -58,7 +77,11 @@ export function InfoDisclosure({ label, description }: InfoDisclosureProps) {
         <InfoIcon />
       </button>
       {open && (
-        <p id={descriptionId} className={styles.description}>
+        <p
+          ref={descriptionRef}
+          id={descriptionId}
+          className={`${styles.description} ${alignRight ? styles.descriptionAlignRight : ''}`}
+        >
           {description}
         </p>
       )}
