@@ -3,11 +3,18 @@
   gap: 0.125rem;
 }
 
+/* FRONTEND-130 (card-tint live review): empty-star color swapped from
+   var(--border) to var(--control-border) -- --border is a subtle
+   near-background hairline color (fine for a 1px divider, too low-contrast
+   for an icon glyph), and became nearly invisible against the tinted card's
+   lighter overlay. --control-border is the same WCAG-passing token
+   buttons.module.css's .btnSecondary already uses for exactly this
+   "stay visible against either background" requirement (FRONTEND-103-AC-07). */
 .starEmpty,
 .starFilled {
   font-size: 1.125rem;
   line-height: 1;
-  color: var(--border);
+  color: var(--control-border);
 }
 
 .starFilled {

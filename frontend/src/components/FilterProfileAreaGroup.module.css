@@ -23,7 +23,14 @@
   gap: 0.5rem;
 }
 
+/* FRONTEND-130 (card-tint live review): shadows the inherited --card-bg
+   custom property back to plain --bg, same trick as SeriesList.module.css's
+   .headerToolbar -- this row's surface.card sits nested inside
+   SettingsSection's own surface.card (SettingsPage.tsx's "Filter Profiles"
+   section), so leaving the tint on both doubled the gradient effect
+   ("gradient on a gradient"). Only the outer section should carry the tint. */
 .row {
+  --card-bg: var(--bg);
   padding: 0.5rem 0.75rem;
   display: flex;
   flex-direction: column;
