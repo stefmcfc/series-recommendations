@@ -1,6 +1,6 @@
 # Frontend Spec 129: Filter Profile Selector Split Placement, Tooltips & Update Confirmation
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: `frontend_spec_107_filter_profile_ui.md` (introduces `FilterProfileSelector` itself, its five current call sites, and `FRONTEND-107-AC-06`'s single-click Update behavior — superseded by this spec, see Design Decisions), `frontend_spec_108_filter_profile_management_and_save_modal.md` (introduces `describeFilterCriteria` and `SaveFilterProfileModal`, both reused/mirrored here), `frontend_spec_109_filter_profile_polish.md` (established the current bottom-of-fields placement `FRONTEND-109-AC-03`/`AC-04` describe — superseded by this spec, see Design Decisions), `frontend_spec_112_filter_profiles_custom_search_and_analysis.md` (adds the `CustomSearchPanel.tsx` wire-up and the Analysis-area `describeFilterCriteria` describer this spec's tooltip also covers for `ANALYSIS_FILTERS`; its `FRONTEND-112-AC-09` decision to hoist the selector to `AnalysisView.tsx` specifically to avoid a `NameStatsTable.tsx` instantiation is reversed by this spec, see Design Decisions)
 **Area**: Frontend (`components/FilterProfileSelector.tsx`, new `hooks/useFilterProfileSelector.ts`, new `components/SavedFiltersList.tsx`, new `components/FilterProfileActions.tsx`, new `components/UpdateFilterProfileModal.tsx`, `components/SearchFilter.tsx`, `components/UseMySeriesPanel.tsx`, `components/RecommendationFiltersBox.tsx`, `components/CustomSearchPanel.tsx`, `components/NameStatsTable.tsx`, `components/AnalysisView.tsx` — plus each of those components' colocated `*.test.tsx`)
@@ -241,6 +241,8 @@ describe('FRONTEND-129-AC-04: saved-filter chips show a description tooltip on h
 
 **Rationale**: Guards against a misclick immediately overwriting a saved profile with no chance to reconsider.
 
+**Post-implementation note**: the button's own label was renamed from "Update Filters" to "Update Saved Filter" in live review, for clarity about what it acts on — a wording change only, not a behavior change to this AC. The statement/test sketches below are left referring to "Update Filters" as an accurate record of what was implemented and tested at the time; the actual button text and test matchers were updated to match.
+
 **References**:
 - `FilterProfileActions` (extracted from `FilterProfileSelector.tsx` lines 191-199, the Update Filters button) — `onClick` changes from directly invoking `handleUpdate` to `setUpdateModalOpen(true)` (state now owned by `useFilterProfileSelector`, per `FRONTEND-129-AC-01`).
 - Supersedes `FRONTEND-107-AC-06`'s single-click-update statement (`frontend_spec_107_filter_profile_ui.md`) — see this spec's Design Decisions.
@@ -381,10 +383,10 @@ describe('FRONTEND-129-AC-07: confirming Update sends name + criteria and update
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-129-AC-01: `useFilterProfileSelector` hook extracts shared state (fetch, selection, modals)
-- [ ] FRONTEND-129-AC-02: `SavedFiltersList` renders at the top, `FilterProfileActions` stays at the existing bottom position, in `SearchFilter`/`UseMySeriesPanel`/`RecommendationFiltersBox`/`CustomSearchPanel`
-- [ ] FRONTEND-129-AC-03: `NameStatsTable` gets both halves bookending its fields; `AnalysisView` loses its own standalone render
-- [ ] FRONTEND-129-AC-04: saved-filter chips carry a `describeFilterCriteria`-derived `title` tooltip, omitted when there's nothing to describe
-- [ ] FRONTEND-129-AC-05: clicking Update Filters opens `UpdateFilterProfileModal` instead of updating directly
-- [ ] FRONTEND-129-AC-06: the modal pre-fills the current name (editable) and validates it, excluding the profile's own current name from the duplicate check
-- [ ] FRONTEND-129-AC-07: confirming sends `{ name, criteria }` together, updates `profiles` and closes on success, shows an in-modal error and stays open on failure
+- [x] FRONTEND-129-AC-01: `useFilterProfileSelector` hook extracts shared state (fetch, selection, modals)
+- [x] FRONTEND-129-AC-02: `SavedFiltersList` renders at the top, `FilterProfileActions` stays at the existing bottom position, in `SearchFilter`/`UseMySeriesPanel`/`RecommendationFiltersBox`/`CustomSearchPanel`
+- [x] FRONTEND-129-AC-03: `NameStatsTable` gets both halves bookending its fields; `AnalysisView` loses its own standalone render
+- [x] FRONTEND-129-AC-04: saved-filter chips carry a `describeFilterCriteria`-derived `title` tooltip, omitted when there's nothing to describe
+- [x] FRONTEND-129-AC-05: clicking Update Filters opens `UpdateFilterProfileModal` instead of updating directly
+- [x] FRONTEND-129-AC-06: the modal pre-fills the current name (editable) and validates it, excluding the profile's own current name from the duplicate check
+- [x] FRONTEND-129-AC-07: confirming sends `{ name, criteria }` together, updates `profiles` and closes on success, shows an in-modal error and stays open on failure
