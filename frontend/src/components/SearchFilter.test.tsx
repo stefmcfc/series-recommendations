@@ -1379,8 +1379,8 @@ describe('FRONTEND-123-AC-03: SearchFilter sections default open/closed correctl
   })
 })
 
-describe('FRONTEND-109-AC-03: Save appears after the filter fields in SearchFilter', () => {
-  it('renders the profile selector after the Years section and before the action buttons', async () => {
+describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom, in SearchFilter', () => {
+  it('renders SavedFiltersList before the Genres & Keywords section', async () => {
     render(
       <SearchFilter
         isOpen
@@ -1390,10 +1390,29 @@ describe('FRONTEND-109-AC-03: Save appears after the filter fields in SearchFilt
       />,
     )
     const body = screen.getByTestId('filters-body')
-    const selector = await screen.findByTestId('filter-profile-selector')
-    // selector should now be a sibling AFTER filters-body, not a child before it
+    const list = await screen.findByTestId('filter-profile-selector')
+    const genresHeading = screen.getByText('Genres & Keywords')
+    expect(body.contains(list)).toBe(true)
     expect(
-      body.compareDocumentPosition(selector) & Node.DOCUMENT_POSITION_FOLLOWING,
+      list.compareDocumentPosition(genresHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('still renders FilterProfileActions immediately before the Search/Clear/Reset row', async () => {
+    render(
+      <SearchFilter
+        isOpen
+        onClose={vi.fn()}
+        onSearch={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    )
+    const actions = await screen.findByTestId('filter-profile-actions')
+    const clearButton = screen.getByTestId('clear-filters-btn')
+    expect(
+      actions.compareDocumentPosition(clearButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
   })
 })

@@ -8,7 +8,9 @@ import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
-import { FilterProfileSelector } from './FilterProfileSelector'
+import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
+import { SavedFiltersList } from './SavedFiltersList'
+import { FilterProfileActions } from './FilterProfileActions'
 import { CollapsibleSection } from './CollapsibleSection'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import {
@@ -389,6 +391,18 @@ export function SearchFilter({
     setForm(formStateFromCriteria(criteria))
   }
 
+  // FRONTEND-129-AC-01/AC-02: one shared hook instance feeds both
+  // SavedFiltersList (rendered at the top of filtersBody) and
+  // FilterProfileActions (rendered at this sheet's existing bottom
+  // position, immediately before the Search/Clear Filters row) -- see
+  // frontend_spec_129's Design Decisions.
+  const filterProfile = useFilterProfileSelector<MySeriesFilterCriteria>({
+    area: 'MY_SERIES',
+    currentCriteria: buildCriteria(form),
+    onApply: handleApplyProfile,
+    onClear: handleClearForm,
+  })
+
   const handleModalKeyDown = useEscapeToClose(() => setBrowseModalOpen(false))
 
   // FRONTEND-071-AC-05: same Escape-to-close pattern as
@@ -434,6 +448,14 @@ export function SearchFilter({
           </div>
 
           <div className={styles.filtersBody} data-testid="filters-body">
+            {/* FRONTEND-129-AC-02: Saved Filters now renders first, before
+                any individual field -- a shortcut past fields for a
+                returning user, distinct from Save/Update at the bottom. */}
+            <SavedFiltersList<MySeriesFilterCriteria>
+              area="MY_SERIES"
+              {...filterProfile}
+            />
+
             <section className={`${styles.filterSection} ${surface.card}`}>
               <CollapsibleSection
                 title="Genres & Keywords"
@@ -733,11 +755,10 @@ export function SearchFilter({
             </section>
           </div>
 
-          <FilterProfileSelector<MySeriesFilterCriteria>
+          <FilterProfileActions<MySeriesFilterCriteria>
             area="MY_SERIES"
             currentCriteria={buildCriteria(form)}
-            onApply={handleApplyProfile}
-            onClear={handleClearForm}
+            {...filterProfile}
           />
 
           <div className={styles.actions}>

@@ -444,6 +444,28 @@ describe('FRONTEND-107-AC-11: RecommendationFiltersBox selector wiring', () => {
   })
 })
 
+describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom, in RecommendationFiltersBox', () => {
+  it('renders SavedFiltersList before Min Vote Count, and FilterProfileActions before Reset Filters', async () => {
+    renderBox({ isCustomSearch: false })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    const list = await screen.findByTestId('filter-profile-selector')
+    const minVoteCount = screen.getByLabelText(/min vote count/i)
+    const actions = await screen.findByTestId('filter-profile-actions')
+    const resetButton = screen.getByTestId('reset-filters-btn')
+
+    expect(
+      list.compareDocumentPosition(minVoteCount) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      actions.compareDocumentPosition(resetButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
 describe('FRONTEND-107-AC-12: applying a profile sets minVoteCountTouched', () => {
   it('sets minVoteCountTouched true when the applied profile has a minVoteCount value', async () => {
     vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([

@@ -458,6 +458,32 @@ describe('FRONTEND-112-AC-04: Custom Search gains a Clear Filters button', () =>
   })
 })
 
+describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom, in CustomSearchPanel', () => {
+  it('renders SavedFiltersList before the genre/keyword fields, and FilterProfileActions before Clear Filters', async () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const list = await screen.findByTestId('filter-profile-selector')
+    const keywordsField = screen.getByLabelText('Keywords')
+    const actions = await screen.findByTestId('filter-profile-actions')
+    const resetButton = screen.getByTestId('reset-custom-search-filters-btn')
+
+    expect(
+      list.compareDocumentPosition(keywordsField) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      actions.compareDocumentPosition(resetButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
 describe('FRONTEND-112-AC-05: Save Filters disabled when Custom Search criteria is empty', () => {
   it('disables Save Filters at the default (empty) state', () => {
     render(

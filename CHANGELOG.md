@@ -8,6 +8,24 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.60.0] - 2026-09-24
+
+### Added
+
+- Frontend: saved-filter chips now show a hover tooltip describing what the profile actually filters by (e.g. "Genres: Crime, Drama"), reusing the same description data already shown in Settings (`frontend_spec_129`).
+- Frontend: clicking "Update Saved Filter" now opens an `UpdateFilterProfileModal` confirmation with an editable, pre-filled name, instead of silently overwriting the saved profile's criteria on one click (`frontend_spec_129`).
+
+### Changed
+
+- Frontend: `FilterProfileSelector` split into a new `useFilterProfileSelector` hook plus two rendered pieces (`SavedFiltersList`, `FilterProfileActions`) sharing one fetch/selection state, so a "Saved Filters" chip list and its Save/Update buttons can render in two different places without duplicating logic (`frontend_spec_129`).
+- Frontend: in `SearchFilter`/`UseMySeriesPanel`/`RecommendationFiltersBox`/`CustomSearchPanel`, the Saved Filters chip list now renders at the top of each filters area (before any individual field); Save/Update Filters stay at their existing bottom position (`frontend_spec_129`).
+- Frontend: Analysis (`NameStatsTable`'s "Analysis Filters" box) gets both the Saved Filters list and Save/Update actions inside it for the first time — previously the whole picker sat outside the box in `AnalysisView`, the only area whose picker ignored the box's collapsed state (`frontend_spec_129`).
+- Frontend: renamed the "Update Filters" button to "Update Saved Filter" for clarity about what it actually does (`frontend_spec_129` follow-up, found in live review).
+
+### Fixed
+
+- Frontend: applying a "Use My Series" saved filter profile created before Country/Language filtering existed (`frontend_spec_128`) no longer crashes the Recommendations page — missing fields on an older profile are now defaulted instead of applied as `undefined`, matching the same guard `SearchFilter`/Analysis already had (found live after `frontend_spec_129` made the saved-filter chip easier to reach).
+
 ## [3.59.1] - 2026-09-24
 
 ### Changed

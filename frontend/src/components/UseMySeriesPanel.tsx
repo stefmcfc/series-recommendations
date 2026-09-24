@@ -9,7 +9,9 @@ import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { NumberInput } from './NumberInput'
 import { StarRating } from './StarRating'
-import { FilterProfileSelector } from './FilterProfileSelector'
+import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
+import { SavedFiltersList } from './SavedFiltersList'
+import { FilterProfileActions } from './FilterProfileActions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   resolveTieredStep,
@@ -170,26 +172,38 @@ export function UseMySeriesPanel({
   // FRONTEND-107-AC-10: there's no reducer to patch here, so applying a
   // saved profile calls each individual setter in sequence (this spec's
   // Design Decisions).
+  // A saved profile from before a given field existed on
+  // UseMySeriesFilterCriteria (e.g. originCountryFilter/originalLanguageFilter,
+  // added by frontend_spec_128) has that key missing entirely, not set to its
+  // empty value -- applying it unguarded left state as `undefined` instead of
+  // `[]`/`''`/`null`, which crashed buildSpecificSeriesCandidatePool's
+  // filterSpecificSeriesByOriginCountry (`undefined.length`). Defaulting each
+  // field here mirrors SearchFilter.tsx's own formStateFromCriteria, which
+  // already guards the same way for its equivalent fields.
   const applyUseMySeriesFilterCriteria = (
     criteria: UseMySeriesFilterCriteria,
   ) => {
-    setSpecificSeriesGenreFilter(criteria.genreFilter)
-    setSpecificSeriesExcludeGenreFilter(criteria.excludeGenreFilter)
-    setSpecificSeriesStatusFilter(criteria.statusFilter)
-    setSpecificSeriesKeywordsFilter(criteria.keywordsFilter)
-    setSpecificSeriesOriginCountryFilter(criteria.originCountryFilter)
-    setSpecificSeriesOriginalLanguageFilter(criteria.originalLanguageFilter)
-    setSpecificSeriesMinPersonalRating(criteria.minPersonalRating)
-    setSpecificSeriesMinImdbRating(criteria.minImdbRating)
-    setSpecificSeriesMinTmdbRating(criteria.minTmdbRating)
-    setSpecificSeriesMinRottenTomatoesRating(criteria.minRottenTomatoesRating)
-    setSpecificSeriesMinRottenTomatoesPopcornmeter(
-      criteria.minRottenTomatoesPopcornmeter,
+    setSpecificSeriesGenreFilter(criteria.genreFilter ?? [])
+    setSpecificSeriesExcludeGenreFilter(criteria.excludeGenreFilter ?? [])
+    setSpecificSeriesStatusFilter(criteria.statusFilter ?? 'any')
+    setSpecificSeriesKeywordsFilter(criteria.keywordsFilter ?? [])
+    setSpecificSeriesOriginCountryFilter(criteria.originCountryFilter ?? [])
+    setSpecificSeriesOriginalLanguageFilter(
+      criteria.originalLanguageFilter ?? '',
     )
-    setSpecificSeriesYearMin(criteria.yearMin)
-    setSpecificSeriesYearMax(criteria.yearMax)
-    setSpecificSeriesSortBy(criteria.sortBy)
-    setSpecificSeriesSortDirection(criteria.sortDirection)
+    setSpecificSeriesMinPersonalRating(criteria.minPersonalRating ?? null)
+    setSpecificSeriesMinImdbRating(criteria.minImdbRating ?? '')
+    setSpecificSeriesMinTmdbRating(criteria.minTmdbRating ?? '')
+    setSpecificSeriesMinRottenTomatoesRating(
+      criteria.minRottenTomatoesRating ?? '',
+    )
+    setSpecificSeriesMinRottenTomatoesPopcornmeter(
+      criteria.minRottenTomatoesPopcornmeter ?? '',
+    )
+    setSpecificSeriesYearMin(criteria.yearMin ?? '')
+    setSpecificSeriesYearMax(criteria.yearMax ?? '')
+    setSpecificSeriesSortBy(criteria.sortBy ?? 'title')
+    setSpecificSeriesSortDirection(criteria.sortDirection ?? 'asc')
   }
 
   // FRONTEND-064-AC-04/AC-05: selecting a new sort field also resets the
@@ -231,6 +245,18 @@ export function UseMySeriesPanel({
     setSpecificSeriesSortBy('title')
     setSpecificSeriesSortDirection('asc')
   }
+
+  // FRONTEND-129-AC-01/AC-02: one shared hook instance feeds both
+  // SavedFiltersList (rendered at the top of this panel's filters body) and
+  // FilterProfileActions (rendered at its existing bottom position,
+  // immediately before the Clear Filters row) -- see frontend_spec_129's
+  // Design Decisions.
+  const filterProfile = useFilterProfileSelector<UseMySeriesFilterCriteria>({
+    area: 'USE_MY_SERIES',
+    currentCriteria: currentUseMySeriesCriteria,
+    onApply: applyUseMySeriesFilterCriteria,
+    onClear: handleClearSpecificSeriesFilters,
+  })
 
   const handleSpecificSeriesModalKeyDown = useEscapeToClose(() =>
     setSpecificSeriesBrowseModalOpen(false),
@@ -325,6 +351,15 @@ export function UseMySeriesPanel({
                     className={styles.filtersBody}
                     data-testid="specific-series-filters-body"
                   >
+                    {/* FRONTEND-129-AC-02: Saved Filters now renders first,
+                        before any individual field. */}
+                    <div className={styles.filterFullWidthRow}>
+                      <SavedFiltersList<UseMySeriesFilterCriteria>
+                        area="USE_MY_SERIES"
+                        {...filterProfile}
+                      />
+                    </div>
+
                     {/* FRONTEND-081 (2026-09-03 live-review amendment): Status
                         and Sort by are now their own full-width rows
                         (previously stacked together in a shared right-hand
@@ -639,11 +674,10 @@ export function UseMySeriesPanel({
                     </div>
 
                     <div className={styles.filterFullWidthRow}>
-                      <FilterProfileSelector<UseMySeriesFilterCriteria>
+                      <FilterProfileActions<UseMySeriesFilterCriteria>
                         area="USE_MY_SERIES"
                         currentCriteria={currentUseMySeriesCriteria}
-                        onApply={applyUseMySeriesFilterCriteria}
-                        onClear={handleClearSpecificSeriesFilters}
+                        {...filterProfile}
                       />
                     </div>
 

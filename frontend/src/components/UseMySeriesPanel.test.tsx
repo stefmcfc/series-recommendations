@@ -947,10 +947,54 @@ describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
     fireEvent.click(await screen.findByText('Comedies'))
     expect(screen.getByLabelText('Completed Only')).toBeChecked()
   })
+
+  // Regression test: a profile saved before originCountryFilter/
+  // originalLanguageFilter existed on UseMySeriesFilterCriteria
+  // (frontend_spec_128) has those keys missing entirely, not set to their
+  // empty value. Applying such a profile used to crash
+  // buildSpecificSeriesCandidatePool's filterSpecificSeriesByOriginCountry
+  // (`undefined.length`) -- found live after frontend_spec_129 shipped.
+  it('applies an older profile missing newer criteria fields without crashing', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([
+      {
+        id: '1',
+        area: 'USE_MY_SERIES',
+        name: 'No animation',
+        criteria: {
+          genreFilter: [],
+          excludeGenreFilter: ['Animation'],
+          statusFilter: 'any',
+          keywordsFilter: [],
+          // originCountryFilter/originalLanguageFilter omitted entirely --
+          // the field didn't exist when this profile was saved.
+          minPersonalRating: null,
+          minImdbRating: '',
+          minTmdbRating: '',
+          yearMin: '',
+          yearMax: '',
+          sortBy: 'title',
+          sortDirection: 'asc',
+        },
+        createdAt: '',
+        updatedAt: '',
+      },
+    ])
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Animation']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(await screen.findByText('No animation'))
+    expect(screen.getByLabelText('Any Status')).toBeChecked()
+  })
 })
 
-describe('FRONTEND-109-AC-04: Save appears after the filter fields in UseMySeriesPanel', () => {
-  it('renders the profile selector after the year fields, not before Status', async () => {
+describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom, in UseMySeriesPanel', () => {
+  it('renders SavedFiltersList before the Filter by Status fieldset', async () => {
     render(
       <UseMySeriesPanel
         state={makeState()}
@@ -961,15 +1005,36 @@ describe('FRONTEND-109-AC-04: Save appears after the filter fields in UseMySerie
       />,
     )
     const body = screen.getByTestId('specific-series-filters-body')
-    const yearMax = screen.getByLabelText(/year max \(my series\)/i)
-    const selector = await screen.findByTestId('filter-profile-selector')
+    const list = await screen.findByTestId('filter-profile-selector')
+    const statusFieldset = screen.getByText('Filter by Status')
+    expect(body.contains(list)).toBe(true)
     expect(
-      yearMax.compareDocumentPosition(selector) &
+      list.compareDocumentPosition(statusFieldset) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('still renders FilterProfileActions after the year fields, before Clear Filters', async () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const yearMax = screen.getByLabelText(/year max \(my series\)/i)
+    const actions = await screen.findByTestId('filter-profile-actions')
+    const resetButton = screen.getByTestId('reset-specific-series-filters-btn')
+    expect(
+      yearMax.compareDocumentPosition(actions) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
     expect(
-      body.lastElementChild?.contains(selector) || body.contains(selector),
-    ).toBe(true)
+      actions.compareDocumentPosition(resetButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 })
 
