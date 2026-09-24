@@ -8,11 +8,18 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.62.0] - 2026-09-24
+
 ### Added
 
 - Backend: "Use My Series" mode gains a per-request `sourceRankingStrategy` (personal rating + date completed [default, unchanged], personal rating + Custom Rating Blend, or Custom Rating Blend + personal rating) governing which of a user's tracked series feed sourcing and per-candidate scoring (`series_spec_068`).
 - Backend: a new user-configurable "Custom Rating Blend" (`sourceRatingBlendSources`) averaging any selected combination of IMDb/TMDB/Tomatometer/Popcornmeter ratings — normalizing Rotten Tomatoes' 0-100 scale to match IMDb/TMDB's 0-10 scale before averaging — deliberately named and implemented separately from the existing, unrelated "Blended Rating" used on the Analysis page (`series_spec_068`).
 - Frontend: "Use My Series" gains a 3-option source-ranking-strategy radio group (with an explanatory info disclosure) and, when a Custom Rating Blend strategy is selected, a 4-chip rating-source picker (IMDb/TMDB/Tomatometer/Popcornmeter) — both saved/restored via the existing filter-profile flow (`frontend_spec_132`).
+
+### Fixed
+
+- Frontend: `InfoDisclosure`'s description could overflow past the viewport's right edge (e.g. Min Tomatometer Rating), inflating the whole page into horizontal scroll — now measured and flipped to anchor from the right when it would overflow.
+- Frontend: Source Ranking Strategy's heading info box rendered on its own line below the heading text instead of beside it, because a `<legend>` inside a flex fieldset always renders as its own block-level box — replaced with a `role="radiogroup"`/`aria-labelledby` div.
 
 ## [3.61.1] - 2026-09-24
 
