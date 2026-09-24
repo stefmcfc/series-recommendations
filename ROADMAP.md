@@ -40,6 +40,7 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
+| Shared `InfoDisclosure` click-to-toggle info boxes for 7 non-obvious controls (Skip Threshold Override, Watch Region, Filter Profiles, Sort By's Best Match/Most Recommended pair, Min Vote Count, Min Avg Blended Rating, Min Rotten Tomatoes Popcornmeter) | — | `frontend_spec_131` | ⬜ Not started |
 
 ---
 
