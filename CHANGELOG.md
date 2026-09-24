@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.59.1] - 2026-09-24
+
 ### Changed
 
 - Frontend: card tint (`frontend_spec_124`) now renders as a 135° diagonal gradient instead of a flat wash, chosen after a live comparison against a radial-glow and top-accent-bar alternative (`frontend_spec_130`).
