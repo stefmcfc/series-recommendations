@@ -615,7 +615,7 @@ export function SearchFilter({
                   <div className={styles.field}>
                     <NumberInput
                       id="search-min-rotten-tomatoes-rating"
-                      label="Min Rotten Tomatoes Rating"
+                      label="Min Tomatometer Rating"
                       min={0}
                       max={100}
                       step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
@@ -625,13 +625,19 @@ export function SearchFilter({
                           target: { value: String(value) },
                         } as React.ChangeEvent<HTMLInputElement>)
                       }
+                      labelInfo={
+                        <InfoDisclosure
+                          label="About Min Tomatometer Rating"
+                          description="Rotten Tomatoes' critics score (their own term is 'Tomatometer') — the percentage of critic reviews that were positive."
+                        />
+                      }
                     />
                   </div>
 
                   <div className={styles.field}>
                     <NumberInput
                       id="search-min-rotten-tomatoes-popcornmeter"
-                      label="Min Rotten Tomatoes Popcornmeter"
+                      label="Min Popcornmeter Rating"
                       min={0}
                       max={100}
                       step={resolveTieredStep(ROTTEN_TOMATOES_STEP_BREAKPOINTS)}
@@ -643,8 +649,8 @@ export function SearchFilter({
                       }
                       labelInfo={
                         <InfoDisclosure
-                          label="About Min Rotten Tomatoes Popcornmeter"
-                          description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — distinct from the Tomatometer critics' score used by 'Min Rotten Tomatoes Rating' above."
+                          label="About Min Popcornmeter Rating"
+                          description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — the percentage of verified audience members who rated it positively."
                         />
                       }
                     />

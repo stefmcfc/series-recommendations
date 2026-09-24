@@ -183,6 +183,17 @@
   gap: 0.375rem;
 }
 
+/* FRONTEND-132 (live-review amendment): forces each of the "Source Ranking
+   Strategy" fieldset's 3 radio options onto its own row within
+   .modeFieldset's flex-wrap layout, without touching .modeFieldset itself --
+   the "Filter by Status" fieldset shares that same class and its 3 short
+   options should keep wrapping inline as before. Applied only to the
+   Source Ranking Strategy options' own .modeOption divs, alongside the
+   existing class (never in place of it). */
+.modeOptionFullRow {
+  flex-basis: 100%;
+}
+
 .seriesPicker {
   display: flex;
   flex-direction: column;

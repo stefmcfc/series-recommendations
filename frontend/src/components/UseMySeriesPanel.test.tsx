@@ -522,7 +522,7 @@ describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the pick
       />,
     )
 
-    fireEvent.change(screen.getByLabelText('Min Rotten Tomatoes Rating'), {
+    fireEvent.change(screen.getByLabelText('Min Tomatometer Rating'), {
       target: { value: '60' },
     })
     const dialog = openBrowseSeriesModal()
@@ -554,10 +554,9 @@ describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the pick
       />,
     )
 
-    fireEvent.change(
-      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
-      { target: { value: '60' } },
-    )
+    fireEvent.change(screen.getByLabelText('Min Popcornmeter Rating'), {
+      target: { value: '60' },
+    })
     const dialog = openBrowseSeriesModal()
 
     expect(within(dialog).getByText('High Popcorn')).toBeInTheDocument()
@@ -1134,8 +1133,8 @@ describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series',
   })
 })
 
-describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure', () => {
-  it('renders the disclosure beside the field', () => {
+describe('FRONTEND-131-AC-11: Min Tomatometer/Popcornmeter Rating fields have info disclosures', () => {
+  it('renders a disclosure on both the Tomatometer and Popcornmeter fields', () => {
     render(
       <UseMySeriesPanel
         state={makeState()}
@@ -1147,14 +1146,14 @@ describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info discl
     )
     expect(
       screen.getByRole('button', {
-        name: 'About Min Rotten Tomatoes Popcornmeter',
+        name: 'About Min Popcornmeter Rating',
       }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', {
-        name: 'About Min Rotten Tomatoes Rating',
+      screen.getByRole('button', {
+        name: 'About Min Tomatometer Rating',
       }),
-    ).not.toBeInTheDocument()
+    ).toBeInTheDocument()
   })
 })
 
