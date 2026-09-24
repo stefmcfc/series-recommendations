@@ -40,6 +40,10 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
+| Add `springdoc-openapi` dependency for a live Swagger UI (`/swagger-ui.html`) and machine-readable OpenAPI spec (`/v3/api-docs`), with app-identifying title/description metadata | `series_spec_066` | — | ⬜ Not started |
+| Port `API.md`'s existing endpoint/parameter prose into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ⬜ Not started |
+| "Use My Series" source-ranking strategy (3 presets) plus a user-configurable "Custom Rating Blend" (IMDb/TMDB/Tomatometer/Popcornmeter chips) | `series_spec_068` | `frontend_spec_132` | ⬜ Not started |
+| Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
 
 ---
 
