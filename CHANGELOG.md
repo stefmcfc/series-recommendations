@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.61.1] - 2026-09-24
+
 ### Changed
 
 - Root: bumped `@commitlint/cli`/`@commitlint/config-conventional` to 21.2.3 and `lint-staged` to 17.5.1 (patch/minor, within existing semver ranges — no behavior change).
