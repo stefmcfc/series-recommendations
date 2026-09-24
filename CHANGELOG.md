@@ -8,6 +8,19 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.61.1] - 2026-09-24
+
+### Changed
+
+- Root: bumped `@commitlint/cli`/`@commitlint/config-conventional` to 21.2.3 and `lint-staged` to 17.5.1 (patch/minor, within existing semver ranges — no behavior change).
+- Frontend: bumped `@testing-library/dom`/`@testing-library/react`/`@testing-library/user-event`, `@types/node`/`@types/react`/`@types/react-dom`, `@vitejs/plugin-react`, `@vitest/coverage-v8`, `eslint`/`eslint-plugin-react-refresh`, `globals`, `jsdom`, `prettier`, `react`/`react-dom`, `react-router-dom`, `typescript-eslint`, and `vite` to their latest patch/minor releases (all within existing semver ranges — no behavior change). Backend and GitHub Actions had no safe updates available — Gradle's own dependency resolver confirms every backend dependency is already on its latest stable release, and every workflow already pins a floating major tag (`@v7`/`@v6`/`@v4`) that auto-tracks the newest release in that line.
+
+### Deferred (evaluated, not taken this pass)
+
+- Frontend: **TypeScript 6→7** — `typescript-eslint` (currently 8.70.1, the latest available) explicitly refuses to run against TS 7.0 with a hard error ("typescript-eslint does not support TS 7.0"), tracked upstream at [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940). Not adoptable until that lands.
+- Frontend: **Vitest 4→5** (+ `@vitest/coverage-v8` companion) — `@testing-library/jest-dom` (7.0.1, the latest published version) hasn't updated its type declarations for Vitest 5's new two-type-parameter `Assertion<R, T>` interface (was `Assertion<T>`), so every jest-dom matcher (`toBeInTheDocument`, `toHaveAttribute`, etc.) silently loses its type in `tsc -b`, breaking the build — runtime test execution is unaffected, only type-checking. Revisit once jest-dom ships a compatible release.
+- Backend: Groovy 5→6, Flyway 12→13 (real majors, no forcing function to take them now) and Spring Boot 4.2.0-M2/Hibernate 8.0.0.Beta2/Gradle 9.8.0 (pre-release milestones/betas/RCs — not stable yet) were all surfaced by Gradle's dependency resolver but deliberately left alone.
+
 ## [3.61.0] - 2026-09-24
 
 ### Added
