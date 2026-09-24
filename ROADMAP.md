@@ -39,7 +39,7 @@ dependency-derived anymore.
 | Feature | Backend Spec | Frontend Spec | Status |
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
-| Saved Filters picker moved to the top of every filter area (My Series, Use My Series, Recommendation Filters, Custom Search, Analysis — the last folded into its own filters box for the first time), plus a hover tooltip on each saved filter describing what it contains | — | `frontend_spec_129` | ⬜ Not started |
+| Saved Filters list moved to the top of every filter area (My Series, Use My Series, Recommendation Filters, Custom Search, Analysis — the last folded into its own filters box for the first time, bookended with fields in between), a hover tooltip on each saved filter describing what it contains, and an "Update Filters" confirmation dialog with an editable name (was a silent, unconfirmed overwrite) | — | `frontend_spec_129` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 
 ---
