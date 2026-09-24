@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Year;
+import java.util.List;
 
 /**
  * Validates a {@link RecommendationCriteria} before it reaches sourcing. Extracted from {@code
@@ -40,6 +41,8 @@ public class RecommendationCriteriaValidator {
         validateYearRange(c);
         validateTrendingWindow(c);
         validateDiscoverSortBy(c);
+        validateSourceRankingStrategy(c);
+        validateSourceRatingBlendSources(c);
     }
 
     private void validateSourceMode(RecommendationCriteria c, boolean hasSourceMode) {
@@ -132,6 +135,28 @@ public class RecommendationCriteriaValidator {
         String discoverSortBy = c.getDiscoverSortBy();
         if (discoverSortBy != null && !discoverSortBy.isBlank() && !RecommendationDefaults.VALID_DISCOVER_SORT_BY.contains(discoverSortBy)) {
             throw new IllegalArgumentException("discoverSortBy must be one of: " + RecommendationDefaults.VALID_DISCOVER_SORT_BY);
+        }
+    }
+
+    /** SERIES-068-AC-02: mirrors {@link #validateDiscoverSortBy}'s existing enum-string validation shape. */
+    private void validateSourceRankingStrategy(RecommendationCriteria c) {
+        String strategy = c.getSourceRankingStrategy();
+        if (strategy != null && !strategy.isBlank() && !RecommendationDefaults.VALID_SOURCE_RANKING_STRATEGIES.contains(strategy)) {
+            throw new IllegalArgumentException(
+                "sourceRankingStrategy must be one of: " + RecommendationDefaults.VALID_SOURCE_RANKING_STRATEGIES);
+        }
+    }
+
+    /** SERIES-068-AC-05: rejects an explicitly-empty list, or any entry outside the 4 recognized blend sources. */
+    private void validateSourceRatingBlendSources(RecommendationCriteria c) {
+        List<String> sources = c.getSourceRatingBlendSources();
+        if (sources == null) {
+            return;
+        }
+        if (sources.isEmpty() || !RecommendationDefaults.VALID_SOURCE_RATING_BLEND_SOURCES.containsAll(sources)) {
+            throw new IllegalArgumentException(
+                "sourceRatingBlendSources must be a non-empty list containing only: "
+                    + RecommendationDefaults.VALID_SOURCE_RATING_BLEND_SOURCES);
         }
     }
 }

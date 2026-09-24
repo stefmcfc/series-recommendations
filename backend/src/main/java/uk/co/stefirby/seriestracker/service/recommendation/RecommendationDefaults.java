@@ -61,6 +61,39 @@ final class RecommendationDefaults {
         "vote_count.asc", "vote_count.desc"
     );
 
+    /** {@code RecommendationCriteria#getSourceRankingStrategy()}'s default when unset (SERIES-068-AC-01/03). */
+    static final String SOURCE_RANKING_STRATEGY_PERSONAL_THEN_DATE = "personalRatingThenDate";
+
+    /** {@code RecommendationCriteria#getSourceRankingStrategy()} value ranking by {@code personalRating}, then the Custom Rating Blend (SERIES-068-AC-07). */
+    static final String SOURCE_RANKING_STRATEGY_PERSONAL_THEN_CUSTOM_BLEND = "personalRatingThenCustomBlend";
+
+    /** {@code RecommendationCriteria#getSourceRankingStrategy()} value ranking by the Custom Rating Blend, then {@code personalRating} (SERIES-068-AC-07). */
+    static final String SOURCE_RANKING_STRATEGY_CUSTOM_BLEND_THEN_PERSONAL = "customBlendThenPersonalRating";
+
+    /** SERIES-068-AC-02: the 3 recognized {@code sourceRankingStrategy} values, validated by {@code RecommendationCriteriaValidator}. */
+    static final Set<String> VALID_SOURCE_RANKING_STRATEGIES = Set.of(
+        SOURCE_RANKING_STRATEGY_PERSONAL_THEN_DATE,
+        SOURCE_RANKING_STRATEGY_PERSONAL_THEN_CUSTOM_BLEND,
+        SOURCE_RANKING_STRATEGY_CUSTOM_BLEND_THEN_PERSONAL
+    );
+
+    /** {@code RecommendationCriteria#getSourceRatingBlendSources()} recognized entry -- IMDb, already 0-10 (SERIES-068-AC-04/06). */
+    static final String BLEND_SOURCE_IMDB = "imdb";
+
+    /** {@code RecommendationCriteria#getSourceRatingBlendSources()} recognized entry -- TMDB, already 0-10 (SERIES-068-AC-04/06). */
+    static final String BLEND_SOURCE_TMDB = "tmdb";
+
+    /** {@code RecommendationCriteria#getSourceRatingBlendSources()} recognized entry -- Rotten Tomatoes' Tomatometer, 0-100, normalized to 0-10 before blending (SERIES-068-AC-04/06). */
+    static final String BLEND_SOURCE_TOMATOMETER = "tomatometer";
+
+    /** {@code RecommendationCriteria#getSourceRatingBlendSources()} recognized entry -- Rotten Tomatoes' Popcornmeter, 0-100, normalized to 0-10 before blending (SERIES-068-AC-04/06). */
+    static final String BLEND_SOURCE_POPCORNMETER = "popcornmeter";
+
+    /** SERIES-068-AC-05: the 4 recognized {@code sourceRatingBlendSources} values, validated by {@code RecommendationCriteriaValidator}. */
+    static final Set<String> VALID_SOURCE_RATING_BLEND_SOURCES = Set.of(
+        BLEND_SOURCE_IMDB, BLEND_SOURCE_TMDB, BLEND_SOURCE_TOMATOMETER, BLEND_SOURCE_POPCORNMETER
+    );
+
     private RecommendationDefaults() {
     }
 }

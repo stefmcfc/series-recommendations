@@ -1,6 +1,6 @@
 # Series Spec 068: Recommendation Source-Series Ranking Strategy
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: none directly, but extends behavior established by `series_spec_006_recommendations.md`
 (introduced pool-based sourcing), `series_spec_015_multi_source_recommendations.md` (introduced
@@ -288,10 +288,10 @@ def "SERIES-068-AC-07: customBlendThenPersonalRating orders by blend first, pers
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-068-AC-01: `sourceRankingStrategy` field added to `RecommendationCriteria`, 3 recognized values, default `personalRatingThenDate`
-- [ ] SERIES-068-AC-02: an unrecognized `sourceRankingStrategy` value is rejected with 400
-- [ ] SERIES-068-AC-03: `resolveSourcePool` sorts by the resolved strategy before capping to `maxSourceSeries`
-- [ ] SERIES-068-AC-04: `sourceRatingBlendSources` field added, 4 recognized values, default `["imdb","tmdb"]`
-- [ ] SERIES-068-AC-05: an empty or unrecognized `sourceRatingBlendSources` entry is rejected with 400
-- [ ] SERIES-068-AC-06: `SourceRatingBlend.compute` averages only selected, non-null sources, normalizing Rotten Tomatoes fields to a 0-10 scale, `null` when nothing is present
-- [ ] SERIES-068-AC-07: both `resolveSourcePool` and `orderSources` use the blend-aware comparator when a Custom-Rating-Blend strategy is selected
+- [x] SERIES-068-AC-01: `sourceRankingStrategy` field added to `RecommendationCriteria`, 3 recognized values, default `personalRatingThenDate`
+- [x] SERIES-068-AC-02: an unrecognized `sourceRankingStrategy` value is rejected with 400
+- [x] SERIES-068-AC-03: `resolveSourcePool` sorts by the resolved strategy before capping to `maxSourceSeries`
+- [x] SERIES-068-AC-04: `sourceRatingBlendSources` field added, 4 recognized values, default `["imdb","tmdb"]`
+- [x] SERIES-068-AC-05: an empty or unrecognized `sourceRatingBlendSources` entry is rejected with 400
+- [x] SERIES-068-AC-06: `SourceRatingBlend.compute` averages only selected, non-null sources, normalizing Rotten Tomatoes fields to a 0-10 scale, `null` when nothing is present
+- [x] SERIES-068-AC-07: both `resolveSourcePool` and `orderSources` use the blend-aware comparator when a Custom-Rating-Blend strategy is selected

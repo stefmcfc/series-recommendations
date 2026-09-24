@@ -39,6 +39,8 @@ public class RecommendationCriteria {
     private String trendingWindow;
     private String discoverSortBy;
     private String region;
+    private String sourceRankingStrategy;
+    private List<String> sourceRatingBlendSources;
 
     public RecommendationCriteria() {
         // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
@@ -146,6 +148,34 @@ public class RecommendationCriteria {
      */
     public String getRegion() { return region; }
     public void setRegion(String region) { this.region = region; }
+
+    /**
+     * {@code "personalRatingThenDate"} (default when unset), {@code
+     * "personalRatingThenCustomBlend"}, or {@code "customBlendThenPersonalRating"}
+     * (SERIES-068-AC-01) -- read only where {@code sourceMode == "useMySeries"} can matter
+     * ({@code RecommendationSourcingService#resolveSourcePool}, {@code
+     * RecommendationDeduplicationService#orderSources}); harmlessly ignored by every other
+     * sourcing mode, whose {@code sourceSeries} is always empty (see {@code
+     * series_spec_068_recommendation_source_ranking_strategy.md}'s Design Decisions). The
+     * default is resolved at the point of use ({@code SourceOrderComparator#forStrategy}), not
+     * on this DTO, matching how {@code sortBy}'s own default is resolved in {@code
+     * RecommendationRankingService#resolveSortComparator}.
+     */
+    public String getSourceRankingStrategy() { return sourceRankingStrategy; }
+    public void setSourceRankingStrategy(String sourceRankingStrategy) { this.sourceRankingStrategy = sourceRankingStrategy; }
+
+    /**
+     * {@code List<String>} of values from {@code {"imdb", "tmdb", "tomatometer",
+     * "popcornmeter"}}, defaulting to {@code ["imdb", "tmdb"]} when unset (SERIES-068-AC-04) --
+     * feeds the "Custom Rating Blend" powering {@code
+     * "personalRatingThenCustomBlend"}/{@code "customBlendThenPersonalRating"}
+     * {@link #sourceRankingStrategy} values. Deliberately distinct from {@code
+     * RatingBlendUtil}'s own fixed, unrelated blend (see this spec's Design Decisions). The
+     * default is resolved at the point of use ({@code SourceRatingBlend#resolveSources}), not on
+     * this DTO, matching {@link #sourceRankingStrategy}'s own convention above.
+     */
+    public List<String> getSourceRatingBlendSources() { return sourceRatingBlendSources; }
+    public void setSourceRatingBlendSources(List<String> sourceRatingBlendSources) { this.sourceRatingBlendSources = sourceRatingBlendSources; }
 
     /**
      * {@code true} iff this request is directed by genre and/or keyword (TOOLING-003-AC-05) --
