@@ -8,6 +8,18 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: card tint (`frontend_spec_124`) now renders as a 135° diagonal gradient instead of a flat wash, chosen after a live comparison against a radial-glow and top-accent-bar alternative (`frontend_spec_130`).
+
+### Fixed
+
+- Frontend: the My Series toolbar (sort/view-mode/filter/Add Series) no longer picks up the card tint — it was sharing the same tinted card surface as the series rows below it, reading as content instead of chrome (`frontend_spec_130`).
+- Frontend: My Series filter section headings (e.g. "Genres & Keywords", "Ratings") now use an accent-tinted background instead of a neutral grey chip that clashed against the tinted card; padding tightened at the same time (`frontend_spec_130`).
+- Frontend: My Series filter panel spacing tightened further — reduced padding on each filter section card and the gap between stacked sections (`frontend_spec_130` follow-up, found in live review).
+- Frontend: Settings > Filter Profiles' saved-profile rows no longer double up the card tint from the section card they sit inside (`frontend_spec_130`).
+- Frontend: unfilled personal-rating stars are now visible against a tinted card background — previously used a near-background color intended only for subtle dividers (`frontend_spec_130`).
+
 ## [3.59.0] - 2026-09-23
 
 ### Added
