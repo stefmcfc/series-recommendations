@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import styles from './NumberInput.module.css'
 
 // FRONTEND-115-AC-03: mirrors a plain <input type="number">'s value/min/max/
@@ -31,6 +31,12 @@ interface NumberInputProps {
   readonly disabled?: boolean
   readonly label: string
   readonly id?: string
+  // FRONTEND-131-AC-03: an optional InfoDisclosure (or any other node)
+  // rendered as a sibling of <label>, never nested inside it -- a <button>
+  // placed inside the <label> would, via the label's native
+  // click-through-focuses-input behavior, also focus the associated
+  // <input> on click.
+  readonly labelInfo?: ReactNode
   // Not in this spec's explicit prop list, but needed by several migrated
   // call sites (e.g. SeriesFormFields' locked-field/error hints) that already
   // wire aria-describedby onto their raw <input> -- a straightforward
@@ -82,6 +88,7 @@ export function NumberInput({
   label,
   id,
   ariaDescribedBy,
+  labelInfo,
 }: NumberInputProps) {
   const generatedId = useId()
   const inputId = id ?? generatedId
@@ -114,7 +121,18 @@ export function NumberInput({
 
   return (
     <div className={styles.wrapper}>
-      <label htmlFor={inputId}>{label}</label>
+      {/* FRONTEND-131-AC-03: labelInfo, when provided, is a sibling of
+          <label> inside this new row -- never a descendant of it. Omitted
+          entirely (no new wrapping element) when labelInfo isn't passed, so
+          every pre-existing caller's rendered output is unchanged. */}
+      {labelInfo ? (
+        <div className={styles.labelRow}>
+          <label htmlFor={inputId}>{label}</label>
+          {labelInfo}
+        </div>
+      ) : (
+        <label htmlFor={inputId}>{label}</label>
+      )}
       <div className={styles.controlRow}>
         <input
           id={inputId}

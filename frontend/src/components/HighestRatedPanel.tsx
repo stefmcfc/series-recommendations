@@ -4,6 +4,7 @@ import type {
   SortByOption,
 } from './RecommendationControls'
 import styles from './RecommendationControls.module.css'
+import { InfoDisclosure } from './InfoDisclosure'
 
 interface HighestRatedPanelProps {
   readonly state: ControlsState
@@ -38,6 +39,17 @@ export function HighestRatedPanel({
   return (
     <fieldset className={styles.sortByFieldset}>
       <legend>Sort By</legend>
+      {/* FRONTEND-131-AC-08: gated to the Best Match/Most Recommended
+          branch this describes -- the TMDB-native options below are
+          self-explanatory and out of scope. A sibling of <legend>, not a
+          descendant, for the identical accessible-name reason as
+          SettingsSection's <h3>/info split. */}
+      {!showDiscoverSortByOptions && (
+        <InfoDisclosure
+          label="About Sort By"
+          description="Best Match ranks by how closely each series matches your own top-rated shows. Most Recommended ranks by how many of your tracked series recommended it, regardless of match quality."
+        />
+      )}
 
       {showDiscoverSortByOptions ? (
         <>

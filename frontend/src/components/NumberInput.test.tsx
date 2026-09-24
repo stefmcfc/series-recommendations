@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect } from 'vitest'
 import { NumberInput } from './NumberInput'
+import { InfoDisclosure } from './InfoDisclosure'
 
 describe('FRONTEND-115-AC-02: renders themed increment/decrement buttons', () => {
   it('renders an input and two spinner buttons', () => {
@@ -122,6 +123,37 @@ describe('FRONTEND-115-AC-04: increment/decrement respects step and clamps to mi
     expect(
       screen.getByRole('button', { name: /decrement|decrease/i }),
     ).toBeDisabled()
+  })
+})
+
+describe('FRONTEND-131-AC-03: NumberInput renders labelInfo beside, not inside, its label', () => {
+  it('renders labelInfo as a sibling of the label, not a child', () => {
+    render(
+      <NumberInput
+        label="Skip Threshold Override"
+        value="5"
+        onChange={vi.fn()}
+        labelInfo={
+          <InfoDisclosure
+            label="About Skip Threshold Override"
+            description="..."
+          />
+        }
+      />,
+    )
+    const label = screen.getByText('Skip Threshold Override').closest('label')
+    const infoButton = screen.getByRole('button', {
+      name: 'About Skip Threshold Override',
+    })
+    expect(label).not.toBeNull()
+    expect(label?.contains(infoButton)).toBe(false)
+  })
+
+  it('renders unchanged when labelInfo is omitted (no regression for existing callers)', () => {
+    const { container } = render(
+      <NumberInput label="Year Min" value="" onChange={vi.fn()} />,
+    )
+    expect(container.querySelectorAll('button')).toHaveLength(2) // increment/decrement only
   })
 })
 

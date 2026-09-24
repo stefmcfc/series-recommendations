@@ -11,6 +11,16 @@
   width: 100%;
 }
 
+/* FRONTEND-131-AC-03: sibling row for an optional labelInfo (e.g.
+   InfoDisclosure) beside <label> -- never nested inside it, since a
+   <button> inside <label> would also focus the associated <input> on
+   click via the label's native click-through behavior. */
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .controlRow {
   display: flex;
   align-items: stretch;

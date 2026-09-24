@@ -7,6 +7,7 @@ import type { MySeriesFilterCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
+import { InfoDisclosure } from './InfoDisclosure'
 import { StarRating } from './StarRating'
 import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
@@ -639,6 +640,12 @@ export function SearchFilter({
                         updateField('minRottenTomatoesPopcornmeter')({
                           target: { value: String(value) },
                         } as React.ChangeEvent<HTMLInputElement>)
+                      }
+                      labelInfo={
+                        <InfoDisclosure
+                          label="About Min Rotten Tomatoes Popcornmeter"
+                          description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — distinct from the Tomatometer critics' score used by 'Min Rotten Tomatoes Rating' above."
+                        />
                       }
                     />
                   </div>

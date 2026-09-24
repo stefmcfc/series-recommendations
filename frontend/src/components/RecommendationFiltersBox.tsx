@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
+import { InfoDisclosure } from './InfoDisclosure'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
@@ -248,6 +249,12 @@ export function RecommendationFiltersBox({
                 handleMinVoteCountChange({
                   target: { value: String(value) },
                 } as React.ChangeEvent<HTMLInputElement>)
+              }
+              labelInfo={
+                <InfoDisclosure
+                  label="About Min Vote Count"
+                  description="Filters out titles TMDB has very little voting data for, excluding obscure or newly-added shows whose rating might not be reliable yet."
+                />
               }
             />
             {minVoteCountError && (

@@ -8,6 +8,7 @@ import type { PickerOption } from './KeywordPicker'
 import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { NumberInput } from './NumberInput'
+import { InfoDisclosure } from './InfoDisclosure'
 import { StarRating } from './StarRating'
 import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
@@ -635,6 +636,12 @@ export function UseMySeriesPanel({
                             setSpecificSeriesMinRottenTomatoesPopcornmeter(
                               String(value),
                             )
+                          }
+                          labelInfo={
+                            <InfoDisclosure
+                              label="About Min Rotten Tomatoes Popcornmeter"
+                              description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — distinct from the Tomatometer critics' score used by 'Min Rotten Tomatoes Rating' above."
+                            />
                           }
                         />
                       </div>

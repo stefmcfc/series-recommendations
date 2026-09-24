@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { SettingsSection } from './SettingsSection'
+import { InfoDisclosure } from './InfoDisclosure'
 import surface from '../styles/surfaces.module.css'
 
 describe('FRONTEND-097-AC-03: SettingsSection renders a title and its children', () => {
@@ -40,6 +41,34 @@ describe('FRONTEND-101-AC-05/08: optional icon is decorative', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'No Icon' })).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-131-AC-04: SettingsSection renders info beside, not inside, its heading', () => {
+  it("keeps the heading's accessible name exact when info is passed", () => {
+    render(
+      <SettingsSection
+        title="Watch Region"
+        info={<InfoDisclosure label="About Watch Region" description="..." />}
+      >
+        <p>content</p>
+      </SettingsSection>,
+    )
+    expect(
+      screen.getByRole('heading', { name: 'Watch Region' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'About Watch Region' }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders unchanged when info is omitted', () => {
+    render(
+      <SettingsSection title="Export">
+        <p>content</p>
+      </SettingsSection>,
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
 

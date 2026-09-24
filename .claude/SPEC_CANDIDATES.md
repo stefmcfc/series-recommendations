@@ -200,42 +200,6 @@ keyword popularity/average personal rating" candidate above — both touch
 `RecommendationRankingService`'s scoring formula directly and should likely be designed together
 rather than layered on separately, per that candidate's own note about the same risk.
 
-### Info/disclosure boxes explaining non-obvious controls (Settings + Sort By) — possibly a global, reusable pattern
-
-Confirmed via search: no tooltip/info/help component exists anywhere in this codebase today —
-this is a first-of-its-kind UI primitive, not a reuse. **Recommended shape** (resolved
-2026-08-26): a small disclosure button (`?`/`ⓘ` icon) next to the label, `aria-expanded`/
-`aria-controls` toggling a short description directly beneath the field — not a hover tooltip
-(fails outright on touch, unreliable for keyboard/screen-reader users) and not permanent
-always-visible text (clutters the panel across four separate fields most of the time unasked-for).
-This is the same click-to-toggle-visibility idiom already used by the "Filters" section's own
-toggle button and `SearchFilter`'s "Browse all keywords" trigger — not a new pattern for this app,
-just a smaller, field-scoped instance of one already in use.
-
-**Note (2026-08-29)**: Max Per Source/Max Sources Shown were confirmed dead under every Discover
-mode and removed from the frontend entirely (`frontend_spec_048`, delivered) rather than hidden —
-this candidate's own scope for those two fields narrowed to "Use My Series" mode only at the time.
-**Update (2026-09-03)**: re-checked against the current code (post `frontend_spec_081`) — neither
-field has any frontend UI control anywhere anymore, including "Use My Series" (grep for
-`maxPerSource`/`maxSourcesShown` across `frontend/src/components/*.tsx` returns zero matches
-outside test files; both remain live backend request params with defaults, just with nothing in
-the UI to set them). This candidate's scope for those two fields is now moot — nothing left to
-attach a disclosure box to. Only "Sort By" (the Best Match/Most Recommended radio pair) is still a
-live candidate for this treatment.
-
-**Update (2026-09-09)**: broadened by the user to cover three specific `/settings` fields, raised
-during a live-app pass — confirmed none of the three currently has any explanatory text at all:
-"Skip Threshold Override" (`SettingsPage.tsx` line ~276, a plain labeled number input + unit
-dropdown, no description of what it does or why you'd set it), "Filter Profiles" (the Settings
-management section from `frontend_spec_108`, no explanation that these are named, reusable
-saved-criteria snapshots per filter area), and "Watch Region" (`SettingsPage.tsx` line ~370, no
-explanation that this affects streaming-availability results). The user also flagged this "might
-be pretty global" — i.e. the eventual disclosure-box primitive built for these should likely be a
-shared component from the start (e.g. `InfoDisclosure`/`FieldHint`), reused across both this
-Settings scope and the still-open "Sort By" scope above, rather than two independent
-implementations of the same idiom. Whoever scopes this should treat "one shared component, many
-call sites" as the default shape, not an optimization to consider later.
-
 ### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
 
 Raised 2026-09-03 alongside a browser walkthrough of `frontend_spec_074`. Confirmed via reading the
