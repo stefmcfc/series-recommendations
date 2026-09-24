@@ -81,6 +81,15 @@ export interface UseMySeriesFilterCriteria {
     | 'rottenTomatoesRating'
     | 'rottenTomatoesPopcornmeter'
   sortDirection: 'asc' | 'desc'
+  // FRONTEND-132-AC-01/03/SERIES-068: mirrors ControlsState's own two new
+  // fields exactly -- this interface stays a decoupled mirror of
+  // UseMySeriesPanel's local state per this file's existing convention
+  // (see Area B's header comment above), not an import of ControlsState.
+  sourceRankingStrategy:
+    | 'personalRatingThenDate'
+    | 'personalRatingThenCustomBlend'
+    | 'customBlendThenPersonalRating'
+  sourceRatingBlendSources: string[]
 }
 
 // Area C -- RecommendationFiltersBox.tsx's named 8-field slice of

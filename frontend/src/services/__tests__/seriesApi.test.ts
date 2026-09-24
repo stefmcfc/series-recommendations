@@ -862,6 +862,38 @@ describe('FRONTEND-033: getRecommendations includes discoverSortBy', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-132-AC-05: getRecommendations wires sourceRankingStrategy/
+// sourceRatingBlendSources
+// ---------------------------------------------------------------------------
+describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
+  it('includes sourceRankingStrategy and sourceRatingBlendSources when present', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({
+      sourceRankingStrategy: 'personalRatingThenCustomBlend',
+      sourceRatingBlendSources: ['imdb', 'popcornmeter'],
+    })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: expect.objectContaining({
+        sourceRankingStrategy: 'personalRatingThenCustomBlend',
+        sourceRatingBlendSources: 'imdb,popcornmeter',
+      }),
+    })
+  })
+
+  it('omits both fields entirely when unset', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({})
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-014-AC-01: getGenreOptions()
 // ---------------------------------------------------------------------------
 describe('FRONTEND-014-AC-01: getGenreOptions', () => {

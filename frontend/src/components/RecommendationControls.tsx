@@ -185,6 +185,15 @@ export interface ControlsState {
   countriesSelected: string[]
   sortBy: SortByOption
   discoverSortBy: DiscoverSortByOption
+  // FRONTEND-132-AC-01/03/SERIES-068: only meaningful while mode ===
+  // 'useMySeries' (series_spec_068's Design Decisions), same as
+  // selectedSeriesIds above -- kept unconditionally present on ControlsState
+  // rather than optional, matching this interface's existing convention.
+  sourceRankingStrategy:
+    | 'personalRatingThenDate'
+    | 'personalRatingThenCustomBlend'
+    | 'customBlendThenPersonalRating'
+  sourceRatingBlendSources: string[]
 }
 
 // FRONTEND-033-AC-03: each mode's default matches its current implicit
@@ -247,6 +256,11 @@ export const initialState: ControlsState = {
   countriesSelected: [],
   sortBy: 'score',
   discoverSortBy: DISCOVER_SORT_BY_DEFAULTS.topRated,
+  // FRONTEND-132-AC-01/03/SERIES-068: matches the backend's own defaults
+  // (series_spec_068) exactly, so a user who never touches these new
+  // controls sees no behavior change from before this spec.
+  sourceRankingStrategy: 'personalRatingThenDate',
+  sourceRatingBlendSources: ['imdb', 'tmdb'],
 }
 
 // FRONTEND-042: shared by both tab tiers' change handlers (top-level
@@ -311,6 +325,18 @@ function applyUseMySeriesModeQuery(
   query.sourceMode = 'useMySeries'
   if (state.selectedSeriesIds.length > 0) {
     query.seriesIds = state.selectedSeriesIds
+  }
+
+  // FRONTEND-132-AC-01/03/SERIES-068: only sent when not at its default --
+  // mirrors this function's existing sortBy convention just below
+  // (`if (state.sortBy === 'recommendationCount') query.sortBy = ...`), not
+  // sourceMode's own unconditional-send precedent, since the backend's own
+  // default (personalRatingThenDate) is identical to initialState's, so an
+  // untouched control produces a request with no behavior change from
+  // before this spec existed.
+  if (state.sourceRankingStrategy !== 'personalRatingThenDate') {
+    query.sourceRankingStrategy = state.sourceRankingStrategy
+    query.sourceRatingBlendSources = state.sourceRatingBlendSources
   }
 }
 

@@ -9,6 +9,7 @@ import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { NumberInput } from './NumberInput'
 import { InfoDisclosure } from './InfoDisclosure'
+import { RatingSourceChips } from './RatingSourceChips'
 import { StarRating } from './StarRating'
 import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
@@ -168,6 +169,12 @@ export function UseMySeriesPanel({
     yearMax: specificSeriesYearMax,
     sortBy: specificSeriesSortBy,
     sortDirection: specificSeriesSortDirection,
+    // FRONTEND-132-AC-01/03/SERIES-068: unlike every other field on this
+    // object, these two live on ControlsState (state), not this panel's own
+    // local useState -- read directly from the state prop rather than a
+    // local variable.
+    sourceRankingStrategy: state.sourceRankingStrategy,
+    sourceRatingBlendSources: state.sourceRatingBlendSources,
   }
 
   // FRONTEND-107-AC-10: there's no reducer to patch here, so applying a
@@ -205,6 +212,20 @@ export function UseMySeriesPanel({
     setSpecificSeriesYearMax(criteria.yearMax ?? '')
     setSpecificSeriesSortBy(criteria.sortBy ?? 'title')
     setSpecificSeriesSortDirection(criteria.sortDirection ?? 'asc')
+    // FRONTEND-132-AC-01/03/SERIES-068: these two live on ControlsState, so
+    // restoring them goes through updateState rather than a local setter --
+    // a saved profile from before this field existed has it missing
+    // entirely (same undefined-key gap this function's other ?? defaults
+    // above already guard against), so both fall back to their
+    // series_spec_068-matching defaults.
+    updateState({
+      sourceRankingStrategy:
+        criteria.sourceRankingStrategy ?? 'personalRatingThenDate',
+      sourceRatingBlendSources: criteria.sourceRatingBlendSources ?? [
+        'imdb',
+        'tmdb',
+      ],
+    })
   }
 
   // FRONTEND-064-AC-04/AC-05: selecting a new sort field also resets the
@@ -245,6 +266,13 @@ export function UseMySeriesPanel({
     setSpecificSeriesYearMax('')
     setSpecificSeriesSortBy('title')
     setSpecificSeriesSortDirection('asc')
+    // FRONTEND-132-AC-01/03/SERIES-068: mirrors applyUseMySeriesFilterCriteria's
+    // updateState call above -- these two live on ControlsState, not local
+    // state, so clearing them goes through updateState too.
+    updateState({
+      sourceRankingStrategy: 'personalRatingThenDate',
+      sourceRatingBlendSources: ['imdb', 'tmdb'],
+    })
   }
 
   // FRONTEND-129-AC-01/AC-02: one shared hook instance feeds both
@@ -452,6 +480,119 @@ export function UseMySeriesPanel({
                         current sort drops series missing that rating. */}
                     {missingRatingMessage && (
                       <p className={styles.hint}>{missingRatingMessage}</p>
+                    )}
+
+                    {/* FRONTEND-132-AC-01/02/SERIES-068: 3-option
+                        source-ranking-strategy radios, placed near the
+                        "Sort by" control above -- both concern how this
+                        panel's own source series are ordered. Only has any
+                        effect while sourceMode === 'useMySeries'
+                        (series_spec_068's Design Decisions), which is always
+                        true here since this fieldset only ever renders
+                        inside UseMySeriesPanel. */}
+                    <fieldset
+                      className={`${styles.modeFieldset} ${styles.filterFullWidthRow}`}
+                    >
+                      <legend>Source Ranking Strategy</legend>
+                      <InfoDisclosure
+                        label="About Source Ranking Strategy"
+                        description={
+                          <>
+                            Controls how your own tracked series are ordered
+                            before recommendations are drawn from them.
+                            &quot;Personal Rating, then Date Completed&quot;
+                            uses your star rating first, breaking ties by when
+                            you finished a series. The two Custom Rating Blend
+                            options instead blend the rating sources you pick
+                            below (IMDb/TMDB/Tomatometer/ Popcornmeter) — either
+                            as the primary signal or as a tiebreaker behind your
+                            personal rating. This &quot;Custom Rating
+                            Blend&quot; is distinct from the Analysis
+                            page&apos;s fixed &quot;Blended Rating&quot; (Min
+                            Avg Blended Rating) — the two features are unrelated
+                            even though they can use the same sources.
+                          </>
+                        }
+                      />
+
+                      <div className={styles.modeOption}>
+                        <input
+                          id="source-ranking-strategy-personal-then-date"
+                          type="radio"
+                          name="source-ranking-strategy"
+                          checked={
+                            state.sourceRankingStrategy ===
+                            'personalRatingThenDate'
+                          }
+                          onChange={() =>
+                            updateState({
+                              sourceRankingStrategy: 'personalRatingThenDate',
+                            })
+                          }
+                        />
+                        <label htmlFor="source-ranking-strategy-personal-then-date">
+                          Personal Rating, then Date Completed
+                        </label>
+                      </div>
+
+                      <div className={styles.modeOption}>
+                        <input
+                          id="source-ranking-strategy-personal-then-blend"
+                          type="radio"
+                          name="source-ranking-strategy"
+                          checked={
+                            state.sourceRankingStrategy ===
+                            'personalRatingThenCustomBlend'
+                          }
+                          onChange={() =>
+                            updateState({
+                              sourceRankingStrategy:
+                                'personalRatingThenCustomBlend',
+                            })
+                          }
+                        />
+                        <label htmlFor="source-ranking-strategy-personal-then-blend">
+                          Personal Rating, then Custom Rating Blend
+                        </label>
+                      </div>
+
+                      <div className={styles.modeOption}>
+                        <input
+                          id="source-ranking-strategy-blend-then-personal"
+                          type="radio"
+                          name="source-ranking-strategy"
+                          checked={
+                            state.sourceRankingStrategy ===
+                            'customBlendThenPersonalRating'
+                          }
+                          onChange={() =>
+                            updateState({
+                              sourceRankingStrategy:
+                                'customBlendThenPersonalRating',
+                            })
+                          }
+                        />
+                        <label htmlFor="source-ranking-strategy-blend-then-personal">
+                          Custom Rating Blend, then Personal Rating
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    {/* FRONTEND-132-AC-03/04/SERIES-068: only rendered for
+                        the two Custom-Rating-Blend strategies -- hidden
+                        entirely for personalRatingThenDate (today's
+                        default), avoiding an irrelevant control most of the
+                        time (this spec's Design Decisions). */}
+                    {state.sourceRankingStrategy !==
+                      'personalRatingThenDate' && (
+                      <div className={styles.filterFullWidthRow}>
+                        <RatingSourceChips
+                          selected={state.sourceRatingBlendSources}
+                          onChange={(next) =>
+                            updateState({ sourceRatingBlendSources: next })
+                          }
+                        />
+                      </div>
                     )}
 
                     {/* FRONTEND-081 (2026-09-03 live-review amendment):

@@ -121,6 +121,13 @@ function buildRecommendationParams(
   // -- always the case in practice, since every real call site resolves it
   // from the watchRegion useLocalStorage hook before calling (AC-04).
   addIfPresent(params, 'region', query.region)
+  // FRONTEND-132-AC-05/SERIES-068.
+  addIfPresent(params, 'sourceRankingStrategy', query.sourceRankingStrategy)
+  addJoinedIfNonEmpty(
+    params,
+    'sourceRatingBlendSources',
+    query.sourceRatingBlendSources,
+  )
   return params
 }
 

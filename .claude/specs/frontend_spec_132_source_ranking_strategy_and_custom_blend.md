@@ -1,6 +1,6 @@
 # Frontend Spec 132: Source Ranking Strategy and Custom Rating Blend Chips
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: `series_spec_068_recommendation_source_ranking_strategy.md` (backend fields this
 spec's controls send), `frontend_spec_131_info_disclosure_boxes.md` (reuses the shared
@@ -210,8 +210,8 @@ describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-132-AC-01: 3-option source-ranking-strategy radios, defaulting to Personal Rating then Date Completed
-- [ ] FRONTEND-132-AC-02: `InfoDisclosure` explains all 3 strategies and the Custom Rating Blend / Blended Rating distinction
-- [ ] FRONTEND-132-AC-03: `RatingSourceChips` renders only for the two blend strategies, defaulting to IMDb+TMDB
-- [ ] FRONTEND-132-AC-04: chip toggle adds/removes a source, refusing to deselect the last one
-- [ ] FRONTEND-132-AC-05: `seriesApi.getRecommendations` forwards both new params when set
+- [x] FRONTEND-132-AC-01: 3-option source-ranking-strategy radios, defaulting to Personal Rating then Date Completed
+- [x] FRONTEND-132-AC-02: `InfoDisclosure` explains all 3 strategies and the Custom Rating Blend / Blended Rating distinction
+- [x] FRONTEND-132-AC-03: `RatingSourceChips` renders only for the two blend strategies, defaulting to IMDb+TMDB
+- [x] FRONTEND-132-AC-04: chip toggle adds/removes a source, refusing to deselect the last one
+- [x] FRONTEND-132-AC-05: `seriesApi.getRecommendations` forwards both new params when set
