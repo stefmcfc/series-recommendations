@@ -434,6 +434,23 @@ lookup just yields an empty list for that one candidate, never a failed request.
 candidate's `streamingProviders` lookup in this response; omitting it behaves identically to
 before — the injected default governs (`series_spec_053_watch_region_override.md`).
 
+`sourceRankingStrategy` (optional, one of `personalRatingThenDate` [default],
+`personalRatingThenCustomBlend`, `customBlendThenPersonalRating`; `400` if unrecognized) chooses
+how `sourceMode=useMySeries`/`seriesIds` sourcing ranks/caps your own source series before
+title-based lookup — read only there, harmlessly ignored under every other sourcing mode
+(`series_spec_068_recommendation_source_ranking_strategy.md`). `personalRatingThenCustomBlend`/
+`customBlendThenPersonalRating` order by `personalRating` and a "Custom Rating Blend" in the
+stated precedence, both descending with nulls last. The Custom Rating Blend is a user-selectable
+average of whichever of `imdb`/`tmdb`/`tomatometer`/`popcornmeter` ratings a source series has
+(`sourceRatingBlendSources` below) — normalizing the two Rotten Tomatoes fields from their 0-100
+scale to 0-10 before averaging — deliberately distinct from the fixed, `imdb`/`tmdb`-only
+"Blended Rating" the origin-country/genre/keyword stats endpoints above compute.
+
+`sourceRatingBlendSources` (optional, comma-separated values from `{"imdb", "tmdb",
+"tomatometer", "popcornmeter"}`, default `imdb,tmdb`; `400` if empty or containing an
+unrecognized entry) selects which rating sources feed the Custom Rating Blend above — read only
+when `sourceRankingStrategy` is one of the two blend-based values.
+
 ---
 
 ### `GET /api/v1/series/recommendations/{tmdbId}/keywords`

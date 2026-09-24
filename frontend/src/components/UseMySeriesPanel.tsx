@@ -9,6 +9,7 @@ import { SPECIFIC_SERIES_PICKER_LIMIT } from '../utils/keywordSuggestions'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import { NumberInput } from './NumberInput'
 import { InfoDisclosure } from './InfoDisclosure'
+import { RatingSourceChips } from './RatingSourceChips'
 import { StarRating } from './StarRating'
 import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
@@ -168,6 +169,12 @@ export function UseMySeriesPanel({
     yearMax: specificSeriesYearMax,
     sortBy: specificSeriesSortBy,
     sortDirection: specificSeriesSortDirection,
+    // FRONTEND-132-AC-01/03/SERIES-068: unlike every other field on this
+    // object, these two live on ControlsState (state), not this panel's own
+    // local useState -- read directly from the state prop rather than a
+    // local variable.
+    sourceRankingStrategy: state.sourceRankingStrategy,
+    sourceRatingBlendSources: state.sourceRatingBlendSources,
   }
 
   // FRONTEND-107-AC-10: there's no reducer to patch here, so applying a
@@ -205,6 +212,20 @@ export function UseMySeriesPanel({
     setSpecificSeriesYearMax(criteria.yearMax ?? '')
     setSpecificSeriesSortBy(criteria.sortBy ?? 'title')
     setSpecificSeriesSortDirection(criteria.sortDirection ?? 'asc')
+    // FRONTEND-132-AC-01/03/SERIES-068: these two live on ControlsState, so
+    // restoring them goes through updateState rather than a local setter --
+    // a saved profile from before this field existed has it missing
+    // entirely (same undefined-key gap this function's other ?? defaults
+    // above already guard against), so both fall back to their
+    // series_spec_068-matching defaults.
+    updateState({
+      sourceRankingStrategy:
+        criteria.sourceRankingStrategy ?? 'personalRatingThenDate',
+      sourceRatingBlendSources: criteria.sourceRatingBlendSources ?? [
+        'imdb',
+        'tmdb',
+      ],
+    })
   }
 
   // FRONTEND-064-AC-04/AC-05: selecting a new sort field also resets the
@@ -245,6 +266,13 @@ export function UseMySeriesPanel({
     setSpecificSeriesYearMax('')
     setSpecificSeriesSortBy('title')
     setSpecificSeriesSortDirection('asc')
+    // FRONTEND-132-AC-01/03/SERIES-068: mirrors applyUseMySeriesFilterCriteria's
+    // updateState call above -- these two live on ControlsState, not local
+    // state, so clearing them goes through updateState too.
+    updateState({
+      sourceRankingStrategy: 'personalRatingThenDate',
+      sourceRatingBlendSources: ['imdb', 'tmdb'],
+    })
   }
 
   // FRONTEND-129-AC-01/AC-02: one shared hook instance feeds both
@@ -451,7 +479,11 @@ export function UseMySeriesPanel({
                     {/* FRONTEND-119-AC-09/SERIES-062: notice shown when the
                         current sort drops series missing that rating. */}
                     {missingRatingMessage && (
-                      <p className={styles.hint}>{missingRatingMessage}</p>
+                      <p
+                        className={`${styles.hint} ${styles.filterFullWidthRow}`}
+                      >
+                        {missingRatingMessage}
+                      </p>
                     )}
 
                     {/* FRONTEND-081 (2026-09-03 live-review amendment):
@@ -607,7 +639,7 @@ export function UseMySeriesPanel({
                       <div className={styles.field}>
                         <NumberInput
                           id="specific-series-min-rotten-tomatoes-rating"
-                          label="Min Rotten Tomatoes Rating"
+                          label="Min Tomatometer Rating"
                           min={0}
                           max={100}
                           step={resolveTieredStep(
@@ -619,13 +651,19 @@ export function UseMySeriesPanel({
                               String(value),
                             )
                           }
+                          labelInfo={
+                            <InfoDisclosure
+                              label="About Min Tomatometer Rating"
+                              description="Rotten Tomatoes' critics score (their own term is 'Tomatometer') — the percentage of critic reviews that were positive."
+                            />
+                          }
                         />
                       </div>
 
                       <div className={styles.field}>
                         <NumberInput
                           id="specific-series-min-rotten-tomatoes-popcornmeter"
-                          label="Min Rotten Tomatoes Popcornmeter"
+                          label="Min Popcornmeter Rating"
                           min={0}
                           max={100}
                           step={resolveTieredStep(
@@ -639,8 +677,8 @@ export function UseMySeriesPanel({
                           }
                           labelInfo={
                             <InfoDisclosure
-                              label="About Min Rotten Tomatoes Popcornmeter"
-                              description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — distinct from the Tomatometer critics' score used by 'Min Rotten Tomatoes Rating' above."
+                              label="About Min Popcornmeter Rating"
+                              description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — the percentage of verified audience members who rated it positively."
                             />
                           }
                         />
@@ -679,6 +717,176 @@ export function UseMySeriesPanel({
                         />
                       </div>
                     </div>
+
+                    {/* FRONTEND-132-AC-01/02/SERIES-068: 3-option
+                        source-ranking-strategy radios. Repositioned (2026-09-24
+                        live-review amendment) from its original spot near the
+                        "Sort by" control down to just before "Save Filters",
+                        after the Genre/Keyword/Country/Language/ratings/Year
+                        grids -- keeps the shorter, more commonly-adjusted
+                        filters together up top and this less-frequently-
+                        touched section lower, without moving any of those
+                        other rows. Only has any effect while sourceMode ===
+                        'useMySeries' (series_spec_068's Design Decisions),
+                        which is always true here since this fieldset only
+                        ever renders inside UseMySeriesPanel. */}
+                    {/* (2026-09-24 live-review amendment): a real <legend>
+                        can never share a flex row with a sibling -- browsers
+                        render a fieldset's legend as its own block-level
+                        "rendered legend" box outside the flex formatting
+                        context entirely, confirmed live (computed
+                        display: block, full row width, pushing every
+                        sibling -- including the heading InfoDisclosure --
+                        onto the next line) regardless of legend/CSS
+                        tweaks. Switched to a plain div with
+                        role="radiogroup"/aria-labelledby (the standard
+                        ARIA-authoring-practices equivalent of
+                        fieldset/legend for a radio group) so the visible
+                        heading is an ordinary flex item that can sit beside
+                        InfoDisclosure normally. */}
+                    <div
+                      role="radiogroup"
+                      aria-labelledby="source-ranking-strategy-heading"
+                      className={`${styles.modeFieldset} ${styles.filterFullWidthRow}`}
+                    >
+                      <div
+                        className={`${styles.fieldsetLegendRow} ${styles.modeOptionFullRow}`}
+                      >
+                        <span
+                          id="source-ranking-strategy-heading"
+                          className={styles.legendText}
+                        >
+                          Source Ranking Strategy
+                        </span>
+                        <InfoDisclosure
+                          label="About Source Ranking Strategy"
+                          description={
+                            <>
+                              Controls how your own tracked series are ordered
+                              before recommendations are drawn from them.
+                              &quot;Personal Rating, then Date Completed&quot;
+                              uses your star rating first, breaking ties by when
+                              you finished a series. The two Custom Rating Blend
+                              options instead blend the rating sources you pick
+                              below (IMDb/TMDB/Tomatometer/ Popcornmeter) —
+                              either as the primary signal or as a tiebreaker
+                              behind your personal rating. This &quot;Custom
+                              Rating Blend&quot; is distinct from the Analysis
+                              page&apos;s fixed &quot;Blended Rating&quot; (Min
+                              Avg Blended Rating) — the two features are
+                              unrelated even though they can use the same
+                              sources.
+                            </>
+                          }
+                        />
+                      </div>
+
+                      {/* (2026-09-24 live-review amendment): modeOptionFullRow
+                          forces each option onto its own row (see the class's
+                          own comment in RecommendationControls.module.css) --
+                          leaves the Status fieldset above, which shares
+                          .modeFieldset, untouched. Each option also now gets
+                          its own InfoDisclosure describing only that one
+                          strategy, rendered as a label sibling (never inside
+                          the label itself, same accessible-name-safety rule
+                          this codebase follows everywhere else). */}
+                      <div
+                        className={`${styles.modeOption} ${styles.modeOptionFullRow}`}
+                      >
+                        <input
+                          id="source-ranking-strategy-personal-then-date"
+                          type="radio"
+                          name="source-ranking-strategy"
+                          checked={
+                            state.sourceRankingStrategy ===
+                            'personalRatingThenDate'
+                          }
+                          onChange={() =>
+                            updateState({
+                              sourceRankingStrategy: 'personalRatingThenDate',
+                            })
+                          }
+                        />
+                        <label htmlFor="source-ranking-strategy-personal-then-date">
+                          Personal Rating, then Date Completed
+                        </label>
+                        <InfoDisclosure
+                          label="About Personal Rating, then Date Completed"
+                          description="Ranks your tracked series by your own star rating first; if two series share the same rating, the one you finished more recently is prioritized. This is the default and doesn't use Custom Rating Blend at all."
+                        />
+                      </div>
+
+                      <div
+                        className={`${styles.modeOption} ${styles.modeOptionFullRow}`}
+                      >
+                        <input
+                          id="source-ranking-strategy-personal-then-blend"
+                          type="radio"
+                          name="source-ranking-strategy"
+                          checked={
+                            state.sourceRankingStrategy ===
+                            'personalRatingThenCustomBlend'
+                          }
+                          onChange={() =>
+                            updateState({
+                              sourceRankingStrategy:
+                                'personalRatingThenCustomBlend',
+                            })
+                          }
+                        />
+                        <label htmlFor="source-ranking-strategy-personal-then-blend">
+                          Personal Rating, then Custom Rating Blend
+                        </label>
+                        <InfoDisclosure
+                          label="About Personal Rating, then Custom Rating Blend"
+                          description="Ranks by your own star rating first; series with the same personal rating are then broken by their Custom Rating Blend score (the sources you pick below)."
+                        />
+                      </div>
+
+                      <div
+                        className={`${styles.modeOption} ${styles.modeOptionFullRow}`}
+                      >
+                        <input
+                          id="source-ranking-strategy-blend-then-personal"
+                          type="radio"
+                          name="source-ranking-strategy"
+                          checked={
+                            state.sourceRankingStrategy ===
+                            'customBlendThenPersonalRating'
+                          }
+                          onChange={() =>
+                            updateState({
+                              sourceRankingStrategy:
+                                'customBlendThenPersonalRating',
+                            })
+                          }
+                        />
+                        <label htmlFor="source-ranking-strategy-blend-then-personal">
+                          Custom Rating Blend, then Personal Rating
+                        </label>
+                        <InfoDisclosure
+                          label="About Custom Rating Blend, then Personal Rating"
+                          description="Ranks primarily by Custom Rating Blend (the sources you pick below); your own personal rating is used only to break ties between series with the same blend score."
+                        />
+                      </div>
+                    </div>
+
+                    {/* FRONTEND-132-AC-03/04/SERIES-068: only rendered for
+                        the two Custom-Rating-Blend strategies -- hidden
+                        entirely for personalRatingThenDate (today's
+                        default), avoiding an irrelevant control most of the
+                        time (this spec's Design Decisions). */}
+                    {state.sourceRankingStrategy !==
+                      'personalRatingThenDate' && (
+                      <div className={styles.filterFullWidthRow}>
+                        <RatingSourceChips
+                          selected={state.sourceRatingBlendSources}
+                          onChange={(next) =>
+                            updateState({ sourceRatingBlendSources: next })
+                          }
+                        />
+                      </div>
+                    )}
 
                     <div className={styles.filterFullWidthRow}>
                       <FilterProfileActions<UseMySeriesFilterCriteria>

@@ -237,4 +237,67 @@ class RecommendationCriteriaValidatorSpec extends Specification {
         expect: "no exception"
             validator.validate(criteria)
     }
+
+    // -- Spec 068, Requirement 1 (SERIES-068-AC-02): sourceRankingStrategy validation --
+
+    def "SERIES-068-AC-02: an unrecognized sourceRankingStrategy is rejected"() {
+        given: "criteria with an invalid strategy value"
+            def criteria = new RecommendationCriteria()
+            criteria.setSourceRankingStrategy("notARealStrategy")
+
+        when: "the criteria is validated"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException (mapped to 400) is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-068-AC-02: every recognized sourceRankingStrategy value is accepted"() {
+        expect: "no exception for any of the 3 documented values"
+            ["personalRatingThenDate", "personalRatingThenCustomBlend", "customBlendThenPersonalRating"].each { value ->
+                validator.validate(new RecommendationCriteria(sourceRankingStrategy: value))
+            }
+    }
+
+    def "SERIES-068-AC-02: an unset sourceRankingStrategy is accepted"() {
+        expect: "no exception"
+            validator.validate(new RecommendationCriteria())
+    }
+
+    // -- Spec 068, Requirement 2 (SERIES-068-AC-05): sourceRatingBlendSources validation --
+
+    def "SERIES-068-AC-05: an invalid sourceRatingBlendSources entry is rejected"() {
+        given: "criteria with an unrecognized blend source"
+            def criteria = new RecommendationCriteria()
+            criteria.setSourceRatingBlendSources(["imdb", "rottenTomatoesAverage"])
+
+        when: "the criteria is validated"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException (mapped to 400) is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-068-AC-05: an empty sourceRatingBlendSources list is rejected"() {
+        given: "criteria with an explicitly-empty blend source list"
+            def criteria = new RecommendationCriteria()
+            criteria.setSourceRatingBlendSources([])
+
+        when: "the criteria is validated"
+            validator.validate(criteria)
+
+        then: "an IllegalArgumentException (mapped to 400) is thrown"
+            thrown(IllegalArgumentException)
+    }
+
+    def "SERIES-068-AC-05: every recognized sourceRatingBlendSources value is accepted"() {
+        expect: "no exception for the full recognized set"
+            validator.validate(new RecommendationCriteria(
+                sourceRatingBlendSources: ["imdb", "tmdb", "tomatometer", "popcornmeter"]))
+    }
+
+    def "SERIES-068-AC-05: an unset sourceRatingBlendSources is accepted"() {
+        expect: "no exception"
+            validator.validate(new RecommendationCriteria())
+    }
 }

@@ -200,7 +200,11 @@ public class RecommendationSourcingService {
                             Map<Integer, DedupedCandidate> accumulator,
                             Map<Integer, Optional<String>> externalIdCache) {
         List<RawCandidate> pageRaw = pageResults.stream().map(candidate -> new RawCandidate(candidate, null)).toList();
-        List<DedupedCandidate> pageDeduped = deduplicationService.dedupeAndExclude(pageRaw, externalIdCache);
+        // SERIES-068 Design Decisions: this backfill path's raw candidates never carry a
+        // non-empty sourceSeries (trending/topRated/genreOrKeyword all pass null), so a
+        // strategy here would be a harmless no-op -- the unparameterized default is passed
+        // explicitly rather than threading criteria through a code path that can never use it.
+        List<DedupedCandidate> pageDeduped = deduplicationService.dedupeAndExclude(pageRaw, externalIdCache, SourceOrderComparator.INSTANCE);
         List<DedupedCandidate> pageFiltered = outputFilterService.applyOutputFilters(pageDeduped, c);
         for (DedupedCandidate dc : pageFiltered) {
             accumulator.merge(dc.candidate().tmdbId(), dc, this::mergeDedupedCandidates);
@@ -307,7 +311,7 @@ public class RecommendationSourcingService {
 
         return pool.stream()
             .filter(e -> !e.isExcludeFromRecommendations())
-            .sorted(SourceOrderComparator.INSTANCE)
+            .sorted(SourceOrderComparator.forStrategy(c))
             .limit(maxSourceSeries)
             .toList();
     }

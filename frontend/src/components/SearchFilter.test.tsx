@@ -146,15 +146,12 @@ describe('FRONTEND-055-AC-01: removed fields', () => {
 describe('FRONTEND-122-AC-02: Rotten Tomatoes min-rating filters in My Series', () => {
   it('includes both RT fields in the submitted criteria when filled in', () => {
     const { onSearch } = renderFilter()
-    fireEvent.change(screen.getByLabelText('Min Rotten Tomatoes Rating'), {
+    fireEvent.change(screen.getByLabelText('Min Tomatometer Rating'), {
       target: { value: '60' },
     })
-    fireEvent.change(
-      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
-      {
-        target: { value: '70' },
-      },
-    )
+    fireEvent.change(screen.getByLabelText('Min Popcornmeter Rating'), {
+      target: { value: '70' },
+    })
     fireEvent.click(screen.getByRole('button', { name: /^search$/i }))
     expect(onSearch).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -181,10 +178,8 @@ describe('FRONTEND-122-AC-02: Rotten Tomatoes min-rating filters in My Series', 
     renderFilter()
     fireEvent.click(await screen.findByText('High RT'))
 
-    expect(screen.getByLabelText('Min Rotten Tomatoes Rating')).toHaveValue(60)
-    expect(
-      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
-    ).toHaveValue(70)
+    expect(screen.getByLabelText('Min Tomatometer Rating')).toHaveValue(60)
+    expect(screen.getByLabelText('Min Popcornmeter Rating')).toHaveValue(70)
   })
 })
 
@@ -1318,27 +1313,27 @@ describe('FRONTEND-123-AC-01: Ratings section row grouping', () => {
   it('groups both Rotten Tomatoes fields in the same row', () => {
     renderFilter()
     const rtRow = screen
-      .getByLabelText('Min Rotten Tomatoes Rating')
+      .getByLabelText('Min Tomatometer Rating')
       .closest('[class*=ratingRow]') as HTMLElement | null
     expect(
-      within(rtRow!).getByLabelText('Min Rotten Tomatoes Popcornmeter'),
+      within(rtRow!).getByLabelText('Min Popcornmeter Rating'),
     ).toBeInTheDocument()
   })
 })
 
-describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure', () => {
-  it('renders the disclosure only on the Popcornmeter field, not the Rating field', () => {
+describe('FRONTEND-131-AC-11: Min Tomatometer/Popcornmeter Rating fields have info disclosures', () => {
+  it('renders a disclosure on both the Tomatometer and Popcornmeter fields', () => {
     renderFilter()
     expect(
       screen.getByRole('button', {
-        name: 'About Min Rotten Tomatoes Popcornmeter',
+        name: 'About Min Popcornmeter Rating',
       }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', {
-        name: 'About Min Rotten Tomatoes Rating',
+      screen.getByRole('button', {
+        name: 'About Min Tomatometer Rating',
       }),
-    ).not.toBeInTheDocument()
+    ).toBeInTheDocument()
   })
 })
 

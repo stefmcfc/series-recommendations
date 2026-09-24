@@ -288,6 +288,18 @@ export interface RecommendationQuery {
   // frontend_spec_102's Design Decisions for why there's no meaningful
   // "absent" state to preserve here, unlike the skip-threshold override).
   region?: string
+  // FRONTEND-132-AC-05/SERIES-068: only meaningful while sourceMode ===
+  // 'useMySeries' (series_spec_068's Design Decisions), but not narrowed to
+  // that here -- every other sourceMode-scoped field on this interface
+  // (e.g. seriesIds) is likewise left unconditionally optional rather than
+  // discriminated per sourceMode value.
+  sourceRankingStrategy?:
+    | 'personalRatingThenDate'
+    | 'personalRatingThenCustomBlend'
+    | 'customBlendThenPersonalRating'
+  // FRONTEND-132-AC-05/SERIES-068: comma-joined by buildRecommendationParams,
+  // mirroring genres/keywords/countries' existing array convention.
+  sourceRatingBlendSources?: string[]
 }
 
 export interface SearchCriteria {

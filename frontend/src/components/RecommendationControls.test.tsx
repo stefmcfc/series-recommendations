@@ -2770,6 +2770,24 @@ describe('FRONTEND-068-AC-01: excludeGenresSelected drives query.excludeGenres',
   })
 })
 
+describe('FRONTEND-132: sourceRankingStrategy/sourceRatingBlendSources reach the query', () => {
+  it('omits both fields when sourceRankingStrategy is at its default', () => {
+    const query = buildQuery(initialState)
+    expect(query.sourceRankingStrategy).toBeUndefined()
+    expect(query.sourceRatingBlendSources).toBeUndefined()
+  })
+
+  it('includes both fields once a Custom Rating Blend strategy is selected', () => {
+    const query = buildQuery({
+      ...initialState,
+      sourceRankingStrategy: 'customBlendThenPersonalRating',
+      sourceRatingBlendSources: ['imdb', 'popcornmeter'],
+    })
+    expect(query.sourceRankingStrategy).toBe('customBlendThenPersonalRating')
+    expect(query.sourceRatingBlendSources).toEqual(['imdb', 'popcornmeter'])
+  })
+})
+
 describe('FRONTEND-094-AC-06: excludeKeywordsSelected reaches the query', () => {
   it('includes excludeKeywords in the built query', () => {
     const query = buildQuery({

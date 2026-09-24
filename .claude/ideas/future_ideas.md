@@ -60,6 +60,34 @@ table.
 
 ## Recommendations & Lookup
 
+### User-configurable (drag-and-drop) source-series ranking
+
+Raised 2026-09-24 while discussing `RecommendationDeduplicationService`/`RecommendationSourcingService`'s
+dedup and sourcing mechanics. Today, `SourceOrderComparator.INSTANCE` (personal rating desc, then
+date completed desc) is the sole, fixed ordering for a user's source series, used in two places:
+`RecommendationSourcingService.resolveSourcePool` sorts the pool *before* capping to
+`maxSourceSeries` (20) — so for anyone with more than 20 `COMPLETED` series, this order decides
+*which* 20 actually get queried against TMDB, not just cosmetic tie-breaking — and
+`RecommendationDeduplicationService.orderSources` decides which source's rating wins
+scoring/tiebreaks when a candidate has multiple contributing sources. Idea: let the user drag-and-
+drop their own ranking of source series instead of relying solely on the fixed rating/date formula.
+
+**Scope, as best understood so far**: backend would need `SourceOrderComparator` to become
+parameterizable by an explicit user-supplied order (e.g. a `rankedSeriesIds` list threaded through
+both `resolveSourcePool` and `orderSources`) rather than always applying the fixed formula, plus
+somewhere to persist that ranking — the existing `FilterProfile` persistence mechanism is the
+likely home rather than a new entity, though this hasn't been designed. Frontend would need an
+actual drag-and-drop reorderable list, which doesn't exist anywhere in this codebase yet (would
+need a new library, e.g. `@dnd-kit`).
+
+**Caveat to keep in view**: this would only affect "Use My Series" mode. The other three sourcing
+modes (`sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword`) never link a candidate to a
+source series at all, so a custom ranking would have zero effect on them — worth being explicit
+about this scope limit whenever the idea is pitched, so it doesn't read as broader than it is.
+
+**Status**: Not specced. Purely a future idea at this point — no design work done beyond the
+scope/caveat above.
+
 ### "Use My Series" source-series picker — "Select Series" relabel
 
 Raised 2026-09-01 as a two-part idea: filter/sort parity for `UseMySeriesPanel.tsx`'s source-series

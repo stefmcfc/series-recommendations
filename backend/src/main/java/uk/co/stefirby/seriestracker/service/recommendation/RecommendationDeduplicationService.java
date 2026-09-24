@@ -8,6 +8,7 @@ import uk.co.stefirby.seriestracker.repository.SeriesRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,12 +34,19 @@ public class RecommendationDeduplicationService {
         this.tmdbClient = tmdbClient;
     }
 
-    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw) {
+    /**
+     * SERIES-068-AC-07: {@code sourceOrderComparator} is resolved once by whichever caller has
+     * {@code RecommendationCriteria} in scope ({@code SourceOrderComparator.forStrategy(criteria)}
+     * for "Use My Series", or the unparameterized {@code SourceOrderComparator.INSTANCE} for the
+     * 3 discover-backfill modes, which never have a non-empty {@code sourceSeries} to reorder --
+     * see this spec's Design Decisions) and threaded through to {@link #orderSources}.
+     */
+    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Comparator<SeriesEntity> sourceOrderComparator) {
         // SERIES-059-AC-07: a fresh, call-scoped cache when there's no shared cache to pass in
         // (e.g. sourceFromPool's single dedupeAndExclude call) -- equivalent to no memoization
         // at all for a single call, but lets sourceWithBackfill's multi-page loop share one
         // cache across several calls via the overload below.
-        return dedupeAndExclude(raw, new HashMap<>());
+        return dedupeAndExclude(raw, new HashMap<>(), sourceOrderComparator);
     }
 
     /**
@@ -48,7 +56,8 @@ public class RecommendationDeduplicationService {
      * {@code RecommendationSourcingService.sourceWithBackfill} does across pages) is never
      * re-resolved via {@link TmdbClient#externalIds(int)}.
      */
-    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Map<Integer, Optional<String>> externalIdCache) {
+    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Map<Integer, Optional<String>> externalIdCache,
+                                             Comparator<SeriesEntity> sourceOrderComparator) {
         Map<String, TmdbCandidate> candidateByImdbId = new LinkedHashMap<>();
         Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
 
@@ -57,7 +66,7 @@ public class RecommendationDeduplicationService {
         }
 
         return candidateByImdbId.entrySet().stream()
-            .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey())), e.getKey()))
+            .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey()), sourceOrderComparator), e.getKey()))
             .toList();
     }
 
@@ -98,12 +107,15 @@ public class RecommendationDeduplicationService {
     }
 
     /**
-     * Applies the canonical per-candidate source ordering (SERIES-015-AC-05) once, so scoring,
-     * {@code best-source} diversity-cap mode, and {@code RecommendationDto.sourceTitles} all
-     * read the same order (SERIES-015-AC-06). A genre/keyword-only candidate's empty list
-     * (SERIES-015-AC-03) sorts to another empty list.
+     * Applies the per-candidate source ordering (SERIES-015-AC-05, parameterized by
+     * SERIES-068-AC-07) once, so scoring, {@code best-source} diversity-cap mode, and {@code
+     * RecommendationDto.sourceTitles} all read the same order (SERIES-015-AC-06). A
+     * genre/keyword-only candidate's empty list (SERIES-015-AC-03) sorts to another empty list.
+     * Package-private (not {@code private}) so {@code SourceOrderComparatorSpec}/direct callers
+     * can exercise it against an explicit comparator without going through the whole {@link
+     * #dedupeAndExclude} pipeline.
      */
-    private List<SeriesEntity> orderSources(List<SeriesEntity> sources) {
-        return sources.stream().sorted(SourceOrderComparator.INSTANCE).toList();
+    List<SeriesEntity> orderSources(List<SeriesEntity> sources, Comparator<SeriesEntity> sourceOrderComparator) {
+        return sources.stream().sorted(sourceOrderComparator).toList();
     }
 }

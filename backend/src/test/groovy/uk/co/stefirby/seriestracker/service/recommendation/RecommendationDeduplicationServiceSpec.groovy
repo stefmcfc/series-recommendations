@@ -2,6 +2,7 @@ package uk.co.stefirby.seriestracker.service.recommendation
 
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbCandidate
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
+import uk.co.stefirby.seriestracker.dto.RecommendationCriteria
 import uk.co.stefirby.seriestracker.model.SeriesEntity
 import uk.co.stefirby.seriestracker.model.SeriesStatus
 import uk.co.stefirby.seriestracker.repository.IgnoredSeriesRepository
@@ -57,7 +58,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId("tt4000000") >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
 
         then: "only the one valid candidate remains"
             result.size() == 1
@@ -74,7 +75,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
 
         then: "the candidate appears once"
             result.size() == 1
@@ -90,7 +91,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId("tt9999999") >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
 
         then: "the candidate appears once, attributed to both series"
             result.size() == 1
@@ -106,7 +107,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
 
         then: "sourceSeries is empty, not null"
             result[0].sourceSeries() == []
@@ -121,8 +122,8 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude(raw, cache) is called twice, sharing the same cache"
-            def firstResult = deduplicationService.dedupeAndExclude(firstPage, cache)
-            def secondResult = deduplicationService.dedupeAndExclude(secondPage, cache)
+            def firstResult = deduplicationService.dedupeAndExclude(firstPage, cache, SourceOrderComparator.INSTANCE)
+            def secondResult = deduplicationService.dedupeAndExclude(secondPage, cache, SourceOrderComparator.INSTANCE)
 
         then: "externalIds(42) is resolved only once across both calls"
             1 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
@@ -140,8 +141,8 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude(raw) is called twice, with no shared cache"
-            deduplicationService.dedupeAndExclude(firstPage)
-            deduplicationService.dedupeAndExclude(secondPage)
+            deduplicationService.dedupeAndExclude(firstPage, SourceOrderComparator.INSTANCE)
+            deduplicationService.dedupeAndExclude(secondPage, SourceOrderComparator.INSTANCE)
 
         then: "externalIds(42) is resolved once per call -- no cross-call memoization for the no-cache overload"
             2 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
@@ -162,9 +163,29 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId("tt9999999") >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
 
         then: "sourceSeries is ordered High Rated, Low Rated, Unrated"
             result[0].sourceSeries()*.title == ["High Rated", "Low Rated", "Unrated"]
+    }
+
+    // -- Spec 068, Requirement 1 (SERIES-068-AC-07): orderSources honors a caller-supplied comparator --
+
+    def "SERIES-068-AC-07: customBlendThenPersonalRating orders by blend first, personal rating as tiebreak"() {
+        given: "two source series with the same personalRating but different Custom Rating Blend results"
+            def seriesA = completedSeries("Series A", "tt3000001", LocalDateTime.now(), null, 4)
+            seriesA.imdbRating = 9.0G
+            seriesA.tmdbRating = 9.0G
+            def seriesB = completedSeries("Series B", "tt3000002", LocalDateTime.now(), null, 4)
+            seriesB.imdbRating = 1.0G
+            seriesB.tmdbRating = 1.0G
+            def criteria = new RecommendationCriteria(sourceRankingStrategy: "customBlendThenPersonalRating")
+            def comparator = SourceOrderComparator.forStrategy(criteria)
+
+        when: "orderSources is called with the resolved comparator"
+            def ordered = deduplicationService.orderSources([seriesB, seriesA], comparator)
+
+        then: "series A (higher blend) sorts first despite equal personalRating"
+            ordered.first() == seriesA
     }
 }

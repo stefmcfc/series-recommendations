@@ -40,6 +40,8 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     countriesSelected: [],
     sortBy: 'score',
     discoverSortBy: 'vote_average.desc',
+    sourceRankingStrategy: 'personalRatingThenDate',
+    sourceRatingBlendSources: ['imdb', 'tmdb'],
     ...overrides,
   }
 }

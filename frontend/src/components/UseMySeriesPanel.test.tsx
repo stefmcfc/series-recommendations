@@ -41,6 +41,8 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     countriesSelected: [],
     sortBy: 'score',
     discoverSortBy: 'vote_average.desc',
+    sourceRankingStrategy: 'personalRatingThenDate',
+    sourceRatingBlendSources: ['imdb', 'tmdb'],
     ...overrides,
   }
 }
@@ -520,7 +522,7 @@ describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the pick
       />,
     )
 
-    fireEvent.change(screen.getByLabelText('Min Rotten Tomatoes Rating'), {
+    fireEvent.change(screen.getByLabelText('Min Tomatometer Rating'), {
       target: { value: '60' },
     })
     const dialog = openBrowseSeriesModal()
@@ -552,10 +554,9 @@ describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the pick
       />,
     )
 
-    fireEvent.change(
-      screen.getByLabelText('Min Rotten Tomatoes Popcornmeter'),
-      { target: { value: '60' } },
-    )
+    fireEvent.change(screen.getByLabelText('Min Popcornmeter Rating'), {
+      target: { value: '60' },
+    })
     const dialog = openBrowseSeriesModal()
 
     expect(within(dialog).getByText('High Popcorn')).toBeInTheDocument()
@@ -1132,8 +1133,8 @@ describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series',
   })
 })
 
-describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure', () => {
-  it('renders the disclosure beside the field', () => {
+describe('FRONTEND-131-AC-11: Min Tomatometer/Popcornmeter Rating fields have info disclosures', () => {
+  it('renders a disclosure on both the Tomatometer and Popcornmeter fields', () => {
     render(
       <UseMySeriesPanel
         state={makeState()}
@@ -1145,13 +1146,147 @@ describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info discl
     )
     expect(
       screen.getByRole('button', {
-        name: 'About Min Rotten Tomatoes Popcornmeter',
+        name: 'About Min Popcornmeter Rating',
       }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', {
-        name: 'About Min Rotten Tomatoes Rating',
+      screen.getByRole('button', {
+        name: 'About Min Tomatometer Rating',
       }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-132-AC-01: source ranking strategy radios', () => {
+  it('defaults to Personal Rating, then Date Completed and updates state on change', () => {
+    const updateState = vi.fn()
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={updateState}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    expect(
+      screen.getByRole('radio', {
+        name: 'Personal Rating, then Date Completed',
+      }),
+    ).toBeChecked()
+
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: 'Custom Rating Blend, then Personal Rating',
+      }),
+    )
+    expect(updateState).toHaveBeenCalledWith({
+      sourceRankingStrategy: 'customBlendThenPersonalRating',
+    })
+  })
+
+  it('updates state when Personal Rating, then Custom Rating Blend is selected', () => {
+    const updateState = vi.fn()
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={updateState}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('radio', {
+        name: 'Personal Rating, then Custom Rating Blend',
+      }),
+    )
+    expect(updateState).toHaveBeenCalledWith({
+      sourceRankingStrategy: 'personalRatingThenCustomBlend',
+    })
+  })
+})
+
+describe('FRONTEND-132-AC-02: strategy explanation disclosure', () => {
+  it('reveals explanatory text distinguishing Custom Rating Blend from Blended Rating on click', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /About.*Ranking/i }))
+    expect(
+      screen.getByText(/distinct from.*Blended Rating/i),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-132-AC-03: Custom Rating Blend source chips', () => {
+  it('is hidden for the default strategy and shown, with IMDb+TMDB selected, for blend strategies', () => {
+    const { rerender } = render(
+      <UseMySeriesPanel
+        state={makeState({ sourceRankingStrategy: 'personalRatingThenDate' })}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.queryByRole('group', { name: /Custom Rating Blend sources/i }),
     ).not.toBeInTheDocument()
+
+    rerender(
+      <UseMySeriesPanel
+        state={makeState({
+          sourceRankingStrategy: 'customBlendThenPersonalRating',
+        })}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const group = screen.getByRole('group', {
+      name: /Custom Rating Blend sources/i,
+    })
+    expect(
+      within(group).getByRole('button', { name: 'IMDb', pressed: true }),
+    ).toBeInTheDocument()
+    expect(
+      within(group).getByRole('button', { name: 'TMDB', pressed: true }),
+    ).toBeInTheDocument()
+    expect(
+      within(group).getByRole('button', {
+        name: 'Tomatometer',
+        pressed: false,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('updates sourceRatingBlendSources on the panel state when a chip is toggled', () => {
+    const updateState = vi.fn()
+    render(
+      <UseMySeriesPanel
+        state={makeState({
+          sourceRankingStrategy: 'personalRatingThenCustomBlend',
+        })}
+        updateState={updateState}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tomatometer' }))
+    expect(updateState).toHaveBeenCalledWith({
+      sourceRatingBlendSources: ['imdb', 'tmdb', 'tomatometer'],
+    })
   })
 })

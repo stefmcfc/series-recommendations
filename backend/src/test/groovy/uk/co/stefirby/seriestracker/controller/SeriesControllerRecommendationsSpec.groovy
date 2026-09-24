@@ -221,6 +221,50 @@ class SeriesControllerRecommendationsSpec extends Specification {
             }))
     }
 
+    // -- SERIES-068-AC-01/04: sourceRankingStrategy/sourceRatingBlendSources endpoint wiring --
+
+    def "SERIES-068: sourceRankingStrategy query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?sourceRankingStrategy=customBlendThenPersonalRating is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("sourceRankingStrategy", "customBlendThenPersonalRating"))
+
+        then: "the response is 200 and RecommendationService received the strategy"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.sourceRankingStrategy == "customBlendThenPersonalRating"
+            }))
+    }
+
+    def "SERIES-068: sourceRatingBlendSources query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?sourceRatingBlendSources=tomatometer&sourceRatingBlendSources=popcornmeter is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("sourceRatingBlendSources", "tomatometer", "popcornmeter"))
+
+        then: "the response is 200 and RecommendationService received both values"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.sourceRatingBlendSources == ["tomatometer", "popcornmeter"]
+            }))
+    }
+
+    def "SERIES-068-AC-02: an unrecognized sourceRankingStrategy is rejected with 400"() {
+        given: "RecommendationService rejects the request as it would for an unrecognized sourceRankingStrategy"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria)))
+                .thenThrow(new IllegalArgumentException("sourceRankingStrategy must be one of: [...]"))
+
+        when: "GET /api/v1/series/recommendations?sourceRankingStrategy=bogus is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations").param("sourceRankingStrategy", "bogus"))
+
+        then: "the response is 400"
+            result.andExpect(status().isBadRequest())
+    }
+
     // -- SERIES-007-AC-09/17: service-level IllegalArgumentException maps to 400 --
 
     def "SERIES-007-AC-09: an unknown series id in seriesIds is rejected"() {

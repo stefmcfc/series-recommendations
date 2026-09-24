@@ -730,8 +730,8 @@ class RecommendationServiceSpec extends Specification {
 
         then: "sourceTrending's own already-deduped/filtered result is used directly, no further dedup/filter pass runs"
             1 * sourcingService.sourceTrending(criteria, 20) >> alreadyDeduped
-            0 * deduplicationServiceMock.dedupeAndExclude(_)
             0 * deduplicationServiceMock.dedupeAndExclude(_, _)
+            0 * deduplicationServiceMock.dedupeAndExclude(_, _, _)
             0 * outputFilterServiceMock.applyOutputFilters(_, _)
 
         and: "the DTOs are assembled straight from that result"

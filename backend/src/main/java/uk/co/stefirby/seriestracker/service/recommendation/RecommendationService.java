@@ -209,7 +209,9 @@ public class RecommendationService {
     private List<DedupedCandidate> sourceAndFilterFromPool(RecommendationCriteria criteria, int limit) {
         List<RawCandidate> raw = sourcingService.sourceFromPool(criteria, limit);
         List<RawCandidate> capped = raw.size() > maxCandidates ? raw.subList(0, maxCandidates) : raw;
-        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped);
+        // SERIES-068-AC-07: "Use My Series" has criteria in scope, so the per-candidate source
+        // ordering honors the requested sourceRankingStrategy, same as resolveSourcePool's own cap.
+        List<DedupedCandidate> deduped = deduplicationService.dedupeAndExclude(capped, SourceOrderComparator.forStrategy(criteria));
         List<DedupedCandidate> filtered = outputFilterService.applyOutputFilters(deduped, criteria);
         log.debug("doRecommend[useMySeries]: {} raw -> {} after maxCandidates cap ({}) -> {} after dedup "
                 + "-> {} after output filters",
