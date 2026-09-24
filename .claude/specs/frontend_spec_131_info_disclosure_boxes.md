@@ -1,6 +1,6 @@
 # Frontend Spec 131: Info Disclosure Boxes for Non-Obvious Controls
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: `frontend_spec_115_number_input_spinner_styling.md` (introduces the shared `NumberInput` component this spec extends with a new `labelInfo` prop), `frontend_spec_097_refresh_skip_threshold_override_ui.md` (introduces `SettingsSection`, extended here with a new `info` prop — see `FRONTEND-097-AC-03`'s "intentionally no collapse/disclosure behavior" note, unaffected by this spec since `info` is a static reveal, not a section-level collapse), `frontend_spec_123_filter_layout_and_collapsible_sections.md` (introduces `CollapsibleSection`, the closest existing analog — this spec's component is a deliberate sibling, not a reuse, see Design Decisions), `tooling_spec_008_recommendation_controls_decomposition.md` (introduces `HighestRatedPanel.tsx`, one of this spec's call sites)
 **Area**: Frontend (new `components/InfoDisclosure.tsx`, `components/NumberInput.tsx`, `components/SettingsSection.tsx`, `components/SettingsPage.tsx`, `components/HighestRatedPanel.tsx`, `components/RecommendationFiltersBox.tsx`, `components/NameStatsTable.tsx`, `components/SearchFilter.tsx`, `components/UseMySeriesPanel.tsx` — plus each of those components' colocated `*.test.tsx`)
@@ -341,14 +341,14 @@ describe('FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info discl
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-131-AC-01: `InfoDisclosure` renders closed by default and toggles its description on click
-- [ ] FRONTEND-131-AC-02: the toggle button's `aria-controls` matches the description's generated `id`
-- [ ] FRONTEND-131-AC-03: `NumberInput` gains `labelInfo`, rendered as a sibling of `<label>`, zero change when omitted
-- [ ] FRONTEND-131-AC-04: `SettingsSection` gains `info`, rendered as a sibling of `<h3>`, zero change when omitted
-- [ ] FRONTEND-131-AC-05: Skip Threshold Override has an info disclosure
-- [ ] FRONTEND-131-AC-06: Watch Region has an info disclosure
-- [ ] FRONTEND-131-AC-07: Filter Profiles has an info disclosure
-- [ ] FRONTEND-131-AC-08: Sort By has an info disclosure, only for the Best Match/Most Recommended branch
-- [ ] FRONTEND-131-AC-09: Min Vote Count has an info disclosure
-- [ ] FRONTEND-131-AC-10: Min Avg Blended Rating has an info disclosure
-- [ ] FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure at both call sites, not its sibling Rating field
+- [x] FRONTEND-131-AC-01: `InfoDisclosure` renders closed by default and toggles its description on click
+- [x] FRONTEND-131-AC-02: the toggle button's `aria-controls` matches the description's generated `id`
+- [x] FRONTEND-131-AC-03: `NumberInput` gains `labelInfo`, rendered as a sibling of `<label>`, zero change when omitted
+- [x] FRONTEND-131-AC-04: `SettingsSection` gains `info`, rendered as a sibling of `<h3>`, zero change when omitted
+- [x] FRONTEND-131-AC-05: Skip Threshold Override has an info disclosure
+- [x] FRONTEND-131-AC-06: Watch Region has an info disclosure
+- [x] FRONTEND-131-AC-07: Filter Profiles has an info disclosure
+- [x] FRONTEND-131-AC-08: Sort By has an info disclosure, only for the Best Match/Most Recommended branch
+- [x] FRONTEND-131-AC-09: Min Vote Count has an info disclosure
+- [x] FRONTEND-131-AC-10: Min Avg Blended Rating has an info disclosure
+- [x] FRONTEND-131-AC-11: Min Rotten Tomatoes Popcornmeter has an info disclosure at both call sites, not its sibling Rating field

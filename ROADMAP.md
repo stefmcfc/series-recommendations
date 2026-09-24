@@ -40,7 +40,6 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
-| Shared `InfoDisclosure` click-to-toggle info boxes for 7 non-obvious controls (Skip Threshold Override, Watch Region, Filter Profiles, Sort By's Best Match/Most Recommended pair, Min Vote Count, Min Avg Blended Rating, Min Rotten Tomatoes Popcornmeter) | — | `frontend_spec_131` | ⬜ Not started |
 
 ---
 
@@ -184,6 +183,7 @@ dependency-derived anymore.
 | My Series filters: Ratings section reorganized into rows (Personal / IMDb+TMDB / RT); all 5 sections (including the new Origin section) made collapsible with per-section active-filter badges | — | `frontend_spec_123` | ✅ Done |
 | Card tint (`frontend_spec_124`) reworked from a flat wash to a 135° diagonal gradient after a live A/B/C/D comparison, plus a polish pass fixing toolbar/nested-row tint bleed, a clashing filter-section heading background, filter-panel spacing, and low-contrast star-rating glyphs | — | `frontend_spec_130` | ✅ Done |
 | Saved Filters list split to the top of every filter area (My Series, Use My Series, Recommendation Filters, Custom Search, Analysis — the last folded into its own filters box for the first time, bookended with fields in between; Save/Update actions stay at the existing bottom position), a hover tooltip on each saved filter describing what it contains, and an "Update Filters" confirmation dialog with an editable name (was a silent, unconfirmed overwrite) | — | `frontend_spec_129` | ✅ Done |
+| Shared `InfoDisclosure` click-to-toggle info boxes for 7 non-obvious controls (Skip Threshold Override, Watch Region, Filter Profiles, Sort By's Best Match/Most Recommended pair, Min Vote Count, Min Avg Blended Rating, Min Rotten Tomatoes Popcornmeter) | — | `frontend_spec_131` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

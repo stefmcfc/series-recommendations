@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: new shared `InfoDisclosure` component — a small click-to-toggle ⓘ button revealing a short description beneath a field, closed by default, for controls whose purpose isn't obvious from their label alone (`frontend_spec_131`).
+- Frontend: `NumberInput` gains an optional `labelInfo` prop and `SettingsSection` gains an optional `info` prop, both rendered as a sibling of the label/heading they sit beside (never nested inside it), so `InfoDisclosure` can be wired in without breaking label-click-focuses-input behavior or folding into a heading's accessible name (`frontend_spec_131`).
+- Frontend: Settings gains info disclosures for Skip Threshold Override, Watch Region, and Filter Profiles (`frontend_spec_131`).
+- Frontend: Sort By's Best Match/Most Recommended pair (Use My Series) gains an info disclosure explaining the difference between the two, shown only for that branch (`frontend_spec_131`).
+- Frontend: Min Vote Count (Recommendation Filters) and Min Avg Blended Rating (Analysis — Keywords/Genres/Country of Origin) each gain an info disclosure (`frontend_spec_131`).
+- Frontend: Min Rotten Tomatoes Popcornmeter (My Series and Recs > Use My Series) gains an info disclosure disambiguating it from the Tomatometer-based "Min Rotten Tomatoes Rating" field beside it (`frontend_spec_131`).
+
 ## [3.60.0] - 2026-09-24
 
 ### Added
