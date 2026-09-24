@@ -68,8 +68,13 @@ pass — not yet designed, just confirmed still relevant and worth a spec eventu
 
 `series_spec_019_keyword_tracking.md`'s aggregate stats endpoint (`GET /api/v1/series/keywords`) already exists and
 is delivered — for each keyword across your tracked series, it reports `seriesCount` and `averagePersonalRating`.
-Confirmed via reading the current code (2026-08-27) that none of this feeds into recommendation scoring or
-filtering: `RecommendationRankingService.score()` computes `rankScore` purely from `tmdbRating` (TMDB's own
+**Update (2026-09-24)**: `series_spec_047_keyword_stats_filtering_sort_and_blended_rating.md` (delivered since this
+candidate was written) added a third field, `averageBlendedRating` — the unweighted average of a keyword's carrying
+series' IMDb/TMDB ratings — and the backing DTO was renamed from `KeywordStatDto` to a now-shared `NameStatDto`
+(also backs `GET /api/v1/series/genres/stats` and `GET /api/v1/series/origin-country/stats`). Whoever designs this
+should weigh `averageBlendedRating` alongside `averagePersonalRating` as a candidate signal — it didn't exist when
+this candidate was first drafted. Re-confirmed via reading the current code (2026-09-24) that none of this feeds
+into recommendation scoring or filtering — still true: `RecommendationRankingService.score()` computes `rankScore` purely from `tmdbRating` (TMDB's own
 `voteAverage`) and the best contributing source series' `personalRating`, blended 50/50
 (`(tmdbRating * 0.5) + (personalRatingTerm * 0.5)`, `RecommendationRankingService.java`) — a candidate's own
 keywords never enter that formula. Likewise, `RecommendationOutputFilterService.applyOutputFilters` has no keyword-
@@ -188,12 +193,19 @@ implemented as one.
     last.
 11. **Saved filter/algorithm profiles.** Confirmed during this discussion: the user wants some way
     to save a chosen combination of weights/filters/source settings rather than re-entering it
-    every session. Once there are this many tunable knobs, that stops being optional. This app has
-    no user-preference persistence precedent today at all — no settings entity, no "save this
-    configuration" pattern anywhere in the codebase — so the save/load half of this is likely its
-    own foundational piece of work (e.g. a new `recommendation_profile` entity/endpoint) that
-    needs designing before or alongside the scoring changes themselves, not as an afterthought
-    bolted onto them.
+    every session. Once there are this many tunable knobs, that stops being optional.
+    **Update (2026-09-24)**: at the time this was written (2026-08-28), this app had no
+    user-preference persistence precedent at all — that's no longer true. `series_spec_055`/`056`/
+    `057` (delivered) shipped named, saved, rename/delete-managed *filter* profiles across all five
+    filterable areas, backed by a real `FilterProfile` entity/endpoint
+    (`FilterProfileController`) — a genuine "save this configuration" pattern now exists in this
+    codebase. Whoever designs *this* item (algorithm/weight profiles, distinct from filter
+    criteria) should start by checking whether that same entity/endpoint shape can be reused or
+    extended, rather than assuming a new `recommendation_profile` entity must be designed from
+    scratch — the foundational "is there a save/load precedent" question this item originally
+    flagged as open is now answered; what's still open is only whether *this* data (weights, not
+    filter criteria) fits the same shape. See `.claude/ideas/future_ideas.md`'s "Saved algorithm
+    profiles" entry, which already tracks this same correction.
 
 **Cross-reference**: overlaps significantly with the existing "Weight recommendation scoring...by
 keyword popularity/average personal rating" candidate above — both touch
