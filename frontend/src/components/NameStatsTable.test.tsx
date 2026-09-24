@@ -3,6 +3,15 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { NameStatsTable } from './NameStatsTable'
 import type { NameStatsOptions, NameStat } from './NameStatsTable'
 import { useNameStatsFilters } from '../hooks/useNameStatsFilters'
+import { seriesApi } from '../services/seriesApi'
+
+// FRONTEND-129-AC-03: NameStatsTable now renders a SavedFiltersList/
+// FilterProfileActions pair (area ANALYSIS_FILTERS) that fetches on mount
+// while its "Analysis Filters" box is expanded -- mocked here (not
+// previously needed by this file) so every pre-existing test sees no
+// behavior change, mirroring RecommendationFiltersBox.test.tsx's own
+// FRONTEND-107-AC-11 comment for why.
+vi.mock('../services/seriesApi')
 
 // FRONTEND-095: status-scope filter ("All Series" / "Completed Only") added
 // directly to the shared NameStatsTable -- exercised here against the
@@ -43,6 +52,7 @@ function Harness({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
 })
 
 describe('FRONTEND-096-AC-03: Apply Filters button styling', () => {
@@ -283,6 +293,34 @@ describe('FRONTEND-086-AC-04/05/06: minimum-value filters', () => {
     expect(fetchStats.mock.calls.at(-1)?.[0]).not.toHaveProperty(
       'minAveragePersonalRating',
     )
+  })
+})
+
+describe('FRONTEND-129-AC-03: Saved Filters list and actions bookend the fields in NameStatsTable', () => {
+  it('renders the list before Min Series Count and actions before Reset Filters, once expanded', async () => {
+    vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([])
+    render(<Harness fetchStats={vi.fn().mockResolvedValue([])} />)
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+
+    const body = screen.getByTestId('filters-body')
+    const list = await screen.findByTestId('filter-profile-selector')
+    const actions = await screen.findByTestId('filter-profile-actions')
+    const minSeriesCountField = screen.getByLabelText('Min Series Count')
+    const resetButton = screen.getByTestId('reset-filters-btn')
+
+    expect(body.contains(list)).toBe(true)
+    expect(
+      list.compareDocumentPosition(minSeriesCountField) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      minSeriesCountField.compareDocumentPosition(actions) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      actions.compareDocumentPosition(resetButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 })
 

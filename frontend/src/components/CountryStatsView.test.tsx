@@ -7,6 +7,11 @@ import { useNameStatsFilters } from '../hooks/useNameStatsFilters'
 
 vi.mock('../services/seriesApi')
 const mockGetCountryStats = vi.mocked(seriesApi.getCountryStats)
+// FRONTEND-129-AC-03: NameStatsTable now renders a SavedFiltersList/
+// FilterProfileActions pair (area ANALYSIS_FILTERS) that fetches on mount --
+// mocked here (not previously needed by this file) so every pre-existing
+// test sees no behavior change.
+const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 
 // FRONTEND-096-AC-14: CountryStatsView now requires a `filters` prop,
 // forwarded unchanged from AnalysisView's single shared
@@ -28,6 +33,7 @@ function openFilters() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockListFilterProfiles.mockResolvedValue([])
 })
 
 describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {

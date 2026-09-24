@@ -172,11 +172,29 @@ describe('FRONTEND-096-AC-11/12/13: filter/sort/panel state persists across tab 
   })
 })
 
-describe('FRONTEND-112-AC-09: shared FilterProfileSelector across Analysis tabs', () => {
-  it('renders exactly one FilterProfileSelector, positioned above the active tab view', async () => {
+describe('FRONTEND-129-AC-03: AnalysisView no longer renders its own picker', () => {
+  it('renders no filter-profile-selector until the Analysis Filters panel is expanded', async () => {
     renderAnalysisView('/analysis/keywords')
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
-    expect(screen.getAllByTestId('filter-profile-selector')).toHaveLength(1)
+    expect(
+      screen.queryByTestId('filter-profile-selector'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+    expect(
+      await screen.findByTestId('filter-profile-selector'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-112-AC-09: shared FilterProfileSelector across Analysis tabs', () => {
+  it('renders exactly one FilterProfileSelector, positioned inside the Analysis Filters box', async () => {
+    renderAnalysisView('/analysis/keywords')
+    await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
+    expect(
+      await screen.findAllByTestId('filter-profile-selector'),
+    ).toHaveLength(1)
   })
 
   it('applying a saved profile updates the shared filters, visible after switching tabs', async () => {
@@ -192,6 +210,7 @@ describe('FRONTEND-112-AC-09: shared FilterProfileSelector across Analysis tabs'
     ])
     renderAnalysisView('/analysis/keywords')
     await waitFor(() => expect(mockGetKeywordStats).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: /analysis filters/i }))
 
     fireEvent.click(await screen.findByText('Top rated only'))
     await waitFor(() =>

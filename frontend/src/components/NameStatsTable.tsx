@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
+import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
+import type { AnalysisFilterCriteria } from '../types/filterProfile'
 import { NumberInput } from './NumberInput'
+import { SavedFiltersList } from './SavedFiltersList'
+import { FilterProfileActions } from './FilterProfileActions'
 import styles from './NameStatsTable.module.css'
 import sharedStyles from './RecommendationControls.module.css'
 
@@ -112,6 +116,24 @@ export function NameStatsTable({
     }
   }, [filters.options, filters.applyVersion, fetchStats, errorLabel])
 
+  // FRONTEND-129-AC-03: Analysis gets both halves inside this box's
+  // "Analysis Filters" disclosure for the first time -- previously the
+  // whole (pre-split) picker sat outside it in AnalysisView.tsx, the only
+  // area whose picker ignored the box's collapsed state (this spec's
+  // Design Decisions). currentCriteria mirrors AnalysisView.tsx's own former
+  // computation: the pending filterInputs plus the live sortBy/
+  // sortDirection.
+  const filterProfile = useFilterProfileSelector<AnalysisFilterCriteria>({
+    area: 'ANALYSIS_FILTERS',
+    currentCriteria: {
+      ...filters.filterInputs,
+      sortBy: filters.sortBy,
+      sortDirection: filters.sortDirection,
+    },
+    onApply: filters.applyFilterProfile,
+    onClear: filters.clearFilterProfile,
+  })
+
   return (
     <div className={styles.container} data-testid={testId}>
       <h2 className={styles.heading}>{heading}</h2>
@@ -136,6 +158,17 @@ export function NameStatsTable({
 
         {filters.filtersOpen && (
           <div className={sharedStyles.filtersBody} data-testid="filters-body">
+            {/* FRONTEND-129-AC-03: Saved Filters now renders first, before
+                any individual field -- folds both halves into this box for
+                the first time, resolving Analysis's standing inconsistency
+                of ignoring the box's collapsed state entirely. */}
+            <div className={sharedStyles.filterFullWidthRow}>
+              <SavedFiltersList<AnalysisFilterCriteria>
+                area="ANALYSIS_FILTERS"
+                {...filterProfile}
+              />
+            </div>
+
             <div className={sharedStyles.field}>
               <NumberInput
                 id={`${idPrefix}-min-series-count`}
@@ -192,6 +225,20 @@ export function NameStatsTable({
                 <option value="all">All Series</option>
                 <option value="completed">Completed Only</option>
               </select>
+            </div>
+
+            {/* FRONTEND-129-AC-03: FilterProfileActions renders immediately
+                before the existing Reset Filters/Apply Filters row. */}
+            <div className={sharedStyles.filterFullWidthRow}>
+              <FilterProfileActions<AnalysisFilterCriteria>
+                area="ANALYSIS_FILTERS"
+                currentCriteria={{
+                  ...filters.filterInputs,
+                  sortBy: filters.sortBy,
+                  sortDirection: filters.sortDirection,
+                }}
+                {...filterProfile}
+              />
             </div>
 
             <div className={sharedStyles.filtersActions}>

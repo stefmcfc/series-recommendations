@@ -20,7 +20,9 @@ import {
 import type { ControlsState } from './RecommendationControls'
 import type { RecommendationFiltersCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
-import { FilterProfileSelector } from './FilterProfileSelector'
+import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
+import { SavedFiltersList } from './SavedFiltersList'
+import { FilterProfileActions } from './FilterProfileActions'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -167,6 +169,21 @@ export function RecommendationFiltersBox({
     })
   }
 
+  // FRONTEND-129-AC-01/AC-02: one shared hook instance feeds both
+  // SavedFiltersList (rendered at the top of filtersBody) and
+  // FilterProfileActions (rendered at this box's existing bottom position,
+  // immediately before the Reset Filters row) -- see frontend_spec_129's
+  // Design Decisions. `disabled` already handles the Custom Search case.
+  const filterProfile = useFilterProfileSelector<RecommendationFiltersCriteria>(
+    {
+      area: 'RECOMMENDATION_FILTERS',
+      currentCriteria: currentRecommendationFiltersCriteria,
+      onApply: handleApplyProfile,
+      onClear: handleResetFilters,
+      disabled: isCustomSearch,
+    },
+  )
+
   return (
     <div className={styles.filtersSection}>
       {/* FRONTEND-065-AC-01: relabeled from "Filters" -- disambiguates from
@@ -191,6 +208,17 @@ export function RecommendationFiltersBox({
 
       {filtersOpen && (
         <div className={styles.filtersBody} data-testid="filters-body">
+          {/* FRONTEND-129-AC-02: Saved Filters now renders first, before
+              any individual field, unconditionally -- disabled already
+              handles the Custom Search case. */}
+          <div className={styles.filterFullWidthRow}>
+            <SavedFiltersList<RecommendationFiltersCriteria>
+              area="RECOMMENDATION_FILTERS"
+              disabled={isCustomSearch}
+              {...filterProfile}
+            />
+          </div>
+
           {!isCustomSearch && (
             <div className={styles.field}>
               <NumberInput
@@ -334,12 +362,11 @@ export function RecommendationFiltersBox({
           )}
 
           <div className={styles.filterFullWidthRow}>
-            <FilterProfileSelector<RecommendationFiltersCriteria>
+            <FilterProfileActions<RecommendationFiltersCriteria>
               area="RECOMMENDATION_FILTERS"
               currentCriteria={currentRecommendationFiltersCriteria}
-              onApply={handleApplyProfile}
-              onClear={handleResetFilters}
               disabled={isCustomSearch}
+              {...filterProfile}
             />
           </div>
 

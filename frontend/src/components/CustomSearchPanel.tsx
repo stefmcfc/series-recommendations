@@ -21,7 +21,9 @@ import {
 import type { ControlsState } from './RecommendationControls'
 import type { CustomSearchFilterCriteria } from '../types/filterProfile'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
-import { FilterProfileSelector } from './FilterProfileSelector'
+import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
+import { SavedFiltersList } from './SavedFiltersList'
+import { FilterProfileActions } from './FilterProfileActions'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 
@@ -102,6 +104,18 @@ export function CustomSearchPanel({
     })
   }
 
+  // FRONTEND-129-AC-01/AC-02: one shared hook instance feeds both
+  // SavedFiltersList (rendered at the top of this panel) and
+  // FilterProfileActions (rendered at its existing bottom position,
+  // immediately before the Clear Filters row) -- see frontend_spec_129's
+  // Design Decisions.
+  const filterProfile = useFilterProfileSelector<CustomSearchFilterCriteria>({
+    area: 'CUSTOM_SEARCH',
+    currentCriteria: currentCustomSearchCriteria,
+    onApply: (criteria) => updateState(criteria),
+    onClear: handleClearCustomSearchFilters,
+  })
+
   return (
     <>
       <div
@@ -117,6 +131,13 @@ export function CustomSearchPanel({
           Search TMDB directly using your own combination of genres, keywords,
           ratings, and other filters — not based on your watched shows.
         </p>
+
+        {/* FRONTEND-129-AC-02: Saved Filters now renders first, before any
+            individual field. */}
+        <SavedFiltersList<CustomSearchFilterCriteria>
+          area="CUSTOM_SEARCH"
+          {...filterProfile}
+        />
 
         <div className={styles.genreKeywordFields}>
           {/* FRONTEND-068-AC-02: combined include/exclude Genres picker,
@@ -262,11 +283,10 @@ export function CustomSearchPanel({
         {/* FRONTEND-112-AC-03/04: end-of-fields placement, matching
           frontend_spec_109's "Save moves to the end of each filter view"
           convention for the other three areas. */}
-        <FilterProfileSelector<CustomSearchFilterCriteria>
+        <FilterProfileActions<CustomSearchFilterCriteria>
           area="CUSTOM_SEARCH"
           currentCriteria={currentCustomSearchCriteria}
-          onApply={(criteria) => updateState(criteria)}
-          onClear={handleClearCustomSearchFilters}
+          {...filterProfile}
         />
 
         <div className={styles.filtersActions}>
