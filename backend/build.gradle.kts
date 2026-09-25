@@ -14,7 +14,7 @@ version = "3.63.0"
 // single place to bump each, and easier for dependabot's version-bump PRs to reason about.
 val sqliteJdbcVersion = "3.53.4.0"
 val spockVersion = "2.4-groovy-5.0"
-val groovyVersion = "5.1.1"
+val groovyVersion = "5.1.2"
 val commonsCsvVersion = "1.14.1"
 
 java {
