@@ -17,7 +17,9 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-05 ("Exclude Keywords" filter candidate closed — spec'd as part of
+Last updated: 2026-09-25 (added the "Use My Series" step-by-step wizard candidate, moved here from
+`.claude/ideas/future_ideas.md` — see the candidate itself for context). Previous update: 2026-09-05
+("Exclude Keywords" filter candidate closed — spec'd as part of
 `frontend_spec_094_recommendations_page_polish.md`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
@@ -236,6 +238,42 @@ explicit Search button — not necessarily uniform treatment across the whole sh
 
 **Status**: Spec candidate, not yet designed. No field-by-field behavior decided — see the open
 question above.
+
+### "Use My Series" / Recommendations page as a step-by-step wizard, for first-time-user guidance
+
+Moved here from `.claude/ideas/future_ideas.md` on 2026-09-25, per the user's own request. Originally
+raised 2026-09-03 while planning the "Use My Series" page restructure (filter/select/post-filter/
+sort/apply): whether the page's several sections should be a single scrolling page or built up
+step-by-step, checkout-style (fill in address, then payment). Deliberately not pursued at the time —
+nothing in this flow has a genuine server-side dependency gating the next step the way a checkout
+does, every field stays in client-side `ControlsState` until one single "Get Recommendations" submit,
+and this app had (and still has) no wizard precedent anywhere. A wizard would also punish the likely
+real workflow of filtering, glancing at picker results, then going back to loosen an earlier filter.
+The single-page-with-collapsible-sections approach was chosen instead, with an explicit note to
+revisit if it ever felt cluttered in practice.
+
+**Why this is being kept as a live candidate now rather than dropped**: as of 2026-09-25, the page
+has grown enough disclosures (Filter My Series / Source Ranking Strategy / Recommendations Filters,
+soon two of those becoming their own slide-out sheets per the just-written
+`frontend_spec_1XX_recommendation_filter_sheets.md`) that the user flagged it's "becoming busy" and
+raised the concern that a first-time user might need guiding through it, not just an experienced user
+who already knows which fields matter to them. The two-sheet redesign is the immediate answer to
+"too much on screen at once"; a wizard would instead answer a different problem — "I don't know what
+order to do these things in or what each one means" — which sheets alone don't solve.
+
+**Deliberately queued behind the two-sheet redesign, not run in parallel with it**: revisit once
+`frontend_spec_1XX_recommendation_filter_sheets.md` has shipped and there's a real, current page to
+evaluate against — building a guided wizard on top of a panel layout that's about to be restructured
+would mean redoing the wizard's own step boundaries once the sheets land anyway. When picked up, the
+original blocking reasoning above (no server-side step-gating, no existing wizard precedent, the
+filter/glance/adjust-again workflow) still needs weighing against the new first-time-user-guidance
+motivation — this isn't a reversal of that reasoning, it's a different problem the original
+reasoning didn't consider. Whoever scopes this should also decide whether "wizard" still means a
+literal forced linear flow, or something lighter (e.g. an optional first-run guided tour/tooltip
+sequence layered over the existing single-page sheet layout, touching fewer of the original
+objections) — both readings are plausible and neither has been chosen yet.
+
+**Status**: Spec candidate, not yet designed. Blocked on the two-sheet redesign shipping first.
 
 ### Full-codebase manual accessibility review
 

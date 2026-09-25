@@ -56,6 +56,13 @@ Country of Origin / Language" (just reconfirmed above) were both specced —
 removed accordingly, per this file's own pipeline rule. See `ROADMAP.md`'s "Specced, coming soon"
 table.
 
+2026-09-25 update: two Recommendations & Lookup / Search & Filter items resolved in one session.
+"'Use My Series' as a step-by-step wizard" was confirmed still worth keeping around, but as a
+`.claude/SPEC_CANDIDATES.md` entry rather than a raw idea — moved there accordingly, no longer a
+"not specced, deliberately deferred" item here. "Redo cluttered filter panels..." (Search & Filter
+section) was committed to as a real spec (two slide-out sheets, no wizard) — removed here, tracked
+in `ROADMAP.md`'s "Specced, coming soon" table.
+
 ---
 
 ## Recommendations & Lookup
@@ -107,27 +114,6 @@ section's heading is still plain "Series" (`UseMySeriesPanel.tsx`), not "Select 
 **Status**: Not specced. Narrow remaining scope — a single label change, `UseMySeriesPanel.tsx`'s
 `label="Series"` → `"Select Series"` (two occurrences, the picker and its "Browse..." modal).
 
-### "Use My Series" as a step-by-step wizard instead of a single scrolling page
-
-Raised 2026-09-03 while planning the "Use My Series" page restructure (filter/select/post-filter/
-sort/apply). The user asked whether the redesigned page's five sections — Filter & sort my series,
-Select my series, Post TMDB filtering, Sort filtered recs, Apply/Get Recommendations — should be a
-single scrolling page or built up step-by-step, checkout-style (fill in address, then payment).
-
-Deliberately not pursued for the initial redesign: nothing in this flow has a genuine
-server-side dependency gating the next step the way a checkout does (address round-trip before
-shipping calc), every field stays in client-side `ControlsState` until one single "Apply
-Filters"/"Get Recommendations" submit — and this app has no existing wizard precedent anywhere
-(its two progressive-disclosure patterns, `RecommendationFiltersBox` and `SearchFilter`'s sheet,
-both use inline collapse/expand, never forced linear steps). A wizard would also punish the likely
-real workflow of filtering, glancing at picker results, then going back to loosen an earlier
-filter — recommended a single page with the new "Filter & sort my series" section defaulting open
-instead (see `frontend_spec_0XX`, the page-restructure spec, once written).
-
-**Status**: Not specced — deliberately deferred by the user's own choice ("let's go with the
-single-page option for now and add this as a future idea"), not rejected. Revisit if the
-single-page version turns out to feel cluttered in practice once built.
-
 ---
 
 ## Search & Filter
@@ -150,25 +136,6 @@ work today. Confirmed unchanged as of 2026-08-26.
 
 **Status**: Not specced. Kept on the list (2026-08-26 review) as a real, distinct gap from
 field-based search — no immediate trigger, but a genuine one when it comes up.
-
-### Redo cluttered filter panels as a collapsible left-hand panel or slide-out sheet — confirmed wanted for both `SearchFilter` and `RecommendationControls`
-
-Originally raised 2026-08-24 for `SearchFilter`'s top-of-page filter panel, noting it was "the
-same shape of layout question as `RecommendationControls`' own `Filters` disclosure, so a
-consistent answer for both is probably better than solving it twice." Confirmed independently for
-`RecommendationControls` on 2026-08-26 — this is now a real, cross-cutting layout idea covering
-both filter panels, not just an anticipated one. Confirmed both panels are still today's original
-always-expanded-top-bar / inline-disclosure shapes (2026-08-26 re-check).
-
-**Status**: Partially implemented. **Note (2026-08-29)**:
-`frontend_spec_055_search_filter_overhaul.md` gives `SearchFilter` a basic show/hide disclosure
-(reusing `RecommendationControls`' existing `filtersOpen` mechanism) — the immediately-actionable
-"collapsible" want is covered there. **Note (2026-09-01)**: `frontend_spec_071_my_series_filter_sheet.md`
-implements the bigger layout question for `SearchFilter` specifically — its inline disclosure is now
-a slide-out sheet (not a left-hand panel), triggered by a new funnel icon next to `SeriesList`'s
-view-mode icons, superseding the inline disclosure entirely. `RecommendationControls`' equivalent
-panel remains open/unspecced and still uses its original inline disclosure — the same sheet
-treatment for it is a separate future spec if wanted, not bundled into `frontend_spec_071`.
 
 ---
 
