@@ -327,6 +327,15 @@
   width: 100%;
   max-width: 26rem;
   height: 100%;
+  /* Without this, the content-box default adds .sheet's own 1.5rem padding
+     on top of its 100% height instead of carving it out of it, rendering
+     the sheet taller than the viewport and clipping whatever sits at the
+     bottom (e.g. Clear/Reset Filters) below the fold with no way to scroll
+     to it -- found live while reviewing frontend_spec_134's Filter My
+     Series sheet, but the bug is in the box model, not this sheet's
+     content, so it's fixed here alongside the identical copy in
+     SearchFilter.module.css. */
+  box-sizing: border-box;
   overflow-y: auto;
   background: var(--bg);
   color: var(--text);

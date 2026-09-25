@@ -19,6 +19,10 @@ versioned together as one app.
 - Frontend: Source Ranking Strategy (and its Custom Rating Blend chips) moved out of "Filter My Series" into its own standalone disclosure section, rendered between "Filter My Series" and "Recommendations Filters" (`frontend_spec_132` amendment).
 - Frontend: "Filter My Series" now defaults closed instead of open, since it's a sheet overlay rather than an inline disclosure (`frontend_spec_134`, supersedes `frontend_spec_081-AC-01`).
 
+### Fixed
+
+- Frontend: both `SearchFilter` and `RecommendationControls`' slide-out sheets (`.sheet`) were missing `box-sizing: border-box`, so the content-box default added the sheet's own padding on top of its 100%-of-viewport height instead of carving it out — on a tall enough sheet (found via "Filter My Series"), this rendered the sheet taller than the viewport and clipped whatever sat at the bottom (e.g. Clear/Reset Filters) below the fold with no way to scroll to it.
+
 ## [3.62.0] - 2026-09-24
 
 ### Added
