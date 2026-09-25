@@ -383,6 +383,16 @@ scope is unchanged.
   documented, deliberate choice in each spec's Design Decisions (avoiding `<dialog>`'s
   showModal()/close() lifecycle complexity), but never evaluated as a *pattern* across every dialog
   at once for whether that tradeoff still holds as more dialogs have accumulated.
+  **Update (2026-09-25)**: two more hand-rolled dialogs joined this pattern —
+  `RecommendationFiltersBox`'s "Recommendations Filters" and `UseMySeriesPanel`'s "Filter My
+  Series" both became slide-out sheets (`frontend_spec_134`), each reusing `SearchFilter`'s own
+  focus-to-Close-button-on-open `useEffect`. Still no focus trap and no focus-return-on-close for
+  either — same tradeoff, not a new gap — but this extends an existing partial-mitigation
+  precedent (focus *into* the dialog on open) to two more instances, worth knowing if this audit
+  ever tallies which dialogs have which pieces. The `UseMySeriesPanel` "Browse Series"/"Browse
+  Keywords" modals now nest one level deeper (inside the new sheet rather than an inline panel) —
+  same Escape-inert bug mechanism below still applies to them unchanged, just at that new nesting
+  depth.
   **Update (2026-09-04)**: live-reproduced the concrete failure mode this causes, while manually
   verifying `frontend_spec_043` (discard-unsaved-changes confirm dialog) in a real browser. The
   mechanism is broader than just "modal closes without returning focus": *any* click on a button
