@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.63.0] - 2026-09-25
+
 ### Added
 
 - Frontend: `RecommendationFiltersBox`'s "Recommendations Filters" and `UseMySeriesPanel`'s "Filter My Series" are now slide-out sheets (matching `SearchFilter`'s existing sheet pattern), each with a one-line explanatory intro and their fields grouped into collapsible subsections (`frontend_spec_134`).
