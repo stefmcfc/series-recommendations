@@ -41,7 +41,6 @@ dependency-derived anymore.
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
-| Split each of the 9 controllers into a `<Name>Api` interface (carries Spring MVC mapping + OpenAPI annotations) and a clean `@RestController` implementation, so future `@ApiResponse`/`@ExampleObject` additions don't further bloat the controllers — piloted on one controller first with an explicit review checkpoint before the other 8 | `series_spec_069` | — | ⬜ Not started |
 ---
 
 ## Delivered
@@ -206,4 +205,5 @@ user-facing feature name.
 | `tooling_spec_006_series_view_shared_action_helpers.md`       | Extract shared rewatch-toggle/delete-submission logic out of `SeriesDetail.tsx`/`SeriesList.tsx`                                                                          | ✅ Done        |
 | `tooling_spec_007_tmdb_client_discover_filters_extraction.md` | Extract `TmdbClient.discover()`'s `DiscoverFilters`-param-building into its own method (Cognitive Complexity 20→≤15)                                                      | ✅ Done _(AC-03 pending SonarQube re-scan confirmation)_ |
 | `tooling_spec_008_recommendation_controls_decomposition.md`   | Split `RecommendationControls.tsx` into per-mode panel components (`UseMySeriesPanel`/`CustomSearchPanel`/`TrendingPanel`/`HighestRatedPanel`/`RecommendationFiltersBox`) | ✅ Done _(AC-07 pending SonarQube re-scan confirmation)_ |
+| `series_spec_069_controller_interface_extraction.md`          | Split each of the 9 controllers into a `<Name>Api` interface (Spring MVC mapping + OpenAPI annotations) and a clean `@RestController` implementation, so future `@ApiResponse`/`@ExampleObject` additions don't further bloat the controllers — piloted on `SeriesKeywordController` with an explicit review checkpoint before the other 8 | ✅ Done |
 | `tooling_spec_009_dev_server_scripts.md`                      | Bash scripts (`scripts/start-dev.sh`/`stop-dev.sh`/`restart-dev.sh`) to start/stop/restart the local backend + frontend dev servers without manual commands            | ✅ Done        |
