@@ -42,6 +42,7 @@ dependency-derived anymore.
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 | Port `API.md`'s existing endpoint/parameter prose into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
+| Split each of the 9 controllers into a `<Name>Api` interface (carries Spring MVC mapping + OpenAPI annotations) and a clean `@RestController` implementation, so future `@ApiResponse`/`@ExampleObject` additions don't further bloat the controllers — piloted on one controller first with an explicit review checkpoint before the other 8 | `series_spec_069` | — | ⬜ Not started |
 ---
 
 ## Delivered
