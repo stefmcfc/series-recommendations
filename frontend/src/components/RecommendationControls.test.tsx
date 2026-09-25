@@ -173,12 +173,31 @@ function addCustomSearchKeyword(value: string) {
 // checkbox click used to do), then closes the modal again so it doesn't
 // leave a second `role="dialog"` element behind for tests that go on to
 // open the "Show all series" modal.
-function includeSpecificSeriesGenre(genre: string) {
+// FRONTEND-134-AC-09: "Filter My Series" is now a sheet that defaults
+// closed and whose trigger only renders once allSeries has been fetched --
+// opens it first (awaiting the trigger's appearance doubles as this
+// helper's readiness wait, superseding the separate
+// `await screen.findByRole('button', { name: 'Include / Exclude Genres' })`
+// callers used to do beforehand).
+async function includeSpecificSeriesGenre(genre: string) {
+  fireEvent.click(
+    await screen.findByRole('button', { name: /^filter my series$/i }),
+  )
   fireEvent.click(
     screen.getByRole('button', { name: 'Include / Exclude Genres' }),
   )
   fireEvent.click(screen.getByRole('button', { name: `${genre}: neutral` }))
   fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+}
+
+// FRONTEND-134-AC-09: shared helper for tests that just need the "Filter My
+// Series" sheet open before reaching a field inside it (e.g. the "Filter by
+// Status" radios) -- mirrors includeSpecificSeriesGenre's own readiness
+// wait.
+async function openFilterMySeriesSheet() {
+  fireEvent.click(
+    await screen.findByRole('button', { name: /^filter my series$/i }),
+  )
 }
 
 // FRONTEND-077-AC-05: the inline Series field no longer renders its own
@@ -187,11 +206,14 @@ function includeSpecificSeriesGenre(genre: string) {
 // KeywordPicker unaffected by hideInput. Closes the modal again afterward
 // so it doesn't leave a second `role="dialog"` element behind for a test
 // that goes on to open another modal.
+// FRONTEND-134-AC-10: name-filtered -- the "Filter My Series" sheet (also
+// role="dialog") may also be open at this point in some tests, so an
+// unfiltered getByRole('dialog') would match two dialogs at once.
 async function pickSpecificSeries(name: string | RegExp) {
   fireEvent.click(
     await screen.findByRole('button', { name: /show all series/i }),
   )
-  const dialog = screen.getByRole('dialog')
+  const dialog = screen.getByRole('dialog', { name: /browse series/i })
   fireEvent.click(within(dialog).getByRole('button', { name }))
   fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
 }
@@ -241,7 +263,7 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
     )
-    let dialog = screen.getByRole('dialog')
+    let dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: 'Ozark - COMPLETED' }),
     ).toBeInTheDocument()
@@ -259,7 +281,7 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    dialog = screen.getByRole('dialog')
+    dialog = screen.getByRole('dialog', { name: /browse series/i })
     const input = within(dialog).getByRole('textbox', { name: 'Series' })
     fireEvent.change(input, { target: { value: 'wire' } })
     fireEvent.click(
@@ -303,7 +325,7 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
     )
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', {
         name: 'Ozark (2017) | United States - COMPLETED',
@@ -333,7 +355,7 @@ describe('FRONTEND-011-AC-04: Specific Series picker via getAll()', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
     )
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: 'Ozark - COMPLETED' }),
     ).toBeInTheDocument()
@@ -635,6 +657,11 @@ describe('FRONTEND-011-AC-09: Reset Filters', () => {
       sourceMode: 'useMySeries',
       seriesIds: ['1'],
     })
+    // FRONTEND-134-AC-05: Reset Filters now also closes the sheet -- re-open
+    // it to inspect the reset field.
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     expect(screen.getByLabelText(/^min tmdb rating$/i)).toHaveValue(null)
   })
 })
@@ -1188,6 +1215,11 @@ describe('FRONTEND-030-AC-10: Reset Filters clears minVoteCount and minVoteCount
     fireEvent.click(screen.getByTestId('reset-filters-btn'))
     clickApplyFilters()
 
+    // FRONTEND-134-AC-05: Reset Filters now also closes the sheet -- re-open
+    // it to inspect the reset field.
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
     expect(
       screen.getByRole('spinbutton', { name: /min vote count/i }),
     ).toHaveValue(null)
@@ -1389,7 +1421,7 @@ describe('FRONTEND-035-AC-05: Specific Series mode renders a KeywordPicker', () 
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
     )
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     const input = within(dialog).getByRole('textbox', { name: 'Series' })
     fireEvent.change(input, { target: { value: 'ozark' } })
     expect(
@@ -1453,7 +1485,7 @@ describe('FRONTEND-035-AC-07: selected series stay visible as chips through filt
 
     await pickSpecificSeries('Ozark - COMPLETED')
 
-    includeSpecificSeriesGenre('Comedy')
+    await includeSpecificSeriesGenre('Comedy')
     clickApplyFilters()
 
     // Narrowed away from the genre-filtered candidate pool, but the chip
@@ -1495,7 +1527,7 @@ describe('FRONTEND-050-AC-01: excluded series are never offered in the Specific 
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
     )
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: /Included Show/ }),
     ).toBeInTheDocument()
@@ -1524,7 +1556,7 @@ describe('FRONTEND-050-AC-02: excluded series are never offered in the browse-al
       await screen.findByRole('button', { name: /show all series/i }),
     )
 
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: /Included Show/ }),
     ).toBeInTheDocument()
@@ -1605,7 +1637,7 @@ describe('FRONTEND-035-AC-09: Show all series modal is uncapped and shares selec
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
 
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog)
         .getAllByRole('button')
@@ -1625,8 +1657,7 @@ describe('FRONTEND-035-AC-10: genre/status filters render but never appear in th
     const onQueryChange = vi.fn()
     render(<RecommendationControls onQueryChange={onQueryChange} />)
 
-    await screen.findByRole('button', { name: 'Include / Exclude Genres' })
-    includeSpecificSeriesGenre('Drama')
+    await includeSpecificSeriesGenre('Drama')
     fireEvent.click(screen.getByLabelText(/completed only/i))
     // FRONTEND-042: "Use My Series" is now active by default (no separate
     // mode-change click to trigger the auto-fetch this test relies on), so
@@ -1652,11 +1683,10 @@ describe('FRONTEND-035-AC-11: genre filter matches case-insensitively within the
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('button', { name: 'Include / Exclude Genres' })
-    includeSpecificSeriesGenre('Comedy')
+    await includeSpecificSeriesGenre('Comedy')
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: /Ted Lasso/ }),
     ).toBeInTheDocument()
@@ -1677,10 +1707,11 @@ describe('FRONTEND-035-AC-12: status filter — Any / Completed Only / Completed
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(await screen.findByLabelText(/completed or watching/i))
+    await openFilterMySeriesSheet()
+    fireEvent.click(screen.getByLabelText(/completed or watching/i))
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: /Ozark/ }),
     ).toBeInTheDocument()
@@ -1707,10 +1738,11 @@ describe('FRONTEND-035-AC-17: status suffix hidden unless "Any Status"', () => {
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(await screen.findByLabelText(/completed only/i))
+    await openFilterMySeriesSheet()
+    fireEvent.click(screen.getByLabelText(/completed only/i))
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: 'Ozark (2017)' }),
     ).toBeInTheDocument()
@@ -1734,7 +1766,7 @@ describe('FRONTEND-035-AC-17: status suffix hidden unless "Any Status"', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /show all series/i }),
     )
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     expect(
       within(dialog).getByRole('button', { name: 'Ozark (2017) - COMPLETED' }),
     ).toBeInTheDocument()
@@ -1771,11 +1803,10 @@ describe('FRONTEND-035-AC-13: fixed pipeline order — filter then sort', () => 
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('button', { name: 'Include / Exclude Genres' })
-    includeSpecificSeriesGenre('Drama')
+    await includeSpecificSeriesGenre('Drama')
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     const suggestionTexts = within(dialog)
       .getAllByRole('button')
       .map((b) => b.textContent)
@@ -1800,7 +1831,7 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
     await screen.findByRole('button', { name: /show all series/i })
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     const order = within(dialog)
       .getAllByRole('button')
       .map((b) => b.textContent)
@@ -1818,12 +1849,12 @@ describe('FRONTEND-035-AC-14/15: sort control reorders the picker client-side, d
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('button', { name: /show all series/i })
+    await openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByLabelText(/sort ascending/i))
 
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     const order = within(dialog)
       .getAllByRole('button')
       .map((b) => b.textContent)
@@ -1847,13 +1878,13 @@ describe('FRONTEND-035-AC-16: null sort values sort last regardless of direction
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    await screen.findByRole('button', { name: /show all series/i })
+    await openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByRole('combobox', { name: /sort by/i }), {
       target: { value: 'personalRating' },
     })
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
     const order = within(dialog)
       .getAllByRole('button')
       .map((b) => b.textContent)
@@ -3130,7 +3161,8 @@ describe('FRONTEND-051-AC-03: disabled states', () => {
       excludedCount: 0,
     })
     render(<RecommendationControls onQueryChange={vi.fn()} />)
-    fireEvent.click(await screen.findByLabelText(/^completed only/i))
+    await openFilterMySeriesSheet()
+    fireEvent.click(screen.getByLabelText(/^completed only/i))
 
     expect(screen.getByRole('button', { name: /select all/i })).toBeDisabled()
   })
@@ -3342,5 +3374,41 @@ describe('FRONTEND-121-AC-01: .tablistNested is sticky', () => {
     expect(nestedBlock).toMatch(/z-index:\s*18/)
     expect(nestedBlock).toMatch(/background:\s*var\(--bg\)/)
     expect(css).toMatch(/--tablist-height:\s*56px/)
+  })
+})
+
+describe('FRONTEND-134-AC-17: DOM order preserved', () => {
+  it('keeps Source Ranking Strategy and the Series picker between the two sheet triggers', async () => {
+    mockGetAll.mockResolvedValue({ series: [makeSeries()], excludedCount: 0 })
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+
+    // FRONTEND-011-AC-04: allSeries is fetched asynchronously -- the
+    // "Filter My Series" trigger isn't rendered until it resolves (the
+    // "No series to choose from yet" hint renders in its place until then).
+    const filterMySeries = await screen.findByRole('button', {
+      name: /^filter my series$/i,
+    })
+    const sourceRanking = screen.getByRole('button', {
+      name: /^source ranking strategy$/i,
+    })
+    const recommendationFilters = screen.getByRole('button', {
+      name: /^recommendations filters$/i,
+    })
+    const getRecommendations = screen.getByRole('button', {
+      name: /get recommendations/i,
+    })
+
+    const order = [
+      filterMySeries,
+      sourceRanking,
+      recommendationFilters,
+      getRecommendations,
+    ]
+    for (let i = 0; i < order.length - 1; i++) {
+      expect(
+        order[i].compareDocumentPosition(order[i + 1]) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+    }
   })
 })

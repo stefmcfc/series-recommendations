@@ -17,8 +17,9 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-25 (added the "Use My Series" step-by-step wizard candidate, moved here from
-`.claude/ideas/future_ideas.md` — see the candidate itself for context). Previous update: 2026-09-05
+Last updated: 2026-09-25 (added a candidate for extending `RecommendationPoolCache`'s TMDB-sourcing
+cache to Discover's three sourcing modes, and the "Use My Series" step-by-step wizard candidate,
+moved here from `.claude/ideas/future_ideas.md` — see each candidate for context). Previous update: 2026-09-05
 ("Exclude Keywords" filter candidate closed — spec'd as part of
 `frontend_spec_094_recommendations_page_polish.md`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
@@ -213,6 +214,50 @@ implemented as one.
 keyword popularity/average personal rating" candidate above — both touch
 `RecommendationRankingService`'s scoring formula directly and should likely be designed together
 rather than layered on separately, per that candidate's own note about the same risk.
+
+### Extend `RecommendationPoolCache`'s TMDB-sourcing cache to the three Discover sourcing modes
+
+Raised 2026-09-25 while explaining to the user, ahead of `frontend_spec_134`'s two-sheet redesign,
+whether re-applying "Recommendations Filters" (a post-sourcing output filter) re-hits TMDB or reuses
+a stored result. Confirmed via reading the code: it depends entirely on `sourceMode`.
+
+**"Use My Series" (`sourceFromPool`) already has this solved.** `RecommendationPoolCache`
+(`service/recommendation/RecommendationPoolCache.java`) is a small, dependency-free, TTL-bound
+(`app.recommendations.pool-cache-ttl-minutes`, default 10) and capacity-bound (`app.recommendations
+.pool-cache-max-entries`, default 50) `ConcurrentHashMap` wrapper around `RecommendationSourcingService
+.sourceFromPool`'s TMDB calls. Its key, `PoolCacheKey(seriesIds, limit)`, deliberately excludes
+`sortBy`/`excludeGenres`/`excludeKeywords`/`minTmdbRating`/etc — per that record's own doc comment,
+because those are "applied strictly after sourcing" in `RecommendationService.doRecommend`'s
+pipeline. Practical effect: changing only a "Recommendations Filters" field and re-clicking "Get
+Recommendations" (same selected series, same limit) hits the cache — no new TMDB calls, just
+re-filtering/re-ranking in memory, for up to 10 minutes.
+
+**The other three sourcing modes have no equivalent cache at all.** `sourceTrending`/`sourceTopRated`/
+`sourceByGenreOrKeyword` (Discover's three sub-tabs) all route through `RecommendationSourcingService
+.sourceWithBackfill`, which dedupes and applies output filters to each TMDB page *inline* as it
+paginates/backfills (confirmed no separate raw-pool step exists to cache, unlike `sourceFromPool`'s
+two-stage raw-then-filter shape). Consequence: for these three modes, changing any output filter and
+re-requesting always re-hits TMDB from scratch, even when nothing about the *source* query (genre/
+keyword/trending window) changed — there's no 10-minute cache window softening that the way there is
+for "Use My Series."
+
+**Not a correctness gap, a performance/API-quota one.** Every mode already returns correct results
+today; this is purely about redundant TMDB call volume when a user is iterating on output filters
+within the Discover tabs. Worth being explicit that this is a nicety, not a bug, when scoping.
+
+**Open questions for whoever designs this**:
+- Can `sourceWithBackfill`'s inline dedupe/filter-per-page shape be restructured to cache a raw,
+  pre-filter page set (mirroring `sourceFromPool`'s split), or does backfill's page-by-page early-stop
+  logic (stopping once `limit` is reached) make a clean raw/filtered separation harder here than it
+  was for `sourceFromPool`?
+- Cache key equivalent to `PoolCacheKey` for these three modes — likely needs to include the
+  mode-specific source query params (genre/keyword ids, trending window, `discoverSortBy`) alongside
+  `limit`, since (unlike `sourceFromPool`'s `seriesIds`) there's no single natural key field.
+- Whether the existing `RecommendationPoolCache` component can be generalized/reused (different value
+  type, same TTL/capacity-eviction mechanics) or whether a second, mode-specific cache makes more
+  sense given the different pagination shape.
+
+**Status**: Not specced. Low priority — performance nicety, not a correctness or UX gap.
 
 ### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
 

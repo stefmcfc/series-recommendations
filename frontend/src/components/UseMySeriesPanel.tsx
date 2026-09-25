@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useEscapeToClose } from '../hooks/useEscapeToClose'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { Series } from '../types/series'
@@ -14,6 +14,7 @@ import { StarRating } from './StarRating'
 import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
+import { CollapsibleSection } from './CollapsibleSection'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   resolveTieredStep,
@@ -42,6 +43,90 @@ import type {
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
+import surface from '../styles/surfaces.module.css'
+
+// FRONTEND-134-AC-14: new capability -- this panel never had an active-
+// filter-count badge before this spec (unlike RecommendationFiltersBox's own
+// countActiveFilters). Counts every field that narrows the source-series
+// pool -- never sortBy/sortDirection (not filters), and never
+// sourceRankingStrategy/sourceRatingBlendSources (live on this same
+// UseMySeriesFilterCriteria object only for saved-profile round-tripping,
+// unaffected by this spec's own "Source Ranking Strategy" carve-out).
+function countActiveUseMySeriesFilters(
+  criteria: UseMySeriesFilterCriteria,
+): number {
+  const stringFields = [
+    criteria.originalLanguageFilter,
+    criteria.minImdbRating,
+    criteria.minTmdbRating,
+    criteria.minRottenTomatoesRating,
+    criteria.minRottenTomatoesPopcornmeter,
+    criteria.yearMin,
+    criteria.yearMax,
+  ]
+  const arrayFields = [
+    criteria.genreFilter,
+    criteria.excludeGenreFilter,
+    criteria.keywordsFilter,
+    criteria.originCountryFilter,
+  ]
+  return (
+    (criteria.statusFilter !== 'any' ? 1 : 0) +
+    (criteria.minPersonalRating != null ? 1 : 0) +
+    stringFields.filter((value) => value.trim() !== '').length +
+    arrayFields.filter((value) => value.length > 0).length
+  )
+}
+
+// FRONTEND-134-AC-15: five small per-section active-filter counters, one per
+// CollapsibleSection this spec introduces -- mirroring SearchFilter.tsx's own
+// per-section counter style.
+function countStatusSortActive(status: SpecificSeriesStatusFilter): number {
+  return status !== 'any' ? 1 : 0
+}
+
+function countGenreKeywordActive(
+  genreFilter: string[],
+  excludeGenreFilter: string[],
+  keywordsFilter: string[],
+): number {
+  return [genreFilter, excludeGenreFilter, keywordsFilter].filter(
+    (value) => value.length > 0,
+  ).length
+}
+
+function countCountryLanguageActive(
+  originCountryFilter: string[],
+  originalLanguageFilter: string,
+): number {
+  return (
+    (originCountryFilter.length > 0 ? 1 : 0) +
+    (originalLanguageFilter.trim() !== '' ? 1 : 0)
+  )
+}
+
+function countRatingsActive(
+  minPersonalRating: number | null,
+  minImdbRating: string,
+  minTmdbRating: string,
+  minRottenTomatoesRating: string,
+  minRottenTomatoesPopcornmeter: string,
+): number {
+  const stringFields = [
+    minImdbRating,
+    minTmdbRating,
+    minRottenTomatoesRating,
+    minRottenTomatoesPopcornmeter,
+  ]
+  return (
+    (minPersonalRating != null ? 1 : 0) +
+    stringFields.filter((value) => value.trim() !== '').length
+  )
+}
+
+function countYearActive(yearMin: string, yearMax: string): number {
+  return [yearMin, yearMax].filter((value) => value.trim() !== '').length
+}
 
 interface UseMySeriesPanelProps {
   readonly state: ControlsState
@@ -141,10 +226,13 @@ export function UseMySeriesPanel({
   ] = useState('')
   const [specificSeriesYearMin, setSpecificSeriesYearMin] = useState('')
   const [specificSeriesYearMax, setSpecificSeriesYearMax] = useState('')
-  // FRONTEND-081-AC-01: "Filter My Series" disclosure, defaulting OPEN
-  // (unlike RecommendationFiltersBox's own filtersOpen, which defaults
-  // closed) so the new filtering capability isn't buried on first render.
-  const [filterSectionOpen, setFilterSectionOpen] = useState(true)
+  // FRONTEND-134-AC-09: "Filter My Series" is now a slide-out sheet, tucked
+  // away until opened -- defaults CLOSED, same as RecommendationFiltersBox's
+  // own filtersOpen. Supersedes frontend_spec_081-AC-01's original "defaults
+  // OPEN" behavior, which made sense for an always-in-flow inline disclosure
+  // but not for a sheet overlay that would otherwise cover the page
+  // immediately on first render of the "Use My Series" tab.
+  const [filterSectionOpen, setFilterSectionOpen] = useState(false)
   // Per an amendment to frontend_spec_132 (being updated separately): the
   // Source Ranking Strategy radiogroup now lives in its own top-level
   // disclosure rather than nested inside "Filter My Series" -- this section
@@ -293,6 +381,32 @@ export function UseMySeriesPanel({
     onClear: handleClearSpecificSeriesFilters,
   })
 
+  // FRONTEND-134-AC-11: same closeButtonRef/useEffect pattern
+  // SearchFilter.tsx/RecommendationFiltersBox.tsx already use -- moves focus
+  // into the sheet as soon as it opens.
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (filterSectionOpen) {
+      closeButtonRef.current?.focus()
+    }
+  }, [filterSectionOpen])
+
+  // FRONTEND-134-AC-12: same Escape-to-close pattern as the other sheets in
+  // this app, on this sheet's own dialog root.
+  const handleFilterSheetKeyDown = useEscapeToClose(() =>
+    setFilterSectionOpen(false),
+  )
+
+  // FRONTEND-134-AC-13: handleClearSpecificSeriesFilters's own body stays
+  // unchanged (it's also reused unwrapped as the saved-filter chip's onClear
+  // above) -- this wrapper is only for the Clear Filters button itself,
+  // which additionally closes the sheet after clearing.
+  const handleClearSpecificSeriesFiltersAndClose = () => {
+    handleClearSpecificSeriesFilters()
+    setFilterSectionOpen(false)
+  }
+
   const handleSpecificSeriesModalKeyDown = useEscapeToClose(() =>
     setSpecificSeriesBrowseModalOpen(false),
   )
@@ -366,10 +480,11 @@ export function UseMySeriesPanel({
             <p className={styles.hint}>No series to choose from yet.</p>
           ) : (
             <>
-              {/* FRONTEND-081-AC-01/02: "Filter My Series" disclosure -- same
-                  collapse/expand mechanics as RecommendationFiltersBox's own
-                  toggle, but seeded open (filterSectionOpen defaults true)
-                  so the new filtering capability isn't buried. */}
+              {/* FRONTEND-134-AC-09/10: "Filter My Series" is now a
+                  slide-out sheet -- same trigger position as before, but
+                  the disclosure body is replaced by a dialog overlay,
+                  mirroring RecommendationFiltersBox's own sheet exactly.
+                  Trigger stays in this component (no state lifted). */}
               <div className={styles.filtersSection}>
                 <button
                   type="button"
@@ -378,372 +493,529 @@ export function UseMySeriesPanel({
                   onClick={() => setFilterSectionOpen((open) => !open)}
                 >
                   Filter My Series
+                  {/* FRONTEND-134-AC-14: new active-filter-count badge --
+                      mirrors RecommendationFiltersBox's own
+                      .filtersActiveBadge/filters-active-count pattern. */}
+                  {countActiveUseMySeriesFilters(currentUseMySeriesCriteria) >
+                    0 && (
+                    <span
+                      className={styles.filtersActiveBadge}
+                      data-testid="use-my-series-filters-active-count"
+                    >
+                      {countActiveUseMySeriesFilters(
+                        currentUseMySeriesCriteria,
+                      )}
+                    </span>
+                  )}
                 </button>
 
                 {filterSectionOpen && (
-                  <div
-                    className={styles.filtersBody}
-                    data-testid="specific-series-filters-body"
+                  // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape-to-close matches SearchFilter.tsx/RecommendationFiltersBox.tsx's sheets; the listener lives on the dialog root per the spec's test contract (`screen.getByRole('dialog')`).
+                  <div // NOSONAR: typescript:S6819, see comment above
+                    className={styles.sheetOverlay}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="filter-my-series-sheet-heading"
+                    onKeyDown={handleFilterSheetKeyDown}
+                    onClick={(e) => {
+                      // FRONTEND-134-AC-12: only the overlay backdrop itself
+                      // should close the sheet -- mirrors
+                      // RecommendationFiltersBox.tsx's own guard.
+                      if (e.target === e.currentTarget)
+                        setFilterSectionOpen(false)
+                    }}
                   >
-                    {/* FRONTEND-129-AC-02: Saved Filters now renders first,
-                        before any individual field. */}
-                    <div className={styles.filterFullWidthRow}>
-                      <SavedFiltersList<UseMySeriesFilterCriteria>
-                        area="USE_MY_SERIES"
-                        {...filterProfile}
-                      />
-                    </div>
-
-                    {/* FRONTEND-081 (2026-09-03 live-review amendment): Status
-                        and Sort by are now their own full-width rows
-                        (previously stacked together in a shared right-hand
-                        column next to Genre) -- see the spec's Design
-                        Decisions for the full before/after. */}
-                    <fieldset
-                      className={`${styles.modeFieldset} ${styles.filterFullWidthRow}`}
-                    >
-                      <legend>Filter by Status</legend>
-
-                      <div className={styles.modeOption}>
-                        <input
-                          id="specific-series-status-any"
-                          type="radio"
-                          name="specific-series-status"
-                          checked={specificSeriesStatusFilter === 'any'}
-                          onChange={() => setSpecificSeriesStatusFilter('any')}
-                        />
-                        <label htmlFor="specific-series-status-any">
-                          Any Status
-                        </label>
-                      </div>
-
-                      <div className={styles.modeOption}>
-                        <input
-                          id="specific-series-status-completed-only"
-                          type="radio"
-                          name="specific-series-status"
-                          checked={
-                            specificSeriesStatusFilter === 'completedOnly'
-                          }
-                          onChange={() =>
-                            setSpecificSeriesStatusFilter('completedOnly')
-                          }
-                        />
-                        <label htmlFor="specific-series-status-completed-only">
-                          Completed Only
-                        </label>
-                      </div>
-
-                      <div className={styles.modeOption}>
-                        <input
-                          id="specific-series-status-completed-or-watching"
-                          type="radio"
-                          name="specific-series-status"
-                          checked={
-                            specificSeriesStatusFilter === 'completedOrWatching'
-                          }
-                          onChange={() =>
-                            setSpecificSeriesStatusFilter('completedOrWatching')
-                          }
-                        />
-                        <label htmlFor="specific-series-status-completed-or-watching">
-                          Completed or Watching
-                        </label>
-                      </div>
-                    </fieldset>
-
-                    <div
-                      className={`${styles.sortControl} ${styles.filterFullWidthRow}`}
-                    >
-                      <label htmlFor="specific-series-sort-by">Sort by</label>
-                      <select
-                        id="specific-series-sort-by"
-                        value={specificSeriesSortBy}
-                        onChange={handleSpecificSeriesSortByChange}
-                      >
-                        {SPECIFIC_SERIES_SORT_BY_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className={styles.sortDirectionButton}
-                        aria-label={
-                          specificSeriesSortDirection === 'asc'
-                            ? 'Sort ascending'
-                            : 'Sort descending'
-                        }
-                        onClick={handleSpecificSeriesSortDirectionToggle}
-                      >
-                        {specificSeriesSortDirection === 'asc' ? '↑' : '↓'}
-                      </button>
-                    </div>
-
-                    {/* FRONTEND-119-AC-09/SERIES-062: notice shown when the
-                        current sort drops series missing that rating. */}
-                    {missingRatingMessage && (
-                      <p
-                        className={`${styles.hint} ${styles.filterFullWidthRow}`}
-                      >
-                        {missingRatingMessage}
-                      </p>
-                    )}
-
-                    {/* FRONTEND-081 (2026-09-03 live-review amendment):
-                        Genre and Keyword now share a fixed 4-column grid row,
-                        each spanning 2 columns, instead of sitting in
-                        separate auto-fit .filtersBody cells. */}
-                    <div className={styles.filterFourColGrid}>
-                      {genreOptions.length > 0 && (
-                        // FRONTEND-069-AC-04: combined include/exclude Filter
-                        // by Genre picker, replacing the former include-only
-                        // checkbox fieldset -- one control now covers both
-                        // specificSeriesGenreFilter and
-                        // specificSeriesExcludeGenreFilter, mutual
-                        // exclusivity guaranteed by GenreIncludeExcludePicker
-                        // itself (frontend_spec_067).
-                        <div className={styles.filterSpanTwo}>
-                          <GenreIncludeExcludePicker
-                            idPrefix="specific-series-genre"
-                            label="Include / Exclude Genres"
-                            genreOptions={genreOptions}
-                            included={specificSeriesGenreFilter}
-                            excluded={specificSeriesExcludeGenreFilter}
-                            onChange={({ included, excluded }) => {
-                              setSpecificSeriesGenreFilter(included)
-                              setSpecificSeriesExcludeGenreFilter(excluded)
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      {/* FRONTEND-081 (2026-09-03 live-review amendment):
-                          allowFreeText removed -- this field narrows the
-                          picker to a tracked series' actual keywords, so an
-                          untracked typed keyword could never match anything.
-                          Mirrors SearchFilter.tsx's Keywords field in every
-                          other respect. */}
-                      <div className={styles.filterSpanTwo}>
-                        <KeywordPicker
-                          id="specific-series-keywords"
-                          label="Keywords"
-                          selected={specificSeriesKeywordsFilter}
-                          onChange={setSpecificSeriesKeywordsFilter}
-                          options={keywordOptions}
-                          placeholder="Type to filter tracked keywords"
-                          maxSuggestionsWhenEmpty={0}
-                          // FRONTEND-077-AC-08: the new "Browse all keywords"
-                          // modal below is now the sole place to type/search
-                          // for this field -- the inline field only shows
-                          // what's already selected.
-                          hideInput
-                        />
-                        {/* FRONTEND-077-AC-07: mirrors the "Show all series"
-                            button's placement/style directly below its own
-                            paired field. */}
-                        <button
-                          type="button"
-                          className={styles.browseSeriesButton}
-                          onClick={() =>
-                            setSpecificSeriesKeywordsBrowseModalOpen(true)
-                          }
+                    <div className={styles.sheet}>
+                      <div className={styles.sheetHeader}>
+                        <h2
+                          id="filter-my-series-sheet-heading"
+                          className={styles.sheetHeading}
                         >
-                          Browse all keywords
+                          Filter My Series
+                        </h2>
+                        <button
+                          ref={closeButtonRef}
+                          type="button"
+                          className={styles.closeButton}
+                          aria-label="Close"
+                          onClick={() => setFilterSectionOpen(false)}
+                        >
+                          Close
                         </button>
                       </div>
-                    </div>
 
-                    {/* FRONTEND-128-AC-03/SERIES-065: Country/Language
-                        client-side filters, mirroring the Genre/Keywords row
-                        immediately above -- Country is multi-select
-                        (OR/substring matched), Language is single-select via
-                        the same selected/onChange adapter
-                        RecommendationFiltersBox.tsx's own Language field
-                        uses to make KeywordPicker (a multi-select component)
-                        behave as a single-select. */}
-                    <div className={styles.filterFourColGrid}>
-                      <div className={styles.filterSpanTwo}>
-                        <KeywordPicker
-                          id="specific-series-origin-country"
-                          label="Country"
-                          selected={specificSeriesOriginCountryFilter}
-                          onChange={setSpecificSeriesOriginCountryFilter}
-                          options={COUNTRY_OPTIONS}
-                          pinnedOptions={countryFavourites}
-                        />
-                      </div>
+                      {/* FRONTEND-134-AC-19: one-line explanation of this
+                          sheet's pre-sourcing scope, directly below the
+                          heading, above SavedFiltersList (this spec's Design
+                          Decisions). */}
+                      <p>
+                        Filter the series that you want to use for
+                        recommendations before selecting them.
+                      </p>
 
-                      <div className={styles.filterSpanTwo}>
-                        <KeywordPicker
-                          id="specific-series-original-language"
-                          label="Language"
-                          selected={
-                            specificSeriesOriginalLanguageFilter
-                              ? [specificSeriesOriginalLanguageFilter]
-                              : []
-                          }
-                          onChange={(next) =>
-                            setSpecificSeriesOriginalLanguageFilter(
-                              next.at(-1) ?? '',
-                            )
-                          }
-                          options={LANGUAGE_OPTIONS}
-                          pinnedOptions={languageFavourites}
-                        />
-                      </div>
-                    </div>
-
-                    {/* FRONTEND-081-AC-05: the client-side successor to the
-                        retired backend minSourceRating gate
-                        (series_spec_045) -- narrows the picker only, never
-                        drops an explicit pick server-side. */}
-                    <div className={styles.filterFourColGrid}>
-                      <div className={styles.field}>
-                        <span>Min Personal Rating</span>
-                        <StarRating
-                          value={specificSeriesMinPersonalRating}
-                          onChange={setSpecificSeriesMinPersonalRating}
-                        />
-                      </div>
-
-                      <div className={styles.field}>
-                        <NumberInput
-                          id="specific-series-min-imdb-rating"
-                          label="Min IMDb Rating"
-                          min={0}
-                          max={10}
-                          step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
-                          value={specificSeriesMinImdbRating}
-                          onChange={(value) =>
-                            setSpecificSeriesMinImdbRating(String(value))
-                          }
-                        />
-                      </div>
-
-                      {/* FRONTEND-081-AC-07: "(My Series)" suffix
-                          disambiguates from RecommendationFiltersBox's own
-                          unsuffixed "Min TMDB Rating" (post-TMDB, unrelated
-                          field). */}
-                      <div className={styles.field}>
-                        <NumberInput
-                          id="specific-series-min-tmdb-rating"
-                          label="Min TMDB Rating (My Series)"
-                          min={0}
-                          max={10}
-                          step={resolveTieredStep(RATING_STEP_BREAKPOINTS)}
-                          value={specificSeriesMinTmdbRating}
-                          onChange={(value) =>
-                            setSpecificSeriesMinTmdbRating(String(value))
-                          }
-                        />
-                      </div>
-
-                      {/* FRONTEND-122-AC-03/SERIES-063. */}
-                      <div className={styles.field}>
-                        <NumberInput
-                          id="specific-series-min-rotten-tomatoes-rating"
-                          label="Min Tomatometer Rating"
-                          min={0}
-                          max={100}
-                          step={resolveTieredStep(
-                            ROTTEN_TOMATOES_STEP_BREAKPOINTS,
-                          )}
-                          value={specificSeriesMinRottenTomatoesRating}
-                          onChange={(value) =>
-                            setSpecificSeriesMinRottenTomatoesRating(
-                              String(value),
-                            )
-                          }
-                          labelInfo={
-                            <InfoDisclosure
-                              label="About Min Tomatometer Rating"
-                              description="Rotten Tomatoes' critics score (their own term is 'Tomatometer') — the percentage of critic reviews that were positive."
-                            />
-                          }
-                        />
-                      </div>
-
-                      <div className={styles.field}>
-                        <NumberInput
-                          id="specific-series-min-rotten-tomatoes-popcornmeter"
-                          label="Min Popcornmeter Rating"
-                          min={0}
-                          max={100}
-                          step={resolveTieredStep(
-                            ROTTEN_TOMATOES_STEP_BREAKPOINTS,
-                          )}
-                          value={specificSeriesMinRottenTomatoesPopcornmeter}
-                          onChange={(value) =>
-                            setSpecificSeriesMinRottenTomatoesPopcornmeter(
-                              String(value),
-                            )
-                          }
-                          labelInfo={
-                            <InfoDisclosure
-                              label="About Min Popcornmeter Rating"
-                              description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — the percentage of verified audience members who rated it positively."
-                            />
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    {/* FRONTEND-081-AC-08: "(My Series)" suffix disambiguates
-                        from RecommendationFiltersBox's own unsuffixed "Year
-                        Min"/"Year Max" (post-TMDB, unrelated fields). */}
-                    <div className={styles.filterFourColGrid}>
-                      <div className={styles.field}>
-                        <NumberInput
-                          id="specific-series-year-min"
-                          label="Year Min (My Series)"
-                          min={MIN_VALID_YEAR}
-                          max={MAX_VALID_YEAR}
-                          step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
-                          value={specificSeriesYearMin}
-                          onChange={(value) =>
-                            setSpecificSeriesYearMin(String(value))
-                          }
-                        />
-                      </div>
-
-                      <div className={styles.field}>
-                        <NumberInput
-                          id="specific-series-year-max"
-                          label="Year Max (My Series)"
-                          min={MIN_VALID_YEAR}
-                          max={MAX_VALID_YEAR}
-                          step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
-                          value={specificSeriesYearMax}
-                          onChange={(value) =>
-                            setSpecificSeriesYearMax(String(value))
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className={styles.filterFullWidthRow}>
-                      <FilterProfileActions<UseMySeriesFilterCriteria>
-                        area="USE_MY_SERIES"
-                        currentCriteria={currentUseMySeriesCriteria}
-                        {...filterProfile}
-                      />
-                    </div>
-
-                    {/* FRONTEND-109-AC-12: matches RecommendationFiltersBox's
-                        "Reset Filters" placement/styling exactly (shared
-                        .filtersActions/.resetButton classes, same
-                        RecommendationControls.module.css). */}
-                    <div className={styles.filtersActions}>
-                      <button
-                        type="button"
-                        className={`${styles.resetButton} ${btn.btnSecondary}`}
-                        data-testid="reset-specific-series-filters-btn"
-                        onClick={handleClearSpecificSeriesFilters}
+                      <div
+                        className={styles.sheetBody}
+                        data-testid="specific-series-filters-body"
                       >
-                        Clear Filters
-                      </button>
+                        {/* FRONTEND-129-AC-02: Saved Filters now renders
+                            first, before any individual field. */}
+                        <SavedFiltersList<UseMySeriesFilterCriteria>
+                          area="USE_MY_SERIES"
+                          {...filterProfile}
+                        />
+
+                        <section
+                          className={`${styles.filterSection} ${surface.card}`}
+                        >
+                          <CollapsibleSection
+                            title="Status & Sort"
+                            defaultOpen={true}
+                            activeCount={countStatusSortActive(
+                              specificSeriesStatusFilter,
+                            )}
+                            toggleClassName={styles.filterSectionHeading}
+                            bodyClassName={styles.filterSectionBody}
+                          >
+                            {/* FRONTEND-081 (2026-09-03 live-review
+                                amendment): Status and Sort by are now their
+                                own full-width rows (previously stacked
+                                together in a shared right-hand column next
+                                to Genre) -- see the spec's Design Decisions
+                                for the full before/after. */}
+                            <fieldset
+                              className={`${styles.modeFieldset} ${styles.filterFullWidthRow}`}
+                            >
+                              <legend>Filter by Status</legend>
+
+                              <div className={styles.modeOption}>
+                                <input
+                                  id="specific-series-status-any"
+                                  type="radio"
+                                  name="specific-series-status"
+                                  checked={specificSeriesStatusFilter === 'any'}
+                                  onChange={() =>
+                                    setSpecificSeriesStatusFilter('any')
+                                  }
+                                />
+                                <label htmlFor="specific-series-status-any">
+                                  Any Status
+                                </label>
+                              </div>
+
+                              <div className={styles.modeOption}>
+                                <input
+                                  id="specific-series-status-completed-only"
+                                  type="radio"
+                                  name="specific-series-status"
+                                  checked={
+                                    specificSeriesStatusFilter ===
+                                    'completedOnly'
+                                  }
+                                  onChange={() =>
+                                    setSpecificSeriesStatusFilter(
+                                      'completedOnly',
+                                    )
+                                  }
+                                />
+                                <label htmlFor="specific-series-status-completed-only">
+                                  Completed Only
+                                </label>
+                              </div>
+
+                              <div className={styles.modeOption}>
+                                <input
+                                  id="specific-series-status-completed-or-watching"
+                                  type="radio"
+                                  name="specific-series-status"
+                                  checked={
+                                    specificSeriesStatusFilter ===
+                                    'completedOrWatching'
+                                  }
+                                  onChange={() =>
+                                    setSpecificSeriesStatusFilter(
+                                      'completedOrWatching',
+                                    )
+                                  }
+                                />
+                                <label htmlFor="specific-series-status-completed-or-watching">
+                                  Completed or Watching
+                                </label>
+                              </div>
+                            </fieldset>
+
+                            <div
+                              className={`${styles.sortControl} ${styles.filterFullWidthRow}`}
+                            >
+                              <label htmlFor="specific-series-sort-by">
+                                Sort by
+                              </label>
+                              <select
+                                id="specific-series-sort-by"
+                                value={specificSeriesSortBy}
+                                onChange={handleSpecificSeriesSortByChange}
+                              >
+                                {SPECIFIC_SERIES_SORT_BY_OPTIONS.map(
+                                  (option) => (
+                                    <option
+                                      key={option.value}
+                                      value={option.value}
+                                    >
+                                      {option.label}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                              <button
+                                type="button"
+                                className={styles.sortDirectionButton}
+                                aria-label={
+                                  specificSeriesSortDirection === 'asc'
+                                    ? 'Sort ascending'
+                                    : 'Sort descending'
+                                }
+                                onClick={
+                                  handleSpecificSeriesSortDirectionToggle
+                                }
+                              >
+                                {specificSeriesSortDirection === 'asc'
+                                  ? '↑'
+                                  : '↓'}
+                              </button>
+                            </div>
+
+                            {/* FRONTEND-119-AC-09/SERIES-062: notice shown
+                                when the current sort drops series missing
+                                that rating. */}
+                            {missingRatingMessage && (
+                              <p
+                                className={`${styles.hint} ${styles.filterFullWidthRow}`}
+                              >
+                                {missingRatingMessage}
+                              </p>
+                            )}
+                          </CollapsibleSection>
+                        </section>
+
+                        <section
+                          className={`${styles.filterSection} ${surface.card}`}
+                        >
+                          <CollapsibleSection
+                            title="Genre & Keyword"
+                            defaultOpen={true}
+                            activeCount={countGenreKeywordActive(
+                              specificSeriesGenreFilter,
+                              specificSeriesExcludeGenreFilter,
+                              specificSeriesKeywordsFilter,
+                            )}
+                            toggleClassName={styles.filterSectionHeading}
+                            bodyClassName={styles.filterSectionBody}
+                          >
+                            {genreOptions.length > 0 && (
+                              // FRONTEND-069-AC-04: combined include/exclude
+                              // Filter by Genre picker, replacing the former
+                              // include-only checkbox fieldset -- one
+                              // control now covers both
+                              // specificSeriesGenreFilter and
+                              // specificSeriesExcludeGenreFilter, mutual
+                              // exclusivity guaranteed by
+                              // GenreIncludeExcludePicker itself
+                              // (frontend_spec_067).
+                              <div className={styles.field}>
+                                <GenreIncludeExcludePicker
+                                  idPrefix="specific-series-genre"
+                                  label="Include / Exclude Genres"
+                                  genreOptions={genreOptions}
+                                  included={specificSeriesGenreFilter}
+                                  excluded={specificSeriesExcludeGenreFilter}
+                                  onChange={({ included, excluded }) => {
+                                    setSpecificSeriesGenreFilter(included)
+                                    setSpecificSeriesExcludeGenreFilter(
+                                      excluded,
+                                    )
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {/* FRONTEND-081 (2026-09-03 live-review
+                                amendment): allowFreeText removed -- this
+                                field narrows the picker to a tracked
+                                series' actual keywords, so an untracked
+                                typed keyword could never match anything.
+                                Mirrors SearchFilter.tsx's Keywords field in
+                                every other respect. */}
+                            <div className={styles.field}>
+                              <KeywordPicker
+                                id="specific-series-keywords"
+                                label="Keywords"
+                                selected={specificSeriesKeywordsFilter}
+                                onChange={setSpecificSeriesKeywordsFilter}
+                                options={keywordOptions}
+                                placeholder="Type to filter tracked keywords"
+                                maxSuggestionsWhenEmpty={0}
+                                // FRONTEND-077-AC-08: the new "Browse all
+                                // keywords" modal below is now the sole
+                                // place to type/search for this field -- the
+                                // inline field only shows what's already
+                                // selected.
+                                hideInput
+                              />
+                              {/* FRONTEND-077-AC-07: mirrors the "Show all
+                                  series" button's placement/style directly
+                                  below its own paired field. */}
+                              <button
+                                type="button"
+                                className={styles.browseSeriesButton}
+                                onClick={() =>
+                                  setSpecificSeriesKeywordsBrowseModalOpen(true)
+                                }
+                              >
+                                Browse all keywords
+                              </button>
+                            </div>
+                          </CollapsibleSection>
+                        </section>
+
+                        <section
+                          className={`${styles.filterSection} ${surface.card}`}
+                        >
+                          <CollapsibleSection
+                            title="Country & Language"
+                            defaultOpen={true}
+                            activeCount={countCountryLanguageActive(
+                              specificSeriesOriginCountryFilter,
+                              specificSeriesOriginalLanguageFilter,
+                            )}
+                            toggleClassName={styles.filterSectionHeading}
+                            bodyClassName={styles.filterSectionBody}
+                          >
+                            {/* FRONTEND-128-AC-03/SERIES-065: Country/
+                                Language client-side filters -- Country is
+                                multi-select (OR/substring matched),
+                                Language is single-select via the same
+                                selected/onChange adapter
+                                RecommendationFiltersBox.tsx's own Language
+                                field uses to make KeywordPicker (a
+                                multi-select component) behave as a
+                                single-select. */}
+                            <div className={styles.field}>
+                              <KeywordPicker
+                                id="specific-series-origin-country"
+                                label="Country"
+                                selected={specificSeriesOriginCountryFilter}
+                                onChange={setSpecificSeriesOriginCountryFilter}
+                                options={COUNTRY_OPTIONS}
+                                pinnedOptions={countryFavourites}
+                              />
+                            </div>
+
+                            <div className={styles.field}>
+                              <KeywordPicker
+                                id="specific-series-original-language"
+                                label="Language"
+                                selected={
+                                  specificSeriesOriginalLanguageFilter
+                                    ? [specificSeriesOriginalLanguageFilter]
+                                    : []
+                                }
+                                onChange={(next) =>
+                                  setSpecificSeriesOriginalLanguageFilter(
+                                    next.at(-1) ?? '',
+                                  )
+                                }
+                                options={LANGUAGE_OPTIONS}
+                                pinnedOptions={languageFavourites}
+                              />
+                            </div>
+                          </CollapsibleSection>
+                        </section>
+
+                        <section
+                          className={`${styles.filterSection} ${surface.card}`}
+                        >
+                          <CollapsibleSection
+                            title="Ratings"
+                            defaultOpen={true}
+                            activeCount={countRatingsActive(
+                              specificSeriesMinPersonalRating,
+                              specificSeriesMinImdbRating,
+                              specificSeriesMinTmdbRating,
+                              specificSeriesMinRottenTomatoesRating,
+                              specificSeriesMinRottenTomatoesPopcornmeter,
+                            )}
+                            toggleClassName={styles.filterSectionHeading}
+                            bodyClassName={styles.filterSectionBody}
+                          >
+                            {/* FRONTEND-081-AC-05: the client-side successor
+                                to the retired backend minSourceRating gate
+                                (series_spec_045) -- narrows the picker only,
+                                never drops an explicit pick server-side. */}
+                            <div className={styles.field}>
+                              <span>Min Personal Rating</span>
+                              <StarRating
+                                value={specificSeriesMinPersonalRating}
+                                onChange={setSpecificSeriesMinPersonalRating}
+                              />
+                            </div>
+
+                            <div className={styles.field}>
+                              <NumberInput
+                                id="specific-series-min-imdb-rating"
+                                label="Min IMDb Rating"
+                                min={0}
+                                max={10}
+                                step={resolveTieredStep(
+                                  RATING_STEP_BREAKPOINTS,
+                                )}
+                                value={specificSeriesMinImdbRating}
+                                onChange={(value) =>
+                                  setSpecificSeriesMinImdbRating(String(value))
+                                }
+                              />
+                            </div>
+
+                            {/* FRONTEND-081-AC-07: "(My Series)" suffix
+                                disambiguates from RecommendationFiltersBox's
+                                own unsuffixed "Min TMDB Rating" (post-TMDB,
+                                unrelated field). */}
+                            <div className={styles.field}>
+                              <NumberInput
+                                id="specific-series-min-tmdb-rating"
+                                label="Min TMDB Rating (My Series)"
+                                min={0}
+                                max={10}
+                                step={resolveTieredStep(
+                                  RATING_STEP_BREAKPOINTS,
+                                )}
+                                value={specificSeriesMinTmdbRating}
+                                onChange={(value) =>
+                                  setSpecificSeriesMinTmdbRating(String(value))
+                                }
+                              />
+                            </div>
+
+                            {/* FRONTEND-122-AC-03/SERIES-063. */}
+                            <div className={styles.field}>
+                              <NumberInput
+                                id="specific-series-min-rotten-tomatoes-rating"
+                                label="Min Tomatometer Rating"
+                                min={0}
+                                max={100}
+                                step={resolveTieredStep(
+                                  ROTTEN_TOMATOES_STEP_BREAKPOINTS,
+                                )}
+                                value={specificSeriesMinRottenTomatoesRating}
+                                onChange={(value) =>
+                                  setSpecificSeriesMinRottenTomatoesRating(
+                                    String(value),
+                                  )
+                                }
+                                labelInfo={
+                                  <InfoDisclosure
+                                    label="About Min Tomatometer Rating"
+                                    description="Rotten Tomatoes' critics score (their own term is 'Tomatometer') — the percentage of critic reviews that were positive."
+                                  />
+                                }
+                              />
+                            </div>
+
+                            <div className={styles.field}>
+                              <NumberInput
+                                id="specific-series-min-rotten-tomatoes-popcornmeter"
+                                label="Min Popcornmeter Rating"
+                                min={0}
+                                max={100}
+                                step={resolveTieredStep(
+                                  ROTTEN_TOMATOES_STEP_BREAKPOINTS,
+                                )}
+                                value={
+                                  specificSeriesMinRottenTomatoesPopcornmeter
+                                }
+                                onChange={(value) =>
+                                  setSpecificSeriesMinRottenTomatoesPopcornmeter(
+                                    String(value),
+                                  )
+                                }
+                                labelInfo={
+                                  <InfoDisclosure
+                                    label="About Min Popcornmeter Rating"
+                                    description="Rotten Tomatoes' audience score (their own term is 'Popcornmeter') — the percentage of verified audience members who rated it positively."
+                                  />
+                                }
+                              />
+                            </div>
+                          </CollapsibleSection>
+                        </section>
+
+                        <section
+                          className={`${styles.filterSection} ${surface.card}`}
+                        >
+                          <CollapsibleSection
+                            title="Year"
+                            defaultOpen={true}
+                            activeCount={countYearActive(
+                              specificSeriesYearMin,
+                              specificSeriesYearMax,
+                            )}
+                            toggleClassName={styles.filterSectionHeading}
+                            bodyClassName={styles.filterSectionBody}
+                          >
+                            {/* FRONTEND-081-AC-08: "(My Series)" suffix
+                                disambiguates from RecommendationFiltersBox's
+                                own unsuffixed "Year Min"/"Year Max"
+                                (post-TMDB, unrelated fields). */}
+                            <div className={styles.field}>
+                              <NumberInput
+                                id="specific-series-year-min"
+                                label="Year Min (My Series)"
+                                min={MIN_VALID_YEAR}
+                                max={MAX_VALID_YEAR}
+                                step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
+                                value={specificSeriesYearMin}
+                                onChange={(value) =>
+                                  setSpecificSeriesYearMin(String(value))
+                                }
+                              />
+                            </div>
+
+                            <div className={styles.field}>
+                              <NumberInput
+                                id="specific-series-year-max"
+                                label="Year Max (My Series)"
+                                min={MIN_VALID_YEAR}
+                                max={MAX_VALID_YEAR}
+                                step={resolveTieredStep(YEAR_STEP_BREAKPOINTS)}
+                                value={specificSeriesYearMax}
+                                onChange={(value) =>
+                                  setSpecificSeriesYearMax(String(value))
+                                }
+                              />
+                            </div>
+                          </CollapsibleSection>
+                        </section>
+
+                        <FilterProfileActions<UseMySeriesFilterCriteria>
+                          area="USE_MY_SERIES"
+                          currentCriteria={currentUseMySeriesCriteria}
+                          {...filterProfile}
+                        />
+
+                        {/* FRONTEND-109-AC-12: matches
+                            RecommendationFiltersBox's "Reset Filters"
+                            placement/styling exactly (shared
+                            .filtersActions/.resetButton classes, same
+                            RecommendationControls.module.css). */}
+                        <div className={styles.filtersActions}>
+                          <button
+                            type="button"
+                            className={`${styles.resetButton} ${btn.btnSecondary}`}
+                            data-testid="reset-specific-series-filters-btn"
+                            onClick={handleClearSpecificSeriesFiltersAndClose}
+                          >
+                            Clear Filters
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

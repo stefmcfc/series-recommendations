@@ -875,24 +875,24 @@ container.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-134-AC-01: "Recommendations Filters" closed state unchanged (button only, no sheet)
-- [ ] FRONTEND-134-AC-02: opening renders an accessible `role="dialog"` sheet
-- [ ] FRONTEND-134-AC-03: focus moves to the Close control on open
-- [ ] FRONTEND-134-AC-04: Escape, Close control, and backdrop click all close the sheet
-- [ ] FRONTEND-134-AC-05: Reset Filters resets fields and closes the sheet
-- [ ] FRONTEND-134-AC-06: fields grouped into four `CollapsibleSection` subsections with own badges
-- [ ] FRONTEND-134-AC-07: Custom-Search-hidden fields stay hidden inside their subsections
-- [ ] FRONTEND-134-AC-08: all pre-existing fields still render (relocation smoke test)
-- [ ] FRONTEND-134-AC-09: "Filter My Series" closed state unchanged (button only, no sheet)
-- [ ] FRONTEND-134-AC-10: opening renders an accessible `role="dialog"` sheet
-- [ ] FRONTEND-134-AC-11: focus moves to the Close control on open
-- [ ] FRONTEND-134-AC-12: Escape, Close control, and backdrop click all close the sheet
-- [ ] FRONTEND-134-AC-13: Clear Filters resets fields and closes the sheet
-- [ ] FRONTEND-134-AC-14: new active-filter-count badge on the "Filter My Series" trigger
-- [ ] FRONTEND-134-AC-15: fields grouped into five `CollapsibleSection` subsections with own badges
-- [ ] FRONTEND-134-AC-16: all pre-existing fields still render (relocation smoke test)
-- [ ] FRONTEND-134-AC-17: DOM order around both sheet triggers, Source Ranking Strategy, and the
+- [x] FRONTEND-134-AC-01: "Recommendations Filters" closed state unchanged (button only, no sheet)
+- [x] FRONTEND-134-AC-02: opening renders an accessible `role="dialog"` sheet
+- [x] FRONTEND-134-AC-03: focus moves to the Close control on open
+- [x] FRONTEND-134-AC-04: Escape, Close control, and backdrop click all close the sheet
+- [x] FRONTEND-134-AC-05: Reset Filters resets fields and closes the sheet
+- [x] FRONTEND-134-AC-06: fields grouped into four `CollapsibleSection` subsections with own badges
+- [x] FRONTEND-134-AC-07: Custom-Search-hidden fields stay hidden inside their subsections
+- [x] FRONTEND-134-AC-08: all pre-existing fields still render (relocation smoke test)
+- [x] FRONTEND-134-AC-09: "Filter My Series" closed state unchanged (button only, no sheet)
+- [x] FRONTEND-134-AC-10: opening renders an accessible `role="dialog"` sheet
+- [x] FRONTEND-134-AC-11: focus moves to the Close control on open
+- [x] FRONTEND-134-AC-12: Escape, Close control, and backdrop click all close the sheet
+- [x] FRONTEND-134-AC-13: Clear Filters resets fields and closes the sheet
+- [x] FRONTEND-134-AC-14: new active-filter-count badge on the "Filter My Series" trigger
+- [x] FRONTEND-134-AC-15: fields grouped into five `CollapsibleSection` subsections with own badges
+- [x] FRONTEND-134-AC-16: all pre-existing fields still render (relocation smoke test)
+- [x] FRONTEND-134-AC-17: DOM order around both sheet triggers, Source Ranking Strategy, and the
       Series picker is unchanged
 - [ ] FRONTEND-134-AC-18: visual check — both sheets slide in from the edge in both themes
-- [ ] FRONTEND-134-AC-19: "Filter My Series" sheet shows its explanatory intro line
-- [ ] FRONTEND-134-AC-20: "Recommendations Filters" sheet shows its explanatory intro line
+- [x] FRONTEND-134-AC-19: "Filter My Series" sheet shows its explanatory intro line
+- [x] FRONTEND-134-AC-20: "Recommendations Filters" sheet shows its explanatory intro line
