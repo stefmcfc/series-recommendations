@@ -43,8 +43,6 @@ dependency-derived anymore.
 | Add `springdoc-openapi` dependency for a live Swagger UI (`/swagger-ui.html`) and machine-readable OpenAPI spec (`/v3/api-docs`), with app-identifying title/description metadata | `series_spec_066` | — | ⬜ Not started |
 | Port `API.md`'s existing endpoint/parameter prose into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
-| "Use My Series" Source Ranking Preview — read-only, collapsed-by-default list showing the selected (or auto-eligible) source series in the exact order the active Source Ranking Strategy would apply, with a visual cutoff marker at the 20-series limit | — | `frontend_spec_135` | ⬜ Not started |
-
 ---
 
 ## Delivered
@@ -190,6 +188,7 @@ dependency-derived anymore.
 | Shared `InfoDisclosure` click-to-toggle info boxes for 7 non-obvious controls (Skip Threshold Override, Watch Region, Filter Profiles, Sort By's Best Match/Most Recommended pair, Min Vote Count, Min Avg Blended Rating, Min Rotten Tomatoes Popcornmeter) | — | `frontend_spec_131` | ✅ Done |
 | "Use My Series" source-ranking strategy (personal rating + date completed [default], personal rating + Custom Rating Blend, or Custom Rating Blend + personal rating) plus a user-configurable "Custom Rating Blend" (IMDb/TMDB/Tomatometer/Popcornmeter chips, normalized to a shared 0-10 scale) | `series_spec_068` | `frontend_spec_132` | ✅ Done |
 | `RecommendationFiltersBox`'s "Recommendations Filters" and `UseMySeriesPanel`'s "Filter My Series" converted from inline disclosures into slide-out sheets (mirroring `frontend_spec_071`), fields grouped into `CollapsibleSection` subsections, each sheet gains a one-line explanatory intro; "Filter My Series" also gains a new active-filter-count badge and now defaults closed | — | `frontend_spec_134` | ✅ Done |
+| "Use My Series" Source Ranking Preview — read-only, collapsed-by-default list showing the selected (or auto-eligible) source series in the exact order the active Source Ranking Strategy would apply, with a visual cutoff marker at the 20-series limit | — | `frontend_spec_135` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

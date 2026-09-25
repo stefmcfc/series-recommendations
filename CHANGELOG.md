@@ -12,6 +12,8 @@ versioned together as one app.
 
 - Frontend: `RecommendationFiltersBox`'s "Recommendations Filters" and `UseMySeriesPanel`'s "Filter My Series" are now slide-out sheets (matching `SearchFilter`'s existing sheet pattern), each with a one-line explanatory intro and their fields grouped into collapsible subsections (`frontend_spec_134`).
 - Frontend: "Filter My Series" gains a new active-filter-count badge on its trigger, matching "Recommendations Filters"' existing one (`frontend_spec_134`).
+- Frontend: `RatingSourceChips` gains an info disclosure explaining that at least one Custom Rating Blend source must stay selected (`frontend_spec_132` amendment).
+- Frontend: a new "Source Ranking Preview" disclosure in "Use My Series" shows the selected (or auto-eligible) source series in the exact order the active Source Ranking Strategy would apply them, with a visual cutoff marker at the 20-series limit (`frontend_spec_135`).
 
 ### Changed
 
