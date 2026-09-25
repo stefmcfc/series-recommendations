@@ -17,11 +17,17 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-25 (added a candidate for extending `RecommendationPoolCache`'s TMDB-sourcing
-cache to Discover's three sourcing modes, and the "Use My Series" step-by-step wizard candidate,
-moved here from `.claude/ideas/future_ideas.md` — see each candidate for context). Previous update: 2026-09-05
-("Exclude Keywords" filter candidate closed — spec'd as part of
-`frontend_spec_094_recommendations_page_polish.md`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-09-25, full review (following `frontend_spec_134`/`frontend_spec_135` shipping):
+added a candidate for extending `RecommendationPoolCache`'s TMDB-sourcing cache to Discover's three
+sourcing modes; moved the "Use My Series" step-by-step wizard candidate here from
+`.claude/ideas/future_ideas.md` and, later the same day, updated it to reflect the two-sheet
+redesign it was blocked on now shipping; corrected two other candidates whose own claims had drifted
+from the code — "Customizable recommendation algorithm" still called `SourceOrderComparator`
+hardcoded (it's been a 3-strategy per-request choice since `series_spec_068`) and pointed at a
+`frontend_spec_081` field label that no longer exists ("Filter & sort my series" → "Filter My
+Series"); "Weight recommendation scoring..." referenced a `future_ideas.md` entry that had already
+been folded into this file and no longer exists under that name — repointed to where that content
+actually lives now. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 Last full review against the codebase: 2026-09-07 — all 5 candidates below re-checked against the
@@ -99,9 +105,10 @@ not a design doc):
   high/low ratings skewing things?
 - A candidate can carry many keywords (each with its own stats) — does the score use the single most-influential
   keyword, an average across all of the candidate's matched keywords, or something else?
-- Interacts with the still-unresolved "recommendation ranking's personal-rating/TMDB-rating blend weight is
-  hardcoded" idea (`.claude/ideas/future_ideas.md`) — both touch the same scoring formula, worth designing together
-  rather than layering one on top of the other twice.
+- Interacts with the "Customizable recommendation algorithm" candidate's own item #2 below (making
+  the TMDB-rating/personal-rating blend weight user-adjustable rather than hardcoded) — both touch
+  the same scoring formula, worth designing together rather than layering one on top of the other
+  twice.
 
 A plain-language walkthrough of the current scoring code (no design proposal yet) lives in
 `.claude/analysis/scoring_weight_recommendations.md`, written 2026-08-27 ahead of picking this up.
@@ -126,13 +133,17 @@ implemented as one.
 - Only the highest-personal-rated source counts toward the score when a candidate has multiple
   sources; the others currently only affect the separate "Most Recommended" sort (by
   contributing-source count), never the score itself.
-- `SourceOrderComparator` (personal rating desc, then date completed desc) is hardcoded and does
-  double duty: it decides both which of your shows get queried at all (before the
-  `maxSourceSeries` cap) and, for multi-source candidates, whose rating wins for scoring.
+- `SourceOrderComparator` does double duty: it decides both which of your shows get queried at all
+  (before the `maxSourceSeries` cap) and, for multi-source candidates, whose rating wins for
+  scoring. **Update (2026-09-25)**: no longer a single hardcoded rule — `series_spec_068` (delivered)
+  made it a per-request choice among 3 strategies (personal rating + date completed [still the
+  default], personal rating + a new user-configurable "Custom Rating Blend," or Custom Rating Blend
+  + personal rating). See item #8 below for what's still open.
 - **Updated 2026-09-03**: there is no backend source-pool filter at all anymore — `minSourceRating`
   (the only one that ever existed) was retired entirely (`series_spec_045`), since it could
-  silently drop an explicitly hand-picked series. `frontend_spec_081`'s "Filter & sort my series"
-  section reintroduced a personal-rating (and genre/keyword/IMDb/TMDB-rating/year) filter, but
+  silently drop an explicitly hand-picked series. `UseMySeriesPanel.tsx`'s "Filter My Series"
+  section (`frontend_spec_081`, relabeled from "Filter & sort my series" by `frontend_spec_132`)
+  reintroduced a personal-rating (and genre/keyword/IMDb/TMDB-rating/year) filter, but
   deliberately as a **client-side-only picker-narrowing aid** — it never reaches the backend, so
   it doesn't satisfy this item's "filter the source pool server-side" framing. Item #9 below is
   still fully open.
@@ -167,9 +178,17 @@ implemented as one.
    Whoever scopes this item should treat "ad-hoc override" as a new, deliberate exception to that
    absolute rule if it's still wanted — not something that falls naturally out of the old, now-gone
    bypass.
-8. Configurable source-query order (today hardcoded via `SourceOrderComparator`) — and whether
-   reordering should also decouple "query order" from "which source wins the score tiebreak,"
-   since one comparator currently does both jobs.
+8. Configurable source-query order (today via `SourceOrderComparator`) — and whether reordering
+   should also decouple "query order" from "which source wins the score tiebreak," since one
+   comparator currently does both jobs. **Update (2026-09-25)**: partially answered by
+   `series_spec_068`/`frontend_spec_132` (delivered) — 3 fixed ranking strategies now exist (see
+   above), and `frontend_spec_135` (delivered, same session) added a read-only preview showing the
+   resulting order. Both still apply the same comparator to both jobs at once (query order and
+   score-tiebreak winner stay coupled) and none of the 3 strategies is a fully arbitrary
+   user-defined order — this item's fuller "decouple the two jobs" and "let the user pick any
+   order" framing is still open. Cross-reference: `.claude/ideas/future_ideas.md`'s
+   "User-configurable (drag-and-drop) source-series ranking" idea is the drag-and-drop-specific
+   version of this same open half.
 9. Additional filters on the _source_ pool itself (genre, year, status), distinct from the
    existing output filters applied to candidates.
 10. Restrict/expand how many raw candidates a single source can contribute — either an explicit
@@ -297,28 +316,28 @@ real workflow of filtering, glancing at picker results, then going back to loose
 The single-page-with-collapsible-sections approach was chosen instead, with an explicit note to
 revisit if it ever felt cluttered in practice.
 
-**Why this is being kept as a live candidate now rather than dropped**: as of 2026-09-25, the page
-has grown enough disclosures (Filter My Series / Source Ranking Strategy / Recommendations Filters,
-soon two of those becoming their own slide-out sheets per the just-written
-`frontend_spec_1XX_recommendation_filter_sheets.md`) that the user flagged it's "becoming busy" and
-raised the concern that a first-time user might need guiding through it, not just an experienced user
-who already knows which fields matter to them. The two-sheet redesign is the immediate answer to
-"too much on screen at once"; a wizard would instead answer a different problem — "I don't know what
-order to do these things in or what each one means" — which sheets alone don't solve.
+**Why this is being kept as a live candidate rather than dropped**: the page had grown enough
+disclosures (Filter My Series / Source Ranking Strategy / Recommendations Filters / Source Ranking
+Preview) that the user flagged it was "becoming busy" and raised the concern that a first-time user
+might need guiding through it, not just an experienced user who already knows which fields matter to
+them. The two-sheet redesign is the immediate answer to "too much on screen at once"; a wizard would
+instead answer a different problem — "I don't know what order to do these things in or what each one
+means" — which sheets alone don't solve.
 
-**Deliberately queued behind the two-sheet redesign, not run in parallel with it**: revisit once
-`frontend_spec_1XX_recommendation_filter_sheets.md` has shipped and there's a real, current page to
-evaluate against — building a guided wizard on top of a panel layout that's about to be restructured
-would mean redoing the wizard's own step boundaries once the sheets land anyway. When picked up, the
-original blocking reasoning above (no server-side step-gating, no existing wizard precedent, the
-filter/glance/adjust-again workflow) still needs weighing against the new first-time-user-guidance
-motivation — this isn't a reversal of that reasoning, it's a different problem the original
-reasoning didn't consider. Whoever scopes this should also decide whether "wizard" still means a
-literal forced linear flow, or something lighter (e.g. an optional first-run guided tour/tooltip
-sequence layered over the existing single-page sheet layout, touching fewer of the original
+**Update (2026-09-25)**: the two-sheet redesign (`frontend_spec_134`) has shipped — "Filter My
+Series" and "Recommendations Filters" are now both slide-out sheets with `CollapsibleSection`
+subsections, and a new "Source Ranking Preview" (`frontend_spec_135`) also landed the same session.
+This candidate is now unblocked and ready to revisit against the real, current page rather than a
+soon-to-change one. When picked up, the original blocking reasoning (no server-side step-gating, no
+existing wizard precedent, the filter/glance/adjust-again workflow) still needs weighing against the
+first-time-user-guidance motivation — this isn't a reversal of that reasoning, it's a different
+problem the original reasoning didn't consider. Whoever scopes this should also decide whether
+"wizard" still means a literal forced linear flow, or something lighter (e.g. an optional first-run
+guided tour/tooltip sequence layered over the existing sheet layout, touching fewer of the original
 objections) — both readings are plausible and neither has been chosen yet.
 
-**Status**: Spec candidate, not yet designed. Blocked on the two-sheet redesign shipping first.
+**Status**: Spec candidate, not yet designed. Unblocked — the two-sheet redesign it was queued
+behind has shipped.
 
 ### Full-codebase manual accessibility review
 

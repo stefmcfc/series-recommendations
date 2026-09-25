@@ -40,9 +40,19 @@ applies uniformly across every sourcing mode the way the document previously imp
 Section 0's Step 1-6 sequence at all) and has been promoted to its own `Section 0b`, moved to sit
 before Section 3.
 
-The core scoring formula itself (Section 1's 50/50 TMDB-rating/personal-rating blend) and the
-multi-source dedup/sort mechanics (Section 2) are unaffected by any of the above — still exactly as
-originally documented.
+The core scoring formula itself (Section 1's 50/50 TMDB-rating/personal-rating blend) was unaffected
+by the six drifts above — still exactly as originally documented.
+
+**2026-09-25 pass**: caught one real drift the 2026-09-24 passes above missed — `series_spec_068`
+(Source Ranking Strategy / Custom Rating Blend) shipped the same day as that "last verified" date but
+wasn't checked against. `SourceOrderComparator.INSTANCE` (Section 0's Step 2, and Section 2's
+multi-source ordering) is no longer the sole, fixed rule for "Use My Series" mode — it's now one of
+three per-request strategies resolved via `SourceOrderComparator.forStrategy(criteria)`; `INSTANCE`
+remains accurate as the default and as what the other three sourcing modes always use. Corrected
+in-place at both spots. Also noted, not corrected (no code drift, just newly relevant context): this
+session added a client-side-only "Source Ranking Preview" (`frontend_spec_135`) that ports this same
+comparator logic to TypeScript for display purposes — it doesn't change anything this document
+describes about the backend.
 
 ---
 
@@ -102,6 +112,10 @@ standing preference — that's no longer possible; the exclusion is now absolute
 entirely (`series_spec_045`) before this section was last checked against the code; it's gone, not
 just changed. The `excludeFromRecommendations` check described in Step 1 above now lives here.
 
+**Corrected 2026-09-25** — the ordering itself stopped being a single fixed comparator the same day
+this document's previous pass claimed to have last verified the code (`series_spec_068`, shipped
+2026-09-24, was missed by that pass). See the note below the code.
+
 ```java
 private List<SeriesEntity> resolveSourcePool(RecommendationCriteria c) {
     List<SeriesEntity> pool = (c.getSeriesIds() != null && !c.getSeriesIds().isEmpty())
@@ -110,7 +124,7 @@ private List<SeriesEntity> resolveSourcePool(RecommendationCriteria c) {
 
     return pool.stream()
         .filter(e -> !e.isExcludeFromRecommendations())
-        .sorted(SourceOrderComparator.INSTANCE)
+        .sorted(SourceOrderComparator.forStrategy(c))
         .limit(maxSourceSeries)
         .toList();
 }
@@ -122,24 +136,41 @@ series get called in?"**:
 - Any series you've manually flagged **"exclude from recommendations"** is dropped here — whether
   it came from the automatic Completed pool or from an explicit `seriesIds` selection in Specific
   Series mode, per Step 1's note above.
-- The remaining pool is then sorted using the exact same `SourceOrderComparator` from Section 2 —
-  your highest personally-rated shows first, ties broken by most-recently-completed.
+- The remaining pool is then sorted by whichever ordering strategy the request asked for
+  (`RecommendationCriteria.sourceRankingStrategy`) — see the note below.
 - Then it's **capped** to the first `maxSourceSeries` shows (config default: **20**) via `.limit(...)`.
 
-So it is *not* every eligible show, unconditionally — it's the **top 20** (by your rating, then
-recency) of whatever survives the eligibility filter. If you have, say, 35 Completed shows with
+So it is *not* every eligible show, unconditionally — it's the **top 20** (by the active ranking
+strategy) of whatever survives the eligibility filter. If you have, say, 35 Completed shows with
 IMDb IDs, only the top 20 by that ordering are ever queried; the other 15 are silently never asked
 about at all, no matter how good a source they might be. Raising `maxSourceSeries` (see the config
 table at the end of this section) is the only way to include more.
+
+**The ordering is now a per-request choice, not a hardcoded formula (`series_spec_068`).**
+`SourceOrderComparator.forStrategy(c)` resolves one of three comparators from
+`c.getSourceRankingStrategy()`: the original `personalRatingThenDate` (personal rating desc, then
+date completed desc — still the default when unset, and still the exact comparator the unparameterized
+`SourceOrderComparator.INSTANCE` constant represents), or two Custom-Rating-Blend variants —
+`personalRatingThenCustomBlend` and `customBlendThenPersonalRating` — that use a new,
+user-configurable "Custom Rating Blend" (`SourceRatingBlend.compute`, an average of whichever of
+imdb/tmdb/tomatometer/popcornmeter ratings the request selects, RT's 0-100 scale normalized ÷10
+first) either as a tiebreaker behind personal rating or as the primary signal ahead of it. On the
+frontend, this is the "Source Ranking Strategy" control in `UseMySeriesPanel.tsx` (its own
+standalone section as of this session, previously nested inside the "Filter My Series" picker), and
+a read-only "Source Ranking Preview" disclosure (`frontend_spec_135`, also this session) now lets a
+user see the resulting order — including which series fall past the `maxSourceSeries` cutoff — by
+porting this same comparator logic to TypeScript client-side, without changing the backend ordering
+described here at all.
 
 **There is no rating floor on the source pool anymore.** A previous version of this app let you set
 a minimum personal rating a show needed to qualify as a source at all — that filter (`minSourceRating`)
 was removed outright (`series_spec_045`) because it could silently drop a series you'd explicitly
 hand-picked in Specific Series mode. If you want to narrow which of your shows can act as a source,
-there's currently no server-side way to do that — `frontend_spec_081`'s "Filter & sort my series"
-picker (personal rating, genre, keyword, IMDb/TMDB rating, year) only narrows what you can *pick*
-client-side before the request is sent; it doesn't reach the backend as a source-pool filter. This
-gap is still tracked as item #9 of the sibling "Customizable recommendation algorithm" candidate in
+there's currently no server-side way to do that — `UseMySeriesPanel.tsx`'s "Filter My Series" picker
+(personal rating, genre, keyword, IMDb/TMDB rating, year — relabeled from "Filter & sort my series"
+this session, `frontend_spec_081`'s original spec) only narrows what you can *pick* client-side
+before the request is sent; it doesn't reach the backend as a source-pool filter. This gap is still
+tracked as item #9 of the sibling "Customizable recommendation algorithm" candidate in
 `SPEC_CANDIDATES.md`.
 
 ### Step 3: one TMDB call per source show
@@ -204,6 +235,21 @@ one **extra** TMDB call: it looks at the genres of shows in your source pool, fi
 genre(s) show up most often, and calls TMDB's `discover/tv` endpoint (sorted by popularity) for
 that genre. This only fires as a top-up when needed — it isn't part of the normal per-show flow,
 and it isn't per-series (it's one call, genre-based, covering the whole pool at once).
+
+**Added 2026-09-25 — a real gap in this document, not a correction of something wrong: all of Steps
+1-4 above are wrapped in a cache.** `RecommendationSourcingService.sourceFromPool` — the entry point
+that runs everything Steps 1-4 describe — doesn't call that work directly; it goes through
+`RecommendationPoolCache.getOrCompute(key, () -> doSourceFromPool(c, limit))` first. `key` is
+`(seriesIds, limit)` only (`PoolCacheKey`) — deliberately excluding `sortBy`/`excludeGenres`/
+`excludeKeywords`/`minTmdbRating`/etc, since those are all applied *after* this cache boundary
+(Step 5 below). Practical effect: re-clicking "Get Recommendations" with the same selected series
+(or the same auto-pool) and the same `limit`, after changing only a "Recommendations Filters" field,
+is a cache hit — none of Steps 1-4's TMDB calls happen again, only re-filtering/re-ranking on
+already-fetched data. Entries expire after `app.recommendations.pool-cache-ttl-minutes` (default
+**10**) or once the cache holds more than `app.recommendations.pool-cache-max-entries` (default
+**50**) distinct keys, whichever comes first — it's a small in-memory `ConcurrentHashMap`, not a
+persistent store, so it doesn't survive an app restart and offers no benefit across the Trending/Top
+Rated/Genre & Keyword modes (Section 0b, below), which have no equivalent cache at all.
 
 ### Step 5: capped, deduped, filtered, scored — but the *order* of the first three now depends on mode
 
@@ -301,13 +347,15 @@ table for what it actually does.
 |---|---|---|
 | Max source shows queried per request | 20 | `app.tmdb.max-source-series` (env `APP_TMDB_MAX_SOURCE_SERIES`) |
 | Max raw candidates kept before dedup/filtering | 50 | `app.tmdb.max-candidates` (env `APP_TMDB_MAX_CANDIDATES`) |
+| "Use My Series" pool-cache TTL (added 2026-09-25) | 10 minutes | `app.recommendations.pool-cache-ttl-minutes` (env `APP_RECOMMENDATIONS_POOL_CACHE_TTL_MINUTES`) |
+| "Use My Series" pool-cache max entries (added 2026-09-25) | 50 | `app.recommendations.pool-cache-max-entries` (env `APP_RECOMMENDATIONS_POOL_CACHE_MAX_ENTRIES`) |
 | Max recommendations per single source show, post-scoring (diversity cap) | 8 | `app.tmdb.max-per-source` (env `APP_TMDB_MAX_PER_SOURCE`). Still a real backend request param (`maxPerSource`) with no UI control reaching it anymore — `frontend_spec_048` confirmed the "Max Per Source"/"Max Sources Shown" controls were dead under every Discover mode and removed them from the frontend entirely |
 | How the diversity cap counts contributing sources | `best-source` (default): only a candidate's single best-rated source counts toward the cap. `all-sources`: every contributing source does | `app.recommendations.diversity-cap-mode` (env `APP_RECOMMENDATIONS_DIVERSITY_CAP_MODE`) — see the new subsection after Section 2's dedup/sort coverage for what this actually changes |
 | Default minimum TMDB vote count (output filter) | 200 | `app.tmdb.default-min-vote-count` (env `APP_TMDB_DEFAULT_MIN_VOTE_COUNT`), or overridden per-request by a filter |
 | Final list size shown | 20, clamped 1-50 | `limit` request parameter (no config-level default override; it's a per-request API param, normally driven by the UI) |
 | Recs returned per source show by TMDB itself, in **Automatic/Specific Series** mode | Not capped by this app — whatever TMDB's `/recommendations` (or `/similar` fallback) endpoint returns on its one requested page | Not controllable from this codebase; would require requesting additional TMDB pages, which isn't implemented **for this mode specifically** — see the note below the table |
 | Extra TMDB pages fetched, in **Trending/Highest Rated/Genre & Keyword** mode, when short of `limit` | Up to `app.tmdb.max-discover-pages` (**6**) additional pages | `app.tmdb.max-discover-pages` (env `APP_TMDB_MAX_DISCOVER_PAGES`) — see the new subsection right after this table |
-| Order source shows are queried in | Personal rating desc, then date completed desc | Not configurable — fixed logic in `SourceOrderComparator`, same ordering used for the "best source" scoring pick in Section 2 |
+| Order source shows are queried in | Personal rating desc, then date completed desc (default); two Custom-Rating-Blend variants also available | Per-request, via `sourceRankingStrategy` (`series_spec_068`) — `SourceOrderComparator.forStrategy(criteria)`, same ordering used for the "best source" scoring pick in Section 2 |
 | Max "because you watched..." source titles displayed per card | 3 | Hardcoded `DEFAULT_MAX_SOURCES_SHOWN` constant in `RecommendationService` — display-only, doesn't affect sourcing/scoring, not currently exposed as config |
 | Which TMDB endpoint is used for genre-based top-up | `discover/tv`, sorted by popularity | Not configurable — only triggers when title-based sourcing yields fewer distinct candidates than `limit` |
 
@@ -639,7 +687,8 @@ every one of your shows that contributed to it — one show, or several.
 ### How that list is put in order — and why only the top one affects the score
 
 That list of source shows isn't left in whatever order TMDB happened to return things — it's sorted
-using one consistent rule, in a small piece of code called `SourceOrderComparator`:
+using one consistent rule, in a small piece of code called `SourceOrderComparator`. `INSTANCE`
+below is the original, still-default rule:
 
 ```java
 static final Comparator<SeriesEntity> INSTANCE = Comparator
@@ -650,6 +699,14 @@ In plain terms: *"Sort the source shows by your personal star rating, highest fi
 shows have the exact same rating (or neither has one), break the tie by whichever you completed
 most recently."* `Comparator.nullsLast` just means "if a show has no rating/completion date at all,
 put it at the bottom rather than crashing or erroring."
+
+**Corrected 2026-09-25 (`series_spec_068`)**: for "Use My Series" mode, this multi-source ordering
+now honors the same per-request `sourceRankingStrategy` Section 0's Step 2 describes —
+`RecommendationService.sourceAndFilterFromPool` resolves `SourceOrderComparator.forStrategy(criteria)`
+once and threads it into `dedupeAndExclude`/`orderSources`, so which source show ends up
+`.getFirst()` (below) depends on the active strategy, not always this fixed `INSTANCE` rule. The
+other three modes (Trending/Top Rated/Genre & Keyword) always pass `INSTANCE` unconditionally here —
+moot in practice, since none of them ever attach a source series to a candidate in the first place.
 
 This is the detail that answers the actual question — **"how does 'Best Match' work for a
 recommendation that comes from multiple shows?"** Look back at Section 1's walkthrough of the
