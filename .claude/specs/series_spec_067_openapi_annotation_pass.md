@@ -1,6 +1,6 @@
 # Series Spec 067: OpenAPI Annotation Pass — Port API.md Prose into Swagger
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P4 (documentation quality — no behavior change to any endpoint)
 **Depends on**: `series_spec_066_openapi_swagger_dependency.md` (annotations are inert without springdoc on the classpath to read them)
 **Area**: Backend (all 9 `@RestController` classes under `backend/src/main/java/uk/co/stefirby/seriestracker/controller/`, plus `API.md` cross-reference only — no DTO/service/repository changes)
@@ -305,12 +305,12 @@ def "SERIES-067-AC-09: GET /api/v1/filter-profiles documents the five valid area
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-067-AC-01: `SeriesController`'s CRUD/search/export endpoints documented (field lock, `clearedFields`, missing-ratings OR/AND asymmetry)
-- [ ] SERIES-067-AC-02: `SeriesGenreController` documented (genre vocabulary, genre stats + its three min-value filters)
-- [ ] SERIES-067-AC-03: `SeriesController`'s import/import-status endpoints documented (dual JSON/CSV dispatch, job status lifecycle)
-- [ ] SERIES-067-AC-04: `SeriesKeywordController` documented (`sortBy` fallback behavior, AND-combined min-value filters)
-- [ ] SERIES-067-AC-05: `SeriesLookupController` documented (TMDB-sole-source, OMDb merge on resolve)
-- [ ] SERIES-067-AC-06: `SeriesOriginCountryController` documented (multi-country contribution, raw ISO code)
-- [ ] SERIES-067-AC-07: `SeriesRecommendationController` documented (4 sourcing modes, pre/post-fetch filter asymmetry, on-demand detail endpoints)
-- [ ] SERIES-067-AC-08: `SeriesWatchProviderController`/`SeriesRefreshController` documented (never-502 fallback, skip-threshold override)
-- [ ] SERIES-067-AC-09: `FilterProfileController` documented (5 valid `area` values, `(area, name)`-scoped uniqueness)
+- [x] SERIES-067-AC-01: `SeriesController`'s CRUD/search/export endpoints documented (field lock, `clearedFields`, missing-ratings OR/AND asymmetry)
+- [x] SERIES-067-AC-02: `SeriesGenreController` documented (genre vocabulary, genre stats + its three min-value filters)
+- [x] SERIES-067-AC-03: `SeriesController`'s import/import-status endpoints documented (dual JSON/CSV dispatch, job status lifecycle)
+- [x] SERIES-067-AC-04: `SeriesKeywordController` documented (`sortBy` fallback behavior, AND-combined min-value filters)
+- [x] SERIES-067-AC-05: `SeriesLookupController` documented (TMDB-sole-source, OMDb merge on resolve)
+- [x] SERIES-067-AC-06: `SeriesOriginCountryController` documented (multi-country contribution, raw ISO code)
+- [x] SERIES-067-AC-07: `SeriesRecommendationController` documented (4 sourcing modes, pre/post-fetch filter asymmetry, on-demand detail endpoints)
+- [x] SERIES-067-AC-08: `SeriesWatchProviderController`/`SeriesRefreshController` documented (never-502 fallback, skip-threshold override)
+- [x] SERIES-067-AC-09: `FilterProfileController` documented (5 valid `area` values, `(area, name)`-scoped uniqueness)
