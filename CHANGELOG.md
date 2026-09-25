@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.64.0] - 2026-09-25
+
 ### Added
 
 - Backend: `springdoc-openapi-starter-webmvc-ui` dependency — a live, interactive Swagger UI at `/swagger-ui.html` and a machine-readable OpenAPI spec at `/v3/api-docs`/`/v3/api-docs.yaml`, generated from the actual controller/DTO code (`series_spec_066`).
