@@ -43,6 +43,7 @@ dependency-derived anymore.
 | Add `springdoc-openapi` dependency for a live Swagger UI (`/swagger-ui.html`) and machine-readable OpenAPI spec (`/v3/api-docs`), with app-identifying title/description metadata | `series_spec_066` | — | ⬜ Not started |
 | Port `API.md`'s existing endpoint/parameter prose into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
+| "Use My Series" Source Ranking Preview — read-only, collapsed-by-default list showing the selected (or auto-eligible) source series in the exact order the active Source Ranking Strategy would apply, with a visual cutoff marker at the 20-series limit | — | `frontend_spec_135` | ⬜ Not started |
 
 ---
 
