@@ -8,6 +8,25 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.63.0] - 2026-09-25
+
+### Added
+
+- Frontend: `RecommendationFiltersBox`'s "Recommendations Filters" and `UseMySeriesPanel`'s "Filter My Series" are now slide-out sheets (matching `SearchFilter`'s existing sheet pattern), each with a one-line explanatory intro and their fields grouped into collapsible subsections (`frontend_spec_134`).
+- Frontend: "Filter My Series" gains a new active-filter-count badge on its trigger, matching "Recommendations Filters"' existing one (`frontend_spec_134`).
+- Frontend: `RatingSourceChips` gains an info disclosure explaining that at least one Custom Rating Blend source must stay selected (`frontend_spec_132` amendment).
+- Frontend: a new "Source Ranking Preview" disclosure in "Use My Series" shows the selected (or auto-eligible) source series in the exact order the active Source Ranking Strategy would apply them, with a visual cutoff marker at the 20-series limit (`frontend_spec_135`).
+
+### Changed
+
+- Frontend: `UseMySeriesPanel`'s "Filter & sort my series" disclosure renamed to "Filter My Series" (`frontend_spec_132` amendment).
+- Frontend: Source Ranking Strategy (and its Custom Rating Blend chips) moved out of "Filter My Series" into its own standalone disclosure section, rendered between "Filter My Series" and "Recommendations Filters" (`frontend_spec_132` amendment).
+- Frontend: "Filter My Series" now defaults closed instead of open, since it's a sheet overlay rather than an inline disclosure (`frontend_spec_134`, supersedes `frontend_spec_081-AC-01`).
+
+### Fixed
+
+- Frontend: both `SearchFilter` and `RecommendationControls`' slide-out sheets (`.sheet`) were missing `box-sizing: border-box`, so the content-box default added the sheet's own padding on top of its 100%-of-viewport height instead of carving it out — on a tall enough sheet (found via "Filter My Series"), this rendered the sheet taller than the viewport and clipped whatever sat at the bottom (e.g. Clear/Reset Filters) below the fold with no way to scroll to it.
+
 ## [3.62.0] - 2026-09-24
 
 ### Added

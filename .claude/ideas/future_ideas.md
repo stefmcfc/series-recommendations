@@ -13,9 +13,10 @@ it duplicated in both.
 
 **Maintenance rule**: every item here carries a `**Status**` line. Before adding a new item or
 touching this file, re-check existing items against the current codebase — code this file
-references may have moved or changed shape since the note was written (confirmed necessary in
-practice: this file's 2026-08-26 review found one item already fully delivered without the file
-being updated, and two others whose referenced classes had been renamed/split by later refactors).
+references may have moved or changed shape since the note was written. This file tracks only ideas
+still in flight, not delivery history — when an idea ships or gets spec'd, remove its entry entirely
+(see below) rather than annotating it as done; `ROADMAP.md`/`CHANGELOG.md` are the source of truth
+for what shipped and when.
 
 - **Delivered** — the idea shipped. Remove the entry entirely — `ROADMAP.md`/`CHANGELOG.md` are
   the source of truth for what shipped and which spec(s) delivered it; this file is only for ideas
@@ -26,35 +27,7 @@ being updated, and two others whose referenced classes had been renamed/split by
 - **Not specced** — retain full detail: what's actually required, why, and any relevant
   constraints or prior discussion. This is the only case where this file carries real content.
 
-Last full review against the codebase: 2026-09-07 (this review found one item — "Use My Series"
-filter/sort parity — almost entirely delivered by `frontend_spec_081` without this file being
-updated; trimmed to its one remaining gap, the "Select Series" relabel. Every other item confirmed
-still accurate against the current code, no other changes needed). Same-day follow-up: the
-Configuration section's Settings-area items (skip-threshold surfacing, Country/Language
-favourites, light/dark toggle) were specced (`series_spec_052`, `frontend_spec_097`/`098`/`099`) and
-removed/trimmed here accordingly — only saved filter/algorithm profiles remains open in that
-section now.
-
-2026-09-10 update: "No shareable URL for a specific series (`SeriesDetail`)" (Navigation section)
-and "CSV import" (Export section) were specced (`frontend_spec_113`, `series_spec_058`/
-`frontend_spec_114`) and removed accordingly — see `ROADMAP.md`'s "Specced, coming soon" table.
-
-2026-09-23 full review: four items updated against the current codebase. The Configuration
-section's "saved filter/algorithm profiles" gap narrowed — filter profiles fully shipped
-(`series_spec_055`/`056`/`057`, `frontend_spec_107`/`108`/`109`/`112`, all five filterable areas);
-only saved *algorithm* profiles remain, unchanged blocking reason. "Recommendations for a
-recommendation"'s blocking condition (candidate detail modal) shipped (`frontend_spec_053`) — no
-longer gated on anything. "Filter My Series by Country of Origin / Language" was corrected —
-`SeriesEntity.originalLanguage` now exists (`series_spec_061`), so Language is no longer a
-materially bigger lift than Country. The export test-coverage gap narrowed to two of its original
-three checks after `series_spec_063` incidentally added one MockMvc `/export` test. Every other
-item confirmed still accurate, no changes needed.
-
-2026-09-23 same-day follow-up: "Recommendations for a recommendation" and "Filter My Series by
-Country of Origin / Language" (just reconfirmed above) were both specced —
-`series_spec_064`/`frontend_spec_127` and `series_spec_065`/`frontend_spec_128` respectively — and
-removed accordingly, per this file's own pipeline rule. See `ROADMAP.md`'s "Specced, coming soon"
-table.
+Last full review against the codebase: 2026-09-25.
 
 ---
 
@@ -62,23 +35,25 @@ table.
 
 ### User-configurable (drag-and-drop) source-series ranking
 
-Raised 2026-09-24 while discussing `RecommendationDeduplicationService`/`RecommendationSourcingService`'s
-dedup and sourcing mechanics. Today, `SourceOrderComparator.INSTANCE` (personal rating desc, then
-date completed desc) is the sole, fixed ordering for a user's source series, used in two places:
-`RecommendationSourcingService.resolveSourcePool` sorts the pool *before* capping to
-`maxSourceSeries` (20) — so for anyone with more than 20 `COMPLETED` series, this order decides
-*which* 20 actually get queried against TMDB, not just cosmetic tie-breaking — and
-`RecommendationDeduplicationService.orderSources` decides which source's rating wins
-scoring/tiebreaks when a candidate has multiple contributing sources. Idea: let the user drag-and-
-drop their own ranking of source series instead of relying solely on the fixed rating/date formula.
+`RecommendationSourcingService.resolveSourcePool`/`RecommendationDeduplicationService.orderSources`
+both order a user's source series via `SourceOrderComparator` — used in two places:
+`resolveSourcePool` sorts the pool *before* capping to `maxSourceSeries` (20), so for anyone with
+more than 20 `COMPLETED` series, this order decides *which* 20 actually get queried against TMDB,
+not just cosmetic tie-breaking; `orderSources` decides which source's rating wins scoring/tiebreaks
+when a candidate has multiple contributing sources. `series_spec_068` made this a per-request choice
+among 3 fixed strategies (personal rating + date completed, or either paired with a user-configurable
+"Custom Rating Blend"), but none of them is a fully arbitrary, user-defined order. Idea: let the user
+drag-and-drop their own ranking of source series instead of picking from fixed strategies.
 
-**Scope, as best understood so far**: backend would need `SourceOrderComparator` to become
-parameterizable by an explicit user-supplied order (e.g. a `rankedSeriesIds` list threaded through
-both `resolveSourcePool` and `orderSources`) rather than always applying the fixed formula, plus
-somewhere to persist that ranking — the existing `FilterProfile` persistence mechanism is the
+**Scope, as best understood so far**: backend would need `SourceOrderComparator` to also accept an
+explicit user-supplied order (e.g. a `rankedSeriesIds` list threaded through both `resolveSourcePool`
+and `orderSources`, alongside the 3 existing strategies) rather than being limited to fixed formulas,
+plus somewhere to persist that ranking — the existing `FilterProfile` persistence mechanism is the
 likely home rather than a new entity, though this hasn't been designed. Frontend would need an
 actual drag-and-drop reorderable list, which doesn't exist anywhere in this codebase yet (would
-need a new library, e.g. `@dnd-kit`).
+need a new library, e.g. `@dnd-kit`). Cross-reference:
+`.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation algorithm" candidate's item #8 covers
+the same underlying gap from the "decouple query order from score-tiebreak winner" angle.
 
 **Caveat to keep in view**: this would only affect "Use My Series" mode. The other three sourcing
 modes (`sourceTrending`/`sourceTopRated`/`sourceByGenreOrKeyword`) never link a candidate to a
@@ -90,43 +65,11 @@ scope/caveat above.
 
 ### "Use My Series" source-series picker — "Select Series" relabel
 
-Raised 2026-09-01 as a two-part idea: filter/sort parity for `UseMySeriesPanel.tsx`'s source-series
-picker (include-Keywords, Min Personal/IMDb/TMDB Rating, Year Min/Max, all narrowing the *source
-pool* of the user's own series, distinct from `RecommendationFiltersBox`'s own same-named fields
-which filter the TMDB recommendation *output*), plus relabeling the area above the picker to
-"Select Series."
+`UseMySeriesPanel.tsx`'s source-series picker heading is still plain "Series," not "Select Series" —
+relabel it (two occurrences: the picker itself and its "Browse..." modal).
 
-**Update (2026-09-07 review)**: confirmed via reading the current code — the filter-parity half
-shipped as `frontend_spec_081`'s "Filter & sort my series" section: `GenreIncludeExcludePicker`,
-an include-only `KeywordPicker` (no free text — narrows to a tracked series' actual keywords),
-Min Personal/IMDb/TMDB Rating, and Year Min/Max are all there, and the original "naming collision"
-risk this idea flagged was resolved with a "(My Series)" label suffix disambiguating from
-`RecommendationFiltersBox`'s own same-named fields. Only the relabel half remains: the picker
-section's heading is still plain "Series" (`UseMySeriesPanel.tsx`), not "Select Series."
-
-**Status**: Not specced. Narrow remaining scope — a single label change, `UseMySeriesPanel.tsx`'s
-`label="Series"` → `"Select Series"` (two occurrences, the picker and its "Browse..." modal).
-
-### "Use My Series" as a step-by-step wizard instead of a single scrolling page
-
-Raised 2026-09-03 while planning the "Use My Series" page restructure (filter/select/post-filter/
-sort/apply). The user asked whether the redesigned page's five sections — Filter & sort my series,
-Select my series, Post TMDB filtering, Sort filtered recs, Apply/Get Recommendations — should be a
-single scrolling page or built up step-by-step, checkout-style (fill in address, then payment).
-
-Deliberately not pursued for the initial redesign: nothing in this flow has a genuine
-server-side dependency gating the next step the way a checkout does (address round-trip before
-shipping calc), every field stays in client-side `ControlsState` until one single "Apply
-Filters"/"Get Recommendations" submit — and this app has no existing wizard precedent anywhere
-(its two progressive-disclosure patterns, `RecommendationFiltersBox` and `SearchFilter`'s sheet,
-both use inline collapse/expand, never forced linear steps). A wizard would also punish the likely
-real workflow of filtering, glancing at picker results, then going back to loosen an earlier
-filter — recommended a single page with the new "Filter & sort my series" section defaulting open
-instead (see `frontend_spec_0XX`, the page-restructure spec, once written).
-
-**Status**: Not specced — deliberately deferred by the user's own choice ("let's go with the
-single-page option for now and add this as a future idea"), not rejected. Revisit if the
-single-page version turns out to feel cluttered in practice once built.
+**Status**: Not specced. Narrow scope — a single label change, `UseMySeriesPanel.tsx`'s
+`label="Series"` → `"Select Series"`.
 
 ---
 
@@ -151,35 +94,15 @@ work today. Confirmed unchanged as of 2026-08-26.
 **Status**: Not specced. Kept on the list (2026-08-26 review) as a real, distinct gap from
 field-based search — no immediate trigger, but a genuine one when it comes up.
 
-### Redo cluttered filter panels as a collapsible left-hand panel or slide-out sheet — confirmed wanted for both `SearchFilter` and `RecommendationControls`
-
-Originally raised 2026-08-24 for `SearchFilter`'s top-of-page filter panel, noting it was "the
-same shape of layout question as `RecommendationControls`' own `Filters` disclosure, so a
-consistent answer for both is probably better than solving it twice." Confirmed independently for
-`RecommendationControls` on 2026-08-26 — this is now a real, cross-cutting layout idea covering
-both filter panels, not just an anticipated one. Confirmed both panels are still today's original
-always-expanded-top-bar / inline-disclosure shapes (2026-08-26 re-check).
-
-**Status**: Partially implemented. **Note (2026-08-29)**:
-`frontend_spec_055_search_filter_overhaul.md` gives `SearchFilter` a basic show/hide disclosure
-(reusing `RecommendationControls`' existing `filtersOpen` mechanism) — the immediately-actionable
-"collapsible" want is covered there. **Note (2026-09-01)**: `frontend_spec_071_my_series_filter_sheet.md`
-implements the bigger layout question for `SearchFilter` specifically — its inline disclosure is now
-a slide-out sheet (not a left-hand panel), triggered by a new funnel icon next to `SeriesList`'s
-view-mode icons, superseding the inline disclosure entirely. `RecommendationControls`' equivalent
-panel remains open/unspecced and still uses its original inline disclosure — the same sheet
-treatment for it is a separate future spec if wanted, not bundled into `frontend_spec_071`.
-
 ---
 
 ## Navigation
 
 ### Real logo / visual branding design
 
-Raised 2026-08-28 alongside the global nav redesign (`frontend_spec_041`, shipped 2026-08-28 —
-menu-bar style top nav, logo top-left linking home). That spec deliberately used only a plain
-placeholder logo mark ("TV Series Tracker" as text); actual visual identity design (wordmark, icon,
-color) was explicitly out of scope for it and deferred here.
+The global nav (`frontend_spec_041`, menu-bar top nav, logo top-left linking home) deliberately uses
+only a plain placeholder logo mark ("TV Series Tracker" as text) — actual visual identity design
+(wordmark, icon, color) was explicitly out of scope for that spec and deferred here.
 
 **Status**: Not specced. No design direction chosen yet — purely a placeholder-now,
 design-properly-later split.
@@ -201,32 +124,16 @@ exporting every field.
 
 ### Saved algorithm profiles — the one remaining Settings gap
 
-Originally raised as a broader "every tunable is an `application.yml`/env-var value, not a live
-in-app setting" observation; the settings shell and its content have since landed incrementally
-(`frontend_spec_070` shipped the shell/nav entry; `frontend_spec_072` moved Export/Refresh All onto
-it; `frontend_spec_097`/`098`/`099`, planned 2026-09-07, add skip-threshold override + visibility, a
-`SettingsSection` wrapper component, Country/Language favourites, and a light/dark/match-system
-theme toggle — the last two both built on a new shared `useLocalStorage` hook, confirmed sufficient
-since this app has zero settings/preference persistence anywhere backend-side and no
-auth/multi-user concept to need one).
+Saving a chosen combination of recommendation-scoring weights/source settings (distinct from filter
+criteria, which already have saved profiles across all five filterable areas) has no persistence
+mechanism yet.
 
-**Update (2026-09-23 review)**: this entry originally also flagged *saved filter profiles* as
-open — that half has since fully shipped. `series_spec_055`/`056`/`057` +
-`frontend_spec_107`/`108`/`109`/`112` deliver named, saved, rename/delete-managed filter profiles
-across all five filterable areas (My Series, Use My Series, Recommendation filters, Custom Search,
-Analysis filters — confirmed in `ROADMAP.md`'s Delivered table). Only *algorithm* profiles — saving
-a chosen combination of scoring weights/source settings, distinct from filter criteria — remain
-unbuilt.
-
-**The one item this entry originally flagged that's still unspecced: saved algorithm profiles** —
-`.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation algorithm" candidate's own item #11.
-That candidate's own text is explicit this needs designing *together* with its 10 sibling
-scoring-formula sub-items, not pulled out alone — still blocked on that larger candidate being
-scoped, not on any settings-infrastructure question (that question is now answered twice over:
-`localStorage` suffices for every flat preference in this app's settings surface, and the now-shipped
-filter-profile persistence pattern shows structured multi-field saved data is also a solved
-problem here — whether algorithm profiles specifically can reuse that same pattern or need
-something else is part of what that candidate still needs to resolve).
+**Blocked on** `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation algorithm" candidate's
+own item #11 — that candidate is explicit this needs designing *together* with its other
+scoring-formula sub-items, not pulled out alone. Whoever picks it up should check whether the
+existing `FilterProfile` entity/endpoint shape can be reused before designing a new one from
+scratch — this app already has proven patterns for both flat preferences (`localStorage`) and
+structured multi-field saved data (filter profiles).
 
 **Status**: Not specced — blocked on `.claude/SPEC_CANDIDATES.md`'s "Customizable recommendation
 algorithm" candidate.
@@ -266,12 +173,9 @@ rather than letting them stay buried in an old spec.
 
 ### `/export`'s `Content-Disposition` header and invalid-`format` → 400 response are still untested at the controller level
 
-Originally "no controller-level (`MockMvc`) test for `/export` at all" (confirmed 2026-08-26 —
-grepped `SeriesControllerSpec.groovy` for `export`/`Content-Disposition`, zero matches). **Update
-(2026-09-23 review)**: no longer fully true — `series_spec_063` incidentally added one MockMvc
-`/export` test (`SERIES-063-AC-04`) while covering that spec's own Rotten-Tomatoes-filter query
-param, which does exercise filter-before-export wiring at the HTTP layer now. Still untested at
-the controller level: the `Content-Disposition` header, and the invalid-`format` → 400 response.
-`SeriesExportServiceSpec.groovy` continues to cover the service layer thoroughly regardless.
+No controller-level (`MockMvc`) test covers the `Content-Disposition` header or the
+invalid-`format` → 400 response — both are only exercised at the HTTP layer if a test specifically
+checks them, and none does. `SeriesExportServiceSpec.groovy` covers the service layer thoroughly
+regardless.
 
 **Status**: Not specced.

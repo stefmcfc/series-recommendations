@@ -307,6 +307,106 @@
   padding-top: 1rem;
 }
 
+/* FRONTEND-134-AC-02/AC-10: slide-out sheet shapes for "Recommendations
+   Filters"/"Filter My Series" -- mirrors SearchFilter.module.css's own
+   .sheetOverlay/.sheet/.sheetHeader/.sheetHeading/.closeButton exactly
+   rather than inventing a third, visually divergent sheet pattern. */
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 26rem;
+  height: 100%;
+  /* Without this, the content-box default adds .sheet's own 1.5rem padding
+     on top of its 100% height instead of carving it out of it, rendering
+     the sheet taller than the viewport and clipping whatever sits at the
+     bottom (e.g. Clear/Reset Filters) below the fold with no way to scroll
+     to it -- found live while reviewing frontend_spec_134's Filter My
+     Series sheet, but the bug is in the box model, not this sheet's
+     content, so it's fixed here alongside the identical copy in
+     SearchFilter.module.css. */
+  box-sizing: border-box;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheetHeading {
+  margin: 0;
+}
+
+.closeButton {
+  background: transparent;
+  color: var(--text-h);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--social-bg);
+}
+
+/* FRONTEND-134-AC-02/AC-10: the two sheets' own body container -- a
+   vertical stack of SavedFiltersList/CollapsibleSection cards/
+   FilterProfileActions/actions row, mirroring SearchFilter.module.css's own
+   .filtersBody (flex column) exactly. Deliberately a different class from
+   this file's pre-existing .filtersBody below (an auto-fit grid designed
+   for a flat field list) -- that class is unchanged and still used by the
+   untouched "Source Ranking Strategy" disclosure's own body, whose content
+   is still a flat field list, not cards. */
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* FRONTEND-134-AC-06/AC-15: CollapsibleSection card + body/heading shapes
+   for both sheets' new subsections -- mirrors SearchFilter.module.css's own
+   .filterSection/.filterSectionBody/.filterSectionHeading exactly. */
+.filterSection {
+  padding: 1rem;
+}
+
+.filterSectionBody {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+  align-items: end;
+  margin-top: 0.75rem;
+}
+
+.filterSectionHeading {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--accent-bg);
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.5rem;
+}
+
 .filtersToggle {
   background: transparent;
   color: var(--text-h);
@@ -349,9 +449,10 @@
   gap: 1rem;
   margin-top: 1rem;
   /* FRONTEND-094-AC-01: visually ties this expanded content back to the
-     toggle that opens/closes it -- shared by UseMySeriesPanel's "Filter &
-     sort my series" and RecommendationFiltersBox's "Recommendations
-     Filters", both of which render through this exact class. */
+     toggle that opens/closes it -- shared by UseMySeriesPanel's "Filter My
+     Series" and "Source Ranking Strategy" sections and
+     RecommendationFiltersBox's "Recommendations Filters", all of which
+     render through this exact class. */
   border-left: 4px solid var(--border);
   padding-left: 1rem;
 }

@@ -84,6 +84,14 @@ function makeSeries(overrides: Partial<Series> = {}): Series {
   }
 }
 
+// FRONTEND-134-AC-09/10: "Filter My Series" is now a slide-out sheet,
+// defaulting closed (supersedes frontend_spec_081-AC-01's original
+// "defaults open" behavior) -- every test below that reaches into the
+// sheet's own fields now opens it first via this helper.
+function openFilterMySeriesSheet() {
+  fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+}
+
 describe('FRONTEND-076-AC-05: other include/exclude usages are renamed', () => {
   it('renders "Include / Exclude Genres" in UseMySeriesPanel', () => {
     render(
@@ -95,6 +103,7 @@ describe('FRONTEND-076-AC-05: other include/exclude usages are renamed', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     expect(
       screen.getByRole('button', { name: 'Include / Exclude Genres' }),
     ).toBeInTheDocument()
@@ -112,6 +121,7 @@ describe('FRONTEND-093-AC-01: divider renders between filter section and Series 
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     const filtersBody = screen.getByTestId('specific-series-filters-body')
     // FRONTEND-093-AC-01: the inline Series picker renders `hideInput`, so
     // "Series" is only exposed as an aria-label on its container div (no
@@ -196,6 +206,7 @@ describe('UseMySeriesPanel', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     expect(
       screen.getByRole('button', { name: 'Include / Exclude Genres' }),
@@ -217,10 +228,13 @@ describe('UseMySeriesPanel', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByLabelText(/completed only/i))
     fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    // FRONTEND-134-AC-10: name-filtered -- the "Filter My Series" sheet
+    // (also role="dialog") is still open here too.
+    const dialog = screen.getByRole('dialog', { name: /browse series/i })
 
     // FRONTEND-035-AC-17: the status suffix is hidden once the status
     // filter narrows to one value -- every remaining suggestion would
@@ -292,6 +306,7 @@ describe('FRONTEND-069-AC-04: UseMySeriesPanel renders the combined picker', () 
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     expect(
       screen.getByRole('button', { name: 'Include / Exclude Genres' }),
     ).toBeInTheDocument()
@@ -315,6 +330,7 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     fireEvent.click(
       screen.getByRole('button', { name: 'Include / Exclude Genres' }),
     )
@@ -327,8 +343,7 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Comedy: include' }))
     fireEvent.click(screen.getByRole('button', { name: 'Done' }))
 
-    fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-    const dialog = screen.getByRole('dialog')
+    const dialog = openBrowseSeriesModal()
 
     expect(
       within(dialog).queryByRole('button', { name: /Funny Show/ }),
@@ -339,8 +354,14 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
   })
 })
 
-describe('FRONTEND-081-AC-01: Filter & sort my series disclosure, open by default', () => {
-  it('renders expanded on mount', () => {
+// FRONTEND-134-AC-09: supersedes this describe block's original title/
+// behavior -- "Filter My Series" is now a slide-out sheet that defaults
+// CLOSED (frontend_spec_081-AC-01's original "defaults OPEN" no longer
+// holds, per this spec's Design Decisions: a sheet defaulting open would
+// cover the page immediately on render, unlike the inline disclosure it
+// replaces).
+describe('FRONTEND-134-AC-09: Filter My Series sheet defaults closed', () => {
+  it('renders collapsed on mount, opening only once the toggle is clicked', () => {
     render(
       <UseMySeriesPanel
         state={initialState}
@@ -351,14 +372,17 @@ describe('FRONTEND-081-AC-01: Filter & sort my series disclosure, open by defaul
       />,
     )
     expect(
-      screen.getByRole('button', { name: /filter & sort my series/i }),
-    ).toHaveAttribute('aria-expanded', 'true')
+      screen.getByRole('button', { name: /^filter my series$/i }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByLabelText(/completed only/i)).not.toBeInTheDocument()
+
+    openFilterMySeriesSheet()
     expect(screen.getByLabelText(/completed only/i)).toBeVisible()
   })
 })
 
-describe('FRONTEND-081-AC-02: toggle collapses/expands the section', () => {
-  it('hides and shows the filter controls on click', () => {
+describe('FRONTEND-134-AC-12: toggle opens/closes the sheet', () => {
+  it('shows and hides the filter controls on click', () => {
     render(
       <UseMySeriesPanel
         state={initialState}
@@ -369,15 +393,16 @@ describe('FRONTEND-081-AC-02: toggle collapses/expands the section', () => {
       />,
     )
     const toggle = screen.getByRole('button', {
-      name: /filter & sort my series/i,
+      name: /^filter my series$/i,
     })
+
+    fireEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByLabelText(/completed only/i)).toBeVisible()
 
     fireEvent.click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByLabelText(/completed only/i)).not.toBeInTheDocument()
-
-    fireEvent.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
   })
 })
 
@@ -399,6 +424,7 @@ describe('FRONTEND-081-AC-04: Keywords filter narrows the picker', () => {
         keywordOptions={['space opera']}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
     const keywordsDialog = screen.getByRole('dialog', {
@@ -425,9 +451,13 @@ describe('FRONTEND-081-AC-04: Keywords filter narrows the picker', () => {
 // typing input (hideInput) -- every "narrows the picker" assertion below now
 // checks the "Show all series" modal's contents instead of the page at
 // large.
+// FRONTEND-134-AC-10: name-filtered -- the "Filter My Series" sheet (also
+// role="dialog") is frequently still open at this point in these tests
+// (its fields are what's being exercised beforehand), so an unfiltered
+// getByRole('dialog') would now match two dialogs at once.
 function openBrowseSeriesModal() {
   fireEvent.click(screen.getByRole('button', { name: /show all series/i }))
-  return screen.getByRole('dialog')
+  return screen.getByRole('dialog', { name: /browse series/i })
 }
 
 describe('FRONTEND-081-AC-05: Min Personal Rating filter narrows the picker', () => {
@@ -445,6 +475,7 @@ describe('FRONTEND-081-AC-05: Min Personal Rating filter narrows the picker', ()
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByRole('button', { name: 'Rate 4 star(s)' }))
     const dialog = openBrowseSeriesModal()
@@ -469,6 +500,7 @@ describe('FRONTEND-081-AC-06: Min IMDb Rating filter narrows the picker', () => 
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
       target: { value: '8' },
@@ -495,6 +527,7 @@ describe('FRONTEND-081-AC-07: Min TMDB Rating (My Series) filter narrows the pic
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/min tmdb rating \(my series\)/i), {
       target: { value: '8' },
@@ -521,6 +554,7 @@ describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the pick
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText('Min Tomatometer Rating'), {
       target: { value: '60' },
@@ -553,6 +587,7 @@ describe('FRONTEND-122-AC-03: Rotten Tomatoes min-rating filters narrow the pick
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText('Min Popcornmeter Rating'), {
       target: { value: '60' },
@@ -579,6 +614,7 @@ describe('FRONTEND-081-AC-08: Year Min/Max (My Series) filters narrow the picker
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
       target: { value: '2015' },
@@ -590,8 +626,8 @@ describe('FRONTEND-081-AC-08: Year Min/Max (My Series) filters narrow the picker
   })
 })
 
-describe('FRONTEND-109-AC-12: Use My Series gains a Clear Filters button', () => {
-  it('resets all local filter/sort fields to defaults', () => {
+describe('FRONTEND-109-AC-12/FRONTEND-134-AC-13: Clear Filters resets defaults and closes the sheet', () => {
+  it('resets all local filter/sort fields to defaults, and closes the sheet', () => {
     render(
       <UseMySeriesPanel
         state={initialState}
@@ -601,12 +637,17 @@ describe('FRONTEND-109-AC-12: Use My Series gains a Clear Filters button', () =>
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
       target: { value: '2020' },
     })
     fireEvent.click(screen.getByTestId('reset-specific-series-filters-btn'))
 
+    // FRONTEND-134-AC-13: Clear Filters now also closes the sheet --
+    // re-open it to inspect the reset fields.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    openFilterMySeriesSheet()
     expect(screen.getByLabelText(/year min \(my series\)/i)).toHaveValue(null)
     expect(screen.getByLabelText('Any Status')).toBeChecked()
   })
@@ -637,6 +678,7 @@ describe('FRONTEND-082-AC-01: interval-overlap year matching includes a series v
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
       target: { value: '2020' },
@@ -667,6 +709,7 @@ describe('FRONTEND-082-AC-02: yearMax still checks year, not lastAirYear', () =>
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/year max \(my series\)/i), {
       target: { value: '2020' },
@@ -697,6 +740,7 @@ describe('FRONTEND-082-AC-03: no lastAirYear falls back to year, unchanged', () 
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/year min \(my series\)/i), {
       target: { value: '2020' },
@@ -723,6 +767,7 @@ describe('FRONTEND-081-AC-09: selected series survive new filters', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText(/min imdb rating/i), {
       target: { value: '8' },
@@ -750,6 +795,7 @@ describe('FRONTEND-081 (2026-09-03 live-review amendment): Keywords field reject
         keywordOptions={['space opera']}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
     const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
@@ -783,6 +829,7 @@ describe('FRONTEND-077-AC-07: Browse all keywords modal for the Keywords filter 
         keywordOptions={['drama', 'crime', 'lapd']}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
 
@@ -804,6 +851,7 @@ describe('FRONTEND-077-AC-07: Browse all keywords modal for the Keywords filter 
         keywordOptions={['drama']}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
     const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
@@ -826,6 +874,7 @@ describe('FRONTEND-077-AC-07: Browse all keywords modal for the Keywords filter 
         keywordOptions={['drama']}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
     const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
@@ -856,6 +905,7 @@ describe('FRONTEND-077-AC-08: UseMySeriesPanel inline Keywords filter field hide
       screen.queryByPlaceholderText('Type to filter tracked keywords'),
     ).not.toBeInTheDocument()
 
+    openFilterMySeriesSheet()
     fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
     expect(
       screen.getByPlaceholderText('Type to filter tracked keywords'),
@@ -874,6 +924,7 @@ describe('FRONTEND-064-AC-04: picker sort defaults to descending for non-Title f
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     fireEvent.change(screen.getByLabelText(/sort by/i), {
       target: { value: 'imdbRating' },
     })
@@ -894,6 +945,7 @@ describe('FRONTEND-064-AC-05: picker sort defaults to ascending for Title', () =
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     fireEvent.change(screen.getByLabelText(/sort by/i), {
       target: { value: 'year' },
     })
@@ -945,6 +997,7 @@ describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     fireEvent.click(await screen.findByText('Comedies'))
     expect(screen.getByLabelText('Completed Only')).toBeChecked()
   })
@@ -989,6 +1042,7 @@ describe('FRONTEND-107-AC-10: UseMySeriesPanel applies a saved profile', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     fireEvent.click(await screen.findByText('No animation'))
     expect(screen.getByLabelText('Any Status')).toBeChecked()
   })
@@ -1005,6 +1059,7 @@ describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom,
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     const body = screen.getByTestId('specific-series-filters-body')
     const list = await screen.findByTestId('filter-profile-selector')
     const statusFieldset = screen.getByText('Filter by Status')
@@ -1025,6 +1080,7 @@ describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom,
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     const yearMax = screen.getByLabelText(/year max \(my series\)/i)
     const actions = await screen.findByTestId('filter-profile-actions')
     const resetButton = screen.getByTestId('reset-specific-series-filters-btn')
@@ -1063,6 +1119,7 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText('Sort by'), {
       target: { value: 'rottenTomatoesRating' },
@@ -1093,6 +1150,7 @@ describe('FRONTEND-119-AC-09: Use My Series missing-rating notice', () => {
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.change(screen.getByLabelText('Sort by'), {
       target: { value: 'rottenTomatoesRating' },
@@ -1123,6 +1181,7 @@ describe('FRONTEND-128-AC-03: origin country/language filters in Use My Series',
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
 
     fireEvent.click(screen.getByLabelText('Country'))
     fireEvent.click(screen.getByText('GB'))
@@ -1144,6 +1203,7 @@ describe('FRONTEND-131-AC-11: Min Tomatometer/Popcornmeter Rating fields have in
         keywordOptions={[]}
       />,
     )
+    openFilterMySeriesSheet()
     expect(
       screen.getByRole('button', {
         name: 'About Min Popcornmeter Rating',
@@ -1288,5 +1348,355 @@ describe('FRONTEND-132-AC-03: Custom Rating Blend source chips', () => {
     expect(updateState).toHaveBeenCalledWith({
       sourceRatingBlendSources: ['imdb', 'tmdb', 'tomatometer'],
     })
+  })
+})
+
+describe('FRONTEND-134-AC-10: opens as an accessible dialog', () => {
+  it('renders a labelled dialog when the toggle is clicked', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    const dialog = screen.getByRole('dialog', { name: /filter my series/i })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+  })
+})
+
+describe('FRONTEND-134-AC-11: focus moves to Close on open', () => {
+  it('focuses the Close button once the sheet opens', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    expect(screen.getByRole('button', { name: /close/i })).toHaveFocus()
+  })
+})
+
+describe('FRONTEND-134-AC-12: Escape/Close/backdrop close the sheet', () => {
+  it('closes on Escape', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    fireEvent.keyDown(
+      screen.getByRole('dialog', { name: /filter my series/i }),
+      { key: 'Escape' },
+    )
+    expect(
+      screen.queryByRole('dialog', { name: /filter my series/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('closes when the Close control is clicked', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(
+      screen.queryByRole('dialog', { name: /filter my series/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('closes when the backdrop is clicked', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    fireEvent.click(screen.getByRole('dialog', { name: /filter my series/i }))
+    expect(
+      screen.queryByRole('dialog', { name: /filter my series/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-13: Clear Filters resets and closes', () => {
+  it('resets fields and closes the sheet', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    fireEvent.click(screen.getByTestId('reset-specific-series-filters-btn'))
+    expect(
+      screen.queryByRole('dialog', { name: /filter my series/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-14: active-filter-count badge', () => {
+  it('shows no badge with every field at its default', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(
+      screen.queryByTestId('use-my-series-filters-active-count'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows a badge once Status is narrowed from Any', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    fireEvent.click(screen.getByLabelText('Completed Only'))
+    expect(
+      screen.getByTestId('use-my-series-filters-active-count'),
+    ).toHaveTextContent('1')
+  })
+})
+
+describe('FRONTEND-134-AC-15: fields grouped into subsections', () => {
+  it('renders five named CollapsibleSection headings', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    for (const name of [
+      'Status & Sort',
+      'Genre & Keyword',
+      'Country & Language',
+      'Ratings',
+      'Year',
+    ]) {
+      expect(
+        screen.getByRole('button', { name: new RegExp(name, 'i') }),
+      ).toBeInTheDocument()
+    }
+  })
+})
+
+describe('FRONTEND-134-AC-16: all fields still present', () => {
+  it('renders every pre-existing field when open', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={['Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    expect(screen.getByText('Filter by Status')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sort by')).toBeInTheDocument()
+    expect(screen.getByText('Min Personal Rating')).toBeInTheDocument()
+    expect(screen.getByLabelText(/year min \(my series\)/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-19: Filter My Series intro line', () => {
+  it('shows the explanatory intro text when the sheet is open', () => {
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^filter my series$/i }))
+    expect(
+      screen.getByText(
+        'Filter the series that you want to use for recommendations before selecting them.',
+      ),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-135-AC-20: Source Ranking Preview disclosure, collapsed by default', () => {
+  it('is present but collapsed until toggled, positioned after "Show all series"', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    expect(
+      screen.queryByTestId('source-ranking-preview-body'),
+    ).not.toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    expect(
+      screen.getByTestId('source-ranking-preview-body'),
+    ).toBeInTheDocument()
+  })
+
+  it('places the toggle after "Show all series"', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const showAllButton = screen.getByRole('button', {
+      name: /show all series/i,
+    })
+    const previewToggle = screen.getByRole('button', {
+      name: /source ranking preview/i,
+    })
+    expect(
+      showAllButton.compareDocumentPosition(previewToggle) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-135-AC-21: preview is wired to the resolved, ranked pool', () => {
+  it('shows the explicitly-selected series, ranked by the active strategy', () => {
+    const low = makeSeries({ id: '1', title: 'Low', personalRating: 2 })
+    const high = makeSeries({ id: '2', title: 'High', personalRating: 9 })
+    render(
+      <UseMySeriesPanel
+        state={makeState({ selectedSeriesIds: ['1', '2'] })}
+        updateState={vi.fn()}
+        allSeries={[low, high]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    const rows = screen.getAllByTestId('source-ranking-row')
+    expect(rows[0]).toHaveTextContent('High')
+    expect(rows[1]).toHaveTextContent('Low')
+  })
+})
+
+describe('FRONTEND-135-AC-22: automatic-pool preview when no series are selected', () => {
+  it('shows eligible series when selectedSeriesIds is empty', () => {
+    const eligible = makeSeries({
+      id: '1',
+      title: 'Eligible',
+      status: 'COMPLETED',
+      imdbId: 'tt1',
+    })
+    const ineligible = makeSeries({
+      id: '2',
+      title: 'Ineligible',
+      status: 'BACKLOG',
+    })
+    render(
+      <UseMySeriesPanel
+        state={makeState({ selectedSeriesIds: [] })}
+        updateState={vi.fn()}
+        allSeries={[eligible, ineligible]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    const rows = screen.getAllByTestId('source-ranking-row')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toHaveTextContent('Eligible')
+  })
+})
+
+describe('FRONTEND-135-AC-23: live updates, no seriesApi calls', () => {
+  it('re-ranks immediately when the strategy changes, without calling seriesApi', () => {
+    const series = makeSeries({
+      id: '1',
+      personalRating: 5,
+      imdbRating: 9,
+      tmdbRating: 9,
+    })
+    const { rerender } = render(
+      <UseMySeriesPanel
+        state={makeState({
+          selectedSeriesIds: ['1'],
+          sourceRankingStrategy: 'personalRatingThenDate',
+        })}
+        updateState={vi.fn()}
+        allSeries={[series]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    expect(screen.getByTestId('source-ranking-row')).not.toHaveTextContent(
+      /blend/i,
+    )
+
+    rerender(
+      <UseMySeriesPanel
+        state={makeState({
+          selectedSeriesIds: ['1'],
+          sourceRankingStrategy: 'customBlendThenPersonalRating',
+        })}
+        updateState={vi.fn()}
+        allSeries={[series]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByTestId('source-ranking-row')).toHaveTextContent(/blend/i)
+    expect(seriesApi.getRecommendations).not.toHaveBeenCalled()
   })
 })

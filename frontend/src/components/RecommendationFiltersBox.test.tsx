@@ -489,6 +489,166 @@ describe('FRONTEND-129-AC-02: Saved Filters list at top, actions stay at bottom,
   })
 })
 
+describe('FRONTEND-134-AC-01: closed state unchanged', () => {
+  it('renders only the toggle button while closed', () => {
+    renderBox()
+    expect(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-02: opens as an accessible dialog', () => {
+  it('renders a labelled dialog when the toggle is clicked', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    const dialog = screen.getByRole('dialog', {
+      name: /recommendations filters/i,
+    })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+  })
+})
+
+describe('FRONTEND-134-AC-03: focus moves to Close on open', () => {
+  it('focuses the Close button once the sheet opens', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.getByRole('button', { name: /close/i })).toHaveFocus()
+  })
+})
+
+describe('FRONTEND-134-AC-04: Escape/Close/backdrop close the sheet', () => {
+  it('closes on Escape', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes when the Close control is clicked', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes when the backdrop is clicked', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    fireEvent.click(screen.getByRole('dialog'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-05: Reset Filters resets and closes', () => {
+  it('resets fields and closes the sheet', () => {
+    const { updateState } = renderBox({
+      state: makeState({ minVoteCount: '200' }),
+    })
+    // FRONTEND-093-AC-02: minVoteCount: '200' makes the toggle's accessible
+    // name "Recommendations Filters1" (active-count badge appended) -- not
+    // anchored to end of string here, unlike the other AC-134 tests below
+    // that use the default (badge-free) state.
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+
+    expect(updateState).toHaveBeenCalledWith(
+      expect.objectContaining({ minVoteCount: '' }),
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-06: fields grouped into subsections', () => {
+  it('renders four named CollapsibleSection headings', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    for (const name of [
+      'Rating & Votes',
+      'Genre & Keyword',
+      'Country & Language',
+      'Year',
+    ]) {
+      expect(
+        screen.getByRole('button', { name: new RegExp(name, 'i') }),
+      ).toBeInTheDocument()
+    }
+  })
+
+  it('shows a badge on Rating & Votes once Min Vote Count is set', () => {
+    renderBox({ state: makeState({ minVoteCount: '200' }) })
+    // FRONTEND-093-AC-02: same badge-suffix reasoning as AC-05 above.
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+    const toggle = screen.getByRole('button', { name: /rating & votes/i })
+    expect(within(toggle).getByText('1')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-07: Custom Search hides the same fields as before', () => {
+  it('omits Min TMDB Rating, Year, Country/Language while isCustomSearch', () => {
+    renderBox({ isCustomSearch: true })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(screen.queryByLabelText(/min tmdb rating/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/^year min$/i)).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-08: all fields still present', () => {
+  it('renders every pre-existing field when open', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    // FRONTEND-131-AC-09: /min vote count/i also matches the "About Min Vote
+    // Count" InfoDisclosure button's aria-label -- anchored exactly here to
+    // avoid that overlap, unlike this describe's other (unambiguous) labels.
+    for (const label of [
+      /min tmdb rating/i,
+      /^min vote count$/i,
+      /^year min$/i,
+      /^year max$/i,
+    ]) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument()
+    }
+    expect(
+      screen.getByRole('button', { name: 'Exclude Genres' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-134-AC-20: Recommendations Filters intro line', () => {
+  it('shows the explanatory intro text when the sheet is open', () => {
+    renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+    expect(
+      screen.getByText(
+        'Filter the recommendations to only show series you want to see.',
+      ),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-107-AC-12: applying a profile sets minVoteCountTouched', () => {
   it('sets minVoteCountTouched true when the applied profile has a minVoteCount value', async () => {
     vi.mocked(seriesApi.listFilterProfiles).mockResolvedValue([

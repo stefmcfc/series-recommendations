@@ -11,19 +11,34 @@ spec's controls send), `frontend_spec_131_info_disclosure_boxes.md` (reuses the 
 
 ## Overview
 
-Adds UI for `series_spec_068`'s two new `RecommendationCriteria` fields to `UseMySeriesPanel.tsx`'s
-existing "Filter & sort my series" disclosure: a 3-option radio choice for how the user's own source
-series are ranked, and — only when a Custom-Rating-Blend strategy is selected — a small chip
-multi-select for which rating sources (IMDb/TMDB/Tomatometer/Popcornmeter) feed that blend.
+Adds UI for `series_spec_068`'s two new `RecommendationCriteria` fields to `UseMySeriesPanel.tsx`: a
+3-option radio choice for how the user's own source series are ranked, and — only when a
+Custom-Rating-Blend strategy is selected — a small chip multi-select for which rating sources
+(IMDb/TMDB/Tomatometer/Popcornmeter) feed that blend.
+
+**Amendment (2026-09-25)**: originally placed inside the "Filter & sort my series" disclosure (see
+Design Decisions below for the original placement rationale, still valid at the panel level). A
+same-day quick fix, ahead of the bigger two-sheet redesign spec'd separately
+(`.claude/ideas/future_ideas.md`'s "Redo cluttered filter panels..." entry), renamed that disclosure
+to "Filter My Series" and pulled this spec's radiogroup + `RatingSourceChips` out into their own
+standalone `styles.filtersSection`/`styles.filtersToggle`/`styles.filtersBody` disclosure, titled
+"Source Ranking Strategy" (`data-testid="source-ranking-strategy-body"`), rendered as a sibling
+immediately after "Filter My Series" and before the Series picker/divider — and, further down the
+page, before `RecommendationFiltersBox`'s "Recommendations Filters" disclosure. `FRONTEND-132-AC-01`
+below is updated to match; every other AC (chip behavior, `seriesApi` wiring) is unaffected by the
+move.
 
 ## Design Decisions
 
-- **Placement: inside `UseMySeriesPanel.tsx`'s "Filter & sort my series" disclosure, not
-  `HighestRatedPanel.tsx`'s "Sort By" fieldset.** `HighestRatedPanel`'s existing Best Match/Most
-  Recommended pair controls how *candidate recommendations* are ranked and is shown across multiple
-  source modes; this spec's controls only ever affect the user's *own source series* ranking and,
-  per `series_spec_068`'s Design Decisions, only have any effect at all when `sourceMode ===
-  "useMySeries"` — so they belong specifically in the panel that's only rendered for that mode.
+- **Placement: inside `UseMySeriesPanel.tsx`, not `HighestRatedPanel.tsx`'s "Sort By" fieldset.**
+  `HighestRatedPanel`'s existing Best Match/Most Recommended pair controls how *candidate
+  recommendations* are ranked and is shown across multiple source modes; this spec's controls only
+  ever affect the user's *own source series* ranking and, per `series_spec_068`'s Design Decisions,
+  only have any effect at all when `sourceMode === "useMySeries"` — so they belong specifically in
+  the panel that's only rendered for that mode. **(Originally nested inside that panel's "Filter &
+  sort my series" disclosure specifically; moved to its own standalone disclosure within the same
+  panel per the 2026-09-25 amendment above — the "which panel" reasoning here still holds, only the
+  "which disclosure within that panel" detail changed.)**
 - **New chip component, not a reuse of `GenreIncludeExcludePicker`.** That component's 3-state
   include/exclude/neutral toggle semantics don't fit a plain "select any subset of 4" control. A new,
   small, single-purpose `RatingSourceChips` component is added instead, following this codebase's
@@ -53,13 +68,14 @@ multi-select for which rating sources (IMDb/TMDB/Tomatometer/Popcornmeter) feed 
 are ranked, so the recommendations I get reflect the ranking signal I actually care about.
 
 ### FRONTEND-132-AC-01 [AUTO]
-**Statement**: `UseMySeriesPanel` shall render 3 radio options inside the "Filter & sort my series"
-disclosure — "Personal Rating, then Date Completed" (checked by default), "Personal Rating, then
-Custom Rating Blend", "Custom Rating Blend, then Personal Rating" — updating `ControlsState
-.sourceRankingStrategy` on change.
+**Statement**: `UseMySeriesPanel` shall render 3 radio options inside its standalone "Source Ranking
+Strategy" disclosure (a sibling of, not nested inside, "Filter My Series") — "Personal Rating, then
+Date Completed" (checked by default), "Personal Rating, then Custom Rating Blend", "Custom Rating
+Blend, then Personal Rating" — updating `ControlsState.sourceRankingStrategy` on change.
 
-**References**: `UseMySeriesPanel.tsx` (new fieldset, placed near the picker's existing "Sort by"
-`<select>`); `series_spec_068`'s `sourceRankingStrategy` values.
+**References**: `UseMySeriesPanel.tsx`, the "Source Ranking Strategy" disclosure
+(`data-testid="source-ranking-strategy-body"`), a sibling section rendered after "Filter My Series"
+and before the Series picker; `series_spec_068`'s `sourceRankingStrategy` values.
 
 **Test Case (Red)**:
 ```tsx
@@ -196,6 +212,41 @@ describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
 
 ---
 
+### FRONTEND-132-AC-06 [AUTO]: info disclosure explains the last-chip guard
+**Amendment (2026-09-25)**: added after a live-review question about whether `RatingSourceChips`
+needed its own explanatory copy — the parent "Source Ranking Strategy" `InfoDisclosure` (AC-02)
+already explains what the blend itself means, so a second copy of that would be redundant, but
+AC-04's last-chip guard (a silent no-op with no visual feedback) was undocumented anywhere in the
+UI, matching exactly the kind of non-obvious-control gap `frontend_spec_131`'s `InfoDisclosure`
+pattern exists to close.
+
+**Statement**: `RatingSourceChips` shall render an `InfoDisclosure` beside its legend whose
+description states that at least one source must remain selected and that clicking the last
+remaining chip has no effect.
+
+**References**: `components/RatingSourceChips.tsx`; `components/InfoDisclosure.tsx`
+(`frontend_spec_131`).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-132 amendment: info disclosure explains the last-chip guard', () => {
+  it('reveals the last-chip-cannot-be-deselected explanation on click', () => {
+    render(<RatingSourceChips selected={['imdb']} onChange={vi.fn()} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /about custom rating blend sources/i }),
+    )
+    expect(
+      screen.getByText(/clicking the last remaining chip does nothing/i),
+    ).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: render `<InfoDisclosure label="About Custom Rating Blend sources"
+description="..." />` immediately after the `<legend>`, before the chip row.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -215,3 +266,4 @@ describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
 - [x] FRONTEND-132-AC-03: `RatingSourceChips` renders only for the two blend strategies, defaulting to IMDb+TMDB
 - [x] FRONTEND-132-AC-04: chip toggle adds/removes a source, refusing to deselect the last one
 - [x] FRONTEND-132-AC-05: `seriesApi.getRecommendations` forwards both new params when set
+- [x] FRONTEND-132-AC-06: `InfoDisclosure` explains `RatingSourceChips`' last-chip guard

@@ -17,8 +17,17 @@ this file, re-check existing entries against the current codebase — referenced
 may have moved since the note was written (see `.claude/ideas/future_ideas.md`'s own maintenance
 rule for why this matters in practice).
 
-Last updated: 2026-09-05 ("Exclude Keywords" filter candidate closed — spec'd as part of
-`frontend_spec_094_recommendations_page_polish.md`, see `ROADMAP.md`). (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
+Last updated: 2026-09-25, full review (following `frontend_spec_134`/`frontend_spec_135` shipping):
+added a candidate for extending `RecommendationPoolCache`'s TMDB-sourcing cache to Discover's three
+sourcing modes; moved the "Use My Series" step-by-step wizard candidate here from
+`.claude/ideas/future_ideas.md` and, later the same day, updated it to reflect the two-sheet
+redesign it was blocked on now shipping; corrected two other candidates whose own claims had drifted
+from the code — "Customizable recommendation algorithm" still called `SourceOrderComparator`
+hardcoded (it's been a 3-strategy per-request choice since `series_spec_068`) and pointed at a
+`frontend_spec_081` field label that no longer exists ("Filter & sort my series" → "Filter My
+Series"); "Weight recommendation scoring..." referenced a `future_ideas.md` entry that had already
+been folded into this file and no longer exists under that name — repointed to where that content
+actually lives now. (`.claude/OUTSTANDING_SPECS.md`, formerly this file's counterpart for
 already-written specs, was retired on 2026-08-27 — its tracking role now lives in `ROADMAP.md`.)
 
 Last full review against the codebase: 2026-09-07 — all 5 candidates below re-checked against the
@@ -96,9 +105,10 @@ not a design doc):
   high/low ratings skewing things?
 - A candidate can carry many keywords (each with its own stats) — does the score use the single most-influential
   keyword, an average across all of the candidate's matched keywords, or something else?
-- Interacts with the still-unresolved "recommendation ranking's personal-rating/TMDB-rating blend weight is
-  hardcoded" idea (`.claude/ideas/future_ideas.md`) — both touch the same scoring formula, worth designing together
-  rather than layering one on top of the other twice.
+- Interacts with the "Customizable recommendation algorithm" candidate's own item #2 below (making
+  the TMDB-rating/personal-rating blend weight user-adjustable rather than hardcoded) — both touch
+  the same scoring formula, worth designing together rather than layering one on top of the other
+  twice.
 
 A plain-language walkthrough of the current scoring code (no design proposal yet) lives in
 `.claude/analysis/scoring_weight_recommendations.md`, written 2026-08-27 ahead of picking this up.
@@ -123,13 +133,17 @@ implemented as one.
 - Only the highest-personal-rated source counts toward the score when a candidate has multiple
   sources; the others currently only affect the separate "Most Recommended" sort (by
   contributing-source count), never the score itself.
-- `SourceOrderComparator` (personal rating desc, then date completed desc) is hardcoded and does
-  double duty: it decides both which of your shows get queried at all (before the
-  `maxSourceSeries` cap) and, for multi-source candidates, whose rating wins for scoring.
+- `SourceOrderComparator` does double duty: it decides both which of your shows get queried at all
+  (before the `maxSourceSeries` cap) and, for multi-source candidates, whose rating wins for
+  scoring. **Update (2026-09-25)**: no longer a single hardcoded rule — `series_spec_068` (delivered)
+  made it a per-request choice among 3 strategies (personal rating + date completed [still the
+  default], personal rating + a new user-configurable "Custom Rating Blend," or Custom Rating Blend
+  + personal rating). See item #8 below for what's still open.
 - **Updated 2026-09-03**: there is no backend source-pool filter at all anymore — `minSourceRating`
   (the only one that ever existed) was retired entirely (`series_spec_045`), since it could
-  silently drop an explicitly hand-picked series. `frontend_spec_081`'s "Filter & sort my series"
-  section reintroduced a personal-rating (and genre/keyword/IMDb/TMDB-rating/year) filter, but
+  silently drop an explicitly hand-picked series. `UseMySeriesPanel.tsx`'s "Filter My Series"
+  section (`frontend_spec_081`, relabeled from "Filter & sort my series" by `frontend_spec_132`)
+  reintroduced a personal-rating (and genre/keyword/IMDb/TMDB-rating/year) filter, but
   deliberately as a **client-side-only picker-narrowing aid** — it never reaches the backend, so
   it doesn't satisfy this item's "filter the source pool server-side" framing. Item #9 below is
   still fully open.
@@ -164,9 +178,17 @@ implemented as one.
    Whoever scopes this item should treat "ad-hoc override" as a new, deliberate exception to that
    absolute rule if it's still wanted — not something that falls naturally out of the old, now-gone
    bypass.
-8. Configurable source-query order (today hardcoded via `SourceOrderComparator`) — and whether
-   reordering should also decouple "query order" from "which source wins the score tiebreak,"
-   since one comparator currently does both jobs.
+8. Configurable source-query order (today via `SourceOrderComparator`) — and whether reordering
+   should also decouple "query order" from "which source wins the score tiebreak," since one
+   comparator currently does both jobs. **Update (2026-09-25)**: partially answered by
+   `series_spec_068`/`frontend_spec_132` (delivered) — 3 fixed ranking strategies now exist (see
+   above), and `frontend_spec_135` (delivered, same session) added a read-only preview showing the
+   resulting order. Both still apply the same comparator to both jobs at once (query order and
+   score-tiebreak winner stay coupled) and none of the 3 strategies is a fully arbitrary
+   user-defined order — this item's fuller "decouple the two jobs" and "let the user pick any
+   order" framing is still open. Cross-reference: `.claude/ideas/future_ideas.md`'s
+   "User-configurable (drag-and-drop) source-series ranking" idea is the drag-and-drop-specific
+   version of this same open half.
 9. Additional filters on the _source_ pool itself (genre, year, status), distinct from the
    existing output filters applied to candidates.
 10. Restrict/expand how many raw candidates a single source can contribute — either an explicit
@@ -212,6 +234,50 @@ keyword popularity/average personal rating" candidate above — both touch
 `RecommendationRankingService`'s scoring formula directly and should likely be designed together
 rather than layered on separately, per that candidate's own note about the same risk.
 
+### Extend `RecommendationPoolCache`'s TMDB-sourcing cache to the three Discover sourcing modes
+
+Raised 2026-09-25 while explaining to the user, ahead of `frontend_spec_134`'s two-sheet redesign,
+whether re-applying "Recommendations Filters" (a post-sourcing output filter) re-hits TMDB or reuses
+a stored result. Confirmed via reading the code: it depends entirely on `sourceMode`.
+
+**"Use My Series" (`sourceFromPool`) already has this solved.** `RecommendationPoolCache`
+(`service/recommendation/RecommendationPoolCache.java`) is a small, dependency-free, TTL-bound
+(`app.recommendations.pool-cache-ttl-minutes`, default 10) and capacity-bound (`app.recommendations
+.pool-cache-max-entries`, default 50) `ConcurrentHashMap` wrapper around `RecommendationSourcingService
+.sourceFromPool`'s TMDB calls. Its key, `PoolCacheKey(seriesIds, limit)`, deliberately excludes
+`sortBy`/`excludeGenres`/`excludeKeywords`/`minTmdbRating`/etc — per that record's own doc comment,
+because those are "applied strictly after sourcing" in `RecommendationService.doRecommend`'s
+pipeline. Practical effect: changing only a "Recommendations Filters" field and re-clicking "Get
+Recommendations" (same selected series, same limit) hits the cache — no new TMDB calls, just
+re-filtering/re-ranking in memory, for up to 10 minutes.
+
+**The other three sourcing modes have no equivalent cache at all.** `sourceTrending`/`sourceTopRated`/
+`sourceByGenreOrKeyword` (Discover's three sub-tabs) all route through `RecommendationSourcingService
+.sourceWithBackfill`, which dedupes and applies output filters to each TMDB page *inline* as it
+paginates/backfills (confirmed no separate raw-pool step exists to cache, unlike `sourceFromPool`'s
+two-stage raw-then-filter shape). Consequence: for these three modes, changing any output filter and
+re-requesting always re-hits TMDB from scratch, even when nothing about the *source* query (genre/
+keyword/trending window) changed — there's no 10-minute cache window softening that the way there is
+for "Use My Series."
+
+**Not a correctness gap, a performance/API-quota one.** Every mode already returns correct results
+today; this is purely about redundant TMDB call volume when a user is iterating on output filters
+within the Discover tabs. Worth being explicit that this is a nicety, not a bug, when scoping.
+
+**Open questions for whoever designs this**:
+- Can `sourceWithBackfill`'s inline dedupe/filter-per-page shape be restructured to cache a raw,
+  pre-filter page set (mirroring `sourceFromPool`'s split), or does backfill's page-by-page early-stop
+  logic (stopping once `limit` is reached) make a clean raw/filtered separation harder here than it
+  was for `sourceFromPool`?
+- Cache key equivalent to `PoolCacheKey` for these three modes — likely needs to include the
+  mode-specific source query params (genre/keyword ids, trending window, `discoverSortBy`) alongside
+  `limit`, since (unlike `sourceFromPool`'s `seriesIds`) there's no single natural key field.
+- Whether the existing `RecommendationPoolCache` component can be generalized/reused (different value
+  type, same TTL/capacity-eviction mechanics) or whether a second, mode-specific cache makes more
+  sense given the different pagination shape.
+
+**Status**: Not specced. Low priority — performance nicety, not a correctness or UX gap.
+
 ### Real-time (live) filtering for the rest of `SearchFilter`'s fields, matching Title's existing debounce
 
 Raised 2026-09-03 alongside a browser walkthrough of `frontend_spec_074`. Confirmed via reading the
@@ -236,6 +302,42 @@ explicit Search button — not necessarily uniform treatment across the whole sh
 
 **Status**: Spec candidate, not yet designed. No field-by-field behavior decided — see the open
 question above.
+
+### "Use My Series" / Recommendations page as a step-by-step wizard, for first-time-user guidance
+
+Moved here from `.claude/ideas/future_ideas.md` on 2026-09-25, per the user's own request. Originally
+raised 2026-09-03 while planning the "Use My Series" page restructure (filter/select/post-filter/
+sort/apply): whether the page's several sections should be a single scrolling page or built up
+step-by-step, checkout-style (fill in address, then payment). Deliberately not pursued at the time —
+nothing in this flow has a genuine server-side dependency gating the next step the way a checkout
+does, every field stays in client-side `ControlsState` until one single "Get Recommendations" submit,
+and this app had (and still has) no wizard precedent anywhere. A wizard would also punish the likely
+real workflow of filtering, glancing at picker results, then going back to loosen an earlier filter.
+The single-page-with-collapsible-sections approach was chosen instead, with an explicit note to
+revisit if it ever felt cluttered in practice.
+
+**Why this is being kept as a live candidate rather than dropped**: the page had grown enough
+disclosures (Filter My Series / Source Ranking Strategy / Recommendations Filters / Source Ranking
+Preview) that the user flagged it was "becoming busy" and raised the concern that a first-time user
+might need guiding through it, not just an experienced user who already knows which fields matter to
+them. The two-sheet redesign is the immediate answer to "too much on screen at once"; a wizard would
+instead answer a different problem — "I don't know what order to do these things in or what each one
+means" — which sheets alone don't solve.
+
+**Update (2026-09-25)**: the two-sheet redesign (`frontend_spec_134`) has shipped — "Filter My
+Series" and "Recommendations Filters" are now both slide-out sheets with `CollapsibleSection`
+subsections, and a new "Source Ranking Preview" (`frontend_spec_135`) also landed the same session.
+This candidate is now unblocked and ready to revisit against the real, current page rather than a
+soon-to-change one. When picked up, the original blocking reasoning (no server-side step-gating, no
+existing wizard precedent, the filter/glance/adjust-again workflow) still needs weighing against the
+first-time-user-guidance motivation — this isn't a reversal of that reasoning, it's a different
+problem the original reasoning didn't consider. Whoever scopes this should also decide whether
+"wizard" still means a literal forced linear flow, or something lighter (e.g. an optional first-run
+guided tour/tooltip sequence layered over the existing sheet layout, touching fewer of the original
+objections) — both readings are plausible and neither has been chosen yet.
+
+**Status**: Spec candidate, not yet designed. Unblocked — the two-sheet redesign it was queued
+behind has shipped.
 
 ### Full-codebase manual accessibility review
 

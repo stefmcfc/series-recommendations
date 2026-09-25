@@ -1,0 +1,59 @@
+/* FRONTEND-135: read-only, presentational ranked list -- deliberately plain
+   (no card chrome of its own) since it always renders inside an existing
+   disclosure body (UseMySeriesPanel's .filtersBody). */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 4px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  font-size: 0.875rem;
+}
+
+.rank {
+  font-weight: 600;
+  color: var(--text-h);
+  min-width: 1.75rem;
+}
+
+.title {
+  font-weight: 600;
+  flex: 1 1 auto;
+}
+
+.detail {
+  color: var(--text-muted, var(--text));
+  font-size: 0.8125rem;
+}
+
+/* FRONTEND-135-AC-17: series past the maxSourceSeries cutoff are still
+   rendered (so the list stays useful for auditing "why wasn't X used"), just
+   visually muted rather than dropped. */
+.mutedRow {
+  opacity: 0.5;
+}
+
+.cutoffDivider {
+  margin: 0.5rem 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted, var(--text));
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--text-muted, var(--text));
+}
