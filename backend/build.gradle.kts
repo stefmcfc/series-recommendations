@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "uk.co.stefirby"
-version = "3.64.0"
+version = "3.65.0"
 
 // Generates META-INF/build-info.properties at build time, auto-wired by Spring Boot's
 // ProjectInfoAutoConfiguration into a BuildProperties bean with zero further config --

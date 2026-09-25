@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.65.0] - 2026-09-25
+
 ### Added
 
 - Backend: `@Operation`/`@Parameter` annotations across all 9 controllers, porting `API.md`'s existing endpoint/parameter prose into the generated OpenAPI spec — Swagger UI is now self-sufficient for exploring behavior (TMDB-managed field lock, sourcing-mode rules, missing-ratings OR/AND semantics, etc.) without cross-referencing `API.md` (`series_spec_067`).
