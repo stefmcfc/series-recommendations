@@ -83,7 +83,7 @@ Expected response:
 
 ### 3. API docs
 
-There is no Swagger/OpenAPI UI wired up yet -- `springdoc-openapi` is not currently a dependency in `build.gradle.kts`. Use [API.md](./API.md) as the source of truth, or add `springdoc-openapi-starter-webmvc-ui` if you want interactive docs.
+An interactive Swagger UI is available at **http://localhost:8080/swagger-ui.html** while the backend is running, generated live from the actual controller/DTO code across all endpoints. The raw machine-readable OpenAPI spec is at **http://localhost:8080/v3/api-docs** (JSON) / **http://localhost:8080/v3/api-docs.yaml** (YAML). [API.md](./API.md) remains the hand-written reference with behavior notes not captured by the generated schema alone.
 
 ---
 

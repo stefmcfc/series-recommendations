@@ -1,6 +1,6 @@
 # Series Spec 066: OpenAPI/Swagger Dependency (springdoc-openapi)
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: none (net-new dependency, no existing spec touches this area)
 **Area**: Backend (`backend/build.gradle.kts`, new `config/OpenApiConfig.java`, `.claude/steering/tech.md`, `RUNBOOK.md`)
@@ -172,7 +172,7 @@ not run the `bootBuildInfo` task) before trusting the test green.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-066-AC-01: `springdoc-openapi-starter-webmvc-ui:3.1.1` added; `/v3/api-docs` returns the generated spec
-- [ ] SERIES-066-AC-02: `/swagger-ui.html` serves the interactive UI
-- [ ] SERIES-066-AC-03: the generated spec carries this app's title and a real description, not springdoc's default
-- [ ] SERIES-066-AC-04: `buildInfo()` enabled; the generated spec's version is bound to the real build version via `BuildProperties`, not a default
+- [x] SERIES-066-AC-01: `springdoc-openapi-starter-webmvc-ui:3.1.1` added; `/v3/api-docs` returns the generated spec
+- [x] SERIES-066-AC-02: `/swagger-ui.html` serves the interactive UI
+- [x] SERIES-066-AC-03: the generated spec carries this app's title and a real description, not springdoc's default
+- [x] SERIES-066-AC-04: `buildInfo()` enabled; the generated spec's version is bound to the real build version via `BuildProperties`, not a default
