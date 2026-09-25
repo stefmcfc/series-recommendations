@@ -349,9 +349,10 @@
   gap: 1rem;
   margin-top: 1rem;
   /* FRONTEND-094-AC-01: visually ties this expanded content back to the
-     toggle that opens/closes it -- shared by UseMySeriesPanel's "Filter &
-     sort my series" and RecommendationFiltersBox's "Recommendations
-     Filters", both of which render through this exact class. */
+     toggle that opens/closes it -- shared by UseMySeriesPanel's "Filter My
+     Series" and "Source Ranking Strategy" sections and
+     RecommendationFiltersBox's "Recommendations Filters", all of which
+     render through this exact class. */
   border-left: 4px solid var(--border);
   padding-left: 1rem;
 }

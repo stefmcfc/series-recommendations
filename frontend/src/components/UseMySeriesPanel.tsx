@@ -141,10 +141,16 @@ export function UseMySeriesPanel({
   ] = useState('')
   const [specificSeriesYearMin, setSpecificSeriesYearMin] = useState('')
   const [specificSeriesYearMax, setSpecificSeriesYearMax] = useState('')
-  // FRONTEND-081-AC-01: "Filter & sort my series" disclosure, defaulting
-  // OPEN (unlike RecommendationFiltersBox's own filtersOpen, which defaults
+  // FRONTEND-081-AC-01: "Filter My Series" disclosure, defaulting OPEN
+  // (unlike RecommendationFiltersBox's own filtersOpen, which defaults
   // closed) so the new filtering capability isn't buried on first render.
   const [filterSectionOpen, setFilterSectionOpen] = useState(true)
+  // Per an amendment to frontend_spec_132 (being updated separately): the
+  // Source Ranking Strategy radiogroup now lives in its own top-level
+  // disclosure rather than nested inside "Filter My Series" -- this section
+  // defaults OPEN too, matching its effective default visibility before the
+  // split (filterSectionOpen also defaults true).
+  const [sourceRankingSectionOpen, setSourceRankingSectionOpen] = useState(true)
 
   const handleSpecificSeriesSelectionChange = (next: string[]) => {
     updateState({ selectedSeriesIds: next })
@@ -360,11 +366,10 @@ export function UseMySeriesPanel({
             <p className={styles.hint}>No series to choose from yet.</p>
           ) : (
             <>
-              {/* FRONTEND-081-AC-01/02: "Filter & sort my series" disclosure
-                  -- same collapse/expand mechanics as
-                  RecommendationFiltersBox's own toggle, but seeded open
-                  (filterSectionOpen defaults true) so the new filtering
-                  capability isn't buried. */}
+              {/* FRONTEND-081-AC-01/02: "Filter My Series" disclosure -- same
+                  collapse/expand mechanics as RecommendationFiltersBox's own
+                  toggle, but seeded open (filterSectionOpen defaults true)
+                  so the new filtering capability isn't buried. */}
               <div className={styles.filtersSection}>
                 <button
                   type="button"
@@ -372,7 +377,7 @@ export function UseMySeriesPanel({
                   aria-expanded={filterSectionOpen}
                   onClick={() => setFilterSectionOpen((open) => !open)}
                 >
-                  Filter & sort my series
+                  Filter My Series
                 </button>
 
                 {filterSectionOpen && (
@@ -718,18 +723,65 @@ export function UseMySeriesPanel({
                       </div>
                     </div>
 
+                    <div className={styles.filterFullWidthRow}>
+                      <FilterProfileActions<UseMySeriesFilterCriteria>
+                        area="USE_MY_SERIES"
+                        currentCriteria={currentUseMySeriesCriteria}
+                        {...filterProfile}
+                      />
+                    </div>
+
+                    {/* FRONTEND-109-AC-12: matches RecommendationFiltersBox's
+                        "Reset Filters" placement/styling exactly (shared
+                        .filtersActions/.resetButton classes, same
+                        RecommendationControls.module.css). */}
+                    <div className={styles.filtersActions}>
+                      <button
+                        type="button"
+                        className={`${styles.resetButton} ${btn.btnSecondary}`}
+                        data-testid="reset-specific-series-filters-btn"
+                        onClick={handleClearSpecificSeriesFilters}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Per an amendment to frontend_spec_132 (being updated
+                  separately): the Source Ranking Strategy radiogroup was
+                  pulled out of "Filter My Series" into its own top-level
+                  disclosure, structurally identical to that section, so it
+                  can be shown/hidden independently. Defaults OPEN, matching
+                  its effective default visibility before the split. */}
+              <div className={styles.filtersSection}>
+                <button
+                  type="button"
+                  className={styles.filtersToggle}
+                  aria-expanded={sourceRankingSectionOpen}
+                  onClick={() => setSourceRankingSectionOpen((open) => !open)}
+                >
+                  Source Ranking Strategy
+                </button>
+
+                {sourceRankingSectionOpen && (
+                  <div
+                    className={styles.filtersBody}
+                    data-testid="source-ranking-strategy-body"
+                  >
                     {/* FRONTEND-132-AC-01/02/SERIES-068: 3-option
-                        source-ranking-strategy radios. Repositioned (2026-09-24
-                        live-review amendment) from its original spot near the
-                        "Sort by" control down to just before "Save Filters",
-                        after the Genre/Keyword/Country/Language/ratings/Year
-                        grids -- keeps the shorter, more commonly-adjusted
-                        filters together up top and this less-frequently-
-                        touched section lower, without moving any of those
-                        other rows. Only has any effect while sourceMode ===
-                        'useMySeries' (series_spec_068's Design Decisions),
-                        which is always true here since this fieldset only
-                        ever renders inside UseMySeriesPanel. */}
+                        source-ranking-strategy radios. Per an amendment to
+                        frontend_spec_132 (being updated separately): now
+                        lives in its own top-level "Source Ranking Strategy"
+                        disclosure rather than nested inside "Filter My
+                        Series" -- previously repositioned (2026-09-24
+                        live-review amendment) within that section; this
+                        amendment pulls it out entirely instead. Only has any
+                        effect while sourceMode === 'useMySeries'
+                        (series_spec_068's Design Decisions), which is always
+                        true here since this fieldset only ever renders
+                        inside UseMySeriesPanel. */}
                     {/* (2026-09-24 live-review amendment): a real <legend>
                         can never share a flex row with a sibling -- browsers
                         render a fieldset's legend as its own block-level
@@ -887,37 +939,14 @@ export function UseMySeriesPanel({
                         />
                       </div>
                     )}
-
-                    <div className={styles.filterFullWidthRow}>
-                      <FilterProfileActions<UseMySeriesFilterCriteria>
-                        area="USE_MY_SERIES"
-                        currentCriteria={currentUseMySeriesCriteria}
-                        {...filterProfile}
-                      />
-                    </div>
-
-                    {/* FRONTEND-109-AC-12: matches RecommendationFiltersBox's
-                        "Reset Filters" placement/styling exactly (shared
-                        .filtersActions/.resetButton classes, same
-                        RecommendationControls.module.css). */}
-                    <div className={styles.filtersActions}>
-                      <button
-                        type="button"
-                        className={`${styles.resetButton} ${btn.btnSecondary}`}
-                        data-testid="reset-specific-series-filters-btn"
-                        onClick={handleClearSpecificSeriesFilters}
-                      >
-                        Clear Filters
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
 
               {/* FRONTEND-093-AC-01: plain decorative divider separating the
-                  "Filter & sort my series" disclosure from the Series picker
-                  below -- previously ran directly into it with no visual
-                  break. */}
+                  "Filter My Series" and "Source Ranking Strategy" disclosures
+                  from the Series picker below -- previously ran directly
+                  into it with no visual break. */}
               <div
                 className={styles.sectionDivider}
                 data-testid="specific-series-divider"

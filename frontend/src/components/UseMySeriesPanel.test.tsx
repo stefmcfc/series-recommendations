@@ -339,7 +339,7 @@ describe('FRONTEND-069-AC-05: exclude toggle narrows Series suggestions', () => 
   })
 })
 
-describe('FRONTEND-081-AC-01: Filter & sort my series disclosure, open by default', () => {
+describe('FRONTEND-081-AC-01: Filter My Series disclosure, open by default', () => {
   it('renders expanded on mount', () => {
     render(
       <UseMySeriesPanel
@@ -351,7 +351,7 @@ describe('FRONTEND-081-AC-01: Filter & sort my series disclosure, open by defaul
       />,
     )
     expect(
-      screen.getByRole('button', { name: /filter & sort my series/i }),
+      screen.getByRole('button', { name: /filter my series/i }),
     ).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByLabelText(/completed only/i)).toBeVisible()
   })
@@ -369,7 +369,7 @@ describe('FRONTEND-081-AC-02: toggle collapses/expands the section', () => {
       />,
     )
     const toggle = screen.getByRole('button', {
-      name: /filter & sort my series/i,
+      name: /filter my series/i,
     })
 
     fireEvent.click(toggle)

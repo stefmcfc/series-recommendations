@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend: `UseMySeriesPanel`'s "Filter & sort my series" disclosure renamed to "Filter My Series" (`frontend_spec_132` amendment).
+- Frontend: Source Ranking Strategy (and its Custom Rating Blend chips) moved out of "Filter My Series" into its own standalone disclosure section, rendered between "Filter My Series" and "Recommendations Filters" (`frontend_spec_132` amendment).
+
 ## [3.62.0] - 2026-09-24
 
 ### Added
