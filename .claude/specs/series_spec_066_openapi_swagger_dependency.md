@@ -1,6 +1,6 @@
 # Series Spec 066: OpenAPI/Swagger Dependency (springdoc-openapi)
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: none (net-new dependency, no existing spec touches this area)
 **Area**: Backend (`backend/build.gradle.kts`, new `config/OpenApiConfig.java`, `.claude/steering/tech.md`, `RUNBOOK.md`)
@@ -17,7 +17,8 @@ This spec covers the dependency and its minimal metadata only. It deliberately d
 - **No configuration is required for the dependency itself to work.** Per springdoc's own documentation: *"For the integration between spring-boot and swagger-ui, add the library to the list of your project dependencies (No additional configuration is needed)."* Adding the dependency alone makes `/swagger-ui.html` (interactive UI), `/v3/api-docs` (JSON spec), and `/v3/api-docs.yaml` (YAML spec) available immediately.
 - **No Spring Security exists in this project** (`grep -i security backend/build.gradle.kts` returns nothing) — there is nothing to unlock or permit for the new endpoints to be reachable; they work the same as every other endpoint today, with no auth gate.
 - **`CorsConfig.java` is deliberately not touched.** Its allow-list (`WebMvcConfigurer.addCorsMappings`, per `tech.md`'s CORS note) is scoped to `/api/**` only. `/swagger-ui.html`/`/v3/api-docs` are opened directly in a browser at `localhost:8080` (same-origin), never fetched cross-origin from the Vite dev server — so this spec has zero CORS surface to add. Called out explicitly so a future reader doesn't wonder why `CorsConfig` wasn't part of this change.
-- **One small, static `OpenAPI` metadata bean, not a full `buildInfo()` wiring.** A bare title ("TV Series Tracker API") and a one-line description (paraphrased from `README.md`'s own opening line: *"A personal app for logging TV series you're watching, tracking your viewing progress, and storing ratings from multiple sources (IMDb, TMDB, Rotten Tomatoes)."*) is enough to make the Swagger UI's landing page read as intentional rather than a bare default. Deliberately **no** dynamic version binding (e.g. via Spring Boot's `springBoot { buildInfo() }` Gradle task) — that's an unrelated piece of build tooling this spec has no reason to introduce, and the app is already versioned elsewhere (`CHANGELOG.md`, both `build.gradle.kts`/`package.json` `version` fields) for anyone who needs it.
+- **A title, description, and dynamically-bound version on the `OpenAPI` metadata bean.** A bare title ("TV Series Tracker API") and a one-line description (paraphrased from `README.md`'s own opening line: *"A personal app for logging TV series you're watching, tracking your viewing progress, and storing ratings from multiple sources (IMDb, TMDB, Rotten Tomatoes)."*) is enough to make the Swagger UI's landing page read as intentional rather than a bare default.
+  **Revised (2026-09-25)**: this spec originally deferred dynamic version binding as out of scope ("the app is already versioned elsewhere for anyone who needs it"). Reversed after discussion — that reasoning undersells the point of this spec, which is a doc surface that stays automatically correct as the code changes (this Overview's own words); a version field that's either missing (springdoc's default, since the original plan never called `.version(...)` at all) or hand-maintained separately would undercut that in the one place a consumer is actually looking. `springBoot { buildInfo() }` (Spring Boot Gradle plugin DSL, already available — `org.springframework.boot` is already a plugin in this build) generates `META-INF/build-info.properties` at build time; Spring Boot's own `ProjectInfoAutoConfiguration` then auto-wires a `BuildProperties` bean from it with zero extra config. `OpenApiConfig` injects that bean and calls `.version(buildProperties.getVersion())`, so the Swagger-displayed version always matches whatever `version` is set in `build.gradle.kts` at build time — the same field this project already bumps at every release (`CHANGELOG.md`'s own versioning convention). See Requirement 3, below.
 - **New file, not an addition to an existing one**: `config/OpenApiConfig.java`, matching this package's established one-bean-per-file convention (`ClockConfig.java`, `CorsConfig.java` are each their own file).
 - **Docs currency, not a formal AC of its own**: once implemented, whoever picks this up should update `tech.md`'s "API Documentation" section (it currently states springdoc is *not* wired up — that becomes false) and add a one-line mention to `RUNBOOK.md` of where to find the new Swagger UI during local dev (`http://localhost:8080/swagger-ui.html`), per this project's Definition of Done rule that `RUNBOOK.md` needs updating whenever how the project is run/verified changes. Not written as its own AC since it's project-documentation hygiene, not a testable behavior — but don't skip it when implementing.
 
@@ -115,6 +116,47 @@ def "SERIES-066-AC-03: the OpenAPI spec carries the app's title and description"
 
 ---
 
+## Requirement 3: the generated docs carry the app's real build version, kept current automatically
+
+**User story**: As a developer looking at the Swagger UI, I want it to show the actual running app
+version, so I don't have to cross-check `CHANGELOG.md` to know whether I'm looking at docs for the
+version I think I'm running.
+
+### SERIES-066-AC-04 [AUTO]
+**Statement**: `backend/build.gradle.kts` shall enable `springBoot { buildInfo() }`; `OpenApiConfig`
+shall inject the auto-configured `BuildProperties` bean and set the `OpenAPI` `Info`'s `version` to
+`buildProperties.getVersion()`; `GET /v3/api-docs`'s `$.info.version` shall equal the project's
+current `version` (`build.gradle.kts`), not springdoc's default.
+
+**References**: `backend/build.gradle.kts` (new `springBoot { buildInfo() }` block, placed near the
+existing `plugins`/`group`/`version` declarations); `config/OpenApiConfig.java` (constructor-injects
+`org.springframework.boot.info.BuildProperties`); Spring Boot's `ProjectInfoAutoConfiguration`
+(already on the classpath via `spring-boot-starter`, auto-configures the `BuildProperties` bean from
+`META-INF/build-info.properties` with no further config once that file exists).
+
+**Test Case (Red)**:
+```groovy
+def "SERIES-066-AC-04: the OpenAPI spec carries the real build version"() {
+    when: "the generated OpenAPI JSON spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the info block's version matches the project's actual version, not a default/placeholder"
+        result.andExpect(status().isOk())
+        result.andExpect(MockMvcResultMatchers.jsonPath('$.info.version').isNotEmpty())
+        // exact value assertion left to implementation -- inject BuildProperties into the spec
+        // itself (or read backend/build.gradle.kts's `version` at test time) rather than
+        // hardcoding today's version string into this test, which would go stale at the next bump
+}
+```
+**Test Case (Green)**: add `springBoot { buildInfo() }` to `build.gradle.kts`; add a
+`BuildProperties buildProperties` constructor param to `OpenApiConfig`; call
+`.version(buildProperties.getVersion())` on the `Info` bean alongside the existing
+`title(...)`/`description(...)` calls. Confirm locally that a Gradle build actually produces
+`META-INF/build-info.properties` (a full build is required — an IDE incremental compile alone may
+not run the `bootBuildInfo` task) before trusting the test green.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -123,12 +165,14 @@ def "SERIES-066-AC-03: the OpenAPI spec carries the app's title and description"
 | `config/` package's one-bean-per-file convention (`ClockConfig`, `CorsConfig`) this spec's `OpenApiConfig` follows | `.claude/steering/structure.md` |
 | `CorsConfig`'s `/api/**`-scoped allow-list this spec explicitly does not touch | `uk.co.stefirby.seriestracker.config.CorsConfig` |
 | App description this spec's OpenAPI title/description paraphrases | `README.md` |
+| `BuildProperties`/`springBoot { buildInfo() }` — Spring Boot Gradle plugin DSL, autoconfigured by `ProjectInfoAutoConfiguration` | [Spring Boot Gradle plugin docs](https://docs.spring.io/spring-boot/gradle-plugin/integrating-with-actuator.html#integrating-with-actuator.build-info) |
 | Depended on by | `series_spec_067_openapi_annotation_pass.md` (needs this dependency present before annotations have any effect) |
 
 ---
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-066-AC-01: `springdoc-openapi-starter-webmvc-ui:3.1.1` added; `/v3/api-docs` returns the generated spec
-- [ ] SERIES-066-AC-02: `/swagger-ui.html` serves the interactive UI
-- [ ] SERIES-066-AC-03: the generated spec carries this app's title and a real description, not springdoc's default
+- [x] SERIES-066-AC-01: `springdoc-openapi-starter-webmvc-ui:3.1.1` added; `/v3/api-docs` returns the generated spec
+- [x] SERIES-066-AC-02: `/swagger-ui.html` serves the interactive UI
+- [x] SERIES-066-AC-03: the generated spec carries this app's title and a real description, not springdoc's default
+- [x] SERIES-066-AC-04: `buildInfo()` enabled; the generated spec's version is bound to the real build version via `BuildProperties`, not a default
