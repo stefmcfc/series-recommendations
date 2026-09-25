@@ -41,6 +41,7 @@ dependency-derived anymore.
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
+| Real example request/response bodies (`@ApiResponse`/`@ExampleObject`) across all 9 controller interfaces, plus 4 shared reusable error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) so Swagger UI shows working JSON, not just shape | `series_spec_070` | — | ⬜ Not started |
 ---
 
 ## Delivered
