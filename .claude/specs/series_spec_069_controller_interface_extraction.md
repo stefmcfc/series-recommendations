@@ -1,6 +1,6 @@
 # Series Spec 069: Controller Interface Extraction for OpenAPI Annotations
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P4 (internal code organization — no behavior change to any endpoint)
 **Depends on**: `series_spec_067_openapi_annotation_pass.md` (the `@Operation`/`@Parameter` annotations this spec relocates must already exist)
 **Area**: Backend (all 9 `@RestController` classes under `backend/src/main/java/uk/co/stefirby/seriestracker/controller/`, plus 9 new sibling `*Api` interfaces in the same package — no DTO/service/repository changes)
@@ -230,17 +230,17 @@ annotation, before treating this AC as satisfied).
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-069-AC-01: `SeriesKeywordController` → `SeriesKeywordControllerApi` pilot split, existing specs pass unmodified
-- [ ] SERIES-069-AC-02 [MANUAL]: live verification the pilot's endpoint and its `/v3/api-docs` entry are unchanged
+- [x] SERIES-069-AC-01: `SeriesKeywordController` → `SeriesKeywordControllerApi` pilot split, existing specs pass unmodified
+- [x] SERIES-069-AC-02 [MANUAL]: live verification the pilot's endpoint and its `/v3/api-docs` entry are unchanged
 
 **⏸ Checkpoint: stop and get explicit user review/go-ahead before continuing below.**
 
-- [ ] SERIES-069-AC-03: `SeriesController` → `SeriesControllerApi`
-- [ ] SERIES-069-AC-04: `SeriesGenreController` → `SeriesGenreControllerApi`
-- [ ] SERIES-069-AC-05: `SeriesLookupController` → `SeriesLookupControllerApi`
-- [ ] SERIES-069-AC-06: `SeriesOriginCountryController` → `SeriesOriginCountryControllerApi`
-- [ ] SERIES-069-AC-07: `SeriesRecommendationController` → `SeriesRecommendationControllerApi`
-- [ ] SERIES-069-AC-08: `SeriesRefreshController` → `SeriesRefreshControllerApi`
-- [ ] SERIES-069-AC-09: `SeriesWatchProviderController` → `SeriesWatchProviderControllerApi`
-- [ ] SERIES-069-AC-10: `FilterProfileController` → `FilterProfileControllerApi`
-- [ ] SERIES-069-AC-11 [MANUAL]: full-app before/after `/v3/api-docs` diff, `/swagger-ui.html` end-to-end check
+- [x] SERIES-069-AC-03: `SeriesController` → `SeriesControllerApi`
+- [x] SERIES-069-AC-04: `SeriesGenreController` → `SeriesGenreControllerApi`
+- [x] SERIES-069-AC-05: `SeriesLookupController` → `SeriesLookupControllerApi`
+- [x] SERIES-069-AC-06: `SeriesOriginCountryController` → `SeriesOriginCountryControllerApi`
+- [x] SERIES-069-AC-07: `SeriesRecommendationController` → `SeriesRecommendationControllerApi`
+- [x] SERIES-069-AC-08: `SeriesRefreshController` → `SeriesRefreshControllerApi`
+- [x] SERIES-069-AC-09: `SeriesWatchProviderController` → `SeriesWatchProviderControllerApi`
+- [x] SERIES-069-AC-10: `FilterProfileController` → `FilterProfileControllerApi`
+- [x] SERIES-069-AC-11 [MANUAL]: full-app before/after `/v3/api-docs` diff, `/swagger-ui.html` end-to-end check

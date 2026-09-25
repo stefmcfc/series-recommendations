@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.65.1] - 2026-09-25
+
+### Changed
+
+- Backend: each of the 9 controllers split into a `<Name>Api` interface (Spring MVC mapping + OpenAPI annotations) and a clean `@RestController` implementation delegating to it — no behavior or API change, groundwork for adding `@ApiResponse`/`@ExampleObject` examples without further bloating the controllers (`series_spec_069`).
+
 ## [3.65.0] - 2026-09-25
 
 ### Added
