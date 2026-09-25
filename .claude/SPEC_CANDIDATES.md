@@ -99,7 +99,14 @@ real usage data" — that's exactly the design work this candidate is waiting on
 not a design doc):
 
 - Does this become a third term in the existing scoring blend (currently 50% TMDB rating / 50% personal rating), or
-  a separate multiplier/boost applied after that blend?
+  a separate multiplier/boost applied after that blend? **Re-verified 2026-09-25 against
+  `RecommendationRankingService.score()`, still exactly true**: `rankScore = (tmdbRating * 0.5) +
+  (personalRatingTerm * 0.5)`. `tmdbRating` is the *candidate's* own TMDB `voteAverage` (0-10, used
+  as-is, `0.0` if TMDB has none); `personalRatingTerm` is the *source* show's personal rating (the
+  single best-rated contributing source, if several) rescaled ×2 (1-5 stars → 0-10) to match TMDB's
+  range before blending. This is also what "Best Match" (the default sort) directly orders by —
+  `resolveSortComparator` sorts by `rankScore` descending unless `sortBy=recommendationCount`, in
+  which case `rankScore` only breaks ties behind source count.
 - A keyword's `averagePersonalRating` is only meaningful once enough tracked series carry it — does a low-
   `seriesCount` keyword get down-weighted or excluded from influencing the score at all, to avoid one or two
   high/low ratings skewing things?
