@@ -1,6 +1,6 @@
 # Frontend Spec 134: Recommendation Filter Sheets
 
-**Status**: Not yet implemented
+**Status**: Implemented
 **Priority**: P3
 **Depends on**:
 - `frontend_spec_071_my_series_filter_sheet.md` (direct precedent for slide-out sheet dialog semantics — `role="dialog"`/`aria-modal`/Escape-to-close/backdrop-click) ✅ implemented
@@ -893,6 +893,6 @@ container.
 - [x] FRONTEND-134-AC-16: all pre-existing fields still render (relocation smoke test)
 - [x] FRONTEND-134-AC-17: DOM order around both sheet triggers, Source Ranking Strategy, and the
       Series picker is unchanged
-- [ ] FRONTEND-134-AC-18: visual check — both sheets slide in from the edge in both themes
+- [x] FRONTEND-134-AC-18: visual check — both sheets slide in from the edge in both themes
 - [x] FRONTEND-134-AC-19: "Filter My Series" sheet shows its explanatory intro line
 - [x] FRONTEND-134-AC-20: "Recommendations Filters" sheet shows its explanatory intro line

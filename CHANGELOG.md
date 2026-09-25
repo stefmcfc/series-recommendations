@@ -8,10 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `RecommendationFiltersBox`'s "Recommendations Filters" and `UseMySeriesPanel`'s "Filter My Series" are now slide-out sheets (matching `SearchFilter`'s existing sheet pattern), each with a one-line explanatory intro and their fields grouped into collapsible subsections (`frontend_spec_134`).
+- Frontend: "Filter My Series" gains a new active-filter-count badge on its trigger, matching "Recommendations Filters"' existing one (`frontend_spec_134`).
+
 ### Changed
 
 - Frontend: `UseMySeriesPanel`'s "Filter & sort my series" disclosure renamed to "Filter My Series" (`frontend_spec_132` amendment).
 - Frontend: Source Ranking Strategy (and its Custom Rating Blend chips) moved out of "Filter My Series" into its own standalone disclosure section, rendered between "Filter My Series" and "Recommendations Filters" (`frontend_spec_132` amendment).
+- Frontend: "Filter My Series" now defaults closed instead of open, since it's a sheet overlay rather than an inline disclosure (`frontend_spec_134`, supersedes `frontend_spec_081-AC-01`).
 
 ## [3.62.0] - 2026-09-24
 
