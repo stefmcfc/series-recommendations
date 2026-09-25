@@ -21,6 +21,14 @@ const BLEND_STRATEGIES: readonly SourceRankingStrategy[] = [
   'customBlendThenPersonalRating',
 ]
 
+// Matches SeriesDetailFields.tsx's own formatDate exactly -- dateCompleted is
+// shown as a raw ISO timestamp everywhere else in this codebase without this,
+// which looked out of place next to the rest of this app's date formatting.
+function formatDate(value: string | null): string {
+  if (value === null) return 'No date'
+  return new Date(value).toLocaleDateString()
+}
+
 // FRONTEND-135-AC-13 through AC-19: read-only ranked-list preview -- rank
 // number, title, and personal rating on every row (Design Decision 3), plus
 // the Custom Rating Blend value for the two blend strategies or
@@ -68,7 +76,7 @@ export function SourceRankingPreview({
               )}
               {strategy === 'personalRatingThenDate' && (
                 <span className={styles.detail}>
-                  Date completed: {s.dateCompleted ?? 'No date'}
+                  Date completed: {formatDate(s.dateCompleted)}
                 </span>
               )}
             </div>

@@ -102,16 +102,15 @@ describe('FRONTEND-135-AC-15: blend value shown only for blend strategies', () =
 })
 
 describe('FRONTEND-135-AC-16: dateCompleted shown only for personalRatingThenDate', () => {
-  it('shows dateCompleted for the default strategy', () => {
+  it('shows dateCompleted for the default strategy, formatted like the rest of the app', () => {
     render(
       <SourceRankingPreview
         series={[makeSeries({ dateCompleted: '2024-05-01' })]}
         strategy="personalRatingThenDate"
       />,
     )
-    expect(screen.getByTestId('source-ranking-row')).toHaveTextContent(
-      /2024-05-01/,
-    )
+    const expected = new Date('2024-05-01').toLocaleDateString()
+    expect(screen.getByTestId('source-ranking-row')).toHaveTextContent(expected)
   })
 
   it('omits dateCompleted for a blend strategy', () => {
