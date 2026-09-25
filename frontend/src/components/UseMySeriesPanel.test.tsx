@@ -1557,3 +1557,146 @@ describe('FRONTEND-134-AC-19: Filter My Series intro line', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('FRONTEND-135-AC-20: Source Ranking Preview disclosure, collapsed by default', () => {
+  it('is present but collapsed until toggled, positioned after "Show all series"', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+
+    expect(
+      screen.queryByTestId('source-ranking-preview-body'),
+    ).not.toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    expect(
+      screen.getByTestId('source-ranking-preview-body'),
+    ).toBeInTheDocument()
+  })
+
+  it('places the toggle after "Show all series"', () => {
+    render(
+      <UseMySeriesPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    const showAllButton = screen.getByRole('button', {
+      name: /show all series/i,
+    })
+    const previewToggle = screen.getByRole('button', {
+      name: /source ranking preview/i,
+    })
+    expect(
+      showAllButton.compareDocumentPosition(previewToggle) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-135-AC-21: preview is wired to the resolved, ranked pool', () => {
+  it('shows the explicitly-selected series, ranked by the active strategy', () => {
+    const low = makeSeries({ id: '1', title: 'Low', personalRating: 2 })
+    const high = makeSeries({ id: '2', title: 'High', personalRating: 9 })
+    render(
+      <UseMySeriesPanel
+        state={makeState({ selectedSeriesIds: ['1', '2'] })}
+        updateState={vi.fn()}
+        allSeries={[low, high]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    const rows = screen.getAllByTestId('source-ranking-row')
+    expect(rows[0]).toHaveTextContent('High')
+    expect(rows[1]).toHaveTextContent('Low')
+  })
+})
+
+describe('FRONTEND-135-AC-22: automatic-pool preview when no series are selected', () => {
+  it('shows eligible series when selectedSeriesIds is empty', () => {
+    const eligible = makeSeries({
+      id: '1',
+      title: 'Eligible',
+      status: 'COMPLETED',
+      imdbId: 'tt1',
+    })
+    const ineligible = makeSeries({
+      id: '2',
+      title: 'Ineligible',
+      status: 'BACKLOG',
+    })
+    render(
+      <UseMySeriesPanel
+        state={makeState({ selectedSeriesIds: [] })}
+        updateState={vi.fn()}
+        allSeries={[eligible, ineligible]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    const rows = screen.getAllByTestId('source-ranking-row')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toHaveTextContent('Eligible')
+  })
+})
+
+describe('FRONTEND-135-AC-23: live updates, no seriesApi calls', () => {
+  it('re-ranks immediately when the strategy changes, without calling seriesApi', () => {
+    const series = makeSeries({
+      id: '1',
+      personalRating: 5,
+      imdbRating: 9,
+      tmdbRating: 9,
+    })
+    const { rerender } = render(
+      <UseMySeriesPanel
+        state={makeState({
+          selectedSeriesIds: ['1'],
+          sourceRankingStrategy: 'personalRatingThenDate',
+        })}
+        updateState={vi.fn()}
+        allSeries={[series]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /source ranking preview/i }),
+    )
+    expect(screen.getByTestId('source-ranking-row')).not.toHaveTextContent(
+      /blend/i,
+    )
+
+    rerender(
+      <UseMySeriesPanel
+        state={makeState({
+          selectedSeriesIds: ['1'],
+          sourceRankingStrategy: 'customBlendThenPersonalRating',
+        })}
+        updateState={vi.fn()}
+        allSeries={[series]}
+        genreOptions={[]}
+        keywordOptions={[]}
+      />,
+    )
+    expect(screen.getByTestId('source-ranking-row')).toHaveTextContent(/blend/i)
+    expect(seriesApi.getRecommendations).not.toHaveBeenCalled()
+  })
+})

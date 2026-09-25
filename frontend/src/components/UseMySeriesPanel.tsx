@@ -15,6 +15,11 @@ import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
 import { CollapsibleSection } from './CollapsibleSection'
+import { SourceRankingPreview } from './SourceRankingPreview'
+import {
+  resolveSourceRankingPool,
+  rankSourceSeries,
+} from '../utils/sourceRanking'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
   resolveTieredStep,
@@ -239,6 +244,12 @@ export function UseMySeriesPanel({
   // defaults OPEN too, matching its effective default visibility before the
   // split (filterSectionOpen also defaults true).
   const [sourceRankingSectionOpen, setSourceRankingSectionOpen] = useState(true)
+  // FRONTEND-135-AC-20/Design Decision 4: new "Source Ranking Preview"
+  // disclosure, defaults CLOSED -- matches frontend_spec_134's decluttering
+  // goal, unlike sourceRankingSectionOpen above (which predates that
+  // decluttering pass and is left as-is).
+  const [sourceRankingPreviewOpen, setSourceRankingPreviewOpen] =
+    useState(false)
 
   const handleSpecificSeriesSelectionChange = (next: string[]) => {
     updateState({ selectedSeriesIds: next })
@@ -456,6 +467,16 @@ export function UseMySeriesPanel({
       label: seriesPickerLabel(s, specificSeriesStatusFilter),
       display: seriesPickerDisplay(s, specificSeriesStatusFilter),
     }),
+  )
+
+  // FRONTEND-135-AC-21/22/23: derived directly from props/state on every
+  // render (no memoization, no separate "auto mode" branch) -- purely
+  // client-side, makes no seriesApi call, so the preview stays live with the
+  // picker/strategy/blend-sources without a separate "Preview" action.
+  const rankedSourceSeries = rankSourceSeries(
+    resolveSourceRankingPool(allSeries, state.selectedSeriesIds),
+    state.sourceRankingStrategy,
+    state.sourceRatingBlendSources,
   )
 
   return (
@@ -1276,6 +1297,37 @@ export function UseMySeriesPanel({
               >
                 Show all series
               </button>
+
+              {/* FRONTEND-135-AC-20: new "Source Ranking Preview"
+                  disclosure -- copies the "Source Ranking Strategy" block
+                  above's exact toggle/body shape (this spec's Design
+                  Decision 4), placed as the last thing inside
+                  specificSeriesSection, after "Show all series" and before
+                  the two "Browse..." modals (which render outside this div
+                  entirely, further down the tree either way). */}
+              <div className={styles.filtersSection}>
+                <button
+                  type="button"
+                  className={styles.filtersToggle}
+                  aria-expanded={sourceRankingPreviewOpen}
+                  onClick={() => setSourceRankingPreviewOpen((open) => !open)}
+                >
+                  Source Ranking Preview
+                </button>
+
+                {sourceRankingPreviewOpen && (
+                  <div
+                    className={styles.filtersBody}
+                    data-testid="source-ranking-preview-body"
+                  >
+                    <SourceRankingPreview
+                      series={rankedSourceSeries}
+                      strategy={state.sourceRankingStrategy}
+                      blendSources={state.sourceRatingBlendSources}
+                    />
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>

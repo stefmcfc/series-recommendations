@@ -1,6 +1,6 @@
 # Frontend Spec 135: Source Ranking Preview
 
-**Status**: Not yet implemented
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: `series_spec_068_recommendation_source_ranking_strategy.md` (`SourceOrderComparator`/
 `SourceRatingBlend`, the backend logic this spec ports client-side), `frontend_spec_132_source_ranking_strategy_and_custom_blend.md`
@@ -784,26 +784,26 @@ describe('FRONTEND-135-AC-23: live updates, no seriesApi calls', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-135-AC-01: `resolveSourceRankingPool` returns the explicit selection, any status, when `selectedSeriesIds` is non-empty
-- [ ] FRONTEND-135-AC-02: `resolveSourceRankingPool` returns the automatic pool (`COMPLETED` + non-blank `imdbId`) when `selectedSeriesIds` is empty
-- [ ] FRONTEND-135-AC-03: `resolveSourceRankingPool` excludes `excludeFromRecommendations` series from either pool
-- [ ] FRONTEND-135-AC-04: `computeCustomRatingBlend` averages exactly the requested, present sources
-- [ ] FRONTEND-135-AC-05: `computeCustomRatingBlend` normalizes RT fields (÷10) before blending
-- [ ] FRONTEND-135-AC-06: `computeCustomRatingBlend` returns `null` when no requested source has a value
-- [ ] FRONTEND-135-AC-07: `computeCustomRatingBlend` rounds to one decimal place
-- [ ] FRONTEND-135-AC-08: `rankSourceSeries` orders `personalRatingThenDate` correctly, nulls last on both keys
-- [ ] FRONTEND-135-AC-09: `rankSourceSeries` orders `personalRatingThenCustomBlend` correctly, nulls last on both keys
-- [ ] FRONTEND-135-AC-10: `rankSourceSeries` orders `customBlendThenPersonalRating` correctly, nulls last on both keys
-- [ ] FRONTEND-135-AC-11: `rankSourceSeries`/`computeCustomRatingBlend` fall back to `['imdb', 'tmdb']` when `blendSources` is empty
-- [ ] FRONTEND-135-AC-12: `rankSourceSeries` does not mutate its input array
-- [ ] FRONTEND-135-AC-13: `SourceRankingPreview` renders rank + title in prop order
-- [ ] FRONTEND-135-AC-14: `SourceRankingPreview` renders personal rating on every row
-- [ ] FRONTEND-135-AC-15: `SourceRankingPreview` renders the blend value only for blend strategies
-- [ ] FRONTEND-135-AC-16: `SourceRankingPreview` renders `dateCompleted` only for `personalRatingThenDate`
-- [ ] FRONTEND-135-AC-17: `SourceRankingPreview` renders the cutoff divider and mutes rows beyond position 20
-- [ ] FRONTEND-135-AC-18: `SourceRankingPreview` renders no cutoff UI at or under 20 series
-- [ ] FRONTEND-135-AC-19: `SourceRankingPreview` renders an empty-pool hint when `series` is empty
-- [ ] FRONTEND-135-AC-20: `UseMySeriesPanel` renders the new disclosure, collapsed by default, in the correct position
-- [ ] FRONTEND-135-AC-21: the disclosure body wires `SourceRankingPreview` to `resolveSourceRankingPool`/`rankSourceSeries`
-- [ ] FRONTEND-135-AC-22: the preview reflects the automatic pool identically to the explicit-selection case
-- [ ] FRONTEND-135-AC-23: the preview updates live with no separate action and makes no `seriesApi` calls
+- [x] FRONTEND-135-AC-01: `resolveSourceRankingPool` returns the explicit selection, any status, when `selectedSeriesIds` is non-empty
+- [x] FRONTEND-135-AC-02: `resolveSourceRankingPool` returns the automatic pool (`COMPLETED` + non-blank `imdbId`) when `selectedSeriesIds` is empty
+- [x] FRONTEND-135-AC-03: `resolveSourceRankingPool` excludes `excludeFromRecommendations` series from either pool
+- [x] FRONTEND-135-AC-04: `computeCustomRatingBlend` averages exactly the requested, present sources
+- [x] FRONTEND-135-AC-05: `computeCustomRatingBlend` normalizes RT fields (÷10) before blending
+- [x] FRONTEND-135-AC-06: `computeCustomRatingBlend` returns `null` when no requested source has a value
+- [x] FRONTEND-135-AC-07: `computeCustomRatingBlend` rounds to one decimal place
+- [x] FRONTEND-135-AC-08: `rankSourceSeries` orders `personalRatingThenDate` correctly, nulls last on both keys
+- [x] FRONTEND-135-AC-09: `rankSourceSeries` orders `personalRatingThenCustomBlend` correctly, nulls last on both keys
+- [x] FRONTEND-135-AC-10: `rankSourceSeries` orders `customBlendThenPersonalRating` correctly, nulls last on both keys
+- [x] FRONTEND-135-AC-11: `rankSourceSeries`/`computeCustomRatingBlend` fall back to `['imdb', 'tmdb']` when `blendSources` is empty
+- [x] FRONTEND-135-AC-12: `rankSourceSeries` does not mutate its input array
+- [x] FRONTEND-135-AC-13: `SourceRankingPreview` renders rank + title in prop order
+- [x] FRONTEND-135-AC-14: `SourceRankingPreview` renders personal rating on every row
+- [x] FRONTEND-135-AC-15: `SourceRankingPreview` renders the blend value only for blend strategies
+- [x] FRONTEND-135-AC-16: `SourceRankingPreview` renders `dateCompleted` only for `personalRatingThenDate`
+- [x] FRONTEND-135-AC-17: `SourceRankingPreview` renders the cutoff divider and mutes rows beyond position 20
+- [x] FRONTEND-135-AC-18: `SourceRankingPreview` renders no cutoff UI at or under 20 series
+- [x] FRONTEND-135-AC-19: `SourceRankingPreview` renders an empty-pool hint when `series` is empty
+- [x] FRONTEND-135-AC-20: `UseMySeriesPanel` renders the new disclosure, collapsed by default, in the correct position
+- [x] FRONTEND-135-AC-21: the disclosure body wires `SourceRankingPreview` to `resolveSourceRankingPool`/`rankSourceSeries`
+- [x] FRONTEND-135-AC-22: the preview reflects the automatic pool identically to the explicit-selection case
+- [x] FRONTEND-135-AC-23: the preview updates live with no separate action and makes no `seriesApi` calls
