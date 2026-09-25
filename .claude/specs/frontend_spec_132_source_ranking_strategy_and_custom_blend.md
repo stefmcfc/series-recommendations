@@ -212,6 +212,41 @@ describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
 
 ---
 
+### FRONTEND-132-AC-06 [AUTO]: info disclosure explains the last-chip guard
+**Amendment (2026-09-25)**: added after a live-review question about whether `RatingSourceChips`
+needed its own explanatory copy — the parent "Source Ranking Strategy" `InfoDisclosure` (AC-02)
+already explains what the blend itself means, so a second copy of that would be redundant, but
+AC-04's last-chip guard (a silent no-op with no visual feedback) was undocumented anywhere in the
+UI, matching exactly the kind of non-obvious-control gap `frontend_spec_131`'s `InfoDisclosure`
+pattern exists to close.
+
+**Statement**: `RatingSourceChips` shall render an `InfoDisclosure` beside its legend whose
+description states that at least one source must remain selected and that clicking the last
+remaining chip has no effect.
+
+**References**: `components/RatingSourceChips.tsx`; `components/InfoDisclosure.tsx`
+(`frontend_spec_131`).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-132 amendment: info disclosure explains the last-chip guard', () => {
+  it('reveals the last-chip-cannot-be-deselected explanation on click', () => {
+    render(<RatingSourceChips selected={['imdb']} onChange={vi.fn()} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /about custom rating blend sources/i }),
+    )
+    expect(
+      screen.getByText(/clicking the last remaining chip does nothing/i),
+    ).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: render `<InfoDisclosure label="About Custom Rating Blend sources"
+description="..." />` immediately after the `<legend>`, before the chip row.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -231,3 +266,4 @@ describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
 - [x] FRONTEND-132-AC-03: `RatingSourceChips` renders only for the two blend strategies, defaulting to IMDb+TMDB
 - [x] FRONTEND-132-AC-04: chip toggle adds/removes a source, refusing to deselect the last one
 - [x] FRONTEND-132-AC-05: `seriesApi.getRecommendations` forwards both new params when set
+- [x] FRONTEND-132-AC-06: `InfoDisclosure` explains `RatingSourceChips`' last-chip guard

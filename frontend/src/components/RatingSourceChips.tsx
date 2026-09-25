@@ -1,3 +1,4 @@
+import { InfoDisclosure } from './InfoDisclosure'
 import styles from './RatingSourceChips.module.css'
 
 interface RatingSourceChipsProps {
@@ -40,6 +41,17 @@ export function RatingSourceChips({
   return (
     <fieldset className={styles.fieldset}>
       <legend>Custom Rating Blend sources</legend>
+      {/* FRONTEND-132 amendment: the one non-obvious behavior here -- a
+          click on the last remaining selected chip is a silent no-op, per
+          handleToggle above -- was never explained anywhere in the UI.
+          Matches this app's established pattern of an InfoDisclosure per
+          non-obvious control (frontend_spec_131) rather than adding this
+          detail to the parent "Source Ranking Strategy" InfoDisclosure,
+          which already covers what the blend itself means. */}
+      <InfoDisclosure
+        label="About Custom Rating Blend sources"
+        description="Choose which rating sources feed the Custom Rating Blend used by the two blend-based ranking strategies above. At least one source must stay selected — clicking the last remaining chip does nothing."
+      />
       <div className={styles.chips}>
         {RATING_SOURCE_OPTIONS.map((option) => {
           const isSelected = selected.includes(option.id)
