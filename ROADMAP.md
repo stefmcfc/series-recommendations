@@ -41,7 +41,6 @@ dependency-derived anymore.
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 | Keyword suggestion sort mode (Most Common / Highest Rated with a configurable floor) + Favourite Keywords + a "Get recommendations for this keyword" modal from the Analysis page | — | `frontend_spec_133` | ⬜ Not started |
-| Real example request/response bodies (`@ApiResponse`/`@ExampleObject`) across all 9 controller interfaces, plus 4 shared reusable error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) so Swagger UI shows working JSON, not just shape | `series_spec_070` | — | ⬜ Not started |
 ---
 
 ## Delivered
@@ -190,6 +189,7 @@ dependency-derived anymore.
 | "Use My Series" Source Ranking Preview — read-only, collapsed-by-default list showing the selected (or auto-eligible) source series in the exact order the active Source Ranking Strategy would apply, with a visual cutoff marker at the 20-series limit | — | `frontend_spec_135` | ✅ Done |
 | `springdoc-openapi` dependency for a live Swagger UI (`/swagger-ui.html`) and machine-readable OpenAPI spec (`/v3/api-docs`), with app-identifying title/description and a version bound to `BuildProperties` (`springBoot { buildInfo() }`) rather than hardcoded | `series_spec_066` | — | ✅ Done |
 | `API.md`'s endpoint/parameter prose ported into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ✅ Done |
+| Real example request/response bodies (`@ApiResponse`/`@ExampleObject`) across all 9 controller interfaces, plus 4 shared reusable error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) so Swagger UI shows working JSON, not just shape | `series_spec_070` | — | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

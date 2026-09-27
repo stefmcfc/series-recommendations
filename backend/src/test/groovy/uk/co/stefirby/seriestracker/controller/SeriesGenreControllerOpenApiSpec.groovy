@@ -52,4 +52,32 @@ class SeriesGenreControllerOpenApiSpec extends Specification {
             ).exists())
         }
   }
+
+  def "SERIES-070-AC-03: GET /api/v1/series/genres/stats documents a 200 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the genreStats operation's 200 response carries an example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/genres/stats.get.responses.200.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-03: GET /api/v1/series/genres documents a 200 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the genres operation's 200 response carries an example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/genres.get.responses.200.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-03: GET /api/v1/series/genres/stats documents a sortBy parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the sortBy parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/genres/stats.get.parameters[?(@.name=='sortBy')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/genres/stats.get.parameters[?(@.name=='onlyCompleted')].example").exists())
+  }
 }

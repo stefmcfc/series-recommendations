@@ -75,4 +75,72 @@ class SeriesWatchProviderRefreshOpenApiSpec extends Specification {
         result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all/status.get.summary').isNotEmpty())
         result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all.post.summary').isNotEmpty())
   }
+
+  def "SERIES-070-AC-08: watchProviders documents both a present and an empty-list example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 200 response carries examples (plural) rather than a single example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/{id}/watch-providers.get.responses.200.content.application/json.examples.length()')
+          .value(org.hamcrest.Matchers.greaterThanOrEqualTo(2)))
+  }
+
+  def "SERIES-070-AC-08: watchProviders references NotFound"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 404 response is present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/{id}/watch-providers.get.responses.404').exists())
+  }
+
+  def "SERIES-070-AC-08: GET .../watch-providers documents id and region parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the id and region parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/{id}/watch-providers.get.parameters[?(@.name=='id')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/{id}/watch-providers.get.parameters[?(@.name=='region')].example").value("US"))
+  }
+
+  def "SERIES-070-AC-08: refresh documents a 200 example and references NotFound"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 200 example and 404 reference are both present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/{id}/refresh.post.responses.200.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/{id}/refresh.post.responses.404').exists())
+  }
+
+  def "SERIES-070-AC-08: acknowledgeNewContent references NotFound"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 404 response is present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/{id}/acknowledge-new-content.post.responses.404').exists())
+  }
+
+  def "SERIES-070-AC-08: refreshAll documents a request-body example, a 202 response example, and references Conflict"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the request body example, 202 response example, and 409 reference are all present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all.post.requestBody.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all.post.responses.202.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all.post.responses.409').exists())
+  }
+
+  def "SERIES-070-AC-08: refreshAllStatus documents a 200 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 200 response carries an example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all/status.get.responses.200.content.application/json.examples').exists())
+  }
 }

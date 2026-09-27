@@ -41,4 +41,23 @@ class SeriesOriginCountryControllerOpenApiSpec extends Specification {
             org.hamcrest.Matchers.containsStringIgnoringCase("each"),
             org.hamcrest.Matchers.containsStringIgnoringCase("fractional"))))
   }
+
+  def "SERIES-070-AC-06: GET .../origin-country/stats documents a 200 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the operation's 200 response carries an example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/origin-country/stats.get.responses.200.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-06: GET .../origin-country/stats documents a sortBy parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the sortBy parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/origin-country/stats.get.parameters[?(@.name=='sortBy')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/origin-country/stats.get.parameters[?(@.name=='onlyCompleted')].example").exists())
+  }
 }

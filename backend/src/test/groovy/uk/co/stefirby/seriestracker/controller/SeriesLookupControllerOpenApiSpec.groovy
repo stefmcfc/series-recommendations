@@ -39,4 +39,42 @@ class SeriesLookupControllerOpenApiSpec extends Specification {
         result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.description')
           .value(org.hamcrest.Matchers.containsStringIgnoringCase("OMDb")))
   }
+
+  def "SERIES-070-AC-05: GET .../lookup/search-tmdb documents a 200 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the search-tmdb operation's 200 response carries an example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/search-tmdb.get.responses.200.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references BadGateway, not NotFound"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 200 example and the 502 reference are present; no 404 is documented"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.200.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.502').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').doesNotExist())
+  }
+
+  def "SERIES-070-AC-05: GET .../lookup/search-tmdb documents a title parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the title parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/lookup/search-tmdb.get.parameters[?(@.name=='title')].example").value("The Office"))
+  }
+
+  def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a real tmdbId parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the tmdbId parameter carries The Office's real, live-verified TMDB id"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/lookup/resolve-tmdb.get.parameters[?(@.name=='tmdbId')].example").value(2316))
+  }
 }

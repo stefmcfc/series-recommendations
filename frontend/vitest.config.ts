@@ -10,5 +10,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
+    // Default 5000ms per-test timeout is too tight for the full suite's
+    // real parallel-worker load on this machine -- waitFor/findBy calls in
+    // otherwise-passing tests intermittently exceed it under contention,
+    // never in isolation. 10s gives real headroom without masking an
+    // actual hang.
+    testTimeout: 10000,
   },
 })

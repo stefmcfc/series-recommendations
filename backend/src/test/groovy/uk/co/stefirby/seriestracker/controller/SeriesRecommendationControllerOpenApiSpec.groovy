@@ -80,4 +80,64 @@ class SeriesRecommendationControllerOpenApiSpec extends Specification {
           '$.paths./api/v1/series/recommendations/{tmdbId}/details.get.description'
         ).value(org.hamcrest.Matchers.containsStringIgnoringCase("null")))
   }
+
+  def "SERIES-070-AC-07: GET /api/v1/series/recommendations documents a 200 example and error refs"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 200 example and both error references are present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/recommendations.get.responses.200.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/recommendations.get.responses.502').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/recommendations.get.responses.400').exists())
+  }
+
+  def "SERIES-070-AC-07: recommendationDetails documents a null-field example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the details endpoint's 200 example shows independent degradation"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/recommendations/{tmdbId}/details.get.responses.200.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-07: recommendationKeywords documents a 200 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the keywords endpoint's 200 example is present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/recommendations/{tmdbId}/keywords.get.responses.200.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-07: GET /api/v1/series/recommendations documents parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the limit and genres parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations.get.parameters[?(@.name=='limit')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations.get.parameters[?(@.name=='genres')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations.get.parameters[?(@.name=='yearMin')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations.get.parameters[?(@.name=='yearMax')].example").exists())
+  }
+
+  def "SERIES-070-AC-07: recommendationKeywords/recommendationDetails document a real tmdbId parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the tmdbId path parameter carries The Office's real, live-verified TMDB id"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations/{tmdbId}/keywords.get.parameters[?(@.name=='tmdbId')].example").value(2316))
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations/{tmdbId}/details.get.parameters[?(@.name=='tmdbId')].example").value(2316))
+  }
+
+  def "SERIES-070-AC-07: recommendationDetails documents a real imdbId parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the imdbId parameter carries The Office's real, live-verified IMDb id"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations/{tmdbId}/details.get.parameters[?(@.name=='imdbId')].example").value("tt0386676"))
+  }
 }

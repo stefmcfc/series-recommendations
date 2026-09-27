@@ -8,6 +8,23 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.66.0] - 2026-09-27
+
+### Added
+
+- Backend: `OpenApiConfig` registers 4 shared, reusable OpenAPI response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`), each with a representative `ApiResponse<Void>`-shaped example — every operation that can return one of these now references it via `ref = "#/components/responses/..."` instead of repeating the error envelope's JSON per operation (`series_spec_070`).
+- Backend: concrete `@ExampleObject` request/response body examples added across all 9 controller interfaces (canonical "The Office" series data, matching `RUNBOOK.md`'s existing curl examples) so Swagger UI's "Try it out" shows real, working JSON instead of an empty/default-value form (`series_spec_070`).
+- Backend: `example =` values added to existing query/path `@Parameter` annotations across all 9 controller interfaces (e.g. `search`'s `title`/`status`/`genre`, `export`'s `format`, UUID path variables) — `lookup/resolve-tmdb`'s `tmdbId` and `recommendations/{tmdbId}/details`' `tmdbId`/`imdbId` use The Office's real, live-verified TMDB (`2316`)/IMDb (`tt0386676`) ids so the example actually resolves (`series_spec_070`).
+
+### Changed
+
+- Backend: 6 `@ExampleObject` text blocks across `FilterProfileControllerApi`/`SeriesControllerApi`/`SeriesRefreshControllerApi`/`SeriesWatchProviderControllerApi` that collapsed to a single physical line are now plain string literals instead of `"""` text blocks. No behavior change — SonarQube finding (`java:S5663`).
+- Frontend: `SearchFilter.tsx`'s `buildCriteria` (16 independent field checks in one function) is now 5 grouped helper functions (`applyGenresKeywordsCriteria`/`applyOriginCriteria`/`applyRatingsCriteria`/`applyYearsCriteria`/`applyMissingRatingsCriteria`). No behavior change — SonarQube finding (`typescript:S3776`).
+- Frontend: `SourceRankingPreview.tsx`'s `BLEND_STRATEGIES` is now a `Set` with `.has()` instead of an array with `.includes()`. No behavior change — SonarQube finding (`typescript:S7776`).
+- Backend: `build.gradle.kts`'s springdoc dependency version is now a named `springdocVersion` val, matching the file's existing pattern for its other dependency versions. No behavior change — SonarQube finding (`kotlin:S6624`).
+- Frontend: `SourceRankingPreview.module.css`'s `--surface-2`/`--text-muted` custom properties — never actually defined anywhere in the project's theme, always silently falling back to their inline default — are replaced with the existing `--social-bg`/`opacity: 0.8` equivalents already used elsewhere for the same purpose. No behavior change; fixes a latent light-theme-only cosmetic issue as a side effect (the old fallback was only really visible against a dark background).
+- Frontend: Vitest's default 5000ms `testTimeout` is raised to 10000ms — too tight for the full suite's real parallel-worker load on this machine, causing intermittent `waitFor`/`findBy` timeouts in otherwise-passing tests under contention (never in isolation), flaking the pre-push hook. No test logic changed.
+
 ## [3.65.1] - 2026-09-25
 
 ### Changed

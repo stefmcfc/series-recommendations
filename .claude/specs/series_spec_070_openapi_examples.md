@@ -1,6 +1,6 @@
 # Series Spec 070: OpenAPI Response/Request Examples
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P4 (documentation quality — no behavior change to any endpoint)
 **Depends on**:
 - `series_spec_069_controller_interface_extraction.md` (this spec's annotations live on the `*Api` interfaces that spec created — the whole reason that split happened first)
@@ -13,9 +13,11 @@
 field types) for free from the method signatures. `series_spec_067` gave that shape *meaning*
 (what a parameter accepts, what a non-obvious behavior does). Neither gives a developer exploring
 Swagger UI an actual example payload — today, "Try it out" starts from an empty/default-value form
-with no sense of what a realistic request or response looks like. This spec adds concrete
-`@ExampleObject` request and response bodies, so Swagger UI shows real, working JSON a developer can
-read or copy directly.
+with no sense of what a realistic request or response looks like, for bodies *or* for query/path
+parameters. This spec adds concrete `@ExampleObject` request and response bodies, plus `example =`
+values on the existing `@Parameter` annotations for query and path parameters, so Swagger UI's
+"Try it out" form shows real, working values a developer can read, copy, or just hit "Execute" on
+directly.
 
 `series_spec_069` split every controller into a `*Api` interface specifically so annotations
 wouldn't keep piling onto the implementation classes — this spec is the reason that split was worth
@@ -58,6 +60,24 @@ contract-only interfaces, never touching the now-clean implementation classes.
   mechanism `series_spec_067` already used for `refreshAll`'s/`create`'s body *description*, now
   extended with an actual example value alongside it. `importSeries` (multipart file upload) has no
   JSON request body to exemplify — out of scope for that one endpoint.
+- **Query and path parameter examples**, extending the same empty-form problem to non-body inputs.
+  Every `@Parameter`-annotated `@RequestParam`/`@PathVariable` across the 9 interfaces already
+  carries a `description` (from `series_spec_067`) but no `example` — Swagger UI's "Try it out"
+  form still starts blank for these today. This spec adds `example = "..."` to each parameter's
+  existing `@Parameter` annotation (extending an annotation already there, not introducing a new
+  one). Same "illustrative, not exhaustive" principle as the response-body examples: each operation
+  gets examples on its most illustrative 2-4 parameters (the ones that most show off that
+  operation's behavior — a realistic sort/filter combo, a resolvable ID) rather than annotating
+  literally every parameter, especially on the 21-parameter `recommendations` endpoint. Reuses the
+  same canonical values already established elsewhere: `title=office`/`status=WATCHING` for
+  `search` and `format=json` for `export` (matching `RUNBOOK.md`'s own existing curl examples for
+  those exact endpoints, same reasoning as the canonical-series choice above). `UUID` path
+  variables (`id`) use the standard placeholder UUID (`3fa85f64-5717-4562-b3fc-2c963f66afa6`) —
+  the one already conventional across OpenAPI examples generally — rather than a fabricated one
+  specific to this app. `tmdbId`/`imdbId` examples should reuse The Office's real TMDB/IMDb IDs;
+  `backend-dev` should confirm the actual values via a live `lookupSearchTmdb` call during
+  implementation rather than guessing a plausible-looking number, so the example a developer copies
+  is genuinely resolvable against the real TMDB/OMDb APIs, not a fabricated ID that 404s.
 - **Still no DTO/`@Schema` annotations.** Same boundary `series_spec_067` and `series_spec_069` both
   drew — every example in this spec lives on an `@Operation`'s `@ApiResponse`/`@RequestBody`
   annotations on the interface, never as `@Schema(example = ...)` on a DTO field. Keeps this spec's
@@ -133,7 +153,12 @@ non-zero `excludedCount`; `export` shall carry a `200` example showing a few lin
 export shape for at least one format. Every other method in this controller (`getAll`, `delete`,
 `ignore`, `importSeries`, `importStatus`) gets the same treatment (a success example, plus
 `NotFound`/`Conflict`/`BadRequest` refs per what its existing `@Operation` description already
-states) — not individually quoted here, same pattern.
+states) — not individually quoted here, same pattern. In addition: every `id` path variable in this
+controller (`getById`/`update`/`delete`/`ignore`) shall carry the placeholder-UUID `@Parameter`
+example; `getAll`'s `sortBy`/`sortDirection` shall carry example values (`"personalRating"`,
+`"desc"`); `search`'s `title`/`status`/`genre` parameters shall carry example values (`"office"`,
+`"WATCHING"`, `"Comedy"`) matching `RUNBOOK.md`'s own existing curl example; `export`'s `format`
+parameter's example shall be `"json"`, also matching `RUNBOOK.md`.
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesControllerApi.java`.
 
@@ -157,10 +182,29 @@ def "SERIES-070-AC-02: GET /api/v1/series/{id} references the shared NotFound re
         result.andExpect(status().isOk())
         result.andExpect(jsonPath("\$.paths./api/v1/series/{id}.get.responses.404").exists())
 }
+
+def "SERIES-070-AC-02: GET /api/v1/series/search documents parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the title and status parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/search.get.parameters[?(@.name=='title')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/search.get.parameters[?(@.name=='status')].example").exists())
+}
+
+def "SERIES-070-AC-02: GET /api/v1/series/{id} documents a path variable example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the id path parameter carries an example UUID"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/{id}.get.parameters[?(@.name=='id')].example").exists())
+}
 ```
 **Test Case (Green)**: add `@ApiResponse`/`@ExampleObject`/`@RequestBody(content=...)` annotations
 to `SeriesControllerApi` per the Statement above, referencing `SERIES-070-AC-01`'s shared components
-for every error case.
+for every error case, plus `example =` values on the `@Parameter` annotations named above.
 
 ---
 
@@ -170,7 +214,8 @@ for every error case.
 **Statement**: `SeriesGenreControllerApi.genres()` shall carry a `200` example (a short list of
 genre name strings); `genreStats()` shall carry a `200` example (2-3 `NameStatDto`-shaped entries
 showing `seriesCount`/`averagePersonalRating`/`averageBlendedRating`, including one with a `null`
-average to illustrate that case).
+average to illustrate that case). `genreStats()`'s `sortBy`/`onlyCompleted` parameters shall carry
+example values (`"seriesCount"`, `true`).
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesGenreControllerApi.java`.
 
@@ -184,8 +229,18 @@ def "SERIES-070-AC-03: GET /api/v1/series/genres/stats documents a 200 response 
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/genres/stats.get.responses.200.content.application/json.examples').exists())
 }
+
+def "SERIES-070-AC-03: GET /api/v1/series/genres/stats documents a sortBy parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the sortBy parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/genres/stats.get.parameters[?(@.name=='sortBy')].example").exists())
+}
 ```
-**Test Case (Green)**: add the `@ApiResponse`/`@ExampleObject` annotations described above.
+**Test Case (Green)**: add the `@ApiResponse`/`@ExampleObject` annotations described above, plus
+`example =` values on the `sortBy`/`onlyCompleted` `@Parameter` annotations.
 
 ---
 
@@ -193,7 +248,8 @@ def "SERIES-070-AC-03: GET /api/v1/series/genres/stats documents a 200 response 
 
 ### SERIES-070-AC-04 [AUTO]
 **Statement**: `SeriesKeywordControllerApi.keywords()` shall carry a `200` example (2-3
-`NameStatDto`-shaped keyword entries, mirroring `AC-03`'s genre-stats example shape).
+`NameStatDto`-shaped keyword entries, mirroring `AC-03`'s genre-stats example shape). Its
+`sortBy`/`onlyCompleted` parameters shall carry example values, same as `AC-03`.
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesKeywordControllerApi.java`
 (the pilot interface from `series_spec_069` — this AC is the first place its content changes since
@@ -209,8 +265,18 @@ def "SERIES-070-AC-04: GET /api/v1/series/keywords documents a 200 response exam
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/keywords.get.responses.200.content.application/json.examples').exists())
 }
+
+def "SERIES-070-AC-04: GET /api/v1/series/keywords documents a sortBy parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the sortBy parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/keywords.get.parameters[?(@.name=='sortBy')].example").exists())
+}
 ```
-**Test Case (Green)**: add the `@ApiResponse`/`@ExampleObject` annotation described above.
+**Test Case (Green)**: add the `@ApiResponse`/`@ExampleObject` annotation described above, plus
+`example =` values on the `sortBy`/`onlyCompleted` `@Parameter` annotations.
 
 ---
 
@@ -219,23 +285,47 @@ def "SERIES-070-AC-04: GET /api/v1/series/keywords documents a 200 response exam
 ### SERIES-070-AC-05 [AUTO]
 **Statement**: `SeriesLookupControllerApi.lookupSearchTmdb()` shall carry a `200` example (2-3 TMDB
 search-result candidates); `lookupResolveTmdb()` shall carry a `200` example showing the merged
-TMDB+OMDb shape, and reference `NotFound` for an unresolvable `tmdbId`.
+TMDB+OMDb shape. **Correction (found during implementation)**: this AC originally said
+`lookupResolveTmdb()` should reference `NotFound` for an unresolvable `tmdbId` — that was wrong.
+`resolveTmdbCandidate`'s only upstream call, `TmdbClient.details()`, never throws
+`EntityNotFoundException`, only `ExternalServiceException`; the operation's own existing
+`@Operation` description already states "Always 200 on success; 502 only for a genuine TMDB
+upstream failure." `lookupResolveTmdb()` shall therefore reference `BadGateway` only, not
+`NotFound` — documenting a 404 that can never actually occur would be worse than not documenting
+it. `lookupSearchTmdb()`'s `title` parameter shall carry the example value `"The Office"`;
+`lookupResolveTmdb()`'s `tmdbId` parameter shall carry The Office's real TMDB id as its example
+(confirmed via a live `lookupSearchTmdb` call during implementation, per this spec's Design
+Decisions, rather than a guessed placeholder).
 
-**References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesLookupControllerApi.java`.
+**References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesLookupControllerApi.java`;
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/tmdb/SeriesLookupService.java` and
+`backend/src/main/java/uk/co/stefirby/seriestracker/client/tmdb/TmdbClient.java` (confirms `details()`
+only ever throws `ExternalServiceException`, never `EntityNotFoundException`).
 
 **Test Case (Red)**:
 ```groovy
-def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references NotFound"() {
+def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references BadGateway, not NotFound"() {
     when: "the generated OpenAPI spec is requested"
         def result = mockMvc.perform(get("/v3/api-docs"))
 
-    then: "both the 200 example and the 404 reference are present"
+    then: "the 200 example and the 502 reference are present; no 404 is documented"
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.200.content.application/json.examples').exists())
-        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.502').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').doesNotExist())
+}
+
+def "SERIES-070-AC-05: GET .../lookup/search-tmdb documents a title parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the title parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/lookup/search-tmdb.get.parameters[?(@.name=='title')].example").exists())
 }
 ```
-**Test Case (Green)**: add the annotations described above.
+**Test Case (Green)**: add the annotations described above, plus `example =` values on the
+`title`/`tmdbId` `@Parameter` annotations.
 
 ---
 
@@ -244,6 +334,7 @@ def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and r
 ### SERIES-070-AC-06 [AUTO]
 **Statement**: `SeriesOriginCountryControllerApi.originCountryStats()` shall carry a `200` example
 (2-3 entries keyed by raw ISO 3166-1 alpha-2 codes, e.g. `US`/`GB`, mirroring `AC-03`'s stats shape).
+Its `sortBy`/`onlyCompleted` parameters shall carry example values, same as `AC-03`.
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesOriginCountryControllerApi.java`.
 
@@ -257,8 +348,18 @@ def "SERIES-070-AC-06: GET .../origin-country/stats documents a 200 response exa
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/origin-country/stats.get.responses.200.content.application/json.examples').exists())
 }
+
+def "SERIES-070-AC-06: GET .../origin-country/stats documents a sortBy parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the sortBy parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/origin-country/stats.get.parameters[?(@.name=='sortBy')].example").exists())
+}
 ```
-**Test Case (Green)**: add the annotation described above.
+**Test Case (Green)**: add the annotation described above, plus `example =` values on the
+`sortBy`/`onlyCompleted` `@Parameter` annotations.
 
 ---
 
@@ -277,7 +378,12 @@ existing description's `app.tmdb.api-key`/502 note) and `BadRequest` (per its mu
 400 note); `recommendationKeywords()` shall carry a `200` example (a short keyword list, empty-list
 case noted in the description already, doesn't need its own example); `recommendationDetails()`
 shall carry a `200` example showing at least one of its three fields as `null` (illustrating the
-independent-degradation behavior `series_spec_067` already documented in prose).
+independent-degradation behavior `series_spec_067` already documented in prose). Given this
+operation's 21 parameters, only its most illustrative subset gets `@Parameter` examples — `limit`
+(`10`), `genres` (`"Comedy"`), `yearMin`/`yearMax` (`2015`/`2024`) — not all 21; `recommendationKeywords()`/
+`recommendationDetails()`'s `tmdbId` path variable shall carry The Office's real TMDB id as its
+example (same live-verification approach as `AC-05`), and `recommendationDetails()`'s optional
+`imdbId` parameter shall carry The Office's real IMDb id.
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesRecommendationControllerApi.java`.
 
@@ -302,8 +408,20 @@ def "SERIES-070-AC-07: recommendationDetails documents a null-field example"() {
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/recommendations/{tmdbId}/details.get.responses.200.content.application/json.examples').exists())
 }
+
+def "SERIES-070-AC-07: GET /api/v1/series/recommendations documents parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the limit and genres parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations.get.parameters[?(@.name=='limit')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/recommendations.get.parameters[?(@.name=='genres')].example").exists())
+}
 ```
-**Test Case (Green)**: add the annotations described above to `SeriesRecommendationControllerApi`.
+**Test Case (Green)**: add the annotations described above to `SeriesRecommendationControllerApi`,
+including `example =` values on the `limit`/`genres`/`yearMin`/`yearMax`/`tmdbId`/`imdbId`
+`@Parameter` annotations.
 
 ---
 
@@ -317,7 +435,9 @@ already states) — and reference `NotFound`. `SeriesRefreshControllerApi.refres
 `acknowledgeNewContent()` shall reference `NotFound`; `refreshAll()` shall carry a request-body
 example (`{"skipThresholdMinutesOverride": 30}`) and a `202` response example, plus reference
 `Conflict` (per its existing "409 if a job is already running" note); `refreshAllStatus()` shall
-carry a `200` example showing the job-status lifecycle shape.
+carry a `200` example showing the job-status lifecycle shape. `watchProviders()`'s `id` path
+variable and `region` parameter shall carry example values (the placeholder UUID, `"US"`);
+`refresh()`/`acknowledgeNewContent()`'s `id` path variable shall carry the same placeholder UUID.
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesWatchProviderControllerApi.java`,
 `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesRefreshControllerApi.java`.
@@ -343,8 +463,19 @@ def "SERIES-070-AC-08: refreshAll documents a request-body example and reference
         result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all.post.requestBody.content.application/json.examples').exists())
         result.andExpect(jsonPath('$.paths./api/v1/series/refresh-all.post.responses.409').exists())
 }
+
+def "SERIES-070-AC-08: GET .../watch-providers documents id and region parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the id and region parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/{id}/watch-providers.get.parameters[?(@.name=='id')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/{id}/watch-providers.get.parameters[?(@.name=='region')].example").exists())
+}
 ```
-**Test Case (Green)**: add the annotations described above to both interfaces.
+**Test Case (Green)**: add the annotations described above to both interfaces, plus `example =`
+values on the `id`/`region` `@Parameter` annotations.
 
 ---
 
@@ -357,7 +488,9 @@ example (`{"area": "MY_SERIES", "name": "No animation", "criteria": {...}}`, reu
 `@RequestBody` description's own worked example if one already fits) and a `201` response example,
 plus reference `BadRequest` and `Conflict` (both already named in its existing description);
 `update()` shall carry a request-body example (a partial `{"name": "..."}` body) and reference
-`Conflict`/`NotFound`; `delete()` shall reference `NotFound`.
+`Conflict`/`NotFound`; `delete()` shall reference `NotFound`. `list()`'s `area` parameter shall
+carry the example value `"MY_SERIES"`; `update()`/`delete()`'s `id` path variable shall carry the
+placeholder UUID.
 
 **References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/FilterProfileControllerApi.java`.
 
@@ -373,8 +506,18 @@ def "SERIES-070-AC-09: POST /api/v1/filter-profiles documents a request example 
         result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.responses.400').exists())
         result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.responses.409').exists())
 }
+
+def "SERIES-070-AC-09: GET /api/v1/filter-profiles documents an area parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the area parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/filter-profiles.get.parameters[?(@.name=='area')].example").exists())
+}
 ```
-**Test Case (Green)**: add the annotations described above to `FilterProfileControllerApi`.
+**Test Case (Green)**: add the annotations described above to `FilterProfileControllerApi`, plus
+`example =` values on the `area`/`id` `@Parameter` annotations.
 
 ---
 
@@ -384,7 +527,9 @@ def "SERIES-070-AC-09: POST /api/v1/filter-profiles documents a request example 
 **Statement**: With the application running, a manual check shall confirm `/swagger-ui.html`
 renders every documented example correctly (readable JSON, no malformed/truncated text blocks) for
 a sample of at least one operation per controller, and that the 4 shared error-response components
-appear correctly wherever referenced (not just once, globally).
+appear correctly wherever referenced (not just once, globally). The same check shall confirm that
+"Try it out" pre-fills the documented example values for query and path parameters (not just
+request/response bodies) on that same sample of operations.
 
 **References**: Live app instance; `/v3/api-docs`, `/swagger-ui.html`.
 
@@ -392,7 +537,11 @@ appear correctly wherever referenced (not just once, globally).
 different controllers, confirm each shows a populated, valid-JSON example in both the request body
 (where applicable) and at least one response code — including expanding a `404`/`409`/`400`/`502`
 response section to confirm the shared component's example renders correctly there too, not just in
-`/v3/api-docs`'s raw JSON.
+`/v3/api-docs`'s raw JSON. Additionally, click "Try it out" on that same sample of operations and
+confirm the annotated query/path parameter fields (e.g. `search`'s `title`/`status`, `getById`'s
+`id`) are pre-filled with their documented example values rather than left blank, and that
+`lookupResolveTmdb`'s/`recommendationDetails`'s `tmdbId`/`imdbId` examples actually resolve
+successfully against the live TMDB/OMDb APIs when executed.
 
 ---
 
@@ -410,13 +559,13 @@ response section to confirm the shared component's example renders correctly the
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-070-AC-01: 4 shared error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) registered in `OpenApiConfig`
-- [ ] SERIES-070-AC-02: `SeriesControllerApi` — request/response examples + error refs across all 10 methods
-- [ ] SERIES-070-AC-03: `SeriesGenreControllerApi` — response examples
-- [ ] SERIES-070-AC-04: `SeriesKeywordControllerApi` — response example
-- [ ] SERIES-070-AC-05: `SeriesLookupControllerApi` — response examples + `NotFound` ref
-- [ ] SERIES-070-AC-06: `SeriesOriginCountryControllerApi` — response example
-- [ ] SERIES-070-AC-07: `SeriesRecommendationControllerApi` — response examples + `BadGateway`/`BadRequest` refs
-- [ ] SERIES-070-AC-08: `SeriesWatchProviderControllerApi`/`SeriesRefreshControllerApi` — response/request examples + `NotFound`/`Conflict` refs
-- [ ] SERIES-070-AC-09: `FilterProfileControllerApi` — request/response examples + `BadRequest`/`Conflict`/`NotFound` refs
-- [ ] SERIES-070-AC-10 [MANUAL]: live Swagger UI check across a sample of endpoints and all 4 shared error components
+- [x] SERIES-070-AC-01: 4 shared error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) registered in `OpenApiConfig`
+- [x] SERIES-070-AC-02: `SeriesControllerApi` — request/response examples + error refs across all 10 methods + `id`/`sortBy`/`sortDirection`/`title`/`status`/`genre`/`format` parameter examples
+- [x] SERIES-070-AC-03: `SeriesGenreControllerApi` — response examples + `sortBy`/`onlyCompleted` parameter examples
+- [x] SERIES-070-AC-04: `SeriesKeywordControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
+- [x] SERIES-070-AC-05: `SeriesLookupControllerApi` — response examples + `BadGateway` ref (not `NotFound` — corrected during implementation, see AC-05) + `title`/`tmdbId` parameter examples
+- [x] SERIES-070-AC-06: `SeriesOriginCountryControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
+- [x] SERIES-070-AC-07: `SeriesRecommendationControllerApi` — response examples + `BadGateway`/`BadRequest` refs + `limit`/`genres`/`yearMin`/`yearMax`/`tmdbId`/`imdbId` parameter examples
+- [x] SERIES-070-AC-08: `SeriesWatchProviderControllerApi`/`SeriesRefreshControllerApi` — response/request examples + `NotFound`/`Conflict` refs + `id`/`region` parameter examples
+- [x] SERIES-070-AC-09: `FilterProfileControllerApi` — request/response examples + `BadRequest`/`Conflict`/`NotFound` refs + `area`/`id` parameter examples
+- [x] SERIES-070-AC-10 [MANUAL]: live Swagger UI check across a sample of endpoints, all 4 shared error components, and pre-filled query/path parameter examples in "Try it out"

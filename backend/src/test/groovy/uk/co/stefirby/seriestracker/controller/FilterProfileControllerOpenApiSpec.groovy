@@ -62,4 +62,65 @@ class FilterProfileControllerOpenApiSpec extends Specification {
         result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.patch.summary').isNotEmpty())
         result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.delete.summary').isNotEmpty())
   }
+
+  def "SERIES-070-AC-09: GET /api/v1/filter-profiles documents a 200 example and references BadRequest"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 200 example and 400 reference are both present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.get.responses.200.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.get.responses.400').exists())
+  }
+
+  def "SERIES-070-AC-09: POST /api/v1/filter-profiles documents a request example and error refs"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the request body example and both error references are present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.requestBody.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.responses.201.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.responses.400').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.responses.409').exists())
+  }
+
+  def "SERIES-070-AC-09: PATCH /api/v1/filter-profiles/{id} documents a request example and error refs"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the request body example and both error references are present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.patch.requestBody.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.patch.responses.409').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.patch.responses.404').exists())
+  }
+
+  def "SERIES-070-AC-09: DELETE /api/v1/filter-profiles/{id} references NotFound"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 404 response is present"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.delete.responses.404').exists())
+  }
+
+  def "SERIES-070-AC-09: GET /api/v1/filter-profiles documents an area parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the area parameter carries an example value"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/filter-profiles.get.parameters[?(@.name=='area')].example").value("MY_SERIES"))
+  }
+
+  def "SERIES-070-AC-09: PATCH/DELETE /api/v1/filter-profiles/{id} document a placeholder-UUID id example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the id path parameter carries the placeholder UUID"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/filter-profiles/{id}.patch.parameters[?(@.name=='id')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/filter-profiles/{id}.delete.parameters[?(@.name=='id')].example").exists())
+  }
 }
