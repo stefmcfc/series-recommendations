@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.68.1] - 2026-09-28
+
 ### Fixed
 
 - Backend: both SQLite datasources (production and test) now set a 30s `busy_timeout` and cap their Hikari pool to a single connection, so contention for the file lock waits/retries instead of failing instantly with `SQLITE_BUSY` — SQLite only ever services one writer at a time regardless of pool size, so the previous default (10 connections, no busy_timeout) added collision risk with no benefit (`tooling_spec_010`).
