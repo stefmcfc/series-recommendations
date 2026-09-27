@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { seriesApi } from '../services/seriesApi'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import { NameStatsTable } from './NameStatsTable'
 import { KeywordRecommendationsModal } from './KeywordRecommendationsModal'
+import { KeywordDetailModal } from './KeywordDetailModal'
+import {
+  DEFAULT_KEYWORD_FAVOURITES,
+  isKeywordFavourites,
+} from './RecommendationControls'
 import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
 
 interface KeywordsViewProps {
@@ -20,8 +26,18 @@ interface KeywordsViewProps {
 // FRONTEND-133-AC-08: the only NameStatsTable consumer that passes
 // onGetRecommendations -- GenreStatsView/CountryStatsView are deliberately
 // left unmodified (this spec's Design Decisions).
+//
+// FRONTEND-136-AC-02/05: also the only consumer that passes favouriteNames
+// and onOpenDetail -- same scoping rationale, reusing the exact
+// keywordFavourites localStorage key frontend_spec_133 already established.
 export function KeywordsView({ filters }: KeywordsViewProps) {
   const [recsKeyword, setRecsKeyword] = useState<string | null>(null)
+  const [detailKeyword, setDetailKeyword] = useState<string | null>(null)
+  const [keywordFavourites] = useLocalStorage(
+    'keywordFavourites',
+    DEFAULT_KEYWORD_FAVOURITES,
+    isKeywordFavourites,
+  )
 
   return (
     <>
@@ -35,11 +51,19 @@ export function KeywordsView({ filters }: KeywordsViewProps) {
         fetchStats={seriesApi.getKeywordStats}
         filters={filters}
         onGetRecommendations={setRecsKeyword}
+        favouriteNames={keywordFavourites}
+        onOpenDetail={setDetailKeyword}
       />
       {recsKeyword !== null && (
         <KeywordRecommendationsModal
           keyword={recsKeyword}
           onClose={() => setRecsKeyword(null)}
+        />
+      )}
+      {detailKeyword !== null && (
+        <KeywordDetailModal
+          keyword={detailKeyword}
+          onClose={() => setDetailKeyword(null)}
         />
       )}
     </>

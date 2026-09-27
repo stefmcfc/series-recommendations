@@ -1,6 +1,42 @@
 # Frontend Spec 136: Keyword Favourites Indicator and Per-Keyword Series Detail Modal
 
-**Status**: Not started
+**Status**: Done (2026-09-27). Implemented as written, with two corrections
+against the spec's own pseudocode (neither a behavior change, both confirmed
+against the actual source before implementing): (1) the fetch call is
+`seriesApi.search({ keywords: [keyword] })` -- plural `keywords`, matching
+`SearchCriteria`'s real field name (`keyword` is only the backend's query
+param name); (2) `seriesApi.search` resolves `{ series: Series[],
+excludedCount: number }`, not a bare array, so the modal reads
+`result.series`. Verification: `npm test` -- 1517/1517 passing across 74
+files (up from 1491/73 on `frontend_spec_133`); `npm run lint` -- clean;
+`npx tsc --noEmit` -- clean. Real browser pass done via a
+headless-Chrome/puppeteer-core script (ephemeral
+`npm install --no-save puppeteer-core`, removed afterward, matching
+`frontend_spec_133`'s precedent) confirming end-to-end: the Keywords tab
+renders a row per keyword pulled from the live backend (677 keywords), a
+favourite star renders only for a keyword present in `keywordFavourites`, the
+"Favourites Only" checkbox filters the table to just that one row
+client-side, clicking a keyword name opens `KeywordDetailModal` titled
+`Series tagged "<keyword>"` with a real fetched row (e.g. "Ballard" /
+BACKLOG / — / 7.4), the Name column's sort indicator renders, the favourite
+toggle flips `aria-pressed` and persists to `localStorage`, and clicking a
+series row navigates to `/my-series/view/:id`.
+
+**Post-implementation fix (2026-09-27, same day, found live before merge)**: the user spotted that
+favouriting a keyword from inside `KeywordDetailModal` didn't update the star already rendered in the
+`KeywordsView` table behind it, without a full remount. Root cause: `KeywordsView` and
+`KeywordDetailModal` each hold their own independent `useLocalStorage('keywordFavourites', ...)`
+instance, and that hook previously read from storage only once on mount with no mechanism for one
+live instance to learn about another instance's write to the same key (the native `storage` event
+only fires in *other* browser tabs, never the one that wrote). Fixed generically in
+`hooks/useLocalStorage.ts` itself — the returned setter now also broadcasts a same-tab `CustomEvent`
+naming the key, and every mounted instance for that key re-reads storage and updates its own state in
+response — rather than special-casing this one call site, since `frontend_spec_137`'s Genre analog
+reuses this exact same plumbing and would hit the identical bug. Added regression coverage at both
+levels: `hooks/useLocalStorage.test.ts` (generic cross-instance sync) and `KeywordsView.test.tsx`
+(the actual user-facing flow — favourite in the still-open modal, star appears in the table behind
+it). Verification re-run after the fix: `npm test` — 1520/1520 passing across 74 files; `npm run
+lint` — clean; `npx tsc --noEmit` — clean.
 **Priority**: P3
 **Depends on**: `frontend_spec_133_keyword_suggestions_and_analysis_recommendations_link.md` (the
 `keywordFavourites` `localStorage` key this spec reads/writes as-is, `KeywordsView`/
@@ -388,12 +424,12 @@ adding/removing the seeded `keyword`.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-136-AC-01: `NameStatsTable` renders a favourite star per row via optional `favouriteNames` prop
-- [ ] FRONTEND-136-AC-02: `KeywordsView` wires `favouriteNames` from `keywordFavourites`; Genre/Country do not
-- [ ] FRONTEND-136-AC-03: "Favourites Only" client-side filter checkbox, no re-fetch
-- [ ] FRONTEND-136-AC-04: `NameStatsTable`'s name cell becomes clickable via optional `onOpenDetail` prop
-- [ ] FRONTEND-136-AC-05: `KeywordsView` wires the click-through to open `KeywordDetailModal`; Genre/Country do not
-- [ ] FRONTEND-136-AC-06: `KeywordDetailModal` fetches all-status series on mount, computes blended rating client-side
-- [ ] FRONTEND-136-AC-07: modal's columns sort client-side by header click, no re-fetch
-- [ ] FRONTEND-136-AC-08: clicking a series row navigates to its existing detail route
-- [ ] FRONTEND-136-AC-09: modal renders a favourite toggle reading/writing `keywordFavourites`
+- [x] FRONTEND-136-AC-01: `NameStatsTable` renders a favourite star per row via optional `favouriteNames` prop
+- [x] FRONTEND-136-AC-02: `KeywordsView` wires `favouriteNames` from `keywordFavourites`; Genre/Country do not
+- [x] FRONTEND-136-AC-03: "Favourites Only" client-side filter checkbox, no re-fetch
+- [x] FRONTEND-136-AC-04: `NameStatsTable`'s name cell becomes clickable via optional `onOpenDetail` prop
+- [x] FRONTEND-136-AC-05: `KeywordsView` wires the click-through to open `KeywordDetailModal`; Genre/Country do not
+- [x] FRONTEND-136-AC-06: `KeywordDetailModal` fetches all-status series on mount, computes blended rating client-side
+- [x] FRONTEND-136-AC-07: modal's columns sort client-side by header click, no re-fetch
+- [x] FRONTEND-136-AC-08: clicking a series row navigates to its existing detail route
+- [x] FRONTEND-136-AC-09: modal renders a favourite toggle reading/writing `keywordFavourites`

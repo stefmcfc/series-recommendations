@@ -40,7 +40,6 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
-| Keywords tab: a favourite-star indicator + "Favourites Only" filter, and a per-keyword detail modal listing every tracked series (any status) carrying that keyword — sortable by name/status/personal rating/blended rating, click-through to the series' own detail page, and a favourite toggle | — | `frontend_spec_136` | ⬜ Not started |
 | Genres: Favourite Genres (a fourth Settings picker + a badge on Custom Search's genre grid) and the same Genres-tab favourite-star/filter/detail-modal treatment as `frontend_spec_136` — depends on that spec shipping first | — | `frontend_spec_137` | ⬜ Not started |
 ---
 
@@ -192,6 +191,7 @@ dependency-derived anymore.
 | `API.md`'s endpoint/parameter prose ported into `@Operation`/`@Parameter` annotations across all 9 controllers, so Swagger UI is self-sufficient without cross-referencing `API.md` | `series_spec_067` | — | ✅ Done |
 | Real example request/response bodies (`@ApiResponse`/`@ExampleObject`) across all 9 controller interfaces, plus 4 shared reusable error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) so Swagger UI shows working JSON, not just shape | `series_spec_070` | — | ✅ Done |
 | Keyword suggestion sort mode (Most Common [default] / Highest Rated with a configurable Minimum Series Count floor) + Favourite Keywords (a third Settings > Recommendation Favourites picker, pinned in Custom Search) + a "Get recommendations for this keyword" `KeywordRecommendationsModal` from the Analysis page's Keywords tab | — | `frontend_spec_133` | ✅ Done |
+| Keywords tab: a favourite-star indicator + "Favourites Only" filter, and a per-keyword detail modal listing every tracked series (any status) carrying that keyword — sortable by name/status/personal rating/blended rating, click-through to the series' own detail page, and a favourite toggle | — | `frontend_spec_136` | ✅ Done |
 
 ## Internal / maintenance specs (not user-facing features)
 

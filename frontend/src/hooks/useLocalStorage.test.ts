@@ -94,4 +94,33 @@ describe('FRONTEND-098-AC-01/02: useLocalStorage read/write/degrade', () => {
     })
     expect(() => act(() => result.current[1]('changed'))).not.toThrow()
   })
+
+  it('syncs a write from one live instance of a key into another mounted instance of the same key', () => {
+    const isValid = (v: unknown): v is string => typeof v === 'string'
+    const instanceA = renderHook(() =>
+      useLocalStorage('test-key', 'default', isValid),
+    )
+    const instanceB = renderHook(() =>
+      useLocalStorage('test-key', 'default', isValid),
+    )
+
+    act(() => instanceA.result.current[1]('changed'))
+
+    expect(instanceA.result.current[0]).toBe('changed')
+    expect(instanceB.result.current[0]).toBe('changed')
+  })
+
+  it('does not sync a write made under a different key', () => {
+    const isValid = (v: unknown): v is string => typeof v === 'string'
+    const other = renderHook(() =>
+      useLocalStorage('other-key', 'default', isValid),
+    )
+    const mine = renderHook(() =>
+      useLocalStorage('test-key', 'default', isValid),
+    )
+
+    act(() => other.result.current[1]('changed'))
+
+    expect(mine.result.current[0]).toBe('default')
+  })
 })
