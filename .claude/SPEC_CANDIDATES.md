@@ -66,9 +66,46 @@ areas) — both now tracked in `ROADMAP.md`, removed from here.
 and removed from this file — both now tracked in `ROADMAP.md`'s "Specced, coming soon" table. Only
 the broadened Settings info/disclosure-box candidate remains open in this file.
 
+2026-09-27 update: two candidates added, both raised while scoping `frontend_spec_136` (Keywords
+tab favourite indicator + per-keyword detail modal) — deliberately deferred out of that spec's scope
+by the user rather than included, but confirmed worth a spec eventually.
+
 ---
 
 ## Candidates
+
+### Cross-link the per-keyword detail modal to "Get recommendations for this keyword"
+
+Raised 2026-09-27 while scoping `frontend_spec_136` (Keywords tab favourite star + a new
+`KeywordDetailModal` listing every tracked series carrying a keyword, any status). `frontend_spec_133`
+(delivered) already added a separate `KeywordRecommendationsModal`, reached via its own "Get Recs"
+button on the same Keywords tab row. The two modals currently have no link between them — a user
+looking at "which of my series have this keyword" in `KeywordDetailModal` has no way to jump straight
+into "get me more recommendations for this keyword" without closing that modal and clicking the
+row's separate button instead.
+
+**Idea**: add a button inside `KeywordDetailModal` (e.g. "Get Recommendations") that opens
+`KeywordRecommendationsModal` for the same keyword — either replacing the detail modal or stacking
+above it. Deliberately not decided here: whether the two modals should be merged into one (tabs
+within a single modal?) instead of cross-linked as two separate ones, which is a bigger redesign
+than a simple link and wasn't what was asked for when this was raised.
+
+**Status**: Spec candidate, not yet designed.
+
+### Star favourited keywords on `SeriesDetail`'s existing keyword chips
+
+Raised 2026-09-27, same session as above. `SeriesDetail` already renders a series' TMDB keywords as
+read-only chips (`frontend_spec_024`). `frontend_spec_133`/`136` together give keywords a
+"favourite" concept (`keywordFavourites` in `localStorage`) surfaced on the Analysis Keywords tab —
+but not on `SeriesDetail`'s own chips, so a user browsing an individual series has no visual cue that
+one of its keywords is one of their favourites.
+
+**Idea**: reuse the same `FavouritesIcon` star treatment `frontend_spec_136` establishes for the
+Keywords tab on any chip in `SeriesDetail` whose keyword is in `keywordFavourites`. Purely additive,
+read-only (no toggle-from-chip interaction implied) — the smallest, most contained of the ideas
+raised in this session.
+
+**Status**: Spec candidate, not yet designed.
 
 ### Weight recommendation scoring and/or output filters by keyword popularity/average personal rating
 
