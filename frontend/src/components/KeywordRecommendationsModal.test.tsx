@@ -8,6 +8,7 @@ const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 
 function makeRecommendation(overrides = {}) {
   return {
+    tmdbId: 70523,
     imdbId: 'tt1234567',
     title: 'Dark',
     year: 2017,
