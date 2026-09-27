@@ -34,7 +34,9 @@ public interface SeriesRecommendationControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "recommendations", value = """
+                    name = "recommendations",
+                    summary = "Two recommendation candidates, one shared by two source series",
+                    value = """
                         {
                           "data": [
                             {
@@ -84,56 +86,97 @@ public interface SeriesRecommendationControllerApi {
         })
     @GetMapping("/recommendations")
     ResponseEntity<ApiResponse<List<RecommendationDto>>> recommendations(
-            @Parameter(example = "10")
+            @Parameter(description = "Max candidates to return, clamped to 1-50.",
+                example = "10")
             @RequestParam(required = false, defaultValue = "20") int limit,
+            @Parameter(description = "Comma-separated series ids (UUIDs) to source "
+                + "recommendations from directly.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @RequestParam(required = false) List<String> seriesIds,
-            @Parameter(example = "Comedy")
+            @Parameter(description = "Comma-separated genre names sourcing a Custom Search "
+                + "TMDB discover/tv call.", example = "Comedy")
             @RequestParam(required = false) List<String> genres,
+            @Parameter(description = "Comma-separated TMDB keyword names sourcing a "
+                + "keyword-directed TMDB discover/tv call.", example = "workplace")
             @RequestParam(required = false) List<String> keywords,
+            @Parameter(description = "Excludes a candidate whose tmdbRating is null or below "
+                + "this threshold. Applied as a post-fetch filter across every sourcing mode.",
+                example = "7.5")
             @RequestParam(required = false) BigDecimal minTmdbRating,
+            @Parameter(description = "Excludes a candidate whose TMDB vote count is below this "
+                + "threshold. Applied as a post-fetch filter across every sourcing mode.",
+                example = "100")
             @RequestParam(required = false) Integer minVoteCount,
-            @Parameter(example = "2015")
+            @Parameter(description = "Excludes a candidate whose known airing span ends before "
+                + "this year.", example = "2015")
             @RequestParam(required = false) Integer yearMin,
-            @Parameter(example = "2024")
+            @Parameter(description = "Excludes a candidate whose known airing span starts "
+                + "after this year.", example = "2024")
             @RequestParam(required = false) Integer yearMax,
             @Parameter(description = "Comma-separated genre names; excludes a candidate whose "
                 + "genres match any entry, resolved via the genre alias vocabulary (not a raw "
                 + "string comparison). Applied as a post-fetch filter across every sourcing "
                 + "mode; for genre/keyword-directed sourcing, additionally sent to TMDB as "
-                + "without_genres pre-fetch.")
+                + "without_genres pre-fetch.", example = "Horror")
             @RequestParam(required = false) List<String> excludeGenres,
             @Parameter(description = "Comma-separated keyword names; excludes a candidate whose "
                 + "TMDB keywords case-insensitively match any entry, applied last (after every "
                 + "other output filter) across every sourcing mode. A per-candidate keyword "
-                + "lookup failure fails that one candidate open rather than the whole request.")
+                + "lookup failure fails that one candidate open rather than the whole request.",
+                example = "anime")
             @RequestParam(required = false) List<String> excludeKeywords,
+            @Parameter(description = "ISO 639-1 language code, sent to TMDB as "
+                + "with_original_language under Custom Search sourcing only.", example = "en")
             @RequestParam(required = false) String language,
             @Parameter(description = "Comma-separated ISO 3166-1 alpha-2 codes (e.g. "
                 + "countries=US,GB); excludes a candidate whose originCountry doesn't "
                 + "case-insensitively match any entry, OR-matched across multiple entries, "
                 + "applied unconditionally across every sourcing mode. For Custom Search "
-                + "sourcing, additionally sent to TMDB as with_origin_country (pipe-joined).")
+                + "sourcing, additionally sent to TMDB as with_origin_country (pipe-joined).",
+                example = "US")
             @RequestParam(required = false) List<String> countries,
+            @Parameter(description = "Diversity cap: the max candidates any single source "
+                + "series may contribute, before maxSourcesShown truncates each candidate's own "
+                + "sourceTitles display list. Defaults to app.tmdb.max-per-source (8).",
+                example = "8")
             @RequestParam(required = false) Integer maxPerSource,
+            @Parameter(description = "Caps how many source titles are shown in a candidate's "
+                + "own sourceTitles list; totalSourceCount still reports the true total "
+                + "regardless of this cap.", example = "3")
             @RequestParam(required = false) Integer maxSourcesShown,
+            @Parameter(description = "score (default) sorts by internal rank score descending; "
+                + "recommendationCount sorts by totalSourceCount descending (rank score as "
+                + "tiebreaker). Any other value falls back to score.", example = "score")
             @RequestParam(required = false) String sortBy,
             @Parameter(description = "trending|topRated|useMySeries selects the sourcing mode; "
                 + "omitted with no seriesIds/genres/keywords set falls through to Custom Search. "
                 + "useMySeries sources from TMDB based on your COMPLETED series, mutually "
                 + "exclusive with genres/keywords but compatible with seriesIds. 400 if combined "
-                + "with genres/keywords/other modes where disallowed, or if unrecognized.")
+                + "with genres/keywords/other modes where disallowed, or if unrecognized.",
+                example = "trending")
             @RequestParam(required = false) String sourceMode,
             @Parameter(description = "day|week (default week); only read under "
-                + "sourceMode=trending, selecting TMDB's trending window.")
+                + "sourceMode=trending, selecting TMDB's trending window.", example = "week")
             @RequestParam(required = false) String trendingWindow,
             @Parameter(description = "For topRated and Custom Search, selects the TMDB-native "
                 + "discover/tv sort_by value (one of TMDB's 12 documented values, e.g. "
                 + "vote_average.desc, popularity.desc; 400 if unrecognized), defaulting to "
                 + "vote_average.desc for topRated and popularity.desc for Custom Search when "
-                + "omitted; ignored under any other mode.")
+                + "omitted; ignored under any other mode.", example = "popularity.desc")
             @RequestParam(required = false) String discoverSortBy,
+            @Parameter(description = "Optional ISO 3166-1 alpha-2 code overriding "
+                + "app.tmdb.watch-region for each candidate's own streamingProviders.",
+                example = "US")
             @RequestParam(required = false) String region,
+            @Parameter(description = "One of personalRatingThenDate (default), "
+                + "personalRatingThenCustomBlend, customBlendThenPersonalRating -- selects how "
+                + "useMySeries-sourced candidates are ranked.",
+                example = "personalRatingThenDate")
             @RequestParam(required = false) String sourceRankingStrategy,
+            @Parameter(description = "Comma-separated, one or more of imdb, tmdb, tomatometer, "
+                + "popcornmeter -- the rating sources blended into the Custom Rating Blend used "
+                + "by the two customBlend* sourceRankingStrategy values.",
+                example = "imdb,tmdb")
             @RequestParam(required = false) List<String> sourceRatingBlendSources);
 
     @Operation(summary = "On-demand TMDB keyword lookup for a single recommendation candidate",
@@ -146,6 +189,7 @@ public interface SeriesRecommendationControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "candidate-keywords",
+                    summary = "Three TMDB keywords for a candidate",
                     value = "{\"data\":[\"workplace\",\"mockumentary\",\"paper company\"],"
                         + "\"error\":null,\"count\":3,\"excludedCount\":0}")))
         })
@@ -166,6 +210,7 @@ public interface SeriesRecommendationControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "candidate-details-degraded",
+                    summary = "TMDB counts present, IMDb rating unavailable",
                     value = "{\"data\":{\"numberOfSeasons\":9,\"numberOfEpisodes\":186,"
                         + "\"imdbRating\":null},\"error\":null,\"count\":1,\"excludedCount\":0}")))
         })

@@ -27,7 +27,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "office-created", value = """
+                    name = "office-created",
+                    summary = "The newly created series",
+                    value = """
                         {
                           "data": {
                             "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -50,6 +52,7 @@ public interface SeriesControllerApi {
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "office-create",
+            summary = "Request body to create a new series",
             value = "{\"title\":\"The Office\",\"year\":2005,\"genres\":\"Comedy\",\"totalSeasons\":9}")))
     @PostMapping
     ResponseEntity<ApiResponse<SeriesDto>> create(@RequestBody SeriesDto dto);
@@ -58,7 +61,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "series-list", value = """
+                    name = "series-list",
+                    summary = "Two tracked series",
+                    value = """
                         {
                           "data": [
                             {
@@ -69,10 +74,19 @@ public interface SeriesControllerApi {
                               "totalSeasons": 9,
                               "status": "WATCHING",
                               "personalRating": 9
+                            },
+                            {
+                              "id": "5a1e3b3a-8f0d-4c2e-9c1a-2b3c4d5e6f70",
+                              "title": "Parks and Recreation",
+                              "year": 2009,
+                              "genres": "Comedy",
+                              "totalSeasons": 7,
+                              "status": "COMPLETED",
+                              "personalRating": 8
                             }
                           ],
                           "error": null,
-                          "count": 1,
+                          "count": 2,
                           "excludedCount": 0
                         }""")))
         })
@@ -88,7 +102,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "office", value = """
+                    name = "office",
+                    summary = "A single tracked series",
+                    value = """
                         {
                           "data": {
                             "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -108,7 +124,8 @@ public interface SeriesControllerApi {
         })
     @GetMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<SeriesDto>> getById(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The series' id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id);
 
     @Operation(summary = "Update a series (partial)",
@@ -125,10 +142,12 @@ public interface SeriesControllerApi {
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "partial-update",
+            summary = "Update personal rating and current season",
             value = "{\"personalRating\":9,\"currentSeason\":5}")))
     @PatchMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<SeriesDto>> update(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The series' id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id,
             @RequestBody SeriesDto dto);
 
@@ -139,7 +158,8 @@ public interface SeriesControllerApi {
         })
     @DeleteMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<Void> delete(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The series' id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id);
 
     @Operation(summary = "Dismiss a recommendation so it never resurfaces",
@@ -147,7 +167,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "ignored", value = """
+                    name = "ignored",
+                    summary = "A dismissed recommendation",
+                    value = """
                         {
                           "data": {
                             "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -163,6 +185,7 @@ public interface SeriesControllerApi {
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "ignore-request",
+            summary = "Request body to dismiss a recommendation",
             value = "{\"imdbId\":\"tt0386676\",\"title\":\"The Office\",\"reason\":\"Already watched\"}")))
     @PostMapping("/ignored")
     ResponseEntity<ApiResponse<IgnoredSeriesDto>> ignore(@RequestBody IgnoredSeriesDto dto);
@@ -173,7 +196,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "search-results", value = """
+                    name = "search-results",
+                    summary = "Two matching series, with two more excluded by other filters",
+                    value = """
                         {
                           "data": [
                             {
@@ -183,16 +208,25 @@ public interface SeriesControllerApi {
                               "genres": "Comedy",
                               "status": "WATCHING",
                               "personalRating": 9
+                            },
+                            {
+                              "id": "5a1e3b3a-8f0d-4c2e-9c1a-2b3c4d5e6f70",
+                              "title": "Parks and Recreation",
+                              "year": 2009,
+                              "genres": "Comedy",
+                              "status": "COMPLETED",
+                              "personalRating": 8
                             }
                           ],
                           "error": null,
-                          "count": 1,
+                          "count": 2,
                           "excludedCount": 2
                         }""")))
         })
     @GetMapping("/search")
     ResponseEntity<ApiResponse<List<SeriesDto>>> search(
-            @Parameter(example = "office")
+            @Parameter(description = "Case-insensitive substring match against the stored title.",
+                example = "office")
             @RequestParam(required = false) String title,
             @Parameter(description = "Repeatable, case-insensitive substring match against the "
                 + "stored genres field, OR'd across multiple values. If a series matches both "
@@ -200,42 +234,74 @@ public interface SeriesControllerApi {
             @RequestParam(required = false) List<String> genre,
             @Parameter(description = "Repeatable, case-insensitive substring match against the "
                 + "stored genres field; drops any matching series. A series with no genres at "
-                + "all is never excluded. Exclusion wins over genre on conflict.")
+                + "all is never excluded. Exclusion wins over genre on conflict.",
+                example = "Animation")
             @RequestParam(required = false) List<String> excludeGenre,
+            @Parameter(description = "Repeatable, case-insensitive exact match against a "
+                + "series' TMDB keyword set, OR'd across multiple values.", example = "workplace")
             @RequestParam(required = false) List<String> keyword,
-            @Parameter(example = "WATCHING")
+            @Parameter(description = "One of BACKLOG, WATCHING, COMPLETED. An unrecognized "
+                + "value returns 400.", example = "WATCHING")
             @RequestParam(required = false) String status,
+            @Parameter(description = "Repeatable ISO 3166-1 alpha-2 code, OR-matched against "
+                + "the stored originCountry column.", example = "US")
             @RequestParam(required = false) List<String> originCountry,
+            @Parameter(description = "ISO 639-1 language code, matched against the stored "
+                + "originalLanguage column.", example = "en")
             @RequestParam(required = false) String originalLanguage,
+            @Parameter(description = "Excludes series whose personalRating is null or below "
+                + "this threshold (1-10).", example = "7")
             @RequestParam(required = false) Integer minPersonalRating,
+            @Parameter(description = "Excludes series whose imdbRating is null or below this "
+                + "threshold.", example = "8.0")
             @RequestParam(required = false) BigDecimal minImdbRating,
+            @Parameter(description = "Excludes series whose tmdbRating is null or below this "
+                + "threshold.", example = "7.5")
             @RequestParam(required = false) BigDecimal minTmdbRating,
+            @Parameter(description = "Excludes series whose rottenTomatoesRating is null or "
+                + "below this threshold (0-100).", example = "80")
             @RequestParam(required = false) Integer minRottenTomatoesRating,
+            @Parameter(description = "Excludes series whose rottenTomatoesPopcornmeter is null "
+                + "or below this threshold (0-100).", example = "75")
             @RequestParam(required = false) Integer minRottenTomatoesPopcornmeter,
+            @Parameter(description = "Excludes series whose known airing span ends before this "
+                + "year (true interval-overlap, not just the stored year).", example = "2000")
             @RequestParam(required = false) Integer yearMin,
+            @Parameter(description = "Excludes series whose known airing span starts after "
+                + "this year (true interval-overlap, not just the stored year).",
+                example = "2020")
             @RequestParam(required = false) Integer yearMax,
+            @Parameter(description = "true restricts results to series flagged for rewatch; "
+                + "false/omitted applies no restriction.", example = "true")
             @RequestParam(required = false) Boolean flaggedForRewatch,
             @Parameter(description = "null/absent is a no-op; true restricts results to series "
                 + "missing an IMDb rating. OR'd together with the other three missing*Rating "
                 + "filters (not AND'd) -- a series matches if it's missing any checked rating. "
-                + "This combined missing-ratings condition still ANDs with every other filter.")
+                + "This combined missing-ratings condition still ANDs with every other filter.",
+                example = "true")
             @RequestParam(required = false) Boolean missingImdbRating,
             @Parameter(description = "null/absent is a no-op; true restricts results to series "
                 + "missing a TMDB rating. OR'd together with the other three missing*Rating "
                 + "filters (not AND'd) -- a series matches if it's missing any checked rating. "
-                + "This combined missing-ratings condition still ANDs with every other filter.")
+                + "This combined missing-ratings condition still ANDs with every other filter.",
+                example = "true")
             @RequestParam(required = false) Boolean missingTmdbRating,
             @Parameter(description = "null/absent is a no-op; true restricts results to series "
                 + "missing a Rotten Tomatoes rating. OR'd together with the other three "
                 + "missing*Rating filters (not AND'd) -- a series matches if it's missing any "
-                + "checked rating. This combined condition still ANDs with every other filter.")
+                + "checked rating. This combined condition still ANDs with every other filter.",
+                example = "true")
             @RequestParam(required = false) Boolean missingRottenTomatoesRating,
             @Parameter(description = "null/absent is a no-op; true restricts results to series "
                 + "missing a Rotten Tomatoes Popcornmeter rating. OR'd together with the other "
                 + "three missing*Rating filters (not AND'd) -- a series matches if it's missing "
-                + "any checked rating. This combined condition still ANDs with every other filter.")
+                + "any checked rating. This combined condition still ANDs with every other filter.",
+                example = "true")
             @RequestParam(required = false) Boolean missingRottenTomatoesPopcornmeter,
+            @Parameter(description = "Field to sort by, e.g. personalRating, title, year, "
+                + "imdbRating, tmdbRating.", example = "personalRating")
             @RequestParam(required = false) String sortBy,
+            @Parameter(description = "asc|desc.", example = "desc")
             @RequestParam(required = false) String sortDirection);
 
     @Operation(summary = "Export series as JSON or CSV",
@@ -246,7 +312,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "json-export", value = """
+                    name = "json-export",
+                    summary = "Two exported series",
+                    value = """
                         {
                           "exportDate": "2026-01-15T10:30:00Z",
                           "series": [
@@ -256,26 +324,58 @@ public interface SeriesControllerApi {
                               "genres": "Comedy",
                               "totalSeasons": 9,
                               "status": "WATCHING"
+                            },
+                            {
+                              "title": "Parks and Recreation",
+                              "year": 2009,
+                              "genres": "Comedy",
+                              "totalSeasons": 7,
+                              "status": "COMPLETED"
                             }
                           ],
-                          "count": 1
+                          "count": 2
                         }""")))
         })
     @GetMapping("/export")
     ResponseEntity<String> export(
-            @Parameter(example = "json")
+            @Parameter(description = "json or csv.", example = "json")
             @RequestParam String format,
+            @Parameter(description = "Case-insensitive substring match against the stored title.",
+                example = "office")
             @RequestParam(required = false) String title,
+            @Parameter(description = "Repeatable, case-insensitive substring match against the "
+                + "stored genres field, OR'd across multiple values.", example = "Comedy")
             @RequestParam(required = false) List<String> genre,
+            @Parameter(description = "One of BACKLOG, WATCHING, COMPLETED. An unrecognized "
+                + "value returns 400.", example = "WATCHING")
             @RequestParam(required = false) String status,
+            @Parameter(description = "Repeatable ISO 3166-1 alpha-2 code, OR-matched against "
+                + "the stored originCountry column.", example = "US")
             @RequestParam(required = false) List<String> originCountry,
+            @Parameter(description = "ISO 639-1 language code, matched against the stored "
+                + "originalLanguage column.", example = "en")
             @RequestParam(required = false) String originalLanguage,
+            @Parameter(description = "Excludes series whose personalRating is null or below "
+                + "this threshold (1-10).", example = "7")
             @RequestParam(required = false) Integer minPersonalRating,
+            @Parameter(description = "Excludes series whose imdbRating is null or below this "
+                + "threshold.", example = "8.0")
             @RequestParam(required = false) BigDecimal minImdbRating,
+            @Parameter(description = "Excludes series whose tmdbRating is null or below this "
+                + "threshold.", example = "7.5")
             @RequestParam(required = false) BigDecimal minTmdbRating,
+            @Parameter(description = "Excludes series whose rottenTomatoesRating is null or "
+                + "below this threshold (0-100).", example = "80")
             @RequestParam(required = false) Integer minRottenTomatoesRating,
+            @Parameter(description = "Excludes series whose rottenTomatoesPopcornmeter is null "
+                + "or below this threshold (0-100).", example = "75")
             @RequestParam(required = false) Integer minRottenTomatoesPopcornmeter,
+            @Parameter(description = "Excludes series whose known airing span ends before this "
+                + "year (true interval-overlap, not just the stored year).", example = "2000")
             @RequestParam(required = false) Integer yearMin,
+            @Parameter(description = "Excludes series whose known airing span starts after "
+                + "this year (true interval-overlap, not just the stored year).",
+                example = "2020")
             @RequestParam(required = false) Integer yearMax);
 
     @Operation(summary = "Start an async job re-importing a previously exported file",
@@ -289,7 +389,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "import-started", value = """
+                    name = "import-started",
+                    summary = "An import job that has just started",
+                    value = """
                         {
                           "data": {
                             "status": "IN_PROGRESS",
@@ -320,7 +422,9 @@ public interface SeriesControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "import-status", value = """
+                    name = "import-status",
+                    summary = "A completed import job with one row error",
+                    value = """
                         {
                           "data": {
                             "status": "COMPLETED",

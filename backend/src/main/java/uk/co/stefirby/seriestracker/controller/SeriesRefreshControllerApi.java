@@ -32,7 +32,9 @@ public interface SeriesRefreshControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "refreshed", value = """
+                    name = "refreshed",
+                    summary = "Both TMDB and OMDb refreshed successfully",
+                    value = """
                         {
                           "data": {
                             "series": {
@@ -56,7 +58,8 @@ public interface SeriesRefreshControllerApi {
         })
     @PostMapping("/" + UuidPathPattern.PATTERN + "/refresh")
     ResponseEntity<ApiResponse<RefreshResult>> refresh(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The series' id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id);
 
     @Operation(summary = "Clear a series' newContentDetectedAt flag",
@@ -68,7 +71,8 @@ public interface SeriesRefreshControllerApi {
         })
     @PostMapping("/" + UuidPathPattern.PATTERN + "/acknowledge-new-content")
     ResponseEntity<ApiResponse<SeriesDto>> acknowledgeNewContent(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The series' id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id);
 
     @Operation(summary = "Start an async job refreshing every tracked series sequentially",
@@ -80,7 +84,9 @@ public interface SeriesRefreshControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "refresh-all-started", value = """
+                    name = "refresh-all-started",
+                    summary = "A bulk refresh job that has just started",
+                    value = """
                         {
                           "data": {
                             "status": "IN_PROGRESS",
@@ -104,7 +110,9 @@ public interface SeriesRefreshControllerApi {
         + "configured default for any future run. Omitting the body, or the field within it, "
         + "leaves the configured default governing.",
         content = @Content(mediaType = "application/json", examples = @ExampleObject(
-            name = "override-threshold", value = "{\"skipThresholdMinutesOverride\":30}")))
+            name = "override-threshold",
+            summary = "Override the skip threshold to 30 minutes for this run only",
+            value = "{\"skipThresholdMinutesOverride\":30}")))
     @PostMapping("/refresh-all")
     ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll(@RequestBody(required = false) RefreshAllOptions options);
 
@@ -115,7 +123,9 @@ public interface SeriesRefreshControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "refresh-all-status", value = """
+                    name = "refresh-all-status",
+                    summary = "A completed bulk refresh job",
+                    value = """
                         {
                           "data": {
                             "status": "COMPLETED",

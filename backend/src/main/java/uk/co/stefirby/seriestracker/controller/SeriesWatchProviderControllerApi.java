@@ -28,10 +28,14 @@ public interface SeriesWatchProviderControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = {
                     @ExampleObject(name = "providers-available",
+                        summary = "Two streaming providers carry this series",
                         value = "{\"data\":[{\"name\":\"Peacock\",\"logoUrl\":"
-                            + "\"https://image.tmdb.org/t/p/w500/example-peacock.jpg\"}],"
-                            + "\"error\":null,\"count\":1,\"excludedCount\":0}"),
+                            + "\"https://image.tmdb.org/t/p/w500/example-peacock.jpg\"},"
+                            + "{\"name\":\"Netflix\",\"logoUrl\":"
+                            + "\"https://image.tmdb.org/t/p/w500/example-netflix.jpg\"}],"
+                            + "\"error\":null,\"count\":2,\"excludedCount\":0}"),
                     @ExampleObject(name = "no-providers-found",
+                        summary = "No streaming providers carry this series",
                         value = "{\"data\":[],\"error\":null,\"count\":0,\"excludedCount\":0}")
                 })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
@@ -39,7 +43,8 @@ public interface SeriesWatchProviderControllerApi {
         })
     @GetMapping("/" + UuidPathPattern.PATTERN + "/watch-providers")
     ResponseEntity<ApiResponse<List<RecommendationDto.StreamingProvider>>> watchProviders(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The series' id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id,
             @Parameter(description = "Optional ISO 3166-1 alpha-2 code overriding "
                 + "app.tmdb.watch-region for this lookup; omitting it behaves identically to "

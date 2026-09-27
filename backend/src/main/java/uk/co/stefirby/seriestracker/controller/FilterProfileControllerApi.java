@@ -30,7 +30,9 @@ public interface FilterProfileControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "profiles", value = """
+                    name = "profiles",
+                    summary = "Two saved MY_SERIES filter profiles",
+                    value = """
                         {
                           "data": [
                             {
@@ -63,7 +65,7 @@ public interface FilterProfileControllerApi {
         })
     @GetMapping
     ResponseEntity<ApiResponse<List<FilterProfileDto>>> list(
-            @Parameter(description = "Required. One of MY_SERIES, USE_MY_SERIES, "
+            @Parameter(description = "One of MY_SERIES, USE_MY_SERIES, "
                 + "RECOMMENDATION_FILTERS, CUSTOM_SEARCH, ANALYSIS_FILTERS -- identifies which "
                 + "of five unrelated frontend contexts this profile belongs to. An unrecognized "
                 + "value returns 400.", example = "MY_SERIES")
@@ -77,7 +79,9 @@ public interface FilterProfileControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "created-profile", value = """
+                    name = "created-profile",
+                    summary = "The newly created filter profile",
+                    value = """
                         {
                           "data": {
                             "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -103,7 +107,9 @@ public interface FilterProfileControllerApi {
         + "criteria is an opaque JSON object the backend never validates or queries into -- it's "
         + "stored and returned exactly as submitted.",
         content = @Content(mediaType = "application/json", examples = @ExampleObject(
-            name = "new-profile", value = """
+            name = "new-profile",
+            summary = "Request body to create a MY_SERIES filter profile",
+            value = """
                 {
                   "area": "MY_SERIES",
                   "name": "No animation",
@@ -128,10 +134,12 @@ public interface FilterProfileControllerApi {
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "rename-profile",
+            summary = "Request body to rename a filter profile",
             value = "{\"name\":\"No animation or reality TV\"}")))
     @PatchMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<FilterProfileDto>> update(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The filter profile's id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id,
             @RequestBody FilterProfileDto dto);
 
@@ -143,6 +151,7 @@ public interface FilterProfileControllerApi {
         })
     @DeleteMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<Void> delete(
-            @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(description = "The filter profile's id.",
+                example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id);
 }

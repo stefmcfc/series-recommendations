@@ -24,7 +24,9 @@ public interface SeriesKeywordControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "keyword-stats", value = """
+                    name = "keyword-stats",
+                    summary = "Two keywords' aggregated rating/count stats",
+                    value = """
                         {
                           "data": [
                             {
@@ -54,19 +56,22 @@ public interface SeriesKeywordControllerApi {
             @RequestParam(required = false) String sortBy,
             @Parameter(description = "asc|desc; an unrecognized value falls back to the active "
                 + "field's own established default direction rather than 400. Null averages "
-                + "always sort last, under both directions.")
+                + "always sort last, under both directions.", example = "desc")
             @RequestParam(required = false) String sortDirection,
             @Parameter(description = "Excludes any keyword whose seriesCount is below this "
                 + "threshold. AND-combined with the other two minimum-value filters; a null "
-                + "average never satisfies a minAverage* filter, even at threshold 0.")
+                + "average never satisfies a minAverage* filter, even at threshold 0.",
+                example = "3")
             @RequestParam(required = false) Integer minSeriesCount,
             @Parameter(description = "Excludes any keyword whose averagePersonalRating is null "
                 + "or below this threshold. AND-combined with the other two minimum-value "
-                + "filters; a null average never satisfies this filter, even at threshold 0.")
+                + "filters; a null average never satisfies this filter, even at threshold 0.",
+                example = "7.5")
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
             @Parameter(description = "Excludes any keyword whose averageBlendedRating is null "
                 + "or below this threshold. AND-combined with the other two minimum-value "
-                + "filters; a null average never satisfies this filter, even at threshold 0.")
+                + "filters; a null average never satisfies this filter, even at threshold 0.",
+                example = "7.5")
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @Parameter(description = "Restricts aggregation to series whose status is COMPLETED "
                 + "when true. null/false/omitted apply no restriction.", example = "true")

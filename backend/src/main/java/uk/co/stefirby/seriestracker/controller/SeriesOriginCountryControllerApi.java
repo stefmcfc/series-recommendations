@@ -26,7 +26,9 @@ public interface SeriesOriginCountryControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "origin-country-stats", value = """
+                    name = "origin-country-stats",
+                    summary = "Two origin countries' aggregated rating/count stats",
+                    value = """
                         {
                           "data": [
                             {
@@ -55,16 +57,18 @@ public interface SeriesOriginCountryControllerApi {
                 example = "seriesCount")
             @RequestParam(required = false) String sortBy,
             @Parameter(description = "asc|desc; an unrecognized value falls back to the active "
-                + "field's own established default direction rather than 400.")
+                + "field's own established default direction rather than 400.", example = "desc")
             @RequestParam(required = false) String sortDirection,
             @Parameter(description = "Excludes any country whose seriesCount is below this "
-                + "threshold. AND-combined with the other minimum-value filters.")
+                + "threshold. AND-combined with the other minimum-value filters.", example = "3")
             @RequestParam(required = false) Integer minSeriesCount,
             @Parameter(description = "Excludes any country whose averagePersonalRating is null "
-                + "or below this threshold. AND-combined with the other minimum-value filters.")
+                + "or below this threshold. AND-combined with the other minimum-value filters.",
+                example = "7.5")
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
             @Parameter(description = "Excludes any country whose averageBlendedRating is null "
-                + "or below this threshold. AND-combined with the other minimum-value filters.")
+                + "or below this threshold. AND-combined with the other minimum-value filters.",
+                example = "7.5")
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @Parameter(description = "Restricts aggregation to series whose status is COMPLETED "
                 + "when true. null/false/omitted apply no restriction.", example = "true")

@@ -24,7 +24,9 @@ public interface SeriesLookupControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "tmdb-candidates", value = """
+                    name = "tmdb-candidates",
+                    summary = "Two same-titled candidates from different countries",
+                    value = """
                         {
                           "data": [
                             {
@@ -51,7 +53,8 @@ public interface SeriesLookupControllerApi {
         })
     @GetMapping("/lookup/search-tmdb")
     ResponseEntity<ApiResponse<List<TmdbLookupCandidateDto>>> lookupSearchTmdb(
-            @Parameter(example = "The Office")
+            @Parameter(description = "Case-insensitive title to search for on TMDB.",
+                example = "The Office")
             @RequestParam String title);
 
     @Operation(summary = "Resolve a TMDB search candidate to full lookup detail",
@@ -63,7 +66,9 @@ public interface SeriesLookupControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "office-resolved", value = """
+                    name = "office-resolved",
+                    summary = "The Office, resolved from TMDB with OMDb ratings merged in",
+                    value = """
                         {
                           "data": {
                             "tmdbId": 2316,

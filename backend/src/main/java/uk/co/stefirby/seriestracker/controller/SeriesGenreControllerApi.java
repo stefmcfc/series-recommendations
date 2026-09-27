@@ -25,6 +25,7 @@ public interface SeriesGenreControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "genre-vocabulary",
+                    summary = "The full genre alias vocabulary",
                     value = "{\"data\":[\"Comedy\",\"Drama\",\"Sci-Fi & Fantasy\"],"
                         + "\"error\":null,\"count\":3,\"excludedCount\":0}")))
         })
@@ -38,7 +39,9 @@ public interface SeriesGenreControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "genre-stats", value = """
+                    name = "genre-stats",
+                    summary = "Two genres' aggregated rating/count stats",
+                    value = """
                         {
                           "data": [
                             {
@@ -66,18 +69,19 @@ public interface SeriesGenreControllerApi {
                 + "default rather than 400.", example = "seriesCount")
             @RequestParam(required = false) String sortBy,
             @Parameter(description = "asc|desc; an unrecognized value falls back to the active "
-                + "field's own established default direction rather than 400.")
+                + "field's own established default direction rather than 400.", example = "desc")
             @RequestParam(required = false) String sortDirection,
             @Parameter(description = "Excludes any genre whose seriesCount is below this "
-                + "threshold. AND-combined with the other minimum-value filters.")
+                + "threshold. AND-combined with the other minimum-value filters.", example = "3")
             @RequestParam(required = false) Integer minSeriesCount,
             @Parameter(description = "Excludes any genre whose averagePersonalRating is null or "
-                + "below this threshold. AND-combined with the other minimum-value filters.")
+                + "below this threshold. AND-combined with the other minimum-value filters.",
+                example = "7.5")
             @RequestParam(required = false) BigDecimal minAveragePersonalRating,
             @Parameter(description = "The unweighted average of a genre's carrying series' "
                 + "IMDb/TMDB ratings, excluding series with neither set. Excludes any genre "
                 + "whose averageBlendedRating is null or below this threshold; AND-combined "
-                + "with the other minimum-value filters.")
+                + "with the other minimum-value filters.", example = "7.5")
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @Parameter(description = "Restricts aggregation to series whose status is COMPLETED "
                 + "when true. null/false/omitted apply no restriction.", example = "true")
