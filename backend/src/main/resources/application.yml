@@ -7,8 +7,13 @@
     # backend/application-local.yml.example and RUNBOOK.md's Environment Variables section.
     import: "optional:file:./application-local.yml"
   datasource:
-    url: jdbc:sqlite:./data/series.db
+    # tooling_spec_010 (TOOLING-010-AC-02): same busy_timeout/single-connection-pool reasoning as
+    # the test datasource -- BulkRefreshService's async per-series writes and a concurrent browser
+    # request are the same single-writer SQLite contention risk, just triggered far less often.
+    url: jdbc:sqlite:./data/series.db?busy_timeout=30000
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
   jpa:
     hibernate:
       ddl-auto: validate

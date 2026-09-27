@@ -83,9 +83,44 @@ flake wasn't, and is logged here instead.
 `frontend_spec_136` was mid-implementation, that `SearchFilter.tsx` (My Series page's filter) never
 got the keyword-favourites `pinnedOptions` treatment `frontend_spec_133` gave `CustomSearchPanel.tsx`.
 
+2026-09-28 update: a sixth candidate added — the user asked, while reviewing `tooling_spec_010`'s
+implementation, why `src/test/resources/application.yml` doesn't need `spring.config.activate.on-
+profile: test` for it to be treated as the test config. Confirmed it's picked up purely by classpath
+location (Gradle's test classpath puts `src/test/resources` ahead of `src/main/resources`, and both
+files share the exact name `application.yml`), which surfaced that every Spock spec's
+`@ActiveProfiles("test")` is currently a no-op — no `application-test.yml` or `@Profile("test")` bean
+exists anywhere in the codebase for it to actually activate.
+
 ---
 
 ## Candidates
+
+### Real Spring profiles for distinct test types (integration/blackbox/smoke), replacing the currently-vestigial `@ActiveProfiles("test")`
+
+Raised 2026-09-28 while reviewing `tooling_spec_010`'s implementation. Every Spock spec in the
+backend suite carries `@ActiveProfiles("test")`, which reads as if it activates a meaningful,
+named configuration — but confirmed directly (no `application-test.yml`, no `@Profile("test")`
+bean anywhere in `backend/src/main/java`) that it currently does nothing. What actually makes
+`backend/src/test/resources/application.yml` the config used during test runs is unrelated to
+profiles entirely: Gradle's test classpath puts `src/test/resources` ahead of `src/main/resources`,
+and since both files share the identical name `application.yml`, Spring resolves `classpath:
+application.yml` to the test one first, shadowing the main one completely. `@ActiveProfiles("test")`
+is along for the ride, not the mechanism.
+
+**Idea**: this whole suite currently only has one flavor of backend test (Spock unit/slice specs
+against an in-process context and a real — now per-context-isolated, `tooling_spec_010` —
+SQLite file). If/when this project wants genuinely distinct test types with their own
+configuration needs — e.g. a true black-box test hitting a running `bootRun` instance over real
+HTTP rather than `MockMvc`, a smoke-test profile that skips expensive setup for a fast sanity
+check, or an integration-test profile that deliberately keeps Flyway enabled (unlike today's
+`create-drop`) to verify real migrations — that's exactly the point at which real, named
+`application-{profile}.yml` files (or `@Profile`-conditional beans) would start doing something,
+and `@ActiveProfiles("test")` should either become meaningful (pointing at an actual
+`application-test.yml`) or be removed as misleading. Worth scoping once there's a concrete second
+test type actually wanted, rather than speculatively — this candidate is the placeholder for that
+conversation, not a decision to build any specific new test type yet.
+
+**Status**: Spec candidate, not yet designed.
 
 ### Bound Vitest's worker thread pool to reduce full-suite timing flakes
 

@@ -1,6 +1,12 @@
 # Tooling Spec 010: SQLite Busy-Timeout, Single-Connection Pooling, and Per-Context Test Database Isolation (Pipeline Reliability)
 
-**Status**: Not started
+**Status**: Done (2026-09-28). Implemented as written. `TOOLING-010-AC-02`'s verification approach
+was chosen (not fully pinned in the original AC) as a plain, no-Spring-context Groovy spec parsing
+`src/main/resources/application.yml` directly via SnakeYaml — deliberately avoiding booting a real
+context under the default profile, which would point a live `HikariDataSource` (and Flyway) at this
+developer's actual `./data/series.db`. Verification: `gradlew.bat test` run 5 consecutive times,
+all green, zero `SQLITE_BUSY`/`CannotAcquireLockException` in any run; confirmed all 5 isolated
+`build/test-dbs/<ClassName>.db` files are created as expected.
 **Priority**: P2 (intermittently blocks every push — the pre-push hook runs the full backend suite,
 and CI's `backend` job runs the same `gradle check`)
 **Depends on**: none — infra/config fix, not a refactor of existing behavior
@@ -288,8 +294,8 @@ all 5 runs green, no `SQLITE_BUSY` in any run's output.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-010-AC-01: test datasource gets `busy_timeout=30000` + `maximum-pool-size: 1`
-- [ ] TOOLING-010-AC-02: production datasource gets the identical change
-- [ ] TOOLING-010-AC-03: `IsolatedTestDatabase.urlFor(Class)` helper, deterministic per-class URL + dir creation
-- [ ] TOOLING-010-AC-04: the 5 `@MockitoBean`-bearing specs each use their own isolated database file
-- [ ] TOOLING-010-AC-05: 5 consecutive full local test runs, zero `SQLITE_BUSY` failures
+- [x] TOOLING-010-AC-01: test datasource gets `busy_timeout=30000` + `maximum-pool-size: 1`
+- [x] TOOLING-010-AC-02: production datasource gets the identical change
+- [x] TOOLING-010-AC-03: `IsolatedTestDatabase.urlFor(Class)` helper, deterministic per-class URL + dir creation
+- [x] TOOLING-010-AC-04: the 5 `@MockitoBean`-bearing specs each use their own isolated database file
+- [x] TOOLING-010-AC-05: 5 consecutive full local test runs, zero `SQLITE_BUSY` failures
