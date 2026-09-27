@@ -25,13 +25,29 @@ public interface SeriesLookupControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "tmdb-candidates", value = """
-                        {"data":[{"tmdbId":2316,"title":"The Office","year":2005,\
-                        "originalTitle":null,"posterUrl":\
-                        "https://image.tmdb.org/t/p/w500/7DJKHzAi83BmQrWLrYYOqcoKfhR.jpg",\
-                        "originCountry":"US"},{"tmdbId":2996,"title":"The Office","year":2001,\
-                        "originalTitle":null,"posterUrl":\
-                        "https://image.tmdb.org/t/p/w500/oX2JKE1RzAONMbYlujHx0hRAJo1.jpg",\
-                        "originCountry":"GB"}],"error":null,"count":2,"excludedCount":0}""")))
+                        {
+                          "data": [
+                            {
+                              "tmdbId": 2316,
+                              "title": "The Office",
+                              "year": 2005,
+                              "originalTitle": null,
+                              "posterUrl": "https://image.tmdb.org/t/p/w500/7DJKHzAi83BmQrWLrYYOqcoKfhR.jpg",
+                              "originCountry": "US"
+                            },
+                            {
+                              "tmdbId": 2996,
+                              "title": "The Office",
+                              "year": 2001,
+                              "originalTitle": null,
+                              "posterUrl": "https://image.tmdb.org/t/p/w500/oX2JKE1RzAONMbYlujHx0hRAJo1.jpg",
+                              "originCountry": "GB"
+                            }
+                          ],
+                          "error": null,
+                          "count": 2,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping("/lookup/search-tmdb")
     ResponseEntity<ApiResponse<List<TmdbLookupCandidateDto>>> lookupSearchTmdb(
@@ -48,16 +64,30 @@ public interface SeriesLookupControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "office-resolved", value = """
-                        {"data":{"tmdbId":2316,"title":"The Office","year":2005,"genres":\
-                        "Comedy","totalSeasons":9,"totalEpisodes":186,"imdbRating":9.0,\
-                        "rottenTomatoesRating":null,"tmdbRating":8.584,"tmdbVoteCount":5508,\
-                        "posterUrl":\
-                        "https://image.tmdb.org/t/p/w500/7DJKHzAi83BmQrWLrYYOqcoKfhR.jpg",\
-                        "imdbId":"tt0386676","originCountry":"US","productionStatus":"ENDED",\
-                        "overview":"The everyday lives of office employees in the Scranton, "
-                        + "Pennsylvania branch of the fictional Dunder Mifflin Paper Company.",\
-                        "lastAirYear":2013,"originalLanguage":"en"},"error":null,"count":1,\
-                        "excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "tmdbId": 2316,
+                            "title": "The Office",
+                            "year": 2005,
+                            "genres": "Comedy",
+                            "totalSeasons": 9,
+                            "totalEpisodes": 186,
+                            "imdbRating": 9.0,
+                            "rottenTomatoesRating": null,
+                            "tmdbRating": 8.584,
+                            "tmdbVoteCount": 5508,
+                            "posterUrl": "https://image.tmdb.org/t/p/w500/7DJKHzAi83BmQrWLrYYOqcoKfhR.jpg",
+                            "imdbId": "tt0386676",
+                            "originCountry": "US",
+                            "productionStatus": "ENDED",
+                            "overview": "The everyday lives of office employees in the Scranton, Pennsylvania branch of the fictional Dunder Mifflin Paper Company.",
+                            "lastAirYear": 2013,
+                            "originalLanguage": "en"
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502",
                 ref = "#/components/responses/BadGateway")
         })

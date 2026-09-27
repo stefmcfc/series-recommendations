@@ -28,10 +28,21 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "office-created", value = """
-                        {"data":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","title":"The Office",\
-                        "year":2005,"genres":"Comedy","totalSeasons":9,"totalEpisodes":186,\
-                        "status":"BACKLOG","dateAdded":"2026-01-15T10:30:00"},"error":null,\
-                        "count":1,"excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                            "title": "The Office",
+                            "year": 2005,
+                            "genres": "Comedy",
+                            "totalSeasons": 9,
+                            "totalEpisodes": 186,
+                            "status": "BACKLOG",
+                            "dateAdded": "2026-01-15T10:30:00"
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
                 ref = "#/components/responses/BadRequest"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
@@ -48,9 +59,22 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "series-list", value = """
-                        {"data":[{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","title":"The Office",\
-                        "year":2005,"genres":"Comedy","totalSeasons":9,"status":"WATCHING",\
-                        "personalRating":9}],"error":null,"count":1,"excludedCount":0}""")))
+                        {
+                          "data": [
+                            {
+                              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                              "title": "The Office",
+                              "year": 2005,
+                              "genres": "Comedy",
+                              "totalSeasons": 9,
+                              "status": "WATCHING",
+                              "personalRating": 9
+                            }
+                          ],
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping
     ResponseEntity<ApiResponse<List<SeriesDto>>> getAll(
@@ -65,9 +89,20 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "office", value = """
-                        {"data":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","title":"The Office",\
-                        "year":2005,"genres":"Comedy","totalSeasons":9,"status":"WATCHING",\
-                        "personalRating":9},"error":null,"count":1,"excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                            "title": "The Office",
+                            "year": 2005,
+                            "genres": "Comedy",
+                            "totalSeasons": 9,
+                            "status": "WATCHING",
+                            "personalRating": 9
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
                 ref = "#/components/responses/NotFound")
         })
@@ -113,9 +148,18 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "ignored", value = """
-                        {"data":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","imdbId":\
-                        "tt0386676","title":"The Office","reason":"Already watched","ignoredAt":\
-                        "2026-01-15T10:30:00"},"error":null,"count":1,"excludedCount":0}""")))
+                        {
+                          "data": {
+                            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                            "imdbId": "tt0386676",
+                            "title": "The Office",
+                            "reason": "Already watched",
+                            "ignoredAt": "2026-01-15T10:30:00"
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }""")))
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "ignore-request",
@@ -130,9 +174,21 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "search-results", value = """
-                        {"data":[{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","title":"The Office",\
-                        "year":2005,"genres":"Comedy","status":"WATCHING","personalRating":9}],\
-                        "error":null,"count":1,"excludedCount":2}""")))
+                        {
+                          "data": [
+                            {
+                              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                              "title": "The Office",
+                              "year": 2005,
+                              "genres": "Comedy",
+                              "status": "WATCHING",
+                              "personalRating": 9
+                            }
+                          ],
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 2
+                        }""")))
         })
     @GetMapping("/search")
     ResponseEntity<ApiResponse<List<SeriesDto>>> search(
@@ -191,9 +247,19 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "json-export", value = """
-                        {"exportDate":"2026-01-15T10:30:00Z","series":[{"title":"The Office",\
-                        "year":2005,"genres":"Comedy","totalSeasons":9,"status":"WATCHING"}],\
-                        "count":1}""")))
+                        {
+                          "exportDate": "2026-01-15T10:30:00Z",
+                          "series": [
+                            {
+                              "title": "The Office",
+                              "year": 2005,
+                              "genres": "Comedy",
+                              "totalSeasons": 9,
+                              "status": "WATCHING"
+                            }
+                          ],
+                          "count": 1
+                        }""")))
         })
     @GetMapping("/export")
     ResponseEntity<String> export(
@@ -224,10 +290,21 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "import-started", value = """
-                        {"data":{"status":"IN_PROGRESS","totalCount":50,"importedCount":0,\
-                        "skippedCount":0,"errorCount":0,"errors":[],"startedAt":\
-                        "2026-01-15T10:30:00","completedAt":null},"error":null,"count":1,\
-                        "excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "status": "IN_PROGRESS",
+                            "totalCount": 50,
+                            "importedCount": 0,
+                            "skippedCount": 0,
+                            "errorCount": 0,
+                            "errors": [],
+                            "startedAt": "2026-01-15T10:30:00",
+                            "completedAt": null
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
                 ref = "#/components/responses/BadRequest"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
@@ -244,10 +321,26 @@ public interface SeriesControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "import-status", value = """
-                        {"data":{"status":"COMPLETED","totalCount":50,"importedCount":48,\
-                        "skippedCount":1,"errorCount":1,"errors":[{"rowIndex":12,"message":\
-                        "Missing title"}],"startedAt":"2026-01-15T10:30:00","completedAt":\
-                        "2026-01-15T10:31:05"},"error":null,"count":1,"excludedCount":0}""")))
+                        {
+                          "data": {
+                            "status": "COMPLETED",
+                            "totalCount": 50,
+                            "importedCount": 48,
+                            "skippedCount": 1,
+                            "errorCount": 1,
+                            "errors": [
+                              {
+                                "rowIndex": 12,
+                                "message": "Missing title"
+                              }
+                            ],
+                            "startedAt": "2026-01-15T10:30:00",
+                            "completedAt": "2026-01-15T10:31:05"
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping("/import/status")
     ResponseEntity<ApiResponse<ImportJobStatus>> importStatus();

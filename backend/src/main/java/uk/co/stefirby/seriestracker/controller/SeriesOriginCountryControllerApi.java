@@ -27,10 +27,25 @@ public interface SeriesOriginCountryControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "origin-country-stats", value = """
-                        {"data":[{"name":"US","seriesCount":18,"averagePersonalRating":8.2,\
-                        "averageBlendedRating":7.9},{"name":"GB","seriesCount":6,\
-                        "averagePersonalRating":null,"averageBlendedRating":8.0}],"error":null,\
-                        "count":2,"excludedCount":0}""")))
+                        {
+                          "data": [
+                            {
+                              "name": "US",
+                              "seriesCount": 18,
+                              "averagePersonalRating": 8.2,
+                              "averageBlendedRating": 7.9
+                            },
+                            {
+                              "name": "GB",
+                              "seriesCount": 6,
+                              "averagePersonalRating": null,
+                              "averageBlendedRating": 8.0
+                            }
+                          ],
+                          "error": null,
+                          "count": 2,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping("/origin-country/stats")
     ResponseEntity<ApiResponse<List<NameStatDto>>> originCountryStats(

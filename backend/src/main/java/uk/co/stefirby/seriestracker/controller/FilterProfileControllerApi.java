@@ -31,13 +31,33 @@ public interface FilterProfileControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "profiles", value = """
-                        {"data":[{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","area":"MY_SERIES",\
-                        "name":"No animation","criteria":{"excludeGenre":["Animation"]},\
-                        "createdAt":"2026-01-10T09:00:00","updatedAt":"2026-01-10T09:00:00"},\
-                        {"id":"5a1e3b3a-8f0d-4c2e-9c1a-2b3c4d5e6f70","area":"MY_SERIES",\
-                        "name":"High personal rating","criteria":{"minPersonalRating":8},\
-                        "createdAt":"2026-01-11T09:00:00","updatedAt":"2026-01-11T09:00:00"}],\
-                        "error":null,"count":2,"excludedCount":0}"""))),
+                        {
+                          "data": [
+                            {
+                              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                              "area": "MY_SERIES",
+                              "name": "No animation",
+                              "criteria": {
+                                "excludeGenre": ["Animation"]
+                              },
+                              "createdAt": "2026-01-10T09:00:00",
+                              "updatedAt": "2026-01-10T09:00:00"
+                            },
+                            {
+                              "id": "5a1e3b3a-8f0d-4c2e-9c1a-2b3c4d5e6f70",
+                              "area": "MY_SERIES",
+                              "name": "High personal rating",
+                              "criteria": {
+                                "minPersonalRating": 8
+                              },
+                              "createdAt": "2026-01-11T09:00:00",
+                              "updatedAt": "2026-01-11T09:00:00"
+                            }
+                          ],
+                          "error": null,
+                          "count": 2,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
                 ref = "#/components/responses/BadRequest")
         })
@@ -58,10 +78,21 @@ public interface FilterProfileControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "created-profile", value = """
-                        {"data":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","area":"MY_SERIES",\
-                        "name":"No animation","criteria":{"excludeGenre":["Animation"]},\
-                        "createdAt":"2026-01-15T10:30:00","updatedAt":"2026-01-15T10:30:00"},\
-                        "error":null,"count":1,"excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                            "area": "MY_SERIES",
+                            "name": "No animation",
+                            "criteria": {
+                              "excludeGenre": ["Animation"]
+                            },
+                            "createdAt": "2026-01-15T10:30:00",
+                            "updatedAt": "2026-01-15T10:30:00"
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
                 ref = "#/components/responses/BadRequest"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
@@ -73,8 +104,13 @@ public interface FilterProfileControllerApi {
         + "stored and returned exactly as submitted.",
         content = @Content(mediaType = "application/json", examples = @ExampleObject(
             name = "new-profile", value = """
-                {"area":"MY_SERIES","name":"No animation","criteria":\
-                {"excludeGenre":["Animation"]}}""")))
+                {
+                  "area": "MY_SERIES",
+                  "name": "No animation",
+                  "criteria": {
+                    "excludeGenre": ["Animation"]
+                  }
+                }""")))
     @PostMapping
     ResponseEntity<ApiResponse<FilterProfileDto>> create(@RequestBody FilterProfileDto dto);
 

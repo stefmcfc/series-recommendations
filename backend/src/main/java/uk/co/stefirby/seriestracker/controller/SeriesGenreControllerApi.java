@@ -24,9 +24,9 @@ public interface SeriesGenreControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "genre-vocabulary", value = """
-                        {"data":["Comedy","Drama","Sci-Fi & Fantasy"],"error":null,"count":3,\
-                        "excludedCount":0}""")))
+                    name = "genre-vocabulary",
+                    value = "{\"data\":[\"Comedy\",\"Drama\",\"Sci-Fi & Fantasy\"],"
+                        + "\"error\":null,\"count\":3,\"excludedCount\":0}")))
         })
     @GetMapping("/genres")
     ResponseEntity<ApiResponse<List<String>>> genres();
@@ -39,10 +39,25 @@ public interface SeriesGenreControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "genre-stats", value = """
-                        {"data":[{"name":"Comedy","seriesCount":12,"averagePersonalRating":8.4,\
-                        "averageBlendedRating":8.1},{"name":"Documentary","seriesCount":3,\
-                        "averagePersonalRating":null,"averageBlendedRating":7.9}],"error":null,\
-                        "count":2,"excludedCount":0}""")))
+                        {
+                          "data": [
+                            {
+                              "name": "Comedy",
+                              "seriesCount": 12,
+                              "averagePersonalRating": 8.4,
+                              "averageBlendedRating": 8.1
+                            },
+                            {
+                              "name": "Documentary",
+                              "seriesCount": 3,
+                              "averagePersonalRating": null,
+                              "averageBlendedRating": 7.9
+                            }
+                          ],
+                          "error": null,
+                          "count": 2,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping("/genres/stats")
     ResponseEntity<ApiResponse<List<NameStatDto>>> genreStats(

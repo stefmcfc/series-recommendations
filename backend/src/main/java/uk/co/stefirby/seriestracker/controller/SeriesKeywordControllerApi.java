@@ -25,10 +25,25 @@ public interface SeriesKeywordControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "keyword-stats", value = """
-                        {"data":[{"name":"workplace","seriesCount":5,"averagePersonalRating":8.6,\
-                        "averageBlendedRating":8.2},{"name":"mockumentary","seriesCount":2,\
-                        "averagePersonalRating":null,"averageBlendedRating":8.0}],"error":null,\
-                        "count":2,"excludedCount":0}""")))
+                        {
+                          "data": [
+                            {
+                              "name": "workplace",
+                              "seriesCount": 5,
+                              "averagePersonalRating": 8.6,
+                              "averageBlendedRating": 8.2
+                            },
+                            {
+                              "name": "mockumentary",
+                              "seriesCount": 2,
+                              "averagePersonalRating": null,
+                              "averageBlendedRating": 8.0
+                            }
+                          ],
+                          "error": null,
+                          "count": 2,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping("/keywords")
     ResponseEntity<ApiResponse<List<NameStatDto>>> keywords(

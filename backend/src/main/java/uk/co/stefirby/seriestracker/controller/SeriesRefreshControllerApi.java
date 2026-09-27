@@ -33,11 +33,24 @@ public interface SeriesRefreshControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "refreshed", value = """
-                        {"data":{"series":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6",\
-                        "title":"The Office","year":2005,"genres":"Comedy","totalSeasons":9,\
-                        "status":"WATCHING","lastRefreshedAt":"2026-01-15T10:30:00"},\
-                        "omdbRefreshed":true,"tmdbRefreshed":true},"error":null,"count":1,\
-                        "excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "series": {
+                              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                              "title": "The Office",
+                              "year": 2005,
+                              "genres": "Comedy",
+                              "totalSeasons": 9,
+                              "status": "WATCHING",
+                              "lastRefreshedAt": "2026-01-15T10:30:00"
+                            },
+                            "omdbRefreshed": true,
+                            "tmdbRefreshed": true
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
                 ref = "#/components/responses/NotFound")
         })
@@ -68,10 +81,20 @@ public interface SeriesRefreshControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "refresh-all-started", value = """
-                        {"data":{"status":"IN_PROGRESS","totalCount":50,"completedCount":0,\
-                        "skippedCount":0,"startedAt":"2026-01-15T10:30:00","finishedAt":null,\
-                        "skipThresholdMinutesUsed":30},"error":null,"count":1,\
-                        "excludedCount":0}"""))),
+                        {
+                          "data": {
+                            "status": "IN_PROGRESS",
+                            "totalCount": 50,
+                            "completedCount": 0,
+                            "skippedCount": 0,
+                            "startedAt": "2026-01-15T10:30:00",
+                            "finishedAt": null,
+                            "skipThresholdMinutesUsed": 30
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
                 ref = "#/components/responses/Conflict")
         })
@@ -93,10 +116,20 @@ public interface SeriesRefreshControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "refresh-all-status", value = """
-                        {"data":{"status":"COMPLETED","totalCount":50,"completedCount":50,\
-                        "skippedCount":12,"startedAt":"2026-01-15T10:30:00","finishedAt":\
-                        "2026-01-15T10:45:22","skipThresholdMinutesUsed":30},"error":null,\
-                        "count":1,"excludedCount":0}""")))
+                        {
+                          "data": {
+                            "status": "COMPLETED",
+                            "totalCount": 50,
+                            "completedCount": 50,
+                            "skippedCount": 12,
+                            "startedAt": "2026-01-15T10:30:00",
+                            "finishedAt": "2026-01-15T10:45:22",
+                            "skipThresholdMinutesUsed": 30
+                          },
+                          "error": null,
+                          "count": 1,
+                          "excludedCount": 0
+                        }""")))
         })
     @GetMapping("/refresh-all/status")
     ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAllStatus();

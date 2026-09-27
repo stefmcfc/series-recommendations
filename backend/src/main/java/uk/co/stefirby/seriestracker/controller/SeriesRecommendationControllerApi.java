@@ -35,20 +35,48 @@ public interface SeriesRecommendationControllerApi {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "recommendations", value = """
-                        {"data":[{"title":"Parks and Recreation","year":2009,"genres":"Comedy",\
-                        "overview":"A mockumentary about a Parks Department in a small Indiana "
-                        + "town.","posterUrl":\
-                        "https://image.tmdb.org/t/p/w500/example-parks.jpg","tmdbRating":8.2,\
-                        "voteCount":3200,"streamingProviders":[{"name":"Peacock",\
-                        "logoUrl":"https://image.tmdb.org/t/p/w500/example-peacock.jpg"}],\
-                        "imdbId":"tt1266020","sourceTitles":["The Office","Brooklyn "
-                        + "Nine-Nine"],"totalSourceCount":2,"originCountry":"US","tmdbId":8592},\
-                        {"title":"Community","year":2009,"genres":"Comedy","overview":"A "
-                        + "suspended lawyer is forced to attend a community college.","posterUrl":\
-                        null,"tmdbRating":8.5,"voteCount":1800,"streamingProviders":[],\
-                        "imdbId":"tt1439629","sourceTitles":["The Office"],"totalSourceCount":1,\
-                        "originCountry":"US","tmdbId":25546}],"error":null,"count":2,\
-                        "excludedCount":0}"""))),
+                        {
+                          "data": [
+                            {
+                              "title": "Parks and Recreation",
+                              "year": 2009,
+                              "genres": "Comedy",
+                              "overview": "A mockumentary about a Parks Department in a small Indiana town.",
+                              "posterUrl": "https://image.tmdb.org/t/p/w500/example-parks.jpg",
+                              "tmdbRating": 8.2,
+                              "voteCount": 3200,
+                              "streamingProviders": [
+                                {
+                                  "name": "Peacock",
+                                  "logoUrl": "https://image.tmdb.org/t/p/w500/example-peacock.jpg"
+                                }
+                              ],
+                              "imdbId": "tt1266020",
+                              "sourceTitles": ["The Office", "Brooklyn Nine-Nine"],
+                              "totalSourceCount": 2,
+                              "originCountry": "US",
+                              "tmdbId": 8592
+                            },
+                            {
+                              "title": "Community",
+                              "year": 2009,
+                              "genres": "Comedy",
+                              "overview": "A suspended lawyer is forced to attend a community college.",
+                              "posterUrl": null,
+                              "tmdbRating": 8.5,
+                              "voteCount": 1800,
+                              "streamingProviders": [],
+                              "imdbId": "tt1439629",
+                              "sourceTitles": ["The Office"],
+                              "totalSourceCount": 1,
+                              "originCountry": "US",
+                              "tmdbId": 25546
+                            }
+                          ],
+                          "error": null,
+                          "count": 2,
+                          "excludedCount": 0
+                        }"""))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
                 ref = "#/components/responses/BadRequest"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502",
@@ -117,9 +145,9 @@ public interface SeriesRecommendationControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "candidate-keywords", value = """
-                        {"data":["workplace","mockumentary","paper company"],"error":null,\
-                        "count":3,"excludedCount":0}""")))
+                    name = "candidate-keywords",
+                    value = "{\"data\":[\"workplace\",\"mockumentary\",\"paper company\"],"
+                        + "\"error\":null,\"count\":3,\"excludedCount\":0}")))
         })
     @GetMapping("/recommendations/{tmdbId}/keywords")
     ResponseEntity<ApiResponse<List<String>>> recommendationKeywords(
@@ -137,9 +165,9 @@ public interface SeriesRecommendationControllerApi {
         responses = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
-                    name = "candidate-details-degraded", value = """
-                        {"data":{"numberOfSeasons":9,"numberOfEpisodes":186,"imdbRating":null},\
-                        "error":null,"count":1,"excludedCount":0}""")))
+                    name = "candidate-details-degraded",
+                    value = "{\"data\":{\"numberOfSeasons\":9,\"numberOfEpisodes\":186,"
+                        + "\"imdbRating\":null},\"error\":null,\"count\":1,\"excludedCount\":0}")))
         })
     @GetMapping("/recommendations/{tmdbId}/details")
     ResponseEntity<ApiResponse<CandidateDetailDto>> recommendationDetails(

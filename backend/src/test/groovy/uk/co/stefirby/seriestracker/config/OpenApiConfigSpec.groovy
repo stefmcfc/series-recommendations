@@ -1,5 +1,7 @@
 package uk.co.stefirby.seriestracker.config
 
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.info.BuildProperties
 import org.springframework.boot.test.context.SpringBootTest
@@ -23,6 +25,9 @@ class OpenApiConfigSpec extends Specification {
 
   @Autowired
   BuildProperties buildProperties
+
+  @Autowired
+  ObjectMapper objectMapper
 
   def "SERIES-066-AC-01: /v3/api-docs returns 200 with the generated OpenAPI spec"() {
     when: "the generated OpenAPI JSON spec is requested"
@@ -73,5 +78,42 @@ class OpenApiConfigSpec extends Specification {
               "\$.components.responses.${name}.content.application/json.example"
             ).exists())
         }
+  }
+
+  // series_spec_070: the actual bug class this guards against -- an @ExampleObject
+  // text block that mixed """ delimiters, \ line-continuation, and + concatenation
+  // compiled fine and passed every jsonPath(...).exists() check while its *value*
+  // was literally invalid JSON (a stray + and an embedded raw newline mid-string).
+  // Asserting existence of the examples node was never enough; this parses every
+  // Example Object's value string across the whole spec as real JSON.
+  def "SERIES-070: every documented Example Object's value string is valid JSON"() {
+    when: "the generated OpenAPI spec is requested and parsed"
+        def result = mockMvc.perform(get("/v3/api-docs")).andReturn()
+        def spec = objectMapper.readTree(result.response.contentAsString)
+        def badExamples = [:]
+        collectExampleValues(spec, '$', badExamples)
+
+    then: "no Example Object's value string fails to parse as JSON"
+        badExamples.isEmpty()
+  }
+
+  private static final List<String> EXAMPLE_OBJECT_KEYS =
+      ['summary', 'description', 'value', 'externalValue']
+
+  private void collectExampleValues(JsonNode node, String path, Map<String, String> badExamples) {
+    if (node.isObject()) {
+      def fieldNames = node.propertyNames()
+      if (node.has('value') && node.get('value').isTextual() && fieldNames.every { it in EXAMPLE_OBJECT_KEYS }) {
+        def rawValue = node.get('value').asText()
+        try {
+          objectMapper.readTree(rawValue)
+        } catch (Exception e) {
+          badExamples[path] = "${e.class.simpleName}: ${e.message} -- value was: ${rawValue}"
+        }
+      }
+      fieldNames.each { name -> collectExampleValues(node.get(name), "${path}.${name}", badExamples) }
+    } else if (node.isArray()) {
+      node.eachWithIndex { JsonNode v, int i -> collectExampleValues(v, "${path}[${i}]", badExamples) }
+    }
   }
 }
