@@ -93,6 +93,63 @@ class SeriesControllerOpenApiSpec extends Specification {
           .value(org.hamcrest.Matchers.containsStringIgnoringCase("skippedCount")))
   }
 
+  def "SERIES-070-AC-02: POST /api/v1/series documents a request example and a 201 response example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the create operation carries both a request body example and a 201 response example"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series.post.requestBody.content.application/json.examples').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series.post.responses.201.content.application/json.examples').exists())
+  }
+
+  def "SERIES-070-AC-02: GET /api/v1/series/{id} references the shared NotFound response"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the 404 response is present for getById"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath('$.paths./api/v1/series/{id}.get.responses.404').exists())
+  }
+
+  def "SERIES-070-AC-02: GET /api/v1/series/search documents parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the title and status parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/search.get.parameters[?(@.name=='title')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/search.get.parameters[?(@.name=='status')].example").exists())
+  }
+
+  def "SERIES-070-AC-02: GET /api/v1/series/{id} documents a path variable example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the id path parameter carries an example UUID"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/{id}.get.parameters[?(@.name=='id')].example").exists())
+  }
+
+  def "SERIES-070-AC-02: GET /api/v1/series documents sortBy/sortDirection parameter examples"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the sortBy and sortDirection parameters carry example values"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series.get.parameters[?(@.name=='sortBy')].example").exists())
+        result.andExpect(jsonPath("\$.paths./api/v1/series.get.parameters[?(@.name=='sortDirection')].example").exists())
+  }
+
+  def "SERIES-070-AC-02: GET /api/v1/series/export documents a format parameter example"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "the format parameter carries the example value json"
+        result.andExpect(status().isOk())
+        result.andExpect(jsonPath("\$.paths./api/v1/series/export.get.parameters[?(@.name=='format')].example").value("json"))
+  }
+
   def "SERIES-067-AC-03: GET /api/v1/series/import/status documents the job status lifecycle"() {
     when: "the generated OpenAPI spec is requested"
         def result = mockMvc.perform(get("/v3/api-docs"))

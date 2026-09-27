@@ -1,6 +1,6 @@
 # Series Spec 070: OpenAPI Response/Request Examples
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P4 (documentation quality — no behavior change to any endpoint)
 **Depends on**:
 - `series_spec_069_controller_interface_extraction.md` (this spec's annotations live on the `*Api` interfaces that spec created — the whole reason that split happened first)
@@ -549,13 +549,13 @@ successfully against the live TMDB/OMDb APIs when executed.
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-070-AC-01: 4 shared error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) registered in `OpenApiConfig`
-- [ ] SERIES-070-AC-02: `SeriesControllerApi` — request/response examples + error refs across all 10 methods + `id`/`sortBy`/`sortDirection`/`title`/`status`/`genre`/`format` parameter examples
-- [ ] SERIES-070-AC-03: `SeriesGenreControllerApi` — response examples + `sortBy`/`onlyCompleted` parameter examples
-- [ ] SERIES-070-AC-04: `SeriesKeywordControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
-- [ ] SERIES-070-AC-05: `SeriesLookupControllerApi` — response examples + `NotFound` ref + `title`/`tmdbId` parameter examples
-- [ ] SERIES-070-AC-06: `SeriesOriginCountryControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
-- [ ] SERIES-070-AC-07: `SeriesRecommendationControllerApi` — response examples + `BadGateway`/`BadRequest` refs + `limit`/`genres`/`yearMin`/`yearMax`/`tmdbId`/`imdbId` parameter examples
-- [ ] SERIES-070-AC-08: `SeriesWatchProviderControllerApi`/`SeriesRefreshControllerApi` — response/request examples + `NotFound`/`Conflict` refs + `id`/`region` parameter examples
-- [ ] SERIES-070-AC-09: `FilterProfileControllerApi` — request/response examples + `BadRequest`/`Conflict`/`NotFound` refs + `area`/`id` parameter examples
-- [ ] SERIES-070-AC-10 [MANUAL]: live Swagger UI check across a sample of endpoints, all 4 shared error components, and pre-filled query/path parameter examples in "Try it out"
+- [x] SERIES-070-AC-01: 4 shared error-response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`) registered in `OpenApiConfig`
+- [x] SERIES-070-AC-02: `SeriesControllerApi` — request/response examples + error refs across all 10 methods + `id`/`sortBy`/`sortDirection`/`title`/`status`/`genre`/`format` parameter examples
+- [x] SERIES-070-AC-03: `SeriesGenreControllerApi` — response examples + `sortBy`/`onlyCompleted` parameter examples
+- [x] SERIES-070-AC-04: `SeriesKeywordControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
+- [x] SERIES-070-AC-05: `SeriesLookupControllerApi` — response examples + `NotFound` ref + `title`/`tmdbId` parameter examples
+- [x] SERIES-070-AC-06: `SeriesOriginCountryControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
+- [x] SERIES-070-AC-07: `SeriesRecommendationControllerApi` — response examples + `BadGateway`/`BadRequest` refs + `limit`/`genres`/`yearMin`/`yearMax`/`tmdbId`/`imdbId` parameter examples
+- [x] SERIES-070-AC-08: `SeriesWatchProviderControllerApi`/`SeriesRefreshControllerApi` — response/request examples + `NotFound`/`Conflict` refs + `id`/`region` parameter examples
+- [x] SERIES-070-AC-09: `FilterProfileControllerApi` — request/response examples + `BadRequest`/`Conflict`/`NotFound` refs + `area`/`id` parameter examples
+- [x] SERIES-070-AC-10 [MANUAL]: live Swagger UI check across a sample of endpoints, all 4 shared error components, and pre-filled query/path parameter examples in "Try it out"

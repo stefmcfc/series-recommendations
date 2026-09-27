@@ -4,6 +4,8 @@ import uk.co.stefirby.seriestracker.dto.ApiResponse;
 import uk.co.stefirby.seriestracker.dto.NameStatDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,12 +20,22 @@ public interface SeriesKeywordControllerApi {
     @Operation(summary = "Aggregate per-keyword stats across tracked series",
         description = "Aggregates seriesCount/averagePersonalRating/averageBlendedRating per "
             + "keyword from normalized TMDB keyword data. Empty list, not an error, when "
-            + "nothing tracked has keywords.")
+            + "nothing tracked has keywords.",
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
+                content = @Content(mediaType = "application/json", examples = @ExampleObject(
+                    name = "keyword-stats", value = """
+                        {"data":[{"name":"workplace","seriesCount":5,"averagePersonalRating":8.6,\
+                        "averageBlendedRating":8.2},{"name":"mockumentary","seriesCount":2,\
+                        "averagePersonalRating":null,"averageBlendedRating":8.0}],"error":null,\
+                        "count":2,"excludedCount":0}""")))
+        })
     @GetMapping("/keywords")
     ResponseEntity<ApiResponse<List<NameStatDto>>> keywords(
             @Parameter(description = "seriesCount (default), averagePersonalRating, "
                 + "averageBlendedRating, or name (case-insensitive alphabetical); an "
-                + "unrecognized value falls back to the default rather than 400.")
+                + "unrecognized value falls back to the default rather than 400.",
+                example = "seriesCount")
             @RequestParam(required = false) String sortBy,
             @Parameter(description = "asc|desc; an unrecognized value falls back to the active "
                 + "field's own established default direction rather than 400. Null averages "
@@ -42,6 +54,6 @@ public interface SeriesKeywordControllerApi {
                 + "filters; a null average never satisfies this filter, even at threshold 0.")
             @RequestParam(required = false) BigDecimal minAverageBlendedRating,
             @Parameter(description = "Restricts aggregation to series whose status is COMPLETED "
-                + "when true. null/false/omitted apply no restriction.")
+                + "when true. null/false/omitted apply no restriction.", example = "true")
             @RequestParam(required = false) Boolean onlyCompleted);
 }

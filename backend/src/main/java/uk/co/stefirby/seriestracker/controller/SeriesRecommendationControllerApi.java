@@ -5,6 +5,8 @@ import uk.co.stefirby.seriestracker.dto.CandidateDetailDto;
 import uk.co.stefirby.seriestracker.dto.RecommendationDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,16 +30,43 @@ public interface SeriesRecommendationControllerApi {
             + "(sourceMode omitted with no seriesIds/genres/keywords set) is Custom Search, an "
             + "unfiltered or genre/keyword-filtered TMDB discover/tv call. trending/topRated/"
             + "useMySeries are mutually exclusive with seriesIds/genres/keywords (400 if "
-            + "combined), except the deliberate useMySeries + seriesIds combination.")
+            + "combined), except the deliberate useMySeries + seriesIds combination.",
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
+                content = @Content(mediaType = "application/json", examples = @ExampleObject(
+                    name = "recommendations", value = """
+                        {"data":[{"title":"Parks and Recreation","year":2009,"genres":"Comedy",\
+                        "overview":"A mockumentary about a Parks Department in a small Indiana "
+                        + "town.","posterUrl":\
+                        "https://image.tmdb.org/t/p/w500/example-parks.jpg","tmdbRating":8.2,\
+                        "voteCount":3200,"streamingProviders":[{"name":"Peacock",\
+                        "logoUrl":"https://image.tmdb.org/t/p/w500/example-peacock.jpg"}],\
+                        "imdbId":"tt1266020","sourceTitles":["The Office","Brooklyn "
+                        + "Nine-Nine"],"totalSourceCount":2,"originCountry":"US","tmdbId":8592},\
+                        {"title":"Community","year":2009,"genres":"Comedy","overview":"A "
+                        + "suspended lawyer is forced to attend a community college.","posterUrl":\
+                        null,"tmdbRating":8.5,"voteCount":1800,"streamingProviders":[],\
+                        "imdbId":"tt1439629","sourceTitles":["The Office"],"totalSourceCount":1,\
+                        "originCountry":"US","tmdbId":25546}],"error":null,"count":2,\
+                        "excludedCount":0}"""))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
+                ref = "#/components/responses/BadRequest"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502",
+                ref = "#/components/responses/BadGateway")
+        })
     @GetMapping("/recommendations")
     ResponseEntity<ApiResponse<List<RecommendationDto>>> recommendations(
+            @Parameter(example = "10")
             @RequestParam(required = false, defaultValue = "20") int limit,
             @RequestParam(required = false) List<String> seriesIds,
+            @Parameter(example = "Comedy")
             @RequestParam(required = false) List<String> genres,
             @RequestParam(required = false) List<String> keywords,
             @RequestParam(required = false) BigDecimal minTmdbRating,
             @RequestParam(required = false) Integer minVoteCount,
+            @Parameter(example = "2015")
             @RequestParam(required = false) Integer yearMin,
+            @Parameter(example = "2024")
             @RequestParam(required = false) Integer yearMax,
             @Parameter(description = "Comma-separated genre names; excludes a candidate whose "
                 + "genres match any entry, resolved via the genre alias vocabulary (not a raw "
@@ -84,9 +113,18 @@ public interface SeriesRecommendationControllerApi {
             + "/api/v1/series/recommendations itself -- fetching keywords for every card in a "
             + "10-20-result list would cost a TMDB call per card the user never asked to expand. "
             + "A TMDB failure or an unresolvable tmdbId both yield an empty list (200), never an "
-            + "error -- there's no persisted entity here for a \"leave unchanged\" posture.")
+            + "error -- there's no persisted entity here for a \"leave unchanged\" posture.",
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
+                content = @Content(mediaType = "application/json", examples = @ExampleObject(
+                    name = "candidate-keywords", value = """
+                        {"data":["workplace","mockumentary","paper company"],"error":null,\
+                        "count":3,"excludedCount":0}""")))
+        })
     @GetMapping("/recommendations/{tmdbId}/keywords")
-    ResponseEntity<ApiResponse<List<String>>> recommendationKeywords(@PathVariable int tmdbId);
+    ResponseEntity<ApiResponse<List<String>>> recommendationKeywords(
+            @Parameter(description = "The Office's real, live-verified TMDB id.", example = "2316")
+            @PathVariable int tmdbId);
 
     @Operation(summary = "On-demand lookup for a candidate's season/episode counts and IMDb rating",
         description = "On-demand, per-candidate lookup mirroring .../keywords' shape -- not "
@@ -95,8 +133,18 @@ public interface SeriesRecommendationControllerApi {
             + "degrade independently to null on their respective source's failure, never a "
             + "4xx/5xx for this endpoint: numberOfSeasons/numberOfEpisodes come from TMDB (both "
             + "null together if that call fails); imdbRating comes from OMDb (null if imdbId is "
-            + "omitted/blank or that call fails).")
+            + "omitted/blank or that call fails).",
+        responses = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
+                content = @Content(mediaType = "application/json", examples = @ExampleObject(
+                    name = "candidate-details-degraded", value = """
+                        {"data":{"numberOfSeasons":9,"numberOfEpisodes":186,"imdbRating":null},\
+                        "error":null,"count":1,"excludedCount":0}""")))
+        })
     @GetMapping("/recommendations/{tmdbId}/details")
     ResponseEntity<ApiResponse<CandidateDetailDto>> recommendationDetails(
-            @PathVariable int tmdbId, @RequestParam(required = false) String imdbId);
+            @Parameter(description = "The Office's real, live-verified TMDB id.", example = "2316")
+            @PathVariable int tmdbId,
+            @Parameter(description = "The Office's real, live-verified IMDb id.", example = "tt0386676")
+            @RequestParam(required = false) String imdbId);
 }

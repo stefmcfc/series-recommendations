@@ -60,4 +60,18 @@ class OpenApiConfigSpec extends Specification {
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.info.version').value(buildProperties.getVersion()))
   }
+
+  def "SERIES-070-AC-01: /v3/api-docs registers the 4 shared error-response components"() {
+    when: "the generated OpenAPI spec is requested"
+        def result = mockMvc.perform(get("/v3/api-docs"))
+
+    then: "components.responses contains all 4 named responses, each with an example"
+        result.andExpect(status().isOk())
+        for (name in ['BadRequest', 'NotFound', 'Conflict', 'BadGateway']) {
+            result.andExpect(jsonPath("\$.components.responses.${name}").exists())
+            result.andExpect(jsonPath(
+              "\$.components.responses.${name}.content.application/json.example"
+            ).exists())
+        }
+  }
 }

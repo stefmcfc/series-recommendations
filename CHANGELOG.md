@@ -8,6 +8,12 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `OpenApiConfig` registers 4 shared, reusable OpenAPI response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`), each with a representative `ApiResponse<Void>`-shaped example — every operation that can return one of these now references it via `ref = "#/components/responses/..."` instead of repeating the error envelope's JSON per operation (`series_spec_070`).
+- Backend: concrete `@ExampleObject` request/response body examples added across all 9 controller interfaces (canonical "The Office" series data, matching `RUNBOOK.md`'s existing curl examples) so Swagger UI's "Try it out" shows real, working JSON instead of an empty/default-value form (`series_spec_070`).
+- Backend: `example =` values added to existing query/path `@Parameter` annotations across all 9 controller interfaces (e.g. `search`'s `title`/`status`/`genre`, `export`'s `format`, UUID path variables) — `lookup/resolve-tmdb`'s `tmdbId` and `recommendations/{tmdbId}/details`' `tmdbId`/`imdbId` use The Office's real, live-verified TMDB (`2316`)/IMDb (`tt0386676`) ids so the example actually resolves (`series_spec_070`).
+
 ## [3.65.1] - 2026-09-25
 
 ### Changed
