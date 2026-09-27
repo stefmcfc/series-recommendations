@@ -19,6 +19,11 @@ const mockExport = vi.mocked(seriesApi.export)
 const mockRefreshAll = vi.mocked(seriesApi.refreshAll)
 const mockGetRefreshStatus = vi.mocked(seriesApi.getRefreshStatus)
 const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
+// FRONTEND-133-AC-05: SettingsPage now fetches keyword stats on mount (to
+// populate the new Favourite Keywords picker's `options`, mirroring
+// RecommendationControls.tsx's own identical fetch) -- mocked here so every
+// pre-existing test in this file sees no behavior change.
+const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
 
 // FRONTEND-102: the new Watch Region picker shares ALL_COUNTRY_OPTIONS with
 // the Recommendation Favourites section's Country Favourites picker, so a
@@ -50,6 +55,7 @@ beforeEach(() => {
   // mount -- default every existing test in this file to an empty list so
   // that unrelated tests aren't coupled to filter-profile behavior.
   mockListFilterProfiles.mockResolvedValue([])
+  mockGetKeywordStats.mockResolvedValue([])
 })
 
 const defaultProps = {
@@ -60,6 +66,54 @@ const defaultProps = {
   cardTint: false,
   setCardTint: vi.fn(),
 }
+
+describe('FRONTEND-133-AC-01: keyword suggestion sort mode setting', () => {
+  it('defaults to Most Common and persists a change to Highest Rated', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(screen.getByRole('radio', { name: 'Most Common' })).toBeChecked()
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Highest Rated' }))
+    expect(localStorage.getItem('keywordSuggestionSortMode')).toBe(
+      JSON.stringify('highestRated'),
+    )
+  })
+})
+
+describe('FRONTEND-133-AC-02: minimum series count field visibility', () => {
+  it('only shows the floor field when Highest Rated is selected', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.queryByLabelText('Minimum Series Count'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Highest Rated' }))
+    expect(screen.getByLabelText('Minimum Series Count')).toHaveValue(2)
+  })
+})
+
+describe('FRONTEND-133-AC-05: Favourite Keywords setting', () => {
+  it('adds and persists a favourite keyword', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      {
+        name: 'time travel',
+        seriesCount: 5,
+        averagePersonalRating: null,
+        averageBlendedRating: null,
+      },
+    ])
+    render(<SettingsPage {...defaultProps} />)
+
+    const section = getSectionByHeading('Recommendation Favourites')
+    const suggestion = await within(section).findByRole('button', {
+      name: 'time travel',
+    })
+    fireEvent.click(suggestion)
+
+    expect(JSON.parse(localStorage.getItem('keywordFavourites')!)).toContain(
+      'time travel',
+    )
+  })
+})
 
 describe('FRONTEND-131-AC-05: Skip Threshold Override has an info disclosure', () => {
   it('renders the disclosure button beside the field', () => {
@@ -1363,7 +1417,10 @@ describe('FRONTEND-110-AC-09: divider between Country and Language Favourites', 
     )
 
     const countryPicker = screen.getByLabelText(/country favourites/i)
-    const divider = screen.getByTestId('favourites-divider')
+    // FRONTEND-133-AC-05: a second divider was added after Language
+    // Favourites (ahead of the new Favourite Keywords picker) -- this test
+    // only cares about the first one, between Country and Language.
+    const [divider] = screen.getAllByTestId('favourites-divider')
     const languagePicker = screen.getByLabelText(/language favourites/i)
 
     expect(

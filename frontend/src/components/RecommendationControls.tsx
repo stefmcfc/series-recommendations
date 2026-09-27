@@ -96,6 +96,52 @@ export function isLanguageFavourites(value: unknown): value is string[] {
   )
 }
 
+// FRONTEND-133-AC-05: Favourite Keywords, mirroring Country/Language
+// Favourites exactly -- unlike those two, there's no static keyword catalog
+// to validate membership against (keywords are open-ended, sourced from
+// whatever's actually been tagged across tracked series), so this only
+// checks shape (an array of strings), not membership.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export const DEFAULT_KEYWORD_FAVOURITES: string[] = []
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isKeywordFavourites(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+  )
+}
+
+// FRONTEND-133-AC-01/02: Custom Search's keyword suggestion sort setting --
+// 'mostCommon' (default, pure frequency, unchanged from pre-133 behavior) or
+// 'highestRated' (sorts by averageBlendedRating desc, gated by the floor
+// below so a keyword tagged once on a highly-rated show can't outrank
+// genuinely common keywords).
+export type KeywordSuggestionSortMode = 'mostCommon' | 'highestRated'
+// No eslint-disable needed here (unlike the array-valued exports above) --
+// this file's react-refresh/only-export-components config already allows a
+// constant string/number literal export (allowConstantExport).
+export const DEFAULT_KEYWORD_SUGGESTION_SORT_MODE: KeywordSuggestionSortMode =
+  'mostCommon'
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isKeywordSuggestionSortMode(
+  value: unknown,
+): value is KeywordSuggestionSortMode {
+  return value === 'mostCommon' || value === 'highestRated'
+}
+
+// FRONTEND-133-AC-02: the Minimum Series Count floor, only meaningful (and
+// only shown in Settings) while sort mode is 'highestRated' -- see this
+// spec's Design Decisions for why this is user-adjustable rather than a
+// hardcoded constant.
+// No eslint-disable needed here -- see the comment on
+// DEFAULT_KEYWORD_SUGGESTION_SORT_MODE above (constant number literal).
+export const DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT = 2
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isKeywordSuggestionMinSeriesCount(
+  value: unknown,
+): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
 // FRONTEND-042: two-tier source selector -- 'mode' picks the top-level tab
 // ("Use My Series" merges the former "Automatic"/"Specific Series" -- see
 // frontend_spec_042's Design Decisions for why those were always the same
@@ -1000,17 +1046,44 @@ export function RecommendationControls({
       .catch(() => undefined)
   }, [])
 
+  // FRONTEND-133-AC-01/04: the Settings-configurable sort mode/floor --
+  // read independently here (not shared state with SettingsPage), matching
+  // this spec's Design Decisions (same pattern as countryFavourites/
+  // languageFavourites above).
+  const [keywordSuggestionSortMode] = useLocalStorage(
+    'keywordSuggestionSortMode',
+    DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
+    isKeywordSuggestionSortMode,
+  )
+  const [keywordSuggestionMinSeriesCount] = useLocalStorage(
+    'keywordSuggestionMinSeriesCount',
+    DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
+    isKeywordSuggestionMinSeriesCount,
+  )
+
   // FRONTEND-032-AC-07/AC-08: offers tracked keywords as type-ahead
   // suggestions alongside free text. Unlike SearchFilter's stricter
   // fetch-failure handling (keywords are that field's only input method),
   // this field stays fully usable via free text on its own, so a failed
   // fetch degrades silently here -- no error banner, options just stay [].
+  //
+  // FRONTEND-133-AC-04: when the Highest Rated sort mode is set, fetches
+  // rating-sorted keywords above the configured floor instead of the
+  // default (unsorted-options, backend-side seriesCount desc) call.
   useEffect(() => {
+    const options =
+      keywordSuggestionSortMode === 'highestRated'
+        ? {
+            sortBy: 'averageBlendedRating' as const,
+            sortDirection: 'desc' as const,
+            minSeriesCount: keywordSuggestionMinSeriesCount,
+          }
+        : undefined
     seriesApi
-      .getKeywordStats()
+      .getKeywordStats(options)
       .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
       .catch(() => undefined)
-  }, [])
+  }, [keywordSuggestionSortMode, keywordSuggestionMinSeriesCount])
 
   // FRONTEND-040-AC-01: state-only update, no longer a choke point that
   // fires a backend request on every change -- every call site except

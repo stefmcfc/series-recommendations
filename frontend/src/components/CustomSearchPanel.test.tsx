@@ -324,6 +324,43 @@ describe('FRONTEND-098-AC-07/08: country/language favourites default and read fr
   })
 })
 
+describe('FRONTEND-133-AC-06: favourite keywords are pinned in Custom Search', () => {
+  it('passes keywordFavourites as pinnedOptions to the inline keyword picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['time travel']))
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={['other']}
+      />,
+    )
+    const keywordsContainer = screen.getByLabelText('Keywords')
+    expect(
+      within(keywordsContainer).getByRole('button', { name: 'time travel' }),
+    ).toBeInTheDocument()
+  })
+
+  it('passes keywordFavourites as pinnedOptions to the "Browse all keywords" modal picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['time travel']))
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={['other']}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    expect(
+      within(dialog).getByRole('button', { name: 'time travel' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-100-AC-09: reordered favourites render in the new order', () => {
   // Deviation from the spec's TDD sketch: the sketch expected pinned
   // country suggestions to render as resolved full names ("United
