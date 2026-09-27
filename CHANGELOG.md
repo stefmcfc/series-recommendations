@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Fixed
+
+- Backend: both SQLite datasources (production and test) now set a 30s `busy_timeout` and cap their Hikari pool to a single connection, so contention for the file lock waits/retries instead of failing instantly with `SQLITE_BUSY` — SQLite only ever services one writer at a time regardless of pool size, so the previous default (10 connections, no busy_timeout) added collision risk with no benefit (`tooling_spec_010`).
+- Backend: the 5 Spock specs that already get their own dedicated Spring context (`SeriesControllerLookupSpec`/`SeriesControllerRecommendationsSpec`/`SeriesControllerRefreshSpec`/`SeriesControllerWatchProvidersSpec`/`GlobalExceptionHandlerSpec`, each mocking a unique collaborator) now each run against their own isolated SQLite file instead of sharing one with every other test context, at no extra context-startup cost (`tooling_spec_010`).
+
 ## [3.68.0] - 2026-09-27
 
 ### Added

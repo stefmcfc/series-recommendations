@@ -4,11 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbWatchProvider
+import uk.co.stefirby.seriestracker.config.IsolatedTestDatabase
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.repository.SeriesRepository
@@ -30,6 +33,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SeriesControllerWatchProvidersSpec extends Specification {
+
+    // tooling_spec_010 (TOOLING-010-AC-04): this spec already gets its own dedicated
+    // ApplicationContext (its @MockitoBean below), so isolating its database costs nothing extra --
+    // see IsolatedTestDatabase's own doc comment.
+    @DynamicPropertySource
+    static void isolatedDatabase(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", { -> IsolatedTestDatabase.urlFor(SeriesControllerWatchProvidersSpec) })
+    }
 
     @Autowired
     MockMvc mockMvc

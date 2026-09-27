@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import spock.lang.Specification
@@ -12,6 +14,7 @@ import uk.co.stefirby.seriestracker.client.omdb.OmdbClient
 import uk.co.stefirby.seriestracker.client.omdb.OmdbRatings
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbClient
 import uk.co.stefirby.seriestracker.client.tmdb.TmdbSeriesDetail
+import uk.co.stefirby.seriestracker.config.IsolatedTestDatabase
 import uk.co.stefirby.seriestracker.dto.SeriesDto
 import uk.co.stefirby.seriestracker.exception.ExternalServiceException
 import uk.co.stefirby.seriestracker.model.ProductionStatus
@@ -39,6 +42,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SeriesControllerRefreshSpec extends Specification {
+
+    // tooling_spec_010 (TOOLING-010-AC-04): this spec already gets its own dedicated
+    // ApplicationContext (its @MockitoBeans below), so isolating its database costs nothing extra --
+    // see IsolatedTestDatabase's own doc comment. Especially worth isolating here specifically:
+    // BulkRefreshService's async per-series writes are the one place in this codebase genuine
+    // concurrent DB access from a background thread is plausible.
+    @DynamicPropertySource
+    static void isolatedDatabase(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", { -> IsolatedTestDatabase.urlFor(SeriesControllerRefreshSpec) })
+    }
 
     @Autowired
     MockMvc mockMvc

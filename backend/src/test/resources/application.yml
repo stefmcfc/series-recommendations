@@ -1,7 +1,13 @@
 spring:
   datasource:
-    url: jdbc:sqlite:./build/test-series.db
+    # tooling_spec_010 (TOOLING-010-AC-01): busy_timeout so a connection contending for the file
+    # lock (e.g. across the several distinct ApplicationContexts Spring keeps cached simultaneously
+    # for this suite) waits/retries instead of failing instantly with SQLITE_BUSY; maximum-pool-size
+    # capped to 1 since SQLite only ever services one writer at a time regardless of pool size.
+    url: jdbc:sqlite:./build/test-series.db?busy_timeout=30000
     driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
   jpa:
     hibernate:
       ddl-auto: create-drop
