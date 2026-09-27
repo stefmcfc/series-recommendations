@@ -14,9 +14,15 @@ import {
 import {
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
+  DEFAULT_KEYWORD_FAVOURITES,
+  DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
+  DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
   LANGUAGE_OPTIONS,
   isCountryFavourites,
   isLanguageFavourites,
+  isKeywordFavourites,
+  isKeywordSuggestionSortMode,
+  isKeywordSuggestionMinSeriesCount,
 } from './RecommendationControls'
 import { ExportControls } from './ExportControls'
 import { ImportControls } from './ImportControls'
@@ -136,6 +142,42 @@ export function SettingsPage({
     DEFAULT_WATCH_REGION,
     isWatchRegion,
   )
+
+  // FRONTEND-133-AC-05: the third Recommendation Favourites picker,
+  // mirroring countryFavourites/languageFavourites above exactly.
+  const [keywordFavourites, setKeywordFavourites] = useLocalStorage(
+    'keywordFavourites',
+    DEFAULT_KEYWORD_FAVOURITES,
+    isKeywordFavourites,
+  )
+  // FRONTEND-133-AC-01/02: Custom Search's keyword suggestion sort mode and
+  // its Highest-Rated-only minimum series count floor.
+  const [keywordSuggestionSortMode, setKeywordSuggestionSortMode] =
+    useLocalStorage(
+      'keywordSuggestionSortMode',
+      DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
+      isKeywordSuggestionSortMode,
+    )
+  const [keywordSuggestionMinSeriesCount, setKeywordSuggestionMinSeriesCount] =
+    useLocalStorage(
+      'keywordSuggestionMinSeriesCount',
+      DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
+      isKeywordSuggestionMinSeriesCount,
+    )
+  // FRONTEND-133-AC-05 (point 2 of the implementation brief): there's no
+  // static keyword catalog the way Country/Language have -- mirrors
+  // RecommendationControls.tsx's own identical getKeywordStats()-on-mount
+  // fetch, independently, rather than sharing state with it (this spec's
+  // Design Decisions: favourites data is independently re-read wherever
+  // needed).
+  const [keywordOptions, setKeywordOptions] = useState<string[]>([])
+
+  useEffect(() => {
+    seriesApi
+      .getKeywordStats()
+      .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
+      .catch(() => undefined)
+  }, [])
 
   const refreshAllInProgress = jobStatus?.status === 'IN_PROGRESS'
 
@@ -467,6 +509,76 @@ export function SettingsPage({
           options={LANGUAGE_OPTIONS}
           reorderable
         />
+        {/* FRONTEND-133-AC-05: a third Recommendation Favourites picker,
+            identical in shape to Country/Language Favourites above -- see
+            this spec's Design Decisions for why it lives in this section
+            rather than a new one. */}
+        <div
+          className={styles.favouritesDivider}
+          data-testid="favourites-divider"
+        />
+        <KeywordPicker
+          id="settings-keyword-favourites"
+          label="Favourite Keywords"
+          selected={keywordFavourites}
+          onChange={setKeywordFavourites}
+          options={keywordOptions}
+          reorderable
+        />
+        <div
+          className={styles.favouritesDivider}
+          data-testid="favourites-divider"
+        />
+        {/* FRONTEND-133-AC-01: Keyword Suggestion Sort -- Most Common
+            (default, pure frequency, unchanged pre-133 behavior) or Highest
+            Rated (rating-sorted, gated by the floor below). */}
+        <div
+          className={styles.themeOptions}
+          role="radiogroup"
+          aria-label="Keyword Suggestion Sort"
+        >
+          <div className={styles.themeOption}>
+            <input
+              id="keyword-suggestion-sort-most-common"
+              type="radio"
+              name="keyword-suggestion-sort"
+              value="mostCommon"
+              checked={keywordSuggestionSortMode === 'mostCommon'}
+              onChange={() => setKeywordSuggestionSortMode('mostCommon')}
+            />
+            <label htmlFor="keyword-suggestion-sort-most-common">
+              Most Common
+            </label>
+          </div>
+          <div className={styles.themeOption}>
+            <input
+              id="keyword-suggestion-sort-highest-rated"
+              type="radio"
+              name="keyword-suggestion-sort"
+              value="highestRated"
+              checked={keywordSuggestionSortMode === 'highestRated'}
+              onChange={() => setKeywordSuggestionSortMode('highestRated')}
+            />
+            <label htmlFor="keyword-suggestion-sort-highest-rated">
+              Highest Rated
+            </label>
+          </div>
+        </div>
+
+        {/* FRONTEND-133-AC-02: only rendered while Highest Rated is
+            selected -- mirrors this file's existing Skip Threshold
+            Override-style conditional field precedent. */}
+        {keywordSuggestionSortMode === 'highestRated' && (
+          <NumberInput
+            id="keyword-suggestion-min-series-count"
+            label="Minimum Series Count"
+            min={0}
+            value={keywordSuggestionMinSeriesCount}
+            onChange={(value) =>
+              setKeywordSuggestionMinSeriesCount(Number(value))
+            }
+          />
+        )}
       </SettingsSection>
 
       {/* FRONTEND-102-AC-05/06: single-select via the same

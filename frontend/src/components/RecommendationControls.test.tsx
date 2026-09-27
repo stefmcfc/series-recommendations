@@ -997,6 +997,22 @@ describe('FRONTEND-032-AC-07: fetches keyword stats and offers them as suggestio
   })
 })
 
+describe('FRONTEND-133-AC-04: suggestion fetch respects the Highest Rated setting', () => {
+  it('calls getKeywordStats with rating-sort params when Highest Rated is set', () => {
+    localStorage.setItem(
+      'keywordSuggestionSortMode',
+      JSON.stringify('highestRated'),
+    )
+    localStorage.setItem('keywordSuggestionMinSeriesCount', JSON.stringify(3))
+    render(<RecommendationControls onQueryChange={vi.fn()} />)
+    expect(mockGetKeywordStats).toHaveBeenCalledWith({
+      sortBy: 'averageBlendedRating',
+      sortDirection: 'desc',
+      minSeriesCount: 3,
+    })
+  })
+})
+
 describe('FRONTEND-032-AC-08: degrades silently on keyword stats fetch failure', () => {
   it('renders no alert and free text still works when getKeywordStats rejects', async () => {
     mockGetKeywordStats.mockRejectedValue(new Error('fail'))

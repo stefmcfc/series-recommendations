@@ -43,6 +43,25 @@ describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {
   })
 })
 
+describe('FRONTEND-133-AC-08: GenreStatsView renders no Get Recs button', () => {
+  it('never renders a Get Recs button', async () => {
+    mockGetGenreStats.mockResolvedValue([
+      {
+        name: 'Drama',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+    ])
+    render(<GenreStatsViewHarness />)
+    await screen.findByText('Drama')
+
+    expect(
+      screen.queryByRole('button', { name: /Get Recs/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-088-AC-03: renders genre stats table', () => {
   it('renders a row per genre with all four columns', async () => {
     mockGetGenreStats.mockResolvedValue([

@@ -14,9 +14,11 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
+  DEFAULT_KEYWORD_FAVOURITES,
   LANGUAGE_OPTIONS,
   isCountryFavourites,
   isLanguageFavourites,
+  isKeywordFavourites,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import type { CustomSearchFilterCriteria } from '../types/filterProfile'
@@ -68,6 +70,15 @@ export function CustomSearchPanel({
     'languageFavourites',
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
+  )
+  // FRONTEND-133-AC-06: same independent-read pattern as
+  // countryFavourites/languageFavourites above, feeding both keyword
+  // KeywordPicker instances below (the inline picker and the "Browse all
+  // keywords" modal).
+  const [keywordFavourites] = useLocalStorage(
+    'keywordFavourites',
+    DEFAULT_KEYWORD_FAVOURITES,
+    isKeywordFavourites,
   )
 
   // FRONTEND-112-AC-03: the 8 fields this area's saved profiles cover --
@@ -171,6 +182,7 @@ export function CustomSearchPanel({
               selected={state.keywordsSelected}
               onChange={(next) => updateState({ keywordsSelected: next })}
               options={keywordOptions}
+              pinnedOptions={keywordFavourites}
               maxSuggestionsWhenEmpty={KEYWORD_SUGGESTIONS_LIMIT}
               hideInput
             />
@@ -331,6 +343,7 @@ export function CustomSearchPanel({
               selected={state.keywordsSelected}
               onChange={(next) => updateState({ keywordsSelected: next })}
               options={keywordOptions}
+              pinnedOptions={keywordFavourites}
               placeholder="Type a keyword and press Enter"
               allowFreeText
               focusOnMount

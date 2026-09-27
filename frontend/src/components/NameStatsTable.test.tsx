@@ -337,6 +337,45 @@ describe('FRONTEND-129-AC-03: Saved Filters list and actions bookend the fields 
   })
 })
 
+describe('FRONTEND-133-AC-07: optional per-row recommendations action', () => {
+  it('renders a Get Recs button only when the callback prop is provided', async () => {
+    const stats = [
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.5,
+      },
+    ]
+    const fetchStats = vi.fn().mockResolvedValue(stats)
+    function GetRecsHarness({
+      onGetRecommendations,
+    }: {
+      onGetRecommendations?: (name: string) => void
+    }) {
+      const filters = useNameStatsFilters()
+      return (
+        <NameStatsTable
+          {...defaultProps}
+          fetchStats={fetchStats}
+          filters={filters}
+          onGetRecommendations={onGetRecommendations}
+        />
+      )
+    }
+    const { rerender } = render(<GetRecsHarness />)
+    await screen.findByText('spy')
+    expect(
+      screen.queryByRole('button', { name: /Get Recs/i }),
+    ).not.toBeInTheDocument()
+
+    const onGetRecommendations = vi.fn()
+    rerender(<GetRecsHarness onGetRecommendations={onGetRecommendations} />)
+    fireEvent.click(screen.getAllByRole('button', { name: /Get Recs/i })[0])
+    expect(onGetRecommendations).toHaveBeenCalledWith('spy')
+  })
+})
+
 describe('table rendering and sort', () => {
   it('renders a row per stat and sorts on column header click', async () => {
     const fetchStats = vi.fn().mockResolvedValue([

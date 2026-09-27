@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.67.0] - 2026-09-27
+
+### Added
+
+- Frontend: Settings > Recommendation Favourites gains a "Keyword Suggestion Sort" setting (Most Common [default] / Highest Rated) and — only while Highest Rated is selected — a "Minimum Series Count" floor, both persisted via `useLocalStorage` (`frontend_spec_133`).
+- Frontend: Custom Search's keyword suggestions now sort by average blended rating (gated by the new floor) when Highest Rated is selected, instead of always sorting by frequency (`RecommendationControls.tsx`'s `getKeywordStats` call site) (`frontend_spec_133`).
+- Frontend: Settings > Recommendation Favourites gains a third picker, "Favourite Keywords" — same `useLocalStorage`/reorderable-`KeywordPicker` shape as the existing Country/Language Favourites — and `CustomSearchPanel`'s two keyword pickers now pin those favourites via `pinnedOptions` (`frontend_spec_133`).
+- Frontend: `NameStatsTable` gains an optional per-row `onGetRecommendations` action ("Get Recs" button), wired up only on the Analysis page's Keywords tab (`KeywordsView`) — Genres/Country of Origin are unaffected (`frontend_spec_133`).
+- Frontend: new `KeywordRecommendationsModal`, opened from the Keywords tab's "Get Recs" button, fetches `seriesApi.getRecommendations({ keywords: [keyword] })` on mount and mirrors `SeriesRecommendationsModal`'s loading/error/empty/results states, plus a new Retry action on the error state (`frontend_spec_133`).
+
 ## [3.66.0] - 2026-09-27
 
 ### Added
