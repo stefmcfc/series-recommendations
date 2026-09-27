@@ -34,6 +34,8 @@ public interface SeriesRefreshControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "refreshed",
                     summary = "Both TMDB and OMDb refreshed successfully",
+                    description = "The result of refreshing one series: both TMDB and OMDb "
+                        + "data were successfully re-fetched.",
                     value = """
                         {
                           "data": {
@@ -86,6 +88,8 @@ public interface SeriesRefreshControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "refresh-all-started",
                     summary = "A bulk refresh job that has just started",
+                    description = "A bulk refresh job immediately after starting, before any "
+                        + "series has been processed.",
                     value = """
                         {
                           "data": {
@@ -112,6 +116,8 @@ public interface SeriesRefreshControllerApi {
         content = @Content(mediaType = "application/json", examples = @ExampleObject(
             name = "override-threshold",
             summary = "Override the skip threshold to 30 minutes for this run only",
+            description = "A request body overriding the skip threshold to 30 minutes for "
+                + "this one bulk-refresh run only, without changing the configured default.",
             value = "{\"skipThresholdMinutesOverride\":30}")))
     @PostMapping("/refresh-all")
     ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll(@RequestBody(required = false) RefreshAllOptions options);
@@ -125,6 +131,8 @@ public interface SeriesRefreshControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "refresh-all-status",
                     summary = "A completed bulk refresh job",
+                    description = "A completed bulk refresh job: 50 series processed, 12 "
+                        + "skipped as recently refreshed within the skip threshold.",
                     value = """
                         {
                           "data": {

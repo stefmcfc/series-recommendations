@@ -28,6 +28,9 @@ public interface SeriesOriginCountryControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "origin-country-stats",
                     summary = "Two origin countries' aggregated rating/count stats",
+                    description = "Two origin countries' aggregated series counts and rating "
+                        + "averages, one with a null averagePersonalRating since none of its "
+                        + "series are rated.",
                     value = """
                         {
                           "data": [

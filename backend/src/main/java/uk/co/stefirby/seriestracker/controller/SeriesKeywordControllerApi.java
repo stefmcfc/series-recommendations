@@ -26,6 +26,9 @@ public interface SeriesKeywordControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "keyword-stats",
                     summary = "Two keywords' aggregated rating/count stats",
+                    description = "Two keywords' aggregated series counts and rating averages, "
+                        + "one with a null averagePersonalRating since none of its series are "
+                        + "rated.",
                     value = """
                         {
                           "data": [

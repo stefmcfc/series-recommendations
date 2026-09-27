@@ -36,6 +36,9 @@ public interface SeriesRecommendationControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "recommendations",
                     summary = "Two recommendation candidates, one shared by two source series",
+                    description = "Two recommendation candidates: one recommended by two of "
+                        + "your source series (Parks and Recreation), one by a single source "
+                        + "series (Community).",
                     value = """
                         {
                           "data": [
@@ -190,6 +193,8 @@ public interface SeriesRecommendationControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "candidate-keywords",
                     summary = "Three TMDB keywords for a candidate",
+                    description = "The Office's own TMDB keywords, fetched on demand for this "
+                        + "one candidate.",
                     value = "{\"data\":[\"workplace\",\"mockumentary\",\"paper company\"],"
                         + "\"error\":null,\"count\":3,\"excludedCount\":0}")))
         })
@@ -211,6 +216,8 @@ public interface SeriesRecommendationControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "candidate-details-degraded",
                     summary = "TMDB counts present, IMDb rating unavailable",
+                    description = "The Office's season/episode counts from TMDB; imdbRating "
+                        + "is null here because no imdbId was supplied on this request.",
                     value = "{\"data\":{\"numberOfSeasons\":9,\"numberOfEpisodes\":186,"
                         + "\"imdbRating\":null},\"error\":null,\"count\":1,\"excludedCount\":0}")))
         })

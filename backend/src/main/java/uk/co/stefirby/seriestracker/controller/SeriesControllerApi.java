@@ -29,6 +29,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "office-created",
                     summary = "The newly created series",
+                    description = "The Office as it exists immediately after creation, with a "
+                        + "generated id and dateAdded.",
                     value = """
                         {
                           "data": {
@@ -53,6 +55,8 @@ public interface SeriesControllerApi {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "office-create",
             summary = "Request body to create a new series",
+            description = "A minimal request body creating The Office, with just the "
+                + "required title plus the commonly-set year/genres/totalSeasons.",
             value = "{\"title\":\"The Office\",\"year\":2005,\"genres\":\"Comedy\",\"totalSeasons\":9}")))
     @PostMapping
     ResponseEntity<ApiResponse<SeriesDto>> create(@RequestBody SeriesDto dto);
@@ -63,6 +67,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "series-list",
                     summary = "Two tracked series",
+                    description = "Two tracked series returned by GET /api/v1/series with no "
+                        + "sort parameters applied.",
                     value = """
                         {
                           "data": [
@@ -104,6 +110,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "office",
                     summary = "A single tracked series",
+                    description = "The Office as currently tracked, including the caller's "
+                        + "own personalRating.",
                     value = """
                         {
                           "data": {
@@ -143,6 +151,8 @@ public interface SeriesControllerApi {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "partial-update",
             summary = "Update personal rating and current season",
+            description = "A partial update body changing personalRating and currentSeason "
+                + "only; every other field stays as-is.",
             value = "{\"personalRating\":9,\"currentSeason\":5}")))
     @PatchMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<SeriesDto>> update(
@@ -169,6 +179,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "ignored",
                     summary = "A dismissed recommendation",
+                    description = "The dismissed-recommendation record just created for The "
+                        + "Office.",
                     value = """
                         {
                           "data": {
@@ -186,6 +198,7 @@ public interface SeriesControllerApi {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "ignore-request",
             summary = "Request body to dismiss a recommendation",
+            description = "A request body dismissing The Office by its imdbId.",
             value = "{\"imdbId\":\"tt0386676\",\"title\":\"The Office\",\"reason\":\"Already watched\"}")))
     @PostMapping("/ignored")
     ResponseEntity<ApiResponse<IgnoredSeriesDto>> ignore(@RequestBody IgnoredSeriesDto dto);
@@ -198,6 +211,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "search-results",
                     summary = "Two matching series, with two more excluded by other filters",
+                    description = "Two series matching the active search filters, with two "
+                        + "more excluded by other filters in the same request.",
                     value = """
                         {
                           "data": [
@@ -314,6 +329,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "json-export",
                     summary = "Two exported series",
+                    description = "A JSON export of two tracked series, in the same shape "
+                        + "returned by GET /api/v1/series/export?format=json.",
                     value = """
                         {
                           "exportDate": "2026-01-15T10:30:00Z",
@@ -391,6 +408,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "import-started",
                     summary = "An import job that has just started",
+                    description = "A bulk import job immediately after starting, before any "
+                        + "row has been processed.",
                     value = """
                         {
                           "data": {
@@ -424,6 +443,8 @@ public interface SeriesControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "import-status",
                     summary = "A completed import job with one row error",
+                    description = "A completed bulk import job: 48 rows imported, 1 skipped "
+                        + "as a duplicate imdbId, 1 failed with a row-level error.",
                     value = """
                         {
                           "data": {

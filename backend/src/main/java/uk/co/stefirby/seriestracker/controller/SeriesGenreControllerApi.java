@@ -26,6 +26,8 @@ public interface SeriesGenreControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "genre-vocabulary",
                     summary = "The full genre alias vocabulary",
+                    description = "The full set of genre alias names this app's search/"
+                        + "recommendation filters accept.",
                     value = "{\"data\":[\"Comedy\",\"Drama\",\"Sci-Fi & Fantasy\"],"
                         + "\"error\":null,\"count\":3,\"excludedCount\":0}")))
         })
@@ -41,6 +43,9 @@ public interface SeriesGenreControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "genre-stats",
                     summary = "Two genres' aggregated rating/count stats",
+                    description = "Two genres' aggregated series counts and rating averages, "
+                        + "one with a null averagePersonalRating since none of its series are "
+                        + "rated.",
                     value = """
                         {
                           "data": [

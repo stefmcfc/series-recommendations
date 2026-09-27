@@ -29,6 +29,8 @@ public interface SeriesWatchProviderControllerApi {
                 content = @Content(mediaType = "application/json", examples = {
                     @ExampleObject(name = "providers-available",
                         summary = "Two streaming providers carry this series",
+                        description = "Two streaming providers currently carrying this series "
+                            + "in the configured watch region.",
                         value = "{\"data\":[{\"name\":\"Peacock\",\"logoUrl\":"
                             + "\"https://image.tmdb.org/t/p/w500/example-peacock.jpg\"},"
                             + "{\"name\":\"Netflix\",\"logoUrl\":"
@@ -36,6 +38,8 @@ public interface SeriesWatchProviderControllerApi {
                             + "\"error\":null,\"count\":2,\"excludedCount\":0}"),
                     @ExampleObject(name = "no-providers-found",
                         summary = "No streaming providers carry this series",
+                        description = "No streaming providers currently carry this series in "
+                            + "the configured watch region.",
                         value = "{\"data\":[],\"error\":null,\"count\":0,\"excludedCount\":0}")
                 })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",

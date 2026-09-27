@@ -26,6 +26,8 @@ public interface SeriesLookupControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "tmdb-candidates",
                     summary = "Two same-titled candidates from different countries",
+                    description = "Two same-titled TMDB search results for different shows, "
+                        + "distinguishable by tmdbId, year, and originCountry.",
                     value = """
                         {
                           "data": [
@@ -68,6 +70,9 @@ public interface SeriesLookupControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "office-resolved",
                     summary = "The Office, resolved from TMDB with OMDb ratings merged in",
+                    description = "The Office fully resolved from TMDB, with imdbRating merged "
+                        + "in from OMDb; rottenTomatoesRating is null since OMDb didn't return "
+                        + "one for this title.",
                     value = """
                         {
                           "data": {

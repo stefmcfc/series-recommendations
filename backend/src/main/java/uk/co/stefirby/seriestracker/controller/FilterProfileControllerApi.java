@@ -32,6 +32,9 @@ public interface FilterProfileControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "profiles",
                     summary = "Two saved MY_SERIES filter profiles",
+                    description = "Two filter profiles saved under the MY_SERIES area -- one "
+                        + "excluding the Animation genre, one requiring a minimum personal "
+                        + "rating.",
                     value = """
                         {
                           "data": [
@@ -81,6 +84,8 @@ public interface FilterProfileControllerApi {
                 content = @Content(mediaType = "application/json", examples = @ExampleObject(
                     name = "created-profile",
                     summary = "The newly created filter profile",
+                    description = "The filter profile that was just created, echoing back its "
+                        + "generated id and timestamps.",
                     value = """
                         {
                           "data": {
@@ -109,6 +114,8 @@ public interface FilterProfileControllerApi {
         content = @Content(mediaType = "application/json", examples = @ExampleObject(
             name = "new-profile",
             summary = "Request body to create a MY_SERIES filter profile",
+            description = "A request body creating a MY_SERIES profile that excludes the "
+                + "Animation genre.",
             value = """
                 {
                   "area": "MY_SERIES",
@@ -135,6 +142,8 @@ public interface FilterProfileControllerApi {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
         mediaType = "application/json", examples = @ExampleObject(name = "rename-profile",
             summary = "Request body to rename a filter profile",
+            description = "A partial update renaming the profile; criteria is left unchanged "
+                + "since it's omitted from the body.",
             value = "{\"name\":\"No animation or reality TV\"}")))
     @PatchMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<FilterProfileDto>> update(
