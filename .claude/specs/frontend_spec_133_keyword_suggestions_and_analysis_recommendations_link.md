@@ -116,15 +116,25 @@ describe('FRONTEND-133-AC-02: minimum series count field visibility', () => {
 ---
 
 ### FRONTEND-133-AC-03 [AUTO]
-**Statement**: `seriesApi.getKeywordStats` shall accept an optional options object
-(`{ sortBy?, sortDirection?, minSeriesCount? }`) and forward each provided field as a query param on
-`GET /series/keywords`.
+**Correction (found during implementation kickoff)**: this AC's original premise was wrong.
+`seriesApi.getKeywordStats` **already** accepts `options?: KeywordStatsOptions`
+(`sortBy`/`sortDirection`/`minSeriesCount`/etc., all defined on the shared `NameStatsOptions` type)
+and already forwards them via `buildNameStatsParams` — this has been true since `series_spec_047`/
+FRONTEND-086, well before this spec. The Overview's claim that `getKeywordStats()` is called "with no
+options at all" is only true of `RecommendationControls.tsx`'s one call site, not the function itself.
+No `seriesApi.ts`/`types/series.ts` change is needed for this AC. Its only remaining purpose is a
+regression-guard test confirming the contract this spec depends on already holds, so AC-04's real
+work (below) has solid ground to build on.
 
-**References**: `services/seriesApi.ts` (existing no-args call today).
+**Statement**: `seriesApi.getKeywordStats(options)` shall already forward `sortBy`/`sortDirection`/
+`minSeriesCount` as query params on `GET /series/keywords` — confirmed, not implemented.
 
-**Test Case (Red)**:
+**References**: `services/seriesApi.ts` (`getKeywordStats`, `KeywordStatsOptions` = `NameStatsOptions`
+in `types/series.ts`).
+
+**Test Case (confirm, not red/green)**:
 ```typescript
-describe('FRONTEND-133-AC-03: getKeywordStats forwards sort/floor options', () => {
+describe('FRONTEND-133-AC-03: getKeywordStats already forwards sort/floor options', () => {
   it('sends sortBy, sortDirection, and minSeriesCount when provided', async () => {
     await seriesApi.getKeywordStats({ sortBy: 'averageBlendedRating', sortDirection: 'desc', minSeriesCount: 3 })
     expect(mockAxios.get).toHaveBeenCalledWith(
@@ -136,7 +146,8 @@ describe('FRONTEND-133-AC-03: getKeywordStats forwards sort/floor options', () =
   })
 })
 ```
-**Test Case (Green)**: widen the function signature; existing no-args call sites (e.g. `KeywordsView`) are unaffected since the new parameter is optional.
+This test should pass immediately against current code with no implementation change — if it doesn't,
+stop and re-verify the premise above against the real current state of `seriesApi.ts` before proceeding.
 
 ---
 
@@ -320,7 +331,7 @@ fetch/loading/error/empty/results structure.
 
 - [ ] FRONTEND-133-AC-01: "Keyword Suggestion Sort" setting (Most Common / Highest Rated)
 - [ ] FRONTEND-133-AC-02: "Minimum Series Count" field, shown only in Highest Rated mode
-- [ ] FRONTEND-133-AC-03: `seriesApi.getKeywordStats` accepts and forwards sort/floor options
+- [ ] FRONTEND-133-AC-03: confirm (already true, no code change) `seriesApi.getKeywordStats` accepts and forwards sort/floor options
 - [ ] FRONTEND-133-AC-04: suggestion fetch uses rating-sort params when Highest Rated is set
 - [ ] FRONTEND-133-AC-05: "Favourite Keywords" setting, same shape as Country/Language Favourites
 - [ ] FRONTEND-133-AC-06: `CustomSearchPanel` pins favourite keywords via `pinnedOptions`
