@@ -74,6 +74,11 @@ by the user rather than included, but confirmed worth a spec eventually.
 (the Genres analog of `frontend_spec_136`) — a "Favourites Only" filter on Custom Search's genre
 grid itself, deliberately deferred in favor of the simpler badge-only treatment that spec settled on.
 
+2026-09-27 update (same day, later still, after `frontend_spec_136` merged): a fifth candidate added
+while reviewing the CI/pre-push pipeline for the two flakes hit during that spec's push/merge — the
+SQLite-side flake was well-evidenced enough to become `tooling_spec_010` directly; the Vitest-side
+flake wasn't, and is logged here instead.
+
 2026-09-27 update (same day, later still): a fourth candidate added — the user spotted, while
 `frontend_spec_136` was mid-implementation, that `SearchFilter.tsx` (My Series page's filter) never
 got the keyword-favourites `pinnedOptions` treatment `frontend_spec_133` gave `CustomSearchPanel.tsx`.
@@ -81,6 +86,29 @@ got the keyword-favourites `pinnedOptions` treatment `frontend_spec_133` gave `C
 ---
 
 ## Candidates
+
+### Bound Vitest's worker thread pool to reduce full-suite timing flakes
+
+Raised 2026-09-27 while reviewing the CI/pre-push pipeline after two test-suite flakes hit back to
+back during `frontend_spec_136`'s push/merge session: a backend `SQLITE_BUSY` failure (well-evidenced
+root cause, became `tooling_spec_010` directly) and a recurrence of `SettingsPage.test.tsx`'s
+pre-existing `waitFor`/`findBy` timeout flake — real under the full 74-file suite's parallel-worker
+load, never in isolation, already partially mitigated once before (`vitest.config.ts`'s `testTimeout`
+raised 5000ms → 10000ms, see `CHANGELOG.md`) but evidently not eliminated by that alone.
+
+**Idea**: `vitest.config.ts` currently sets no `pool`/`poolOptions`, so Vitest defaults to spawning
+worker threads up to the machine's full CPU count. Under real load (74 files' worth of React
+rendering + jsdom simultaneously), that many threads can oversubscribe the CPU and cause scheduler
+delays in async callbacks that read as a hung `findBy`/`waitFor` even past a generous timeout.
+Capping `poolOptions.threads.maxThreads` to a bounded value (e.g. half the CPU count, or a fixed
+number) could reduce this — but it's a genuine speed-vs-reliability trade-off across the whole suite
+(fewer threads generally means a slower run), and unlike `tooling_spec_010`'s SQLite fix there's no
+equivalent smoking-gun log evidence pinning the exact mechanism here. Worth re-checking whether this
+is still recurring once `tooling_spec_010` has shipped (eliminating the backend flake removes one
+source of overall pre-push friction that could otherwise get misattributed to this one) before
+committing to a specific thread-count trade-off.
+
+**Status**: Spec candidate, not yet designed.
 
 ### Pin favourite keywords to the top of `SearchFilter`'s keyword picker(s)
 
