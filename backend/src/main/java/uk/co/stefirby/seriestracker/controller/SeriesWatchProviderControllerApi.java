@@ -31,8 +31,8 @@ public interface SeriesWatchProviderControllerApi {
                         {"data":[{"name":"Peacock","logoUrl":\
                         "https://image.tmdb.org/t/p/w500/example-peacock.jpg"}],"error":null,\
                         "count":1,"excludedCount":0}"""),
-                    @ExampleObject(name = "no-providers-found", value = """
-                        {"data":[],"error":null,"count":0,"excludedCount":0}""")
+                    @ExampleObject(name = "no-providers-found",
+                        value = "{\"data\":[],\"error\":null,\"count\":0,\"excludedCount\":0}")
                 })),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
                 ref = "#/components/responses/NotFound")

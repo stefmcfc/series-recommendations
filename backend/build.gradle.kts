@@ -24,6 +24,7 @@ val sqliteJdbcVersion = "3.53.4.0"
 val spockVersion = "2.4-groovy-5.0"
 val groovyVersion = "5.1.1"
 val commonsCsvVersion = "1.14.1"
+val springdocVersion = "3.1.1"
 
 java {
     toolchain {
@@ -44,7 +45,7 @@ dependencies {
     // Interactive Swagger UI (/swagger-ui.html) and machine-readable OpenAPI spec
     // (/v3/api-docs, /v3/api-docs.yaml) generated from the actual controller/DTO code --
     // no further configuration required beyond this dependency (series_spec_066).
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
 
     // RestClient support (OmdbClient). Boot 4 split RestClient's autoconfiguration --
     // including the RestClient.Builder bean -- out of spring-boot-starter-web into its own

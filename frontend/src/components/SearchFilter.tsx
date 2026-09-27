@@ -95,22 +95,25 @@ const initialFormState: FormState = {
   missingRottenTomatoesPopcornmeter: false,
 }
 
-function buildCriteria(form: FormState): SearchCriteria {
-  const criteria: SearchCriteria = {}
-
+function applyGenresKeywordsCriteria(
+  form: FormState,
+  criteria: SearchCriteria,
+): void {
   if (form.genresSelected.length > 0) criteria.genres = form.genresSelected
-
   if (form.excludeGenresSelected.length > 0)
     criteria.excludeGenres = form.excludeGenresSelected
-
   if (form.keywordsSelected.length > 0)
     criteria.keywords = form.keywordsSelected
+}
 
+function applyOriginCriteria(form: FormState, criteria: SearchCriteria): void {
   if (form.originCountrySelected.length > 0)
     criteria.originCountry = form.originCountrySelected
   if (form.originalLanguage.trim() !== '')
     criteria.originalLanguage = form.originalLanguage
+}
 
+function applyRatingsCriteria(form: FormState, criteria: SearchCriteria): void {
   if (form.minPersonalRating != null)
     criteria.minPersonalRating = form.minPersonalRating
   if (form.minImdbRating.trim() !== '')
@@ -123,19 +126,35 @@ function buildCriteria(form: FormState): SearchCriteria {
     criteria.minRottenTomatoesPopcornmeter = Number(
       form.minRottenTomatoesPopcornmeter,
     )
+}
+
+function applyYearsCriteria(form: FormState, criteria: SearchCriteria): void {
   if (form.yearMin.trim() !== '') criteria.yearMin = Number(form.yearMin)
   if (form.yearMax.trim() !== '') criteria.yearMax = Number(form.yearMax)
+}
 
-  // FRONTEND-116-AC-03: only sent when checked -- unchecked (the default)
-  // means "no filter", same omit-when-absent convention as every other field
-  // above, not an explicit `false`.
+// FRONTEND-116-AC-03: only sent when checked -- unchecked (the default)
+// means "no filter", same omit-when-absent convention as every other field
+// above, not an explicit `false`.
+function applyMissingRatingsCriteria(
+  form: FormState,
+  criteria: SearchCriteria,
+): void {
   if (form.missingImdbRating) criteria.missingImdbRating = true
   if (form.missingTmdbRating) criteria.missingTmdbRating = true
   if (form.missingRottenTomatoesRating)
     criteria.missingRottenTomatoesRating = true
   if (form.missingRottenTomatoesPopcornmeter)
     criteria.missingRottenTomatoesPopcornmeter = true
+}
 
+function buildCriteria(form: FormState): SearchCriteria {
+  const criteria: SearchCriteria = {}
+  applyGenresKeywordsCriteria(form, criteria)
+  applyOriginCriteria(form, criteria)
+  applyRatingsCriteria(form, criteria)
+  applyYearsCriteria(form, criteria)
+  applyMissingRatingsCriteria(form, criteria)
   return criteria
 }
 

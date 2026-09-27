@@ -38,8 +38,8 @@ public interface SeriesControllerApi {
                 ref = "#/components/responses/Conflict")
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
-        mediaType = "application/json", examples = @ExampleObject(name = "office-create", value = """
-            {"title":"The Office","year":2005,"genres":"Comedy","totalSeasons":9}""")))
+        mediaType = "application/json", examples = @ExampleObject(name = "office-create",
+            value = "{\"title\":\"The Office\",\"year\":2005,\"genres\":\"Comedy\",\"totalSeasons\":9}")))
     @PostMapping
     ResponseEntity<ApiResponse<SeriesDto>> create(@RequestBody SeriesDto dto);
 
@@ -89,8 +89,8 @@ public interface SeriesControllerApi {
                 ref = "#/components/responses/NotFound")
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
-        mediaType = "application/json", examples = @ExampleObject(name = "partial-update", value = """
-            {"personalRating":9,"currentSeason":5}""")))
+        mediaType = "application/json", examples = @ExampleObject(name = "partial-update",
+            value = "{\"personalRating\":9,\"currentSeason\":5}")))
     @PatchMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<SeriesDto>> update(
             @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
@@ -118,8 +118,8 @@ public interface SeriesControllerApi {
                         "2026-01-15T10:30:00"},"error":null,"count":1,"excludedCount":0}""")))
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
-        mediaType = "application/json", examples = @ExampleObject(name = "ignore-request", value = """
-            {"imdbId":"tt0386676","title":"The Office","reason":"Already watched"}""")))
+        mediaType = "application/json", examples = @ExampleObject(name = "ignore-request",
+            value = "{\"imdbId\":\"tt0386676\",\"title\":\"The Office\",\"reason\":\"Already watched\"}")))
     @PostMapping("/ignored")
     ResponseEntity<ApiResponse<IgnoredSeriesDto>> ignore(@RequestBody IgnoredSeriesDto dto);
 

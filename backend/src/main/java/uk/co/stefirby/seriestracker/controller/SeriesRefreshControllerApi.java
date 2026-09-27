@@ -81,8 +81,7 @@ public interface SeriesRefreshControllerApi {
         + "configured default for any future run. Omitting the body, or the field within it, "
         + "leaves the configured default governing.",
         content = @Content(mediaType = "application/json", examples = @ExampleObject(
-            name = "override-threshold", value = """
-                {"skipThresholdMinutesOverride":30}""")))
+            name = "override-threshold", value = "{\"skipThresholdMinutesOverride\":30}")))
     @PostMapping("/refresh-all")
     ResponseEntity<ApiResponse<RefreshJobStatus>> refreshAll(@RequestBody(required = false) RefreshAllOptions options);
 

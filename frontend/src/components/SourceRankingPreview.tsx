@@ -16,10 +16,10 @@ interface SourceRankingPreviewProps {
   readonly blendSources?: string[]
 }
 
-const BLEND_STRATEGIES: readonly SourceRankingStrategy[] = [
+const BLEND_STRATEGIES: ReadonlySet<SourceRankingStrategy> = new Set([
   'personalRatingThenCustomBlend',
   'customBlendThenPersonalRating',
-]
+])
 
 // Matches SeriesDetailFields.tsx's own formatDate exactly -- dateCompleted is
 // shown as a raw ISO timestamp everywhere else in this codebase without this,
@@ -44,7 +44,7 @@ export function SourceRankingPreview({
     return <p className={styles.hint}>No series to preview.</p>
   }
 
-  const isBlendStrategy = BLEND_STRATEGIES.includes(strategy)
+  const isBlendStrategy = BLEND_STRATEGIES.has(strategy)
 
   return (
     <ol className={styles.list}>

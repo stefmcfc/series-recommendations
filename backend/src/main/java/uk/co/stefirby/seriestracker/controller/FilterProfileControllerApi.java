@@ -91,8 +91,8 @@ public interface FilterProfileControllerApi {
                 ref = "#/components/responses/Conflict")
         })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(
-        mediaType = "application/json", examples = @ExampleObject(name = "rename-profile", value = """
-            {"name":"No animation or reality TV"}""")))
+        mediaType = "application/json", examples = @ExampleObject(name = "rename-profile",
+            value = "{\"name\":\"No animation or reality TV\"}")))
     @PatchMapping("/" + UuidPathPattern.PATTERN)
     ResponseEntity<ApiResponse<FilterProfileDto>> update(
             @Parameter(example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
