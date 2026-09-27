@@ -70,9 +70,29 @@ the broadened Settings info/disclosure-box candidate remains open in this file.
 tab favourite indicator + per-keyword detail modal) — deliberately deferred out of that spec's scope
 by the user rather than included, but confirmed worth a spec eventually.
 
+2026-09-27 update (same day, later): a third candidate added while scoping `frontend_spec_137`
+(the Genres analog of `frontend_spec_136`) — a "Favourites Only" filter on Custom Search's genre
+grid itself, deliberately deferred in favor of the simpler badge-only treatment that spec settled on.
+
 ---
 
 ## Candidates
+
+### "Favourites Only" filter on Custom Search's genre grid
+
+Raised 2026-09-27 while scoping `frontend_spec_137` (the Genres analog of `frontend_spec_136`'s
+Keywords favourite/detail-modal work). That spec settled on a read-only favourite *badge* on
+`CustomSearchPanel`'s genre grid (`GenreIncludeExcludePicker`), not reordering or filtering — the
+simpler, lower-risk option, confirmed directly with the user over the alternative of sorting
+favourites to the front of the grid.
+
+**Idea**: a toggle above the genre grid that narrows it to favourited genres only, the same
+client-side-filter shape `frontend_spec_136` already established for the Analysis Genres tab. Given
+the grid only has 16 genres total, the value here is smaller than it was for Keywords' much larger
+vocabulary — worth weighing that against the added UI complexity when this is actually scoped,
+rather than assuming it's automatically worth building just because the Analysis-tab version was.
+
+**Status**: Spec candidate, not yet designed.
 
 ### Cross-link the per-keyword detail modal to "Get recommendations for this keyword"
 

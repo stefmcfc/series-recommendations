@@ -48,6 +48,13 @@ detail page, and a favourite toggle for the keyword itself inside the modal.
   `CountryStatsView` are unaffected by construction (undefined prop = no star column, no filter
   checkbox, no behavior change). Neither Genre nor Country has a favourites concept in this app
   today, so this is a real scope boundary, not an arbitrary one.
+- **The detail-modal open callback is named generically (`onOpenDetail`), not the more literal
+  `onOpenKeywordDetail`** — confirmed with the user directly, ahead of a planned follow-up Genres spec
+  (`frontend_spec_137`) that reuses this exact same `NameStatsTable` plumbing for a
+  `GenreDetailModal`. Naming it generically now, while this prop doesn't exist yet, avoids
+  `NameStatsTable` ending up with two near-duplicate callback props (`onOpenDetail` +
+  `onOpenGenreDetail`) doing the identical job. `favouriteNames`/the "Favourites Only" filter were
+  already generic by name; only the click-through callback needed this.
 - **"Favourites Only" filters client-side, not via a new backend query param.** Favourite keywords
   are a purely local, unsynced-to-backend concept (confirmed: `GET /series/keywords` has no
   favourites-related param, and none is being added). The checkbox filters the already-fetched
@@ -194,7 +201,7 @@ I've tagged with it — whatever their status — with ratings I can sort by, so
 history with that keyword without leaving the page to search manually.
 
 ### FRONTEND-136-AC-04 [AUTO]
-**Statement**: `NameStatsTable` shall accept a new, optional `onOpenKeywordDetail?: (name: string) =>
+**Statement**: `NameStatsTable` shall accept a new, optional `onOpenDetail?: (name: string) =>
 void` prop; where provided, each row's name cell shall render as a button calling it with that row's
 `name`; where omitted, the name cell shall remain plain text as today.
 
@@ -209,12 +216,12 @@ describe('FRONTEND-136-AC-04: optional keyword-name click-through', () => {
     const { rerender } = render(<NameStatsTable stats={stats} fetchStats={fetchStats} />)
     expect(screen.queryByRole('button', { name: stats[0].name })).not.toBeInTheDocument()
 
-    const onOpenKeywordDetail = vi.fn()
+    const onOpenDetail = vi.fn()
     rerender(
-      <NameStatsTable stats={stats} fetchStats={fetchStats} onOpenKeywordDetail={onOpenKeywordDetail} />,
+      <NameStatsTable stats={stats} fetchStats={fetchStats} onOpenDetail={onOpenDetail} />,
     )
     fireEvent.click(screen.getByRole('button', { name: stats[0].name }))
-    expect(onOpenKeywordDetail).toHaveBeenCalledWith(stats[0].name)
+    expect(onOpenDetail).toHaveBeenCalledWith(stats[0].name)
   })
 })
 ```
@@ -223,7 +230,7 @@ describe('FRONTEND-136-AC-04: optional keyword-name click-through', () => {
 ---
 
 ### FRONTEND-136-AC-05 [AUTO]
-**Statement**: `KeywordsView` (and only `KeywordsView`) shall pass `onOpenKeywordDetail`, opening a
+**Statement**: `KeywordsView` (and only `KeywordsView`) shall pass `onOpenDetail`, opening a
 new `KeywordDetailModal` seeded with the clicked keyword.
 
 **References**: `components/KeywordsView.tsx`; new `components/KeywordDetailModal.tsx`.
@@ -384,7 +391,7 @@ adding/removing the seeded `keyword`.
 - [ ] FRONTEND-136-AC-01: `NameStatsTable` renders a favourite star per row via optional `favouriteNames` prop
 - [ ] FRONTEND-136-AC-02: `KeywordsView` wires `favouriteNames` from `keywordFavourites`; Genre/Country do not
 - [ ] FRONTEND-136-AC-03: "Favourites Only" client-side filter checkbox, no re-fetch
-- [ ] FRONTEND-136-AC-04: `NameStatsTable`'s name cell becomes clickable via optional `onOpenKeywordDetail` prop
+- [ ] FRONTEND-136-AC-04: `NameStatsTable`'s name cell becomes clickable via optional `onOpenDetail` prop
 - [ ] FRONTEND-136-AC-05: `KeywordsView` wires the click-through to open `KeywordDetailModal`; Genre/Country do not
 - [ ] FRONTEND-136-AC-06: `KeywordDetailModal` fetches all-status series on mount, computes blended rating client-side
 - [ ] FRONTEND-136-AC-07: modal's columns sort client-side by header click, no re-fetch

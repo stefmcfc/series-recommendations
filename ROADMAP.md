@@ -41,6 +41,7 @@ dependency-derived anymore.
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
 | Keywords tab: a favourite-star indicator + "Favourites Only" filter, and a per-keyword detail modal listing every tracked series (any status) carrying that keyword — sortable by name/status/personal rating/blended rating, click-through to the series' own detail page, and a favourite toggle | — | `frontend_spec_136` | ⬜ Not started |
+| Genres: Favourite Genres (a fourth Settings picker + a badge on Custom Search's genre grid) and the same Genres-tab favourite-star/filter/detail-modal treatment as `frontend_spec_136` — depends on that spec shipping first | — | `frontend_spec_137` | ⬜ Not started |
 ---
 
 ## Delivered
