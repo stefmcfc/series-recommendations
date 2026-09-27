@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.66.0] - 2026-09-27
+
 ### Added
 
 - Backend: `OpenApiConfig` registers 4 shared, reusable OpenAPI response components (`BadRequest`/`NotFound`/`Conflict`/`BadGateway`), each with a representative `ApiResponse<Void>`-shaped example — every operation that can return one of these now references it via `ref = "#/components/responses/..."` instead of repeating the error envelope's JSON per operation (`series_spec_070`).
@@ -21,6 +23,7 @@ versioned together as one app.
 - Frontend: `SourceRankingPreview.tsx`'s `BLEND_STRATEGIES` is now a `Set` with `.has()` instead of an array with `.includes()`. No behavior change — SonarQube finding (`typescript:S7776`).
 - Backend: `build.gradle.kts`'s springdoc dependency version is now a named `springdocVersion` val, matching the file's existing pattern for its other dependency versions. No behavior change — SonarQube finding (`kotlin:S6624`).
 - Frontend: `SourceRankingPreview.module.css`'s `--surface-2`/`--text-muted` custom properties — never actually defined anywhere in the project's theme, always silently falling back to their inline default — are replaced with the existing `--social-bg`/`opacity: 0.8` equivalents already used elsewhere for the same purpose. No behavior change; fixes a latent light-theme-only cosmetic issue as a side effect (the old fallback was only really visible against a dark background).
+- Frontend: Vitest's default 5000ms `testTimeout` is raised to 10000ms — too tight for the full suite's real parallel-worker load on this machine, causing intermittent `waitFor`/`findBy` timeouts in otherwise-passing tests under contention (never in isolation), flaking the pre-push hook. No test logic changed.
 
 ## [3.65.1] - 2026-09-25
 
