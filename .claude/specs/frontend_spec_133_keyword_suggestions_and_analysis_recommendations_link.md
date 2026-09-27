@@ -1,6 +1,20 @@
 # Frontend Spec 133: Keyword Suggestion Sort/Favourites and Analysis-Page Recommendations Link
 
-**Status**: Not started
+**Status**: Done (2026-09-27). Implemented as written, with one deliberate
+addition beyond the written test sketches: `KeywordRecommendationsModal`'s
+error state gained a "Retry" action (re-runs the fetch), matching AC-09's own
+red test contract even though `SeriesRecommendationsModal` (the component it's
+modeled on) doesn't have one. Verification: `npm test` -- 1491/1491 passing
+across 73 files; `npm run lint` -- clean; `npx tsc --noEmit` -- clean. Real
+browser pass done via a headless-Chrome/puppeteer-core script (ephemeral
+`npm install --no-save puppeteer-core`, removed afterward, matching
+`frontend_spec_032`'s precedent) confirming: Settings' Keyword Suggestion Sort
+radios default to Most Common, the Minimum Series Count field is hidden until
+Highest Rated is selected (then defaults to 2), Favourite Keywords renders a
+real fetched keyword as a suggestion; the Analysis page's Keywords tab renders
+a "Get Recs" button per row that opens a dialog titled "Recommendations for
+&lt;keyword&gt;" and resolves out of its loading state, while the Genres tab
+renders no such button at all.
 **Priority**: P3
 **Depends on**: `frontend_spec_098_country_language_favourites.md` (the exact `useLocalStorage`
 favourites pattern this spec copies for keywords), `frontend_spec_053_candidate_detail_modal.md`
@@ -329,12 +343,12 @@ fetch/loading/error/empty/results structure.
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-133-AC-01: "Keyword Suggestion Sort" setting (Most Common / Highest Rated)
-- [ ] FRONTEND-133-AC-02: "Minimum Series Count" field, shown only in Highest Rated mode
-- [ ] FRONTEND-133-AC-03: confirm (already true, no code change) `seriesApi.getKeywordStats` accepts and forwards sort/floor options
-- [ ] FRONTEND-133-AC-04: suggestion fetch uses rating-sort params when Highest Rated is set
-- [ ] FRONTEND-133-AC-05: "Favourite Keywords" setting, same shape as Country/Language Favourites
-- [ ] FRONTEND-133-AC-06: `CustomSearchPanel` pins favourite keywords via `pinnedOptions`
-- [ ] FRONTEND-133-AC-07: `NameStatsTable` gains an optional per-row `onGetRecommendations` action
-- [ ] FRONTEND-133-AC-08: only `KeywordsView` wires the action; Genre/Country views are unaffected
-- [ ] FRONTEND-133-AC-09: `KeywordRecommendationsModal` fetches on mount, mirrors `SeriesRecommendationsModal`'s states
+- [x] FRONTEND-133-AC-01: "Keyword Suggestion Sort" setting (Most Common / Highest Rated)
+- [x] FRONTEND-133-AC-02: "Minimum Series Count" field, shown only in Highest Rated mode
+- [x] FRONTEND-133-AC-03: confirm (already true, no code change) `seriesApi.getKeywordStats` accepts and forwards sort/floor options
+- [x] FRONTEND-133-AC-04: suggestion fetch uses rating-sort params when Highest Rated is set
+- [x] FRONTEND-133-AC-05: "Favourite Keywords" setting, same shape as Country/Language Favourites
+- [x] FRONTEND-133-AC-06: `CustomSearchPanel` pins favourite keywords via `pinnedOptions`
+- [x] FRONTEND-133-AC-07: `NameStatsTable` gains an optional per-row `onGetRecommendations` action
+- [x] FRONTEND-133-AC-08: only `KeywordsView` wires the action; Genre/Country views are unaffected
+- [x] FRONTEND-133-AC-09: `KeywordRecommendationsModal` fetches on mount, mirrors `SeriesRecommendationsModal`'s states
