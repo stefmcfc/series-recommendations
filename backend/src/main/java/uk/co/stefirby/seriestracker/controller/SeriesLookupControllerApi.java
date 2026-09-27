@@ -58,8 +58,6 @@ public interface SeriesLookupControllerApi {
                         + "Pennsylvania branch of the fictional Dunder Mifflin Paper Company.",\
                         "lastAirYear":2013,"originalLanguage":"en"},"error":null,"count":1,\
                         "excludedCount":0}"""))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
-                ref = "#/components/responses/NotFound"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502",
                 ref = "#/components/responses/BadGateway")
         })

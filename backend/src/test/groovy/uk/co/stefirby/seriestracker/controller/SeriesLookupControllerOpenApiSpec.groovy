@@ -49,14 +49,15 @@ class SeriesLookupControllerOpenApiSpec extends Specification {
         result.andExpect(jsonPath('$.paths./api/v1/series/lookup/search-tmdb.get.responses.200.content.application/json.examples').exists())
   }
 
-  def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references NotFound"() {
+  def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references BadGateway, not NotFound"() {
     when: "the generated OpenAPI spec is requested"
         def result = mockMvc.perform(get("/v3/api-docs"))
 
-    then: "both the 200 example and the 404 reference are present"
+    then: "the 200 example and the 502 reference are present; no 404 is documented"
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.200.content.application/json.examples').exists())
-        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.502').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').doesNotExist())
   }
 
   def "SERIES-070-AC-05: GET .../lookup/search-tmdb documents a title parameter example"() {

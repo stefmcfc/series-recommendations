@@ -285,24 +285,34 @@ def "SERIES-070-AC-04: GET /api/v1/series/keywords documents a sortBy parameter 
 ### SERIES-070-AC-05 [AUTO]
 **Statement**: `SeriesLookupControllerApi.lookupSearchTmdb()` shall carry a `200` example (2-3 TMDB
 search-result candidates); `lookupResolveTmdb()` shall carry a `200` example showing the merged
-TMDB+OMDb shape, and reference `NotFound` for an unresolvable `tmdbId`. `lookupSearchTmdb()`'s
-`title` parameter shall carry the example value `"The Office"`; `lookupResolveTmdb()`'s `tmdbId`
-parameter shall carry The Office's real TMDB id as its example (confirmed via a live
-`lookupSearchTmdb` call during implementation, per this spec's Design Decisions, rather than a
-guessed placeholder).
+TMDB+OMDb shape. **Correction (found during implementation)**: this AC originally said
+`lookupResolveTmdb()` should reference `NotFound` for an unresolvable `tmdbId` — that was wrong.
+`resolveTmdbCandidate`'s only upstream call, `TmdbClient.details()`, never throws
+`EntityNotFoundException`, only `ExternalServiceException`; the operation's own existing
+`@Operation` description already states "Always 200 on success; 502 only for a genuine TMDB
+upstream failure." `lookupResolveTmdb()` shall therefore reference `BadGateway` only, not
+`NotFound` — documenting a 404 that can never actually occur would be worse than not documenting
+it. `lookupSearchTmdb()`'s `title` parameter shall carry the example value `"The Office"`;
+`lookupResolveTmdb()`'s `tmdbId` parameter shall carry The Office's real TMDB id as its example
+(confirmed via a live `lookupSearchTmdb` call during implementation, per this spec's Design
+Decisions, rather than a guessed placeholder).
 
-**References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesLookupControllerApi.java`.
+**References**: `backend/src/main/java/uk/co/stefirby/seriestracker/controller/SeriesLookupControllerApi.java`;
+`backend/src/main/java/uk/co/stefirby/seriestracker/service/tmdb/SeriesLookupService.java` and
+`backend/src/main/java/uk/co/stefirby/seriestracker/client/tmdb/TmdbClient.java` (confirms `details()`
+only ever throws `ExternalServiceException`, never `EntityNotFoundException`).
 
 **Test Case (Red)**:
 ```groovy
-def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references NotFound"() {
+def "SERIES-070-AC-05: GET .../lookup/resolve-tmdb documents a 200 example and references BadGateway, not NotFound"() {
     when: "the generated OpenAPI spec is requested"
         def result = mockMvc.perform(get("/v3/api-docs"))
 
-    then: "both the 200 example and the 404 reference are present"
+    then: "the 200 example and the 502 reference are present; no 404 is documented"
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.200.content.application/json.examples').exists())
-        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.502').exists())
+        result.andExpect(jsonPath('$.paths./api/v1/series/lookup/resolve-tmdb.get.responses.404').doesNotExist())
 }
 
 def "SERIES-070-AC-05: GET .../lookup/search-tmdb documents a title parameter example"() {
@@ -553,7 +563,7 @@ successfully against the live TMDB/OMDb APIs when executed.
 - [x] SERIES-070-AC-02: `SeriesControllerApi` — request/response examples + error refs across all 10 methods + `id`/`sortBy`/`sortDirection`/`title`/`status`/`genre`/`format` parameter examples
 - [x] SERIES-070-AC-03: `SeriesGenreControllerApi` — response examples + `sortBy`/`onlyCompleted` parameter examples
 - [x] SERIES-070-AC-04: `SeriesKeywordControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
-- [x] SERIES-070-AC-05: `SeriesLookupControllerApi` — response examples + `NotFound` ref + `title`/`tmdbId` parameter examples
+- [x] SERIES-070-AC-05: `SeriesLookupControllerApi` — response examples + `BadGateway` ref (not `NotFound` — corrected during implementation, see AC-05) + `title`/`tmdbId` parameter examples
 - [x] SERIES-070-AC-06: `SeriesOriginCountryControllerApi` — response example + `sortBy`/`onlyCompleted` parameter examples
 - [x] SERIES-070-AC-07: `SeriesRecommendationControllerApi` — response examples + `BadGateway`/`BadRequest` refs + `limit`/`genres`/`yearMin`/`yearMax`/`tmdbId`/`imdbId` parameter examples
 - [x] SERIES-070-AC-08: `SeriesWatchProviderControllerApi`/`SeriesRefreshControllerApi` — response/request examples + `NotFound`/`Conflict` refs + `id`/`region` parameter examples
