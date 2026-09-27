@@ -6,6 +6,7 @@ import { NumberInput } from './NumberInput'
 import { InfoDisclosure } from './InfoDisclosure'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
+import { FavouritesIcon } from './SettingsIcons'
 import styles from './NameStatsTable.module.css'
 import sharedStyles from './RecommendationControls.module.css'
 
@@ -69,6 +70,17 @@ export interface NameStatsTableProps {
   // all, so those two views are unaffected by construction (this spec's
   // Design Decisions).
   readonly onGetRecommendations?: (name: string) => void
+  // FRONTEND-136-AC-01/03: optional -- when provided, each row whose `name`
+  // is in this array renders a favourite star beside the name, and a
+  // "Favourites Only" checkbox appears to filter the already-fetched
+  // `stats` client-side; when omitted (the GenreStatsView/CountryStatsView
+  // call sites), neither the star nor the checkbox renders at all, mirroring
+  // onGetRecommendations' existing optional-prop pattern above.
+  readonly favouriteNames?: string[]
+  // FRONTEND-136-AC-04: optional -- when provided, the name cell renders as
+  // a button calling it with that row's `name`; when omitted, the name cell
+  // stays plain text, same structural pattern as onGetRecommendations.
+  readonly onOpenDetail?: (name: string) => void
 }
 
 function formatAverage(value: number | null): string {
@@ -85,10 +97,15 @@ export function NameStatsTable({
   fetchStats,
   filters,
   onGetRecommendations,
+  favouriteNames,
+  onOpenDetail,
 }: NameStatsTableProps) {
   const [stats, setStats] = useState<NameStat[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // FRONTEND-136-AC-03: purely client-side, against the already-fetched
+  // `stats` -- unrelated to the fetch effect below, no re-fetch triggered.
+  const [favouritesOnly, setFavouritesOnly] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -142,9 +159,27 @@ export function NameStatsTable({
     onClear: filters.clearFilterProfile,
   })
 
+  // FRONTEND-136-AC-03: only applied once favouriteNames is provided --
+  // otherwise displayedStats is just stats, unchanged.
+  const displayedStats =
+    favouriteNames && favouritesOnly
+      ? stats.filter((stat) => favouriteNames.includes(stat.name))
+      : stats
+
   return (
     <div className={styles.container} data-testid={testId}>
       <h2 className={styles.heading}>{heading}</h2>
+
+      {favouriteNames && (
+        <label className={styles.favouritesOnlyLabel}>
+          <input
+            type="checkbox"
+            checked={favouritesOnly}
+            onChange={(e) => setFavouritesOnly(e.target.checked)}
+          />
+          Favourites Only
+        </label>
+      )}
 
       <div className={sharedStyles.filtersSection}>
         <button
@@ -329,9 +364,30 @@ export function NameStatsTable({
             </tr>
           </thead>
           <tbody>
-            {stats.map((stat) => (
+            {displayedStats.map((stat) => (
               <tr key={stat.name}>
-                <td>{stat.name}</td>
+                <td>
+                  {onOpenDetail ? (
+                    <button
+                      type="button"
+                      className={styles.nameButton}
+                      onClick={() => onOpenDetail(stat.name)}
+                    >
+                      {stat.name}
+                    </button>
+                  ) : (
+                    stat.name
+                  )}
+                  {favouriteNames?.includes(stat.name) && (
+                    <span
+                      className={styles.favouriteStar}
+                      data-testid="favourite-star"
+                      aria-hidden="true"
+                    >
+                      <FavouritesIcon />
+                    </span>
+                  )}
+                </td>
                 <td>{stat.seriesCount}</td>
                 <td>{formatAverage(stat.averagePersonalRating)}</td>
                 <td>{formatAverage(stat.averageBlendedRating)}</td>

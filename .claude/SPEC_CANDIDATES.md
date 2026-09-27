@@ -74,9 +74,35 @@ by the user rather than included, but confirmed worth a spec eventually.
 (the Genres analog of `frontend_spec_136`) — a "Favourites Only" filter on Custom Search's genre
 grid itself, deliberately deferred in favor of the simpler badge-only treatment that spec settled on.
 
+2026-09-27 update (same day, later still): a fourth candidate added — the user spotted, while
+`frontend_spec_136` was mid-implementation, that `SearchFilter.tsx` (My Series page's filter) never
+got the keyword-favourites `pinnedOptions` treatment `frontend_spec_133` gave `CustomSearchPanel.tsx`.
+
 ---
 
 ## Candidates
+
+### Pin favourite keywords to the top of `SearchFilter`'s keyword picker(s)
+
+Raised 2026-09-27 by the user, spotted while `frontend_spec_136` (Analysis Keywords tab favourite
+star/detail modal) was being implemented, but not part of that spec's scope. `frontend_spec_133`
+added `keywordFavourites`-backed `pinnedOptions` to `CustomSearchPanel.tsx`'s two `KeywordPicker`
+instances (the inline picker and its "Browse all keywords" modal picker) — confirmed via direct
+read, that spec's scope named `CustomSearchPanel` only. `SearchFilter.tsx` (the My Series page's own
+filter panel) has the same two-instance shape — an inline `KeywordPicker` (~line 500) and its own
+"Browse all keywords" modal (~line 823) — but neither passes `pinnedOptions` for keywords, even
+though `SearchFilter.tsx` already does exactly this for its Country and Language pickers in the same
+file (`countryFavourites`/`languageFavourites` read via `useLocalStorage`, lines ~279-284, passed as
+`pinnedOptions` at lines ~554/567). So within `SearchFilter.tsx` itself, Keywords is the one picker
+type that doesn't pin favourites — an inconsistency, not a new concept.
+
+**Idea**: read `keywordFavourites` in `SearchFilter.tsx` via the existing `useLocalStorage` hook (same
+key, same shape already established) and pass it as `pinnedOptions` to both of `SearchFilter.tsx`'s
+keyword `KeywordPicker` instances, mirroring `CustomSearchPanel.tsx`'s existing wiring exactly.
+Small, contained, no design decisions left open — likely a same-shape sibling PR to
+`frontend_spec_133`'s AC-06/07 rather than anything novel.
+
+**Status**: Spec candidate, not yet designed.
 
 ### "Favourites Only" filter on Custom Search's genre grid
 

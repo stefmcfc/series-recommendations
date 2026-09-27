@@ -120,3 +120,44 @@
 .getRecsButton:hover {
   background: var(--social-bg);
 }
+
+/* FRONTEND-136-AC-01/03/04: favourite star, "Favourites Only" checkbox, and
+   the optional clickable name button -- all new, unused unless
+   favouriteNames/onOpenDetail are provided (Keywords tab only). */
+.favouritesOnlyLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.favouriteStar {
+  display: inline-flex;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: 0.4rem;
+  color: #eab308;
+  vertical-align: middle;
+}
+
+.favouriteStar svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.nameButton {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--link, #2563eb);
+  cursor: pointer;
+  text-align: left;
+}
+
+.nameButton:hover {
+  text-decoration: underline;
+}

@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `NameStatsTable` gains an optional `favouriteNames` prop and a "Favourites Only" checkbox — the Analysis page's Keywords tab now shows a star beside any keyword already in Settings' Favourite Keywords, and can filter the table to just those, client-side against the already-fetched stats (`frontend_spec_136`).
+- Frontend: `NameStatsTable`'s name cell becomes a clickable button via a new optional `onOpenDetail` prop, wired up only on the Keywords tab; clicking a keyword opens a new `KeywordDetailModal` listing every tracked series (any status) carrying that keyword, with name/status/personal rating/a client-side-computed blended rating (new `utils/blendedRating.ts`), sortable by any column header, each row navigating to that series' own detail page, and a favourite toggle for the keyword itself (`frontend_spec_136`).
+
+### Fixed
+
+- Frontend: `useLocalStorage` now broadcasts a same-tab sync event on every write, so two components mounted at once and sharing the same key stay in sync — found live-testing `frontend_spec_136`: favouriting a keyword from the new `KeywordDetailModal` never updated the star already showing in the Keywords table behind it, because each held independent state read from storage only once on mount.
+
 ## [3.67.0] - 2026-09-27
 
 ### Added

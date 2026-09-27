@@ -33,6 +33,40 @@ function openFilters() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockListFilterProfiles.mockResolvedValue([])
+  localStorage.clear()
+})
+
+describe('FRONTEND-136-AC-02/05: GenreStatsView unaffected by keywordFavourites/onOpenDetail', () => {
+  it('renders no favourite star even for an identically-named favourite', async () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['Drama']))
+    mockGetGenreStats.mockResolvedValue([
+      {
+        name: 'Drama',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+    ])
+    render(<GenreStatsViewHarness />)
+    await screen.findByText('Drama')
+    expect(screen.queryByTestId('favourite-star')).not.toBeInTheDocument()
+  })
+
+  it('renders no clickable name button', async () => {
+    mockGetGenreStats.mockResolvedValue([
+      {
+        name: 'Drama',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+    ])
+    render(<GenreStatsViewHarness />)
+    await screen.findByText('Drama')
+    expect(
+      screen.queryByRole('button', { name: 'Drama' }),
+    ).not.toBeInTheDocument()
+  })
 })
 
 describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {

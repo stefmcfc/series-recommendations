@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { KeywordsView } from './KeywordsView'
 import { seriesApi } from '../services/seriesApi'
@@ -18,9 +19,16 @@ const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 // instance -- this Harness wraps it with a real instance of that hook so
 // every existing behavioral test below (Apply Filters, sort, etc.) keeps
 // exercising the same end-to-end flow it did before this prop was added.
+// FRONTEND-136-AC-08: KeywordDetailModal calls useNavigate, so this harness
+// always renders inside a Router -- unconditionally, since it's a no-op for
+// every pre-existing test that never opens that modal.
 function KeywordsViewHarness() {
   const filters = useNameStatsFilters()
-  return <KeywordsView filters={filters} />
+  return (
+    <MemoryRouter>
+      <KeywordsView filters={filters} />
+    </MemoryRouter>
+  )
 }
 
 // FRONTEND-096-AC-04: filter fields now sit collapsed behind the "Analysis
@@ -33,6 +41,7 @@ function openFilters() {
 beforeEach(() => {
   vi.clearAllMocks()
   mockListFilterProfiles.mockResolvedValue([])
+  localStorage.clear()
 })
 
 describe('FRONTEND-133-AC-08: KeywordsView wires the recommendations action', () => {
@@ -57,6 +66,78 @@ describe('FRONTEND-133-AC-08: KeywordsView wires the recommendations action', ()
     expect(seriesApi.getRecommendations).toHaveBeenCalledWith({
       keywords: ['spy'],
     })
+  })
+})
+
+describe('FRONTEND-136-AC-02: KeywordsView wires favourites', () => {
+  it('shows a star for a keyword already in keywordFavourites', async () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['time travel']))
+    mockGetKeywordStats.mockResolvedValue([
+      {
+        name: 'time travel',
+        seriesCount: 2,
+        averagePersonalRating: 8,
+        averageBlendedRating: 7.5,
+      },
+    ])
+    render(<KeywordsViewHarness />)
+    expect(await screen.findByTestId('favourite-star')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-136-AC-05: KeywordsView wires the detail modal', () => {
+  it('opens KeywordDetailModal from a keyword name click', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      {
+        name: 'time travel',
+        seriesCount: 2,
+        averagePersonalRating: 8,
+        averageBlendedRating: 7.5,
+      },
+    ])
+    vi.mocked(seriesApi.search).mockResolvedValue({
+      series: [],
+      excludedCount: 0,
+    })
+    render(<KeywordsViewHarness />)
+    fireEvent.click(await screen.findByRole('button', { name: 'time travel' }))
+
+    expect(
+      await screen.findByRole('dialog', { name: /time travel/i }),
+    ).toBeInTheDocument()
+  })
+
+  // Regression: favouriting a keyword from inside the modal previously never
+  // updated the star already rendered in the table behind it -- KeywordsView
+  // and KeywordDetailModal each held their own independent
+  // useLocalStorage('keywordFavourites', ...) state, read from storage only
+  // once on mount, so the table's copy of that state never learned about the
+  // modal's write without a full remount. Fixed in useLocalStorage.ts itself
+  // (same-tab sync broadcast) -- this exercises the real user-facing flow
+  // the bug was reported against, not just the hook in isolation (see
+  // useLocalStorage.test.ts for that unit-level coverage).
+  it('shows the star in the table once a keyword is favourited from the still-open modal, without a remount', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      {
+        name: 'time travel',
+        seriesCount: 2,
+        averagePersonalRating: 8,
+        averageBlendedRating: 7.5,
+      },
+    ])
+    vi.mocked(seriesApi.search).mockResolvedValue({
+      series: [],
+      excludedCount: 0,
+    })
+    render(<KeywordsViewHarness />)
+    fireEvent.click(await screen.findByRole('button', { name: 'time travel' }))
+    await screen.findByRole('dialog', { name: /time travel/i })
+
+    expect(screen.queryByTestId('favourite-star')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /add.*favourites/i }))
+
+    expect(await screen.findByTestId('favourite-star')).toBeInTheDocument()
   })
 })
 

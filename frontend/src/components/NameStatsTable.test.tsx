@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { NameStatsTable } from './NameStatsTable'
 import type { NameStatsOptions, NameStat } from './NameStatsTable'
@@ -408,5 +414,137 @@ describe('table rendering and sort', () => {
     const fetchStats = vi.fn().mockRejectedValue(new Error('boom'))
     render(<Harness fetchStats={fetchStats} />)
     expect(await screen.findByRole('alert')).toBeInTheDocument()
+  })
+})
+
+// FRONTEND-136-AC-01/03/04: favourite star indicator, "Favourites Only"
+// filter, and the optional name-cell click-through -- all gated on new
+// optional props, mirroring onGetRecommendations' existing
+// provided-vs-omitted harness pattern above (FRONTEND-133-AC-07).
+function FavouritesAndDetailHarness({
+  fetchStats,
+  favouriteNames,
+  onOpenDetail,
+}: {
+  fetchStats: (options: NameStatsOptions) => Promise<NameStat[]>
+  favouriteNames?: string[]
+  onOpenDetail?: (name: string) => void
+}) {
+  const filters = useNameStatsFilters()
+  return (
+    <NameStatsTable
+      {...defaultProps}
+      fetchStats={fetchStats}
+      filters={filters}
+      favouriteNames={favouriteNames}
+      onOpenDetail={onOpenDetail}
+    />
+  )
+}
+
+describe('FRONTEND-136-AC-01: favourite star indicator', () => {
+  const stats = [
+    {
+      name: 'time travel',
+      seriesCount: 2,
+      averagePersonalRating: 8,
+      averageBlendedRating: 7.5,
+    },
+    {
+      name: 'heist',
+      seriesCount: 5,
+      averagePersonalRating: 6,
+      averageBlendedRating: 6.2,
+    },
+  ]
+
+  it('renders a star only for names present in favouriteNames', async () => {
+    const fetchStats = vi.fn().mockResolvedValue(stats)
+    render(
+      <FavouritesAndDetailHarness
+        fetchStats={fetchStats}
+        favouriteNames={['time travel']}
+      />,
+    )
+    await screen.findByText('time travel')
+
+    const rows = screen.getAllByRole('row')
+    expect(within(rows[1]).getByTestId('favourite-star')).toBeInTheDocument()
+    expect(
+      within(rows[2]).queryByTestId('favourite-star'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders no star at all when favouriteNames is omitted', async () => {
+    const fetchStats = vi.fn().mockResolvedValue(stats)
+    render(<FavouritesAndDetailHarness fetchStats={fetchStats} />)
+    await screen.findByText('time travel')
+    expect(screen.queryByTestId('favourite-star')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-136-AC-03: Favourites Only filter', () => {
+  it('narrows rows to favourites only when checked, client-side', async () => {
+    const stats = [
+      {
+        name: 'time travel',
+        seriesCount: 2,
+        averagePersonalRating: 8,
+        averageBlendedRating: 7.5,
+      },
+      {
+        name: 'heist',
+        seriesCount: 5,
+        averagePersonalRating: 6,
+        averageBlendedRating: 6.2,
+      },
+    ]
+    const fetchStats = vi.fn().mockResolvedValue(stats)
+    render(
+      <FavouritesAndDetailHarness
+        fetchStats={fetchStats}
+        favouriteNames={['time travel']}
+      />,
+    )
+    expect(await screen.findByText('heist')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Favourites Only/i }))
+    expect(screen.queryByText('heist')).not.toBeInTheDocument()
+    expect(screen.getByText('time travel')).toBeInTheDocument()
+    expect(fetchStats).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Favourites Only/i }))
+    expect(screen.getByText('heist')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-136-AC-04: optional keyword-name click-through', () => {
+  it('renders the name as a clickable button only when the callback prop is provided', async () => {
+    const stats = [
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.5,
+      },
+    ]
+    const fetchStats = vi.fn().mockResolvedValue(stats)
+    const { rerender } = render(
+      <FavouritesAndDetailHarness fetchStats={fetchStats} />,
+    )
+    await screen.findByText('spy')
+    expect(
+      screen.queryByRole('button', { name: 'spy' }),
+    ).not.toBeInTheDocument()
+
+    const onOpenDetail = vi.fn()
+    rerender(
+      <FavouritesAndDetailHarness
+        fetchStats={fetchStats}
+        onOpenDetail={onOpenDetail}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'spy' }))
+    expect(onOpenDetail).toHaveBeenCalledWith('spy')
   })
 })
