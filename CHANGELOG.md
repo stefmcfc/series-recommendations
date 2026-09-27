@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.68.0] - 2026-09-27
+
 ### Added
 
 - Frontend: `NameStatsTable` gains an optional `favouriteNames` prop and a "Favourites Only" checkbox — the Analysis page's Keywords tab now shows a star beside any keyword already in Settings' Favourite Keywords, and can filter the table to just those, client-side against the already-fetched stats (`frontend_spec_136`).
