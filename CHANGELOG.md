@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.67.0] - 2026-09-27
+
 ### Added
 
 - Frontend: Settings > Recommendation Favourites gains a "Keyword Suggestion Sort" setting (Most Common [default] / Highest Rated) and — only while Highest Rated is selected — a "Minimum Series Count" floor, both persisted via `useLocalStorage` (`frontend_spec_133`).
