@@ -63,6 +63,12 @@ export interface NameStatsTableProps {
   // useNameStatsFilters() instance shared across all three /analysis
   // sub-tabs.
   readonly filters: NameStatsFiltersState
+  // FRONTEND-133-AC-07: optional -- when provided, each row renders a "Get
+  // Recs" button calling it with that row's `name`; when omitted (the
+  // GenreStatsView/CountryStatsView call sites), no such button renders at
+  // all, so those two views are unaffected by construction (this spec's
+  // Design Decisions).
+  readonly onGetRecommendations?: (name: string) => void
 }
 
 function formatAverage(value: number | null): string {
@@ -78,6 +84,7 @@ export function NameStatsTable({
   errorLabel,
   fetchStats,
   filters,
+  onGetRecommendations,
 }: NameStatsTableProps) {
   const [stats, setStats] = useState<NameStat[]>([])
   const [loading, setLoading] = useState(true)
@@ -315,6 +322,10 @@ export function NameStatsTable({
               >
                 {`Avg. Blended Rating${filters.sortIndicator('averageBlendedRating')}`}
               </th>
+              {/* FRONTEND-133-AC-07: an extra header cell only when the
+                  action column itself renders, so the header/row column
+                  counts always stay in sync. */}
+              {onGetRecommendations && <th scope="col"></th>}
             </tr>
           </thead>
           <tbody>
@@ -324,6 +335,17 @@ export function NameStatsTable({
                 <td>{stat.seriesCount}</td>
                 <td>{formatAverage(stat.averagePersonalRating)}</td>
                 <td>{formatAverage(stat.averageBlendedRating)}</td>
+                {onGetRecommendations && (
+                  <td>
+                    <button
+                      type="button"
+                      className={styles.getRecsButton}
+                      onClick={() => onGetRecommendations(stat.name)}
+                    >
+                      Get Recs
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -72,9 +72,15 @@
   white-space: nowrap;
 }
 
+/* FRONTEND-133-AC-07: column 1 narrowed (40% -> 32%) and a new 5th column
+   (8%, the Get Recs button) added -- only actually rendered on the
+   Keywords tab (the only NameStatsTable consumer that passes
+   onGetRecommendations), but these widths apply uniformly across all three
+   tabs' shared .table class regardless, matching this file's own existing
+   rationale for fixed per-tab-independent column widths above. */
 .table th:nth-child(1),
 .table td:nth-child(1) {
-  width: 40%;
+  width: 32%;
 }
 
 .table th:nth-child(2),
@@ -86,11 +92,31 @@
   width: 20%;
 }
 
+.table th:nth-child(5),
+.table td:nth-child(5) {
+  width: 8%;
+}
+
 .sortableHeader {
   cursor: pointer;
   user-select: none;
 }
 
 .sortableHeader:hover {
+  background: var(--social-bg);
+}
+
+.getRecsButton {
+  white-space: nowrap;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8125rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.getRecsButton:hover {
   background: var(--social-bg);
 }

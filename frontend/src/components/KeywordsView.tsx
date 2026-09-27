@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { seriesApi } from '../services/seriesApi'
 import { NameStatsTable } from './NameStatsTable'
+import { KeywordRecommendationsModal } from './KeywordRecommendationsModal'
 import type { NameStatsFiltersState } from '../hooks/useNameStatsFilters'
 
 interface KeywordsViewProps {
@@ -14,17 +16,32 @@ interface KeywordsViewProps {
 // FRONTEND-096-AC-14: `filters` is forwarded unchanged from AnalysisView's
 // single shared useNameStatsFilters() instance -- this is the only change
 // this component makes for that spec.
+//
+// FRONTEND-133-AC-08: the only NameStatsTable consumer that passes
+// onGetRecommendations -- GenreStatsView/CountryStatsView are deliberately
+// left unmodified (this spec's Design Decisions).
 export function KeywordsView({ filters }: KeywordsViewProps) {
+  const [recsKeyword, setRecsKeyword] = useState<string | null>(null)
+
   return (
-    <NameStatsTable
-      testId="keywords-view"
-      heading="Keywords"
-      idPrefix="keywords"
-      nameColumnLabel="Keyword"
-      loadingLabel="Loading keyword stats..."
-      errorLabel="Failed to load keyword stats. Please try again."
-      fetchStats={seriesApi.getKeywordStats}
-      filters={filters}
-    />
+    <>
+      <NameStatsTable
+        testId="keywords-view"
+        heading="Keywords"
+        idPrefix="keywords"
+        nameColumnLabel="Keyword"
+        loadingLabel="Loading keyword stats..."
+        errorLabel="Failed to load keyword stats. Please try again."
+        fetchStats={seriesApi.getKeywordStats}
+        filters={filters}
+        onGetRecommendations={setRecsKeyword}
+      />
+      {recsKeyword !== null && (
+        <KeywordRecommendationsModal
+          keyword={recsKeyword}
+          onClose={() => setRecsKeyword(null)}
+        />
+      )}
+    </>
   )
 }

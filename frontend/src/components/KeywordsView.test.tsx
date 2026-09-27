@@ -35,6 +35,31 @@ beforeEach(() => {
   mockListFilterProfiles.mockResolvedValue([])
 })
 
+describe('FRONTEND-133-AC-08: KeywordsView wires the recommendations action', () => {
+  it('opens KeywordRecommendationsModal seeded with the clicked keyword', async () => {
+    mockGetKeywordStats.mockResolvedValue([
+      {
+        name: 'spy',
+        seriesCount: 4,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.5,
+      },
+    ])
+    vi.mocked(seriesApi.getRecommendations).mockResolvedValue([])
+    render(<KeywordsViewHarness />)
+    await screen.findByText('spy')
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Get Recs/i })[0])
+
+    expect(
+      screen.getByRole('dialog', { name: /Recommendations for/i }),
+    ).toBeInTheDocument()
+    expect(seriesApi.getRecommendations).toHaveBeenCalledWith({
+      keywords: ['spy'],
+    })
+  })
+})
+
 describe('FRONTEND-096-AC-14: forwards the filters prop unchanged', () => {
   it('passes the filters prop straight through to NameStatsTable', async () => {
     mockGetKeywordStats.mockResolvedValue([])
