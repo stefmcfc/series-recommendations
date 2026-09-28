@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.70.0] - 2026-09-28
+
 ### Added
 
 - Tooling: `--debug` flag on `scripts/start-dev.sh`/`restart-dev.sh` launches the backend via `gradlew.bat bootRun --debug-jvm` (JDWP debug port `:5005`) for IntelliJ's Remote JVM Debug, and points to the frontend's equivalent (IntelliJ's JavaScript Debug run config against `http://localhost:5173` — no server-side flag needed, Vite already serves debuggable code) (`tooling_spec_011`).
