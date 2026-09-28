@@ -23,9 +23,31 @@ BACKEND_TIMEOUT=90
 FRONTEND_TIMEOUT=20
 BACKEND_IMAGE="java.exe"
 FRONTEND_IMAGE="node.exe"
+BACKEND_DEBUG_PORT=5005
 
 ensure_logs_dir() {
   mkdir -p "$LOGS_DIR"
+}
+
+# TOOLING-011-AC-01: sets TARGET (all/backend/frontend, default all) and
+# DEBUG_MODE (0/1, default 0) from any order of a backend|frontend|all
+# positional argument and a --debug flag. Returns non-zero, leaving both
+# unset, on any other argument.
+parse_args() {
+  TARGET="all"
+  DEBUG_MODE=0
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --debug) DEBUG_MODE=1 ;;
+      all | backend | frontend) TARGET="$arg" ;;
+      *)
+        unset TARGET DEBUG_MODE
+        return 1
+        ;;
+    esac
+  done
+  return 0
 }
 
 # TOOLING-009-AC-01: success iff netstat shows a LISTENING entry for $1.
