@@ -24,6 +24,11 @@ const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 // RecommendationControls.tsx's own identical fetch) -- mocked here so every
 // pre-existing test in this file sees no behavior change.
 const mockGetKeywordStats = vi.mocked(seriesApi.getKeywordStats)
+// FRONTEND-137-AC-01: SettingsPage now also fetches genre options on mount
+// (to populate the new Favourite Genres picker's `options`), mirroring the
+// keywordOptions fetch above -- mocked here so every pre-existing test in
+// this file sees no behavior change.
+const mockGetGenreOptions = vi.mocked(seriesApi.getGenreOptions)
 
 // FRONTEND-102: the new Watch Region picker shares ALL_COUNTRY_OPTIONS with
 // the Recommendation Favourites section's Country Favourites picker, so a
@@ -56,6 +61,7 @@ beforeEach(() => {
   // that unrelated tests aren't coupled to filter-profile behavior.
   mockListFilterProfiles.mockResolvedValue([])
   mockGetKeywordStats.mockResolvedValue([])
+  mockGetGenreOptions.mockResolvedValue([])
 })
 
 const defaultProps = {
@@ -111,6 +117,23 @@ describe('FRONTEND-133-AC-05: Favourite Keywords setting', () => {
 
     expect(JSON.parse(localStorage.getItem('keywordFavourites')!)).toContain(
       'time travel',
+    )
+  })
+})
+
+describe('FRONTEND-137-AC-01: Favourite Genres setting', () => {
+  it('adds and persists a favourite genre', async () => {
+    mockGetGenreOptions.mockResolvedValue(['Comedy', 'Drama'])
+    render(<SettingsPage {...defaultProps} />)
+
+    const section = getSectionByHeading('Recommendation Favourites')
+    const suggestion = await within(section).findByRole('button', {
+      name: 'Comedy',
+    })
+    fireEvent.click(suggestion)
+
+    expect(JSON.parse(localStorage.getItem('genreFavourites')!)).toContain(
+      'Comedy',
     )
   })
 })

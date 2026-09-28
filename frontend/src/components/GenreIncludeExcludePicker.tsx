@@ -6,6 +6,7 @@ import { useEscapeToClose } from '../hooks/useEscapeToClose'
 // most-common `var(--text)`, and this spec makes no visual-redesign changes)
 // wins the same-specificity cascade against `.btnSecondary`'s `color`.
 import btn from '../styles/buttons.module.css'
+import { FavouritesIcon } from './SettingsIcons'
 import styles from './GenreIncludeExcludePicker.module.css'
 
 export type GenreIncludeExcludeMode = 'includeExclude' | 'excludeOnly'
@@ -25,6 +26,11 @@ interface GenreIncludeExcludePickerProps {
   readonly excluded: string[]
   readonly onChange: (next: GenreIncludeExcludeChange) => void
   readonly mode?: GenreIncludeExcludeMode
+  // FRONTEND-137-AC-02: optional -- where provided, each grid toggle button
+  // for a favourited genre renders a small read-only badge. The badge is
+  // purely visual; toggling a favourite happens in Settings or
+  // GenreDetailModal, not by interacting with the badge itself.
+  readonly favouriteGenres?: string[]
 }
 
 // FRONTEND-067-AC-10: a genre present in both `included` and `excluded` (a
@@ -91,6 +97,7 @@ export function GenreIncludeExcludePicker({
   excluded,
   onChange,
   mode = 'includeExclude',
+  favouriteGenres,
 }: GenreIncludeExcludePickerProps) {
   const [open, setOpen] = useState(false)
 
@@ -189,6 +196,15 @@ export function GenreIncludeExcludePicker({
                     onClick={() => handleToggle(genre)}
                   >
                     <span aria-hidden="true">{genre}</span>
+                    {favouriteGenres?.includes(genre) && (
+                      <span
+                        className={styles.favouriteBadge}
+                        data-testid="genre-favourite-badge"
+                        aria-hidden="true"
+                      >
+                        <FavouritesIcon />
+                      </span>
+                    )}
                   </button>
                 )
               })}

@@ -536,3 +536,30 @@ describe('FRONTEND-112-AC-05: Save Filters disabled when Custom Search criteria 
     expect(screen.getByRole('button', { name: /save filters/i })).toBeDisabled()
   })
 })
+
+// FRONTEND-137-AC-02: CustomSearchPanel's one GenreIncludeExcludePicker
+// instance reads genreFavourites from localStorage and shows a badge.
+describe('FRONTEND-137-AC-02: favourite genre badge in Custom Search', () => {
+  it('shows a badge only on favourited genres', () => {
+    localStorage.setItem('genreFavourites', JSON.stringify(['Comedy']))
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={['Comedy', 'Drama']}
+        keywordOptions={[]}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Genres/i }))
+    expect(
+      within(screen.getByRole('button', { name: /Comedy/i })).getByTestId(
+        'genre-favourite-badge',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('button', { name: /Drama/i })).queryByTestId(
+        'genre-favourite-badge',
+      ),
+    ).not.toBeInTheDocument()
+  })
+})

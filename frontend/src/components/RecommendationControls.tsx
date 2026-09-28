@@ -110,6 +110,20 @@ export function isKeywordFavourites(value: unknown): value is string[] {
   )
 }
 
+// FRONTEND-137-AC-01: Favourite Genres, mirroring Favourite Keywords exactly
+// -- like keywords (and unlike Country/Language), genres have no static
+// frontend catalog to validate membership against (the vocabulary lives in
+// the backend's TmdbGenreTable, fetched via seriesApi.getGenreOptions()), so
+// this only checks shape (an array of strings), not membership.
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export const DEFAULT_GENRE_FAVOURITES: string[] = []
+// eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
+export function isGenreFavourites(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+  )
+}
+
 // FRONTEND-133-AC-01/02: Custom Search's keyword suggestion sort setting --
 // 'mostCommon' (default, pure frequency, unchanged from pre-133 behavior) or
 // 'highestRated' (sorts by averageBlendedRating desc, gated by the floor

@@ -15,10 +15,12 @@ import {
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
   DEFAULT_KEYWORD_FAVOURITES,
+  DEFAULT_GENRE_FAVOURITES,
   LANGUAGE_OPTIONS,
   isCountryFavourites,
   isLanguageFavourites,
   isKeywordFavourites,
+  isGenreFavourites,
 } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
 import type { CustomSearchFilterCriteria } from '../types/filterProfile'
@@ -79,6 +81,15 @@ export function CustomSearchPanel({
     'keywordFavourites',
     DEFAULT_KEYWORD_FAVOURITES,
     isKeywordFavourites,
+  )
+  // FRONTEND-137-AC-02: same independent-read pattern as the favourites
+  // above, feeding the Genres grid's read-only favourite badge -- scoped to
+  // this one CustomSearchPanel instance only, mirroring keywordFavourites'
+  // own scoping precedent (this spec's Design Decisions).
+  const [genreFavourites] = useLocalStorage(
+    'genreFavourites',
+    DEFAULT_GENRE_FAVOURITES,
+    isGenreFavourites,
   )
 
   // FRONTEND-112-AC-03: the 8 fields this area's saved profiles cover --
@@ -169,6 +180,7 @@ export function CustomSearchPanel({
                   excludeGenresSelected: excluded,
                 })
               }
+              favouriteGenres={genreFavourites}
             />
           </div>
           <div className={styles.field}>

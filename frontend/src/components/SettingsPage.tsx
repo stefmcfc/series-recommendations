@@ -15,12 +15,14 @@ import {
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
   DEFAULT_KEYWORD_FAVOURITES,
+  DEFAULT_GENRE_FAVOURITES,
   DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
   DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
   LANGUAGE_OPTIONS,
   isCountryFavourites,
   isLanguageFavourites,
   isKeywordFavourites,
+  isGenreFavourites,
   isKeywordSuggestionSortMode,
   isKeywordSuggestionMinSeriesCount,
 } from './RecommendationControls'
@@ -150,6 +152,13 @@ export function SettingsPage({
     DEFAULT_KEYWORD_FAVOURITES,
     isKeywordFavourites,
   )
+  // FRONTEND-137-AC-01: a fourth Recommendation Favourites picker, mirroring
+  // keywordFavourites above exactly.
+  const [genreFavourites, setGenreFavourites] = useLocalStorage(
+    'genreFavourites',
+    DEFAULT_GENRE_FAVOURITES,
+    isGenreFavourites,
+  )
   // FRONTEND-133-AC-01/02: Custom Search's keyword suggestion sort mode and
   // its Highest-Rated-only minimum series count floor.
   const [keywordSuggestionSortMode, setKeywordSuggestionSortMode] =
@@ -176,6 +185,19 @@ export function SettingsPage({
     seriesApi
       .getKeywordStats()
       .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
+      .catch(() => undefined)
+  }, [])
+
+  // FRONTEND-137-AC-01: mirrors keywordOptions above -- genres also have no
+  // static frontend catalog, only the backend's TmdbGenreTable, so this
+  // fetches getGenreOptions() (already a plain string[], no mapping step
+  // needed) on mount rather than introducing a new static constants file.
+  const [genreOptions, setGenreOptions] = useState<string[]>([])
+
+  useEffect(() => {
+    seriesApi
+      .getGenreOptions()
+      .then((options) => setGenreOptions(options))
       .catch(() => undefined)
   }, [])
 
@@ -523,6 +545,22 @@ export function SettingsPage({
           selected={keywordFavourites}
           onChange={setKeywordFavourites}
           options={keywordOptions}
+          reorderable
+        />
+        {/* FRONTEND-137-AC-01: a fourth Recommendation Favourites picker,
+            identical in shape to Favourite Keywords above -- genres also
+            have no static frontend catalog, only seriesApi.getGenreOptions()
+            fetched on mount above. */}
+        <div
+          className={styles.favouritesDivider}
+          data-testid="favourites-divider"
+        />
+        <KeywordPicker
+          id="settings-genre-favourites"
+          label="Favourite Genres"
+          selected={genreFavourites}
+          onChange={setGenreFavourites}
+          options={genreOptions}
           reorderable
         />
         <div

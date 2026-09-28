@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { GenreStatsView } from './GenreStatsView'
 import { seriesApi } from '../services/seriesApi'
@@ -18,9 +19,17 @@ const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 // instance -- this Harness wraps it with a real instance of that hook so
 // every existing behavioral test below (Apply Filters, sort, etc.) keeps
 // exercising the same end-to-end flow it did before this prop was added.
+// FRONTEND-137-AC-05: GenreDetailModal calls useNavigate, so this harness
+// always renders inside a Router -- unconditionally, since it's a no-op for
+// every pre-existing test that never opens that modal (mirrors
+// KeywordsView.test.tsx's identical KeywordsViewHarness precedent).
 function GenreStatsViewHarness() {
   const filters = useNameStatsFilters()
-  return <GenreStatsView filters={filters} />
+  return (
+    <MemoryRouter>
+      <GenreStatsView filters={filters} />
+    </MemoryRouter>
+  )
 }
 
 // FRONTEND-096-AC-04: filter fields now sit collapsed behind the "Analysis
@@ -36,8 +45,14 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-describe('FRONTEND-136-AC-02/05: GenreStatsView unaffected by keywordFavourites/onOpenDetail', () => {
-  it('renders no favourite star even for an identically-named favourite', async () => {
+// FRONTEND-137-AC-03/04 superseded this describe's original scope: as of
+// frontend_spec_137, GenreStatsView *does* wire favouriteNames/onOpenDetail
+// -- from genreFavourites, not keywordFavourites. This test now only
+// confirms the keywordFavourites key specifically has no effect here (the
+// scope boundary that still holds); see FRONTEND-137-AC-03/04's own describe
+// blocks below for the genreFavourites-driven star/button behavior.
+describe('FRONTEND-136-AC-02: GenreStatsView unaffected by keywordFavourites', () => {
+  it('renders no favourite star for a keywordFavourites entry, even identically named', async () => {
     localStorage.setItem('keywordFavourites', JSON.stringify(['Drama']))
     mockGetGenreStats.mockResolvedValue([
       {
@@ -51,21 +66,69 @@ describe('FRONTEND-136-AC-02/05: GenreStatsView unaffected by keywordFavourites/
     await screen.findByText('Drama')
     expect(screen.queryByTestId('favourite-star')).not.toBeInTheDocument()
   })
+})
 
-  it('renders no clickable name button', async () => {
+describe('FRONTEND-137-AC-03: GenreStatsView wires genreFavourites', () => {
+  it('shows a star for a genre already in genreFavourites', async () => {
+    localStorage.setItem('genreFavourites', JSON.stringify(['Comedy']))
     mockGetGenreStats.mockResolvedValue([
       {
-        name: 'Drama',
+        name: 'Comedy',
         seriesCount: 5,
         averagePersonalRating: 4.2,
         averageBlendedRating: 7.8,
       },
     ])
     render(<GenreStatsViewHarness />)
+    await screen.findByText('Comedy')
+    expect(screen.getByTestId('favourite-star')).toBeInTheDocument()
+  })
+
+  it('the Favourites Only filter narrows to genreFavourites, client-side', async () => {
+    localStorage.setItem('genreFavourites', JSON.stringify(['Comedy']))
+    mockGetGenreStats.mockResolvedValue([
+      {
+        name: 'Comedy',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+      {
+        name: 'Drama',
+        seriesCount: 3,
+        averagePersonalRating: 6,
+        averageBlendedRating: 6.5,
+      },
+    ])
+    render(<GenreStatsViewHarness />)
     await screen.findByText('Drama')
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Favourites Only/i }))
+    expect(screen.queryByText('Drama')).not.toBeInTheDocument()
+    expect(screen.getByText('Comedy')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-137-AC-04: GenreStatsView wires the detail modal', () => {
+  it('opens GenreDetailModal from a genre name click', async () => {
+    mockGetGenreStats.mockResolvedValue([
+      {
+        name: 'Comedy',
+        seriesCount: 5,
+        averagePersonalRating: 4.2,
+        averageBlendedRating: 7.8,
+      },
+    ])
+    vi.mocked(seriesApi.search).mockResolvedValue({
+      series: [],
+      excludedCount: 0,
+    })
+    render(<GenreStatsViewHarness />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Comedy' }))
+
     expect(
-      screen.queryByRole('button', { name: 'Drama' }),
-    ).not.toBeInTheDocument()
+      await screen.findByRole('dialog', { name: /Comedy/i }),
+    ).toBeInTheDocument()
   })
 })
 
