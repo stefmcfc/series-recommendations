@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.69.0] - 2026-09-28
+
 ### Added
 
 - Frontend: Settings > Recommendation Favourites gains a fourth picker, "Favourite Genres" — same `useLocalStorage`/reorderable-`KeywordPicker` shape as Favourite Keywords, with its options fetched from `seriesApi.getGenreOptions()` on mount (`frontend_spec_137`).
