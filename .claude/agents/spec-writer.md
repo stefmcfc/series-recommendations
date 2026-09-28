@@ -24,3 +24,5 @@ You draft feature specs for the TV Series Tracker in EARS format. Read `.claude/
 ## Output
 
 Write the spec to `.claude/specs/{area}_spec_{number}{_name}.md`, matching the existing numbering scheme (`series_spec_00N_*` for backend, `frontend_spec_00N` for frontend, `tooling_spec_00N_*` for repo-wide tooling/CI/build-config work that isn't backend or frontend feature work). Don't implement the feature yourself — hand off to `backend-dev` or `frontend-dev` once the spec is approved.
+
+**Before calling `Write` on the target path, confirm it doesn't already exist** (`Read` or `Glob` it) — don't rely on another spec's cross-reference table or your own assumption that a given number is unused. A blind `Write` silently destroys an existing draft and its already-committed, immutable AC IDs; this has happened for real in this project (`frontend_spec_024` was clobbered this way). If the path already exists, use `Edit` or stop and flag the collision instead of overwriting.

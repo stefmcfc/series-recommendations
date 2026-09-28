@@ -143,7 +143,24 @@ is still recurring once `tooling_spec_010` has shipped (eliminating the backend 
 source of overall pre-push friction that could otherwise get misattributed to this one) before
 committing to a specific thread-count trade-off.
 
-**Status**: Spec candidate, not yet designed.
+**2026-09-28 update — attempted reproduction, hypothesis not supported**: tried directly forcing the
+CPU-oversubscription mechanism this candidate assumes, on this machine (20 logical CPUs, 34GB RAM):
+20 CPU-saturating busy-loop processes launched (confirmed actually consuming CPU via `Get-Process`
+CPU-time deltas, not just spawned), then the full frontend suite run 3 times and
+`SettingsPage.test.tsx` alone run 3 more times, all under that sustained load. Every run passed —
+0 failures across 6 stressed runs (1520/1520, 61/61 each time) — despite a real, measured ~3x
+slowdown (unstressed full suite ~56s → stressed ~175s; unstressed `SettingsPage.test.tsx` alone
+~18s → stressed ~50s). The 10s `testTimeout` had ample headroom even at 3x slower. This doesn't
+prove the original flake's mechanism was something else entirely, but it does mean raw CPU
+contention alone, even fairly severe, isn't sufficient to reproduce it here — so bounding
+`poolOptions.threads.maxThreads` (which would cost real suite speed, unconditionally, on every run)
+isn't justified by the evidence gathered so far. Downgrading from "worth investigating" to "don't
+implement without a repro" — if this recurs, capture the failing test's exact assertion, timing, and
+what else was running on the machine at that moment before proposing a fix, rather than reasoning
+from the CPU-oversubscription theory again.
+
+**Status**: Spec candidate, reproduction attempted and inconclusive — do not implement the
+thread-pool cap without a fresh, better-diagnosed recurrence.
 
 ### Pin favourite keywords to the top of `SearchFilter`'s keyword picker(s)
 
