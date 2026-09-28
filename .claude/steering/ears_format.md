@@ -144,6 +144,10 @@ describe('FRONTEND-003-AC-01: fetch on mount', () => { /* tests */ })
 describe('FRONTEND-003-AC-02: loading state', () => { /* tests */ })
 ```
 
+## Before writing a new spec file
+
+**Verify the target file doesn't already exist before calling `Write` on it** — via `Read` or `Glob`, not by trusting another spec's cross-reference table or the conversation's own assumption that it's "not yet written." A blind `Write` silently clobbers an existing draft, which is especially destructive here because reference IDs are immutable (see above) and other specs/tests may already point at the ones a clobbered file was carrying. Concrete incident: `frontend_spec_024_keyword_tracking.md` was blind-written over an already-committed draft (from an earlier PR) because several other specs' cross-reference tables described it as not yet written — the tables were stale, not the file. Default to `Edit` (which enforces a prior `Read`) for anything that might already exist; only use `Write` once you've confirmed, this session, that the path is genuinely new.
+
 ## When writing a new spec
 
 Always include:
