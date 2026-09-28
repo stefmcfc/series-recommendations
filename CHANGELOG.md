@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.70.0] - 2026-09-28
+
+### Added
+
+- Tooling: `--debug` flag on `scripts/start-dev.sh`/`restart-dev.sh` launches the backend via `gradlew.bat bootRun --debug-jvm` (JDWP debug port `:5005`) for IntelliJ's Remote JVM Debug, and points to the frontend's equivalent (IntelliJ's JavaScript Debug run config against `http://localhost:5173` — no server-side flag needed, Vite already serves debuggable code) (`tooling_spec_011`).
+- Backend: `bootRun`'s debug options now pin `suspend=false` in `build.gradle.kts`, so `--debug-jvm` (via the script flag above or run manually) never blocks startup waiting for a debugger to attach — Gradle's own default (`suspend=true`) would otherwise leave the JVM parked at the JDWP handshake indefinitely (`tooling_spec_011`).
+
 ## [3.69.0] - 2026-09-28
 
 ### Added

@@ -22,15 +22,17 @@ No database installation needed -- SQLite is bundled as a JDBC driver.
 `scripts/start-dev.sh`, `scripts/stop-dev.sh`, and `scripts/restart-dev.sh` (git bash) start/stop/
 restart both dev servers in the background, without needing two terminal windows or a manual
 `netstat`/`taskkill` cycle. See `.claude/specs/tooling_spec_009_dev_server_scripts.md` for the full
-design.
+design, and `.claude/specs/tooling_spec_011_dev_server_debug_mode.md` for the `--debug` flag below.
 
 ```bash
 bash scripts/start-dev.sh              # both servers
 bash scripts/start-dev.sh backend      # just the backend
 bash scripts/start-dev.sh frontend     # just the frontend
+bash scripts/start-dev.sh --debug      # both servers, backend with its JDWP debug port open
 
 bash scripts/stop-dev.sh               # both servers
 bash scripts/restart-dev.sh            # stop then start, both (or one, with an argument)
+bash scripts/restart-dev.sh backend --debug   # restart just the backend, debug port open
 ```
 
 - **Output**: each service's stdout/stderr goes to `logs/backend.log`/`logs/frontend.log`,
@@ -54,6 +56,28 @@ scripts are actually doing under the hood.
 
 ---
 
+## Debugging
+
+**Backend**: `bash scripts/start-dev.sh --debug` (or add `--debug` to `restart-dev.sh`) launches the
+backend via `gradlew.bat bootRun --debug-jvm`, which opens a JDWP debug port on **`:5005`** — the
+script reports this once the backend is ready. `backend/build.gradle.kts` pins `suspend=false` on
+`bootRun`'s debug options, so this never blocks startup waiting for a debugger to attach (Gradle's
+own `--debug-jvm` default is `suspend=true`, which would otherwise leave the JVM parked at the JDWP
+handshake and `start-dev.sh`'s health check timing out). One-time IntelliJ setup: **Run → Edit
+Configurations → + → Remote JVM Debug**, host `localhost`, port `5005` — attach any time after the
+backend reports ready, and breakpoints in controller/service code will be hit on the next matching
+request. The manual equivalent (no script) is `gradlew.bat bootRun --debug-jvm` from `backend/`.
+
+**Frontend**: there's no server-side debug flag — Vite's dev server already serves unminified,
+sourcemapped code by default, which is what actually makes in-browser breakpoints work. Just make
+sure the frontend dev server is running (`start-dev.sh` with or without `--debug` — it makes no
+difference to the frontend), then attach: **Run → Edit Configurations → + → JavaScript Debug**, URL
+`http://localhost:5173`. Breakpoints set in the original `.tsx` source (not transpiled output) are
+hit as normal. Plain browser DevTools against `http://localhost:5173` works identically without any
+IntelliJ configuration at all.
+
+---
+
 ## Running the Backend Locally
 
 ### 1. Start the Spring Boot server
@@ -68,6 +92,8 @@ The server starts at **http://localhost:8080**.
 > Only the Windows wrapper (`gradlew.bat`) is present in this repo. If you need to run on macOS/Linux, generate the Unix wrapper script with `gradle wrapper` (requires a local Gradle install) or install Gradle directly and run `gradle bootRun`.
 
 **For active backend development**, use `gradlew.bat bootRun --continuous` instead: `spring-boot-devtools` (a `developmentOnly` dependency, excluded from the built jar) automatically restarts the Spring context -- in-process, a few seconds, not a full JVM/Gradle-daemon relaunch -- whenever Gradle's `--continuous` file watcher detects a recompiled class. Config-only changes (`application.yml`, `build.gradle.kts` itself) still need a manual stop/restart.
+
+**To attach a remote debugger**, use `gradlew.bat bootRun --debug-jvm` instead (or `scripts/start-dev.sh --debug` — see "Debugging" above) — opens a JDWP port on `:5005`, `suspend=false` so startup is never blocked waiting for a debugger to attach.
 
 ### 2. Verify it is running
 

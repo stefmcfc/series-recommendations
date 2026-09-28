@@ -1,3 +1,5 @@
+import org.springframework.boot.gradle.tasks.run.BootRun
+
 plugins {
     java
     id("org.springframework.boot") version "4.1.1"
@@ -8,7 +10,7 @@ plugins {
 }
 
 group = "uk.co.stefirby"
-version = "3.69.0"
+version = "3.70.0"
 
 // Generates META-INF/build-info.properties at build time, auto-wired by Spring Boot's
 // ProjectInfoAutoConfiguration into a BuildProperties bean with zero further config --
@@ -91,6 +93,21 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
+}
+
+// TOOLING-011-AC-02: --debug-jvm's own default is suspend=true, which blocks the forked
+// JVM (and so Spring Boot's own startup) until a debugger attaches -- fine for a
+// developer sitting at an IDE ready to attach immediately, but it means
+// scripts/start-dev.sh's health-check-then-report-ready flow would always time out
+// waiting for a port that never opens. Forcing suspend=false makes `gradlew.bat bootRun
+// --debug-jvm` start immediately either way -- the JDWP port (5005) stays open for a
+// debugger to attach at any later point, it just never blocks getting there.
+tasks.named<BootRun>("bootRun") {
+    debugOptions {
+        port.set(5005)
+        server.set(true)
+        suspend.set(false)
+    }
 }
 
 jacoco {

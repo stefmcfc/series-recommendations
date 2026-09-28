@@ -4,7 +4,9 @@
 # a PID whose process image doesn't match what's expected.
 # See .claude/specs/tooling_spec_009_dev_server_scripts.md.
 #
-# Usage: bash scripts/stop-dev.sh [backend|frontend]   (default: both)
+# Usage: bash scripts/stop-dev.sh [backend|frontend] [--debug]   (default: both;
+# --debug is accepted and ignored, so restart-dev.sh --debug can pass it through --
+# see .claude/specs/tooling_spec_011_dev_server_debug_mode.md, TOOLING-011-AC-05)
 
 set -uo pipefail
 
@@ -13,15 +15,12 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/lib/dev-common.sh"
 
 usage() {
-  echo "Usage: $(basename "$0") [backend|frontend]" >&2
+  echo "Usage: $(basename "$0") [backend|frontend] [--debug]" >&2
   exit 1
 }
 
-target="${1:-all}"
-case "$target" in
-  all | backend | frontend) ;;
-  *) usage ;;
-esac
+parse_args "$@" || usage
+target="$TARGET"
 
 # TOOLING-009-AC-08/09/11
 stop_service() {
