@@ -8,6 +8,15 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.69.0] - 2026-09-28
+
+### Added
+
+- Frontend: Settings > Recommendation Favourites gains a fourth picker, "Favourite Genres" — same `useLocalStorage`/reorderable-`KeywordPicker` shape as Favourite Keywords, with its options fetched from `seriesApi.getGenreOptions()` on mount (`frontend_spec_137`).
+- Frontend: `GenreIncludeExcludePicker` gains an optional `favouriteGenres` prop rendering a small, read-only star badge on a favourited genre's grid toggle button — wired up only in `CustomSearchPanel`'s genre picker, leaving `SearchFilter`/`RecommendationFiltersBox`/`UseMySeriesPanel`'s own instances unaffected (`frontend_spec_137`).
+- Frontend: the Analysis page's Genres tab now wires `NameStatsTable`'s existing `favouriteNames`/"Favourites Only" filter props from a new `genreFavourites` `localStorage` key, mirroring the Keywords tab's identical treatment (`frontend_spec_137`).
+- Frontend: new `GenreDetailModal`, opened by clicking a genre name on the Genres tab (via `NameStatsTable`'s existing `onOpenDetail` prop), lists every tracked series (any status) carrying that genre with name/status/personal rating/blended rating, sortable by column, each row navigating to that series' own detail page, and a favourite toggle for the genre itself — a near-verbatim copy of `KeywordDetailModal`'s shape (`frontend_spec_137`).
+
 ## [3.68.1] - 2026-09-28
 
 ### Fixed

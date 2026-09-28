@@ -1,0 +1,164 @@
+/* FRONTEND-137-AC-05: mirrors KeywordDetailModal.module.css exactly -- same
+   shared overlay/dialog/loading/error/retry/empty/sort/row/favourite-toggle
+   shapes (frontend_spec_136). A CSS module is per-file-scoped, so this
+   duplication doesn't risk any class-name collision with the file it's
+   modeled on. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem 0;
+  background: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 40rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dialogHeading {
+  margin: 0;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+}
+
+.doneButton {
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 0;
+  color: var(--text);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  color: #b91c1c;
+  background: #fdf0f0;
+  border: 1px solid rgba(185, 28, 28, 0.3);
+  border-radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error {
+    color: #fca5a5;
+    background: #3a1a1a;
+    border-color: rgba(248, 113, 113, 0.35);
+  }
+}
+
+.retryButton {
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+}
+
+.empty {
+  color: var(--text);
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+/* FRONTEND-137-AC-05: sort styling matches NameStatsTable.tsx's
+   .sortableHeader visually, without pulling in that component's
+   fetch-driven useNameStatsFilters hook. */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortableHeader:hover {
+  background: var(--social-bg);
+}
+
+/* FRONTEND-137-AC-05: each row navigates to that series' own detail route on
+   click -- no nested interactive control inside, unlike SeriesList's rows. */
+.row {
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--social-bg);
+}
+
+/* FRONTEND-137-AC-05: favourite toggle for the seeded genre itself, styled
+   after SettingsPage.tsx's genreFavourites picker toggle look. */
+.favouriteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.favouriteButton:hover {
+  background: var(--social-bg);
+}
+
+.favouriteButton.favourited {
+  color: #eab308;
+}
+
+.favouriteButton.favourited svg {
+  fill: currentColor;
+}

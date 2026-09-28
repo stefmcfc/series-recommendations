@@ -1,6 +1,12 @@
 # Frontend Spec 137: Genre Favourites Indicator and Per-Genre Series Detail Modal
 
-**Status**: Not started
+**Status**: Done (2026-09-28). Implemented as written, following the same shape as
+`frontend_spec_136`'s Keyword analog. One correction against the spec's own pseudocode (not a
+behavior change, confirmed against the actual source before implementing, same correction already
+called out by `frontend_spec_136`): the fetch call is `seriesApi.search({ genres: [genre] })` --
+plural `genres`, matching `SearchCriteria`'s real field name (`genre` is only the backend's query
+param name). Verification: `npm test` -- 1541/1541 passing across 75 files; `npm run lint` -- clean;
+`npx tsc --noEmit` -- clean.
 **Priority**: P3
 **Depends on**: `frontend_spec_136_keyword_favourites_indicator_and_detail_modal.md` (must ship
 first — this spec reuses its generalized `NameStatsTable` plumbing (`favouriteNames`, the
@@ -265,8 +271,8 @@ describe('FRONTEND-137-AC-05: fetch-on-mount and favourite toggle', () => {
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-137-AC-01: "Favourite Genres" picker in Settings, options fetched from `getGenreOptions()`
-- [ ] FRONTEND-137-AC-02: favourite badge on `CustomSearchPanel`'s genre grid, scoped to that instance only
-- [ ] FRONTEND-137-AC-03: `GenreStatsView` wires `favouriteNames`/"Favourites Only" from `genreFavourites`
-- [ ] FRONTEND-137-AC-04: `GenreStatsView` wires `onOpenDetail` to open `GenreDetailModal`
-- [ ] FRONTEND-137-AC-05: `GenreDetailModal` mirrors `KeywordDetailModal` exactly, seeded by genre
+- [x] FRONTEND-137-AC-01: "Favourite Genres" picker in Settings, options fetched from `getGenreOptions()`
+- [x] FRONTEND-137-AC-02: favourite badge on `CustomSearchPanel`'s genre grid, scoped to that instance only
+- [x] FRONTEND-137-AC-03: `GenreStatsView` wires `favouriteNames`/"Favourites Only" from `genreFavourites`
+- [x] FRONTEND-137-AC-04: `GenreStatsView` wires `onOpenDetail` to open `GenreDetailModal`
+- [x] FRONTEND-137-AC-05: `GenreDetailModal` mirrors `KeywordDetailModal` exactly, seeded by genre

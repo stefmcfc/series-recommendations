@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { vi, describe, it, expect } from 'vitest'
 import { GenreIncludeExcludePicker } from './GenreIncludeExcludePicker'
 import buttonStyles from '../styles/buttons.module.css'
@@ -379,5 +379,51 @@ describe('FRONTEND-103-AC-10/12/13: tier-2 trigger/clear migrate, tier-4 chips/t
     fireEvent.click(screen.getByRole('button', { name: /Genres/ }))
     const toggle = screen.getByRole('button', { name: 'Horror: exclude' })
     expect(toggle.className).not.toContain(buttonStyles.btnDestructive)
+  })
+})
+
+// FRONTEND-137-AC-02: optional favouriteGenres prop -- a small read-only
+// badge on the grid toggle button for each favourited genre.
+describe('FRONTEND-137-AC-02: favourite genre badge', () => {
+  it('renders a badge only for genres present in favouriteGenres', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Comedy', 'Drama']}
+        included={[]}
+        excluded={[]}
+        onChange={vi.fn()}
+        favouriteGenres={['Comedy']}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Genres/ }))
+    expect(
+      within(screen.getByRole('button', { name: /Comedy/i })).getByTestId(
+        'genre-favourite-badge',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('button', { name: /Drama/i })).queryByTestId(
+        'genre-favourite-badge',
+      ),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders no badge at all when favouriteGenres is omitted', () => {
+    render(
+      <GenreIncludeExcludePicker
+        idPrefix="test"
+        label="Genres"
+        genreOptions={['Comedy']}
+        included={[]}
+        excluded={[]}
+        onChange={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Genres/ }))
+    expect(
+      screen.queryByTestId('genre-favourite-badge'),
+    ).not.toBeInTheDocument()
   })
 })

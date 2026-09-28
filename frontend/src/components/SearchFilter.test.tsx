@@ -18,6 +18,7 @@ const mockListFilterProfiles = vi.mocked(seriesApi.listFilterProfiles)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
   mockGetKeywordStats.mockResolvedValue([])
   mockGetGenreOptions.mockResolvedValue([])
   // FRONTEND-107-AC-09: SearchFilter now renders a FilterProfileSelector
@@ -264,6 +265,24 @@ describe('FRONTEND-063-AC-03: GenreIncludeExcludePicker renders', () => {
     expect(
       await screen.findByRole('button', { name: 'Include / Exclude Genres' }),
     ).toBeInTheDocument()
+  })
+})
+
+// FRONTEND-137-AC-02: favourite genre badges are scoped to
+// CustomSearchPanel's own GenreIncludeExcludePicker instance only --
+// SearchFilter's separate instance must render no badge, even for an
+// identically-favourited genre.
+describe("FRONTEND-137-AC-02: SearchFilter's genre picker renders no badge", () => {
+  it('shows no favourite badge regardless of genreFavourites', async () => {
+    localStorage.setItem('genreFavourites', JSON.stringify(['Comedy']))
+    mockGetGenreOptions.mockResolvedValue(['Comedy', 'Drama'])
+    renderFilter()
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Include / Exclude Genres' }),
+    )
+    expect(
+      screen.queryByTestId('genre-favourite-badge'),
+    ).not.toBeInTheDocument()
   })
 })
 
