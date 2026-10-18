@@ -6,7 +6,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     groovy
     jacoco
-    id("com.github.spotbugs") version "6.5.11"
+    id("com.github.spotbugs") version "6.5.13"
 }
 
 group = "uk.co.stefirby"
