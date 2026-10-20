@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.71.0] - 2026-10-20
+
 ### Added
 
 - Tooling: `backend/Dockerfile` — a multi-stage production image (`eclipse-temurin:25-jdk-alpine` build stage running the checked-in Gradle wrapper, `eclipse-temurin:25-jre-alpine` runtime stage) so the backend can run in a container without Java/Gradle on the host (`tooling_spec_012`).
