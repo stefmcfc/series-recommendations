@@ -176,7 +176,7 @@ export function NameStatsTable({
             type="checkbox"
             checked={favouritesOnly}
             onChange={(e) => setFavouritesOnly(e.target.checked)}
-          />
+          />{' '}
           Favourites Only
         </label>
       )}
