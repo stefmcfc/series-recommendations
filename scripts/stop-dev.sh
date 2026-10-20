@@ -14,6 +14,10 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/dev-common.sh
 source "$DIR/lib/dev-common.sh"
 
+# tooling_spec_013_dev_script_pause_on_failure.md -- pauses on a keypress before this script's
+# window closes, if (and only if) it's about to exit non-zero.
+trap pause_on_failure EXIT
+
 usage() {
   echo "Usage: $(basename "$0") [backend|frontend] [--debug]" >&2
   exit 1

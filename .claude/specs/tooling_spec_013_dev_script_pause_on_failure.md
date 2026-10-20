@@ -1,6 +1,10 @@
 # Tooling Spec 013: Dev Scripts Pause on Failure So a Disposable Window Can Be Read
 
-**Status**: Not started
+**Status**: Implemented (2026-10-20). `pause_on_failure` added to `scripts/lib/dev-common.sh`;
+`trap pause_on_failure EXIT` wired into all three scripts; `restart-dev.sh` passes
+`DEV_SCRIPT_NESTED=1` to its two nested calls via the `VAR=value cmd` form (never `export`, per
+the Overview's warning) and captures both exit codes independently. See Verification below for
+what was and wasn't directly reproducible from this environment.
 **Priority**: Low — UX/DX gap in local tooling, no effect on the app itself
 **Depends on**: none (purely `scripts/` — no backend/frontend code touched)
 **Area**: Tooling (repo-wide dev scripts — not backend or frontend feature work)
@@ -207,9 +211,45 @@ of both — not a bare fall-through to the last command's own exit code.
 
 ## Acceptance Criteria Summary
 
-- [ ] TOOLING-013-AC-01 — `start-dev.sh` pauses on a non-zero exit when run directly
-- [ ] TOOLING-013-AC-02 — `stop-dev.sh` pauses on a non-zero exit when run directly
-- [ ] TOOLING-013-AC-03 — `restart-dev.sh` pauses exactly once on a nested failure, not doubled
-- [ ] TOOLING-013-AC-04 — a successful (exit 0) run never pauses
-- [ ] TOOLING-013-AC-05 — no pause/hang when stdin isn't an interactive terminal
-- [ ] TOOLING-013-AC-06 — `restart-dev.sh`'s exit code reflects either nested step's failure
+- [x] TOOLING-013-AC-01 — `start-dev.sh` pauses on a non-zero exit when run directly
+- [x] TOOLING-013-AC-02 — `stop-dev.sh` pauses on a non-zero exit when run directly
+- [x] TOOLING-013-AC-03 — `restart-dev.sh` pauses exactly once on a nested failure, not doubled
+- [x] TOOLING-013-AC-04 — a successful (exit 0) run never pauses
+- [x] TOOLING-013-AC-05 — no pause/hang when stdin isn't an interactive terminal
+- [x] TOOLING-013-AC-06 — `restart-dev.sh`'s exit code reflects either nested step's failure
+
+## Verification
+
+`bash -n` syntax-checked all four modified files.
+
+**Directly reproduced in this environment** (no real attached console available — see below):
+- **AC-04**: `bash scripts/stop-dev.sh` (both servers genuinely not running) returned in under a
+  second with exit `0` and no pause — confirmed the success path is unaffected.
+- **AC-05**: `bash scripts/stop-dev.sh badarg < /dev/null`, `start-dev.sh badarg < /dev/null`, and
+  `restart-dev.sh badarg < /dev/null` each returned immediately (wrapped in `timeout 10` as a
+  belt-and-suspenders guard) with exit `1` and no hang, confirming the `[ -t 0 ]` guard works
+  against a genuinely non-interactive stdin.
+- **AC-06**: the `restart-dev.sh badarg` run above exited `1` — both nested scripts fail
+  independently (restart-dev.sh doesn't short-circuit between steps, by existing design — unlike
+  the Requirement 3 verification note's framing, a bad arg actually fails *both* nested calls,
+  each printing its own usage message; this is pre-existing `restart-dev.sh` behavior, not
+  something this spec changes) and the combined `status` correctly ends up `1`.
+- **AC-03's `DEV_SCRIPT_NESTED` scoping**: verified directly that the `VAR=value cmd` form (as
+  used in `restart-dev.sh`) does not leak the variable into the calling shell's own environment —
+  a minimal repro (`DEV_SCRIPT_NESTED=1 bash -c "true"; echo "${DEV_SCRIPT_NESTED:-unset}"`)
+  confirmed `unset` in the parent, i.e. `restart-dev.sh`'s own `pause_on_failure` trap would see
+  no leftover value when it fires at the bottom of the script — this is the exact mistake
+  (`export` instead of `VAR=value cmd`) the reference project's first revision shipped.
+
+**Not directly reproducible from this environment, verified by code review instead**: the actual
+"a disposable spawned window stays open and blocks on a keypress" behavior (AC-01/02/03's
+headline claim) requires a real attached console — confirmed unavailable here the same way the
+reference project's own implementation found: `winpty bash -c "echo test"` itself fails with
+`stdin is not a tty` in this sandboxed tool environment, and `[ -t 0 ]` is false here regardless
+of which script runs it. The `pause_on_failure` implementation is a verbatim adaptation of the
+reference project's own (already real-terminal-verified there, after its `export`-scoping bug was
+caught and fixed) implementation, and the guard logic around it (`DEV_SCRIPT_NESTED`, `[ -t 0 ]`)
+is verified above by direct reproduction of everything that *is* reachable without a tty. A quick
+real-terminal spot check (`.\scripts\start-dev.sh badarg` from PowerShell, expecting the "Press
+any key to close this window..." prompt to actually block) is recommended before relying on this
+for the first time, but isn't blocking given the above.

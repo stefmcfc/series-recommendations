@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Start the local backend/frontend dev servers in the background, with
-# output captured to logs/. See .claude/specs/tooling_spec_009_dev_server_scripts.md
-# and .claude/specs/tooling_spec_011_dev_server_debug_mode.md (--debug).
+# output captured to logs/. See .claude/specs/tooling_spec_009_dev_server_scripts.md,
+# .claude/specs/tooling_spec_011_dev_server_debug_mode.md (--debug), and
+# .claude/specs/tooling_spec_013_dev_script_pause_on_failure.md (pause-on-failure).
 #
 # Usage: bash scripts/start-dev.sh [backend|frontend] [--debug]   (default: both, no debug)
 
@@ -10,6 +11,10 @@ set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/dev-common.sh
 source "$DIR/lib/dev-common.sh"
+
+# tooling_spec_013_dev_script_pause_on_failure.md -- pauses on a keypress before this script's
+# window closes, if (and only if) it's about to exit non-zero.
+trap pause_on_failure EXIT
 
 usage() {
   echo "Usage: $(basename "$0") [backend|frontend] [--debug]" >&2
