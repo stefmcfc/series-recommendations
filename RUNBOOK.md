@@ -22,7 +22,8 @@ No database installation needed -- SQLite is bundled as a JDBC driver.
 `scripts/start-dev.sh`, `scripts/stop-dev.sh`, and `scripts/restart-dev.sh` (git bash) start/stop/
 restart both dev servers in the background, without needing two terminal windows or a manual
 `netstat`/`taskkill` cycle. See `.claude/specs/tooling_spec_009_dev_server_scripts.md` for the full
-design, and `.claude/specs/tooling_spec_011_dev_server_debug_mode.md` for the `--debug` flag below.
+design, `.claude/specs/tooling_spec_011_dev_server_debug_mode.md` for the `--debug` flag below, and
+`.claude/specs/tooling_spec_013_dev_script_pause_on_failure.md` for the pause-on-failure behavior.
 
 ```bash
 bash scripts/start-dev.sh              # both servers
@@ -50,6 +51,13 @@ bash scripts/restart-dev.sh backend --debug   # restart just the backend, debug 
   file is stale or missing.
 - `stop-dev.sh` only stops the backend's forked dev-server JVM, not the underlying Gradle Daemon —
   same as today's manual `gradlew.bat` usage, the Daemon stays warm across runs.
+- **Pause on failure**: if any of the three scripts exits non-zero, it prints "Press any key to
+  close this window..." and blocks on a keypress before exiting — so a disposable window (e.g.
+  double-clicking the `.sh` file, or launching from PowerShell via Windows' `.sh` file
+  association) stays open long enough to read the diagnostic, instead of closing itself instantly.
+  Running from an already-open terminal session is unaffected either way (the window was never
+  going to close on its own). No pause ever happens on success, or when stdin isn't an
+  interactive terminal (e.g. a future CI/automation invocation).
 
 The manual commands below still work exactly as before and remain the source of truth for what the
 scripts are actually doing under the hood.
