@@ -1,5 +1,7 @@
 package uk.co.stefirby.seriestracker.controller
 
+import static org.hamcrest.Matchers.containsStringIgnoringCase
+import static org.hamcrest.Matchers.hasItem
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -28,7 +30,7 @@ class FilterProfileControllerOpenApiSpec extends Specification {
         result.andExpect(status().isOk())
         result.andExpect(jsonPath(
           '$.paths./api/v1/filter-profiles.get.parameters[?(@.name=="area")].description'
-        ).value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsStringIgnoringCase("MY_SERIES"))))
+        ).value(hasItem(containsStringIgnoringCase("MY_SERIES"))))
   }
 
   def "SERIES-067-AC-09: POST /api/v1/filter-profiles documents (area, name)-scoped uniqueness"() {
@@ -38,7 +40,7 @@ class FilterProfileControllerOpenApiSpec extends Specification {
     then: "the create operation's description mentions area-scoped uniqueness"
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/filter-profiles.post.description')
-          .value(org.hamcrest.Matchers.containsStringIgnoringCase("area")))
+          .value(containsStringIgnoringCase("area")))
   }
 
   def "SERIES-067-AC-09: PATCH /api/v1/filter-profiles/{id} documents (area, name)-scoped uniqueness"() {
@@ -48,7 +50,7 @@ class FilterProfileControllerOpenApiSpec extends Specification {
     then: "the update operation's description mentions area-scoped uniqueness"
         result.andExpect(status().isOk())
         result.andExpect(jsonPath('$.paths./api/v1/filter-profiles/{id}.patch.description')
-          .value(org.hamcrest.Matchers.containsStringIgnoringCase("area")))
+          .value(containsStringIgnoringCase("area")))
   }
 
   def "SERIES-067-AC-09: list/create/update/delete each carry an operation summary"() {

@@ -78,6 +78,40 @@ IntelliJ configuration at all.
 
 ---
 
+## Running via Docker Compose
+
+An alternative to the manual/script dev flow above: `docker compose up --build` runs the whole app
+in containers, with no Java/Node install needed on the host (`tooling_spec_012`). This builds
+production-style images, not a dev server — there's no hot-reload; re-run `--build` after a code
+change.
+
+```bash
+cp .env.example .env            # fill in APP_OMDB_API_KEY/APP_TMDB_API_KEY if you have them (optional)
+docker compose up --build       # builds backend + frontend images, starts both
+```
+
+- **Backend**: `backend/Dockerfile` is a multi-stage build — `eclipse-temurin:25-jdk-alpine` runs
+  `./gradlew bootJar -x test --no-daemon` (the project's own checked-in Unix wrapper, see above),
+  then `eclipse-temurin:25-jre-alpine` runs just the built jar. Exposed on **http://localhost:8080**,
+  same as running it directly.
+- **Frontend**: `frontend/Dockerfile` builds the Vite bundle in a `node:22-alpine` stage, then
+  serves it from `nginx:alpine` (`frontend/nginx.conf`) on **http://localhost:4173**. nginx serves
+  the SPA with history-mode fallback (a direct request to `/settings` returns `index.html`, not a
+  404) and reverse-proxies any `/api/` request to the `backend` container, same-origin — no CORS
+  configuration is needed for the containerized flow.
+- **Database**: SQLite persists in a named Docker volume (`series-data`, mounted at `/app/data`
+  inside the `backend` container) — `docker compose down` (no `-v`) followed by `docker compose up`
+  again still has your data; `docker compose down -v` removes the volume for a clean slate.
+- **Secrets**: `APP_OMDB_API_KEY`/`APP_TMDB_API_KEY` are supplied only via the root `.env` file
+  (gitignored, copy `.env.example` to create it) through `docker-compose.yml`'s `env_file:` —
+  never baked into either image. Both are optional, same as running locally (see Environment
+  Variables below).
+- **Healthcheck**: the `backend` service's healthcheck polls `GET /api/v1/series`; `frontend`
+  waits for `backend` to report healthy before starting, so `docker compose ps` showing both
+  `healthy`/`running` means the stack is actually ready, not just launched.
+
+---
+
 ## Running the Backend Locally
 
 ### 1. Start the Spring Boot server
@@ -89,7 +123,7 @@ gradlew.bat bootRun
 
 The server starts at **http://localhost:8080**.
 
-> Only the Windows wrapper (`gradlew.bat`) is present in this repo. If you need to run on macOS/Linux, generate the Unix wrapper script with `gradle wrapper` (requires a local Gradle install) or install Gradle directly and run `gradle bootRun`.
+> Both the Windows (`gradlew.bat`) and Unix (`gradlew`) wrappers are checked in — the latter was added for `backend/Dockerfile`'s Linux-based build stage (`tooling_spec_012`, see "Running via Docker Compose" below). Keep them in sync: regenerate both together via `gradle wrapper` on any future Gradle version bump, never hand-edit one.
 
 **For active backend development**, use `gradlew.bat bootRun --continuous` instead: `spring-boot-devtools` (a `developmentOnly` dependency, excluded from the built jar) automatically restarts the Spring context -- in-process, a few seconds, not a full JVM/Gradle-daemon relaunch -- whenever Gradle's `--continuous` file watcher detects a recompiled class. Config-only changes (`application.yml`, `build.gradle.kts` itself) still need a manual stop/restart.
 

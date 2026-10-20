@@ -12,7 +12,7 @@ These are hard rules, not suggestions — follow them even if training data or h
 - **Types are centralized** in `frontend/src/types/` (backend: the `dto/` package). Don't redeclare or duplicate a shape inline in a component or controller.
 - **Spec first.** Write or update the relevant `.claude/specs/` EARS spec before implementing a new requirement — see `.claude/steering/ears_format.md` and the `ears-spec` skill. Exception: a one-off, no-behavior-change quality/maintenance pass (e.g. resolving a batch of SonarQube/lint findings) doesn't need a spec — there's no new requirement to write acceptance criteria against. If a "cleanup" turns out to need a real behavior change (e.g. converting `role="dialog"` to a native `<dialog>` with proper focus-trap lifecycle), that specific piece reverts to needing a spec.
 - **Never commit secrets.** No `.env`, API keys, or credentials — see `.claude/steering/tech.md`.
-- **Only `gradlew.bat` (Windows) is checked in** for the Gradle wrapper. Don't add a Unix `gradlew` script unless asked — it risks wrapper-jar/version drift with no one to keep it in sync.
+- **Both `gradlew.bat` (Windows) and `gradlew` (Unix) are checked in** for the Gradle wrapper — `backend/gradlew` was added in `tooling_spec_012` so `backend/Dockerfile`'s Linux-based build stage can invoke it directly. Regenerate both together via `gradle wrapper` on any future Gradle version bump; never hand-edit either one, and never let them drift onto different Gradle versions.
 
 ## Current status
 
@@ -28,7 +28,7 @@ These are hard rules, not suggestions — follow them even if training data or h
 | Database | SQLite (local dev); PostgreSQL planned for production, no code changes needed (Spring Data JPA) |
 | ORM | Spring Data JPA + Hibernate (community SQLite dialect) |
 | Migrations | Flyway |
-| Build (backend) | Gradle (wrapper included, Windows `gradlew.bat` only) |
+| Build (backend) | Gradle (both `gradlew.bat`/`gradlew` wrappers checked in) |
 | Build (frontend) | Vite 8, npm |
 | Tests (backend) | Spock 2.4 (Groovy 5) |
 | Tests (frontend) | Vitest 4, React Testing Library |

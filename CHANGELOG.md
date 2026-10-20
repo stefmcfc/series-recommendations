@@ -8,6 +8,13 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Tooling: `backend/Dockerfile` — a multi-stage production image (`eclipse-temurin:25-jdk-alpine` build stage running the checked-in Gradle wrapper, `eclipse-temurin:25-jre-alpine` runtime stage) so the backend can run in a container without Java/Gradle on the host (`tooling_spec_012`).
+- Tooling: `frontend/Dockerfile` + `frontend/nginx.conf` — a multi-stage production image (`node:22-alpine` build stage, `nginx:alpine` runtime stage) that serves the built SPA with history-mode fallback and reverse-proxies `/api/` to the backend container, same-origin, with no CORS config change (`tooling_spec_012`).
+- Tooling: root `docker-compose.yml` wires up a `backend` service (named `series-data` volume for SQLite persistence, healthcheck on `GET /api/v1/series`) and a `frontend` service, so `docker compose up --build` runs the whole app in one command; root `.env.example` documents the optional `APP_OMDB_API_KEY`/`APP_TMDB_API_KEY` secrets, supplied only via `env_file` at container-run time, never baked into an image layer (`tooling_spec_012`).
+- Tooling: `backend/gradlew` (the Unix Gradle wrapper, regenerated via `gradle wrapper --gradle-version 9.7.1` to match the already-checked-in `gradlew.bat`) is now checked in alongside `backend/gradlew.bat`, so the backend Docker build stage can invoke it directly — supersedes the previous "only `gradlew.bat` is checked in" hard rule (`tooling_spec_012`, `CLAUDE.md`, `.claude/steering/tech.md`).
+
 ## [3.70.0] - 2026-09-28
 
 ### Added

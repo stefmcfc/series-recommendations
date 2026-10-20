@@ -26,7 +26,7 @@ A personal app for logging TV series you're watching, tracking your viewing prog
 | Database | SQLite (local dev); PostgreSQL planned for production, no code changes needed (Spring Data JPA) |
 | ORM | Spring Data JPA + Hibernate |
 | Migrations | Flyway |
-| Build (backend) | Gradle (Windows `gradlew.bat` wrapper only) |
+| Build (backend) | Gradle (both `gradlew.bat`/`gradlew` wrappers checked in) |
 | Build (frontend) | Vite, npm |
 | Tests (backend) | Spock Framework (Groovy) |
 | Tests (frontend) | Vitest, React Testing Library |
@@ -69,6 +69,9 @@ full endpoint list, query params, and behavior notes.
 ## Getting Started
 
 See [RUNBOOK.md](./RUNBOOK.md) for detailed setup and local development instructions.
+
+Alternatively, run the whole app in containers with `docker compose up --build` (no Java/Node
+install needed) — see RUNBOOK.md's "Running via Docker Compose" section.
 
 ## Features Roadmap
 

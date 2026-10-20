@@ -1,0 +1,44 @@
+services:
+  # Production-style images (tooling_spec_012) -- backend/frontend still run via
+  # gradlew.bat bootRun / npm run dev for day-to-day development, see RUNBOOK.md.
+  backend:
+    build:
+      context: ./backend
+    environment:
+      # SQLite, not Postgres (tooling_spec_012 Decision 2) -- the named volume below is
+      # mounted at /app/data, and busy_timeout=30000 is preserved for the same single-writer
+      # contention reason as the host dev datasource (tooling_spec_010).
+      SPRING_DATASOURCE_URL: jdbc:sqlite:/app/data/series.db?busy_timeout=30000
+    # APP_OMDB_API_KEY/APP_TMDB_API_KEY come only from a gitignored .env (copy .env.example to
+    # .env and fill in real values) -- never inlined here, so no secret is ever committed or
+    # baked into either image layer (TOOLING-012-AC-06). `required: false` means the app still
+    # starts fine with no .env at all -- both keys are genuinely optional (RUNBOOK.md).
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - series-data:/app/data
+    ports:
+      - "8080:8080"
+    healthcheck:
+      # GET /api/v1/series returns 200 with an empty (or seeded) list once Flyway migrations
+      # have run against the mounted volume -- this app has no auth layer, so unlike
+      # behavioural-activation's /api/v1/auth/me check, a 2xx is required here, not just any
+      # response (tooling_spec_012's Overview).
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/api/v1/series"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "4173:80"
+
+volumes:
+  series-data:
