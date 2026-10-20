@@ -8,12 +8,22 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.71.0] - 2026-10-20
+
 ### Added
 
 - Tooling: `backend/Dockerfile` — a multi-stage production image (`eclipse-temurin:25-jdk-alpine` build stage running the checked-in Gradle wrapper, `eclipse-temurin:25-jre-alpine` runtime stage) so the backend can run in a container without Java/Gradle on the host (`tooling_spec_012`).
 - Tooling: `frontend/Dockerfile` + `frontend/nginx.conf` — a multi-stage production image (`node:22-alpine` build stage, `nginx:alpine` runtime stage) that serves the built SPA with history-mode fallback and reverse-proxies `/api/` to the backend container, same-origin, with no CORS config change (`tooling_spec_012`).
 - Tooling: root `docker-compose.yml` wires up a `backend` service (named `series-data` volume for SQLite persistence, healthcheck on `GET /api/v1/series`) and a `frontend` service, so `docker compose up --build` runs the whole app in one command; root `.env.example` documents the optional `APP_OMDB_API_KEY`/`APP_TMDB_API_KEY` secrets, supplied only via `env_file` at container-run time, never baked into an image layer (`tooling_spec_012`).
 - Tooling: `backend/gradlew` (the Unix Gradle wrapper, regenerated via `gradle wrapper --gradle-version 9.7.1` to match the already-checked-in `gradlew.bat`) is now checked in alongside `backend/gradlew.bat`, so the backend Docker build stage can invoke it directly — supersedes the previous "only `gradlew.bat` is checked in" hard rule (`tooling_spec_012`, `CLAUDE.md`, `.claude/steering/tech.md`).
+
+### Fixed
+
+- Frontend: 5 fire-and-forget `navigate(...)`/`axe.default(...)` calls (react-router's `NavigateFunction` and `@axe-core/react`'s dev-only init both type as `void | Promise<void>`) are now explicitly marked with `void`, closing a SonarQube `typescript:S9383` finding (unhandled-promise) with no behavior change.
+- Frontend: `isKeywordFavourites`/`isGenreFavourites` (`RecommendationControls.tsx`) had identical bodies — extracted the shared check into `isStringArray`; both exported guards are unchanged in signature/behavior (`typescript:S4144`).
+- Frontend: `NameStatsTable`'s "Favourites Only" checkbox label now uses an explicit `{' '}` instead of relying on JSX's newline-whitespace-collapsing rules — no visual change (the label already has a flex `gap`), just removes the ambiguity SonarQube's `typescript:S6772` flags.
+- Backend: four plain map/filter loops with no side effects or early exits (`ImportFileParser.parseCsv`, `NameStatAggregator.aggregate`, `TmdbClient.watchProviders`/`listOfMaps`) converted to streams, closing `java:S9391` findings with no behavior change. A fifth (`RecommendationRankingService.applyDiversityCap`) is left as a loop with a documented suppression — its admission check has an order-dependent side effect that a stream `.filter()` would technically replicate but obscure.
+- Tooling: `backend/Dockerfile` and `frontend/Dockerfile` now run as non-root users instead of each base image's root default (`docker:S6471`) — the backend creates and runs as an `app` user (chowning `/app`, including an empty `/app/data` so the `series-data` volume inherits that ownership on first mount); the frontend switches to the `nginx:alpine` image's existing unprivileged `nginx` user and moves nginx to listen on `8080` (a non-root process can't bind `<1024`). `docker-compose.yml`'s frontend port mapping is now `4173:8080` (container-side only — the host-facing `4173` is unchanged).
 
 ## [3.70.0] - 2026-09-28
 

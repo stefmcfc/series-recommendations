@@ -170,7 +170,7 @@ export function KeywordDetailModal({
   }
 
   const handleRowClick = (id: string) => {
-    navigate(`/my-series/view/${id}`)
+    void navigate(`/my-series/view/${id}`)
   }
 
   return (

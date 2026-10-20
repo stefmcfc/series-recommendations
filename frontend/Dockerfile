@@ -17,4 +17,11 @@ RUN npm run build
 FROM nginx:alpine
 COPY --from=build /workspace/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+# docker:S6471 -- run as the image's existing unprivileged "nginx" user instead of root.
+# /var/cache/nginx (worker temp dirs, created lazily at startup) and /run (nginx.pid) are the
+# only two paths nginx actually needs to write to that root owns by default; nginx.conf's pid
+# path is /run/nginx.pid, and /var/run is just a symlink to it. Paired with nginx.conf's
+# listen 8080 (binding <1024 needs a capability grant a non-root process doesn't have).
+RUN chown -R nginx:nginx /var/cache/nginx /run
+USER nginx
+EXPOSE 8080

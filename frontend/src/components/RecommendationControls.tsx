@@ -96,6 +96,16 @@ export function isLanguageFavourites(value: unknown): value is string[] {
   )
 }
 
+// Shared shape check backing isKeywordFavourites/isGenreFavourites below
+// (typescript:S4144 -- the two were textually identical function bodies;
+// see NameStatAggregator.java's own S4144 note for the backend counterpart
+// of this same consolidation).
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+  )
+}
+
 // FRONTEND-133-AC-05: Favourite Keywords, mirroring Country/Language
 // Favourites exactly -- unlike those two, there's no static keyword catalog
 // to validate membership against (keywords are open-ended, sourced from
@@ -105,9 +115,7 @@ export function isLanguageFavourites(value: unknown): value is string[] {
 export const DEFAULT_KEYWORD_FAVOURITES: string[] = []
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function isKeywordFavourites(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-  )
+  return isStringArray(value)
 }
 
 // FRONTEND-137-AC-01: Favourite Genres, mirroring Favourite Keywords exactly
@@ -119,9 +127,7 @@ export function isKeywordFavourites(value: unknown): value is string[] {
 export const DEFAULT_GENRE_FAVOURITES: string[] = []
 // eslint-disable-next-line react-refresh/only-export-components -- see the eslint-disable comment on LANGUAGE_OPTIONS above for rationale.
 export function isGenreFavourites(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
-  )
+  return isStringArray(value)
 }
 
 // FRONTEND-133-AC-01/02: Custom Search's keyword suggestion sort setting --

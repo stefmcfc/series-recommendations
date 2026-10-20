@@ -103,7 +103,7 @@ function MySeriesView({
   // descendant of App's own BrowserRouter and can call useNavigate directly.
   const navigate = useNavigate()
   const handleSeriesClick = (id: string) => {
-    navigate(`/my-series/view/${id}`)
+    void navigate(`/my-series/view/${id}`)
   }
   const status = statusFromTabParam(statusTab)
   const flaggedForRewatch = flaggedForRewatchFromTabParam(statusTab)
@@ -215,7 +215,7 @@ function SeriesDetailRoute({
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const handleBackToList = () => {
-    navigate('/my-series')
+    void navigate('/my-series')
   }
 
   if (id == null) {

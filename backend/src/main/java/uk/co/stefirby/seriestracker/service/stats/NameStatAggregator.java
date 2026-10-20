@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Shared aggregation/sort/filter logic behind {@code KeywordStatsService} and {@code
@@ -91,10 +92,9 @@ public final class NameStatAggregator {
             }
         }
 
-        List<NameStat> stats = new ArrayList<>();
-        for (Map.Entry<String, List<SeriesEntity>> entry : seriesByName.entrySet()) {
-            stats.add(toStat(entry.getKey(), entry.getValue()));
-        }
+        List<NameStat> stats = seriesByName.entrySet().stream()
+            .map(entry -> toStat(entry.getKey(), entry.getValue()))
+            .collect(Collectors.toCollection(ArrayList::new));
 
         stats.removeIf(stat -> !passesFilters(
             stat, query.minSeriesCount(), query.minAveragePersonalRating(), query.minAverageBlendedRating()));

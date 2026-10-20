@@ -17,7 +17,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -121,11 +120,7 @@ public class ImportFileParser {
                     "Uploaded CSV file's header row does not match the expected export format");
             }
 
-            List<SeriesDto> entries = new ArrayList<>();
-            for (CSVRecord csvRecord : parser) {
-                entries.add(toDto(csvRecord));
-            }
-            return entries;
+            return parser.getRecords().stream().map(this::toDto).toList();
         } catch (IOException e) {
             throw new IllegalArgumentException("Unable to read the uploaded file", e);
         }

@@ -16,5 +16,12 @@ FROM eclipse-temurin:25-jre-alpine
 RUN apk add --no-cache curl
 WORKDIR /app
 COPY --from=build /workspace/build/libs/*.jar app.jar
+# docker:S6471 -- run as a non-root user rather than the image's root default. /app/data is
+# created (empty) and chowned here, not just /app itself, because Docker initializes a named
+# volume's ownership from whatever already exists at its mount point in the image on first
+# use -- so the series-data volume (mounted at /app/data by docker-compose.yml) comes up
+# already writable by this user instead of root.
+RUN addgroup -S app && adduser -S app -G app && mkdir -p /app/data && chown -R app:app /app
+USER app
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
