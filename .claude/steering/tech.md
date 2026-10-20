@@ -32,7 +32,7 @@ This reflects what's actually declared in `backend/build.gradle.kts` and `fronte
 ## Build Tools
 
 ### Backend
-- **Gradle** via the wrapper. Only `gradlew.bat` (Windows) is checked in — there is no Unix `gradlew` script yet. Generate one with `gradle wrapper` if Unix/macOS support is needed.
+- **Gradle** via the wrapper. Both `gradlew.bat` (Windows) and `gradlew` (Unix) are checked in — the latter was added by `tooling_spec_012` so `backend/Dockerfile`'s Linux-based build stage can invoke it directly (`./gradlew bootJar -x test --no-daemon`), guaranteeing the same Gradle version as any local/CI build by construction (both wrappers point at the same `gradle/wrapper/gradle-wrapper.properties`). Regenerate both together via `gradle wrapper` on any future version bump — never hand-edit one.
 
 ### Frontend
 - **Vite**: Dev server, production build, asset bundling

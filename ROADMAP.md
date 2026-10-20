@@ -40,6 +40,8 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
+| "Show series I already have" recommendations toggle — opt-in flag surfacing already-tracked candidates (with their status/personal rating, navigating to that series) across all Discover/Use My Series modes, instead of always silently excluding them | `series_spec_071` | `frontend_spec_138` | ⬜ Not started |
+| Dev scripts (`start-dev.sh`/`stop-dev.sh`/`restart-dev.sh`) pause on failure so a disposable spawned window can be read before it closes; fixes `restart-dev.sh`'s silent exit-code swallowing | `tooling_spec_013` | — | ⬜ Not started |
 
 ---
 
@@ -213,3 +215,4 @@ user-facing feature name.
 | `tooling_spec_009_dev_server_scripts.md`                      | Bash scripts (`scripts/start-dev.sh`/`stop-dev.sh`/`restart-dev.sh`) to start/stop/restart the local backend + frontend dev servers without manual commands            | ✅ Done        |
 | `tooling_spec_010_sqlite_test_concurrency_reliability.md`     | `busy_timeout` + single-connection Hikari pool on both SQLite datasources, plus per-class isolated database files for the 5 already-uniquely-cached `@MockitoBean` specs — fixing intermittent `SQLITE_BUSY` test failures caused by Spring's simultaneously-cached test contexts all pooling against one on-disk file | ✅ Done        |
 | `tooling_spec_011_dev_server_debug_mode.md`                   | `--debug` flag on `start-dev.sh`/`restart-dev.sh`: launches the backend via `gradlew.bat bootRun --debug-jvm` (JDWP on `:5005`, `suspend=false` pinned in `build.gradle.kts` so startup never blocks) for IntelliJ's Remote JVM Debug; documents the frontend's equivalent (no server flag needed — Vite already serves debuggable code, attach via IntelliJ's JavaScript Debug run config) | ✅ Done        |
+| `tooling_spec_012_docker_production_images.md`                | Production-style multi-stage `backend/Dockerfile`/`frontend/Dockerfile` + root `docker-compose.yml` so the whole app runs via `docker compose up --build` (SQLite named volume, nginx reverse-proxying `/api/` same-origin); adds `backend/gradlew` (Unix wrapper), superseding the Windows-only wrapper hard rule | ✅ Done        |
