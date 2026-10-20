@@ -351,13 +351,11 @@ public class TmdbClient {
             return List.of();
         }
         List<Map<String, Object>> flatrate = listOfMaps((Map<String, Object>) regionEntry, "flatrate");
-        List<TmdbWatchProvider> providers = new ArrayList<>();
-        for (Map<String, Object> item : flatrate) {
-            providers.add(new TmdbWatchProvider(
+        return flatrate.stream()
+            .map(item -> new TmdbWatchProvider(
                 ExternalApiSupport.str(item.get("provider_name")),
-                ExternalApiSupport.str(item.get("logo_path"))));
-        }
-        return providers;
+                ExternalApiSupport.str(item.get("logo_path"))))
+            .toList();
     }
 
     /**
@@ -463,13 +461,10 @@ public class TmdbClient {
         if (!(value instanceof List<?> list)) {
             return List.of();
         }
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Object o : list) {
-            if (o instanceof Map<?, ?> m) {
-                result.add((Map<String, Object>) m);
-            }
-        }
-        return result;
+        return list.stream()
+            .filter(o -> o instanceof Map<?, ?>)
+            .map(o -> (Map<String, Object>) o)
+            .toList();
     }
 
     private static List<TmdbCandidate> mapResults(Map<String, Object> body) {

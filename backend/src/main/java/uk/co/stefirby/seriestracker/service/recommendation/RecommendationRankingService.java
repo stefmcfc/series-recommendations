@@ -82,6 +82,11 @@ public class RecommendationRankingService {
      * source (the first entry under the canonical ordering); {@code "all-sources"}
      * checks/increments every contributing source.
      */
+    @SuppressWarnings("java:S9391") // loop body's admission check has an order-dependent side
+    // effect (incrementing perSourceCount as each candidate is admitted) -- a stream .filter()
+    // would be functionally equivalent for this sequential, ordered source, but hiding a
+    // stateful predicate inside what reads as a pure filter is a worse readability trade than
+    // this 5-line loop.
     List<ScoredCandidate> applyDiversityCap(List<ScoredCandidate> ranked, int maxPerSource) {
         boolean allSourcesMode = "all-sources".equals(diversityCapMode);
         Map<String, Integer> perSourceCount = new HashMap<>();
