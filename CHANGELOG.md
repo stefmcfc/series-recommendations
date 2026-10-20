@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.72.0] - 2026-10-20
+
 ### Added
 
 - Tooling: `scripts/start-dev.sh`/`stop-dev.sh`/`restart-dev.sh` now pause on a keypress before exiting if they're about to exit non-zero — so a disposable spawned window (double-click, or launched from PowerShell via Windows' `.sh` file association) stays open long enough to read the failure diagnostic, instead of closing itself instantly. No effect on the success path or on non-interactive invocations (`tooling_spec_013`, ported from the sibling `behavioural-activation` project's `tooling_spec_004`).
