@@ -9,7 +9,7 @@ if (import.meta.env.DEV) {
     import('react-dom'),
     import('@axe-core/react'),
   ])
-  axe.default(React.default, ReactDOM.default, 1000)
+  void axe.default(React.default, ReactDOM.default, 1000)
 }
 
 createRoot(document.getElementById('root')!).render(
