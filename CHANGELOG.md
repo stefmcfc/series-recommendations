@@ -15,6 +15,10 @@ versioned together as one app.
 - Frontend: an already-tracked `RecommendationCard` is now also visually distinguished by an accent-colored left border and an "In My Series" eyebrow tag above the title, in addition to the status/rating badge (`frontend_spec_138`, live-review follow-up).
 - Frontend: an already-tracked `RecommendationCard`'s status/rating badge now renders the personal rating as stars (`StarRating`, matching `SeriesList`'s own convention) instead of a raw number (`frontend_spec_138`, live-review follow-up).
 
+### Fixed
+
+- Frontend: `NameStatsTable`'s name-link button now uses `var(--accent)` instead of `var(--link, #2563eb)` — `--link` was never a defined token anywhere in `index.css`, so the button always silently fell back to the hardcoded blue regardless of theme/accent; it's now actually theme-aware.
+
 ## [3.72.0] - 2026-10-20
 
 ### Added
