@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.74.0] - 2026-10-23
+
 ### Added
 
 - Frontend: new shared `PillToggle` component — a pill-shaped `<button aria-pressed>` extracted from `SearchFilter`'s existing Missing Ratings chip styling (`frontend_spec_139`).
