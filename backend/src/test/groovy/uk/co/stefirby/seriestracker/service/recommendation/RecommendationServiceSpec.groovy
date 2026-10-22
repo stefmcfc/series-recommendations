@@ -730,8 +730,8 @@ class RecommendationServiceSpec extends Specification {
 
         then: "sourceTrending's own already-deduped/filtered result is used directly, no further dedup/filter pass runs"
             1 * sourcingService.sourceTrending(criteria, 20) >> alreadyDeduped
-            0 * deduplicationServiceMock.dedupeAndExclude(_, _)
             0 * deduplicationServiceMock.dedupeAndExclude(_, _, _)
+            0 * deduplicationServiceMock.dedupeAndExclude(_, _, _, _)
             0 * outputFilterServiceMock.applyOutputFilters(_, _)
 
         and: "the DTOs are assembled straight from that result"
@@ -829,5 +829,108 @@ class RecommendationServiceSpec extends Specification {
 
         then: "the injected GB default still governs the candidate's watch-provider lookup"
             1 * tmdbClient.watchProviders(10, "GB") >> []
+    }
+
+    // -- Spec 071 (SERIES-071): includeAlreadyTracked --
+
+    def "SERIES-071-AC-01: omitting includeAlreadyTracked excludes an already-tracked candidate, as today"() {
+        given: "trending returns a candidate whose imdbId matches an existing tracked series"
+            def criteria = new RecommendationCriteria(sourceMode: "trending")
+            tmdbClient.trending("week") >> [candidate(10, "Tracked")]
+            tmdbClient.trending("week", 2) >> []
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000010") >> false
+
+        when: "recommend(20, criteria) is called with no includeAlreadyTracked set"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the already-tracked candidate is absent"
+            results.isEmpty()
+    }
+
+    def "SERIES-071-AC-02: includeAlreadyTracked=true surfaces an already-tracked trending candidate"() {
+        given: "trending returns a candidate whose imdbId matches an existing tracked series"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", includeAlreadyTracked: true)
+            tmdbClient.trending("week") >> [candidate(10, "Tracked")]
+            tmdbClient.trending("week", 2) >> []
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000010") >> false
+            def tracked = new SeriesEntity(title: "Tracked", status: SeriesStatus.WATCHING, personalRating: 8)
+            tracked.id = UUID.randomUUID()
+            seriesRepository.findByImdbId("tt1000010") >> Optional.of(tracked)
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the already-tracked candidate is present"
+            results.size() == 1
+            results[0].title() == "Tracked"
+    }
+
+    def "SERIES-071-AC-03: includeAlreadyTracked=true does not surface an ignored trending candidate"() {
+        given: "trending returns a candidate whose imdbId matches an ignored series, not a tracked one"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", includeAlreadyTracked: true)
+            tmdbClient.trending("week") >> [candidate(30, "Ignored")]
+            tmdbClient.trending("week", 2) >> []
+            tmdbClient.externalIds(30) >> Optional.of("tt1000030")
+            seriesRepository.existsByImdbId("tt1000030") >> false
+            ignoredSeriesRepository.existsByImdbId("tt1000030") >> true
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the ignored candidate is still absent"
+            results.isEmpty()
+    }
+
+    def "SERIES-071-AC-05: an already-tracked result carries its tracked fields; an ordinary result has them null"() {
+        given: "trending returns a tracked (WATCHING, personalRating 8) candidate and a new one"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", includeAlreadyTracked: true)
+            tmdbClient.trending("week") >> [candidate(10, "Tracked"), candidate(20, "New")]
+            tmdbClient.trending("week", 2) >> []
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            tmdbClient.externalIds(20) >> Optional.of("tt1000020")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            seriesRepository.existsByImdbId("tt1000020") >> false
+            ignoredSeriesRepository.existsByImdbId(_) >> false
+            def trackedId = UUID.randomUUID()
+            def tracked = new SeriesEntity(title: "Tracked", status: SeriesStatus.WATCHING, personalRating: 8)
+            tracked.id = trackedId
+            seriesRepository.findByImdbId("tt1000010") >> Optional.of(tracked)
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+            def trackedResult = results.find { it.title() == "Tracked" }
+            def newResult = results.find { it.title() == "New" }
+
+        then: "the tracked result carries its tracked fields"
+            trackedResult.trackedSeriesId() == trackedId.toString()
+            trackedResult.trackedStatus() == "WATCHING"
+            trackedResult.trackedPersonalRating() == 8
+
+        and: "the ordinary (untracked) result has all three fields null"
+            newResult.trackedSeriesId() == null
+            newResult.trackedStatus() == null
+            newResult.trackedPersonalRating() == null
+    }
+
+    def "SERIES-071-AC-06: an already-tracked candidate below minTmdbRating is still excluded"() {
+        given: "trending returns a tracked candidate whose tmdbRating (5.0) is below the requested minTmdbRating (7)"
+            def criteria = new RecommendationCriteria(sourceMode: "trending", includeAlreadyTracked: true, minTmdbRating: new BigDecimal("7"))
+            tmdbClient.trending("week") >> [candidate(10, "Low Rated Tracked", 2020, new BigDecimal("5.0"))]
+            tmdbClient.trending("week", 2) >> []
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000010") >> false
+            seriesRepository.findByImdbId("tt1000010") >> Optional.of(
+                new SeriesEntity(title: "Low Rated Tracked", status: SeriesStatus.WATCHING))
+
+        when: "recommend(20, criteria) is called"
+            def results = recommendationService.recommend(20, criteria)
+
+        then: "the low-rated already-tracked candidate is absent, same as any other low-rated candidate"
+            results.isEmpty()
     }
 }

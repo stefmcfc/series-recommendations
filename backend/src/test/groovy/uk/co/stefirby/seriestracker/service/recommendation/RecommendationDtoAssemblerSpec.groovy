@@ -135,4 +135,34 @@ class RecommendationDtoAssemblerSpec extends Specification {
         then: "the injected GB default is used"
             1 * tmdbClient.watchProviders(500, "GB") >> []
     }
+
+    // -- Spec 071, Requirement 3 (SERIES-071-AC-05): tracked-series fields --
+
+    def "SERIES-071-AC-05: toDto carries trackedSeriesId/trackedStatus/trackedPersonalRating from a non-null trackedSeries"() {
+        given: "a deduped candidate whose trackedSeries is a WATCHING series with personalRating 8"
+            def tracked = new SeriesEntity(title: "Tracked Show", status: SeriesStatus.WATCHING, personalRating: 8)
+            tracked.id = UUID.randomUUID()
+            def dc = new DedupedCandidate(candidate(500), [], "tt5005005", tracked)
+
+        when: "toDto is called"
+            def result = dtoAssembler.toDto(dc, 3, null)
+
+        then: "the three tracked fields mirror the tracked SeriesEntity"
+            result.trackedSeriesId() == tracked.id.toString()
+            result.trackedStatus() == "WATCHING"
+            result.trackedPersonalRating() == 8
+    }
+
+    def "SERIES-071-AC-05: toDto leaves all three tracked fields null when trackedSeries is null"() {
+        given: "a deduped candidate with no trackedSeries (the 3-arg constructor's default)"
+            def dc = new DedupedCandidate(candidate(500), [], "tt5005005")
+
+        when: "toDto is called"
+            def result = dtoAssembler.toDto(dc, 3, null)
+
+        then: "all three tracked fields are null"
+            result.trackedSeriesId() == null
+            result.trackedStatus() == null
+            result.trackedPersonalRating() == null
+    }
 }

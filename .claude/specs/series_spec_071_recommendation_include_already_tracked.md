@@ -1,6 +1,6 @@
 # Series Spec 071: Include Already-Tracked Series in Recommendations
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3 (new discovery feature, no existing behavior broken if unused — the new criteria
 field defaults to today's exact behavior when absent)
 **Depends on**: `series_spec_006_recommendations.md` (base recommendation pipeline),
@@ -271,9 +271,9 @@ not instead of, the existing output-filter/ranking stages already in the pipelin
 
 ## Acceptance Criteria Summary
 
-- [ ] SERIES-071-AC-01: `RecommendationCriteria.includeAlreadyTracked`, absent/false = today's behavior
-- [ ] SERIES-071-AC-02: `true` bypasses the already-tracked exclusion only
-- [ ] SERIES-071-AC-03: already-ignored exclusion stays absolute regardless of the flag
-- [ ] SERIES-071-AC-04: `DedupedCandidate.trackedSeries` + `SeriesRepository.findByImdbId`
-- [ ] SERIES-071-AC-05: `RecommendationDto.trackedSeriesId`/`trackedStatus`/`trackedPersonalRating`
-- [ ] SERIES-071-AC-06: already-tracked candidates still obey existing filters/ranking/diversity cap
+- [x] SERIES-071-AC-01: `RecommendationCriteria.includeAlreadyTracked`, absent/false = today's behavior
+- [x] SERIES-071-AC-02: `true` bypasses the already-tracked exclusion only
+- [x] SERIES-071-AC-03: already-ignored exclusion stays absolute regardless of the flag
+- [x] SERIES-071-AC-04: `DedupedCandidate.trackedSeries` + `SeriesRepository.findByImdbId`
+- [x] SERIES-071-AC-05: `RecommendationDto.trackedSeriesId`/`trackedStatus`/`trackedPersonalRating`
+- [x] SERIES-071-AC-06: already-tracked candidates still obey existing filters/ranking/diversity cap

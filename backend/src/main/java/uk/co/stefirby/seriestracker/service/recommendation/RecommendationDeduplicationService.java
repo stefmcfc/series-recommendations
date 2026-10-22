@@ -41,12 +41,13 @@ public class RecommendationDeduplicationService {
      * 3 discover-backfill modes, which never have a non-empty {@code sourceSeries} to reorder --
      * see this spec's Design Decisions) and threaded through to {@link #orderSources}.
      */
-    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Comparator<SeriesEntity> sourceOrderComparator) {
+    List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Comparator<SeriesEntity> sourceOrderComparator,
+                                             boolean includeAlreadyTracked) {
         // SERIES-059-AC-07: a fresh, call-scoped cache when there's no shared cache to pass in
         // (e.g. sourceFromPool's single dedupeAndExclude call) -- equivalent to no memoization
         // at all for a single call, but lets sourceWithBackfill's multi-page loop share one
         // cache across several calls via the overload below.
-        return dedupeAndExclude(raw, new HashMap<>(), sourceOrderComparator);
+        return dedupeAndExclude(raw, new HashMap<>(), sourceOrderComparator, includeAlreadyTracked);
     }
 
     /**
@@ -55,30 +56,45 @@ public class RecommendationDeduplicationService {
      * by an earlier element of {@code raw} itself or an earlier call sharing the same map, as
      * {@code RecommendationSourcingService.sourceWithBackfill} does across pages) is never
      * re-resolved via {@link TmdbClient#externalIds(int)}.
+     *
+     * <p>{@code includeAlreadyTracked} (SERIES-071-AC-02) bypasses only the already-tracked
+     * half of the exclusion check in {@link #accumulateCandidate} when {@code true} -- the
+     * already-ignored half stays absolute regardless (SERIES-071-AC-03).
      */
     List<DedupedCandidate> dedupeAndExclude(List<RawCandidate> raw, Map<Integer, Optional<String>> externalIdCache,
-                                             Comparator<SeriesEntity> sourceOrderComparator) {
+                                             Comparator<SeriesEntity> sourceOrderComparator, boolean includeAlreadyTracked) {
         Map<String, TmdbCandidate> candidateByImdbId = new LinkedHashMap<>();
         Map<String, List<SeriesEntity>> sourcesByImdbId = new LinkedHashMap<>();
+        Map<String, SeriesEntity> trackedSeriesByImdbId = new LinkedHashMap<>();
 
         for (RawCandidate rc : raw) {
-            accumulateCandidate(rc, candidateByImdbId, sourcesByImdbId, externalIdCache);
+            accumulateCandidate(rc, candidateByImdbId, sourcesByImdbId, trackedSeriesByImdbId, externalIdCache, includeAlreadyTracked);
         }
 
         return candidateByImdbId.entrySet().stream()
-            .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey()), sourceOrderComparator), e.getKey()))
+            .map(e -> new DedupedCandidate(e.getValue(), orderSources(sourcesByImdbId.get(e.getKey()), sourceOrderComparator),
+                e.getKey(), trackedSeriesByImdbId.get(e.getKey())))
             .toList();
     }
 
     /**
      * Resolves {@code rc}'s imdb_id and folds it into {@code candidateByImdbId}/{@code
-     * sourcesByImdbId} -- extracted from {@link #dedupeAndExclude}'s loop so each early-exit
-     * case below is a {@code return} rather than a {@code continue} (java:S135).
+     * sourcesByImdbId}/{@code trackedSeriesByImdbId} -- extracted from {@link
+     * #dedupeAndExclude}'s loop so each early-exit case below is a {@code return} rather than a
+     * {@code continue} (java:S135).
+     *
+     * <p>SERIES-071-AC-02/03/04: the already-ignored check stays an absolute, unconditional
+     * exclusion. The already-tracked check only excludes when {@code includeAlreadyTracked} is
+     * {@code false}; when it's {@code true} and a match exists, the matched {@link SeriesEntity}
+     * is fetched once (via {@link SeriesRepository#findByImdbId}) and recorded in {@code
+     * trackedSeriesByImdbId} rather than re-queried later at DTO-assembly time.
      */
     private void accumulateCandidate(RawCandidate rc,
                                       Map<String, TmdbCandidate> candidateByImdbId,
                                       Map<String, List<SeriesEntity>> sourcesByImdbId,
-                                      Map<Integer, Optional<String>> externalIdCache) {
+                                      Map<String, SeriesEntity> trackedSeriesByImdbId,
+                                      Map<Integer, Optional<String>> externalIdCache,
+                                      boolean includeAlreadyTracked) {
         Optional<String> imdbIdOpt = externalIdCache.computeIfAbsent(rc.candidate().tmdbId(), tmdbClient::externalIds);
         if (imdbIdOpt.isEmpty()) {
             return;
@@ -93,8 +109,16 @@ public class RecommendationDeduplicationService {
             return;
         }
 
-        if (seriesRepository.existsByImdbId(imdbId) || ignoredSeriesRepository.existsByImdbId(imdbId)) {
+        if (ignoredSeriesRepository.existsByImdbId(imdbId)) {
             return;
+        }
+
+        SeriesEntity trackedSeries = null;
+        if (seriesRepository.existsByImdbId(imdbId)) {
+            if (!includeAlreadyTracked) {
+                return;
+            }
+            trackedSeries = seriesRepository.findByImdbId(imdbId).orElse(null);
         }
 
         candidateByImdbId.put(imdbId, rc.candidate());
@@ -104,6 +128,7 @@ public class RecommendationDeduplicationService {
             sources.add(rc.sourceSeries());
         }
         sourcesByImdbId.put(imdbId, sources);
+        trackedSeriesByImdbId.put(imdbId, trackedSeries);
     }
 
     /**

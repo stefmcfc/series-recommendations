@@ -58,7 +58,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId("tt4000000") >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, false)
 
         then: "only the one valid candidate remains"
             result.size() == 1
@@ -75,7 +75,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, false)
 
         then: "the candidate appears once"
             result.size() == 1
@@ -91,7 +91,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId("tt9999999") >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, false)
 
         then: "the candidate appears once, attributed to both series"
             result.size() == 1
@@ -107,7 +107,7 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, false)
 
         then: "sourceSeries is empty, not null"
             result[0].sourceSeries() == []
@@ -122,8 +122,8 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude(raw, cache) is called twice, sharing the same cache"
-            def firstResult = deduplicationService.dedupeAndExclude(firstPage, cache, SourceOrderComparator.INSTANCE)
-            def secondResult = deduplicationService.dedupeAndExclude(secondPage, cache, SourceOrderComparator.INSTANCE)
+            def firstResult = deduplicationService.dedupeAndExclude(firstPage, cache, SourceOrderComparator.INSTANCE, false)
+            def secondResult = deduplicationService.dedupeAndExclude(secondPage, cache, SourceOrderComparator.INSTANCE, false)
 
         then: "externalIds(42) is resolved only once across both calls"
             1 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
@@ -141,8 +141,8 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId(_) >> false
 
         when: "dedupeAndExclude(raw) is called twice, with no shared cache"
-            deduplicationService.dedupeAndExclude(firstPage, SourceOrderComparator.INSTANCE)
-            deduplicationService.dedupeAndExclude(secondPage, SourceOrderComparator.INSTANCE)
+            deduplicationService.dedupeAndExclude(firstPage, SourceOrderComparator.INSTANCE, false)
+            deduplicationService.dedupeAndExclude(secondPage, SourceOrderComparator.INSTANCE, false)
 
         then: "externalIds(42) is resolved once per call -- no cross-call memoization for the no-cache overload"
             2 * tmdbClient.externalIds(42) >> Optional.of("tt0000042")
@@ -163,13 +163,91 @@ class RecommendationDeduplicationServiceSpec extends Specification {
             ignoredSeriesRepository.existsByImdbId("tt9999999") >> false
 
         when: "dedupeAndExclude is called"
-            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE)
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, false)
 
         then: "sourceSeries is ordered High Rated, Low Rated, Unrated"
             result[0].sourceSeries()*.title == ["High Rated", "Low Rated", "Unrated"]
     }
 
     // -- Spec 068, Requirement 1 (SERIES-068-AC-07): orderSources honors a caller-supplied comparator --
+
+    // -- Spec 071, Requirement 2/3 (SERIES-071-AC-02/03/04): includeAlreadyTracked --
+
+    def "SERIES-071-AC-02: includeAlreadyTracked=true surfaces an already-tracked candidate"() {
+        given: "a candidate whose resolved imdbId matches an existing tracked series"
+            def raw = [new RawCandidate(candidate(10, "Tracked"), null)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000010") >> false
+            def tracked = completedSeries("Tracked", "tt1000010", LocalDateTime.now())
+            seriesRepository.findByImdbId("tt1000010") >> Optional.of(tracked)
+
+        when: "dedupeAndExclude is called with includeAlreadyTracked=true"
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, true)
+
+        then: "the already-tracked candidate is present"
+            result.size() == 1
+            result[0].imdbId() == "tt1000010"
+    }
+
+    def "SERIES-071-AC-02: includeAlreadyTracked=false (the default) still excludes an already-tracked candidate"() {
+        given: "a candidate whose resolved imdbId matches an existing tracked series"
+            def raw = [new RawCandidate(candidate(10, "Tracked"), null)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000010") >> false
+
+        when: "dedupeAndExclude is called with includeAlreadyTracked=false"
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, false)
+
+        then: "the already-tracked candidate is absent, as today"
+            result.isEmpty()
+    }
+
+    def "SERIES-071-AC-03: includeAlreadyTracked=true does not surface an ignored candidate"() {
+        given: "a candidate whose resolved imdbId matches an ignored series, not a tracked one"
+            def raw = [new RawCandidate(candidate(30, "Ignored"), null)]
+            tmdbClient.externalIds(30) >> Optional.of("tt1000030")
+            seriesRepository.existsByImdbId("tt1000030") >> false
+            ignoredSeriesRepository.existsByImdbId("tt1000030") >> true
+
+        when: "dedupeAndExclude is called with includeAlreadyTracked=true"
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, true)
+
+        then: "the ignored candidate is still absent"
+            result.isEmpty()
+    }
+
+    def "SERIES-071-AC-04: a matched already-tracked candidate carries the resolved SeriesEntity as trackedSeries"() {
+        given: "a candidate whose resolved imdbId matches an existing tracked series"
+            def raw = [new RawCandidate(candidate(10, "Tracked"), null)]
+            tmdbClient.externalIds(10) >> Optional.of("tt1000010")
+            seriesRepository.existsByImdbId("tt1000010") >> true
+            ignoredSeriesRepository.existsByImdbId("tt1000010") >> false
+            def tracked = completedSeries("Tracked", "tt1000010", LocalDateTime.now())
+            seriesRepository.findByImdbId("tt1000010") >> Optional.of(tracked)
+
+        when: "dedupeAndExclude is called with includeAlreadyTracked=true"
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, true)
+
+        then: "the result's trackedSeries is the resolved entity"
+            result[0].trackedSeries() == tracked
+    }
+
+    def "SERIES-071-AC-04: an ordinary (not already-tracked) candidate's trackedSeries is null"() {
+        given: "a valid candidate matching neither a tracked nor an ignored series"
+            def raw = [new RawCandidate(candidate(40, "New"), null)]
+            tmdbClient.externalIds(40) >> Optional.of("tt1000040")
+            seriesRepository.existsByImdbId("tt1000040") >> false
+            ignoredSeriesRepository.existsByImdbId("tt1000040") >> false
+
+        when: "dedupeAndExclude is called with includeAlreadyTracked=true"
+            def result = deduplicationService.dedupeAndExclude(raw, SourceOrderComparator.INSTANCE, true)
+
+        then: "trackedSeries is null, never queried"
+            result[0].trackedSeries() == null
+            0 * seriesRepository.findByImdbId(_)
+    }
 
     def "SERIES-068-AC-07: customBlendThenPersonalRating orders by blend first, personal rating as tiebreak"() {
         given: "two source series with the same personalRating but different Custom Rating Blend results"

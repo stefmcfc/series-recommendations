@@ -451,6 +451,27 @@ scale to 0-10 before averaging — deliberately distinct from the fixed, `imdb`/
 unrecognized entry) selects which rating sources feed the Custom Rating Blend above — read only
 when `sourceRankingStrategy` is one of the two blend-based values.
 
+`includeAlreadyTracked` (optional boolean, default/absent `false`) bypasses only the
+already-tracked half of the exclusion check that otherwise drops any candidate matching a series
+you already have (any status) — useful for sanity-checking why a title isn't showing up, or just
+browsing with full context. The already-ignored half of that check stays absolute regardless of
+this flag: an ignored series is never resurfaced, even with `includeAlreadyTracked=true`
+(`series_spec_034_exclude_from_recommendations_enforcement.md`'s "ignored is an absolute rule"
+precedent). Applies identically across every sourcing mode (`useMySeries`/`seriesIds`, `trending`,
+`topRated`, Custom Search), and an already-tracked candidate surfaced this way still obeys every
+other output filter (`minTmdbRating`, `excludeGenres`, `excludeKeywords`, `minVoteCount`, etc.)
+and, for `sourceMode=useMySeries`/`seriesIds`, the ranking/diversity-cap step — exactly like any
+other candidate (`series_spec_071_recommendation_include_already_tracked.md`).
+
+When a candidate matches an already-tracked series under `includeAlreadyTracked=true`, its result
+additionally carries three fields populated from that series' own current data: `trackedSeriesId`
+(its `id`, a UUID string — usable directly with `GET`/`PATCH`/`DELETE /api/v1/series/{id}`),
+`trackedStatus` (its `status`, e.g. `"WATCHING"`), and `trackedPersonalRating` (its
+`personalRating`, or `null` if unrated). All three are `null` for every ordinary (untracked)
+result in the same response, and for every result at all when `includeAlreadyTracked` is
+unset/`false`. There's no separate boolean "is this tracked" field — check
+`trackedSeriesId != null` instead.
+
 ---
 
 ### `GET /api/v1/series/recommendations/{tmdbId}/keywords`

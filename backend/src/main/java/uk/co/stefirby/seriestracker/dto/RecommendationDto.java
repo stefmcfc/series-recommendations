@@ -38,6 +38,17 @@ import java.util.List;
  * never {@code null} (an empty list when none are found or the lookup fails). See {@code
  * series_spec_020_watch_providers.md}.
  *
+ * <p>{@code trackedSeriesId}/{@code trackedStatus}/{@code trackedPersonalRating}
+ * (series_spec_071_recommendation_include_already_tracked.md, SERIES-071-AC-05) are populated
+ * from the matched {@code SeriesEntity} only when the request set {@code
+ * includeAlreadyTracked=true} and this specific candidate matched a series the user already
+ * tracks -- {@code null} for all three otherwise, including for every ordinary (untracked)
+ * candidate in the same response. {@code trackedStatus} mirrors {@link SeriesDto#getStatus()}'s
+ * own convention of serializing the {@code SeriesStatus} enum as its {@code name()}; {@code
+ * trackedPersonalRating} is passed through verbatim, matching {@link
+ * SeriesDto#getPersonalRating()}. There's deliberately no separate boolean "isTracked" field --
+ * a consumer can already test {@code trackedSeriesId != null}.
+ *
  * <p>A record: always built fully, in one place ({@code RecommendationService.toDto}), and
  * never mutated afterward -- see the "Records over classes" guidance in this project's Java
  * conventions.
@@ -55,7 +66,10 @@ public record RecommendationDto(
     List<String> sourceTitles,
     Integer totalSourceCount,
     String originCountry,
-    Integer tmdbId
+    Integer tmdbId,
+    String trackedSeriesId,
+    String trackedStatus,
+    Integer trackedPersonalRating
 ) {
 
     /**

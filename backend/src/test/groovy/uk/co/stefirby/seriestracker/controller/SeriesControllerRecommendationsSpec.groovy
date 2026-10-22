@@ -60,7 +60,10 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 ["Breaking Bad"],
                 1,
                 "US",
-                1396
+                1396,
+                null,
+                null,
+                null
             )
             when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto, dto, dto])
 
@@ -91,7 +94,10 @@ class SeriesControllerRecommendationsSpec extends Specification {
                 ["Breaking Bad"],
                 1,
                 "US",
-                1396
+                1396,
+                null,
+                null,
+                null
             )
             when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([dto])
 
@@ -541,6 +547,37 @@ class SeriesControllerRecommendationsSpec extends Specification {
             result.andExpect(status().isOk())
             result.andExpect(jsonPath('$.data.numberOfSeasons').value(5))
             result.andExpect(jsonPath('$.data.imdbRating').doesNotExist())
+    }
+
+    // -- SERIES-071-AC-01: includeAlreadyTracked endpoint wiring --
+
+    def "SERIES-071-AC-01: includeAlreadyTracked query param is bound and passed through to RecommendationCriteria"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations?includeAlreadyTracked=true is requested"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations")
+                .param("includeAlreadyTracked", "true"))
+
+        then: "the response is 200 and RecommendationService received includeAlreadyTracked=true"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.includeAlreadyTracked == true
+            }))
+    }
+
+    def "SERIES-071-AC-01: omitting includeAlreadyTracked behaves identically to before this spec (left null on criteria)"() {
+        given: "RecommendationService resolves an empty list for any criteria"
+            when(recommendationService.recommend(eq(20), any(RecommendationCriteria))).thenReturn([])
+
+        when: "GET /api/v1/series/recommendations is requested with no includeAlreadyTracked param"
+            def result = mockMvc.perform(get("/api/v1/series/recommendations"))
+
+        then: "the response is 200 and RecommendationCriteria.includeAlreadyTracked is null"
+            result.andExpect(status().isOk())
+            def unused = verify(recommendationService).recommend(eq(20), argThat({ RecommendationCriteria c ->
+                c.includeAlreadyTracked == null
+            }))
     }
 
     def "SERIES-036-AC-05: the existing keywords endpoint is unaffected by the new details endpoint"() {

@@ -32,6 +32,14 @@ public class RecommendationDtoAssembler {
             .map(SeriesEntity::getTitle)
             .limit(effectiveMaxSourcesShown)
             .toList();
+        // SERIES-071-AC-05: null for all three unless includeAlreadyTracked was true and this
+        // candidate matched -- mirrors SeriesDto's own status/personalRating serialization
+        // (SeriesMapper.toDto) exactly.
+        SeriesEntity trackedSeries = dc.trackedSeries();
+        String trackedSeriesId = trackedSeries != null ? trackedSeries.getId().toString() : null;
+        String trackedStatus = trackedSeries != null && trackedSeries.getStatus() != null
+            ? trackedSeries.getStatus().name() : null;
+        Integer trackedPersonalRating = trackedSeries != null ? trackedSeries.getPersonalRating() : null;
         return new RecommendationDto(
             c.title(),
             c.year(),
@@ -45,7 +53,10 @@ public class RecommendationDtoAssembler {
             sourceTitles,
             dc.sourceSeries().size(),
             TmdbClient.joinOriginCountries(c.originCountries()),
-            c.tmdbId()
+            c.tmdbId(),
+            trackedSeriesId,
+            trackedStatus,
+            trackedPersonalRating
         );
     }
 }

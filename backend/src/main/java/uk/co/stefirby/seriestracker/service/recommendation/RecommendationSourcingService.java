@@ -204,7 +204,8 @@ public class RecommendationSourcingService {
         // non-empty sourceSeries (trending/topRated/genreOrKeyword all pass null), so a
         // strategy here would be a harmless no-op -- the unparameterized default is passed
         // explicitly rather than threading criteria through a code path that can never use it.
-        List<DedupedCandidate> pageDeduped = deduplicationService.dedupeAndExclude(pageRaw, externalIdCache, SourceOrderComparator.INSTANCE);
+        List<DedupedCandidate> pageDeduped = deduplicationService.dedupeAndExclude(pageRaw, externalIdCache, SourceOrderComparator.INSTANCE,
+            Boolean.TRUE.equals(c.getIncludeAlreadyTracked()));
         List<DedupedCandidate> pageFiltered = outputFilterService.applyOutputFilters(pageDeduped, c);
         for (DedupedCandidate dc : pageFiltered) {
             accumulator.merge(dc.candidate().tmdbId(), dc, this::mergeDedupedCandidates);
@@ -214,7 +215,13 @@ public class RecommendationSourcingService {
             sourceName, page, pageRaw.size(), pageDeduped.size(), pageFiltered.size(), accumulator.size());
     }
 
-    /** SERIES-059-AC-02: combines a repeat {@code tmdbId}'s contributing sources into the entry already in the accumulator, preserving the canonical source ordering. */
+    /**
+     * SERIES-059-AC-02: combines a repeat {@code tmdbId}'s contributing sources into the entry
+     * already in the accumulator, preserving the canonical source ordering. {@code
+     * existing.trackedSeries()} (SERIES-071-AC-04) is carried through unchanged -- whichever
+     * page first resolved it is authoritative, and it can never differ between pages for the
+     * same {@code imdbId}.
+     */
     private DedupedCandidate mergeDedupedCandidates(DedupedCandidate existing, DedupedCandidate incoming) {
         if (incoming.sourceSeries().isEmpty()) {
             return existing;
@@ -222,7 +229,7 @@ public class RecommendationSourcingService {
         List<SeriesEntity> combined = new ArrayList<>(existing.sourceSeries());
         combined.addAll(incoming.sourceSeries());
         return new DedupedCandidate(existing.candidate(),
-            combined.stream().sorted(SourceOrderComparator.INSTANCE).toList(), existing.imdbId());
+            combined.stream().sorted(SourceOrderComparator.INSTANCE).toList(), existing.imdbId(), existing.trackedSeries());
     }
 
     /** Shared by {@link #sourceTopRated}/{@link #sourceByGenreOrKeyword}: an explicit, non-blank {@code discoverSortBy} wins; otherwise the mode's own default. */

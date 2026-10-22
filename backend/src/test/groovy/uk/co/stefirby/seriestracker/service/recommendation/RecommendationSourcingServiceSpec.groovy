@@ -456,7 +456,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             // end-of-results signal, stopping the loop -- this test cares about routing/genre-
             // mapping, not pagination.
             1 * tmdbClient.discover([18], [], "popularity.desc", new DiscoverFilters(200, null, null, null, null, null, []), 2) >> []
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> [new DedupedCandidate(candidate(50, "Drama Show"), [], "tt0000050")]
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> [new DedupedCandidate(candidate(50, "Drama Show"), [], "tt0000050")]
             1 * outputFilterService.applyOutputFilters(_, criteria) >> [new DedupedCandidate(candidate(50, "Drama Show"), [], "tt0000050")]
 
         and: "the candidate has no linked source series (empty, not null -- SERIES-015-AC-03)"
@@ -815,7 +815,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "only page 1 is fetched"
             1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
             0 * tmdbClient.trending("week", 2)
 
@@ -837,7 +837,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week", 3) >> (41..60).collect { candidate(it) }
 
         and: "each page's raw candidates (exactly 20, never the growing accumulated total) are dedup/filtered exactly once"
-            3 * deduplicationService.dedupeAndExclude({ it.size() == 20 }, _, _) >> []
+            3 * deduplicationService.dedupeAndExclude({ it.size() == 20 }, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 1)
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(2, 1)
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(3, 1)
@@ -854,8 +854,8 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week") >> (1..20).collect { candidate(it) }
             1 * tmdbClient.trending("week", 2) >> [candidate(21)]
             0 * tmdbClient.trending("week", 3)
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 5)
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(100, 15)
 
@@ -875,7 +875,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week", 2) >> [candidate(2)]
             1 * tmdbClient.trending("week", 3) >> [candidate(3)]
             0 * tmdbClient.trending("week", 4)
-            deduplicationService.dedupeAndExclude(_, _, _) >> []
+            deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
             notThrown(Exception)
     }
@@ -891,7 +891,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.trending("week") >> [candidate(1)]
             1 * tmdbClient.trending("week", 2) >> []
             0 * tmdbClient.trending("week", 3)
-            deduplicationService.dedupeAndExclude(_, _, _) >> []
+            deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
     }
 
@@ -937,7 +937,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "only page 1 is fetched"
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> (1..20).collect { candidate(it) }
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2)
     }
@@ -953,8 +953,8 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> (1..20).collect { candidate(it) }
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> [candidate(21)]
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3)
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 5)
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(100, 15)
             result.size() == 20
@@ -972,7 +972,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> [candidate(2)]
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3) >> [candidate(3)]
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 4)
-            deduplicationService.dedupeAndExclude(_, _, _) >> []
+            deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
             notThrown(Exception)
     }
@@ -988,7 +988,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc") >> [candidate(1)]
             1 * tmdbClient.discoverTopRated(200, "vote_average.desc", 2) >> []
             0 * tmdbClient.discoverTopRated(200, "vote_average.desc", 3)
-            deduplicationService.dedupeAndExclude(_, _, _) >> []
+            deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
     }
 
@@ -1006,7 +1006,7 @@ class RecommendationSourcingServiceSpec extends Specification {
 
         then: "only page 1 is fetched"
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> (1..20).collect { candidate(it) }
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(15)
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2)
     }
@@ -1022,8 +1022,8 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> (1..20).collect { candidate(it) }
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> [candidate(21)]
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3)
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
-            1 * deduplicationService.dedupeAndExclude(_, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
+            1 * deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(1, 5)
             1 * outputFilterService.applyOutputFilters(_, criteria) >> dedupedFrom(100, 15)
             result.size() == 20
@@ -1041,7 +1041,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> [candidate(2)]
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3) >> [candidate(3)]
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 4)
-            deduplicationService.dedupeAndExclude(_, _, _) >> []
+            deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
             notThrown(Exception)
     }
@@ -1057,7 +1057,7 @@ class RecommendationSourcingServiceSpec extends Specification {
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS) >> [candidate(1)]
             1 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 2) >> []
             0 * tmdbClient.discover([], [], "popularity.desc", EMPTY_REQUEST_FILTERS, 3)
-            deduplicationService.dedupeAndExclude(_, _, _) >> []
+            deduplicationService.dedupeAndExclude(_, _, _, _) >> []
             outputFilterService.applyOutputFilters(_, criteria) >> dedupedOfSize(1)
     }
 }

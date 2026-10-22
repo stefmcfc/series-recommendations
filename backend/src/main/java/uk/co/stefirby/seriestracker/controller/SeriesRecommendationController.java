@@ -43,7 +43,8 @@ public class SeriesRecommendationController implements SeriesRecommendationContr
             String discoverSortBy,
             String region,
             String sourceRankingStrategy,
-            List<String> sourceRatingBlendSources) {
+            List<String> sourceRatingBlendSources,
+            Boolean includeAlreadyTracked) {
         int clampedLimit = Math.clamp(limit, 1, 50);
 
         RecommendationCriteria criteria = new RecommendationCriteria();
@@ -67,6 +68,7 @@ public class SeriesRecommendationController implements SeriesRecommendationContr
         criteria.setRegion(region);
         criteria.setSourceRankingStrategy(sourceRankingStrategy);
         criteria.setSourceRatingBlendSources(sourceRatingBlendSources);
+        criteria.setIncludeAlreadyTracked(includeAlreadyTracked);
 
         List<RecommendationDto> results = recommendationService.recommend(clampedLimit, criteria);
         return ResponseEntity.ok(new ApiResponse<>(results, results.size()));
