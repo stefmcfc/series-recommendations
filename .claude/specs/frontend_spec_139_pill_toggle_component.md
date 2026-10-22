@@ -1,6 +1,6 @@
 # Frontend Spec 139: `PillToggle` Shared Component and Toggle Consolidation
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `frontend_spec_116_missing_ratings_filter_ui.md`/
 `frontend_spec_118_missing_ratings_filter_section.md` (the original `.ratingToggleChip` pattern
@@ -401,10 +401,10 @@ migration (not as a separate follow-up pass).
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-139-AC-01: `PillToggle` renders a pill `<button aria-pressed>`, composing `btnPrimary`/`btnSecondary`
-- [ ] FRONTEND-139-AC-02: clicking a `PillToggle` calls `onChange` with the negated `pressed` value
-- [ ] FRONTEND-139-AC-03: `SearchFilter`'s 4 Missing Ratings chips migrated to `PillToggle`; `.ratingToggleChip` removed
-- [ ] FRONTEND-139-AC-04: `NameStatsTable`'s Favourites Only toggle migrated to `PillToggle`; `.favouritesOnlyLabel` removed
-- [ ] FRONTEND-139-AC-05: `SettingsPage`'s Tint Cards toggle migrated to `PillToggle`
-- [ ] FRONTEND-139-AC-06: `RecommendationFiltersBox`'s already-tracked toggle migrated to `PillToggle`; `.checkboxField` rules removed
-- [ ] FRONTEND-139-AC-07: test query-shape updated (`checkbox`/`getByLabelText` to `button`+`aria-pressed`) in `NameStatsTable.test.tsx`, `GenreStatsView.test.tsx`, `SettingsPage.test.tsx`, `RecommendationFiltersBox.test.tsx`
+- [x] FRONTEND-139-AC-01: `PillToggle` renders a pill `<button aria-pressed>`, composing `btnPrimary`/`btnSecondary`
+- [x] FRONTEND-139-AC-02: clicking a `PillToggle` calls `onChange` with the negated `pressed` value
+- [x] FRONTEND-139-AC-03: `SearchFilter`'s 4 Missing Ratings chips migrated to `PillToggle`; `.ratingToggleChip` removed
+- [x] FRONTEND-139-AC-04: `NameStatsTable`'s Favourites Only toggle migrated to `PillToggle`; `.favouritesOnlyLabel` removed
+- [x] FRONTEND-139-AC-05: `SettingsPage`'s Tint Cards toggle migrated to `PillToggle`
+- [x] FRONTEND-139-AC-06: `RecommendationFiltersBox`'s already-tracked toggle migrated to `PillToggle`; `.checkboxField` rules removed
+- [x] FRONTEND-139-AC-07: test query-shape updated (`checkbox`/`getByLabelText` to `button`+`aria-pressed`) in `NameStatsTable.test.tsx`, `GenreStatsView.test.tsx`, `SettingsPage.test.tsx`, `RecommendationFiltersBox.test.tsx`

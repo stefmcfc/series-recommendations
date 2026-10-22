@@ -1,0 +1,12 @@
+/* FRONTEND-139-AC-01: pill geometry only -- color/border/hover come from
+   buttons.module.css's btnPrimary/btnSecondary, composed in PillToggle.tsx.
+   Ported verbatim from SearchFilter.module.css's .ratingToggleChip, the
+   original ad hoc implementation of this same recipe (see that file's own
+   comment, retained there for history, for the full rationale on why these
+   two classes are composed rather than duplicated). */
+.pillToggle {
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}

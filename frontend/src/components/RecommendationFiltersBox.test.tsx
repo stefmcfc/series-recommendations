@@ -692,31 +692,35 @@ describe('FRONTEND-138-AC-01: already-tracked toggle', () => {
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
 
-    const checkbox = screen.getByLabelText('Show series I already have')
-    expect(checkbox).not.toBeChecked()
+    const toggle = screen.getByRole('button', {
+      name: 'Show series I already have',
+    })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
 
-    fireEvent.click(checkbox)
+    fireEvent.click(toggle)
 
     expect(updateState).toHaveBeenCalledWith({ includeAlreadyTracked: true })
   })
 
-  it('renders checked when includeAlreadyTracked is true', () => {
+  it('renders pressed when includeAlreadyTracked is true', () => {
     renderBox({ state: makeState({ includeAlreadyTracked: true }) })
     fireEvent.click(
       screen.getByRole('button', { name: /^recommendations filters/i }),
     )
 
-    expect(screen.getByLabelText('Show series I already have')).toBeChecked()
+    expect(
+      screen.getByRole('button', { name: 'Show series I already have' }),
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('renders the checkbox regardless of isCustomSearch', () => {
+  it('renders the toggle regardless of isCustomSearch', () => {
     renderBox({ isCustomSearch: true })
     fireEvent.click(
       screen.getByRole('button', { name: /^recommendations filters$/i }),
     )
 
     expect(
-      screen.getByLabelText('Show series I already have'),
+      screen.getByRole('button', { name: 'Show series I already have' }),
     ).toBeInTheDocument()
   })
 })

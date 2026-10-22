@@ -13,6 +13,7 @@ import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
 import { CollapsibleSection } from './CollapsibleSection'
+import { PillToggle } from './PillToggle'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import {
   LANGUAGE_OPTIONS,
@@ -688,57 +689,43 @@ export function SearchFilter({
                 headingTag="h3"
               >
                 <div className={styles.missingRatingsChips}>
-                  <button
-                    type="button"
-                    className={`${styles.ratingToggleChip} ${
-                      form.missingImdbRating ? btn.btnPrimary : btn.btnSecondary
-                    }`}
-                    aria-pressed={form.missingImdbRating}
-                    onClick={toggleMissingRatingField('missingImdbRating')}
+                  <PillToggle
+                    pressed={form.missingImdbRating}
+                    onChange={() =>
+                      toggleMissingRatingField('missingImdbRating')()
+                    }
                   >
                     Missing IMDb Rating
-                  </button>
+                  </PillToggle>
 
-                  <button
-                    type="button"
-                    className={`${styles.ratingToggleChip} ${
-                      form.missingTmdbRating ? btn.btnPrimary : btn.btnSecondary
-                    }`}
-                    aria-pressed={form.missingTmdbRating}
-                    onClick={toggleMissingRatingField('missingTmdbRating')}
+                  <PillToggle
+                    pressed={form.missingTmdbRating}
+                    onChange={() =>
+                      toggleMissingRatingField('missingTmdbRating')()
+                    }
                   >
                     Missing TMDB Rating
-                  </button>
+                  </PillToggle>
 
-                  <button
-                    type="button"
-                    className={`${styles.ratingToggleChip} ${
-                      form.missingRottenTomatoesRating
-                        ? btn.btnPrimary
-                        : btn.btnSecondary
-                    }`}
-                    aria-pressed={form.missingRottenTomatoesRating}
-                    onClick={toggleMissingRatingField(
-                      'missingRottenTomatoesRating',
-                    )}
+                  <PillToggle
+                    pressed={form.missingRottenTomatoesRating}
+                    onChange={() =>
+                      toggleMissingRatingField('missingRottenTomatoesRating')()
+                    }
                   >
                     Missing Rotten Tomatoes Rating
-                  </button>
+                  </PillToggle>
 
-                  <button
-                    type="button"
-                    className={`${styles.ratingToggleChip} ${
-                      form.missingRottenTomatoesPopcornmeter
-                        ? btn.btnPrimary
-                        : btn.btnSecondary
-                    }`}
-                    aria-pressed={form.missingRottenTomatoesPopcornmeter}
-                    onClick={toggleMissingRatingField(
-                      'missingRottenTomatoesPopcornmeter',
-                    )}
+                  <PillToggle
+                    pressed={form.missingRottenTomatoesPopcornmeter}
+                    onChange={() =>
+                      toggleMissingRatingField(
+                        'missingRottenTomatoesPopcornmeter',
+                      )()
+                    }
                   >
                     Missing Rotten Tomatoes Popcornmeter
-                  </button>
+                  </PillToggle>
                 </div>
               </CollapsibleSection>
             </section>

@@ -974,7 +974,7 @@ describe('FRONTEND-124-AC-02: cardTint state applies a data-card-tint attribute'
     await screen.findByTestId('series-list')
 
     fireEvent.click(screen.getByRole('link', { name: /settings/i }))
-    fireEvent.click(await screen.findByLabelText(/tint cards/i))
+    fireEvent.click(await screen.findByRole('button', { name: /tint cards/i }))
 
     expect(document.documentElement.dataset.cardTint).toBeUndefined()
   })

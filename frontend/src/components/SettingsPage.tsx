@@ -33,6 +33,7 @@ import { NumberInput } from './NumberInput'
 import { SettingsSection } from './SettingsSection'
 import { FilterProfileManager } from './FilterProfileManager'
 import { InfoDisclosure } from './InfoDisclosure'
+import { PillToggle } from './PillToggle'
 import {
   AppearanceIcon,
   RefreshIcon,
@@ -420,15 +421,9 @@ export function SettingsPage({
             custom toggle-switch component (no such UI exists anywhere in
             this app today; see this spec's Design Decisions). */}
         <div className={styles.themeOption}>
-          <input
-            id="card-tint-toggle"
-            type="checkbox"
-            checked={cardTint}
-            onChange={(e) => setCardTint(e.target.checked)}
-          />
-          <label htmlFor="card-tint-toggle">
+          <PillToggle pressed={cardTint} onChange={setCardTint}>
             Tint cards with the active accent color
-          </label>
+          </PillToggle>
         </div>
       </SettingsSection>
 

@@ -26,6 +26,7 @@ import { useFilterProfileSelector } from '../hooks/useFilterProfileSelector'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
 import { CollapsibleSection } from './CollapsibleSection'
+import { PillToggle } from './PillToggle'
 import styles from './RecommendationControls.module.css'
 import btn from '../styles/buttons.module.css'
 import surface from '../styles/surfaces.module.css'
@@ -325,19 +326,14 @@ export function RecommendationFiltersBox({
                   applies includeAlreadyTracked identically regardless of
                   sourceMode, so this renders unconditionally, above the
                   mode-gated sections below. */}
-              <div className={styles.checkboxField}>
-                <label htmlFor="recommendation-include-already-tracked">
-                  Show series I already have
-                </label>
-                <input
-                  id="recommendation-include-already-tracked"
-                  type="checkbox"
-                  checked={state.includeAlreadyTracked}
-                  onChange={(e) =>
-                    updateState({ includeAlreadyTracked: e.target.checked })
-                  }
-                />
-              </div>
+              <PillToggle
+                pressed={state.includeAlreadyTracked}
+                onChange={(next) =>
+                  updateState({ includeAlreadyTracked: next })
+                }
+              >
+                Show series I already have
+              </PillToggle>
 
               {/* FRONTEND-129-AC-02: Saved Filters now renders first, before
                   any individual field, unconditionally -- disabled already
