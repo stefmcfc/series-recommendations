@@ -40,6 +40,7 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
+| `PillToggle` shared component extracted from `SearchFilter`'s existing Missing Ratings chips, consolidating 5 toggle call sites (Missing Ratings x4, Favourites Only, Tint Cards, Show series I already have) onto one implementation and visual treatment | — | `frontend_spec_139` | ⬜ Not started |
 
 ---
 
