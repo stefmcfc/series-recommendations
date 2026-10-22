@@ -91,6 +91,12 @@ files share the exact name `application.yml`), which surfaced that every Spock s
 `@ActiveProfiles("test")` is currently a no-op — no `application-test.yml` or `@Profile("test")` bean
 exists anywhere in the codebase for it to actually activate.
 
+2026-10-23 update: two candidates added during live review of `frontend_spec_138`/`frontend_spec_139`
+(the "show series I already have" toggle and its `PillToggle` styling follow-up) — a Settings-backed
+default for that toggle (reversing `frontend_spec_138`'s original session-only decision after the user
+found the control hard to relocate), and a Settings clarity pass starting with the "Keyword Suggestion
+Sort" control the user found unclear while looking for the first one.
+
 ---
 
 ## Candidates
@@ -603,4 +609,54 @@ scope is unchanged.
    keep the current ad hoc "fix what's found" posture.
 3. Whether the no-focus-trap dialog pattern above should be revisited as part of this audit or
    treated as an accepted, already-decided tradeoff each dialog's own spec already signed off on.
+
+### Settings-backed default for "Show series I already have" (persisted session-start value)
+
+Raised 2026-10-23 during live review of `frontend_spec_138`/`frontend_spec_139`. `frontend_spec_138`
+deliberately made this toggle session-only — defaulting to `false` every visit, never persisted — on
+the reasoning that it's an occasional sanity-check, not a standing preference, matching
+`RecommendationFiltersBox`'s other per-request-only fields (`minTmdbRating`, `excludeGenres`, etc.).
+Revisited after the user found the toggle hard to relocate in practice (it lives inside the
+collapsed-by-default "Recommendations Filters" sheet) and asked whether it should live in Settings
+instead — confirmed this isn't a reversal of the original reasoning so much as new information (lived
+discoverability friction) weighed against it. Decided: don't move the control itself, just let
+Settings supply its *default*.
+
+**Idea**: mirror the existing `watchRegion`/favourite-genres/favourite-keywords pattern exactly — a
+new `useLocalStorage`-backed field, edited in `SettingsPage.tsx`, that supplies
+`includeAlreadyTracked`'s *initial* value in `RecommendationControls.tsx`'s `ControlsState` the same
+way those other fields already seed their own `ControlsState` defaults today. The toggle itself stays
+exactly where it is (inside `RecommendationFiltersBox`'s "Recommendations Filters" sheet) and remains
+freely flippable within a session — only the value it starts at would come from this new persisted
+preference instead of always `false`.
+
+**Open questions for whoever designs this**: where in `SettingsPage.tsx` this new field should live
+(no existing section is an obvious fit — not really a "Recommendation Favourite," not an Appearance
+setting); and whether it should be folded into the Settings-clarity-pass candidate below if that one
+ends up touching the same file/section anyway.
+
+**Status**: Spec candidate, not yet designed.
+
+### Settings clarity pass — explain non-obvious controls' scope/effect (starting with Keyword Suggestion Sort)
+
+Raised 2026-10-23. The user found `SettingsPage.tsx`'s "Keyword Suggestion Sort" radiogroup (Most
+Common / Highest Rated) and its conditional "Minimum Series Count" field (`frontend_spec_133`) unclear
+on first read — neither the label nor its placement (inside the "Recommendation Favourites" section,
+right below the Favourite Genres picker) makes it obvious that this control only changes the *ordering
+of keyword suggestions* offered in every keyword autocomplete/type-ahead field app-wide (Custom
+Search's keyword picker, Exclude Keywords fields, etc.) — it has nothing to do with the Favourites
+pickers it's grouped under, and nothing to do with recommendation filtering/scoring directly.
+
+**Idea**: this app already has a precedent for exactly this problem. `frontend_spec_131` added
+`InfoDisclosure` click-to-expand explainer boxes to 7 other non-obvious Settings controls (Skip
+Threshold Override, Filter Profiles, Watch Region, Sort By's Best Match/Most Recommended pair, Min
+Vote Count, Min Avg Blended Rating, Min Rotten Tomatoes Popcornmeter) — "Keyword Suggestion Sort"/
+"Minimum Series Count" fits that exact profile and was simply missed. The user explicitly raised this
+as possibly needing "another sweep" rather than a single fix, i.e. a fresh audit of the whole Settings
+page for similar unexplained-scope gaps, not an assumption that this is the only one `frontend_spec_131`
+missed.
+
+**Status**: Spec candidate, not yet designed. Scope deliberately left open for whoever picks this up:
+a single-control addition (just Keyword Suggestion Sort) vs. a full Settings-page audit for similar
+gaps before writing any spec.
 
