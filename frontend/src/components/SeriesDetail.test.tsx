@@ -21,6 +21,16 @@ const mockAcknowledgeNewContent = vi.mocked(seriesApi.acknowledgeNewContent)
 const mockGetWatchProviders = vi.mocked(seriesApi.getWatchProviders)
 const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 
+// FRONTEND-138-AC-05: RecommendationCard (rendered via the Recommendations
+// modal below) now calls useNavigate() unconditionally -- real useNavigate
+// stays wired for the MemoryRouter-wrapped renders already in this file
+// (spread actual), it's just resolvable without a Router ancestor too.
+vi.mock('react-router-dom', async () => {
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => vi.fn() }
+})
+
 function makeSeries(overrides: Partial<Series> = {}): Series {
   return {
     id: 'abc-123',
@@ -75,6 +85,9 @@ function makeRecommendation(
     totalSourceCount: 0,
     originCountry: null,
     tmdbId: 1234,
+    trackedSeriesId: null,
+    trackedStatus: null,
+    trackedPersonalRating: null,
     ...overrides,
   }
 }

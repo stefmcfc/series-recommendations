@@ -2857,6 +2857,18 @@ describe('FRONTEND-094-AC-11: valid Min Vote Count reaches the query', () => {
   })
 })
 
+describe('FRONTEND-138-AC-02: includeAlreadyTracked is only sent when checked', () => {
+  it('omits includeAlreadyTracked when the checkbox is unchecked', () => {
+    const query = buildQuery(initialState)
+    expect(query.includeAlreadyTracked).toBeUndefined()
+  })
+
+  it('includes includeAlreadyTracked: true when the checkbox is checked', () => {
+    const query = buildQuery({ ...initialState, includeAlreadyTracked: true })
+    expect(query.includeAlreadyTracked).toBe(true)
+  })
+})
+
 describe('FRONTEND-069-AC-01: excludeGenreFilter narrows the pool', () => {
   it('omits a series matching an excluded genre', () => {
     const series = [

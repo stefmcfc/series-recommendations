@@ -43,6 +43,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     discoverSortBy: 'vote_average.desc',
     sourceRankingStrategy: 'personalRatingThenDate',
     sourceRatingBlendSources: ['imdb', 'tmdb'],
+    includeAlreadyTracked: false,
     ...overrides,
   }
 }

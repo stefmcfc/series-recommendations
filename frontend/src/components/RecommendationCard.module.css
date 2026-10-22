@@ -133,3 +133,13 @@
   padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
 }
+
+/* FRONTEND-138-AC-04/05: already-tracked status/rating badge, replacing
+   Mark Watched/Add to List/Ignore -- styled as a button (not a bare span)
+   since clicking it navigates to the series' own detail page. */
+.trackedBadge {
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}

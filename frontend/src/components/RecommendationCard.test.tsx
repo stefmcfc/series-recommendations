@@ -13,6 +13,17 @@ const mockGetRecommendationDetails = vi.mocked(
   seriesApi.getRecommendationDetails,
 )
 
+// FRONTEND-138-AC-05: mirrors GenreDetailModal.test.tsx/
+// KeywordDetailModal.test.tsx's own useNavigate mock -- the real hook is
+// entirely replaced, so no <MemoryRouter> wrapper is needed around any of
+// this file's existing render() calls.
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 function makeRecommendation(
   overrides: Partial<Recommendation> = {},
 ): Recommendation {
@@ -30,6 +41,9 @@ function makeRecommendation(
     totalSourceCount: 0,
     originCountry: null,
     tmdbId: 1234,
+    trackedSeriesId: null,
+    trackedStatus: null,
+    trackedPersonalRating: null,
     ...overrides,
   }
 }
@@ -247,5 +261,92 @@ describe('FRONTEND-105-AC-07: recommendation cards compose the shared surface pr
       />,
     )
     expect(screen.getByText('Fargo').closest(`.${surface.card}`)).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-138-AC-04: already-tracked card rendering', () => {
+  it('shows a status/rating badge instead of Mark Watched/Add to List/Ignore', () => {
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({
+          trackedSeriesId: 'series-1',
+          trackedStatus: 'WATCHING',
+          trackedPersonalRating: 8,
+        })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+
+    const badge = screen.getByTestId('tracked-badge')
+    expect(badge).toHaveTextContent('WATCHING')
+    expect(badge).toHaveTextContent('8')
+    expect(
+      screen.queryByRole('button', { name: /mark as watched/i }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /add to list/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('ignore-btn')).not.toBeInTheDocument()
+    expect(screen.getByTestId('view-details-btn')).toBeInTheDocument()
+  })
+
+  it('omits the personal rating segment when trackedPersonalRating is null', () => {
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({
+          trackedSeriesId: 'series-1',
+          trackedStatus: 'BACKLOG',
+          trackedPersonalRating: null,
+        })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTestId('tracked-badge')).toHaveTextContent('BACKLOG')
+  })
+
+  it('shows the normal three action buttons when trackedSeriesId is null', () => {
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({ trackedSeriesId: null })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: /mark as watched/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /add to list/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('ignore-btn')).toBeInTheDocument()
+    expect(screen.queryByTestId('tracked-badge')).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-138-AC-05: tracked badge navigation', () => {
+  it('navigates to the series detail route when clicked', () => {
+    render(
+      <RecommendationCard
+        recommendation={makeRecommendation({
+          trackedSeriesId: 'series-42',
+          trackedStatus: 'COMPLETED',
+          trackedPersonalRating: 9,
+        })}
+        onMarkWatched={vi.fn()}
+        onAddToList={vi.fn()}
+        onIgnore={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('tracked-badge'))
+
+    expect(mockNavigate).toHaveBeenCalledWith('/my-series/view/series-42')
   })
 })

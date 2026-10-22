@@ -128,6 +128,11 @@ function buildRecommendationParams(
     'sourceRatingBlendSources',
     query.sourceRatingBlendSources,
   )
+  // FRONTEND-138-AC-02/SERIES-071: sent only when explicitly true -- mirrors
+  // buildNameStatsParams' onlyCompleted check (addIfPresent's `!= null` would
+  // also let a `false` value through, which the query builder never produces
+  // but this stays explicit to match the "absent means no override" contract).
+  if (query.includeAlreadyTracked === true) params.includeAlreadyTracked = true
   return params
 }
 
