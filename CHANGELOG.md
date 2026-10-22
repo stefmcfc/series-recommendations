@@ -8,6 +8,8 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.73.0] - 2026-10-22
+
 ### Added
 
 - Backend: `GET /api/v1/series/recommendations` accepts an opt-in `includeAlreadyTracked` flag that surfaces already-tracked candidates (status/personal rating attached) instead of always silently excluding them; already-ignored candidates remain excluded regardless (`series_spec_071`).
