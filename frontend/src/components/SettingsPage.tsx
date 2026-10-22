@@ -420,7 +420,7 @@ export function SettingsPage({
             choice like the two radiogroups above -- a plain checkbox, not a
             custom toggle-switch component (no such UI exists anywhere in
             this app today; see this spec's Design Decisions). */}
-        <div className={styles.themeOption}>
+        <div className={`${styles.themeOption} ${styles.cardTintRow}`}>
           <PillToggle pressed={cardTint} onChange={setCardTint}>
             Tint cards with the active accent color
           </PillToggle>
