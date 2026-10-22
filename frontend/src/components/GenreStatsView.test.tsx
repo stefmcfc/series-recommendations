@@ -103,7 +103,7 @@ describe('FRONTEND-137-AC-03: GenreStatsView wires genreFavourites', () => {
     render(<GenreStatsViewHarness />)
     await screen.findByText('Drama')
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /Favourites Only/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Favourites Only/i }))
     expect(screen.queryByText('Drama')).not.toBeInTheDocument()
     expect(screen.getByText('Comedy')).toBeInTheDocument()
   })

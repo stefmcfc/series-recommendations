@@ -8,6 +8,18 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.74.0] - 2026-10-23
+
+### Added
+
+- Frontend: new shared `PillToggle` component — a pill-shaped `<button aria-pressed>` extracted from `SearchFilter`'s existing Missing Ratings chip styling (`frontend_spec_139`).
+
+### Changed
+
+- Frontend: `SearchFilter`'s four Missing Ratings chips now render via the shared `PillToggle` component instead of their own inline markup — same look and behavior, one implementation instead of a bespoke one (`frontend_spec_139`).
+- Frontend: `NameStatsTable`'s "Favourites Only" control, `SettingsPage`'s "Tint cards with the active accent color" control, and `RecommendationFiltersBox`'s "Show series I already have" control now render as `PillToggle` pills instead of checkboxes, for visual consistency with the Missing Ratings chips (`frontend_spec_139`).
+- Frontend: `SettingsPage`'s "Tint cards" pill now has margin separating it from the accent-color radiogroup above it — previously zero gap, unnoticeable with the old low-profile checkbox but visibly cramped once it became the larger `PillToggle` pill (`frontend_spec_139`, live-review follow-up).
+
 ## [3.73.0] - 2026-10-22
 
 ### Added

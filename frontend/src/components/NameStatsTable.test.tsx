@@ -484,6 +484,22 @@ describe('FRONTEND-136-AC-01: favourite star indicator', () => {
 })
 
 describe('FRONTEND-136-AC-03: Favourites Only filter', () => {
+  it('renders as a button with aria-pressed, not a checkbox', async () => {
+    const fetchStats = vi.fn().mockResolvedValue([])
+    render(
+      <FavouritesAndDetailHarness
+        fetchStats={fetchStats}
+        favouriteNames={['Comedy']}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: 'Favourites Only' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.queryByRole('checkbox', { name: /Favourites Only/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('narrows rows to favourites only when checked, client-side', async () => {
     const stats = [
       {
@@ -508,12 +524,19 @@ describe('FRONTEND-136-AC-03: Favourites Only filter', () => {
     )
     expect(await screen.findByText('heist')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /Favourites Only/i }))
+    const favouritesOnlyToggle = screen.getByRole('button', {
+      name: /Favourites Only/i,
+    })
+    expect(favouritesOnlyToggle).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(favouritesOnlyToggle)
+    expect(favouritesOnlyToggle).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByText('heist')).not.toBeInTheDocument()
     expect(screen.getByText('time travel')).toBeInTheDocument()
     expect(fetchStats).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /Favourites Only/i }))
+    fireEvent.click(favouritesOnlyToggle)
+    expect(favouritesOnlyToggle).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('heist')).toBeInTheDocument()
   })
 })

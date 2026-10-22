@@ -29,6 +29,17 @@
   cursor: pointer;
 }
 
+/* The Tint Cards PillToggle sits directly below the two theme/accent-color
+   radiogroups with no container margin between them (each is a plain
+   sibling <div>). A radio+label pair's thin inline height made that zero
+   gap unnoticeable; PillToggle's larger, bordered pill made it read as
+   cramped once it replaced the old checkbox here -- this margin is sized to
+   visually separate "pick one" controls above from the on/off toggle below,
+   not to loosen .themeOption's own tight within-row spacing. */
+.cardTintRow {
+  margin-top: 0.875rem;
+}
+
 /* FRONTEND-110-AC-09: mirrors FilterProfileAreaGroup.module.css's .summary
    divider convention -- same token, same one-line-border shape -- rather
    than inventing a new visual treatment. */

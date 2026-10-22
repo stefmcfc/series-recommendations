@@ -635,19 +635,10 @@
   font-size: 0.9375rem;
 }
 
-/* FRONTEND-138-AC-01: mirrors SeriesFormFields.module.css's own
-   .checkboxField exactly -- same label/input layout convention for a
-   standalone checkbox field, kept here since this box doesn't share that
-   component's stylesheet. */
-.checkboxField {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.checkboxField label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-h);
-}
+/* FRONTEND-139-AC-06: the "Show series I already have" checkbox this rule
+   styled moved to the shared PillToggle component (see
+   RecommendationFiltersBox.tsx), which carries its own geometry -- no local
+   class needed here anymore. SeriesFormFields.module.css/
+   AddSeriesForm.module.css/EditSeriesForm.module.css each define their own
+   separate, unrelated .checkboxField class and are unaffected by this
+   removal. */

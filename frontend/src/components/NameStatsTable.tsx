@@ -7,6 +7,7 @@ import { InfoDisclosure } from './InfoDisclosure'
 import { SavedFiltersList } from './SavedFiltersList'
 import { FilterProfileActions } from './FilterProfileActions'
 import { FavouritesIcon } from './SettingsIcons'
+import { PillToggle } from './PillToggle'
 import styles from './NameStatsTable.module.css'
 import sharedStyles from './RecommendationControls.module.css'
 
@@ -171,14 +172,9 @@ export function NameStatsTable({
       <h2 className={styles.heading}>{heading}</h2>
 
       {favouriteNames && (
-        <label className={styles.favouritesOnlyLabel}>
-          <input
-            type="checkbox"
-            checked={favouritesOnly}
-            onChange={(e) => setFavouritesOnly(e.target.checked)}
-          />{' '}
+        <PillToggle pressed={favouritesOnly} onChange={setFavouritesOnly}>
           Favourites Only
-        </label>
+        </PillToggle>
       )}
 
       <div className={sharedStyles.filtersSection}>

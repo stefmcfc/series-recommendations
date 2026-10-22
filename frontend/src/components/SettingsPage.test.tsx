@@ -1402,15 +1402,15 @@ describe('FRONTEND-124-AC-03: card tint checkbox in Settings', () => {
       />,
     )
 
-    const checkbox = screen.getByLabelText(/tint cards/i)
-    expect(checkbox).not.toBeChecked()
+    const toggle = screen.getByRole('button', { name: /tint cards/i })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
 
-    fireEvent.click(checkbox)
+    fireEvent.click(toggle)
 
     expect(setCardTint).toHaveBeenCalledWith(true)
   })
 
-  it('renders checked when cardTint is true', () => {
+  it('renders pressed when cardTint is true', () => {
     render(
       <SettingsPage
         theme="system"
@@ -1422,7 +1422,10 @@ describe('FRONTEND-124-AC-03: card tint checkbox in Settings', () => {
       />,
     )
 
-    expect(screen.getByLabelText(/tint cards/i)).toBeChecked()
+    expect(screen.getByRole('button', { name: /tint cards/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 })
 

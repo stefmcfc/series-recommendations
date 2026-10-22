@@ -121,18 +121,11 @@
   background: var(--social-bg);
 }
 
-/* FRONTEND-136-AC-01/03/04: favourite star, "Favourites Only" checkbox, and
-   the optional clickable name button -- all new, unused unless
-   favouriteNames/onOpenDetail are provided (Keywords tab only). */
-.favouritesOnlyLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-  color: var(--text);
-  cursor: pointer;
-}
-
+/* FRONTEND-136-AC-01/04: favourite star and the optional clickable name
+   button -- all new, unused unless favouriteNames/onOpenDetail are provided
+   (Keywords tab only). FRONTEND-139-AC-04: the "Favourites Only" control
+   itself moved to the shared PillToggle component (see NameStatsTable.tsx),
+   which carries its own geometry -- no local class needed here anymore. */
 .favouriteStar {
   display: inline-flex;
   width: 0.9rem;
