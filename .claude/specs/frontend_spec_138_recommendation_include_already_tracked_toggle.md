@@ -1,6 +1,6 @@
 # Frontend Spec 138: "Show Series I Already Have" Recommendations Toggle
 
-**Status**: Not started
+**Status**: Complete
 **Priority**: P3
 **Depends on**: `series_spec_071_recommendation_include_already_tracked.md` (backend flag + response
 fields this spec consumes)
@@ -184,8 +184,8 @@ it('FRONTEND-138-AC-05: clicking the tracked badge navigates to the series detai
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-138-AC-01: `ControlsState.includeAlreadyTracked` checkbox, default false
-- [ ] FRONTEND-138-AC-02: sent only when true, omitted otherwise
-- [ ] FRONTEND-138-AC-03: `Recommendation` gains the three tracked-* fields
-- [ ] FRONTEND-138-AC-04: tracked card shows status/rating badge instead of the 3 normal actions
-- [ ] FRONTEND-138-AC-05: badge click navigates to `/my-series/view/:id`
+- [x] FRONTEND-138-AC-01: `ControlsState.includeAlreadyTracked` checkbox, default false
+- [x] FRONTEND-138-AC-02: sent only when true, omitted otherwise
+- [x] FRONTEND-138-AC-03: `Recommendation` gains the three tracked-* fields
+- [x] FRONTEND-138-AC-04: tracked card shows status/rating badge instead of the 3 normal actions
+- [x] FRONTEND-138-AC-05: badge click navigates to `/my-series/view/:id`

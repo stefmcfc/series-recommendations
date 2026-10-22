@@ -894,6 +894,31 @@ describe('FRONTEND-132-AC-05: seriesApi forwards the new params', () => {
 })
 
 // ---------------------------------------------------------------------------
+// FRONTEND-138-AC-02/SERIES-071: getRecommendations wires includeAlreadyTracked
+// ---------------------------------------------------------------------------
+describe('FRONTEND-138-AC-02: getRecommendations includeAlreadyTracked', () => {
+  it('includes includeAlreadyTracked: true when set', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ includeAlreadyTracked: true })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: { includeAlreadyTracked: true },
+    })
+  })
+
+  it('omits includeAlreadyTracked entirely when false/unset', async () => {
+    client.get.mockResolvedValue({ data: { data: [], count: 0 } })
+
+    await seriesApi.getRecommendations({ includeAlreadyTracked: false })
+
+    expect(client.get).toHaveBeenCalledWith('/series/recommendations', {
+      params: {},
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
 // FRONTEND-014-AC-01: getGenreOptions()
 // ---------------------------------------------------------------------------
 describe('FRONTEND-014-AC-01: getGenreOptions', () => {

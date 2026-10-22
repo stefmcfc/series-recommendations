@@ -320,6 +320,25 @@ export function RecommendationFiltersBox({
             </p>
 
             <div className={styles.sheetBody} data-testid="filters-body">
+              {/* FRONTEND-138-AC-01/SERIES-071: one shared toggle across every
+                  sourceMode (not gated by isCustomSearch) -- the backend
+                  applies includeAlreadyTracked identically regardless of
+                  sourceMode, so this renders unconditionally, above the
+                  mode-gated sections below. */}
+              <div className={styles.checkboxField}>
+                <label htmlFor="recommendation-include-already-tracked">
+                  Show series I already have
+                </label>
+                <input
+                  id="recommendation-include-already-tracked"
+                  type="checkbox"
+                  checked={state.includeAlreadyTracked}
+                  onChange={(e) =>
+                    updateState({ includeAlreadyTracked: e.target.checked })
+                  }
+                />
+              </div>
+
               {/* FRONTEND-129-AC-02: Saved Filters now renders first, before
                   any individual field, unconditionally -- disabled already
                   handles the Custom Search case. */}

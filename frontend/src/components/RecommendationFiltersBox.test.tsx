@@ -42,6 +42,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     discoverSortBy: 'vote_average.desc',
     sourceRankingStrategy: 'personalRatingThenDate',
     sourceRatingBlendSources: ['imdb', 'tmdb'],
+    includeAlreadyTracked: false,
     ...overrides,
   }
 }
@@ -681,5 +682,41 @@ describe('FRONTEND-107-AC-12: applying a profile sets minVoteCountTouched', () =
         minVoteCountTouched: true,
       }),
     )
+  })
+})
+
+describe('FRONTEND-138-AC-01: already-tracked toggle', () => {
+  it('renders unchecked by default and toggles on click', () => {
+    const { updateState } = renderBox()
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+
+    const checkbox = screen.getByLabelText('Show series I already have')
+    expect(checkbox).not.toBeChecked()
+
+    fireEvent.click(checkbox)
+
+    expect(updateState).toHaveBeenCalledWith({ includeAlreadyTracked: true })
+  })
+
+  it('renders checked when includeAlreadyTracked is true', () => {
+    renderBox({ state: makeState({ includeAlreadyTracked: true }) })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters/i }),
+    )
+
+    expect(screen.getByLabelText('Show series I already have')).toBeChecked()
+  })
+
+  it('renders the checkbox regardless of isCustomSearch', () => {
+    renderBox({ isCustomSearch: true })
+    fireEvent.click(
+      screen.getByRole('button', { name: /^recommendations filters$/i }),
+    )
+
+    expect(
+      screen.getByLabelText('Show series I already have'),
+    ).toBeInTheDocument()
   })
 })

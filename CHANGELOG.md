@@ -8,6 +8,19 @@ versioned together as one app.
 
 ## [Unreleased]
 
+## [3.73.0] - 2026-10-22
+
+### Added
+
+- Backend: `GET /api/v1/series/recommendations` accepts an opt-in `includeAlreadyTracked` flag that surfaces already-tracked candidates (status/personal rating attached) instead of always silently excluding them; already-ignored candidates remain excluded regardless (`series_spec_071`).
+- Frontend: Discover/Use My Series filters gain a "Show series I already have" checkbox; a matched result shows a status/rating badge in place of the Mark Watched/Add to List/Ignore actions, and clicking it navigates to that series' own detail page (`frontend_spec_138`).
+- Frontend: an already-tracked `RecommendationCard` is now also visually distinguished by an accent-colored left border and an "In My Series" eyebrow tag above the title, in addition to the status/rating badge (`frontend_spec_138`, live-review follow-up).
+- Frontend: an already-tracked `RecommendationCard`'s status/rating badge now renders the personal rating as stars (`StarRating`, matching `SeriesList`'s own convention) instead of a raw number (`frontend_spec_138`, live-review follow-up).
+
+### Fixed
+
+- Frontend: `NameStatsTable`'s name-link button now uses `var(--accent)` instead of `var(--link, #2563eb)` — `--link` was never a defined token anywhere in `index.css`, so the button always silently fell back to the hardcoded blue regardless of theme/accent; it's now actually theme-aware.
+
 ## [3.72.0] - 2026-10-20
 
 ### Added

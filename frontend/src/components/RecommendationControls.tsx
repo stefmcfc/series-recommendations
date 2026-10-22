@@ -260,6 +260,12 @@ export interface ControlsState {
     | 'personalRatingThenCustomBlend'
     | 'customBlendThenPersonalRating'
   sourceRatingBlendSources: string[]
+  // FRONTEND-138-AC-01/SERIES-071: one shared toggle across every sourceMode
+  // (not per-panel) -- the backend applies includeAlreadyTracked identically
+  // regardless of sourceMode, so a single RecommendationFiltersBox field is
+  // sufficient. Not persisted to localStorage -- defaults to false every
+  // session, same as minTmdbRating/excludeGenresSelected/etc above.
+  includeAlreadyTracked: boolean
 }
 
 // FRONTEND-033-AC-03: each mode's default matches its current implicit
@@ -327,6 +333,7 @@ export const initialState: ControlsState = {
   // controls sees no behavior change from before this spec.
   sourceRankingStrategy: 'personalRatingThenDate',
   sourceRatingBlendSources: ['imdb', 'tmdb'],
+  includeAlreadyTracked: false,
 }
 
 // FRONTEND-042: shared by both tab tiers' change handlers (top-level
@@ -530,6 +537,11 @@ function applyExcludeAndMiscFilters(
   // state slot.
   if (state.countriesSelected.length > 0)
     query.countries = state.countriesSelected
+
+  // FRONTEND-138-AC-02/SERIES-071: sent only when the checkbox is checked --
+  // omitted (not sent as false) otherwise, matching this function's own
+  // array-field convention just above.
+  if (state.includeAlreadyTracked) query.includeAlreadyTracked = true
 }
 
 // Cosmetic pass (2026-08-27, no spec): title | (year) | country - status,

@@ -39,6 +39,7 @@ function makeState(overrides: Partial<ControlsState> = {}): ControlsState {
     discoverSortBy: 'popularity.desc',
     sourceRankingStrategy: 'personalRatingThenDate',
     sourceRatingBlendSources: ['imdb', 'tmdb'],
+    includeAlreadyTracked: false,
     ...overrides,
   }
 }

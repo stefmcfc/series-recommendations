@@ -180,7 +180,15 @@ public interface SeriesRecommendationControllerApi {
                 + "popcornmeter -- the rating sources blended into the Custom Rating Blend used "
                 + "by the two customBlend* sourceRankingStrategy values.",
                 example = "imdb,tmdb")
-            @RequestParam(required = false) List<String> sourceRatingBlendSources);
+            @RequestParam(required = false) List<String> sourceRatingBlendSources,
+            @Parameter(description = "true bypasses only the already-tracked half of the "
+                + "already-added/already-ignored exclusion check, surfacing a candidate the "
+                + "user already tracks (any status) with its trackedSeriesId/trackedStatus/"
+                + "trackedPersonalRating populated; already-ignored candidates stay excluded "
+                + "regardless. Absent/false behaves identically to today (already-tracked "
+                + "candidates excluded). Applies across every sourcing mode.",
+                example = "true")
+            @RequestParam(required = false) Boolean includeAlreadyTracked);
 
     @Operation(summary = "On-demand TMDB keyword lookup for a single recommendation candidate",
         description = "On-demand lookup, deliberately not folded into GET "

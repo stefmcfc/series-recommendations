@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Recommendation } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
 import { formatCountryNames } from '../utils/countryName'
 import { RecommendationDetailModal } from './RecommendationDetailModal'
+import { StarRating } from './StarRating'
 import styles from './RecommendationCard.module.css'
 import btn from '../styles/buttons.module.css'
 import surface from '../styles/surfaces.module.css'
@@ -43,12 +45,23 @@ export function RecommendationCard({
 }: RecommendationCardProps) {
   const [posterError, setPosterError] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const navigate = useNavigate()
 
   const r = recommendation
 
+  // FRONTEND-138-AC-05/SERIES-071: the badge itself is the navigation
+  // control -- the rest of the card (poster, title, overview) stays inert to
+  // clicking, matching every other card on this page today (this spec's
+  // Design Decisions).
+  const handleTrackedBadgeClick = () => {
+    if (r.trackedSeriesId !== null) {
+      void navigate(`/my-series/view/${r.trackedSeriesId}`)
+    }
+  }
+
   return (
     <li
-      className={`${styles.card} ${surface.card}`}
+      className={`${styles.card} ${surface.card} ${r.trackedSeriesId !== null ? styles.trackedCard : ''}`}
       data-testid="recommendation-card"
     >
       <div className={styles.thumbnail}>
@@ -62,6 +75,11 @@ export function RecommendationCard({
         )}
       </div>
       <div className={styles.cardBody}>
+        {r.trackedSeriesId !== null && (
+          <span className={styles.trackedEyebrow} data-testid="tracked-eyebrow">
+            In My Series
+          </span>
+        )}
         <div className={styles.cardHeader}>
           <h3 className={styles.title}>{r.title}</h3>
           {r.year !== null && <span className={styles.year}>{r.year}</span>}
@@ -91,29 +109,50 @@ export function RecommendationCard({
         )}
 
         <div className={styles.cardActions}>
-          <button
-            type="button"
-            className={`${styles.markWatchedButton} ${btn.btnPrimary}`}
-            onClick={() => onMarkWatched(r)}
-          >
-            Mark as Watched
-          </button>
-          <button
-            type="button"
-            className={`${styles.addToListButton} ${btn.btnSecondary}`}
-            onClick={() => onAddToList(r)}
-          >
-            Add to List
-          </button>
-          <button
-            type="button"
-            className={`${styles.ignoreButton} ${btn.btnSecondary}`}
-            data-testid="ignore-btn"
-            disabled={ignoring}
-            onClick={() => onIgnore(r)}
-          >
-            Ignore
-          </button>
+          {r.trackedSeriesId !== null ? (
+            // FRONTEND-138-AC-04/SERIES-071: already-tracked result -- the
+            // three actions that assume "you don't have this yet" (Mark
+            // Watched, Add to List, Ignore) are replaced by a status/rating
+            // badge; View Details stays present unconditionally (this spec's
+            // Design Decisions).
+            <button
+              type="button"
+              className={`${styles.trackedBadge} ${btn.btnSecondary}`}
+              data-testid="tracked-badge"
+              onClick={handleTrackedBadgeClick}
+            >
+              {r.trackedStatus}
+              {r.trackedPersonalRating !== null && (
+                <StarRating value={r.trackedPersonalRating} />
+              )}
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={`${styles.markWatchedButton} ${btn.btnPrimary}`}
+                onClick={() => onMarkWatched(r)}
+              >
+                Mark as Watched
+              </button>
+              <button
+                type="button"
+                className={`${styles.addToListButton} ${btn.btnSecondary}`}
+                onClick={() => onAddToList(r)}
+              >
+                Add to List
+              </button>
+              <button
+                type="button"
+                className={`${styles.ignoreButton} ${btn.btnSecondary}`}
+                data-testid="ignore-btn"
+                disabled={ignoring}
+                onClick={() => onIgnore(r)}
+              >
+                Ignore
+              </button>
+            </>
+          )}
           <button
             type="button"
             className={`${styles.viewDetailsButton} ${btn.btnSecondary}`}

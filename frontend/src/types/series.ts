@@ -235,6 +235,14 @@ export interface Recommendation {
   totalSourceCount: number
   originCountry: string | null
   tmdbId: number
+  // FRONTEND-138-AC-03/SERIES-071: populated only when this result matches a
+  // series already tracked AND the request set includeAlreadyTracked=true --
+  // null for every ordinary (untracked) result, and for every result at all
+  // when the flag is unset/false. Check trackedSeriesId != null rather than
+  // adding a separate boolean (mirrors the backend DTO exactly).
+  trackedSeriesId: string | null
+  trackedStatus: SeriesStatus | null
+  trackedPersonalRating: number | null
 }
 
 // FRONTEND-053/SERIES-036: mirrors the backend's CandidateDetailDto
@@ -300,6 +308,10 @@ export interface RecommendationQuery {
   // FRONTEND-132-AC-05/SERIES-068: comma-joined by buildRecommendationParams,
   // mirroring genres/keywords/countries' existing array convention.
   sourceRatingBlendSources?: string[]
+  // FRONTEND-138-AC-02/SERIES-071: sent only when true (never `false`) --
+  // mirrors onlyCompleted's existing "absent means no override" convention
+  // on NameStatsOptions above, not a plain optional boolean passthrough.
+  includeAlreadyTracked?: boolean
 }
 
 export interface SearchCriteria {

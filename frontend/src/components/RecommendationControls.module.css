@@ -634,3 +634,20 @@
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
 }
+
+/* FRONTEND-138-AC-01: mirrors SeriesFormFields.module.css's own
+   .checkboxField exactly -- same label/input layout convention for a
+   standalone checkbox field, kept here since this box doesn't share that
+   component's stylesheet. */
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkboxField label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+}

@@ -6,6 +6,15 @@ import { seriesApi } from '../services/seriesApi'
 vi.mock('../services/seriesApi')
 const mockGetRecommendations = vi.mocked(seriesApi.getRecommendations)
 
+// FRONTEND-138-AC-05: RecommendationCard now calls useNavigate()
+// unconditionally -- mirrors RecommendationCard.test.tsx's own mock, no
+// <MemoryRouter> wrapper needed around this file's existing render() calls.
+vi.mock('react-router-dom', async () => {
+  const actual =
+    await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => vi.fn() }
+})
+
 function makeRecommendation(overrides = {}) {
   return {
     tmdbId: 70523,
@@ -21,6 +30,9 @@ function makeRecommendation(overrides = {}) {
     streamingProviders: [],
     sourceTitles: [],
     totalSourceCount: 0,
+    trackedSeriesId: null,
+    trackedStatus: null,
+    trackedPersonalRating: null,
     ...overrides,
   }
 }

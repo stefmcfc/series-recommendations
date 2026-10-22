@@ -41,6 +41,7 @@ public class RecommendationCriteria {
     private String region;
     private String sourceRankingStrategy;
     private List<String> sourceRatingBlendSources;
+    private Boolean includeAlreadyTracked;
 
     public RecommendationCriteria() {
         // Explicit no-arg constructor: fields are populated field-by-field via setters afterward.
@@ -176,6 +177,17 @@ public class RecommendationCriteria {
      */
     public List<String> getSourceRatingBlendSources() { return sourceRatingBlendSources; }
     public void setSourceRatingBlendSources(List<String> sourceRatingBlendSources) { this.sourceRatingBlendSources = sourceRatingBlendSources; }
+
+    /**
+     * {@code true} bypasses only the already-tracked half of {@code
+     * RecommendationDeduplicationService.accumulateCandidate}'s exclusion check (SERIES-071-
+     * AC-01/02) -- the already-ignored half stays absolute regardless (SERIES-071-AC-03).
+     * Absent/{@code null}/{@code false} all behave identically to today's existing behavior
+     * (already-tracked candidates excluded), matching this class's general "null means no
+     * override" convention.
+     */
+    public Boolean getIncludeAlreadyTracked() { return includeAlreadyTracked; }
+    public void setIncludeAlreadyTracked(Boolean includeAlreadyTracked) { this.includeAlreadyTracked = includeAlreadyTracked; }
 
     /**
      * {@code true} iff this request is directed by genre and/or keyword (TOOLING-003-AC-05) --
