@@ -8,6 +8,11 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Backend: `GET /api/v1/series/recommendations` accepts an opt-in `includeAlreadyTracked` flag that surfaces already-tracked candidates (status/personal rating attached) instead of always silently excluding them; already-ignored candidates remain excluded regardless (`series_spec_071`).
+- Frontend: Discover/Use My Series filters gain a "Show series I already have" checkbox; a matched result shows a status/rating badge in place of the Mark Watched/Add to List/Ignore actions, and clicking it navigates to that series' own detail page (`frontend_spec_138`).
+
 ## [3.72.0] - 2026-10-20
 
 ### Added
