@@ -271,7 +271,7 @@ describe('FRONTEND-138-AC-04: already-tracked card rendering', () => {
         recommendation={makeRecommendation({
           trackedSeriesId: 'series-1',
           trackedStatus: 'WATCHING',
-          trackedPersonalRating: 8,
+          trackedPersonalRating: 4,
         })}
         onMarkWatched={vi.fn()}
         onAddToList={vi.fn()}
@@ -281,7 +281,7 @@ describe('FRONTEND-138-AC-04: already-tracked card rendering', () => {
 
     const badge = screen.getByTestId('tracked-badge')
     expect(badge).toHaveTextContent('WATCHING')
-    expect(badge).toHaveTextContent('8')
+    expect(within(badge).getByLabelText('Personal rating')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /mark as watched/i }),
     ).not.toBeInTheDocument()
@@ -290,6 +290,9 @@ describe('FRONTEND-138-AC-04: already-tracked card rendering', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByTestId('ignore-btn')).not.toBeInTheDocument()
     expect(screen.getByTestId('view-details-btn')).toBeInTheDocument()
+    expect(screen.getByTestId('tracked-eyebrow')).toHaveTextContent(
+      'In My Series',
+    )
   })
 
   it('omits the personal rating segment when trackedPersonalRating is null', () => {
@@ -306,7 +309,9 @@ describe('FRONTEND-138-AC-04: already-tracked card rendering', () => {
       />,
     )
 
-    expect(screen.getByTestId('tracked-badge')).toHaveTextContent('BACKLOG')
+    const badge = screen.getByTestId('tracked-badge')
+    expect(badge).toHaveTextContent('BACKLOG')
+    expect(within(badge).queryByLabelText('Personal rating')).toBeNull()
   })
 
   it('shows the normal three action buttons when trackedSeriesId is null', () => {
@@ -327,6 +332,7 @@ describe('FRONTEND-138-AC-04: already-tracked card rendering', () => {
     ).toBeInTheDocument()
     expect(screen.getByTestId('ignore-btn')).toBeInTheDocument()
     expect(screen.queryByTestId('tracked-badge')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('tracked-eyebrow')).not.toBeInTheDocument()
   })
 })
 
@@ -337,7 +343,7 @@ describe('FRONTEND-138-AC-05: tracked badge navigation', () => {
         recommendation={makeRecommendation({
           trackedSeriesId: 'series-42',
           trackedStatus: 'COMPLETED',
-          trackedPersonalRating: 9,
+          trackedPersonalRating: 5,
         })}
         onMarkWatched={vi.fn()}
         onAddToList={vi.fn()}

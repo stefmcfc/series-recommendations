@@ -4,6 +4,7 @@ import type { Recommendation } from '../types/series'
 import { StreamingProviders } from './StreamingProviders'
 import { formatCountryNames } from '../utils/countryName'
 import { RecommendationDetailModal } from './RecommendationDetailModal'
+import { StarRating } from './StarRating'
 import styles from './RecommendationCard.module.css'
 import btn from '../styles/buttons.module.css'
 import surface from '../styles/surfaces.module.css'
@@ -60,7 +61,7 @@ export function RecommendationCard({
 
   return (
     <li
-      className={`${styles.card} ${surface.card}`}
+      className={`${styles.card} ${surface.card} ${r.trackedSeriesId !== null ? styles.trackedCard : ''}`}
       data-testid="recommendation-card"
     >
       <div className={styles.thumbnail}>
@@ -74,6 +75,11 @@ export function RecommendationCard({
         )}
       </div>
       <div className={styles.cardBody}>
+        {r.trackedSeriesId !== null && (
+          <span className={styles.trackedEyebrow} data-testid="tracked-eyebrow">
+            In My Series
+          </span>
+        )}
         <div className={styles.cardHeader}>
           <h3 className={styles.title}>{r.title}</h3>
           {r.year !== null && <span className={styles.year}>{r.year}</span>}
@@ -116,8 +122,9 @@ export function RecommendationCard({
               onClick={handleTrackedBadgeClick}
             >
               {r.trackedStatus}
-              {r.trackedPersonalRating !== null &&
-                ` • ${r.trackedPersonalRating}`}
+              {r.trackedPersonalRating !== null && (
+                <StarRating value={r.trackedPersonalRating} />
+              )}
             </button>
           ) : (
             <>
