@@ -11,6 +11,18 @@
   color: var(--text-h);
 }
 
+/* FRONTEND-140-AC-06: sibling row for an optional labelInfo (e.g.
+   InfoDisclosure) beside <label> -- never nested inside it, mirroring
+   NumberInput.module.css's own .labelRow (frontend_spec_131
+   FRONTEND-131-AC-03) for the identical reason: a <button> inside <label>
+   would also focus the associated <input> on click via the label's native
+   click-through behavior. */
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .container input {
   font: inherit;
   padding: 0.5rem 0.625rem;

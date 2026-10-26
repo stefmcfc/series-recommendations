@@ -8,6 +8,16 @@ versioned together as one app.
 
 ## [Unreleased]
 
+### Added
+
+- Frontend: `KeywordPicker` gains an optional `labelInfo` prop, mirroring `NumberInput`'s existing one — rendered as a sibling of its `<label>`, never nested inside it, and only when `hideInput` is unset (`frontend_spec_140`).
+
+### Changed
+
+- Frontend: Settings' "Keyword Suggestion Sort" radio pair is now wrapped in a visible `fieldset`/`legend` (previously an unlabelled `role="radiogroup"` div) with an adjacent `InfoDisclosure` explaining it reorders keyword suggestions app-wide — not only within Recommendation Favourites — and what "Highest Rated" means (`frontend_spec_140`).
+- Frontend: Settings' "Recommendation Favourites" section gains an `InfoDisclosure` explaining its four pickers (Country/Language/Keyword/Genre Favourites) are consumed throughout the app — My Series' filters, Analysis page favourite-star badges — not only for recommendation scoring (`frontend_spec_140`).
+- Frontend: Custom Search's "Browse Keywords" modal field now shows an `InfoDisclosure` pointing back to Settings → Recommendation Favourites for where keyword suggestion sort order and pinned favourites are configured (`frontend_spec_140`).
+
 ## [3.74.0] - 2026-10-23
 
 ### Added

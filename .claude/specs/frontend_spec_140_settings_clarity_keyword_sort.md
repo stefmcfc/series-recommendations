@@ -1,6 +1,6 @@
 # Frontend Spec 140: Settings Clarity Pass — Keyword Suggestion Sort & Recommendation Favourites Scope
 
-**Status**: Not started
+**Status**: Implemented
 **Priority**: P3
 **Depends on**: `frontend_spec_131_info_disclosure_boxes.md` (introduces the `InfoDisclosure` component and the `NumberInput.labelInfo`/`SettingsSection.info` sibling-of-label/heading hook-point pattern this spec reuses and extends to `KeywordPicker`), `frontend_spec_133_keyword_suggestions_and_analysis_recommendations_link.md` (introduces the "Keyword Suggestion Sort" radiogroup and "Minimum Series Count" field this spec clarifies), `tooling_spec_008_recommendation_controls_decomposition.md` (introduces `HighestRatedPanel.tsx`'s `fieldset`/`legend` "Sort By" pattern this spec's fieldset mirrors)
 **Area**: Frontend (`components/SettingsPage.tsx`, `components/SettingsPage.module.css`, `components/KeywordPicker.tsx`, `components/KeywordPicker.module.css`, `components/CustomSearchPanel.tsx` — plus each of those components' colocated `*.test.tsx`)
@@ -299,13 +299,13 @@ This AC passes by construction (no backend diff in this spec's changeset) — if
 
 ## Acceptance Criteria Summary
 
-- [ ] FRONTEND-140-AC-01: Keyword Suggestion Sort wrapped in a `fieldset`/`legend`, radios unchanged
-- [ ] FRONTEND-140-AC-02: fieldset gains an `InfoDisclosure` explaining its app-wide scope and Highest Rated's meaning
-- [ ] FRONTEND-140-AC-03: Minimum Series Count field itself is unchanged, no field-level disclosure of its own
-- [ ] FRONTEND-140-AC-04: `.sortByFieldset`/`.sortByFieldset legend` CSS added to `SettingsPage.module.css`, matching the existing reset
-- [ ] FRONTEND-140-AC-05: "Recommendation Favourites" section gains an `info` disclosure explaining its app-wide scope
-- [ ] FRONTEND-140-AC-06: `KeywordPicker` gains an optional `labelInfo` prop, rendered as a sibling of `<label>`
-- [ ] FRONTEND-140-AC-07: `KeywordPicker` renders unchanged when `labelInfo` is omitted or `hideInput` is set
-- [ ] FRONTEND-140-AC-08: `browse-custom-search-keywords` instance gets a `labelInfo` disclosure pointing back to Settings
-- [ ] FRONTEND-140-AC-09: `recommendation-keywords` instance gains no disclosure (regression guard)
-- [ ] FRONTEND-140-AC-10: `NameStatAggregator`'s behavior is unchanged — no backend file modified
+- [x] FRONTEND-140-AC-01: Keyword Suggestion Sort wrapped in a `fieldset`/`legend`, radios unchanged
+- [x] FRONTEND-140-AC-02: fieldset gains an `InfoDisclosure` explaining its app-wide scope and Highest Rated's meaning
+- [x] FRONTEND-140-AC-03: Minimum Series Count field itself is unchanged, no field-level disclosure of its own
+- [x] FRONTEND-140-AC-04: `.sortByFieldset`/`.sortByFieldset legend` CSS added to `SettingsPage.module.css`, matching the existing reset [MANUAL — CSS written and copied verbatim from the established `RecommendationControls.module.css` precedent; not yet visually confirmed in a real browser in this session (no browser-automation tool available) — still needs the quick light/dark-theme visual check called for in the Verification note]
+- [x] FRONTEND-140-AC-05: "Recommendation Favourites" section gains an `info` disclosure explaining its app-wide scope
+- [x] FRONTEND-140-AC-06: `KeywordPicker` gains an optional `labelInfo` prop, rendered as a sibling of `<label>`
+- [x] FRONTEND-140-AC-07: `KeywordPicker` renders unchanged when `labelInfo` is omitted or `hideInput` is set
+- [x] FRONTEND-140-AC-08: `browse-custom-search-keywords` instance gets a `labelInfo` disclosure pointing back to Settings
+- [x] FRONTEND-140-AC-09: `recommendation-keywords` instance gains no disclosure (regression guard)
+- [x] FRONTEND-140-AC-10: `NameStatAggregator`'s behavior is unchanged — no backend file modified

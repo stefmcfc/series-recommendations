@@ -501,6 +501,12 @@ export function SettingsPage({
       <SettingsSection
         title="Recommendation Favourites"
         icon={<FavouritesIcon />}
+        info={
+          <InfoDisclosure
+            label="About Recommendation Favourites"
+            description="Country, Language, Keyword, and Genre Favourites are used throughout the app, not only for recommendation scoring -- they also appear as pinned suggestions in Custom Search's and My Series' filter pickers, and as the favourite-star badges shown on the Analysis page's Keywords and Genres tabs."
+          />
+        }
       >
         <KeywordPicker
           id="settings-country-favourites"
@@ -564,12 +570,22 @@ export function SettingsPage({
         />
         {/* FRONTEND-133-AC-01: Keyword Suggestion Sort -- Most Common
             (default, pure frequency, unchanged pre-133 behavior) or Highest
-            Rated (rating-sorted, gated by the floor below). */}
-        <div
-          className={styles.themeOptions}
-          role="radiogroup"
-          aria-label="Keyword Suggestion Sort"
-        >
+            Rated (rating-sorted, gated by the floor below).
+            FRONTEND-140-AC-01: fieldset/legend, not an unlabelled
+            role="radiogroup" div -- mirrors HighestRatedPanel.tsx's "Sort
+            By" fieldset (no same-row heading/disclosure requirement here,
+            see this spec's Design Decisions). */}
+        <fieldset className={styles.sortByFieldset}>
+          <legend>Keyword Suggestion Sort</legend>
+          {/* FRONTEND-140-AC-02: a sibling of </legend>, never nested
+              inside it -- one disclosure covers both radios and the
+              Minimum Series Count field below (FRONTEND-140-AC-03),
+              mirroring the Sort By fieldset's single-disclosure-per-
+              fieldset precedent. */}
+          <InfoDisclosure
+            label="About Keyword Suggestion Sort"
+            description="Reorders keyword suggestions app-wide -- not only here, but also in Custom Search's Keywords field, every Exclude Keywords field, and the Favourite Keywords list above. Highest Rated sorts by each keyword's average rating across your tracked series, subject to the Minimum Series Count floor below; Most Common sorts by how often each keyword appears."
+          />
           <div className={styles.themeOption}>
             <input
               id="keyword-suggestion-sort-most-common"
@@ -596,7 +612,7 @@ export function SettingsPage({
               Highest Rated
             </label>
           </div>
-        </div>
+        </fieldset>
 
         {/* FRONTEND-133-AC-02: only rendered while Highest Rated is
             selected -- mirrors this file's existing Skip Threshold

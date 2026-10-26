@@ -29,6 +29,28 @@
   cursor: pointer;
 }
 
+/* FRONTEND-140-AC-04: resets the fieldset's default browser border/padding/
+   margin, and styles its legend -- copied from
+   RecommendationControls.module.css's own .sortByFieldset/.sortByFieldset
+   legend (HighestRatedPanel.tsx's "Sort By" fieldset) so this new fieldset
+   reads visually consistent with that established precedent. */
+.sortByFieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sortByFieldset legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-h);
+  padding: 0;
+}
+
 /* The Tint Cards PillToggle sits directly below the two theme/accent-color
    radiogroups with no container margin between them (each is a plain
    sibling <div>). A radio+label pair's thin inline height made that zero

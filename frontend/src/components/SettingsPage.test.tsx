@@ -97,6 +97,60 @@ describe('FRONTEND-133-AC-02: minimum series count field visibility', () => {
   })
 })
 
+describe('FRONTEND-140-AC-01: Keyword Suggestion Sort has a visible heading', () => {
+  it('renders a "Keyword Suggestion Sort" group heading reachable by role', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('group', { name: 'Keyword Suggestion Sort' }),
+    ).toBeInTheDocument()
+  })
+
+  it('still renders both radios, checked/unchecked as before', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(screen.getByRole('radio', { name: 'Most Common' })).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: 'Highest Rated' }),
+    ).not.toBeChecked()
+  })
+})
+
+describe('FRONTEND-140-AC-02: Keyword Suggestion Sort has an info disclosure', () => {
+  it('renders the disclosure button beside the fieldset legend', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }),
+    ).toBeInTheDocument()
+  })
+
+  it('explains the app-wide scope when opened', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }),
+    )
+    expect(screen.getByText(/app-wide/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-03: Minimum Series Count has no field-level disclosure of its own', () => {
+  it('renders the floor field with no "About Minimum Series Count" button', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(screen.getByRole('radio', { name: 'Highest Rated' }))
+    expect(screen.getByLabelText('Minimum Series Count')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /About Minimum Series Count/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-05: Recommendation Favourites has an info disclosure', () => {
+  it('renders the disclosure button beside the section heading', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Recommendation Favourites' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-133-AC-05: Favourite Keywords setting', () => {
   it('adds and persists a favourite keyword', async () => {
     mockGetKeywordStats.mockResolvedValue([
