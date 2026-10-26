@@ -21,6 +21,10 @@ import {
   DEFAULT_LANGUAGE_FAVOURITES,
   isCountryFavourites,
   isLanguageFavourites,
+  DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
+  DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
+  isKeywordSuggestionSortMode,
+  isKeywordSuggestionMinSeriesCount,
 } from './RecommendationControls'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
 import {
@@ -287,6 +291,20 @@ export function SearchFilter({
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
   )
+  // FRONTEND-140-AC-13: read-only here (Settings owns the setter) -- feeds
+  // the reactive keywordOptions fetch below so this field's suggestion
+  // order actually follows the Keyword Suggestion Sort setting, matching
+  // RecommendationControls.tsx's identical effect (FRONTEND-133-AC-04).
+  const [keywordSuggestionSortMode] = useLocalStorage(
+    'keywordSuggestionSortMode',
+    DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
+    isKeywordSuggestionSortMode,
+  )
+  const [keywordSuggestionMinSeriesCount] = useLocalStorage(
+    'keywordSuggestionMinSeriesCount',
+    DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
+    isKeywordSuggestionMinSeriesCount,
+  )
   // FRONTEND-073-AC-02: Title used to be this sheet's first field (and this
   // ref's focus target) -- now that it's lived on the My Series page itself
   // since frontend_spec_073, the Close button is the first focusable element
@@ -305,16 +323,29 @@ export function SearchFilter({
     }
   }, [isOpen])
 
+  // FRONTEND-140-AC-13: reactive to keywordSuggestionSortMode/
+  // keywordSuggestionMinSeriesCount, mirroring RecommendationControls.tsx's
+  // identical effect (FRONTEND-133-AC-04) and SettingsPage.tsx's
+  // (FRONTEND-140-AC-12) exactly -- the existing error-handling .catch() is
+  // preserved unchanged.
   useEffect(() => {
+    const options =
+      keywordSuggestionSortMode === 'highestRated'
+        ? {
+            sortBy: 'averageBlendedRating' as const,
+            sortDirection: 'desc' as const,
+            minSeriesCount: keywordSuggestionMinSeriesCount,
+          }
+        : undefined
     seriesApi
-      .getKeywordStats()
+      .getKeywordStats(options)
       .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
       .catch(() =>
         setKeywordOptionsError(
           'Failed to load keyword filter options. Please try again.',
         ),
       )
-  }, [])
+  }, [keywordSuggestionSortMode, keywordSuggestionMinSeriesCount])
 
   useEffect(() => {
     seriesApi

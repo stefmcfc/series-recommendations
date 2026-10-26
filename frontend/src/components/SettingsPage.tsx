@@ -176,18 +176,31 @@ export function SettingsPage({
     )
   // FRONTEND-133-AC-05 (point 2 of the implementation brief): there's no
   // static keyword catalog the way Country/Language have -- mirrors
-  // RecommendationControls.tsx's own identical getKeywordStats()-on-mount
-  // fetch, independently, rather than sharing state with it (this spec's
-  // Design Decisions: favourites data is independently re-read wherever
-  // needed).
+  // RecommendationControls.tsx's own identical getKeywordStats() fetch,
+  // independently, rather than sharing state with it (this spec's Design
+  // Decisions: favourites data is independently re-read wherever needed).
   const [keywordOptions, setKeywordOptions] = useState<string[]>([])
 
+  // FRONTEND-140-AC-12: reactive to keywordSuggestionSortMode/
+  // keywordSuggestionMinSeriesCount (already in scope above), mirroring
+  // RecommendationControls.tsx's identical effect (FRONTEND-133-AC-04)
+  // exactly -- this fetch feeds the Favourite Keywords picker immediately
+  // below the Keyword Suggestion Sort setting, so it needs to actually
+  // follow that setting for the setting's own "app-wide" copy to be true.
   useEffect(() => {
+    const options =
+      keywordSuggestionSortMode === 'highestRated'
+        ? {
+            sortBy: 'averageBlendedRating' as const,
+            sortDirection: 'desc' as const,
+            minSeriesCount: keywordSuggestionMinSeriesCount,
+          }
+        : undefined
     seriesApi
-      .getKeywordStats()
+      .getKeywordStats(options)
       .then((stats) => setKeywordOptions(stats.map((stat) => stat.name)))
       .catch(() => undefined)
-  }, [])
+  }, [keywordSuggestionSortMode, keywordSuggestionMinSeriesCount])
 
   // FRONTEND-137-AC-01: mirrors keywordOptions above -- genres also have no
   // static frontend catalog, only the backend's TmdbGenreTable, so this
@@ -532,6 +545,26 @@ export function SettingsPage({
           options={LANGUAGE_OPTIONS}
           reorderable
         />
+        {/* FRONTEND-137-AC-01: a fourth Recommendation Favourites picker,
+            identical in shape to Favourite Keywords below -- genres also
+            have no static frontend catalog, only seriesApi.getGenreOptions()
+            fetched on mount above.
+            FRONTEND-140-AC-11: rendered before Favourite Keywords (moved
+            from after it) so the picker whose suggestion order the Keyword
+            Suggestion Sort setting controls sits immediately adjacent to
+            that setting below. */}
+        <div
+          className={styles.favouritesDivider}
+          data-testid="favourites-divider"
+        />
+        <KeywordPicker
+          id="settings-genre-favourites"
+          label="Favourite Genres"
+          selected={genreFavourites}
+          onChange={setGenreFavourites}
+          options={genreOptions}
+          reorderable
+        />
         {/* FRONTEND-133-AC-05: a third Recommendation Favourites picker,
             identical in shape to Country/Language Favourites above -- see
             this spec's Design Decisions for why it lives in this section
@@ -546,22 +579,6 @@ export function SettingsPage({
           selected={keywordFavourites}
           onChange={setKeywordFavourites}
           options={keywordOptions}
-          reorderable
-        />
-        {/* FRONTEND-137-AC-01: a fourth Recommendation Favourites picker,
-            identical in shape to Favourite Keywords above -- genres also
-            have no static frontend catalog, only seriesApi.getGenreOptions()
-            fetched on mount above. */}
-        <div
-          className={styles.favouritesDivider}
-          data-testid="favourites-divider"
-        />
-        <KeywordPicker
-          id="settings-genre-favourites"
-          label="Favourite Genres"
-          selected={genreFavourites}
-          onChange={setGenreFavourites}
-          options={genreOptions}
           reorderable
         />
         <div
@@ -584,7 +601,7 @@ export function SettingsPage({
               fieldset precedent. */}
           <InfoDisclosure
             label="About Keyword Suggestion Sort"
-            description="Reorders keyword suggestions app-wide -- not only here, but also in Custom Search's Keywords field, every Exclude Keywords field, and the Favourite Keywords list above. Highest Rated sorts by each keyword's average rating across your tracked series, subject to the Minimum Series Count floor below; Most Common sorts by how often each keyword appears."
+            description="Reorders keyword suggestions app-wide -- not only here, but also in Custom Search's Keywords field, every Exclude Keywords field, My Series' own Keywords filter, and the Favourite Keywords list above. Highest Rated sorts by each keyword's average rating across your tracked series, subject to the Minimum Series Count floor below; Most Common sorts by how often each keyword appears."
           />
           <div className={styles.themeOption}>
             <input

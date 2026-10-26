@@ -151,6 +151,57 @@ describe('FRONTEND-140-AC-05: Recommendation Favourites has an info disclosure',
   })
 })
 
+describe('FRONTEND-140-AC-11: Recommendation Favourites field order', () => {
+  it('renders Favourite Genres before Favourite Keywords, immediately before the Sort fieldset', () => {
+    render(<SettingsPage {...defaultProps} />)
+    const genresLabel = screen.getByText('Favourite Genres')
+    const keywordsLabel = screen.getByText('Favourite Keywords')
+    // DOCUMENT_POSITION_FOLLOWING (4) means keywordsLabel comes after
+    // genresLabel in document order.
+    expect(
+      genresLabel.compareDocumentPosition(keywordsLabel) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-140-AC-12: Favourite Keywords options follow the sort setting', () => {
+  it('re-fetches with sortBy/minSeriesCount params when Highest Rated is selected', async () => {
+    localStorage.setItem(
+      'keywordSuggestionSortMode',
+      JSON.stringify('highestRated'),
+    )
+    localStorage.setItem('keywordSuggestionMinSeriesCount', JSON.stringify(3))
+    render(<SettingsPage {...defaultProps} />)
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenCalledWith({
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 3,
+      }),
+    )
+  })
+
+  it('fetches with no params when Most Common (default) is selected', async () => {
+    render(<SettingsPage {...defaultProps} />)
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenCalledWith(undefined),
+    )
+  })
+})
+
+describe('FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure names My Series too', () => {
+  it('mentions My Series in the opened description', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }),
+    )
+    expect(
+      screen.getByText(/Reorders keyword suggestions app-wide/),
+    ).toHaveTextContent(/My Series/i)
+  })
+})
+
 describe('FRONTEND-133-AC-05: Favourite Keywords setting', () => {
   it('adds and persists a favourite keyword', async () => {
     mockGetKeywordStats.mockResolvedValue([

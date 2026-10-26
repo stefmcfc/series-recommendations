@@ -2,14 +2,16 @@
 
 **Status**: Implemented
 **Priority**: P3
-**Depends on**: `frontend_spec_131_info_disclosure_boxes.md` (introduces the `InfoDisclosure` component and the `NumberInput.labelInfo`/`SettingsSection.info` sibling-of-label/heading hook-point pattern this spec reuses and extends to `KeywordPicker`), `frontend_spec_133_keyword_suggestions_and_analysis_recommendations_link.md` (introduces the "Keyword Suggestion Sort" radiogroup and "Minimum Series Count" field this spec clarifies), `tooling_spec_008_recommendation_controls_decomposition.md` (introduces `HighestRatedPanel.tsx`'s `fieldset`/`legend` "Sort By" pattern this spec's fieldset mirrors)
-**Area**: Frontend (`components/SettingsPage.tsx`, `components/SettingsPage.module.css`, `components/KeywordPicker.tsx`, `components/KeywordPicker.module.css`, `components/CustomSearchPanel.tsx` — plus each of those components' colocated `*.test.tsx`)
+**Depends on**: `frontend_spec_131_info_disclosure_boxes.md` (introduces the `InfoDisclosure` component and the `NumberInput.labelInfo`/`SettingsSection.info` sibling-of-label/heading hook-point pattern this spec reuses and extends to `KeywordPicker`), `frontend_spec_133_keyword_suggestions_and_analysis_recommendations_link.md` (introduces the "Keyword Suggestion Sort" radiogroup, "Minimum Series Count" field, and the `RecommendationControls.tsx` reactive-fetch pattern Requirement 6 extends to two more call sites), `tooling_spec_008_recommendation_controls_decomposition.md` (introduces `HighestRatedPanel.tsx`'s `fieldset`/`legend` "Sort By" pattern this spec's fieldset mirrors)
+**Area**: Frontend (`components/SettingsPage.tsx`, `components/SettingsPage.module.css`, `components/KeywordPicker.tsx`, `components/KeywordPicker.module.css`, `components/CustomSearchPanel.tsx`, `components/SearchFilter.tsx` — plus each of those components' colocated `*.test.tsx`)
 
 ## Overview
 
 `frontend_spec_131` added click-to-expand `InfoDisclosure` explainer boxes to seven non-obvious Settings controls, but missed an eighth: `SettingsPage.tsx`'s "Keyword Suggestion Sort" radiogroup has no visible heading at all today — only a screen-reader-only `aria-label`, so sighted users see two bare radio buttons under the Favourite Genres picker with no indication of what they control or that the effect reaches far beyond the "Recommendation Favourites" section they live in (they actually reorder keyword suggestions across every keyword field app-wide: Custom Search, Exclude Keywords fields, and the Favourite Keywords list immediately above them). A full audit of the rest of `SettingsPage.tsx` for the same "unexplained app-wide scope" problem found exactly one further gap: the "Recommendation Favourites" section's four pickers (Country/Language/Keyword/Genre Favourites) are themselves consumed well beyond recommendations — by My Series' own filter pickers and by the favourite-star badges on the Analysis page's Keywords/Genres tabs — which the section's name doesn't suggest. This spec fixes both gaps, purely presentationally: no backend change, and no change to `NameStatAggregator`'s actual sort/filter behavior.
 
 As a related, explicitly-requested follow-on, this spec also gives `KeywordPicker` the same `labelInfo` "hook point" `NumberInput` already has (`frontend_spec_131`), and wires it onto Custom Search's "Browse Keywords" modal field — the one `KeywordPicker` instance in `CustomSearchPanel.tsx` with a visible, non-`hideInput` label — pointing back to where the sort/favourites settings this spec clarifies actually live.
+
+**Requirement 6, added during live PR review of this spec's implementation (PR #279, not yet merged):** reviewing the shipped UI surfaced that the AC-02 `InfoDisclosure` copy's claim — that Keyword Suggestion Sort reorders suggestions "across every keyword field app-wide" — was not actually true. Two keyword-suggestion fetches never read `keywordSuggestionSortMode`/`keywordSuggestionMinSeriesCount` at all: `SettingsPage.tsx`'s own `keywordOptions` fetch (feeding the Favourite Keywords picker directly below the setting) and `SearchFilter.tsx`'s (feeding My Series' own "Keywords"/"Browse Keywords" fields) are both independent, mount-only, no-args calls to `seriesApi.getKeywordStats()`. `RecommendationFiltersBox.tsx` and `UseMySeriesPanel.tsx` were checked and are unaffected — both already share `RecommendationControls.tsx`'s reactive `keywordOptions` state, which does read the settings correctly. This is treated as completing `frontend_spec_133`'s already-stated intent (an app-wide setting) rather than a new feature, and is fixed in the same PR rather than a new spec, per explicit user direction during this review. A field reorder (Favourite Keywords moved beneath Favourite Genres, adjacent to the setting it affects) is bundled in for the same reason — it's what made the Favourite Keywords gap visible/obvious in the first place.
 
 ## Design Decisions
 
@@ -284,6 +286,119 @@ This AC passes by construction (no backend diff in this spec's changeset) — if
 
 ---
 
+## Requirement 6: The setting applies everywhere its own copy claims it does
+
+**User story**: As a user who just changed Keyword Suggestion Sort, I want every keyword-suggestion field in the app — including the Favourite Keywords picker right next to the setting, and My Series' own Keywords filter — to actually reflect my choice, not just the Custom Search fields that happened to already be wired.
+
+### FRONTEND-140-AC-11 [AUTO]
+**Statement**: In `SettingsPage.tsx`'s "Recommendation Favourites" section, the "Favourite Keywords" `KeywordPicker` (currently rendered before "Favourite Genres") shall be reordered to render immediately after "Favourite Genres" — i.e. Country Favourites, Language Favourites, Favourite Genres, Favourite Keywords, then the Keyword Suggestion Sort fieldset — so the picker whose suggestion order the setting controls sits adjacent to that setting. The existing `favouritesDivider` between each picker is preserved (moved along with its picker, not duplicated or dropped).
+
+**References**: `frontend/src/components/SettingsPage.tsx` lines ~537-560 (current Favourite Keywords / Favourite Genres blocks and their dividers, to be reordered; no prop changes to either `KeywordPicker`).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-140-AC-11: Recommendation Favourites field order', () => {
+  it('renders Favourite Genres before Favourite Keywords, immediately before the Sort fieldset', () => {
+    render(<SettingsPage {...defaultProps} />)
+    const labels = screen.getAllByText(/Favourites?$/).map((el) => el.textContent)
+    const genresIndex = labels.indexOf('Favourite Genres')
+    const keywordsIndex = labels.indexOf('Favourite Keywords')
+    expect(genresIndex).toBeGreaterThan(-1)
+    expect(keywordsIndex).toBeGreaterThan(genresIndex)
+  })
+})
+```
+**Test Case (Green)**: swap the two JSX blocks (and their dividers) in place.
+
+---
+
+### FRONTEND-140-AC-12 [AUTO]
+**Statement**: `SettingsPage.tsx`'s own `keywordOptions` fetch (currently a mount-only, no-args `seriesApi.getKeywordStats()` call feeding the "Favourite Keywords" picker) shall become reactive to the same `keywordSuggestionSortMode`/`keywordSuggestionMinSeriesCount` state this component already reads for the Keyword Suggestion Sort fieldset — passing `{ sortBy: 'averageBlendedRating', sortDirection: 'desc', minSeriesCount }` when mode is `'highestRated'`, `undefined` otherwise — and re-fetching whenever either value changes, mirroring `RecommendationControls.tsx`'s existing identical effect (`FRONTEND-133-AC-04`) exactly.
+
+**References**: `frontend/src/components/SettingsPage.tsx` lines 183-190 (current mount-only effect) and lines ~165-175 (existing `keywordSuggestionSortMode`/`keywordSuggestionMinSeriesCount` state, already in scope — no new `useLocalStorage` reads needed). Pattern to mirror: `frontend/src/components/RecommendationControls.tsx` lines 1105-1118.
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-140-AC-12: Favourite Keywords options follow the sort setting', () => {
+  it('re-fetches with sortBy/minSeriesCount params when Highest Rated is selected', async () => {
+    localStorage.setItem('keywordSuggestionSortMode', JSON.stringify('highestRated'))
+    localStorage.setItem('keywordSuggestionMinSeriesCount', JSON.stringify(3))
+    const spy = vi.spyOn(seriesApi, 'getKeywordStats').mockResolvedValue([])
+    render(<SettingsPage {...defaultProps} />)
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 3,
+      }),
+    )
+  })
+
+  it('fetches with no params when Most Common (default) is selected', async () => {
+    const spy = vi.spyOn(seriesApi, 'getKeywordStats').mockResolvedValue([])
+    render(<SettingsPage {...defaultProps} />)
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(undefined))
+  })
+})
+```
+**Test Case (Green)**: replace the `[]`-deps effect with one depending on `[keywordSuggestionSortMode, keywordSuggestionMinSeriesCount]`, building the same conditional options object `RecommendationControls.tsx` already builds.
+
+---
+
+### FRONTEND-140-AC-13 [AUTO]
+**Statement**: `SearchFilter.tsx`'s `keywordOptions` fetch (feeding its "Keywords" field and "Browse Keywords" modal, currently a mount-only, no-args `seriesApi.getKeywordStats()` call) shall become reactive to `keywordSuggestionSortMode`/`keywordSuggestionMinSeriesCount` in the same way as AC-12, reading both via `useLocalStorage` (imported from `RecommendationControls.tsx`'s exported `isKeywordSuggestionSortMode`/`DEFAULT_KEYWORD_SUGGESTION_SORT_MODE`/`isKeywordSuggestionMinSeriesCount`/`DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT`, since `SearchFilter.tsx` has no prior local copies of these). The existing `.catch(() => setKeywordOptionsError(...))` error-handling behavior is preserved unchanged.
+
+**References**: `frontend/src/components/SearchFilter.tsx` lines 274-317 (current independent state/effect, error handling to preserve). Pattern/exports to reuse: `frontend/src/components/RecommendationControls.tsx` lines 134-163 (types/constants/validators) and 1105-1118 (the effect shape).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-140-AC-13: My Series Keywords filter options follow the sort setting', () => {
+  it('re-fetches with sortBy/minSeriesCount params when Highest Rated is selected', async () => {
+    localStorage.setItem('keywordSuggestionSortMode', JSON.stringify('highestRated'))
+    localStorage.setItem('keywordSuggestionMinSeriesCount', JSON.stringify(5))
+    const spy = vi.spyOn(seriesApi, 'getKeywordStats').mockResolvedValue([])
+    render(<SearchFilter {...defaultProps} />)
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith({
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 5,
+      }),
+    )
+  })
+
+  it('still sets the existing error message on fetch failure', async () => {
+    vi.spyOn(seriesApi, 'getKeywordStats').mockRejectedValue(new Error('fail'))
+    render(<SearchFilter {...defaultProps} />)
+    expect(
+      await screen.findByText('Failed to load keyword filter options. Please try again.'),
+    ).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: add the two `useLocalStorage` reads and rebuild the effect/dependency array as in AC-12, keeping the existing `.catch()` body untouched.
+
+---
+
+### FRONTEND-140-AC-14 [AUTO]
+**Statement**: The AC-02 `InfoDisclosure` description shall be updated to also name My Series' Keywords filter among the fields the setting affects, so the copy accurately reflects AC-13's fix (it already names Custom Search's Keywords field, Exclude Keywords fields, and the Favourite Keywords list).
+
+**References**: `frontend/src/components/SettingsPage.tsx` (the AC-02 `InfoDisclosure` description string, introduced earlier in this spec).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure names My Series too', () => {
+  it('mentions My Series in the opened description', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }))
+    expect(screen.getByText(/My Series/i)).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: extend the description string with the My Series Keywords filter mention.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -309,3 +424,7 @@ This AC passes by construction (no backend diff in this spec's changeset) — if
 - [x] FRONTEND-140-AC-08: `browse-custom-search-keywords` instance gets a `labelInfo` disclosure pointing back to Settings
 - [x] FRONTEND-140-AC-09: `recommendation-keywords` instance gains no disclosure (regression guard)
 - [x] FRONTEND-140-AC-10: `NameStatAggregator`'s behavior is unchanged — no backend file modified
+- [x] FRONTEND-140-AC-11: Favourite Keywords reordered beneath Favourite Genres, adjacent to the Sort fieldset
+- [x] FRONTEND-140-AC-12: Settings' own Favourite Keywords options now follow the sort/filter setting
+- [x] FRONTEND-140-AC-13: My Series' Keywords filter options now follow the sort/filter setting
+- [x] FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure copy updated to name My Series too
