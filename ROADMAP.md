@@ -40,6 +40,7 @@ dependency-derived anymore.
 | ------- | ------------ | -------------- | ------ |
 | Filter-profile auto-suggested names label bare-numeric criteria (e.g. "Series Count 5" instead of "5") across all 5 filter-profile areas | — | `frontend_spec_125` | ⬜ Not started |
 | "More Like This" — get TMDB recommendations seeded by an untracked recommendation candidate's own `tmdbId`, from within the candidate detail modal | `series_spec_064` | `frontend_spec_127` | ⬜ Not started |
+| Keyword Suggestion Sort active indicator — a small badge beside every keyword-suggestion field stating "Highest Rated (min N)" when that mode is active, so users can tell at a glance whether/how a field's suggestions are currently sorted and floor-filtered | — | `frontend_spec_141` | ⬜ Not started |
 
 ---
 
