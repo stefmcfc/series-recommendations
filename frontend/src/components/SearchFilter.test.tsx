@@ -64,6 +64,62 @@ describe('FRONTEND-076-AC-04: SearchFilter genre picker is renamed', () => {
   })
 })
 
+describe('FRONTEND-140-AC-13: My Series Keywords filter options follow the sort setting', () => {
+  it('re-fetches with sortBy/minSeriesCount params when Highest Rated is selected', async () => {
+    localStorage.setItem(
+      'keywordSuggestionSortMode',
+      JSON.stringify('highestRated'),
+    )
+    localStorage.setItem('keywordSuggestionMinSeriesCount', JSON.stringify(5))
+    renderFilter()
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenCalledWith({
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 5,
+      }),
+    )
+  })
+
+  it('fetches with no params when Most Common (default) is selected', async () => {
+    renderFilter()
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenCalledWith(undefined),
+    )
+  })
+
+  it('still sets the existing error message on fetch failure', async () => {
+    mockGetKeywordStats.mockRejectedValue(new Error('fail'))
+    renderFilter()
+    expect(
+      await screen.findByText(
+        'Failed to load keyword filter options. Please try again.',
+      ),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-15: SearchFilter pins favourited keywords', () => {
+  it('passes keywordFavourites as pinnedOptions to the inline keyword picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    renderFilter()
+    const keywordsContainer = screen.getByLabelText('Keywords')
+    expect(
+      within(keywordsContainer).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
+  })
+
+  it('passes keywordFavourites as pinnedOptions to the "Browse all keywords" modal picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    renderFilter()
+    fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    expect(
+      within(dialog).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-006-AC-01/02: fields', () => {
   it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()

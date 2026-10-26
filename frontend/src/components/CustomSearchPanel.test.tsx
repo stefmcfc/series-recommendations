@@ -246,6 +246,43 @@ describe('FRONTEND-094-AC-04: modal keyword picker accepts free text', () => {
   })
 })
 
+describe('FRONTEND-140-AC-08: Browse Keywords modal field has an info disclosure', () => {
+  it('renders the disclosure button beside the modal keyword field', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={['heist']}
+      />,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: /browse all keywords/i }),
+    )
+    expect(
+      within(
+        screen.getByRole('dialog', { name: /browse keywords/i }),
+      ).getByRole('button', { name: 'About Keywords' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-09: the inline hideInput Keywords field gains no disclosure', () => {
+  it('renders no "About Keywords" button before the Browse Keywords modal is opened', () => {
+    render(
+      <CustomSearchPanel
+        state={makeState()}
+        updateState={vi.fn()}
+        genreOptions={[]}
+        keywordOptions={['heist']}
+      />,
+    )
+    expect(
+      screen.queryByRole('button', { name: 'About Keywords' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-098-AC-07/08: country/language favourites default and read from localStorage', () => {
   it('uses the default US/GB pinned countries when nothing is stored', () => {
     render(

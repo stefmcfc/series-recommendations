@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect } from 'vitest'
 import { KeywordPicker } from './KeywordPicker'
+import { InfoDisclosure } from './InfoDisclosure'
 
 describe('FRONTEND-029-AC-01: labelled input', () => {
   it('renders an input reachable by its label text', () => {
@@ -770,5 +771,53 @@ describe('FRONTEND-100-AC-05: drag-and-drop reorders on drop', () => {
     )
     const chipA = screen.getByText('a').closest('li')!
     expect(chipA).toHaveAttribute('draggable', 'true')
+  })
+})
+
+describe('FRONTEND-140-AC-06: KeywordPicker renders labelInfo beside, not inside, its label', () => {
+  it('renders labelInfo as a sibling of the label, not a child', () => {
+    render(
+      <KeywordPicker
+        id="kw"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        labelInfo={<InfoDisclosure label="About Keywords" description="..." />}
+      />,
+    )
+    const label = screen.getByText('Keywords').closest('label')
+    const infoButton = screen.getByRole('button', { name: 'About Keywords' })
+    expect(label).not.toBeNull()
+    expect(label?.contains(infoButton)).toBe(false)
+  })
+})
+
+describe('FRONTEND-140-AC-07: KeywordPicker renders unchanged without labelInfo, or with hideInput set', () => {
+  it('renders no extra button when labelInfo is omitted', () => {
+    render(
+      <KeywordPicker
+        id="kw"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('does not render labelInfo when hideInput is set, even if passed', () => {
+    render(
+      <KeywordPicker
+        id="kw"
+        label="Keywords"
+        selected={[]}
+        onChange={vi.fn()}
+        hideInput
+        labelInfo={<InfoDisclosure label="About Keywords" description="..." />}
+      />,
+    )
+    expect(
+      screen.queryByRole('button', { name: 'About Keywords' }),
+    ).not.toBeInTheDocument()
   })
 })

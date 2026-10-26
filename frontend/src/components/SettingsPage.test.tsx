@@ -97,6 +97,111 @@ describe('FRONTEND-133-AC-02: minimum series count field visibility', () => {
   })
 })
 
+describe('FRONTEND-140-AC-01: Keyword Suggestion Sort has a visible heading', () => {
+  it('renders a "Keyword Suggestion Sort" group heading reachable by role', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('group', { name: 'Keyword Suggestion Sort' }),
+    ).toBeInTheDocument()
+  })
+
+  it('still renders both radios, checked/unchecked as before', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(screen.getByRole('radio', { name: 'Most Common' })).toBeChecked()
+    expect(
+      screen.getByRole('radio', { name: 'Highest Rated' }),
+    ).not.toBeChecked()
+  })
+})
+
+describe('FRONTEND-140-AC-02: Keyword Suggestion Sort has an info disclosure', () => {
+  it('renders the disclosure button beside the fieldset legend', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }),
+    ).toBeInTheDocument()
+  })
+
+  it('explains the app-wide scope when opened', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }),
+    )
+    expect(screen.getByText(/app-wide/i)).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-03: Minimum Series Count has no field-level disclosure of its own', () => {
+  it('renders the floor field with no "About Minimum Series Count" button', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(screen.getByRole('radio', { name: 'Highest Rated' }))
+    expect(screen.getByLabelText('Minimum Series Count')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /About Minimum Series Count/i }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-05: Recommendation Favourites has an info disclosure', () => {
+  it('renders the disclosure button beside the section heading', () => {
+    render(<SettingsPage {...defaultProps} />)
+    expect(
+      screen.getByRole('button', { name: 'About Recommendation Favourites' }),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-11: Recommendation Favourites field order', () => {
+  it('renders Favourite Genres before Favourite Keywords, immediately before the Sort fieldset', () => {
+    render(<SettingsPage {...defaultProps} />)
+    const genresLabel = screen.getByText('Favourite Genres')
+    const keywordsLabel = screen.getByText('Favourite Keywords')
+    // DOCUMENT_POSITION_FOLLOWING (4) means keywordsLabel comes after
+    // genresLabel in document order.
+    expect(
+      genresLabel.compareDocumentPosition(keywordsLabel) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+})
+
+describe('FRONTEND-140-AC-12: Favourite Keywords options follow the sort setting', () => {
+  it('re-fetches with sortBy/minSeriesCount params when Highest Rated is selected', async () => {
+    localStorage.setItem(
+      'keywordSuggestionSortMode',
+      JSON.stringify('highestRated'),
+    )
+    localStorage.setItem('keywordSuggestionMinSeriesCount', JSON.stringify(3))
+    render(<SettingsPage {...defaultProps} />)
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenCalledWith({
+        sortBy: 'averageBlendedRating',
+        sortDirection: 'desc',
+        minSeriesCount: 3,
+      }),
+    )
+  })
+
+  it('fetches with no params when Most Common (default) is selected', async () => {
+    render(<SettingsPage {...defaultProps} />)
+    await waitFor(() =>
+      expect(mockGetKeywordStats).toHaveBeenCalledWith(undefined),
+    )
+  })
+})
+
+describe('FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure names My Series too', () => {
+  it('mentions My Series in the opened description', () => {
+    render(<SettingsPage {...defaultProps} />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'About Keyword Suggestion Sort' }),
+    )
+    expect(
+      screen.getByText(/Reorders keyword suggestions app-wide/),
+    ).toHaveTextContent(/My Series/i)
+  })
+})
+
 describe('FRONTEND-133-AC-05: Favourite Keywords setting', () => {
   it('adds and persists a favourite keyword', async () => {
     mockGetKeywordStats.mockResolvedValue([

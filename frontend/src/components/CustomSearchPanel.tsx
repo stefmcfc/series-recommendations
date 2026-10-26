@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { KeywordPicker } from './KeywordPicker'
 import { NumberInput } from './NumberInput'
+import { InfoDisclosure } from './InfoDisclosure'
 import { KEYWORD_SUGGESTIONS_LIMIT } from '../utils/keywordSuggestions'
 import { COUNTRY_OPTIONS } from '../utils/countryOptions'
 import { MIN_VALID_YEAR, MAX_VALID_YEAR } from '../utils/yearBounds'
@@ -359,6 +360,17 @@ export function CustomSearchPanel({
               placeholder="Type a keyword and press Enter"
               allowFreeText
               focusOnMount
+              // FRONTEND-140-AC-08: points back to where keyword suggestion
+              // sort order and pinned Favourite Keywords are configured --
+              // only this instance (visible label, no hideInput); the
+              // inline recommendation-keywords field below (hideInput) is
+              // deliberately left unwired (FRONTEND-140-AC-09).
+              labelInfo={
+                <InfoDisclosure
+                  label="About Keywords"
+                  description="Suggestion order and pinned favourites for this field are configured in Settings -> Recommendation Favourites."
+                />
+              }
             />
 
             <div className={styles.dialogActions}>

@@ -47,6 +47,15 @@ interface KeywordPickerProps {
   // (Genre/Keyword filters, etc.) render identically to before this prop
   // existed -- only Settings' Country/Language favourites editors pass it.
   readonly reorderable?: boolean
+  // FRONTEND-140-AC-06: an optional InfoDisclosure (or any other node)
+  // rendered as a sibling of <label>, never nested inside it -- mirrors
+  // NumberInput's own labelInfo prop (frontend_spec_131 FRONTEND-131-AC-03)
+  // for the identical reason: a <button> inside <label> would also focus
+  // the associated <input> on click via the label's native click-through
+  // behavior. Gated by the same !hideInput condition as <label> itself
+  // (FRONTEND-140-AC-07) -- hideInput usages render no visible label at
+  // all, so there's nothing for labelInfo to sit beside.
+  readonly labelInfo?: ReactNode
 }
 
 function isSameKeyword(a: string, b: string): boolean {
@@ -107,6 +116,7 @@ export function KeywordPicker({
   maxSuggestionsWhenEmpty,
   hideInput = false,
   reorderable = false,
+  labelInfo,
 }: KeywordPickerProps) {
   const [inputValue, setInputValue] = useState('')
   const [dragIndex, setDragIndex] = useState<number | null>(null)
@@ -266,7 +276,20 @@ export function KeywordPicker({
       className={styles.container}
       aria-label={hideInput ? label : undefined}
     >
-      {!hideInput && <label htmlFor={id}>{label}</label>}
+      {/* FRONTEND-140-AC-06/07: labelInfo, when provided and !hideInput, is
+          a sibling of <label> inside this new row -- never a descendant of
+          it. Omitted entirely (no new wrapping element) when labelInfo
+          isn't passed, so every pre-existing call site's rendered output is
+          unchanged. */}
+      {!hideInput &&
+        (labelInfo ? (
+          <div className={styles.labelRow}>
+            <label htmlFor={id}>{label}</label>
+            {labelInfo}
+          </div>
+        ) : (
+          <label htmlFor={id}>{label}</label>
+        ))}
       {!hideInput && (
         <input
           ref={inputRef}
