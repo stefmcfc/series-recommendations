@@ -2,8 +2,8 @@
 
 **Status**: Implemented
 **Priority**: P3
-**Depends on**: `frontend_spec_131_info_disclosure_boxes.md` (introduces the `InfoDisclosure` component and the `NumberInput.labelInfo`/`SettingsSection.info` sibling-of-label/heading hook-point pattern this spec reuses and extends to `KeywordPicker`), `frontend_spec_133_keyword_suggestions_and_analysis_recommendations_link.md` (introduces the "Keyword Suggestion Sort" radiogroup, "Minimum Series Count" field, and the `RecommendationControls.tsx` reactive-fetch pattern Requirement 6 extends to two more call sites), `tooling_spec_008_recommendation_controls_decomposition.md` (introduces `HighestRatedPanel.tsx`'s `fieldset`/`legend` "Sort By" pattern this spec's fieldset mirrors)
-**Area**: Frontend (`components/SettingsPage.tsx`, `components/SettingsPage.module.css`, `components/KeywordPicker.tsx`, `components/KeywordPicker.module.css`, `components/CustomSearchPanel.tsx`, `components/SearchFilter.tsx` — plus each of those components' colocated `*.test.tsx`)
+**Depends on**: `frontend_spec_131_info_disclosure_boxes.md` (introduces the `InfoDisclosure` component and the `NumberInput.labelInfo`/`SettingsSection.info` sibling-of-label/heading hook-point pattern this spec reuses and extends to `KeywordPicker`), `frontend_spec_133_keyword_suggestions_and_analysis_recommendations_link.md` (introduces the "Keyword Suggestion Sort" radiogroup, "Minimum Series Count" field, the `RecommendationControls.tsx` reactive-fetch pattern Requirement 6 extends to two more call sites, and the `keywordFavourites`/`pinnedOptions` mechanism Requirement 7 extends to two more call sites), `tooling_spec_008_recommendation_controls_decomposition.md` (introduces `HighestRatedPanel.tsx`'s `fieldset`/`legend` "Sort By" pattern this spec's fieldset mirrors)
+**Area**: Frontend (`components/SettingsPage.tsx`, `components/SettingsPage.module.css`, `components/KeywordPicker.tsx`, `components/KeywordPicker.module.css`, `components/CustomSearchPanel.tsx`, `components/SearchFilter.tsx`, `components/UseMySeriesPanel.tsx` — plus each of those components' colocated `*.test.tsx`)
 
 ## Overview
 
@@ -12,6 +12,8 @@
 As a related, explicitly-requested follow-on, this spec also gives `KeywordPicker` the same `labelInfo` "hook point" `NumberInput` already has (`frontend_spec_131`), and wires it onto Custom Search's "Browse Keywords" modal field — the one `KeywordPicker` instance in `CustomSearchPanel.tsx` with a visible, non-`hideInput` label — pointing back to where the sort/favourites settings this spec clarifies actually live.
 
 **Requirement 6, added during live PR review of this spec's implementation (PR #279, not yet merged):** reviewing the shipped UI surfaced that the AC-02 `InfoDisclosure` copy's claim — that Keyword Suggestion Sort reorders suggestions "across every keyword field app-wide" — was not actually true. Two keyword-suggestion fetches never read `keywordSuggestionSortMode`/`keywordSuggestionMinSeriesCount` at all: `SettingsPage.tsx`'s own `keywordOptions` fetch (feeding the Favourite Keywords picker directly below the setting) and `SearchFilter.tsx`'s (feeding My Series' own "Keywords"/"Browse Keywords" fields) are both independent, mount-only, no-args calls to `seriesApi.getKeywordStats()`. `RecommendationFiltersBox.tsx` and `UseMySeriesPanel.tsx` were checked and are unaffected — both already share `RecommendationControls.tsx`'s reactive `keywordOptions` state, which does read the settings correctly. This is treated as completing `frontend_spec_133`'s already-stated intent (an app-wide setting) rather than a new feature, and is fixed in the same PR rather than a new spec, per explicit user direction during this review. A field reorder (Favourite Keywords moved beneath Favourite Genres, adjacent to the setting it affects) is bundled in for the same reason — it's what made the Favourite Keywords gap visible/obvious in the first place.
+
+**Requirement 7, added from further live PR review:** testing Requirement 6's fix, the user favourited a keyword below the Minimum Series Count floor and expected it to still appear (pinned, at the top) in every filter surface — it does in Custom Search's Discover mode, but is missing entirely from My Series' own filter (`SearchFilter.tsx`) and Recommendations' "Use My Series" mode (`UseMySeriesPanel.tsx`). Root cause: `KeywordPicker`'s `pinnedOptions` prop is what rescues a favourited-but-filtered-out entry (it falls back to the pinned entry's own id/label when missing from `options`) — `CustomSearchPanel.tsx` already passes `pinnedOptions={keywordFavourites}` on its Keywords fields, but `SearchFilter.tsx` and `UseMySeriesPanel.tsx` only ever wired `pinnedOptions` for their Country/Language fields, never Keywords, and neither reads `keywordFavourites` via `useLocalStorage` at all today. `SearchFilter.tsx`'s half of this gap was already a known, undesigned `.claude/SPEC_CANDIDATES.md` entry ("Pin favourite keywords to the top of SearchFilter's keyword picker(s)"); `UseMySeriesPanel.tsx`'s identical gap was undocumented until now. Treated as completing already-established pinning behavior (not new functionality) and fixed in this same PR, per explicit user direction. The separate ask — a visual marker distinguishing a pinned/favourited entry from a regular suggestion inside `KeywordPicker`'s own rendered list, which doesn't exist anywhere in the app today — is out of scope for this spec and tracked instead in `frontend_spec_142_pinned_option_favourite_indicator.md`.
 
 ## Design Decisions
 
@@ -399,6 +401,50 @@ describe('FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure names My Series
 
 ---
 
+## Requirement 7: Favourited keywords stay pinned everywhere the setting applies
+
+**User story**: As a user who favourited a keyword that's since fallen below the Minimum Series Count floor, I want it to still appear, pinned at the top, in every keyword field the Keyword Suggestion Sort setting affects — not just Custom Search's Discover mode — so favouriting a keyword means something consistent app-wide.
+
+### FRONTEND-140-AC-15 [AUTO]
+**Statement**: `SearchFilter.tsx` shall read `keywordFavourites` via `useLocalStorage('keywordFavourites', DEFAULT_KEYWORD_FAVOURITES, isKeywordFavourites)` (imported from `RecommendationControls.tsx`, mirroring its existing `countryFavourites`/`languageFavourites` reads immediately above) and pass it as `pinnedOptions={keywordFavourites}` on both its `search-keywords` (inline) and `browse-keywords` (modal) `KeywordPicker` instances.
+
+**References**: `frontend/src/components/SearchFilter.tsx` lines 284-290 (existing `countryFavourites`/`languageFavourites` reads, pattern to mirror), lines 532-548 and 848-859 (the two Keywords `KeywordPicker` instances, currently with no `pinnedOptions`). Pattern already in use: `frontend/src/components/CustomSearchPanel.tsx` lines 81-85 (the read) and 198/359 (`pinnedOptions={keywordFavourites}`).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-140-AC-15: SearchFilter pins favourited keywords', () => {
+  it('keeps a favourited keyword visible even when excluded by the min-count filter', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    render(<SearchFilter {...defaultProps} />)
+    // options excludes 'spy' (simulating it falling below the floor) but it
+    // still renders first via the pinnedOptions fallback.
+    expect(screen.getByText('spy')).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: add the `useLocalStorage` read and `pinnedOptions` prop at both call sites.
+
+---
+
+### FRONTEND-140-AC-16 [AUTO]
+**Statement**: `UseMySeriesPanel.tsx` shall read `keywordFavourites` the same way (mirroring its existing `countryFavourites`/`languageFavourites` reads) and pass it as `pinnedOptions={keywordFavourites}` on both its `specific-series-keywords` (inline) and `browse-specific-series-keywords` (modal) `KeywordPicker` instances.
+
+**References**: `frontend/src/components/UseMySeriesPanel.tsx` lines 181-190 (existing `countryFavourites`/`languageFavourites` reads, pattern to mirror), lines ~769-779 and ~1396-1406 (the two Keywords `KeywordPicker` instances, currently with no `pinnedOptions`).
+
+**Test Case (Red)**:
+```tsx
+describe('FRONTEND-140-AC-16: UseMySeriesPanel pins favourited keywords', () => {
+  it('keeps a favourited keyword visible even when excluded by the min-count filter', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    render(<UseMySeriesPanel {...defaultProps} />)
+    expect(screen.getByText('spy')).toBeInTheDocument()
+  })
+})
+```
+**Test Case (Green)**: add the `useLocalStorage` read and `pinnedOptions` prop at both call sites.
+
+---
+
 ## Cross-References
 
 | This spec | Source |
@@ -428,3 +474,5 @@ describe('FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure names My Series
 - [x] FRONTEND-140-AC-12: Settings' own Favourite Keywords options now follow the sort/filter setting
 - [x] FRONTEND-140-AC-13: My Series' Keywords filter options now follow the sort/filter setting
 - [x] FRONTEND-140-AC-14: Keyword Suggestion Sort disclosure copy updated to name My Series too
+- [x] FRONTEND-140-AC-15: `SearchFilter.tsx`'s Keywords fields pin favourited keywords
+- [x] FRONTEND-140-AC-16: `UseMySeriesPanel.tsx`'s Keywords fields pin favourited keywords

@@ -36,8 +36,10 @@ import {
   LANGUAGE_OPTIONS,
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
+  DEFAULT_KEYWORD_FAVOURITES,
   isCountryFavourites,
   isLanguageFavourites,
+  isKeywordFavourites,
 } from './RecommendationControls'
 import type {
   ControlsState,
@@ -187,6 +189,14 @@ export function UseMySeriesPanel({
     'languageFavourites',
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
+  )
+  // FRONTEND-140-AC-16: read-only here (Settings owns the setter) -- lets a
+  // favourited keyword stay visible/pinned even when it's been excluded by
+  // the Minimum Series Count floor, mirroring CustomSearchPanel.tsx.
+  const [keywordFavourites] = useLocalStorage(
+    'keywordFavourites',
+    DEFAULT_KEYWORD_FAVOURITES,
+    isKeywordFavourites,
   )
   // FRONTEND-077-AC-07: separate open/closed state for the new "Browse all
   // keywords" modal paired with the Keywords filter field below -- mirrors
@@ -772,6 +782,7 @@ export function UseMySeriesPanel({
                                 selected={specificSeriesKeywordsFilter}
                                 onChange={setSpecificSeriesKeywordsFilter}
                                 options={keywordOptions}
+                                pinnedOptions={keywordFavourites}
                                 placeholder="Type to filter tracked keywords"
                                 maxSuggestionsWhenEmpty={0}
                                 // FRONTEND-077-AC-08: the new "Browse all
@@ -1399,6 +1410,7 @@ export function UseMySeriesPanel({
               selected={specificSeriesKeywordsFilter}
               onChange={setSpecificSeriesKeywordsFilter}
               options={keywordOptions}
+              pinnedOptions={keywordFavourites}
               placeholder="Type to filter tracked keywords"
               focusOnMount
               // FRONTEND-077-AC-07: no maxSuggestionsWhenEmpty here -- this

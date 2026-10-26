@@ -24,6 +24,8 @@ versioned together as one app.
 - Frontend: Settings' own "Favourite Keywords" picker now actually follows the "Keyword Suggestion Sort" setting — previously its options were fetched once on mount with no sort/filter params, regardless of the setting (`frontend_spec_140`, live-review follow-up).
 - Frontend: My Series' "Keywords" filter field and "Browse Keywords" modal now also follow the "Keyword Suggestion Sort" setting, for the same reason as above (`frontend_spec_140`, live-review follow-up).
 - Frontend: the "About Keyword Suggestion Sort" disclosure's copy now also names My Series' Keywords filter among the fields the setting affects, matching the fix above (`frontend_spec_140`, live-review follow-up).
+- Frontend: `SearchFilter`'s "Keywords"/"Browse Keywords" fields now pin favourited keywords (via `pinnedOptions`) the same way Custom Search already did — previously a favourited keyword that fell below the Minimum Series Count floor simply disappeared from My Series' own filter (`frontend_spec_140`, live-review follow-up).
+- Frontend: `UseMySeriesPanel`'s "Keywords"/"Browse Keywords" fields now pin favourited keywords the same way, for the same reason as above (`frontend_spec_140`, live-review follow-up).
 
 ## [3.74.0] - 2026-10-23
 

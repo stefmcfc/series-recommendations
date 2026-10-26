@@ -99,6 +99,27 @@ describe('FRONTEND-140-AC-13: My Series Keywords filter options follow the sort 
   })
 })
 
+describe('FRONTEND-140-AC-15: SearchFilter pins favourited keywords', () => {
+  it('passes keywordFavourites as pinnedOptions to the inline keyword picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    renderFilter()
+    const keywordsContainer = screen.getByLabelText('Keywords')
+    expect(
+      within(keywordsContainer).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
+  })
+
+  it('passes keywordFavourites as pinnedOptions to the "Browse all keywords" modal picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    renderFilter()
+    fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    expect(
+      within(dialog).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('FRONTEND-006-AC-01/02: fields', () => {
   it('renders a labelled control per SearchCriteria field', () => {
     renderFilter()

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, within } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { UseMySeriesPanel } from './UseMySeriesPanel'
 import { initialState } from './RecommendationControls'
 import type { ControlsState } from './RecommendationControls'
@@ -816,6 +816,51 @@ describe('FRONTEND-081 (2026-09-03 live-review amendment): Keywords field reject
     // field no longer renders its own typing input (FRONTEND-077-AC-05).
     const seriesDialog = openBrowseSeriesModal()
     expect(within(seriesDialog).getByText('Has Keyword')).toBeInTheDocument()
+  })
+})
+
+describe('FRONTEND-140-AC-16: UseMySeriesPanel pins favourited keywords', () => {
+  afterEach(() => {
+    localStorage.removeItem('keywordFavourites')
+  })
+
+  it('passes keywordFavourites as pinnedOptions to the inline keyword picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={['other']}
+      />,
+    )
+    openFilterMySeriesSheet()
+
+    const keywordsContainer = screen.getByLabelText('Keywords')
+    expect(
+      within(keywordsContainer).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
+  })
+
+  it('passes keywordFavourites as pinnedOptions to the "Browse all keywords" modal picker', () => {
+    localStorage.setItem('keywordFavourites', JSON.stringify(['spy']))
+    render(
+      <UseMySeriesPanel
+        state={initialState}
+        updateState={vi.fn()}
+        allSeries={[makeSeries()]}
+        genreOptions={[]}
+        keywordOptions={['other']}
+      />,
+    )
+    openFilterMySeriesSheet()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Browse all keywords' }))
+    const dialog = screen.getByRole('dialog', { name: /browse keywords/i })
+    expect(
+      within(dialog).getByRole('button', { name: 'spy' }),
+    ).toBeInTheDocument()
   })
 })
 

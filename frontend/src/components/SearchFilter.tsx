@@ -19,8 +19,10 @@ import {
   LANGUAGE_OPTIONS,
   DEFAULT_COUNTRY_FAVOURITES,
   DEFAULT_LANGUAGE_FAVOURITES,
+  DEFAULT_KEYWORD_FAVOURITES,
   isCountryFavourites,
   isLanguageFavourites,
+  isKeywordFavourites,
   DEFAULT_KEYWORD_SUGGESTION_SORT_MODE,
   DEFAULT_KEYWORD_SUGGESTION_MIN_SERIES_COUNT,
   isKeywordSuggestionSortMode,
@@ -291,6 +293,14 @@ export function SearchFilter({
     DEFAULT_LANGUAGE_FAVOURITES,
     isLanguageFavourites,
   )
+  // FRONTEND-140-AC-15: read-only here (Settings owns the setter) -- lets a
+  // favourited keyword stay visible/pinned even when it's been excluded by
+  // the Minimum Series Count floor, mirroring CustomSearchPanel.tsx.
+  const [keywordFavourites] = useLocalStorage(
+    'keywordFavourites',
+    DEFAULT_KEYWORD_FAVOURITES,
+    isKeywordFavourites,
+  )
   // FRONTEND-140-AC-13: read-only here (Settings owns the setter) -- feeds
   // the reactive keywordOptions fetch below so this field's suggestion
   // order actually follows the Keyword Suggestion Sort setting, matching
@@ -535,6 +545,7 @@ export function SearchFilter({
                     selected={form.keywordsSelected}
                     onChange={handleKeywordsChange}
                     options={keywordOptionsError ? [] : keywordOptions}
+                    pinnedOptions={keywordFavourites}
                     placeholder="Type to filter tracked keywords"
                     allowFreeText
                     // A default suggestion list here (rather than only once typing)
@@ -851,6 +862,7 @@ export function SearchFilter({
               selected={form.keywordsSelected}
               onChange={handleKeywordsChange}
               options={keywordOptionsError ? [] : keywordOptions}
+              pinnedOptions={keywordFavourites}
               placeholder="Type to filter tracked keywords"
               focusOnMount
               allowFreeText
