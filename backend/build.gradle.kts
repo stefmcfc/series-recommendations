@@ -26,7 +26,7 @@ val sqliteJdbcVersion = "3.53.4.0"
 val spockVersion = "2.5-groovy-5.0"
 val groovyVersion = "5.1.1"
 val commonsCsvVersion = "1.14.1"
-val springdocVersion = "3.1.1"
+val springdocVersion = "3.2.0"
 
 java {
     toolchain {
